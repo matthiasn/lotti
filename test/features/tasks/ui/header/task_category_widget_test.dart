@@ -58,7 +58,7 @@ void main() {
     expect(find.text(testCategory.name), findsOneWidget);
 
     // Assert - should contain a color icon
-          expect(find.byType(Container), findsWidgets);
+    expect(find.byType(Container), findsWidgets);
   });
 
   testWidgets('renders correctly without a category', (tester) async {
@@ -76,7 +76,7 @@ void main() {
     expect(find.text('-'), findsOneWidget);
 
     // Assert - should still contain a color icon (with default color)
-          expect(find.byType(Container), findsWidgets);
+    expect(find.byType(Container), findsWidgets);
   });
 
   testWidgets('opens category selection modal when tapped', (tester) async {

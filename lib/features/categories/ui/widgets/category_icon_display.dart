@@ -4,11 +4,11 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/utils/color.dart';
 
 /// Widget for displaying category icons with colored borders.
-/// 
+///
 /// This widget displays either a Material Design icon (if the category has an icon selected)
 /// or the first letter of the category name as a fallback. The display includes a colored
 /// circular border matching the category's color.
-/// 
+///
 /// Example:
 /// ```dart
 /// CategoryIconDisplay(
@@ -27,10 +27,10 @@ class CategoryIconDisplay extends StatelessWidget {
 
   /// The category to display an icon for
   final CategoryDefinition category;
-  
+
   /// The size of the circular icon display (both width and height)
   final double size;
-  
+
   /// Whether to show the colored border around the icon/text
   final bool showBorder;
 
@@ -61,7 +61,9 @@ class CategoryIconDisplay extends StatelessWidget {
                 size: size * CategoryIconConstants.iconSizeMultiplier,
               )
             : Text(
-                category.name.isNotEmpty ? category.name[0].toUpperCase() : CategoryIconStrings.fallbackCharacter,
+                category.name.isNotEmpty
+                    ? category.name[0].toUpperCase()
+                    : CategoryIconStrings.fallbackCharacter,
                 style: TextStyle(
                   color: categoryColor,
                   fontWeight: FontWeight.bold,

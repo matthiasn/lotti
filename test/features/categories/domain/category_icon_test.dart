@@ -39,7 +39,8 @@ void main() {
       });
 
       test('should have unique display names', () {
-        final displayNames = CategoryIcon.values.map((e) => e.displayName).toSet();
+        final displayNames =
+            CategoryIcon.values.map((e) => e.displayName).toSet();
         expect(displayNames.length, equals(CategoryIcon.values.length));
       });
     });
@@ -55,101 +56,154 @@ void main() {
       });
 
       test('should find exact enum name matches', () {
-        expect(CategoryIconExtension.suggestFromName('fitness'), equals(CategoryIcon.fitness));
-        expect(CategoryIconExtension.suggestFromName('running'), equals(CategoryIcon.running));
-        expect(CategoryIconExtension.suggestFromName('yoga'), equals(CategoryIcon.yoga));
+        expect(CategoryIconExtension.suggestFromName('fitness'),
+            equals(CategoryIcon.fitness));
+        expect(CategoryIconExtension.suggestFromName('running'),
+            equals(CategoryIcon.running));
+        expect(CategoryIconExtension.suggestFromName('yoga'),
+            equals(CategoryIcon.yoga));
       });
 
       test('should be case insensitive for enum names', () {
-        expect(CategoryIconExtension.suggestFromName('FITNESS'), equals(CategoryIcon.fitness));
-        expect(CategoryIconExtension.suggestFromName('Running'), equals(CategoryIcon.running));
-        expect(CategoryIconExtension.suggestFromName('YOGA'), equals(CategoryIcon.yoga));
+        expect(CategoryIconExtension.suggestFromName('FITNESS'),
+            equals(CategoryIcon.fitness));
+        expect(CategoryIconExtension.suggestFromName('Running'),
+            equals(CategoryIcon.running));
+        expect(CategoryIconExtension.suggestFromName('YOGA'),
+            equals(CategoryIcon.yoga));
       });
 
       test('should find word-boundary matches in display names', () {
-        expect(CategoryIconExtension.suggestFromName('Heart'), equals(CategoryIcon.heartHealth));
-        expect(CategoryIconExtension.suggestFromName('Computer'), equals(CategoryIcon.computer));
-        expect(CategoryIconExtension.suggestFromName('Health'), equals(CategoryIcon.heartHealth));
+        expect(CategoryIconExtension.suggestFromName('Heart'),
+            equals(CategoryIcon.heartHealth));
+        expect(CategoryIconExtension.suggestFromName('Computer'),
+            equals(CategoryIcon.computer));
+        expect(CategoryIconExtension.suggestFromName('Health'),
+            equals(CategoryIcon.heartHealth));
       });
 
       test('should not match partial words incorrectly', () {
         // This test ensures we fixed the bug where "art" would match "Heart Health"
-        expect(CategoryIconExtension.suggestFromName('art'), equals(CategoryIcon.art));
-        expect(CategoryIconExtension.suggestFromName('art'), isNot(equals(CategoryIcon.heartHealth)));
-        
+        expect(CategoryIconExtension.suggestFromName('art'),
+            equals(CategoryIcon.art));
+        expect(CategoryIconExtension.suggestFromName('art'),
+            isNot(equals(CategoryIcon.heartHealth)));
+
         // Other examples of avoiding false matches
-        expect(CategoryIconExtension.suggestFromName('men'), isNot(equals(CategoryIcon.mentalHealth)));
-        expect(CategoryIconExtension.suggestFromName('car'), equals(CategoryIcon.car));
-        expect(CategoryIconExtension.suggestFromName('car'), isNot(equals(CategoryIcon.medical))); // "care" partial match
+        expect(CategoryIconExtension.suggestFromName('men'),
+            isNot(equals(CategoryIcon.mentalHealth)));
+        expect(CategoryIconExtension.suggestFromName('car'),
+            equals(CategoryIcon.car));
+        expect(CategoryIconExtension.suggestFromName('car'),
+            isNot(equals(CategoryIcon.medical))); // "care" partial match
       });
 
       test('should match complete words and reasonable prefixes', () {
         // Complete word matches
-        expect(CategoryIconExtension.suggestFromName('mental'), equals(CategoryIcon.mentalHealth));
-        expect(CategoryIconExtension.suggestFromName('heart'), equals(CategoryIcon.heartHealth));
-        
+        expect(CategoryIconExtension.suggestFromName('mental'),
+            equals(CategoryIcon.mentalHealth));
+        expect(CategoryIconExtension.suggestFromName('heart'),
+            equals(CategoryIcon.heartHealth));
+
         // Reasonable prefix matches (4+ characters and at least 60% of target word)
-        expect(CategoryIconExtension.suggestFromName('men'), isNull); // Too short, should not match "mental"
-        expect(CategoryIconExtension.suggestFromName('ment'), equals(CategoryIcon.mentalHealth)); // Should match "mental" (4 chars, 67% of "mental")
-        expect(CategoryIconExtension.suggestFromName('heal'), equals(CategoryIcon.heartHealth)); // Should match "health" (4 chars, 67% of "health")
+        expect(CategoryIconExtension.suggestFromName('men'),
+            isNull); // Too short, should not match "mental"
+        expect(
+            CategoryIconExtension.suggestFromName('ment'),
+            equals(CategoryIcon
+                .mentalHealth)); // Should match "mental" (4 chars, 67% of "mental")
+        expect(
+            CategoryIconExtension.suggestFromName('heal'),
+            equals(CategoryIcon
+                .heartHealth)); // Should match "health" (4 chars, 67% of "health")
       });
 
       test('should find keyword mappings', () {
-        expect(CategoryIconExtension.suggestFromName('gym'), equals(CategoryIcon.fitness));
-        expect(CategoryIconExtension.suggestFromName('exercise'), equals(CategoryIcon.fitness));
-        expect(CategoryIconExtension.suggestFromName('doctor'), equals(CategoryIcon.medical));
-        expect(CategoryIconExtension.suggestFromName('book'), equals(CategoryIcon.reading));
-        expect(CategoryIconExtension.suggestFromName('diary'), equals(CategoryIcon.journal));
+        expect(CategoryIconExtension.suggestFromName('gym'),
+            equals(CategoryIcon.fitness));
+        expect(CategoryIconExtension.suggestFromName('exercise'),
+            equals(CategoryIcon.fitness));
+        expect(CategoryIconExtension.suggestFromName('doctor'),
+            equals(CategoryIcon.medical));
+        expect(CategoryIconExtension.suggestFromName('book'),
+            equals(CategoryIcon.reading));
+        expect(CategoryIconExtension.suggestFromName('diary'),
+            equals(CategoryIcon.journal));
       });
 
-      test('should use word boundaries for keyword matching to avoid false matches', () {
+      test(
+          'should use word boundaries for keyword matching to avoid false matches',
+          () {
         // Test that partial matches within words are avoided using "run" keyword
-        expect(CategoryIconExtension.suggestFromName('prune'), isNull); // Should NOT match "run" keyword
-        expect(CategoryIconExtension.suggestFromName('brunette'), isNull); // Should NOT match "run" keyword  
-        expect(CategoryIconExtension.suggestFromName('trunk'), isNull); // Should NOT match "run" keyword
-        expect(CategoryIconExtension.suggestFromName('overrun'), isNull); // Should NOT match "run" keyword
-        
+        expect(CategoryIconExtension.suggestFromName('prune'),
+            isNull); // Should NOT match "run" keyword
+        expect(CategoryIconExtension.suggestFromName('brunette'),
+            isNull); // Should NOT match "run" keyword
+        expect(CategoryIconExtension.suggestFromName('trunk'),
+            isNull); // Should NOT match "run" keyword
+        expect(CategoryIconExtension.suggestFromName('overrun'),
+            isNull); // Should NOT match "run" keyword
+
         // Test that exact word matches still work for "run" keyword
-        expect(CategoryIconExtension.suggestFromName('run'), equals(CategoryIcon.running)); // Should match "run" keyword
-        expect(CategoryIconExtension.suggestFromName('I want to run'), equals(CategoryIcon.running)); // Should match "run" as whole word
-        expect(CategoryIconExtension.suggestFromName('run fast'), equals(CategoryIcon.running)); // Should match "run" as whole word
-        
+        expect(CategoryIconExtension.suggestFromName('run'),
+            equals(CategoryIcon.running)); // Should match "run" keyword
+        expect(CategoryIconExtension.suggestFromName('I want to run'),
+            equals(CategoryIcon.running)); // Should match "run" as whole word
+        expect(CategoryIconExtension.suggestFromName('run fast'),
+            equals(CategoryIcon.running)); // Should match "run" as whole word
+
         // Test other keywords don't have false matches using "book" keyword
-        expect(CategoryIconExtension.suggestFromName('handbook'), isNull); // Should NOT match "book" keyword
-        expect(CategoryIconExtension.suggestFromName('notebook'), isNull); // Should NOT match "book" keyword
-        expect(CategoryIconExtension.suggestFromName('facebook'), isNull); // Should NOT match "book" keyword
-        expect(CategoryIconExtension.suggestFromName('book'), equals(CategoryIcon.reading)); // Should match "book" keyword
-        expect(CategoryIconExtension.suggestFromName('read a book'), equals(CategoryIcon.reading)); // Should match "book" as whole word
-        
+        expect(CategoryIconExtension.suggestFromName('handbook'),
+            isNull); // Should NOT match "book" keyword
+        expect(CategoryIconExtension.suggestFromName('notebook'),
+            isNull); // Should NOT match "book" keyword
+        expect(CategoryIconExtension.suggestFromName('facebook'),
+            isNull); // Should NOT match "book" keyword
+        expect(CategoryIconExtension.suggestFromName('book'),
+            equals(CategoryIcon.reading)); // Should match "book" keyword
+        expect(CategoryIconExtension.suggestFromName('read a book'),
+            equals(CategoryIcon.reading)); // Should match "book" as whole word
+
         // Test other keyword false matches using "gym" keyword
-        expect(CategoryIconExtension.suggestFromName('gymnasium'), isNull); // Should NOT match "gym" keyword
-        expect(CategoryIconExtension.suggestFromName('gymkhana'), isNull); // Should NOT match "gym" keyword  
-        expect(CategoryIconExtension.suggestFromName('gym'), equals(CategoryIcon.fitness)); // Should match "gym" keyword
+        expect(CategoryIconExtension.suggestFromName('gymnasium'),
+            isNull); // Should NOT match "gym" keyword
+        expect(CategoryIconExtension.suggestFromName('gymkhana'),
+            isNull); // Should NOT match "gym" keyword
+        expect(CategoryIconExtension.suggestFromName('gym'),
+            equals(CategoryIcon.fitness)); // Should match "gym" keyword
       });
 
       test('should handle whitespace in input', () {
-        expect(CategoryIconExtension.suggestFromName('  gym  '), equals(CategoryIcon.fitness));
-        expect(CategoryIconExtension.suggestFromName('\tfitness\n'), equals(CategoryIcon.fitness));
+        expect(CategoryIconExtension.suggestFromName('  gym  '),
+            equals(CategoryIcon.fitness));
+        expect(CategoryIconExtension.suggestFromName('\tfitness\n'),
+            equals(CategoryIcon.fitness));
       });
 
       test('should return null for unknown input', () {
-        expect(CategoryIconExtension.suggestFromName('unknown_category'), isNull);
+        expect(
+            CategoryIconExtension.suggestFromName('unknown_category'), isNull);
         expect(CategoryIconExtension.suggestFromName('xyz123'), isNull);
       });
 
       test('should prioritize exact matches over partial matches', () {
         // If there's both an exact enum name match and a partial display name match,
         // it should return the exact match
-        expect(CategoryIconExtension.suggestFromName('work'), equals(CategoryIcon.work));
+        expect(CategoryIconExtension.suggestFromName('work'),
+            equals(CategoryIcon.work));
       });
 
-      test('should prioritize exact display name matches over word matches', () {
+      test('should prioritize exact display name matches over word matches',
+          () {
         // Test that exact display name matches are found before word-boundary matches
-        // This ensures "Work" matches CategoryIcon.work (display: "Work") 
+        // This ensures "Work" matches CategoryIcon.work (display: "Work")
         // before any other icons that might contain "work" as a word
-        expect(CategoryIconExtension.suggestFromName('Work'), equals(CategoryIcon.work));
-        expect(CategoryIconExtension.suggestFromName('Art'), equals(CategoryIcon.art));
-        expect(CategoryIconExtension.suggestFromName('Music'), equals(CategoryIcon.music));
+        expect(CategoryIconExtension.suggestFromName('Work'),
+            equals(CategoryIcon.work));
+        expect(CategoryIconExtension.suggestFromName('Art'),
+            equals(CategoryIcon.art));
+        expect(CategoryIconExtension.suggestFromName('Music'),
+            equals(CategoryIcon.music));
       });
     });
 
@@ -161,9 +215,12 @@ void main() {
       });
 
       test('fromJson should parse valid enum names', () {
-        expect(CategoryIconExtension.fromJson('fitness'), equals(CategoryIcon.fitness));
-        expect(CategoryIconExtension.fromJson('heartHealth'), equals(CategoryIcon.heartHealth));
-        expect(CategoryIconExtension.fromJson('mentalHealth'), equals(CategoryIcon.mentalHealth));
+        expect(CategoryIconExtension.fromJson('fitness'),
+            equals(CategoryIcon.fitness));
+        expect(CategoryIconExtension.fromJson('heartHealth'),
+            equals(CategoryIcon.heartHealth));
+        expect(CategoryIconExtension.fromJson('mentalHealth'),
+            equals(CategoryIcon.mentalHealth));
       });
 
       test('fromJson should return null for null input', () {
@@ -181,8 +238,10 @@ void main() {
       });
 
       test('fromJson should handle whitespace', () {
-        expect(CategoryIconExtension.fromJson('  fitness  '), equals(CategoryIcon.fitness));
-        expect(CategoryIconExtension.fromJson('\theartHealth\n'), equals(CategoryIcon.heartHealth));
+        expect(CategoryIconExtension.fromJson('  fitness  '),
+            equals(CategoryIcon.fitness));
+        expect(CategoryIconExtension.fromJson('\theartHealth\n'),
+            equals(CategoryIcon.heartHealth));
       });
 
       test('roundtrip serialization should work', () {
@@ -208,8 +267,10 @@ void main() {
     });
 
     test('should have alpha values in valid range', () {
-      expect(CategoryIconConstants.selectedBackgroundAlpha, greaterThanOrEqualTo(0));
-      expect(CategoryIconConstants.selectedBackgroundAlpha, lessThanOrEqualTo(1));
+      expect(CategoryIconConstants.selectedBackgroundAlpha,
+          greaterThanOrEqualTo(0));
+      expect(
+          CategoryIconConstants.selectedBackgroundAlpha, lessThanOrEqualTo(1));
     });
   });
 
@@ -236,13 +297,15 @@ void main() {
         final json = icon.toJson();
         expect(CategoryIconExtension.fromJson(json), equals(icon));
       }
-      
+
       // Test edge cases that should use the map efficiently
-      expect(CategoryIconExtension.fromJson('fitness'), equals(CategoryIcon.fitness));
-      expect(CategoryIconExtension.fromJson('  medical  '), equals(CategoryIcon.medical));
+      expect(CategoryIconExtension.fromJson('fitness'),
+          equals(CategoryIcon.fitness));
+      expect(CategoryIconExtension.fromJson('  medical  '),
+          equals(CategoryIcon.medical));
       expect(CategoryIconExtension.fromJson('invalidValue'), isNull);
     });
-    
+
     test('should handle the static map initialization correctly', () {
       // Verify that all enum values are present in the internal map
       // by checking a sample of different icons
@@ -253,11 +316,12 @@ void main() {
         CategoryIcon.work,
         CategoryIcon.home,
       ];
-      
+
       for (final icon in testIcons) {
         final json = icon.name;
         final result = CategoryIconExtension.fromJson(json);
-        expect(result, equals(icon), reason: 'Map lookup failed for ${icon.name}');
+        expect(result, equals(icon),
+            reason: 'Map lookup failed for ${icon.name}');
       }
     });
   });

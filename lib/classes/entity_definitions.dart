@@ -8,7 +8,7 @@ part 'entity_definitions.freezed.dart';
 part 'entity_definitions.g.dart';
 
 /// Custom JSON converter for CategoryIcon enum.
-/// 
+///
 /// Handles serialization and deserialization of CategoryIcon values to/from JSON strings.
 /// Returns null for invalid inputs and logs warnings in debug mode for troubleshooting.
 class CategoryIconConverter implements JsonConverter<CategoryIcon?, String?> {

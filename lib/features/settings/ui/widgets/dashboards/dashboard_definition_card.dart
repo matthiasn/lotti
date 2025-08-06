@@ -20,10 +20,10 @@ class DashboardDefinitionCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/settings/dashboards/${dashboard.id}',
       title: dashboard.name,
-              leading: CategoryIconCompact(
-                dashboard.categoryId, 
-                size: CategoryIconConstants.iconSizeMedium,
-              ),
+      leading: CategoryIconCompact(
+        dashboard.categoryId,
+        size: CategoryIconConstants.iconSizeMedium,
+      ),
       subtitle: description.isNotEmpty ? Text(description) : null,
       trailing: Visibility(
         visible: dashboard.private,

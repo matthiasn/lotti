@@ -19,26 +19,27 @@ void main() {
 
       // Get the GridView widget to check its properties
       final gridView = tester.widget<GridView>(find.byType(GridView));
-      
+
       // The GridView should have itemCount equal to CategoryIcon.values.length
       // (The close button is not part of the GridView, it's in the header)
       expect(gridView.semanticChildCount, equals(CategoryIcon.values.length));
-      
+
       // Also verify the data source: ensure all CategoryIcon values are represented
-      expect(CategoryIcon.values.length, equals(56), 
-        reason: 'Expected 56 CategoryIcon enum values');
-      
+      expect(CategoryIcon.values.length, equals(56),
+          reason: 'Expected 56 CategoryIcon enum values');
+
       // Verify that the close button exists separately (not in the GridView)
       expect(find.byIcon(Icons.close), findsOneWidget);
-      
+
       // Test that we can find at least some of the initially visible icons
       // (This verifies the GridView is actually rendering items)
       final visibleIconCount = tester.widgetList(find.byType(Icon)).length;
-      expect(visibleIconCount, greaterThan(0), 
-        reason: 'Should have at least some visible icons rendered');
+      expect(visibleIconCount, greaterThan(0),
+          reason: 'Should have at least some visible icons rendered');
     });
 
-    testWidgets('should be able to scroll through and access all icons', (tester) async {
+    testWidgets('should be able to scroll through and access all icons',
+        (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -52,38 +53,39 @@ void main() {
 
       // Track unique icons we can find by scrolling
       final foundIcons = <IconData>{};
-      
+
       // Scroll through the GridView in chunks to load and collect all visible icons
       final scrollable = find.descendant(
-        of: find.byType(GridView), 
+        of: find.byType(GridView),
         matching: find.byType(Scrollable),
       );
-      
+
       // Initial collection
       for (final widget in tester.widgetList<Icon>(find.byType(Icon))) {
         foundIcons.add(widget.icon!);
       }
-      
+
       // Scroll down in increments and collect more icons
       const scrollIncrement = -300.0;
       for (var i = 0; i < 10; i++) {
         await tester.drag(scrollable, const Offset(0, scrollIncrement));
         await tester.pumpAndSettle();
-        
+
         // Collect any new icons that became visible
         for (final widget in tester.widgetList<Icon>(find.byType(Icon))) {
           foundIcons.add(widget.icon!);
         }
       }
-      
+
       // We should have found most of the CategoryIcon values (allowing for lazy loading limitations)
       // This test ensures the scrolling mechanism works and icons are accessible
-      expect(foundIcons.length, greaterThanOrEqualTo(30), 
-        reason: 'Should be able to access at least 30 different icons through scrolling, found ${foundIcons.length}');
-        
+      expect(foundIcons.length, greaterThanOrEqualTo(30),
+          reason:
+              'Should be able to access at least 30 different icons through scrolling, found ${foundIcons.length}');
+
       // Verify we found the close button icon
       expect(foundIcons.contains(Icons.close), isTrue,
-        reason: 'Should find the close button icon');
+          reason: 'Should find the close button icon');
     });
 
     testWidgets('should display correct title', (tester) async {
@@ -209,8 +211,6 @@ void main() {
       expect(result, equals(CategoryIcon.fitness));
     });
 
-
-
     testWidgets('should display icon names', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -284,7 +284,5 @@ void main() {
       // Should render without errors
       expect(find.byType(CategoryIconPicker), findsOneWidget);
     });
-
-
   });
 }

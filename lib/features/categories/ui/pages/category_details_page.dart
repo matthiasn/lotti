@@ -311,7 +311,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                             const SizedBox(height: 16),
                             _buildColorPicker(),
                             const SizedBox(height: 16),
-                            if (category != null) _buildIconPicker(category: category),
+                            if (category != null)
+                              _buildIconPicker(category: category),
                             const SizedBox(height: 16),
                             _buildSwitchTiles(category!),
                           ],
@@ -617,12 +618,13 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   Widget _buildIconPicker({CategoryDefinition? category}) {
     final isCreateMode = category == null;
     final icon = isCreateMode ? _selectedIcon : category.icon;
-    final color = isCreateMode 
-        ? (_selectedColor ?? Colors.blue) 
+    final color = isCreateMode
+        ? (_selectedColor ?? Colors.blue)
         : colorFromCssHex(category.color, substitute: Colors.blue);
-    final iconDisplayName = icon?.displayName ?? CategoryIconStrings.chooseIconText;
-    final hintText = isCreateMode 
-        ? CategoryIconStrings.createModeIconHint 
+    final iconDisplayName =
+        icon?.displayName ?? CategoryIconStrings.chooseIconText;
+    final hintText = isCreateMode
+        ? CategoryIconStrings.createModeIconHint
         : CategoryIconStrings.iconSelectionHint;
 
     return Column(

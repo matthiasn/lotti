@@ -850,8 +850,7 @@ void main() {
         ).called(1);
       });
 
-      test('propagates categoryId to linked entries with null categoryId',
-          () async {
+      test('propagates categoryId to all linked entries', () async {
         final localMockJournalRepository = MockJournalRepository();
 
         final linkedEntry1 = testTask.copyWith(
@@ -859,7 +858,7 @@ void main() {
         );
         final linkedEntry2 = testTextEntryNoGeo.copyWith(
           meta: testTextEntryNoGeo.meta
-              .copyWith(id: 'linked_2', categoryId: null),
+              .copyWith(id: 'linked_2', categoryId: 'old_category'),
         );
 
         // Specific stubs for this test
@@ -918,86 +917,20 @@ void main() {
         ).called(1);
       });
 
-      test(
-          'does not propagate categoryId to linked entries that already have a categoryId',
-          () async {
-        final localMockJournalRepository = MockJournalRepository();
-
-        final linkedEntryWithCategory = testTask.copyWith(
-          meta: testTask.meta
-              .copyWith(id: 'linked_with_cat', categoryId: 'existing_cat_id'),
-        );
-        final linkedEntryNullCategory = testTextEntryNoGeo.copyWith(
-          meta: testTextEntryNoGeo.meta
-              .copyWith(id: 'linked_null_cat', categoryId: null),
-        );
-
-        // Specific stubs for this test
-        when(
-          () => localMockJournalRepository.updateCategoryId(
-            entryId,
-            categoryId: testCategoryId,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => localMockJournalRepository.getLinkedEntities(linkedTo: entryId),
-        ).thenAnswer(
-          (_) async => [linkedEntryWithCategory, linkedEntryNullCategory],
-        );
-        when(
-          () => localMockJournalRepository.updateCategoryId(
-            linkedEntryNullCategory.id,
-            categoryId: testCategoryId,
-          ),
-        ).thenAnswer((_) async => true);
-
-        final container = makeProviderContainer(
-          overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
-          ],
-        );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
-        await container.read(entryControllerProvider(id: entryId).future);
-
-        final result = await notifier.updateCategoryId(testCategoryId);
-
-        expect(result, isTrue);
-        verify(
-          () => localMockJournalRepository.updateCategoryId(
-            entryId,
-            categoryId: testCategoryId,
-          ),
-        ).called(1);
-        verify(
-          () => localMockJournalRepository.updateCategoryId(
-            linkedEntryNullCategory.id,
-            categoryId: testCategoryId,
-          ),
-        ).called(1);
-        verifyNever(
-          () => localMockJournalRepository.updateCategoryId(
-            linkedEntryWithCategory.id,
-            categoryId: testCategoryId,
-          ),
-        );
-      });
-
       test('handles null categoryId update (clearing category)', () async {
         final localMockJournalRepository = MockJournalRepository();
 
-        final linkedEntryNullCategory = testTextEntryNoGeo.copyWith(
+        final linkedEntry1 = testTextEntryNoGeo.copyWith(
           meta: testTextEntryNoGeo.meta.copyWith(
-            id: 'linked_null_cat_clear',
+            id: 'linked_1_clear',
             categoryId: null,
-          ), // This one should be updated to null
+          ),
         );
-        final linkedEntryWithCategory = testTask.copyWith(
+        final linkedEntry2 = testTask.copyWith(
           meta: testTask.meta.copyWith(
-            id: 'linked_with_cat_clear',
+            id: 'linked_2_clear',
             categoryId: 'existing_cat_id',
-          ), // This one should NOT be updated to null
+          ),
         );
 
         // Specific stubs for this test
@@ -1010,11 +943,17 @@ void main() {
         when(
           () => localMockJournalRepository.getLinkedEntities(linkedTo: entryId),
         ).thenAnswer(
-          (_) async => [linkedEntryNullCategory, linkedEntryWithCategory],
+          (_) async => [linkedEntry1, linkedEntry2],
         );
         when(
           () => localMockJournalRepository.updateCategoryId(
-            linkedEntryNullCategory.id,
+            linkedEntry1.id,
+            categoryId: null,
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry2.id,
             categoryId: null,
           ),
         ).thenAnswer((_) async => true);
@@ -1040,14 +979,96 @@ void main() {
         ).called(1);
         verify(
           () => localMockJournalRepository.updateCategoryId(
-            linkedEntryNullCategory.id,
+            linkedEntry1.id,
             categoryId: null,
           ),
         ).called(1);
-        verifyNever(
-          () => localMockJournalRepository
-              .updateCategoryId(linkedEntryWithCategory.id, categoryId: null),
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry2.id,
+            categoryId: null,
+          ),
+        ).called(1);
+      });
+
+      test('updates linked entries categories when task category changes',
+          () async {
+        final localMockJournalRepository = MockJournalRepository();
+        const oldCategoryId = 'old_cat_123';
+        const newCategoryId = 'new_cat_456';
+
+        // Create a task with old category and linked entries with same old category
+        final mainTask = testTask.copyWith(
+          meta: testTask.meta.copyWith(categoryId: oldCategoryId),
         );
+        final linkedEntry1 = testTextEntry.copyWith(
+          meta: testTextEntry.meta
+              .copyWith(id: 'linked_entry_1', categoryId: oldCategoryId),
+        );
+        final linkedEntry2 = testTextEntryNoGeo.copyWith(
+          meta: testTextEntryNoGeo.meta
+              .copyWith(id: 'linked_entry_2', categoryId: oldCategoryId),
+        );
+
+        // Setup mocks
+        when(() => mockJournalDb.journalEntityById(mainTask.meta.id))
+            .thenAnswer((_) async => mainTask);
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            mainTask.meta.id,
+            categoryId: newCategoryId,
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => localMockJournalRepository.getLinkedEntities(
+              linkedTo: mainTask.meta.id),
+        ).thenAnswer((_) async => [linkedEntry1, linkedEntry2]);
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry1.id,
+            categoryId: newCategoryId,
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry2.id,
+            categoryId: newCategoryId,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier = container
+            .read(entryControllerProvider(id: mainTask.meta.id).notifier);
+        await container
+            .read(entryControllerProvider(id: mainTask.meta.id).future);
+
+        final result = await notifier.updateCategoryId(newCategoryId);
+
+        expect(result, isTrue);
+        // Verify all entries (main and linked) are updated to new category
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            mainTask.meta.id,
+            categoryId: newCategoryId,
+          ),
+        ).called(1);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry1.id,
+            categoryId: newCategoryId,
+          ),
+        ).called(1);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry2.id,
+            categoryId: newCategoryId,
+          ),
+        ).called(1);
       });
 
       test('returns false if main entry update fails', () async {
