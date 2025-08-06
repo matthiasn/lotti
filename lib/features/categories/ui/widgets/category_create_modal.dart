@@ -232,7 +232,7 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
       ),
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       setState(() {
         _selectedIcon = result;
       });
