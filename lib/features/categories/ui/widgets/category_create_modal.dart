@@ -134,11 +134,11 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                   } catch (e, s) {
                     // Log the actual error with stack trace for debugging
                     debugPrint('Error creating category: $e\n$s');
-                    
+
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(context.messages.categoryCreationError ?? 'Failed to create category. Please try again.'),
+                          content: Text(context.messages.categoryCreationError),
                           backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
@@ -173,7 +173,7 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
           child: Container(
             padding: const EdgeInsets.all(CategoryIconConstants.sectionSpacing),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
               borderRadius:
                   BorderRadius.circular(CategoryIconConstants.borderRadius),
             ),
@@ -196,9 +196,10 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                             color: _pickerColor,
                             size: CategoryIconConstants.standardIconSize,
                           )
-                        : const Icon(
+                        : Icon(
                             Icons.category,
-                            color: Colors.grey,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                             size: CategoryIconConstants.standardIconSize,
                           ),
                   ),
