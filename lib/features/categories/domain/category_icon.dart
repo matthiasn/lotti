@@ -79,10 +79,7 @@ class CategoryIconConstants {
   /// Standard section spacing
   static const double sectionSpacing = 16;
   
-  /// Button spacing
-  static const double buttonSpacing = 8;
-  
-  /// Small section spacing
+  /// Small section spacing (also used for button spacing)
   static const double smallSectionSpacing = 8;
   
   /// Icon preview size in forms
