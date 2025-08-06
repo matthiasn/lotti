@@ -190,18 +190,13 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                     ),
                   ),
                   child: Center(
-                    child: _selectedIcon != null
-                        ? Icon(
-                            _selectedIcon!.iconData,
-                            color: _pickerColor,
-                            size: CategoryIconConstants.standardIconSize,
-                          )
-                        : Icon(
-                            Icons.category,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                            size: CategoryIconConstants.standardIconSize,
-                          ),
+                    child: Icon(
+                      _selectedIcon?.iconData ?? Icons.category,
+                      color: _selectedIcon != null
+                          ? _pickerColor
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                      size: CategoryIconConstants.standardIconSize,
+                    ),
                   ),
                 ),
                 const SizedBox(width: CategoryIconConstants.sectionSpacing),
