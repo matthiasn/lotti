@@ -675,7 +675,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get categoryCreationError =>
-      'Failed to create category. Please try again.';
+      'Kategorie konnte nicht erstellt werden. Bitte versuchen Sie es erneut.';
 
   @override
   String get createEntryLabel => 'Neuen Eintrag erstellen';

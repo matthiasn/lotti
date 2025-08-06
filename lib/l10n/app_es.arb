@@ -73,6 +73,7 @@
   "conflictsResolved": "resueltos",
   "conflictsUnresolved": "sin resolver",
   "createCategoryTitle": "Crear categoría:",
+  "categoryCreationError": "No se pudo crear la categoría. Por favor, inténtelo de nuevo.",
   "createEntryLabel": "Crear nueva entrada",
   "createEntryTitle": "Añadir",
   "dashboardActiveLabel": "Activo:",

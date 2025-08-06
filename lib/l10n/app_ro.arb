@@ -73,6 +73,7 @@
   "conflictsResolved": "rezolvat",
   "conflictsUnresolved": "nerezolvat",
   "createCategoryTitle": "Creați categorie:",
+  "categoryCreationError": "Nu s-a putut crea categoria. Vă rugăm să încercați din nou.",
   "createEntryLabel": "Creați o intrare nouă",
   "createEntryTitle": "Adaugă",
   "dashboardActiveLabel": "Activ:",

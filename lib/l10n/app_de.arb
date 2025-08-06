@@ -73,6 +73,7 @@
   "conflictsResolved": "gelöst",
   "conflictsUnresolved": "ungelöst",
   "createCategoryTitle": "Kategorie erstellen:",
+  "categoryCreationError": "Kategorie konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
   "createEntryLabel": "Neuen Eintrag erstellen",
   "createEntryTitle": "Hinzufügen",
   "dashboardActiveLabel": "Aktiv:",

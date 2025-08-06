@@ -72,6 +72,7 @@
   "conflictsResolved": "resolved",
   "conflictsUnresolved": "unresolved",
   "createCategoryTitle": "Create Category:",
+  "categoryCreationError": "Failed to create category. Please try again.",
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
   "dashboardActiveLabel": "Active:",
