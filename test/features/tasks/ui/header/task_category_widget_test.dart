@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/tasks/ui/header/task_category_widget.dart';
 import 'package:lotti/get_it.dart';
@@ -57,8 +58,8 @@ void main() {
     // Assert - should display the category name
     expect(find.text(testCategory.name), findsOneWidget);
 
-    // Assert - should contain a color icon
-          expect(find.byType(Container), findsWidgets);
+    // Assert - should contain a category icon
+    expect(find.byType(CategoryIconCompact), findsOneWidget);
   });
 
   testWidgets('renders correctly without a category', (tester) async {
@@ -75,8 +76,8 @@ void main() {
     // Assert - should display a dash for empty category
     expect(find.text('-'), findsOneWidget);
 
-    // Assert - should still contain a color icon (with default color)
-          expect(find.byType(Container), findsWidgets);
+    // Assert - should still contain a category icon fallback
+    expect(find.byType(CategoryIconCompact), findsOneWidget);
   });
 
   testWidgets('opens category selection modal when tapped', (tester) async {
