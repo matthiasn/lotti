@@ -72,7 +72,7 @@ class _LatestAiResponseSummaryState
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            'Error loading AI summary: $error',
+            'Failed to load AI summary. Please try again.',
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ),

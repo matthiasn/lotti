@@ -128,10 +128,9 @@ class _CategoryIconRenderer extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        color: categoryColor,
-      ),
+      ).copyWith(color: categoryColor),
       child: Center(
         child: Text(
           categoryName.isNotEmpty

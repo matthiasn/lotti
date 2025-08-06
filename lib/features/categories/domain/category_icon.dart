@@ -65,6 +65,34 @@ class CategoryIconConstants {
 
   /// Spacing between icon and text in picker
   static const double iconTextSpacing = 4;
+
+  /// Modal and UI layout constants
+  /// Maximum height ratio for create modal
+  static const double modalMaxHeightRatio = 0.85;
+  
+  /// Standard border radius for UI elements
+  static const double borderRadius = 12;
+  
+  /// Small border radius for color picker
+  static const double colorPickerBorderRadius = 10;
+  
+  /// Standard section spacing
+  static const double sectionSpacing = 16;
+  
+  /// Button spacing
+  static const double buttonSpacing = 8;
+  
+  /// Small section spacing
+  static const double smallSectionSpacing = 8;
+  
+  /// Icon preview size in forms
+  static const double iconPreviewSize = 48;
+  
+  /// Standard icon size for buttons and UI elements
+  static const double standardIconSize = 28;
+  
+  /// Small arrow icon size
+  static const double arrowIconSize = 16;
 }
 
 /// String constants for CategoryIcon functionality.
