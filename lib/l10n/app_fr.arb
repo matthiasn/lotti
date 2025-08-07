@@ -21,6 +21,7 @@
   "aiAssistantThinking": "Réflexion...",
   "aiAssistantTitle": "Assistant IA",
   "aiAssistantTranscribeAudio": "Transcrire l'audio",
+  "aiConfigFailedToLoadModelsGeneric": "Échec du chargement des modèles. Veuillez réessayer.",
   "aiTaskSummaryRunning": "Réflexion sur le résumé de la tâche...",
   "aiTaskSummaryTitle": "Résumé de la tâche IA",
   "aiSettingsClearFiltersButton": "Effacer",

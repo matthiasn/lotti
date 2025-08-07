@@ -43,6 +43,7 @@
       }
     }
   },
+  "aiConfigFailedToLoadModelsGeneric": "Failed to load models. Please try again.",
   "aiConfigFailedToSaveMessage": "Failed to save configuration. Please try again.",
   "aiConfigInputDataTypesTitle": "Required Input Data Types",
   "aiConfigInputModalitiesFieldLabel": "Input Modalities",

@@ -21,6 +21,7 @@
   "aiAssistantThinking": "Thinking...",
   "aiAssistantTitle": "AI Assistant",
   "aiAssistantTranscribeAudio": "Transcribe audio",
+  "aiConfigFailedToLoadModelsGeneric": "Failed to load models. Please try again.",
   "aiTaskSummaryRunning": "Thinking about summarising task...",
   "aiTaskSummaryTitle": "AI Task Summary",
   "cancelButton": "Cancel",

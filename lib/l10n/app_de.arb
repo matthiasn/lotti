@@ -21,6 +21,7 @@
   "aiAssistantThinking": "Denke nach...",
   "aiAssistantTitle": "KI-Assistent",
   "aiAssistantTranscribeAudio": "Audio transkribieren",
+  "aiConfigFailedToLoadModelsGeneric": "Fehler beim Laden der Modelle. Bitte versuchen Sie es erneut.",
   "aiTaskSummaryRunning": "Denke über die Zusammenfassung der Aufgabe nach...",
   "aiTaskSummaryTitle": "KI-Aufgabenzusammenfassung",
   "aiSettingsClearFiltersButton": "Löschen",

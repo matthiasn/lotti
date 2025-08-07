@@ -21,6 +21,7 @@
   "aiAssistantThinking": "Se gândește...",
   "aiAssistantTitle": "Asistent AI",
   "aiAssistantTranscribeAudio": "Transcrie audio",
+  "aiConfigFailedToLoadModelsGeneric": "Eșec la încărcarea modelelor. Vă rugăm să încercați din nou.",
   "aiTaskSummaryRunning": "Se gândește la rezumarea sarcinii...",
   "aiTaskSummaryTitle": "Rezumatul sarcinii AI",
   "aiSettingsClearFiltersButton": "Șterge",
