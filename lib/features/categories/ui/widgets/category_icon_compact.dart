@@ -128,17 +128,18 @@ class _CategoryIconRenderer extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-      ).copyWith(color: categoryColor),
+        color: categoryColor,
+      ),
       child: Center(
         child: Text(
           categoryName.isNotEmpty 
               ? categoryName.substring(0, 1).toUpperCase() 
               : CategoryIconStrings.fallbackCharacter,
           style: TextStyle(
-            color: categoryColor.computeLuminance() > CategoryIconConstants.luminanceThreshold 
-                ? Colors.black 
+            color: categoryColor.computeLuminance() > CategoryIconConstants.luminanceThreshold
+                ? Colors.black
                 : Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: size * CategoryIconConstants.textSizeMultiplier,
