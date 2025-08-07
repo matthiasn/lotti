@@ -291,6 +291,24 @@ abstract class AppLocalizations {
   /// **'Failed to load models. Please try again.'**
   String get aiConfigFailedToLoadModelsGeneric;
 
+  /// No description provided for @loggingFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load logs. Please try again.'**
+  String get loggingFailedToLoad;
+
+  /// No description provided for @loggingSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed. Please try again.'**
+  String get loggingSearchFailed;
+
+  /// No description provided for @loggingFailedToLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load more results. Please try again.'**
+  String get loggingFailedToLoadMore;
+
   /// No description provided for @aiConfigFailedToSaveMessage.
   ///
   /// In en, this message translates to:

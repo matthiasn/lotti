@@ -110,11 +110,10 @@ class _LoggingPageState extends State<LoggingPage> {
       if (!mounted) return;
       // Log the actual error for debugging
       debugPrint('Failed to load logs: $e');
-      const errorMessage = 'Failed to load logs. Please try again.';
       setState(() {
         _isSearching = false;
       });
-      _showSearchError(errorMessage);
+      _showSearchError(context.messages.loggingFailedToLoad);
     }
   }
 
@@ -159,11 +158,10 @@ class _LoggingPageState extends State<LoggingPage> {
       if (!mounted) return;
       // Log the actual error for debugging
       debugPrint('Search failed: $e');
-      const errorMessage = 'Search failed. Please try again.';
       setState(() {
         _isSearching = false;
       });
-      _showSearchError(errorMessage);
+      _showSearchError(context.messages.loggingSearchFailed);
     }
   }
 
@@ -199,11 +197,10 @@ class _LoggingPageState extends State<LoggingPage> {
       if (!mounted) return;
       // Log the actual error for debugging
       debugPrint('Failed to load more results: $e');
-      const errorMessage = 'Failed to load more results. Please try again.';
       setState(() {
         _isLoadingMore = false;
       });
-      _showSearchError(errorMessage);
+      _showSearchError(context.messages.loggingFailedToLoadMore);
     }
   }
 
