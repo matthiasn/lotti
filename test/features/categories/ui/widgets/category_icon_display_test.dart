@@ -7,7 +7,7 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart'
 void main() {
   group('CategoryIconDisplay', () {
     late CategoryDefinition testCategory;
-    
+
     setUp(() {
       testCategory = CategoryDefinition(
         id: 'test-id',
@@ -21,9 +21,11 @@ void main() {
       );
     });
 
-    testWidgets('should display icon when category has an icon', (tester) async {
-      final categoryWithIcon = testCategory.copyWith(icon: CategoryIcon.fitness);
-      
+    testWidgets('should display icon when category has an icon',
+        (tester) async {
+      final categoryWithIcon =
+          testCategory.copyWith(icon: CategoryIcon.fitness);
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -38,7 +40,8 @@ void main() {
       expect(find.text(CategoryIconStrings.fallbackCharacter), findsNothing);
     });
 
-    testWidgets('should display first letter when category has no icon', (tester) async {
+    testWidgets('should display first letter when category has no icon',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -53,9 +56,10 @@ void main() {
       expect(find.byType(Icon), findsNothing);
     });
 
-    testWidgets('should display fallback character for empty category name', (tester) async {
+    testWidgets('should display fallback character for empty category name',
+        (tester) async {
       final emptyNameCategory = testCategory.copyWith(name: '');
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -70,7 +74,7 @@ void main() {
 
     testWidgets('should respect custom size parameter', (tester) async {
       const customSize = 64.0;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -118,7 +122,8 @@ void main() {
       expect(decoration.border, isNull);
     });
 
-    testWidgets('should use category color for border and text/icon', (tester) async {
+    testWidgets('should use category color for border and text/icon',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -130,15 +135,15 @@ void main() {
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration! as BoxDecoration;
       final border = decoration.border! as Border;
-      
+
       // Border should use the category color (red in this case)
       expect(border.top.color.r, equals(1.0));
       expect(border.top.color.g, equals(0.0));
       expect(border.top.color.b, equals(0.0));
-      
+
       final text = tester.widget<Text>(find.text('T'));
       final textStyle = text.style!;
-      
+
       // Text color should also use the category color
       expect(textStyle.color!.r, equals(1.0));
       expect(textStyle.color!.g, equals(0.0));
@@ -147,7 +152,7 @@ void main() {
 
     testWidgets('should handle uppercase conversion correctly', (tester) async {
       final lowercaseCategory = testCategory.copyWith(name: 'test');
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -164,8 +169,9 @@ void main() {
 
     testWidgets('should use correct icon size ratio', (tester) async {
       const customSize = 100.0;
-      final categoryWithIcon = testCategory.copyWith(icon: CategoryIcon.fitness);
-      
+      final categoryWithIcon =
+          testCategory.copyWith(icon: CategoryIcon.fitness);
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -178,13 +184,14 @@ void main() {
       );
 
       final iconWidget = tester.widget<Icon>(find.byIcon(Icons.fitness_center));
-      const expectedIconSize = customSize * CategoryIconConstants.iconSizeMultiplier;
+      const expectedIconSize =
+          customSize * CategoryIconConstants.iconSizeMultiplier;
       expect(iconWidget.size, equals(expectedIconSize));
     });
 
     testWidgets('should use correct text size ratio', (tester) async {
       const customSize = 100.0;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -197,7 +204,8 @@ void main() {
       );
 
       final text = tester.widget<Text>(find.text('T'));
-      const expectedFontSize = customSize * CategoryIconConstants.textSizeMultiplier;
+      const expectedFontSize =
+          customSize * CategoryIconConstants.textSizeMultiplier;
       expect(text.style!.fontSize, equals(expectedFontSize));
     });
   });

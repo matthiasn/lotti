@@ -19,10 +19,10 @@ class DashboardCard extends StatelessWidget {
       path: '/dashboards/${dashboard.id}',
       title: dashboard.name,
       subtitle: description.isNotEmpty ? Text(dashboard.description) : null,
-              leading: CategoryIconCompact(
-                dashboard.categoryId, 
-                size: CategoryIconConstants.iconSizeMedium,
-              ),
+      leading: CategoryIconCompact(
+        dashboard.categoryId,
+        size: CategoryIconConstants.iconSizeMedium,
+      ),
     );
   }
 }

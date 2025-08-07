@@ -123,7 +123,7 @@ class ModernJournalCard extends StatelessWidget {
                   if (_shouldShowCategoryIcon()) ...[
                     const SizedBox(width: 8),
                     CategoryIconCompact(
-                      item.meta.categoryId, 
+                      item.meta.categoryId,
                       size: CategoryIconConstants.iconSizeMedium,
                     ),
                   ],

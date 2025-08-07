@@ -189,9 +189,9 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
             ],
           ),
           leading: CategoryIconCompact(
-          habitDefinition.categoryId,
-          size: CategoryIconConstants.iconSizeMedium,
-        ),
+            habitDefinition.categoryId,
+            size: CategoryIconConstants.iconSizeMedium,
+          ),
           trailing: IconButton(
             padding: EdgeInsets.zero,
             onPressed: onTapAdd,

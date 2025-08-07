@@ -170,11 +170,9 @@ class EntryController extends _$EntryController {
         .getLinkedEntities(linkedTo: id);
 
     for (final entry in linkedEntries) {
-      if (entry.categoryId == null) {
-        await ref
-            .read(journalRepositoryProvider)
-            .updateCategoryId(entry.id, categoryId: categoryId);
-      }
+      await ref
+          .read(journalRepositoryProvider)
+          .updateCategoryId(entry.id, categoryId: categoryId);
     }
     return res;
   }

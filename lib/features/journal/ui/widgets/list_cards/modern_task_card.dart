@@ -33,10 +33,10 @@ class ModernTaskCard extends StatelessWidget {
         title: task.data.title,
         maxTitleLines: 3,
         leading: ModernIconContainer(
-                        child: CategoryIconCompact(
-                          task.meta.categoryId, 
-                          size: CategoryIconConstants.iconSizeLarge,
-                        ),
+          child: CategoryIconCompact(
+            task.meta.categoryId,
+            size: CategoryIconConstants.iconSizeLarge,
+          ),
         ),
         subtitleWidget: _buildSubtitleRow(context),
         trailing: TimeRecordingIcon(

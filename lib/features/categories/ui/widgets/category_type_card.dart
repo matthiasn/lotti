@@ -29,7 +29,7 @@ class CategoryTypeCard extends StatelessWidget {
         onTap: onTap,
         title: categoryDefinition.name,
         leading: CategoryIconCompact(
-          categoryDefinition.id, 
+          categoryDefinition.id,
           size: CategoryIconConstants.iconSizeMedium,
         ),
         backgroundColor: selected

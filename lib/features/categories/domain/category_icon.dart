@@ -2,106 +2,107 @@ import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// Constants for CategoryIcon functionality.
-/// 
+///
 /// This class provides reusable constants for sizing, spacing, and configuration
 /// of category icon-related widgets to ensure consistent styling throughout the app.
 class CategoryIconConstants {
   CategoryIconConstants._(); // Private constructor to prevent instantiation
-  
+
   /// Default icon size multiplier for category display
   static const double iconSizeMultiplier = 0.6;
-  
+
   /// Default text size multiplier for category display
   static const double textSizeMultiplier = 0.4;
-  
+
   /// Default border width for category icon display
   static const double borderWidth = 2;
-  
+
   /// Default icon size for icon picker grid
   static const double pickerIconSize = 28;
-  
+
   /// Number of columns in icon picker grid
   static const int pickerGridColumns = 4;
-  
+
   /// Spacing between grid items
   static const double pickerGridSpacing = 12;
-  
+
   /// Icon picker dialog max width
   static const double pickerMaxWidth = 400;
-  
+
   /// Icon picker text size
   static const double pickerTextSize = 10;
-  
+
   /// Default category icon display size
   static const double defaultIconSize = 48;
-  
+
   /// Icon sizes for different contexts - Single source of truth
   /// Large icons for prominent displays (category details, large cards)
   static const double iconSizeLarge = 32;
-  
+
   /// Medium icons for list items, cards with text (task definition)
   static const double iconSizeMedium = 24;
-  
+
   /// Small icons for compact lists, inline displays (journal entries)
   static const double iconSizeSmall = 20;
-  
+
   /// Extra small icons for dense interfaces
   static const double iconSizeExtraSmall = 16;
-  
+
   /// Alpha values and other constants
   static const double selectedBackgroundAlpha = 0.1;
   static const double fallbackIconAlpha = 51;
   static const double fallbackIconSizeMultiplier = 0.6;
   static const double luminanceThreshold = 0.5;
-  
+
   /// Selected border width in picker
   static const double selectedBorderWidth = 2;
-  
+
   /// Unselected border width in picker
   static const double unselectedBorderWidth = 1;
-  
+
   /// Default padding for icon picker
   static const double pickerPadding = 16;
-  
+
   /// Spacing between icon and text in picker
   static const double iconTextSpacing = 4;
 }
 
 /// String constants for CategoryIcon functionality.
-/// 
+///
 /// This class provides reusable string constants to avoid hardcoded strings
 /// throughout the category icon implementation, improving maintainability and localization.
 class CategoryIconStrings {
   CategoryIconStrings._(); // Private constructor to prevent instantiation
-  
+
   /// Default fallback character when category name is empty
   static const String fallbackCharacter = '?';
-  
+
   /// Title for icon picker dialog
   static const String chooseIconTitle = 'Choose Icon';
-  
+
   /// Label for icon section in forms
   static const String iconLabel = 'Icon';
-  
+
   /// Instruction text for icon selection
   static const String iconSelectionHint = 'Tap to select a different icon';
-  
+
   /// Instruction text for create mode icon selection
   static const String createModeIconHint = 'Tap to select an icon';
-  
+
   /// Fallback text when no icon is selected
   static const String chooseIconText = 'Choose an icon';
-  
+
   /// Warning message prefix for invalid icon names
-  static const String invalidIconWarning = 'Warning: Invalid CategoryIcon name: ';
+  static const String invalidIconWarning =
+      'Warning: Invalid CategoryIcon name: ';
 }
 
 /// Enum representing all available category icons in Lotti.
-/// 
+///
 /// These icons cover the main use cases for life tracking, habits, and tasks.
 /// Each enum value maps to a specific Material Design icon and has a human-readable
 /// display name for use in the UI.
-/// 
+///
 /// The icons are organized into logical groups:
 /// - Health & Wellness: fitness, medical, nutrition, etc.
 /// - Work & Productivity: tasks, meetings, work-related activities
@@ -177,7 +178,7 @@ enum CategoryIcon {
 extension CategoryIconExtension on CategoryIcon {
   /// Static map for O(1) lookup of CategoryIcon by name
   /// Initialized once to avoid repeated iteration through enum values
-  static final Map<String, CategoryIcon> _byName = 
+  static final Map<String, CategoryIcon> _byName =
       Map.fromEntries(CategoryIcon.values.map((e) => MapEntry(e.name, e)));
 
   IconData get iconData {
@@ -448,7 +449,7 @@ extension CategoryIconExtension on CategoryIcon {
     final nameWords = lowercaseName.split(RegExp(r'\s+'));
     for (final icon in CategoryIcon.values) {
       final displayWords = icon.displayName.toLowerCase().split(RegExp(r'\s+'));
-      
+
       // Check if any complete word from the category name matches any complete word from the display name
       for (final nameWord in nameWords) {
         if (nameWord.isNotEmpty) {
@@ -458,11 +459,13 @@ extension CategoryIconExtension on CategoryIcon {
               return icon;
             }
             // Prefix match: require at least 4 characters and must be at least 60% of the target word
-            if (nameWord.length >= 4 && displayWord.startsWith(nameWord) && 
+            if (nameWord.length >= 4 &&
+                displayWord.startsWith(nameWord) &&
                 nameWord.length >= (displayWord.length * 0.6)) {
               return icon;
             }
-            if (displayWord.length >= 4 && nameWord.startsWith(displayWord) && 
+            if (displayWord.length >= 4 &&
+                nameWord.startsWith(displayWord) &&
                 displayWord.length >= (nameWord.length * 0.6)) {
               return icon;
             }
@@ -552,7 +555,7 @@ extension CategoryIconExtension on CategoryIcon {
 
     final trimmedJson = json.trim();
     final icon = _byName[trimmedJson];
-    
+
     if (icon == null) {
       // Log the error in debug mode for troubleshooting
       assert(() {
@@ -560,7 +563,7 @@ extension CategoryIconExtension on CategoryIcon {
         return true;
       }(), 'Invalid CategoryIcon name: "$trimmedJson"');
     }
-    
+
     return icon;
   }
 }

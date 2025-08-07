@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 
 /// Modal dialog for selecting category icons from the available set.
-/// 
+///
 /// This widget displays all available CategoryIcon values in a grid layout,
 /// allowing users to select an icon for their category. The currently selected
 /// icon is highlighted with a colored border and background.
-/// 
+///
 /// Example:
 /// ```dart
 /// final selectedIcon = await showDialog<CategoryIcon>(
@@ -37,7 +37,8 @@ class CategoryIconPicker extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.all(CategoryIconConstants.pickerPadding),
+              padding:
+                  const EdgeInsets.all(CategoryIconConstants.pickerPadding),
               child: Row(
                 children: [
                   Expanded(
@@ -56,7 +57,8 @@ class CategoryIconPicker extends StatelessWidget {
             const Divider(height: 1),
             Expanded(
               child: GridView.builder(
-                padding: const EdgeInsets.all(CategoryIconConstants.pickerPadding),
+                padding:
+                    const EdgeInsets.all(CategoryIconConstants.pickerPadding),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: CategoryIconConstants.pickerGridColumns,
                   crossAxisSpacing: CategoryIconConstants.pickerGridSpacing,
@@ -66,7 +68,7 @@ class CategoryIconPicker extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final icon = CategoryIcon.values[index];
                   final isSelected = icon == selectedIcon;
-                  
+
                   return InkWell(
                     onTap: () {
                       Navigator.of(context).pop(icon);
@@ -74,17 +76,18 @@ class CategoryIconPicker extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isSelected 
-                          ? Theme.of(context).colorScheme.primary.withValues(
-                              alpha: CategoryIconConstants.selectedBackgroundAlpha) 
-                          : Colors.transparent,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary.withValues(
+                                alpha: CategoryIconConstants
+                                    .selectedBackgroundAlpha)
+                            : Colors.transparent,
                         border: Border.all(
-                          color: isSelected 
-                            ? Theme.of(context).colorScheme.primary 
-                            : Colors.grey.shade300,
-                          width: isSelected 
-                            ? CategoryIconConstants.selectedBorderWidth 
-                            : CategoryIconConstants.unselectedBorderWidth,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey.shade300,
+                          width: isSelected
+                              ? CategoryIconConstants.selectedBorderWidth
+                              : CategoryIconConstants.unselectedBorderWidth,
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -94,21 +97,22 @@ class CategoryIconPicker extends StatelessWidget {
                           Icon(
                             icon.iconData,
                             size: CategoryIconConstants.pickerIconSize,
-                            color: isSelected 
-                              ? Theme.of(context).colorScheme.primary 
-                              : Colors.grey.shade700,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey.shade700,
                           ),
-                          const SizedBox(height: CategoryIconConstants.iconTextSpacing),
+                          const SizedBox(
+                              height: CategoryIconConstants.iconTextSpacing),
                           Text(
                             icon.displayName,
                             style: TextStyle(
                               fontSize: CategoryIconConstants.pickerTextSize,
-                              color: isSelected 
-                                ? Theme.of(context).colorScheme.primary 
-                                : Colors.grey.shade700,
-                              fontWeight: isSelected 
-                                ? FontWeight.bold 
-                                : FontWeight.normal,
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.grey.shade700,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
