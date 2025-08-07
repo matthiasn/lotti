@@ -273,8 +273,8 @@ class UnifiedAiInferenceRepository {
         onProgress(buffer.toString());
 
         // Accumulate tool calls from chunks
-        if (chunk.choices.isNotEmpty) {
-          final delta = chunk.choices.first.delta;
+        if (chunk.choices?.isNotEmpty ?? false) {
+          final delta = chunk.choices?.first.delta;
           if (delta?.toolCalls != null) {
             developer.log(
               'Received tool call chunk with ${delta!.toolCalls!.length} tool calls',
@@ -683,10 +683,10 @@ class UnifiedAiInferenceRepository {
     try {
       // Handle potential null values in Anthropic's response
       final choices = chunk.choices;
-      if (choices.isEmpty) {
+      if (choices?.isEmpty ?? true) {
         return '';
       }
-      return choices.firstOrNull?.delta?.content ?? '';
+      return choices?.firstOrNull?.delta?.content ?? '';
     } catch (e) {
       // Log error but continue processing stream
       developer.log(
