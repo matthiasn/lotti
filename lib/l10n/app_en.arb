@@ -44,6 +44,9 @@
     }
   },
   "aiConfigFailedToLoadModelsGeneric": "Failed to load models. Please try again.",
+  "loggingFailedToLoad": "Failed to load logs. Please try again.",
+  "loggingSearchFailed": "Search failed. Please try again.",
+  "loggingFailedToLoadMore": "Failed to load more results. Please try again.",
   "aiConfigFailedToSaveMessage": "Failed to save configuration. Please try again.",
   "aiConfigInputDataTypesTitle": "Required Input Data Types",
   "aiConfigInputModalitiesFieldLabel": "Input Modalities",

@@ -113,6 +113,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Eșec la încărcarea modelelor. Vă rugăm să încercați din nou.';
 
   @override
+  String get loggingFailedToLoad =>
+      'Eșec la încărcarea jurnalelor. Vă rugăm să încercați din nou.';
+
+  @override
+  String get loggingSearchFailed =>
+      'Căutarea a eșuat. Vă rugăm să încercați din nou.';
+
+  @override
+  String get loggingFailedToLoadMore =>
+      'Eșec la încărcarea mai multor rezultate. Vă rugăm să încercați din nou.';
+
+  @override
   String get aiConfigFailedToSaveMessage =>
       'Failed to save configuration. Please try again.';
 

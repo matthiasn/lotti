@@ -113,6 +113,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Fehler beim Laden der Modelle. Bitte versuchen Sie es erneut.';
 
   @override
+  String get loggingFailedToLoad =>
+      'Fehler beim Laden der Protokolle. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get loggingSearchFailed =>
+      'Suche fehlgeschlagen. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get loggingFailedToLoadMore =>
+      'Fehler beim Laden weiterer Ergebnisse. Bitte versuchen Sie es erneut.';
+
+  @override
   String get aiConfigFailedToSaveMessage =>
       'Failed to save configuration. Please try again.';
 
