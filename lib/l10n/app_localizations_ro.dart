@@ -109,6 +109,22 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get aiConfigFailedToLoadModelsGeneric =>
+      'Eșec la încărcarea modelelor. Vă rugăm să încercați din nou.';
+
+  @override
+  String get loggingFailedToLoad =>
+      'Eșec la încărcarea jurnalelor. Vă rugăm să încercați din nou.';
+
+  @override
+  String get loggingSearchFailed =>
+      'Căutarea a eșuat. Vă rugăm să încercați din nou.';
+
+  @override
+  String get loggingFailedToLoadMore =>
+      'Eșec la încărcarea mai multor rezultate. Vă rugăm să încercați din nou.';
+
+  @override
   String get aiConfigFailedToSaveMessage =>
       'Failed to save configuration. Please try again.';
 
@@ -672,6 +688,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get createCategoryTitle => 'Creați categorie:';
+
+  @override
+  String get categoryCreationError =>
+      'Nu s-a putut crea categoria. Vă rugăm să încercați din nou.';
 
   @override
   String get createEntryLabel => 'Creați o intrare nouă';

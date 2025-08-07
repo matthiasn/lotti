@@ -109,6 +109,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aiConfigFailedToLoadModelsGeneric =>
+      'Failed to load models. Please try again.';
+
+  @override
+  String get loggingFailedToLoad => 'Failed to load logs. Please try again.';
+
+  @override
+  String get loggingSearchFailed => 'Search failed. Please try again.';
+
+  @override
+  String get loggingFailedToLoadMore =>
+      'Failed to load more results. Please try again.';
+
+  @override
   String get aiConfigFailedToSaveMessage =>
       'Failed to save configuration. Please try again.';
 
@@ -669,6 +683,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createCategoryTitle => 'Create Category:';
+
+  @override
+  String get categoryCreationError =>
+      'Failed to create category. Please try again.';
 
   @override
   String get createEntryLabel => 'Create new entry';
@@ -2117,6 +2135,20 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   }
 
   @override
+  String get aiConfigFailedToLoadModelsGeneric =>
+      'Failed to load models. Please try again.';
+
+  @override
+  String get loggingFailedToLoad => 'Failed to load logs. Please try again.';
+
+  @override
+  String get loggingSearchFailed => 'Search failed. Please try again.';
+
+  @override
+  String get loggingFailedToLoadMore =>
+      'Failed to load more results. Please try again.';
+
+  @override
   String get aiConfigListUndoDelete => 'UNDO';
 
   @override
@@ -2293,6 +2325,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get createCategoryTitle => 'Create Category:';
+
+  @override
+  String get categoryCreationError =>
+      'Failed to create category. Please try again.';
 
   @override
   String get createEntryLabel => 'Create new entry';

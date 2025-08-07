@@ -43,6 +43,10 @@
       }
     }
   },
+  "aiConfigFailedToLoadModelsGeneric": "Failed to load models. Please try again.",
+  "loggingFailedToLoad": "Failed to load logs. Please try again.",
+  "loggingSearchFailed": "Search failed. Please try again.",
+  "loggingFailedToLoadMore": "Failed to load more results. Please try again.",
   "aiConfigFailedToSaveMessage": "Failed to save configuration. Please try again.",
   "aiConfigInputDataTypesTitle": "Required Input Data Types",
   "aiConfigInputModalitiesFieldLabel": "Input Modalities",
@@ -258,6 +262,7 @@
   "conflictsResolveRemoteVersion": "Resolve with remote version",
   "conflictsCopyTextFromSync": "Copy Text from Sync",
   "createCategoryTitle": "Create Category:",
+  "categoryCreationError": "Failed to create category. Please try again.",
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
   "dashboardActiveLabel": "Active:",

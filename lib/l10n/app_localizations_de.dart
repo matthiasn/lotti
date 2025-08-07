@@ -109,6 +109,22 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get aiConfigFailedToLoadModelsGeneric =>
+      'Fehler beim Laden der Modelle. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get loggingFailedToLoad =>
+      'Fehler beim Laden der Protokolle. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get loggingSearchFailed =>
+      'Suche fehlgeschlagen. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get loggingFailedToLoadMore =>
+      'Fehler beim Laden weiterer Ergebnisse. Bitte versuchen Sie es erneut.';
+
+  @override
   String get aiConfigFailedToSaveMessage =>
       'Failed to save configuration. Please try again.';
 
@@ -672,6 +688,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get createCategoryTitle => 'Kategorie erstellen:';
+
+  @override
+  String get categoryCreationError =>
+      'Kategorie konnte nicht erstellt werden. Bitte versuchen Sie es erneut.';
 
   @override
   String get createEntryLabel => 'Neuen Eintrag erstellen';

@@ -110,6 +110,22 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get aiConfigFailedToLoadModelsGeneric =>
+      'Échec du chargement des modèles. Veuillez réessayer.';
+
+  @override
+  String get loggingFailedToLoad =>
+      'Échec du chargement des journaux. Veuillez réessayer.';
+
+  @override
+  String get loggingSearchFailed =>
+      'Échec de la recherche. Veuillez réessayer.';
+
+  @override
+  String get loggingFailedToLoadMore =>
+      'Échec du chargement de résultats supplémentaires. Veuillez réessayer.';
+
+  @override
   String get aiConfigFailedToSaveMessage =>
       'Failed to save configuration. Please try again.';
 
@@ -675,6 +691,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get createCategoryTitle => 'Créer une catégorie :';
+
+  @override
+  String get categoryCreationError =>
+      'Impossible de créer la catégorie. Veuillez réessayer.';
 
   @override
   String get createEntryLabel => 'Créer une nouvelle entrée';

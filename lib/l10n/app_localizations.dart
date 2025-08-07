@@ -285,6 +285,30 @@ abstract class AppLocalizations {
   /// **'Failed to load models: {error}'**
   String aiConfigFailedToLoadModels(String error);
 
+  /// No description provided for @aiConfigFailedToLoadModelsGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load models. Please try again.'**
+  String get aiConfigFailedToLoadModelsGeneric;
+
+  /// No description provided for @loggingFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load logs. Please try again.'**
+  String get loggingFailedToLoad;
+
+  /// No description provided for @loggingSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed. Please try again.'**
+  String get loggingSearchFailed;
+
+  /// No description provided for @loggingFailedToLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load more results. Please try again.'**
+  String get loggingFailedToLoadMore;
+
   /// No description provided for @aiConfigFailedToSaveMessage.
   ///
   /// In en, this message translates to:
@@ -1304,6 +1328,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create Category:'**
   String get createCategoryTitle;
+
+  /// No description provided for @categoryCreationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create category. Please try again.'**
+  String get categoryCreationError;
 
   /// No description provided for @createEntryLabel.
   ///

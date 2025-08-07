@@ -135,7 +135,7 @@ class _CategoryIconRenderer extends StatelessWidget {
       child: Center(
         child: Text(
           categoryName.isNotEmpty
-              ? categoryName[0].toUpperCase()
+              ? categoryName.substring(0, 1).toUpperCase()
               : CategoryIconStrings.fallbackCharacter,
           style: TextStyle(
             color: categoryColor.computeLuminance() >

@@ -108,11 +108,12 @@ class _LoggingPageState extends State<LoggingPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      final errorMessage = 'Failed to load logs: $e';
+      // Log the actual error for debugging
+      debugPrint('Failed to load logs: $e');
       setState(() {
         _isSearching = false;
       });
-      _showSearchError(errorMessage);
+      _showSearchError(context.messages.loggingFailedToLoad);
     }
   }
 
@@ -155,11 +156,12 @@ class _LoggingPageState extends State<LoggingPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      final errorMessage = 'Search failed: $e';
+      // Log the actual error for debugging
+      debugPrint('Search failed: $e');
       setState(() {
         _isSearching = false;
       });
-      _showSearchError(errorMessage);
+      _showSearchError(context.messages.loggingSearchFailed);
     }
   }
 
@@ -193,11 +195,12 @@ class _LoggingPageState extends State<LoggingPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      final errorMessage = 'Failed to load more results: $e';
+      // Log the actual error for debugging
+      debugPrint('Failed to load more results: $e');
       setState(() {
         _isLoadingMore = false;
       });
-      _showSearchError(errorMessage);
+      _showSearchError(context.messages.loggingFailedToLoadMore);
     }
   }
 
