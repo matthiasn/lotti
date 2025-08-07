@@ -58,7 +58,6 @@ void main() {
     // Assert - should display the category name
     expect(find.text(testCategory.name), findsOneWidget);
 
-    // Assert - should contain a color icon
     // Assert - should contain a category icon
     expect(find.byType(CategoryIconCompact), findsOneWidget);
   });
@@ -76,8 +75,6 @@ void main() {
 
     // Assert - should display a dash for empty category
     expect(find.text('-'), findsOneWidget);
-
-    // Assert - should still contain a color icon (with default color)
 
     // Assert - should still contain a category icon fallback
     expect(find.byType(CategoryIconCompact), findsOneWidget);
