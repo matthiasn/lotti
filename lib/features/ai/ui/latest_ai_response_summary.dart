@@ -71,7 +71,7 @@ class _LatestAiResponseSummaryState
       error: (error, stackTrace) {
         // Log the actual error for debugging
         debugPrint('Error loading AI summary: $error\n$stackTrace');
-        
+
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(16),

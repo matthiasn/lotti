@@ -678,8 +678,8 @@ void main() {
       // Assert - Should only get the valid responses, not the error
       final responses = await stream.toList();
       expect(responses.length, 2);
-      expect(responses[0].choices[0].delta?.content, 'Valid response');
-      expect(responses[1].choices[0].delta?.content, 'Another valid response');
+      expect(responses[0].choices?[0].delta?.content, 'Valid response');
+      expect(responses[1].choices?[0].delta?.content, 'Another valid response');
     });
 
     test('_filterAnthropicPings propagates non-Anthropic errors', () async {
@@ -867,7 +867,7 @@ void main() {
       // Assert - Should get the response directly without filtering
       final responses = await stream.toList();
       expect(responses.length, 1);
-      expect(responses[0].choices[0].delta?.content, 'Test');
+      expect(responses[0].choices?[0].delta?.content, 'Test');
     });
 
     test(
@@ -912,7 +912,7 @@ void main() {
       // Assert - Should get the response directly without filtering
       final responses = await stream.toList();
       expect(responses.length, 1);
-      expect(responses[0].choices[0].delta?.content, 'Test');
+      expect(responses[0].choices?[0].delta?.content, 'Test');
     });
 
     test('constructor initializes repository with ref', () {
@@ -957,7 +957,7 @@ void main() {
       // Assert - Should complete normally
       final responses = await stream.toList();
       expect(responses.length, 1);
-      expect(responses[0].choices[0].delta?.content, 'Test response');
+      expect(responses[0].choices?[0].delta?.content, 'Test response');
     });
 
     test('generateWithAudio handles Whisper provider type successfully',
@@ -1000,8 +1000,8 @@ void main() {
       expect(stream.isBroadcast, isTrue);
 
       final response = await stream.first;
-      expect(response.choices.length, 1);
-      expect(response.choices[0].delta?.content, transcribedText);
+      expect(response.choices?.length, 1);
+      expect(response.choices?[0].delta?.content, transcribedText);
       expect(response.id, startsWith('whisper-'));
       expect(response.object, 'chat.completion.chunk');
 
@@ -1236,7 +1236,7 @@ void main() {
       );
 
       final response = await stream.first;
-      expect(response.choices[0].delta?.content, transcribedText);
+      expect(response.choices?[0].delta?.content, transcribedText);
     });
 
     test('constructor with custom httpClient parameter', () {
@@ -1290,9 +1290,9 @@ void main() {
       expect(response.object, equals('chat.completion.chunk'));
       expect(response.created, isA<int>());
       expect(response.choices, hasLength(1));
-      expect(response.choices[0].index, equals(0));
-      expect(response.choices[0].delta?.content, equals(transcribedText));
-      expect(response.choices[0].delta?.role, isNull);
+      expect(response.choices?[0].index, equals(0));
+      expect(response.choices?[0].delta?.content, equals(transcribedText));
+      expect(response.choices?[0].delta?.role, isNull);
     });
   });
 }

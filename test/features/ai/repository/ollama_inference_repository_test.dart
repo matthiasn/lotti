@@ -71,7 +71,7 @@ void main() {
         final result = await stream.first;
 
         // Assert
-        expect(result.choices.first.delta?.content, equals('Test response'));
+        expect(result.choices?.first.delta?.content, equals('Test response'));
 
         // Verify the correct endpoint was called
         final captured =
@@ -122,7 +122,7 @@ void main() {
 
         // Assert
         expect(results, isNotEmpty);
-        expect(results.first.choices.first.delta?.content,
+        expect(results.first.choices?.first.delta?.content,
             equals('Test response'));
 
         // Verify the correct endpoint was called
@@ -187,7 +187,7 @@ void main() {
         // Assert
         expect(results, isNotEmpty);
         final toolCallsResponse = results.first;
-        expect(toolCallsResponse.choices.first.delta?.toolCalls, isNotNull);
+        expect(toolCallsResponse.choices?.first.delta?.toolCalls, isNotNull);
       });
 
       test('should retry on timeout', () async {
@@ -225,8 +225,8 @@ void main() {
         final result = await stream.first;
 
         // Assert
-        expect(
-            result.choices.first.delta?.content, equals('Success after retry'));
+        expect(result.choices?.first.delta?.content,
+            equals('Success after retry'));
         expect(attempts, equals(3));
       });
 
@@ -355,7 +355,7 @@ void main() {
         final result = await stream.first;
 
         // Assert
-        expect(result.choices.first.delta?.content,
+        expect(result.choices?.first.delta?.content,
             equals('This is an image description'));
 
         // Verify warmUpModel was called

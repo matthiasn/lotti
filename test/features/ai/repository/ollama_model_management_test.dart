@@ -447,7 +447,7 @@ void main() {
         // Assert
         final response = await stream.first;
         expect(response.choices, hasLength(1));
-        expect(response.choices.first.delta?.content, 'Analyze this image');
+        expect(response.choices?.first.delta?.content, 'Analyze this image');
 
         // Verify warmUpModel was called
         verify(() => mockHttpClient.post(
@@ -692,7 +692,7 @@ void main() {
 
         // Assert
         final response = await stream.first;
-        expect(response.choices.first.delta?.content, expectedResponse);
+        expect(response.choices?.first.delta?.content, expectedResponse);
       });
 
       test('throws ModelNotInstalledException when model not found', () async {

@@ -585,8 +585,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show error message
-      expect(
-          find.text('Failed to load AI summary. Please try again.'), findsOneWidget);
+      expect(find.text('Failed to load AI summary. Please try again.'),
+          findsOneWidget);
       expect(find.byType(AnimatedSize), findsNothing);
       expect(find.byType(AnimatedSwitcher), findsNothing);
     });
