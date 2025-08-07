@@ -109,6 +109,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aiConfigFailedToLoadModelsGeneric =>
+      'Failed to load models. Please try again.';
+
+  @override
   String get aiConfigFailedToSaveMessage =>
       'Failed to save configuration. Please try again.';
 
@@ -2119,6 +2123,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
     );
     return '$count associated model$_temp0 removed';
   }
+
+  @override
+  String get aiConfigFailedToLoadModelsGeneric =>
+      'Failed to load models. Please try again.';
 
   @override
   String get aiConfigListUndoDelete => 'UNDO';

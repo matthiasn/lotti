@@ -21,6 +21,7 @@
   "aiAssistantThinking": "Pensando...",
   "aiAssistantTitle": "Asistente de IA",
   "aiAssistantTranscribeAudio": "Transcribir audio",
+  "aiConfigFailedToLoadModelsGeneric": "Error al cargar modelos. Por favor, inténtalo de nuevo.",
   "aiTaskSummaryRunning": "Pensando en resumir la tarea...",
   "aiTaskSummaryTitle": "Resumen de tareas de IA",
   "aiSettingsClearFiltersButton": "Limpiar",

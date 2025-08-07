@@ -110,6 +110,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get aiConfigFailedToLoadModelsGeneric =>
+      'Error al cargar modelos. Por favor, inténtalo de nuevo.';
+
+  @override
   String get aiConfigFailedToSaveMessage =>
       'Failed to save configuration. Please try again.';
 

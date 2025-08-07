@@ -285,6 +285,12 @@ abstract class AppLocalizations {
   /// **'Failed to load models: {error}'**
   String aiConfigFailedToLoadModels(String error);
 
+  /// No description provided for @aiConfigFailedToLoadModelsGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load models. Please try again.'**
+  String get aiConfigFailedToLoadModelsGeneric;
+
   /// No description provided for @aiConfigFailedToSaveMessage.
   ///
   /// In en, this message translates to:
