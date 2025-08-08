@@ -98,6 +98,10 @@ if [ ! -f "lotti" ]; then
 fi
 
 # Built files are now included as sources in the Flatpak manifest
+
+# Force clean build to avoid cache issues
+echo "Cleaning previous build cache..."
+rm -rf .flatpak-builder/ build-dir/ || true
 echo "Built files are ready for Flatpak packaging"
 
 
