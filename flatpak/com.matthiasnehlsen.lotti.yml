@@ -21,6 +21,13 @@ modules:
       - type: file
         url: https://sh.rustup.rs
         dest-filename: rustup.sh
+  - name: keybinder
+    buildsystem: simple
+    build-commands:
+      - install -D libkeybinder-3.0.so.0 /app/lib/ 2>/dev/null || echo "libkeybinder-3.0.so.0 not found"
+    sources:
+      - type: file
+        path: ../libkeybinder-3.0.so.0
 command: /app/lotti-wrapper
 finish-args:
   - --share=network
@@ -36,6 +43,9 @@ finish-args:
   - --device=dri
   # Add required libraries
   - --env=LD_LIBRARY_PATH=/app/lib
+  # Add system library dependencies
+  - --socket=x11
+  - --socket=wayland
   # Removed --socket=gpg-agent (not needed unless app specifically uses GPG)
 modules:
   - name: lotti

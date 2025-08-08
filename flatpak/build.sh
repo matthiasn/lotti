@@ -117,6 +117,17 @@ if find . -maxdepth 1 -name "*.so" -type f | grep -q .; then
     echo "Copied .so files from project root to lib/:"
     ls -la lib/
 fi
+
+# Copy system libraries that might be needed
+echo "Copying system libraries..."
+if [ -f "/usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0" ]; then
+    echo "Found libkeybinder-3.0.so.0 in system, copying to lib/:"
+    cp /usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
+fi
+if [ -f "/usr/lib/libkeybinder-3.0.so.0" ]; then
+    echo "Found libkeybinder-3.0.so.0 in /usr/lib, copying to lib/:"
+    cp /usr/lib/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
+fi
 echo "Files in project root:"
 ls -la
 
