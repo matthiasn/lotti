@@ -29,12 +29,17 @@ modules:
       - ls -la
       - cp lotti /app/
       - echo "Installing shared libraries..."
+      - mkdir -p /app/lib
       - cp -r lib/* /app/lib/ 2>/dev/null || echo "No lib files to copy"
       - echo "Creating wrapper script..."
       - echo '#!/bin/bash' > /app/lotti-wrapper
       - echo 'export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH' >> /app/lotti-wrapper
+      - echo 'echo "Wrapper script running with LD_LIBRARY_PATH=$LD_LIBRARY_PATH"' >> /app/lotti-wrapper
+      - echo 'ls -la /app/lib/ 2>/dev/null || echo "No lib directory"' >> /app/lotti-wrapper
       - echo 'exec /app/lotti "$@"' >> /app/lotti-wrapper
       - chmod +x /app/lotti-wrapper
+      - echo "Wrapper script created:"
+      - cat /app/lotti-wrapper
     sources:
       - type: git
         url: {{LOTTI_REPO_URL}}
