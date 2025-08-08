@@ -2,7 +2,7 @@
 Name=Lotti
 Comment=A smart journal and life management app
 Exec=/app/lotti
-# Icon=com.matthiasnehlsen.lotti
+Icon=com.matthiasnehlsen.lotti
 Terminal=false
 Type=Application
 Categories=Office;TextEditor;
