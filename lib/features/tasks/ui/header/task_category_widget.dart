@@ -44,7 +44,7 @@ class TaskCategoryWidget extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(right: 5),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
               context.messages.taskCategoryLabel,
@@ -52,7 +52,6 @@ class TaskCategoryWidget extends StatelessWidget {
                 color: context.colorScheme.outline,
               ),
             ),
-            const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -60,7 +59,6 @@ class TaskCategoryWidget extends StatelessWidget {
                   category?.id,
                   size: CategoryIconConstants.iconSizeMedium,
                 ),
-                const SizedBox(width: 10),
                 Flexible(
                   child: Text(
                     category?.name ?? '-',

@@ -9,7 +9,7 @@ class CategoryIconConstants {
   CategoryIconConstants._(); // Private constructor to prevent instantiation
 
   /// Default icon size multiplier for category display
-  static const double iconSizeMultiplier = 0.6;
+  static const double iconSizeMultiplier = 0.56;
 
   /// Default text size multiplier for category display
   static const double textSizeMultiplier = 0.4;
@@ -33,14 +33,14 @@ class CategoryIconConstants {
   static const double pickerTextSize = 10;
 
   /// Default category icon display size
-  static const double defaultIconSize = 48;
+  static const double defaultIconSize = 43.2;
 
   /// Icon sizes for different contexts - Single source of truth
   /// Large icons for prominent displays (category details, large cards)
-  static const double iconSizeLarge = 32;
+  static const double iconSizeLarge = 38.4;
 
   /// Medium icons for list items, cards with text (task definition)
-  static const double iconSizeMedium = 24;
+  static const double iconSizeMedium = 35.2;
 
   /// Small icons for compact lists, inline displays (journal entries)
   static const double iconSizeSmall = 20;
@@ -83,7 +83,7 @@ class CategoryIconConstants {
   static const double smallSectionSpacing = 8;
 
   /// Icon preview size in forms
-  static const double iconPreviewSize = 48;
+  static const double iconPreviewSize = 35.2;
 
   /// Standard icon size for buttons and UI elements
   static const double standardIconSize = 28;
@@ -179,6 +179,7 @@ enum CategoryIcon {
   people,
   relationships,
   social,
+  baby,
   gaming,
   music,
   art,
@@ -301,6 +302,8 @@ extension CategoryIconExtension on CategoryIcon {
         return Icons.palette;
       case CategoryIcon.photography:
         return MdiIcons.cameraOutline;
+      case CategoryIcon.baby:
+        return Icons.baby_changing_station;
 
       // Utility & Tracking Icons
       case CategoryIcon.wallet:
@@ -445,6 +448,8 @@ extension CategoryIconExtension on CategoryIcon {
         return 'Computer';
       case CategoryIcon.connectivity:
         return 'Internet';
+      case CategoryIcon.baby:
+        return 'Baby';
     }
   }
 
@@ -538,6 +543,12 @@ extension CategoryIconExtension on CategoryIcon {
       'learn': CategoryIcon.learning,
       'friend': CategoryIcon.relationships,
       'family': CategoryIcon.relationships,
+      'baby': CategoryIcon.baby,
+      'child': CategoryIcon.baby,
+      'kid': CategoryIcon.baby,
+      'nursing': CategoryIcon.baby,
+      'infant': CategoryIcon.baby,
+      'toddler': CategoryIcon.baby,
       'game': CategoryIcon.gaming,
       'play': CategoryIcon.gaming,
       'sing': CategoryIcon.music,
