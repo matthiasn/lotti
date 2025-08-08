@@ -107,6 +107,16 @@ if find build/linux/x64/release/bundle -name "*.so" -type f | grep -q .; then
 else
     echo "No .so files found in bundle"
 fi
+
+# Also copy any .so files that might be in the project root
+echo "Searching for .so files in project root:"
+find . -maxdepth 1 -name "*.so" -type f || echo "No .so files found in project root"
+if find . -maxdepth 1 -name "*.so" -type f | grep -q .; then
+    echo "Found .so files in project root, copying to lib/:"
+    find . -maxdepth 1 -name "*.so" -type f -exec cp {} lib/ \;
+    echo "Copied .so files from project root to lib/:"
+    ls -la lib/
+fi
 echo "Files in project root:"
 ls -la
 

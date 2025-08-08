@@ -50,6 +50,8 @@ modules:
       - echo "Installing shared libraries..."
       - mkdir -p /app/lib
       - cp -r lib/* /app/lib/ 2>/dev/null || echo "No lib files to copy"
+      - echo "Searching for .so files in project root:"
+      - find . -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files found"
       - echo "Creating wrapper script..."
       - echo '#!/bin/bash' > /app/lotti-wrapper
       - echo 'export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH' >> /app/lotti-wrapper
