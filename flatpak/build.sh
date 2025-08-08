@@ -104,6 +104,10 @@ echo "Cleaning previous build cache..."
 rm -rf .flatpak-builder/ build-dir/ || true
 echo "Built files are ready for Flatpak packaging"
 
+# Build Flatpak without AppStream validation to get basic functionality working
+echo "Building Flatpak without AppStream validation..."
+flatpak-builder --force-clean --disable-rofiles-fuse build-dir flatpak/com.matthiasnehlsen.lotti.generated.yml
+
 
 
 # Build the Flatpak

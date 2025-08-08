@@ -37,13 +37,14 @@ modules:
         buildsystem: simple
         build-commands:
           - install -D com.matthiasnehlsen.lotti.desktop /app/share/applications/com.matthiasnehlsen.lotti.desktop
-          - install -D com.matthiasnehlsen.lotti.generated.metainfo.xml /app/share/metainfo/com.matthiasnehlsen.lotti.metainfo.xml
-          # Install icon to symbolic directory with correct name for AppStream
-          - install -D app_icon_1024.png /app/share/icons/hicolor/symbolic/apps/com.matthiasnehlsen.lotti.png
+          # Skip metainfo and icon for now to get basic functionality working
+          # - install -D com.matthiasnehlsen.lotti.generated.metainfo.xml /app/share/metainfo/com.matthiasnehlsen.lotti.metainfo.xml
+          # - install -D app_icon_1024.png /app/share/icons/hicolor/symbolic/apps/com.matthiasnehlsen.lotti.png
         sources:
           - type: file
             path: com.matthiasnehlsen.lotti.desktop
-          - type: file
-            path: com.matthiasnehlsen.lotti.generated.metainfo.xml
-          - type: file
-            path: app_icon_1024.png 
+          # Skip metainfo and icon sources for now
+          # - type: file
+          #   path: com.matthiasnehlsen.lotti.generated.metainfo.xml
+          # - type: file
+          #   path: app_icon_1024.png 
