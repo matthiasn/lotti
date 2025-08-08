@@ -23,7 +23,7 @@
   <url type="bugtracker">https://github.com/matthiasn/lotti/issues</url>
   <url type="help">https://github.com/matthiasn/lotti</url>
   <launchable type="desktop-id">com.matthiasnehlsen.lotti.desktop</launchable>
-  <icon type="stock">com.matthiasnehlsen.lotti</icon>
+  <icon>com.matthiasnehlsen.lotti</icon>
   <releases>
     <release version="{{LOTTI_VERSION}}" date="{{LOTTI_RELEASE_DATE}}">
       <description>
