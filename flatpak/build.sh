@@ -90,13 +90,20 @@ echo "Built app copied to project root"
 # Copy all shared libraries to lib directory for Flatpak
 echo "Copying shared libraries..."
 mkdir -p lib
-if ! cp -r build/linux/x64/release/bundle/lib/* lib/ 2>/dev/null || true; then
-    echo "Warning: No lib directory found in bundle"
+echo "Checking bundle structure:"
+ls -la build/linux/x64/release/bundle/ || echo "Bundle not found"
+if [ -d "build/linux/x64/release/bundle/lib" ]; then
+    echo "Found lib directory in bundle:"
+    ls -la build/linux/x64/release/bundle/lib/
+    cp -r build/linux/x64/release/bundle/lib/* lib/
+    echo "Copied lib files to project root:"
+    ls -la lib/
+else
+    echo "No lib directory found in bundle, checking for .so files:"
+    find build/linux/x64/release/bundle -name "*.so" -type f || echo "No .so files found"
 fi
 echo "Files in project root:"
 ls -la
-echo "Files in lib directory:"
-ls -la lib/ 2>/dev/null || echo "No lib directory"
 
 # Check if lotti executable exists
 if [ ! -f "lotti" ]; then
