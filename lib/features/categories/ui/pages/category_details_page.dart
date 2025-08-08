@@ -648,8 +648,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               children: [
                 if (isCreateMode)
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: CategoryIconConstants.defaultIconSize,
+                    height: CategoryIconConstants.defaultIconSize,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(

@@ -99,7 +99,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: new_category_details.CategoryDetailsPage(),
         ),
 
-      if (pathContains('categories') && pathContainsKey('categoryId'))
+      if (pathContains('categories') &&
+          pathContainsKey('categoryId') &&
+          state.pathParameters['categoryId'] != 'create')
         BeamPage(
           key: ValueKey(
             'settings-categories-${state.pathParameters['categoryId']}',
