@@ -70,6 +70,9 @@ echo "Icon file copied successfully to flatpak/app_icon_1024.png"
 # Build Flutter app if it doesn't exist
 if [ ! -d "build/linux/x64/release/bundle" ]; then
     echo "Flutter app not built. Building now..."
+    echo "Getting Flutter dependencies..."
+    flutter pub get
+    echo "Building Flutter app with all dependencies..."
     if ! flutter build linux --release; then
         echo "Error: Failed to build Flutter app"
         exit 1

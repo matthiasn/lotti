@@ -10,43 +10,17 @@ modules:
     sources:
       - type: file
         path: ../lib/libdesktop_drop_plugin.so
-  - name: flutter-dependencies
+  - name: rust
     buildsystem: simple
     build-commands:
-      - install -D libflutter_linux_gtk.so /app/lib/ 2>/dev/null || echo "libflutter_linux_gtk.so not found"
-      - install -D libgtk-3.so.0 /app/lib/ 2>/dev/null || echo "libgtk-3.so.0 not found"
-      - install -D libgdk-3.so.0 /app/lib/ 2>/dev/null || echo "libgdk-3.so.0 not found"
-      - install -D libcairo.so.2 /app/lib/ 2>/dev/null || echo "libcairo.so.2 not found"
-      - install -D libpango-1.0.so.0 /app/lib/ 2>/dev/null || echo "libpango-1.0.so.0 not found"
-      - install -D libpangocairo-1.0.so.0 /app/lib/ 2>/dev/null || echo "libpangocairo-1.0.so.0 not found"
-      - install -D libatk-1.0.so.0 /app/lib/ 2>/dev/null || echo "libatk-1.0.so.0 not found"
-      - install -D libgdk_pixbuf-2.0.so.0 /app/lib/ 2>/dev/null || echo "libgdk_pixbuf-2.0.so.0 not found"
-      - install -D libgio-2.0.so.0 /app/lib/ 2>/dev/null || echo "libgio-2.0.so.0 not found"
-      - install -D libgobject-2.0.so.0 /app/lib/ 2>/dev/null || echo "libgobject-2.0.so.0 not found"
-      - install -D libglib-2.0.so.0 /app/lib/ 2>/dev/null || echo "libglib-2.0.so.0 not found"
+      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      - export PATH="$HOME/.cargo/bin:$PATH"
+      - rustc --version
+      - cargo --version
     sources:
       - type: file
-        path: ../lib/libflutter_linux_gtk.so
-      - type: file
-        path: ../lib/libgtk-3.so.0
-      - type: file
-        path: ../lib/libgdk-3.so.0
-      - type: file
-        path: ../lib/libcairo.so.2
-      - type: file
-        path: ../lib/libpango-1.0.so.0
-      - type: file
-        path: ../lib/libpangocairo-1.0.so.0
-      - type: file
-        path: ../lib/libatk-1.0.so.0
-      - type: file
-        path: ../lib/libgdk_pixbuf-2.0.so.0
-      - type: file
-        path: ../lib/libgio-2.0.so.0
-      - type: file
-        path: ../lib/libgobject-2.0.so.0
-      - type: file
-        path: ../lib/libglib-2.0.so.0
+        url: https://sh.rustup.rs
+        dest-filename: rustup.sh
 command: /app/lotti-wrapper
 finish-args:
   - --share=network
