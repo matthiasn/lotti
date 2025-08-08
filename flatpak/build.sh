@@ -101,6 +101,13 @@ if [ -d "build/linux/x64/release/bundle/lib" ]; then
 else
     echo "No lib directory found in bundle, checking for .so files:"
     find build/linux/x64/release/bundle -name "*.so" -type f || echo "No .so files found"
+    # If .so files are found directly in bundle, copy them to lib/
+    if find build/linux/x64/release/bundle -name "*.so" -type f | grep -q .; then
+        echo "Found .so files, copying to lib/:"
+        find build/linux/x64/release/bundle -name "*.so" -type f -exec cp {} lib/ \;
+        echo "Copied .so files to lib/:"
+        ls -la lib/
+    fi
 fi
 echo "Files in project root:"
 ls -la
