@@ -1,7 +1,7 @@
 app-id: com.matthiasnehlsen.lotti
-runtime: org.freedesktop.Platform
-runtime-version: '23.08'
-sdk: org.freedesktop.Sdk
+runtime: org.gnome.Platform
+runtime-version: '45'
+sdk: org.gnome.Sdk
 modules:
   - name: desktop-drop-plugin
     buildsystem: simple
