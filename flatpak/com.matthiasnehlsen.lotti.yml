@@ -29,7 +29,7 @@ modules:
     sources:
       - type: git
         url: {{LOTTI_REPO_URL}}
-        commit: {{LOTTI_VERSION}}
+        branch: fix/flatpak-kb-fix-v2
       - type: file
         path: ../lotti
     modules:
