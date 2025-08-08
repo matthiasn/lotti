@@ -123,10 +123,22 @@ echo "Copying system libraries..."
 if [ -f "/usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0" ]; then
     echo "Found libkeybinder-3.0.so.0 in system, copying to lib/:"
     cp /usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
-fi
-if [ -f "/usr/lib/libkeybinder-3.0.so.0" ]; then
+elif [ -f "/usr/lib/libkeybinder-3.0.so.0" ]; then
     echo "Found libkeybinder-3.0.so.0 in /usr/lib, copying to lib/:"
     cp /usr/lib/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
+else
+    echo "libkeybinder-3.0.so.0 not found in system, trying to install it..."
+    sudo apt-get update && sudo apt-get install -y libkeybinder-3.0-0 2>/dev/null || echo "Failed to install libkeybinder-3.0-0"
+    # Try copying again after installation
+    if [ -f "/usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0" ]; then
+        echo "Found libkeybinder-3.0.so.0 after installation, copying to lib/:"
+        cp /usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
+    elif [ -f "/usr/lib/libkeybinder-3.0.so.0" ]; then
+        echo "Found libkeybinder-3.0.so.0 after installation, copying to lib/:"
+        cp /usr/lib/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
+    else
+        echo "libkeybinder-3.0.so.0 still not found after installation attempt"
+    fi
 fi
 echo "Files in project root:"
 ls -la
