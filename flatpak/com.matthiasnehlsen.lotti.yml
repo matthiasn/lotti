@@ -2,15 +2,7 @@ app-id: com.matthiasnehlsen.lotti
 runtime: org.gnome.Platform
 runtime-version: '45'
 sdk: org.gnome.Sdk
-modules:
-  - name: desktop-drop-plugin
-    buildsystem: simple
-    build-commands:
-      - install -D libdesktop_drop_plugin.so /app/lib/
-    sources:
-      - type: file
-        path: ../lib/libdesktop_drop_plugin.so
-command: /app/lotti
+command: /app/lotti-wrapper
 finish-args:
   - --share=network
   - --share=ipc
@@ -23,6 +15,8 @@ finish-args:
   - --filesystem=xdg-download:rw     # For downloading/saving exports
   # App data is automatically available in ~/.var/app/com.matthiasnehlsen.lotti/
   - --device=dri
+  # Add required libraries
+  - --env=LD_LIBRARY_PATH=/app/lib
   # Removed --socket=gpg-agent (not needed unless app specifically uses GPG)
 modules:
   - name: lotti
@@ -36,6 +30,11 @@ modules:
       - cp lotti /app/
       - echo "Installing shared libraries..."
       - cp -r lib/* /app/lib/ 2>/dev/null || echo "No lib files to copy"
+      - echo "Creating wrapper script..."
+      - echo '#!/bin/bash' > /app/lotti-wrapper
+      - echo 'export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH' >> /app/lotti-wrapper
+      - echo 'exec /app/lotti "$@"' >> /app/lotti-wrapper
+      - chmod +x /app/lotti-wrapper
     sources:
       - type: git
         url: {{LOTTI_REPO_URL}}
