@@ -83,7 +83,7 @@ class CategoryIconConstants {
   static const double smallSectionSpacing = 8;
 
   /// Icon preview size in forms
-  static const double iconPreviewSize = 35.2;
+  static const double iconPreviewSize = iconSizeMedium;
 
   /// Standard icon size for buttons and UI elements
   static const double standardIconSize = 28;
