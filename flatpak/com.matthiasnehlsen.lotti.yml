@@ -2,6 +2,14 @@ app-id: com.matthiasnehlsen.lotti
 runtime: org.gnome.Platform
 runtime-version: '45'
 sdk: org.gnome.Sdk
+modules:
+  - name: desktop-drop-plugin
+    buildsystem: simple
+    build-commands:
+      - install -D libdesktop_drop_plugin.so /app/lib/
+    sources:
+      - type: file
+        path: ../lib/libdesktop_drop_plugin.so
 command: /app/lotti
 finish-args:
   - --share=network
@@ -26,12 +34,16 @@ modules:
       - echo "Installing pre-built Flutter app..."
       - ls -la
       - cp lotti /app/
+      - echo "Installing shared libraries..."
+      - cp -r lib/* /app/lib/ 2>/dev/null || echo "No lib files to copy"
     sources:
       - type: git
         url: {{LOTTI_REPO_URL}}
         branch: fix/flatpak-kb-fix-v2
       - type: file
         path: ../lotti
+      - type: dir
+        path: ../lib
     modules:
       - name: flutter-common
         buildsystem: simple
