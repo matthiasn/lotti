@@ -92,25 +92,20 @@ echo "Built app copied to project root"
 
 # Copy all shared libraries to lib directory for Flatpak
 echo "Copying shared libraries..."
+rm -rf lib
 mkdir -p lib
 echo "Checking bundle structure:"
 ls -la build/linux/x64/release/bundle/ || echo "Bundle not found"
-if [ -d "build/linux/x64/release/bundle/lib" ]; then
-    echo "Found lib directory in bundle:"
-    ls -la build/linux/x64/release/bundle/lib/
-    cp -r build/linux/x64/release/bundle/lib/* lib/
-    echo "Copied lib files to project root:"
+echo "Searching for .so files in bundle:"
+find build/linux/x64/release/bundle -name "*.so" -type f || echo "No .so files found"
+# Copy all .so files to lib directory
+if find build/linux/x64/release/bundle -name "*.so" -type f | grep -q .; then
+    echo "Found .so files, copying to lib/:"
+    find build/linux/x64/release/bundle -name "*.so" -type f -exec cp {} lib/ \;
+    echo "Copied .so files to lib/:"
     ls -la lib/
 else
-    echo "No lib directory found in bundle, checking for .so files:"
-    find build/linux/x64/release/bundle -name "*.so" -type f || echo "No .so files found"
-    # If .so files are found directly in bundle, copy them to lib/
-    if find build/linux/x64/release/bundle -name "*.so" -type f | grep -q .; then
-        echo "Found .so files, copying to lib/:"
-        find build/linux/x64/release/bundle -name "*.so" -type f -exec cp {} lib/ \;
-        echo "Copied .so files to lib/:"
-        ls -la lib/
-    fi
+    echo "No .so files found in bundle"
 fi
 echo "Files in project root:"
 ls -la
