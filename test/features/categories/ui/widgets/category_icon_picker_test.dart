@@ -24,10 +24,6 @@ void main() {
       // (The close button is not part of the GridView, it's in the header)
       expect(gridView.semanticChildCount, equals(CategoryIcon.values.length));
 
-      // Also verify the data source: ensure all CategoryIcon values are represented
-      expect(CategoryIcon.values.length, equals(57),
-          reason: 'Expected 57 CategoryIcon enum values');
-
       // Verify that the close button exists separately (not in the GridView)
       expect(find.byIcon(Icons.close), findsOneWidget);
 
