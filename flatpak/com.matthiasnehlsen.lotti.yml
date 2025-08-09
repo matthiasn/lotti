@@ -50,9 +50,12 @@ modules:
       - echo "Creating lib directory and copying .so files..."
       - mkdir -p /app/lib
       - cp *.so /app/lib/
-      - echo "Copying data and share directories..."
-      - cp -r data /app/
-      - cp -r share /app/
+      - echo "Creating data directory and copying Flutter assets..."
+      - mkdir -p /app/data
+      - cp -r flutter_assets /app/data/
+      - cp icudtl.dat /app/data/
+      - echo "Copying share directory..."
+      - cp -r share /app/ 2>/dev/null || echo "No share directory found"
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
       - echo "Checking if lotti executable was copied:"
@@ -148,7 +151,9 @@ modules:
       - type: file
         path: ../libwindow_manager_plugin.so
       - type: dir
-        path: ../data
+        path: ../flutter_assets
+      - type: file
+        path: ../icudtl.dat
       - type: dir
         path: ../share
   - name: flutter-common
