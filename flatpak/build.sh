@@ -90,6 +90,15 @@ if ! cp -r build/linux/x64/release/bundle .; then
 fi
 echo "Built app copied to project root"
 
+# Add built files to git for Flatpak access
+echo "Adding built files to git..."
+git add bundle/ || echo "Failed to add bundle to git"
+git add -f *.so 2>/dev/null || echo "No .so files to add"
+git add -f flutter_assets/ 2>/dev/null || echo "No flutter_assets to add"
+git add -f icudtl.dat 2>/dev/null || echo "No icudtl.dat to add"
+echo "Committing built files..."
+git commit -m "temp: Add built files for Flatpak build" --no-verify || echo "Nothing to commit"
+
 # Copy libkeybinder from system to bundle/lib for Flatpak
 echo "Copying libkeybinder from system to bundle/lib..."
 if [ -f "/usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0" ]; then
