@@ -3,6 +3,13 @@ runtime: org.gnome.Platform
 runtime-version: '45'
 sdk: org.gnome.Sdk
 modules:
+  - name: setup
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/lib
+      - mkdir -p /app/share/applications
+      - mkdir -p /app/share/metainfo
+      - mkdir -p /app/share/icons/hicolor/apps
   - name: desktop-drop-plugin
     buildsystem: simple
     build-commands:
