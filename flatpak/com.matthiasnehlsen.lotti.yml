@@ -40,7 +40,11 @@ modules:
       - echo "void keybinder_bind(const char* keystring, KeybinderHandler handler, void* user_data) {}" >> dummy_keybinder.c
       - echo "void keybinder_unbind(const char* keystring, KeybinderHandler handler) {}" >> dummy_keybinder.c
       - echo "typedef void (*KeybinderHandler)(const char* keystring, void* user_data);" >> dummy_keybinder.c
-      - gcc -shared -o /app/lib/libkeybinder-3.0.so.0 dummy_keybinder.c -lglib-2.0 2>/dev/null || echo "Failed to create dummy library"
+      - echo "int main() { return 0; }" >> dummy_keybinder.c
+      - gcc -shared -o /app/lib/libkeybinder-3.0.so.0 dummy_keybinder.c -lglib-2.0 2>/dev/null || echo "Failed to create dummy library with glib"
+      - gcc -shared -o /app/lib/libkeybinder-3.0.so.0 dummy_keybinder.c 2>/dev/null || echo "Failed to create dummy library without glib"
+      - echo "Checking if dummy library was created:"
+      - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Dummy library not found"
       - rm -f dummy_keybinder.c
       - echo "Contents of /app/lib/ after copying:"
       - ls -la /app/lib/
