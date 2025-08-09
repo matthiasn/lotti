@@ -18,20 +18,38 @@ modules:
       - type: file
         path: ../lib/libdesktop_drop_plugin.so
 
+  - name: flutter
+    buildsystem: simple
+    build-commands:
+      - echo "Installing Flutter SDK..."
+      - curl -L https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.5-stable.tar.xz -o flutter.tar.xz
+      - tar xf flutter.tar.xz
+      - export PATH="$PWD/flutter/bin:$PATH"
+      - flutter --version
+      - flutter config --no-analytics
+      - flutter doctor --verbose
+
   - name: lotti
     buildsystem: simple
     build-options:
       strip: true
       no-debuginfo: true
     build-commands:
-      - echo "Installing Flutter application from bundle..."
-      - echo "Contents of bundle directory:"
-      - ls -la bundle/
+      - echo "Building Flutter application inside Flatpak sandbox..."
+      - echo "Setting up Flutter PATH..."
+      - export PATH="/run/build/flutter/flutter/bin:$PATH"
+      - flutter --version
+      - echo "Getting Flutter dependencies..."
+      - flutter pub get
+      - echo "Building Flutter Linux app..."
+      - flutter build linux --release
+      - echo "Contents of built bundle:"
+      - ls -la build/linux/x64/release/bundle/
       - echo "Copying Flutter bundle structure to /app/..."
-      - cp bundle/lotti /app/ 2>/dev/null || echo "Failed to copy lotti executable"
-      - cp -r bundle/lib /app/ 2>/dev/null || echo "Failed to copy lib directory"
-      - cp -r bundle/data /app/ 2>/dev/null || echo "Failed to copy data directory"
-      - cp -r bundle/share /app/ 2>/dev/null || echo "Failed to copy share directory"
+      - cp build/linux/x64/release/bundle/lotti /app/
+      - cp -r build/linux/x64/release/bundle/lib /app/
+      - cp -r build/linux/x64/release/bundle/data /app/
+      - cp -r build/linux/x64/release/bundle/share /app/
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
       - echo "Checking if lotti executable was copied:"
@@ -88,8 +106,6 @@ modules:
       - type: git
         url: {{LOTTI_REPO_URL}}
         branch: fix/flatpak-kb-fix-v2
-      - type: dir
-        path: ../bundle
   - name: flutter-common
     buildsystem: simple
     build-commands:
