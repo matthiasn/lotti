@@ -50,7 +50,7 @@ modules:
       - type: dir
         path: ../lib
       - type: file
-        path: ../libkeybinder-3.0.so.0
+        path: ../lib/libkeybinder-3.0.so.0
   - name: flutter-common
     buildsystem: simple
     build-commands:
