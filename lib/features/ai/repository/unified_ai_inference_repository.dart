@@ -20,6 +20,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -1436,6 +1437,29 @@ class UnifiedAiInferenceRepository {
       // Create conversation processor
       final processor = LottiConversationProcessor(ref: ref);
 
+      // Get the appropriate inference repository based on provider type
+      OllamaInferenceRepository? ollamaRepo;
+      if (provider.inferenceProviderType == InferenceProviderType.ollama) {
+        ollamaRepo = OllamaInferenceRepository();
+      } else {
+        // For cloud providers, we'll need to use a wrapper that implements OllamaInferenceRepository interface
+        // For now, throw an error as cloud providers should use regular inference
+        developer.log(
+          'Cloud provider ${provider.inferenceProviderType} not supported with conversation approach yet',
+          name: 'UnifiedAiInferenceRepository',
+        );
+        // Fall back to regular processing
+        await _runInferenceInternal(
+          entityId: entity.id,
+          promptConfig: promptConfig,
+          onProgress: onProgress,
+          onStatusChange: onStatusChange,
+          isRerun: isRerun,
+          entity: entity,
+        );
+        return;
+      }
+
       // Define tools for checklist updates
       final tools = [
         ...ChecklistCompletionFunctions.getTools(),
@@ -1452,6 +1476,7 @@ class UnifiedAiInferenceRepository {
         promptConfig: promptConfig,
         systemMessage: systemMessage,
         tools: tools,
+        ollamaRepo: ollamaRepo,
       );
 
       // Update progress with final result

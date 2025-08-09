@@ -35,6 +35,7 @@ class LottiConversationProcessor {
     required AiConfigPrompt promptConfig,
     required String? systemMessage,
     required List<ChatCompletionTool> tools,
+    required OllamaInferenceRepository ollamaRepo,
     AutoChecklistService? autoChecklistService,
   }) async {
     developer.log(
@@ -75,9 +76,6 @@ class LottiConversationProcessor {
 
     // Create conversation repository
     final conversationRepo = ref.read(conversationRepositoryProvider.notifier);
-    // Note: OllamaRepo should be passed from the caller who has access to CloudInferenceRepository
-    // For now, create a new instance
-    final ollamaRepo = OllamaInferenceRepository();
 
     // Create conversation with appropriate system message
     final conversationId = conversationRepo.createConversation(

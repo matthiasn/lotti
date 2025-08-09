@@ -336,6 +336,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
+        ollamaRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -354,6 +355,7 @@ void main() {
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Add pizza ingredients: cheese, tomatoes, pepperoni';
       const conversationId = 'test-conversation-id';
+      final mockOllamaRepo = MockOllamaInferenceRepository();
 
       // Mock conversation setup
       when(() => mockConversationRepo.createConversation(
@@ -459,6 +461,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
+        ollamaRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -478,6 +481,7 @@ void main() {
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Añadir comprar leche a mi lista';
       const conversationId = 'test-conversation-id';
+      final mockOllamaRepo = MockOllamaInferenceRepository();
 
       // Mock conversation setup
       when(() => mockConversationRepo.createConversation(
@@ -601,6 +605,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
+        ollamaRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -621,6 +626,7 @@ void main() {
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Add pizza ingredients: cheese, tomatoes, pepperoni';
       const conversationId = 'test-conversation-id';
+      final mockOllamaRepo = MockOllamaInferenceRepository();
 
       // Mock conversation setup
       when(() => mockConversationRepo.createConversation(
@@ -770,6 +776,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
+        ollamaRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -788,6 +795,7 @@ void main() {
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Add invalid item';
       const conversationId = 'test-conversation-id';
+      final mockOllamaRepo = MockOllamaInferenceRepository();
 
       // Mock conversation setup
       when(() => mockConversationRepo.createConversation(
@@ -865,6 +873,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
+        ollamaRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -881,6 +890,7 @@ void main() {
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Add timeout test';
       const conversationId = 'test-conversation-id';
+      final mockOllamaRepo = MockOllamaInferenceRepository();
 
       // Mock conversation setup
       when(() => mockConversationRepo.createConversation(
@@ -929,6 +939,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
+        ollamaRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -956,6 +967,7 @@ void main() {
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Add new item to checklist';
       const conversationId = 'test-conversation-id';
+      final mockOllamaRepo = MockOllamaInferenceRepository();
 
       // Mock conversation setup
       when(() => mockConversationRepo.createConversation(
@@ -1062,6 +1074,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
+        ollamaRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 

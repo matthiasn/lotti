@@ -72,7 +72,6 @@ void main() {
       ),
     ).thenAnswer((_) {
       // Suppress stack trace logging in tests
-      return null;
     });
   });
 

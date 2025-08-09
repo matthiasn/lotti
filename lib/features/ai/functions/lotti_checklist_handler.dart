@@ -32,6 +32,18 @@ class LottiChecklistItemHandler extends FunctionHandler {
 
   @override
   FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call) {
+    // Early check: verify function name matches
+    if (call.function.name != functionName) {
+      return FunctionCallResult(
+        success: false,
+        functionName: functionName,
+        arguments: call.function.arguments,
+        data: {'toolCallId': call.id},
+        error:
+            'Function name mismatch: expected "$functionName", got "${call.function.name}"',
+      );
+    }
+
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
       final description = args['actionItemDescription'] as String?;

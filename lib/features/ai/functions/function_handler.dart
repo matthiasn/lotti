@@ -62,6 +62,18 @@ class ChecklistItemHandler extends FunctionHandler {
 
   @override
   FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call) {
+    // Early check: verify function name matches
+    if (call.function.name != functionName) {
+      return FunctionCallResult(
+        success: false,
+        functionName: functionName,
+        arguments: call.function.arguments,
+        data: {'toolCallId': call.id},
+        error:
+            'Function name mismatch: expected "$functionName", got "${call.function.name}"',
+      );
+    }
+
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
       final description = args['actionItemDescription'] as String?;
@@ -180,126 +192,5 @@ Do NOT recreate the items that were already successful.''';
 
   void reset() {
     _createdDescriptions.clear();
-  }
-}
-
-/// Example: Handler for a different function type (e.g., adding calendar events)
-class CalendarEventHandler extends FunctionHandler {
-  CalendarEventHandler();
-
-  final Set<String> _createdEvents = {};
-
-  @override
-  String get functionName => 'createCalendarEvent';
-
-  @override
-  FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call) {
-    try {
-      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
-      final title = args['title'] as String?;
-      final date = args['date'] as String?;
-
-      if (title != null && date != null) {
-        return FunctionCallResult(
-          success: true,
-          functionName: functionName,
-          arguments: call.function.arguments,
-          data: {
-            'title': title,
-            'date': date,
-            'toolCallId': call.id,
-          },
-        );
-      } else {
-        final missingFields = <String>[];
-        if (title == null) missingFields.add('title');
-        if (date == null) missingFields.add('date');
-
-        return FunctionCallResult(
-          success: false,
-          functionName: functionName,
-          arguments: call.function.arguments,
-          data: {
-            'attemptedTitle': title ?? args['name'] ?? args['event'] ?? '',
-            'attemptedDate': date ?? args['datetime'] ?? args['when'] ?? '',
-            'toolCallId': call.id,
-          },
-          error: 'Missing required fields: ${missingFields.join(', ')}',
-        );
-      }
-    } catch (e) {
-      return FunctionCallResult(
-        success: false,
-        functionName: functionName,
-        arguments: call.function.arguments,
-        data: {'toolCallId': call.id},
-        error: 'Invalid JSON: $e',
-      );
-    }
-  }
-
-  @override
-  bool isDuplicate(FunctionCallResult result) {
-    if (!result.success) return false;
-
-    final title = result.data['title'] as String?;
-    final date = result.data['date'] as String?;
-    if (title == null || date == null) return false;
-
-    final key = '${title.toLowerCase()}|$date';
-    if (_createdEvents.contains(key)) {
-      return true;
-    }
-
-    _createdEvents.add(key);
-    return false;
-  }
-
-  @override
-  String? getDescription(FunctionCallResult result) {
-    if (result.success) {
-      return '${result.data['title']} on ${result.data['date']}';
-    } else {
-      final title = result.data['attemptedTitle'] as String?;
-      final date = result.data['attemptedDate'] as String?;
-      if (title != null && title.isNotEmpty) {
-        return date != null && date.isNotEmpty ? '$title on $date' : title;
-      }
-      return null;
-    }
-  }
-
-  @override
-  String createToolResponse(FunctionCallResult result) {
-    if (result.success) {
-      return 'Created event: ${getDescription(result)}';
-    } else {
-      return 'Error: ${result.error}';
-    }
-  }
-
-  @override
-  String getRetryPrompt({
-    required List<FunctionCallResult> failedItems,
-    required List<String> successfulDescriptions,
-  }) {
-    final errorSummary = failedItems.map((item) {
-      final attempted = getDescription(item);
-      final attemptedStr = attempted != null ? ' for "$attempted"' : '';
-      return '- ${item.error}$attemptedStr';
-    }).join('\n');
-
-    return '''
-I noticed errors in your calendar event creation:
-$errorSummary
-
-Successfully created events: ${successfulDescriptions.join(', ')}
-
-Please retry with the correct format:
-{"title": "event title", "date": "YYYY-MM-DD"}''';
-  }
-
-  void reset() {
-    _createdEvents.clear();
   }
 }

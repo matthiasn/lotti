@@ -11,6 +11,9 @@ The AI feature consists of several key components:
 3. **Inference Execution**: Run AI inference through various providers (OpenAI, Anthropic, Google, etc.)
 4. **Response Processing**: Parse and display AI-generated responses
 5. **UI Components**: Settings pages, response displays, and configuration management
+6. **Conversation Support**: Multi-turn interactions with context preservation
+7. **Automatic Setup**: Model pre-population and intelligent defaults
+8. **Error Recovery**: Comprehensive error handling and user-friendly messages
 
 ## Architecture
 
@@ -58,12 +61,181 @@ The repository layer has been refactored for better separation of concerns:
 - **`auto_checklist_service.dart`**: Handles automatic checklist creation logic and decision making
 - **`checklist_completion_service.dart`**: Manages checklist item completion suggestions and tracking
 
+#### Conversation Management (`conversation/`)
+- **`conversation_manager.dart`**: Manages multi-turn AI conversations
+  - Maintains conversation context and message history
+  - Handles tool calls and responses
+  - Provides event streaming for real-time updates
+- **`conversation_repository.dart`**: Repository for conversation persistence
+  - Creates and manages conversation sessions
+  - Routes messages to appropriate inference providers
+  - Manages conversation lifecycle and cleanup
+
 #### Functions (`functions/`)
 - **`checklist_completion_functions.dart`**: OpenAI-style function definitions for checklist operations
   - `suggest_checklist_completion`: Suggests items that appear completed
   - `add_checklist_item`: Adds new items to checklists
 - **`task_functions.dart`**: Function definitions for task operations
   - `set_task_language`: Automatically detects and sets task language
+- **`lotti_conversation_processor.dart`**: Conversation-based processing for better batching
+  - Handles multiple checklist items efficiently
+  - Provides error recovery and retry mechanisms
+  - Supports batch operations with `add_multiple_checklist_items`
+- **`lotti_checklist_handler.dart`**: Single checklist item creation handler
+- **`lotti_batch_checklist_handler.dart`**: Batch checklist item creation handler
+- **`function_handler.dart`**: Abstract base class for extensible function handling
+  - Provides common interface for processing function calls
+  - Handles duplicate detection and error recovery
+  - Early function name validation to prevent misrouted calls
+
+##### Extensible Function Handler Pattern
+
+The system uses an extensible pattern for handling AI function calls. Each handler:
+1. Extends the abstract `FunctionHandler` class
+2. Implements required methods for processing calls and handling errors
+3. Validates function names early to prevent processing misrouted calls
+4. Provides retry prompts for failed attempts
+
+Example of extending the system with a new function type:
+
+```dart
+class CalendarEventHandler extends FunctionHandler {
+  CalendarEventHandler();
+
+  final Set<String> _createdEvents = {};
+
+  @override
+  String get functionName => 'createCalendarEvent';
+
+  @override
+  FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call) {
+    // Early check: verify function name matches
+    if (call.function.name != functionName) {
+      return FunctionCallResult(
+        success: false,
+        functionName: functionName,
+        arguments: call.function.arguments,
+        data: {'toolCallId': call.id},
+        error: 'Function name mismatch: expected "$functionName", got "${call.function.name}"',
+      );
+    }
+
+    try {
+      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
+      final title = args['title'] as String?;
+      final date = args['date'] as String?;
+
+      if (title != null && date != null) {
+        return FunctionCallResult(
+          success: true,
+          functionName: functionName,
+          arguments: call.function.arguments,
+          data: {
+            'title': title,
+            'date': date,
+            'toolCallId': call.id,
+          },
+        );
+      } else {
+        final missingFields = <String>[];
+        if (title == null) missingFields.add('title');
+        if (date == null) missingFields.add('date');
+
+        return FunctionCallResult(
+          success: false,
+          functionName: functionName,
+          arguments: call.function.arguments,
+          data: {
+            'attemptedTitle': title ?? args['name'] ?? args['event'] ?? '',
+            'attemptedDate': date ?? args['datetime'] ?? args['when'] ?? '',
+            'toolCallId': call.id,
+          },
+          error: 'Missing required fields: ${missingFields.join(', ')}',
+        );
+      }
+    } catch (e) {
+      return FunctionCallResult(
+        success: false,
+        functionName: functionName,
+        arguments: call.function.arguments,
+        data: {'toolCallId': call.id},
+        error: 'Invalid JSON: $e',
+      );
+    }
+  }
+
+  @override
+  bool isDuplicate(FunctionCallResult result) {
+    if (!result.success) return false;
+
+    final title = result.data['title'] as String?;
+    final date = result.data['date'] as String?;
+    if (title == null || date == null) return false;
+
+    final key = '${title.toLowerCase()}|$date';
+    if (_createdEvents.contains(key)) {
+      return true;
+    }
+
+    _createdEvents.add(key);
+    return false;
+  }
+
+  @override
+  String? getDescription(FunctionCallResult result) {
+    if (result.success) {
+      return '${result.data['title']} on ${result.data['date']}';
+    } else {
+      final title = result.data['attemptedTitle'] as String?;
+      final date = result.data['attemptedDate'] as String?;
+      if (title != null && title.isNotEmpty) {
+        return date != null && date.isNotEmpty ? '$title on $date' : title;
+      }
+      return null;
+    }
+  }
+
+  @override
+  String createToolResponse(FunctionCallResult result) {
+    if (result.success) {
+      return 'Created event: ${getDescription(result)}';
+    } else {
+      return 'Error: ${result.error}';
+    }
+  }
+
+  @override
+  String getRetryPrompt({
+    required List<FunctionCallResult> failedItems,
+    required List<String> successfulDescriptions,
+  }) {
+    final errorSummary = failedItems.map((item) {
+      final attempted = getDescription(item);
+      final attemptedStr = attempted != null ? ' for "$attempted"' : '';
+      return '- ${item.error}$attemptedStr';
+    }).join('\n');
+
+    return '''
+I noticed errors in your calendar event creation:
+$errorSummary
+
+Successfully created events: ${successfulDescriptions.join(', ')}
+
+Please retry with the correct format:
+{"title": "event title", "date": "YYYY-MM-DD"}''';
+  }
+
+  void reset() {
+    _createdEvents.clear();
+  }
+}
+```
+
+To integrate a new handler:
+1. Create the handler class extending `FunctionHandler`
+2. Add it to the conversation processor's handler list
+3. Define the corresponding OpenAI function tool
+4. The system automatically handles retries, duplicates, and error recovery
 
 #### State Management (`state/`)
 - **`unified_ai_controller.dart`**: Main controller orchestrating AI operations
@@ -75,6 +247,40 @@ The repository layer has been refactored for better separation of concerns:
   - **Dual-Entry System**: Creates symmetric entries for both primary and linked entities
   - **ActiveInferenceByEntity**: Finds active inferences for any entity (primary or linked)
 - **`checklist_suggestions_controller.dart`**: Manages checklist completion suggestions
+
+#### Helpers & Extensions
+- **`helpers/entity_state_helper.dart`**: Utilities for managing entity state during AI operations
+- **Extensions for type safety and convenience**:
+  - `input_data_type_extensions.dart`: Extensions for InputDataType enum
+  - `modality_extensions.dart`: Extensions for Modality enum
+  - `inference_provider_extensions.dart`: Extensions for provider types
+  - `ai_error_utils.dart`: Error handling utilities
+
+#### Form States
+- **`prompt_form_state.dart`**: State management for prompt creation/editing forms
+- **`inference_model_form_state.dart`**: State management for model configuration forms
+- **`inference_provider_form_state.dart`**: State management for provider configuration forms
+
+#### Utilities (`util/`)
+- **`ai_error_utils.dart`**: Comprehensive error handling and categorization
+  - Categorizes errors (network, auth, rate limit, model errors)
+  - Provides user-friendly error messages
+  - Extracts detailed error information from various providers
+- **`known_models.dart`**: Predefined model configurations
+  - Models for all supported providers (OpenAI, Anthropic, Gemini, etc.)
+  - Automatic model detection based on provider
+- **`model_prepopulation_service.dart`**: Automatic model setup
+  - Creates known model configurations when adding providers
+  - Saves setup time for common models
+- **`preconfigured_prompts.dart`**: Built-in prompt templates
+  - Six main prompt types (Task Summary, Checklist Updates, etc.)
+  - Consistent formatting and instructions
+
+#### Constants & Configuration
+- **`constants/provider_config.dart`**: Configuration constants for AI providers
+  - Default base URLs for each provider
+  - Model availability mappings
+  - Provider-specific settings
 
 ## Supported AI Providers
 
@@ -248,6 +454,8 @@ AI can automatically create new checklist items based on content analysis:
 - **Smart Creation**: Creates "to-do" checklist if none exists
 - **Context Awareness**: Works during any inference type
 - **Common Triggers**: "I need to...", "Next I'll...", task mentions
+- **Batch Processing**: Uses conversation-based approach for efficient handling
+- **Error Recovery**: Automatic retry with corrected format on failures
 
 ### Language Detection
 
@@ -331,12 +539,31 @@ Models define:
 ### Response Display
 - **`ai_response_summary.dart`**: Markdown rendering with H1 filtering
 - **`latest_ai_response_summary.dart`**: Animated response updates
+- **`expandable_ai_response_summary.dart`**: Interactive TLDR with accordion expansion
 - **`ai_response_summary_modal.dart`**: Full-screen view
 
 ### Progress Indicators
-- **`unified_ai_progress_view.dart`**: Real-time progress
-- **`ai_running_animation.dart`**: Animated processing indicator
-- **Model Installation Dialog**: For Ollama models not yet installed
+- **`unified_ai_progress_view.dart`**: Real-time progress with model installation
+- **`ai_running_animation.dart`**: Siri-wave animated processing indicator
+- **Model Installation Dialog**: Integrated UI for installing Ollama models
+
+### AI Assistant Access
+- **`unified_ai_popup_menu.dart`**: Context-aware AI menu
+  - Shows available prompts for current entity type
+  - Quick access to AI features from any entity
+  - Dynamic prompt filtering based on context
+
+### Settings Services
+- **`ai_settings_filter_service.dart`**: Advanced filtering system
+  - Filter by provider, capabilities, reasoning support
+  - Search across all configuration types
+- **`ai_settings_navigation_service.dart`**: Smooth navigation
+  - Consistent slide transitions
+  - Centralized navigation logic
+- **`ai_config_delete_service.dart`**: Smart deletion
+  - Cascading deletes for related configurations
+  - Undo functionality
+  - Stylish confirmation dialogs
 
 ## Linked Entity Inference Tracking
 
@@ -362,14 +589,20 @@ The repository layer follows a hierarchical design:
 
 ```
 UnifiedAiInferenceRepository (orchestration)
-    ↓
-CloudInferenceRepository (routing)
-    ↓
-Provider-Specific Repositories:
-- OllamaInferenceRepository (local models)
-- WhisperInferenceRepository (audio)
-- OpenAI/Anthropic/etc (via OpenAI client)
+    ↓                           ↓
+CloudInferenceRepository    ConversationRepository (for multi-turn)
+    ↓                           ↓
+Provider-Specific:          ConversationManager
+- OllamaInferenceRepository    ↓
+- WhisperInferenceRepository   Event Streaming
+- OpenAI/Anthropic/etc
 ```
+
+The conversation layer enables:
+- Multi-turn interactions with context preservation
+- Streaming responses with real-time UI updates
+- Tool call handling across conversation turns
+- Automatic error recovery and retry logic
 
 ### Error Handling
 
@@ -437,6 +670,139 @@ A: AI analyzes task content (especially audio transcripts) and calls `set_task_l
 ### Q: What happens during concurrent modifications?
 A: The Read-Current-Write pattern ensures AI reads fresh state before updates, preserving user changes made during processing.
 
+## Conversation-Based Processing
+
+### Overview
+
+The AI system uses a conversation-based approach for checklist updates to improve efficiency and handle complex scenarios better. This approach is particularly effective for models that may not process all items in a single function call.
+
+### Benefits
+
+1. **Efficient Batching**: The system includes a batch function `add_multiple_checklist_items` that can create multiple items at once
+2. **Error Recovery**: If function calls fail, the system automatically retries with helpful prompts
+3. **Duplicate Prevention**: Intelligently prevents creating duplicate items across single and batch operations
+4. **Better Model Support**: Works well with models that may only process one item at a time (like some open-source models)
+
+### How It Works
+
+1. **Initial Request**: User's prompt is sent with available function tools
+2. **Function Calls**: AI makes function calls to create checklist items (single or batch)
+3. **Error Handling**: If calls fail, system provides corrective prompts automatically
+4. **Continuation**: System can ask AI to continue if more items are needed
+5. **Completion**: Process ends when all items are created or max turns reached
+
+### Implementation Details
+
+The conversation-based approach uses several key components:
+- **ConversationManager**: Maintains message history and handles tool responses
+- **ConversationRepository**: Manages conversation lifecycle and routes to providers
+- **LottiConversationProcessor**: Orchestrates the checklist creation flow
+- **Event Streaming**: Provides real-time updates via `ConversationEvent` stream
+
+### Current Limitations
+
+**Cloud Provider Support**: Currently, the conversation-based approach only works with Ollama (local) providers. Cloud providers (OpenAI, Anthropic, Google Gemini, etc.) fall back to the traditional single-request approach. This is a temporary limitation that will be addressed in future updates.
+
 ## Category-Based AI Settings
 
 The AI system integrates with the Categories feature for fine-grained control over which prompts are available for different content types. See the [Categories Feature README](../categories/README.md#ai-powered-category-settings) for details.
+
+## TODO / Future Work
+
+### Cloud Provider Support for Conversation-Based Processing
+
+Currently, the conversation-based processing approach is limited to Ollama providers. To enable full support for cloud providers (OpenAI, Anthropic, Google Gemini, etc.), the following implementation plan should be followed:
+
+#### 1. Create a Unified Inference Interface
+
+Create an interface that both `OllamaInferenceRepository` and cloud providers can implement:
+
+```dart
+abstract class ConversationInferenceRepository {
+  Stream<ConversationEvent> sendMessage({
+    required String conversationId,
+    required String message,
+    required String model,
+    required List<ChatCompletionTool> tools,
+    required double temperature,
+  });
+}
+```
+
+#### 2. Implement Cloud Provider Adapter
+
+Create an adapter that wraps `CloudInferenceRepository` to implement the conversation interface:
+
+```dart
+class CloudConversationAdapter implements ConversationInferenceRepository {
+  final CloudInferenceRepository cloudRepo;
+  
+  @override
+  Stream<ConversationEvent> sendMessage({...}) {
+    // Convert cloud streaming responses to conversation events
+    // Handle tool calls and streaming appropriately
+  }
+}
+```
+
+#### 3. Update Conversation Repository
+
+Modify `ConversationRepository` to accept the abstract interface instead of concrete `OllamaInferenceRepository`:
+
+```dart
+Future<void> sendMessage({
+  required ConversationInferenceRepository inferenceRepo, // Instead of OllamaInferenceRepository
+  // ... other parameters
+})
+```
+
+#### 4. Factory Pattern for Repository Creation
+
+In `UnifiedAiInferenceRepository._processWithConversation()`:
+
+```dart
+ConversationInferenceRepository createInferenceRepo(AiConfigInferenceProvider provider) {
+  switch (provider.inferenceProviderType) {
+    case InferenceProviderType.ollama:
+      return OllamaInferenceRepository();
+    case InferenceProviderType.openai:
+    case InferenceProviderType.anthropic:
+    case InferenceProviderType.google:
+      return CloudConversationAdapter(
+        cloudRepo: ref.read(cloudInferenceRepositoryProvider),
+        provider: provider,
+      );
+    // ... other providers
+  }
+}
+```
+
+#### 5. Handle Provider-Specific Differences
+
+- **Streaming**: Ensure consistent event streaming across providers
+- **Tool Call Format**: Normalize tool call responses between providers
+- **Error Handling**: Unified error handling across different provider APIs
+- **Authentication**: Pass appropriate credentials based on provider type
+
+#### 6. Testing Strategy
+
+- Unit tests for each adapter implementation
+- Integration tests with mock providers
+- End-to-end tests with real providers (behind feature flags)
+- Performance comparison between providers
+
+#### 7. Migration Path
+
+1. Implement interface and adapters without changing existing code
+2. Add feature flag for cloud conversation support
+3. Gradually enable for each provider after testing
+4. Remove fallback to non-conversation approach once stable
+
+### Other Future Improvements
+
+- **Streaming UI Updates**: Show checklist items as they're created in real-time
+- **Progress Indicators**: Better visual feedback during batch operations
+- **Undo/Redo**: Support for undoing batch checklist operations
+- **Template Support**: Predefined checklist templates for common tasks
+- **Smart Grouping**: Automatically group related checklist items
+- **Priority Detection**: AI-suggested priority levels for checklist items
