@@ -553,13 +553,13 @@ Models define:
   - Dynamic prompt filtering based on context
 
 ### Settings Services
-- **`settings/ai_settings_filter_service.dart`**: Advanced filtering system
+- **`ui/settings/ai_settings_filter_service.dart`**: Advanced filtering system
   - Filter by provider, capabilities, reasoning support
   - Search across all configuration types
-- **`settings/ai_settings_navigation_service.dart`**: Smooth navigation
+- **`ui/settings/ai_settings_navigation_service.dart`**: Smooth navigation
   - Consistent slide transitions
   - Centralized navigation logic
-- **`settings/services/ai_config_delete_service.dart`**: Smart deletion
+- **`ui/settings/services/ai_config_delete_service.dart`**: Smart deletion
   - Cascading deletes for related configurations
   - Undo functionality
   - Stylish confirmation dialogs
@@ -794,13 +794,15 @@ Currently, the conversation-based processing approach is limited to Ollama provi
 Create an interface that both `OllamaInferenceRepository` and cloud providers can implement:
 
 ```dart
-abstract class ConversationInferenceRepository {
-  Stream<ConversationEvent> sendMessage({
-    required String conversationId,
-    required String message,
+abstract class InferenceRepositoryInterface {
+  /// Generate text with full conversation history
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
     required String model,
-    required List<ChatCompletionTool> tools,
     required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
   });
 }
 ```
@@ -810,13 +812,19 @@ abstract class ConversationInferenceRepository {
 Create an adapter that wraps `CloudInferenceRepository` to implement the conversation interface:
 
 ```dart
-class CloudConversationAdapter implements ConversationInferenceRepository {
-  final CloudInferenceRepository cloudRepo;
+class CloudInferenceWrapper implements InferenceRepositoryInterface {
+  final CloudInferenceRepository cloudRepository;
   
   @override
-  Stream<ConversationEvent> sendMessage({...}) {
-    // Convert cloud streaming responses to conversation events
-    // Handle tool calls and streaming appropriately
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+  }) {
+    // Convert messages to prompt and delegate to cloud repository
   }
 }
 ```
@@ -827,7 +835,7 @@ Modify `ConversationRepository` to accept the abstract interface instead of conc
 
 ```dart
 Future<void> sendMessage({
-  required ConversationInferenceRepository inferenceRepo, // Instead of OllamaInferenceRepository
+  required InferenceRepositoryInterface inferenceRepo, // Instead of OllamaInferenceRepository
   // ... other parameters
 })
 ```
@@ -837,16 +845,15 @@ Future<void> sendMessage({
 In `UnifiedAiInferenceRepository._processWithConversation()`:
 
 ```dart
-ConversationInferenceRepository createInferenceRepo(AiConfigInferenceProvider provider) {
+InferenceRepositoryInterface createInferenceRepo(AiConfigInferenceProvider provider) {
   switch (provider.inferenceProviderType) {
     case InferenceProviderType.ollama:
       return OllamaInferenceRepository();
     case InferenceProviderType.openai:
     case InferenceProviderType.anthropic:
     case InferenceProviderType.google:
-      return CloudConversationAdapter(
-        cloudRepo: ref.read(cloudInferenceRepositoryProvider),
-        provider: provider,
+      return CloudInferenceWrapper(
+        cloudRepository: ref.read(cloudInferenceRepositoryProvider),
       );
     // ... other providers
   }

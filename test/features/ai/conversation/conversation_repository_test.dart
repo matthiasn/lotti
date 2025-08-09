@@ -494,7 +494,15 @@ void main() {
         // After 2 turns, canContinue should be false
         expect(manager.canContinue(), false);
 
-        // Try to send third message anyway
+        // Try to send third message anyway and expect user message followed by error event
+        final maxTurnsError = expectLater(
+          manager.events,
+          emitsInOrder([
+            isA<UserMessageEvent>(),
+            isA<ConversationErrorEvent>(),
+          ]),
+        );
+
         await repository.sendMessage(
           conversationId: conversationId,
           message: 'Third message',
@@ -503,11 +511,15 @@ void main() {
           inferenceRepo: mockOllamaRepo,
         );
 
-        // Check final state
-        // It might have added the user message but not processed a response
-        // Or it might have rejected the message entirely
+        await maxTurnsError;
+
+        // Verify that we're at the turn limit (user message may have been added)
         expect(manager.turnCount, lessThanOrEqualTo(3));
         expect(manager.canContinue(), false);
+
+        // Verify that the conversation has the expected number of messages
+        // 2 turns = 4 messages (2 user + 2 assistant) + possibly 1 more user message
+        expect(manager.messages.length, lessThanOrEqualTo(5));
       });
 
       test('handles errors during API call', () async {

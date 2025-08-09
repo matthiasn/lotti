@@ -1165,14 +1165,25 @@ class UnifiedAiInferenceRepository {
           final itemDescriptions = <String>[];
 
           if (isBatch) {
-            // Parse comma-separated items
-            final itemsString = arguments['items'] as String?;
-            if (itemsString != null && itemsString.trim().isNotEmpty) {
+            // Prefer JSON array, fallback to comma-separated string
+            final itemsField = arguments['items'];
+            if (itemsField is List) {
               itemDescriptions.addAll(
-                itemsString
-                    .split(',')
-                    .map((item) => item.trim())
-                    .where((item) => item.isNotEmpty),
+                itemsField
+                    .map((e) => e.toString().trim())
+                    .where((e) => e.isNotEmpty),
+              );
+            } else if (itemsField is String && itemsField.trim().isNotEmpty) {
+              itemDescriptions.addAll(
+                itemsField
+                    .split(RegExp(r'\s*,\s*'))
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty),
+              );
+            } else {
+              developer.log(
+                'Unexpected type for "items": ${itemsField?.runtimeType}',
+                name: 'UnifiedAiInferenceRepository',
               );
             }
             developer.log(
