@@ -32,21 +32,24 @@ modules:
       - cp -r lib/* /app/lib/ 2>/dev/null || echo "No lib files to copy"
       - echo "Searching for .so files in project root:"
       - find . -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files found"
-      - echo "Creating dummy libkeybinder-3.0.so.0..."
-      - mkdir -p /app/lib
-      - echo "#include <glib.h>" > dummy_keybinder.c
-      - echo "void g_once_init_enter_pointer(void* location) {}" >> dummy_keybinder.c
-      - echo "void g_once_init_leave(void* location, gpointer result) {}" >> dummy_keybinder.c
-      - echo "void keybinder_init(void) {}" >> dummy_keybinder.c
-      - echo "void keybinder_bind(const char* keystring, KeybinderHandler handler, void* user_data) {}" >> dummy_keybinder.c
-      - echo "void keybinder_unbind(const char* keystring, KeybinderHandler handler) {}" >> dummy_keybinder.c
-      - echo "typedef void (*KeybinderHandler)(const char* keystring, void* user_data);" >> dummy_keybinder.c
-      - echo "int main() { return 0; }" >> dummy_keybinder.c
-      - gcc -shared -o /app/lib/libkeybinder-3.0.so.0 dummy_keybinder.c -lglib-2.0 2>/dev/null || echo "Failed to create dummy library with glib"
-      - gcc -shared -o /app/lib/libkeybinder-3.0.so.0 dummy_keybinder.c 2>/dev/null || echo "Failed to create dummy library without glib"
-      - echo "Checking if dummy library was created:"
-      - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Dummy library not found"
-      - rm -f dummy_keybinder.c
+      - echo "Installing libkeybinder-3.0-0 package..."
+      - apt-get update && apt-get install -y libkeybinder-3.0-0 2>/dev/null || echo "Failed to install libkeybinder-3.0-0"
+      - echo "Copying libkeybinder from system..."
+      - cp /usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0 /app/lib/ 2>/dev/null || echo "libkeybinder not found in /usr/lib/x86_64-linux-gnu/"
+      - cp /usr/lib/libkeybinder-3.0.so.0 /app/lib/ 2>/dev/null || echo "libkeybinder not found in /usr/lib/"
+      - echo "Checking if libkeybinder was copied:"
+      - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "libkeybinder not found"
+      - echo "If libkeybinder not found, creating minimal stub..."
+      - if [ ! -f /app/lib/libkeybinder-3.0.so.0 ]; then
+      -   echo "Creating minimal libkeybinder stub..."
+      -   echo "void keybinder_init(void) {}" > stub_keybinder.c
+      -   echo "void keybinder_bind(const char* keystring, void* handler, void* user_data) {}" >> stub_keybinder.c
+      -   echo "void keybinder_unbind(const char* keystring, void* handler) {}" >> stub_keybinder.c
+      -   gcc -shared -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c 2>/dev/null || echo "Failed to create stub"
+      -   rm -f stub_keybinder.c
+      -   echo "Stub created:"
+      -   ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Stub creation failed"
+      - fi
       - echo "Contents of /app/lib/ after copying:"
       - ls -la /app/lib/
       - echo "Creating wrapper script..."
