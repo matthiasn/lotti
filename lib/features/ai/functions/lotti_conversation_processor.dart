@@ -11,7 +11,7 @@ import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -35,7 +35,7 @@ class LottiConversationProcessor {
     required AiConfigPrompt promptConfig,
     required String? systemMessage,
     required List<ChatCompletionTool> tools,
-    required OllamaInferenceRepository ollamaRepo,
+    required InferenceRepositoryInterface inferenceRepo,
     AutoChecklistService? autoChecklistService,
   }) async {
     developer.log(
@@ -96,6 +96,7 @@ class LottiConversationProcessor {
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
         ref: ref,
+        provider: provider,
       );
 
       // Send the initial prompt - this will trigger the entire conversation flow
@@ -104,7 +105,7 @@ class LottiConversationProcessor {
         message: prompt,
         model: model.providerModelId,
         provider: provider,
-        ollamaRepo: ollamaRepo,
+        inferenceRepo: inferenceRepo,
         tools: tools,
         temperature: 0.1,
         strategy: strategy,
@@ -114,9 +115,8 @@ class LottiConversationProcessor {
       hasErrors = strategy.hadErrors;
       responseText = strategy.getResponseSummary();
 
-      // Combine items from both handlers for logging
-      final totalItems = checklistHandler.successfulItems.length +
-          batchChecklistHandler.successfulItems.length;
+      // Use only checklistHandler items since batch items are copied there
+      final totalItems = checklistHandler.successfulItems.length;
 
       developer.log(
         'Conversation completed: $totalItems items created '
@@ -183,6 +183,8 @@ Guidelines:
 - If you detect a language, call set_task_language first, then create items
 - Do not use suggest_checklist_completion
 - When the user provides a list, use add_multiple_checklist_items for efficiency
+- CRITICAL: Each function must be called as a separate tool call - never combine multiple function calls into one
+- CRITICAL: If you need to call both set_task_language and add_multiple_checklist_items, make them as two distinct tool calls
 
 Example: If user says "Pizza shopping: cheese, pepperoni, dough", use:
 add_multiple_checklist_items with {"items": "cheese, pepperoni, dough"}''';
@@ -195,7 +197,7 @@ add_multiple_checklist_items with {"items": "cheese, pepperoni, dough"}''';
     required AiConfigModel model,
     required AiConfigInferenceProvider provider,
     required String originalPrompt,
-    required OllamaInferenceRepository ollamaRepo,
+    required InferenceRepositoryInterface inferenceRepo,
     AutoChecklistService? autoChecklistService,
   }) async {
     developer.log(
@@ -267,11 +269,24 @@ IMPORTANT: The correct format is {"actionItemDescription": "item description"}.
       );
 
       for (final toolCall in initialToolCalls) {
-        final handler = handlers.firstWhere(
-          (h) => h.functionName == toolCall.function.name,
-          orElse: () =>
-              throw Exception('No handler for ${toolCall.function.name}'),
-        );
+        FunctionHandler? handler;
+        try {
+          handler = handlers.firstWhere(
+            (h) => h.functionName == toolCall.function.name,
+          );
+        } catch (_) {
+          // Unknown function - log it but don't treat as error
+          developer.log(
+            'Unknown function: ${toolCall.function.name}',
+            name: 'LottiConversationProcessor',
+          );
+          manager.addToolResponse(
+            toolCallId: toolCall.id,
+            response:
+                'Unknown function. Please use add_checklist_item or add_multiple_checklist_items to create checklist items.',
+          );
+          continue;
+        }
 
         final result = handler.processFunctionCall(toolCall);
         allResults.add(result);
@@ -345,7 +360,7 @@ IMPORTANT: The correct format is {"actionItemDescription": "item description"}.
             message: retryPrompt,
             model: model.providerModelId,
             provider: provider,
-            ollamaRepo: ollamaRepo,
+            inferenceRepo: inferenceRepo,
             tools: [
               const ChatCompletionTool(
                 type: ChatCompletionToolType.function,
@@ -394,7 +409,7 @@ Please continue creating any remaining items from the original request.''';
           message: continuationPrompt,
           model: model.providerModelId,
           provider: provider,
-          ollamaRepo: ollamaRepo,
+          inferenceRepo: inferenceRepo,
           tools: [
             const ChatCompletionTool(
               type: ChatCompletionToolType.function,
@@ -584,11 +599,13 @@ class LottiChecklistStrategy extends ConversationStrategy {
     required this.checklistHandler,
     required this.batchChecklistHandler,
     required this.ref,
+    required this.provider,
   });
 
   final LottiChecklistItemHandler checklistHandler;
   final LottiBatchChecklistHandler batchChecklistHandler;
   final Ref ref;
+  final AiConfigInferenceProvider provider;
 
   int _rounds = 0;
   bool _hadErrors = false;
@@ -597,10 +614,8 @@ class LottiChecklistStrategy extends ConversationStrategy {
   bool get hadErrors => _hadErrors;
 
   String getResponseSummary() {
-    // Combine items from both handlers
-    final allItems = <String>{}
-      ..addAll(checklistHandler.successfulItems)
-      ..addAll(batchChecklistHandler.successfulItems);
+    // Use only checklistHandler items since batch items are copied there
+    final allItems = checklistHandler.successfulItems;
 
     if (allItems.isEmpty) {
       return 'No checklist items were created.';
@@ -835,15 +850,20 @@ class LottiChecklistStrategy extends ConversationStrategy {
       }
     }
 
-    // Continue if we haven't tried too many times and haven't created any items yet
-    // OR if we've created at least one item and haven't exceeded our round limit
-    final totalSuccessfulItems = checklistHandler.successfulItems.length +
-        batchChecklistHandler.successfulItems.length;
-    final shouldContinue =
-        _rounds < 10 && (_rounds == 1 || totalSuccessfulItems > 0);
+    // For cloud providers (like Gemini), we don't need multi-round conversations
+    // as they typically return complete responses in the first round
+    final isCloudProvider =
+        provider.inferenceProviderType != InferenceProviderType.ollama;
+
+    // Continue logic depends on provider type
+    final totalSuccessfulItems = checklistHandler.successfulItems.length;
+    final shouldContinue = !isCloudProvider && // Only continue for Ollama
+        _rounds < 10 &&
+        (_rounds == 1 || totalSuccessfulItems > 0);
 
     developer.log(
-      'Deciding whether to continue: checklistItems=${checklistHandler.successfulItems.length}, '
+      'Deciding whether to continue: provider=${provider.inferenceProviderType}, '
+      'isCloudProvider=$isCloudProvider, checklistItems=${checklistHandler.successfulItems.length}, '
       'batchItems=${batchChecklistHandler.successfulItems.length}, '
       'totalItems=$totalSuccessfulItems, rounds=$_rounds, shouldContinue=$shouldContinue',
       name: 'LottiConversationProcessor',
@@ -858,8 +878,12 @@ class LottiChecklistStrategy extends ConversationStrategy {
 
   @override
   bool shouldContinue(ConversationManager manager) {
-    final totalSuccessfulItems = checklistHandler.successfulItems.length +
-        batchChecklistHandler.successfulItems.length;
+    // Only continue for Ollama providers
+    if (provider.inferenceProviderType != InferenceProviderType.ollama) {
+      return false;
+    }
+
+    final totalSuccessfulItems = checklistHandler.successfulItems.length;
     return _rounds < 10 && (_rounds == 1 || totalSuccessfulItems > 0);
   }
 
@@ -877,11 +901,8 @@ class LottiChecklistStrategy extends ConversationStrategy {
       return retryPrompt;
     }
 
-    // Combine successful items from both handlers
-    final allSuccessfulItems = <String>[
-      ...checklistHandler.successfulItems,
-      ...batchChecklistHandler.successfulItems,
-    ];
+    // Use only checklistHandler items since batch items are copied there
+    final allSuccessfulItems = checklistHandler.successfulItems;
 
     // If no items created yet, provide explicit instructions
     if (allSuccessfulItems.isEmpty) {

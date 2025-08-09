@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -16,7 +17,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// - Chat completion with /api/chat endpoint (supports function calling)
 /// - Image analysis
 /// - Model management (installation, checking, warm-up)
-class OllamaInferenceRepository {
+class OllamaInferenceRepository implements InferenceRepositoryInterface {
   OllamaInferenceRepository({http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client();
 
@@ -30,6 +31,7 @@ class OllamaInferenceRepository {
   /// - Uses /api/generate endpoint for regular text generation
   /// - Handles Ollama-specific response format
   /// - Provides comprehensive error handling
+  @override
   Stream<CreateChatCompletionStreamResponse> generateText({
     required String prompt,
     required String model,
@@ -62,6 +64,7 @@ class OllamaInferenceRepository {
   /// Generate text using Ollama's chat API with full conversation history
   ///
   /// This method accepts the full conversation messages for proper context
+  @override
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,

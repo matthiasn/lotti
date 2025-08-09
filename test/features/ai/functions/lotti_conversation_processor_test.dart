@@ -316,7 +316,7 @@ void main() {
             message: prompt,
             model: model.name,
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -381,7 +381,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -439,7 +439,7 @@ void main() {
             message: prompt,
             model: model.name,
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -506,7 +506,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -575,7 +575,7 @@ void main() {
             message: any(named: 'message'),
             model: model.name,
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -650,7 +650,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -736,7 +736,7 @@ void main() {
             message: any(named: 'message'),
             model: model.name,
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -829,7 +829,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -887,7 +887,7 @@ void main() {
             message: any(named: 'message'),
             model: model.name,
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -926,7 +926,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -966,7 +966,7 @@ void main() {
             message: prompt,
             model: model.name,
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -992,7 +992,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -1056,7 +1056,7 @@ void main() {
             message: prompt,
             model: model.name,
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -1124,7 +1124,7 @@ void main() {
         promptConfig: promptConfig,
         systemMessage: null,
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -1222,7 +1222,7 @@ void main() {
             message: any(named: 'message'),
             model: any(named: 'model'),
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -1238,7 +1238,7 @@ void main() {
         model: model,
         provider: provider,
         originalPrompt: 'Add shopping list items',
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -1252,7 +1252,7 @@ void main() {
             message: any(named: 'message', that: contains('format')),
             model: any(named: 'model'),
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -1321,7 +1321,7 @@ void main() {
             message: any(named: 'message'),
             model: any(named: 'model'),
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -1337,7 +1337,7 @@ void main() {
         model: model,
         provider: provider,
         originalPrompt: 'Add multiple shopping items',
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
       );
 
@@ -1351,7 +1351,7 @@ void main() {
             message: any(named: 'message', that: contains('continue creating')),
             model: any(named: 'model'),
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -1394,7 +1394,7 @@ void main() {
         model: model,
         provider: provider,
         originalPrompt: 'Test',
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
       );
 
       // The method catches exceptions and returns a result instead
@@ -1436,7 +1436,7 @@ void main() {
             message: any(named: 'message'),
             model: any(named: 'model'),
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -1455,7 +1455,7 @@ void main() {
         promptConfig: prompt,
         systemMessage: 'System message',
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
       );
 
       expect(result.totalCreated, 0);
@@ -1485,7 +1485,7 @@ void main() {
             message: any(named: 'message'),
             model: any(named: 'model'),
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -1504,7 +1504,7 @@ void main() {
         promptConfig: prompt,
         systemMessage: 'System message',
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
       );
 
       expect(result.totalCreated, 0);
@@ -1537,7 +1537,7 @@ void main() {
             message: any(named: 'message'),
             model: any(named: 'model'),
             provider: any(named: 'provider'),
-            ollamaRepo: any(named: 'ollamaRepo'),
+            inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
             temperature: any(named: 'temperature'),
             strategy: any(named: 'strategy'),
@@ -1556,7 +1556,7 @@ void main() {
         promptConfig: prompt,
         systemMessage: 'System message',
         tools: [],
-        ollamaRepo: mockOllamaRepo,
+        inferenceRepo: mockOllamaRepo,
         autoChecklistService: customAutoChecklistService,
       );
 
@@ -1589,6 +1589,14 @@ void main() {
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
         ref: mockRef,
+        provider: AiConfigInferenceProvider(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          inferenceProviderType: InferenceProviderType.ollama,
+          baseUrl: 'http://localhost:11434',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+        ),
       );
     });
 

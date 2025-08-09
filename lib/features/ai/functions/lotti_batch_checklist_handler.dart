@@ -244,6 +244,13 @@ Do NOT recreate the items that were already successful.''';
           if (refreshedEntity is Task) {
             task = refreshedEntity;
             onTaskUpdated?.call(refreshedEntity);
+          } else if (refreshedEntity == null) {
+            // Task was deleted, stop processing
+            developer.log(
+              'Task ${currentTask.id} was deleted, stopping batch checklist processing',
+              name: 'LottiBatchChecklistHandler',
+            );
+            return successCount;
           }
         }
       }

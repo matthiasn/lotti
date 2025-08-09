@@ -806,3 +806,9 @@ ConversationInferenceRepository createInferenceRepo(AiConfigInferenceProvider pr
 - **Template Support**: Predefined checklist templates for common tasks
 - **Smart Grouping**: Automatically group related checklist items
 - **Priority Detection**: AI-suggested priority levels for checklist items
+- **Non-Streaming Response Option**: Add support for non-streaming API responses to handle providers (like Gemini) that return malformed streaming tool calls. This would:
+  - Add a `preferNonStreaming` flag to `AiConfigInferenceProvider`
+  - Use `createChatCompletion` instead of `createChatCompletionStream` for flagged providers
+  - Convert non-streaming responses to streams for API consistency
+  - Solve issues with concatenated JSON in tool call arguments
+  - Provide cleaner tool call parsing without accumulation complexity

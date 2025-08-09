@@ -151,7 +151,7 @@ void main() {
             message: 'Hello',
             model: 'test-model',
             provider: provider,
-            ollamaRepo: mockOllamaRepo,
+            inferenceRepo: mockOllamaRepo,
           ),
           throwsArgumentError,
         );
@@ -175,7 +175,7 @@ void main() {
           message: 'Hello, AI!',
           model: 'test-model',
           provider: provider,
-          ollamaRepo: mockOllamaRepo,
+          inferenceRepo: mockOllamaRepo,
         );
 
         // Emit response
@@ -222,7 +222,7 @@ void main() {
           message: 'Call a function',
           model: 'test-model',
           provider: provider,
-          ollamaRepo: mockOllamaRepo,
+          inferenceRepo: mockOllamaRepo,
           tools: [
             const ChatCompletionTool(
               type: ChatCompletionToolType.function,
@@ -297,7 +297,7 @@ void main() {
           message: 'Process with strategy',
           model: 'test-model',
           provider: provider,
-          ollamaRepo: mockOllamaRepo,
+          inferenceRepo: mockOllamaRepo,
           strategy: mockStrategy,
           tools: [
             const ChatCompletionTool(
@@ -389,7 +389,7 @@ void main() {
           message: 'Process and complete',
           model: 'test-model',
           provider: provider,
-          ollamaRepo: mockOllamaRepo,
+          inferenceRepo: mockOllamaRepo,
           strategy: mockStrategy,
           tools: [
             const ChatCompletionTool(
@@ -477,7 +477,7 @@ void main() {
           message: 'First message',
           model: 'test-model',
           provider: provider,
-          ollamaRepo: mockOllamaRepo,
+          inferenceRepo: mockOllamaRepo,
         );
 
         await repository.sendMessage(
@@ -485,7 +485,7 @@ void main() {
           message: 'Second message',
           model: 'test-model',
           provider: provider,
-          ollamaRepo: mockOllamaRepo,
+          inferenceRepo: mockOllamaRepo,
         );
 
         // Third message - check if it even processes
@@ -500,7 +500,7 @@ void main() {
           message: 'Third message',
           model: 'test-model',
           provider: provider,
-          ollamaRepo: mockOllamaRepo,
+          inferenceRepo: mockOllamaRepo,
         );
 
         // Check final state
@@ -528,7 +528,7 @@ void main() {
           message: 'This will fail',
           model: 'test-model',
           provider: provider,
-          ollamaRepo: mockOllamaRepo,
+          inferenceRepo: mockOllamaRepo,
         );
 
         // Wait for event processing
@@ -557,7 +557,7 @@ void main() {
           message: 'Accumulate tool args',
           model: 'test-model',
           provider: provider,
-          ollamaRepo: mockOllamaRepo,
+          inferenceRepo: mockOllamaRepo,
           tools: [
             const ChatCompletionTool(
               type: ChatCompletionToolType.function,

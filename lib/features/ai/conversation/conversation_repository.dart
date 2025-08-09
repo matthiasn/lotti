@@ -4,7 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
@@ -55,7 +55,7 @@ class ConversationRepository extends _$ConversationRepository {
     required String message,
     required String model,
     required AiConfigInferenceProvider provider,
-    required OllamaInferenceRepository ollamaRepo,
+    required InferenceRepositoryInterface inferenceRepo,
     List<ChatCompletionTool>? tools,
     double temperature = 0.7,
     ConversationStrategy? strategy,
@@ -86,7 +86,7 @@ class ConversationRepository extends _$ConversationRepository {
         final messages = manager.getMessagesForRequest();
 
         // Make API call with full conversation history
-        final stream = ollamaRepo.generateTextWithMessages(
+        final stream = inferenceRepo.generateTextWithMessages(
           messages: messages,
           model: model,
           provider: provider,
@@ -102,6 +102,13 @@ class ConversationRepository extends _$ConversationRepository {
           if (response.choices?.isNotEmpty ?? false) {
             final delta = response.choices!.first.delta;
 
+            // DEBUG: Print full response chunk
+            if (delta?.toolCalls != null) {
+              for (var i = 0; i < delta!.toolCalls!.length; i++) {
+                // Tool call processing handled below
+              }
+            }
+
             // Collect content
             if (delta?.content != null) {
               contentBuffer.write(delta!.content);
@@ -109,49 +116,78 @@ class ConversationRepository extends _$ConversationRepository {
 
             // Collect tool calls
             if (delta?.toolCalls != null) {
-              for (final toolCallChunk in delta!.toolCalls!) {
-                // Find existing tool call by ID or index
-                var existingIndex = -1;
+              // Special handling for Gemini which sends multiple complete tool calls in one chunk
+              // with empty IDs and null indices
+              final isGeminiStyle = delta!.toolCalls!.length > 1 &&
+                  delta.toolCalls!.every((tc) =>
+                      (tc.id == null || tc.id!.isEmpty) &&
+                      tc.index == null &&
+                      tc.function?.arguments != null &&
+                      tc.function!.arguments!.isNotEmpty);
 
-                // First try to find by ID if available
-                if (toolCallChunk.id != null) {
-                  existingIndex =
-                      toolCalls.indexWhere((tc) => tc.id == toolCallChunk.id);
-                }
-
-                // If not found by ID and we have an index, use the index
-                if (existingIndex < 0 && toolCallChunk.index != null) {
-                  final chunkIndex = toolCallChunk.index!;
-                  if (chunkIndex < toolCalls.length) {
-                    existingIndex = chunkIndex;
+              if (isGeminiStyle) {
+                // Handle Gemini's multiple complete tool calls in one chunk
+                for (var i = 0; i < delta.toolCalls!.length; i++) {
+                  final toolCallChunk = delta.toolCalls![i];
+                  if (toolCallChunk.function != null) {
+                    final toolCallId = 'tool_gemini_${toolCalls.length}';
+                    toolCalls.add(ChatCompletionMessageToolCall(
+                      id: toolCallId,
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: toolCallChunk.function!.name ?? '',
+                        arguments: toolCallChunk.function!.arguments ?? '',
+                      ),
+                    ));
                   }
                 }
+              } else {
+                // Standard OpenAI-style streaming accumulation
+                for (final toolCallChunk in delta.toolCalls!) {
+                  // Find existing tool call by ID or index
+                  var existingIndex = -1;
 
-                if (existingIndex >= 0) {
-                  // Append to existing tool call
-                  final existing = toolCalls[existingIndex];
-                  final updatedArgs = existing.function.arguments +
-                      (toolCallChunk.function?.arguments ?? '');
-                  toolCalls[existingIndex] = ChatCompletionMessageToolCall(
-                    id: existing.id,
-                    type: existing.type,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: existing.function.name,
-                      arguments: updatedArgs,
-                    ),
-                  );
-                } else if (toolCallChunk.function != null) {
-                  // Add new tool call
-                  final toolCallId = toolCallChunk.id ??
-                      'tool_${toolCallChunk.index ?? toolCalls.length}';
-                  toolCalls.add(ChatCompletionMessageToolCall(
-                    id: toolCallId,
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: toolCallChunk.function!.name ?? '',
-                      arguments: toolCallChunk.function!.arguments ?? '',
-                    ),
-                  ));
+                  // First try to find by ID if available
+                  if (toolCallChunk.id != null &&
+                      toolCallChunk.id!.isNotEmpty) {
+                    existingIndex =
+                        toolCalls.indexWhere((tc) => tc.id == toolCallChunk.id);
+                  }
+
+                  // If not found by ID and we have an index, use the index
+                  if (existingIndex < 0 && toolCallChunk.index != null) {
+                    final chunkIndex = toolCallChunk.index!;
+                    if (chunkIndex < toolCalls.length) {
+                      existingIndex = chunkIndex;
+                    }
+                  }
+
+                  if (existingIndex >= 0) {
+                    // Append to existing tool call
+                    final existing = toolCalls[existingIndex];
+                    final updatedArgs = existing.function.arguments +
+                        (toolCallChunk.function?.arguments ?? '');
+                    toolCalls[existingIndex] = ChatCompletionMessageToolCall(
+                      id: existing.id,
+                      type: existing.type,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: existing.function.name,
+                        arguments: updatedArgs,
+                      ),
+                    );
+                  } else if (toolCallChunk.function != null) {
+                    // Add new tool call
+                    final toolCallId = toolCallChunk.id ??
+                        'tool_${toolCallChunk.index ?? toolCalls.length}';
+                    toolCalls.add(ChatCompletionMessageToolCall(
+                      id: toolCallId,
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: toolCallChunk.function!.name ?? '',
+                        arguments: toolCallChunk.function!.arguments ?? '',
+                      ),
+                    ));
+                  }
                 }
               }
             }

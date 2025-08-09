@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -90,6 +91,14 @@ void main() {
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
         ref: mockRef,
+        provider: AiConfigInferenceProvider(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          inferenceProviderType: InferenceProviderType.ollama,
+          baseUrl: 'http://localhost:11434',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+        ),
       );
 
       // Test 1: No items in either handler (before first round, _rounds = 0)
@@ -138,6 +147,14 @@ void main() {
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
         ref: mockRef,
+        provider: AiConfigInferenceProvider(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          inferenceProviderType: InferenceProviderType.ollama,
+          baseUrl: 'http://localhost:11434',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+        ),
       );
 
       // Get continuation prompt
