@@ -26,23 +26,19 @@ modules:
     build-commands:
       - echo "Installing complete Flutter bundle structure..."
       - ls -la
-      - echo "Copying executable..."
-      - cp lotti /app/ 2>/dev/null || echo "Failed to copy lotti executable"
-      - echo "Copying lib directory..."
-      - cp -r lib /app/ 2>/dev/null || echo "Failed to copy lib directory"
-      - echo "Copying any remaining .so files from project root..."
-      - find . -maxdepth 1 -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files found in project root"
-      - echo "Copying data directory..."
-      - cp -r data /app/ 2>/dev/null || echo "Failed to copy data directory"
-      - echo "Copying share directory..."
-      - cp -r share /app/ 2>/dev/null || echo "Failed to copy share directory"
-      - echo "Checking data directory structure:"
-      - ls -la /app/data/ 2>/dev/null || echo "No data directory"
-      - ls -la /app/data/flutter_assets/ 2>/dev/null || echo "No flutter_assets directory"
+      - echo "Checking bundle contents:"
+      - ls -la bundle/ 2>/dev/null || echo "No bundle directory"
+      - ls -la bundle/lib/ 2>/dev/null || echo "No bundle/lib directory"
+      - echo "Copying bundle structure to /app/:"
+      - cp -r bundle/* /app/ 2>/dev/null || echo "Failed to copy bundle structure"
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
       - echo "Checking if lotti executable was copied:"
       - ls -la /app/lotti 2>/dev/null || echo "lotti executable not found in /app/"
+      - echo "Checking lib directory:"
+      - ls -la /app/lib/ 2>/dev/null || echo "No lib directory"
+      - echo "Checking data directory:"
+      - ls -la /app/data/ 2>/dev/null || echo "No data directory"
       - echo "Creating comprehensive libkeybinder stub with all required symbols..."
       - |
         cat > stub_keybinder.c << 'EOF'
@@ -84,14 +80,8 @@ modules:
       - type: git
         url: {{LOTTI_REPO_URL}}
         branch: fix/flatpak-kb-fix-v2
-      - type: file
-        path: ../bundle/lotti
       - type: dir
-        path: ../bundle/lib
-      - type: dir
-        path: ../bundle/data
-      - type: dir
-        path: ../bundle/share
+        path: ../bundle
   - name: flutter-common
     buildsystem: simple
     build-commands:
