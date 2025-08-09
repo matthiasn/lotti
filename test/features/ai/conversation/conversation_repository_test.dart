@@ -751,6 +751,164 @@ void main() {
         expect(manager!.messages.length, 2);
       });
 
+      test('handles invalid tool call with missing function name', () async {
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+            )).thenAnswer((_) => streamController.stream);
+
+        final sendFuture = repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Missing function name test',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          tools: [
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'test_function',
+                description: 'A test function',
+              ),
+            ),
+          ],
+        );
+
+        // Send response with tool call missing function name
+        streamController.add(
+          CreateChatCompletionStreamResponse(
+            id: 'test-response',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool-1',
+                      type:
+                          ChatCompletionStreamMessageToolCallChunkType.function,
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        arguments: '{"arg": "value"}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        await streamController.close();
+        await sendFuture;
+
+        // Tool call should be added with empty function name
+        final manager = repository.getConversation(conversationId);
+        expect(manager, isNotNull);
+        expect(manager!.messages.length, 2);
+      });
+
+      test('handles empty tool call IDs', () async {
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+            )).thenAnswer((_) => streamController.stream);
+
+        final sendFuture = repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Empty tool call ID',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          tools: [
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'test_function',
+                description: 'A test function',
+              ),
+            ),
+          ],
+        );
+
+        // First chunk with empty tool call ID
+        streamController
+          ..add(
+            CreateChatCompletionStreamResponse(
+              id: 'test-response',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: '', // Empty ID
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'test_function',
+                          arguments: '{"arg": ',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          )
+          // Second chunk completing the arguments
+          ..add(
+            CreateChatCompletionStreamResponse(
+              id: 'test-response',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: '', // Still empty
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          arguments: '"value"}',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
+
+        await streamController.close();
+        await sendFuture;
+
+        // Verify the conversation was updated with auto-generated ID
+        final manager = repository.getConversation(conversationId);
+        expect(manager, isNotNull);
+        expect(manager!.messages.length, 2);
+      });
+
       test('handles multiple tool calls with separate buffers', () async {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
