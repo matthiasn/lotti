@@ -36,6 +36,9 @@ modules:
       - cp -r data /app/ 2>/dev/null || echo "Failed to copy data directory"
       - echo "Copying share directory..."
       - cp -r share /app/ 2>/dev/null || echo "Failed to copy share directory"
+      - echo "Checking data directory structure:"
+      - ls -la /app/data/ 2>/dev/null || echo "No data directory"
+      - ls -la /app/data/flutter_assets/ 2>/dev/null || echo "No flutter_assets directory"
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
       - echo "Checking if lotti executable was copied:"
