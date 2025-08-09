@@ -13,12 +13,16 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -173,6 +177,8 @@ class UnifiedAiInferenceRepository {
     required AiConfigPrompt promptConfig,
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
+    bool useConversationApproach =
+        false, // Flag to enable new conversation approach
   }) async {
     await _runInferenceInternal(
       entityId: entityId,
@@ -180,6 +186,7 @@ class UnifiedAiInferenceRepository {
       onProgress: onProgress,
       onStatusChange: onStatusChange,
       isRerun: false,
+      useConversationApproach: useConversationApproach,
     );
   }
 
@@ -190,6 +197,7 @@ class UnifiedAiInferenceRepository {
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
     required bool isRerun,
+    bool useConversationApproach = false,
     JournalEntity? entity, // Optional entity to avoid redundant fetches
   }) async {
     final start = DateTime.now();
@@ -251,6 +259,40 @@ class UnifiedAiInferenceRepository {
         }
       }
 
+      // Check if we should use conversation approach for checklist updates
+      developer.log(
+        'Checking conversation approach: useConversationApproach=$useConversationApproach, '
+        'responseType=${promptConfig.aiResponseType}, '
+        'supportsFunctionCalling=${model.supportsFunctionCalling}, '
+        'provider=${provider.inferenceProviderType}, '
+        'model=${model.providerModelId}',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      if (useConversationApproach &&
+          promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
+          model.supportsFunctionCalling) {
+        developer.log(
+          'Using conversation approach for checklist updates',
+          name: 'UnifiedAiInferenceRepository',
+        );
+
+        // Use conversation processor for better batching and error handling
+        await _processWithConversation(
+          prompt: prompt,
+          entity: entity,
+          promptConfig: promptConfig,
+          model: model,
+          provider: provider,
+          systemMessage: systemMessage,
+          onProgress: onProgress,
+          onStatusChange: onStatusChange,
+          start: start,
+          isRerun: isRerun,
+        );
+        return; // Exit early, conversation processor handles everything
+      }
+
       final stream = await _runCloudInference(
         prompt: prompt,
         model: model,
@@ -275,9 +317,17 @@ class UnifiedAiInferenceRepository {
         // Accumulate tool calls from chunks
         if (chunk.choices?.isNotEmpty ?? false) {
           final delta = chunk.choices?.first.delta;
+          developer.log(
+            'Stream chunk received: hasContent=${text.isNotEmpty}, '
+            'hasToolCalls=${delta?.toolCalls != null}, '
+            'toolCallCount=${delta?.toolCalls?.length ?? 0}',
+            name: 'UnifiedAiInferenceRepository',
+          );
           if (delta?.toolCalls != null) {
             developer.log(
-              'Received tool call chunk with ${delta!.toolCalls!.length} tool calls',
+              'Tool call details: ${delta!.toolCalls!.map((tc) => 'id=${tc.id}, '
+                  'index=${tc.index}, function=${tc.function?.name}, '
+                  'hasArgs=${tc.function?.arguments != null}').join('; ')}',
               name: 'UnifiedAiInferenceRepository',
             );
             // Special handling: if we receive multiple tool calls in one chunk all with the same index,
@@ -1005,10 +1055,21 @@ class UnifiedAiInferenceRepository {
     required Task task,
   }) async {
     var languageWasSet = false;
+    var currentTask = task; // Create mutable copy for updates
     developer.log(
       'Starting to process ${toolCalls.length} tool calls for checklist operations',
       name: 'UnifiedAiInferenceRepository',
     );
+
+    // Log all tool calls for debugging
+    for (var i = 0; i < toolCalls.length; i++) {
+      final tc = toolCalls[i];
+      developer.log(
+        'Tool call [$i]: name=${tc.function.name}, '
+        'args=${tc.function.arguments.length > 200 ? '${tc.function.arguments.substring(0, 200)}...' : tc.function.arguments}',
+        name: 'UnifiedAiInferenceRepository',
+      );
+    }
 
     final suggestions = <ChecklistCompletionSuggestion>[];
 
@@ -1091,93 +1152,150 @@ class UnifiedAiInferenceRepository {
           }
         }
       } else if (toolCall.function.name ==
-          ChecklistCompletionFunctions.addChecklistItem) {
-        // Handle add checklist item
+              ChecklistCompletionFunctions.addChecklistItem ||
+          toolCall.function.name == 'add_multiple_checklist_items') {
+        // Handle add checklist item(s)
         try {
           final arguments =
               jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
-          final actionItemDescription =
-              arguments['actionItemDescription'] as String;
 
-          developer.log(
-            'Adding checklist item: $actionItemDescription',
-            name: 'UnifiedAiInferenceRepository',
-          );
+          // Determine if this is single or multiple items
+          final isBatch =
+              toolCall.function.name == 'add_multiple_checklist_items';
+          final itemDescriptions = <String>[];
 
-          // Check if task has existing checklists
-          final checklistIds = task.data.checklistIds ?? [];
-
-          if (checklistIds.isEmpty) {
-            // Create a new "to-do" checklist with the item
-            developer.log(
-              'No existing checklists found, creating new "to-do" checklist',
-              name: 'UnifiedAiInferenceRepository',
-            );
-
-            final result = await autoChecklistService.autoCreateChecklist(
-              taskId: task.id,
-              suggestions: [
-                ChecklistItemData(
-                  title: actionItemDescription,
-                  isChecked: false,
-                  linkedChecklists: [],
-                ),
-              ],
-              title: 'TODOs',
-            );
-
-            if (result.success) {
-              developer.log(
-                'Created new checklist ${result.checklistId} with item',
-                name: 'UnifiedAiInferenceRepository',
+          if (isBatch) {
+            // Prefer JSON array, fallback to comma-separated string
+            final itemsField = arguments['items'];
+            if (itemsField is List) {
+              itemDescriptions.addAll(
+                itemsField
+                    .map((e) => e.toString().trim())
+                    .where((e) => e.isNotEmpty),
               );
-
-              // Refresh the task to get the updated checklistIds
-              final journalDb = getIt<JournalDb>();
-              final updatedEntity = await journalDb.journalEntityById(task.id);
-              if (updatedEntity is Task) {
-                task = updatedEntity;
-                developer.log(
-                  'Refreshed task, now has ${task.data.checklistIds?.length ?? 0} checklists',
-                  name: 'UnifiedAiInferenceRepository',
-                );
-              } else {
-                // The task should exist since we just created a checklist for it.
-                // If not, it was likely deleted concurrently. Stop processing to avoid further errors.
-                developer.log(
-                  'Failed to refresh task ${task.id} after creating checklist. It might have been deleted concurrently.',
-                  name: 'UnifiedAiInferenceRepository',
-                  level: 1000, // SEVERE
-                );
-                break;
-              }
+            } else if (itemsField is String && itemsField.trim().isNotEmpty) {
+              itemDescriptions.addAll(
+                itemsField
+                    .split(RegExp(r'\s*,\s*'))
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty),
+              );
             } else {
               developer.log(
-                'Failed to create checklist: ${result.error}',
+                'Unexpected type for "items": ${itemsField?.runtimeType}',
                 name: 'UnifiedAiInferenceRepository',
               );
             }
-          } else {
-            // Add item to the first existing checklist using atomic operation
-            final checklistId = checklistIds.first;
             developer.log(
-              'Adding item to existing checklist: $checklistId',
+              'Processing batch checklist items: ${itemDescriptions.length} items',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          } else {
+            // Single item
+            final actionItemDescription =
+                arguments['actionItemDescription'] as String?;
+            if (actionItemDescription != null &&
+                actionItemDescription.trim().isNotEmpty) {
+              itemDescriptions.add(actionItemDescription);
+            }
+          }
+
+          if (itemDescriptions.isEmpty) {
+            developer.log(
+              'No valid items found in tool call',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            continue;
+          }
+
+          developer.log(
+            'Processing ${itemDescriptions.length} checklist items',
+            name: 'UnifiedAiInferenceRepository',
+          );
+
+          // Process each item
+          for (final itemDescription in itemDescriptions) {
+            developer.log(
+              'Adding checklist item: $itemDescription',
               name: 'UnifiedAiInferenceRepository',
             );
 
-            final checklistRepository = ref.read(checklistRepositoryProvider);
-            final newItem = await checklistRepository.addItemToChecklist(
-              checklistId: checklistId,
-              title: actionItemDescription,
-              isChecked: false,
-              categoryId: task.meta.categoryId,
-            );
+            // Check if task has existing checklists
+            final checklistIds = currentTask.data.checklistIds ?? [];
 
-            if (newItem != null) {
+            if (checklistIds.isEmpty) {
+              // Create a new "to-do" checklist with the item
               developer.log(
-                'Successfully added item ${newItem.id} to checklist',
+                'No existing checklists found, creating new "to-do" checklist',
                 name: 'UnifiedAiInferenceRepository',
               );
+
+              final result = await autoChecklistService.autoCreateChecklist(
+                taskId: currentTask.id,
+                suggestions: [
+                  ChecklistItemData(
+                    title: itemDescription,
+                    isChecked: false,
+                    linkedChecklists: [],
+                  ),
+                ],
+                title: 'TODOs',
+              );
+
+              if (result.success) {
+                developer.log(
+                  'Created new checklist ${result.checklistId} with item',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+
+                // Refresh the task to get the updated checklistIds
+                final journalDb = getIt<JournalDb>();
+                final updatedEntity =
+                    await journalDb.journalEntityById(currentTask.id);
+                if (updatedEntity is Task) {
+                  currentTask = updatedEntity;
+                  developer.log(
+                    'Refreshed task, now has ${currentTask.data.checklistIds?.length ?? 0} checklists',
+                    name: 'UnifiedAiInferenceRepository',
+                  );
+                } else {
+                  // The task should exist since we just created a checklist for it.
+                  // If not, it was likely deleted concurrently. Stop processing to avoid further errors.
+                  developer.log(
+                    'Failed to refresh task ${currentTask.id} after creating checklist. It might have been deleted concurrently.',
+                    name: 'UnifiedAiInferenceRepository',
+                    level: 1000, // SEVERE
+                  );
+                  break;
+                }
+              } else {
+                developer.log(
+                  'Failed to create checklist: ${result.error}',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              }
+            } else {
+              // Add item to the first existing checklist using atomic operation
+              final checklistId = checklistIds.first;
+              developer.log(
+                'Adding item to existing checklist: $checklistId',
+                name: 'UnifiedAiInferenceRepository',
+              );
+
+              final checklistRepository = ref.read(checklistRepositoryProvider);
+              final newItem = await checklistRepository.addItemToChecklist(
+                checklistId: checklistId,
+                title: itemDescription,
+                isChecked: false,
+                categoryId: currentTask.meta.categoryId,
+              );
+
+              if (newItem != null) {
+                developer.log(
+                  'Successfully added item ${newItem.id} to checklist',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              }
             }
           }
 
@@ -1185,7 +1303,7 @@ class UnifiedAiInferenceRepository {
           ref.invalidate(checklistItemControllerProvider);
         } catch (e) {
           developer.log(
-            'Error processing add checklist item: $e',
+            'Error processing add checklist item(s): $e',
             name: 'UnifiedAiInferenceRepository',
             error: e,
           );
@@ -1207,11 +1325,12 @@ class UnifiedAiInferenceRepository {
 
           // Re-fetch the task to get the latest state and avoid race conditions
           final journalRepo = ref.read(journalRepositoryProvider);
-          final freshEntity = await journalRepo.getJournalEntityById(task.id);
+          final freshEntity =
+              await journalRepo.getJournalEntityById(currentTask.id);
 
           if (freshEntity is! Task) {
             developer.log(
-              'Task ${task.id} not found or is not a Task anymore, skipping language update',
+              'Task ${currentTask.id} not found or is not a Task anymore, skipping language update',
               name: 'UnifiedAiInferenceRepository',
             );
             continue;
@@ -1230,20 +1349,20 @@ class UnifiedAiInferenceRepository {
             try {
               await journalRepo.updateJournalEntity(updated);
               developer.log(
-                'Successfully set task language to $languageCode for task ${task.id}',
+                'Successfully set task language to $languageCode for task ${currentTask.id}',
                 name: 'UnifiedAiInferenceRepository',
               );
               languageWasSet = true;
             } catch (e) {
               developer.log(
-                'Failed to update task language for task ${task.id}',
+                'Failed to update task language for task ${currentTask.id}',
                 name: 'UnifiedAiInferenceRepository',
                 error: e,
               );
             }
           } else {
             developer.log(
-              'Task ${task.id} already has language set to ${freshTask.data.languageCode}, not overwriting',
+              'Task ${currentTask.id} already has language set to ${freshTask.data.languageCode}, not overwriting',
               name: 'UnifiedAiInferenceRepository',
             );
           }
@@ -1302,7 +1421,7 @@ class UnifiedAiInferenceRepository {
                 await checklistRepository.updateChecklistItem(
                   checklistItemId: suggestion.checklistItemId,
                   data: checklistItem.data.copyWith(isChecked: true),
-                  taskId: task.id,
+                  taskId: currentTask.id,
                 );
 
                 developer.log(
@@ -1331,7 +1450,7 @@ class UnifiedAiInferenceRepository {
       ref.invalidate(checklistItemControllerProvider);
 
       developer.log(
-        'Processed ${suggestions.length} checklist completion suggestions for task ${task.id}',
+        'Processed ${suggestions.length} checklist completion suggestions for task ${currentTask.id}',
         name: 'UnifiedAiInferenceRepository',
       );
     } else {
@@ -1356,6 +1475,120 @@ class UnifiedAiInferenceRepository {
       return linkedEntities.firstWhereOrNull((e) => e is Task) as Task?;
     }
     return null;
+  }
+
+  /// Process checklist updates using conversation approach for better batching
+  Future<void> _processWithConversation({
+    required String prompt,
+    required JournalEntity entity,
+    required AiConfigPrompt promptConfig,
+    required AiConfigModel model,
+    required AiConfigInferenceProvider provider,
+    required String systemMessage,
+    required void Function(String) onProgress,
+    required void Function(InferenceStatus) onStatusChange,
+    required DateTime start,
+    required bool isRerun,
+  }) async {
+    developer.log(
+      'Starting conversation-based processing for ${entity.runtimeType}',
+      name: 'UnifiedAiInferenceRepository',
+    );
+
+    // Get the task for this entity
+    final task = await _getTaskForEntity(entity);
+    if (task == null) {
+      developer.log(
+        'No task found for entity ${entity.id}, falling back to regular processing',
+        name: 'UnifiedAiInferenceRepository',
+      );
+      // Fall back to regular processing
+      await _runInferenceInternal(
+        entityId: entity.id,
+        promptConfig: promptConfig,
+        onProgress: onProgress,
+        onStatusChange: onStatusChange,
+        isRerun: isRerun,
+        entity: entity,
+      );
+      return;
+    }
+
+    try {
+      // Create conversation processor
+      final processor = LottiConversationProcessor(ref: ref);
+
+      // Get the appropriate inference repository based on provider type
+      InferenceRepositoryInterface inferenceRepo;
+
+      if (provider.inferenceProviderType == InferenceProviderType.ollama) {
+        developer.log(
+          'Using OllamaInferenceRepository for conversation approach',
+          name: 'UnifiedAiInferenceRepository',
+        );
+        inferenceRepo = ref.read(ollamaInferenceRepositoryProvider);
+      } else {
+        developer.log(
+          'Using CloudInferenceWrapper for ${provider.inferenceProviderType} provider',
+          name: 'UnifiedAiInferenceRepository',
+        );
+        final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
+        inferenceRepo = CloudInferenceWrapper(cloudRepository: cloudRepo);
+      }
+
+      // Define tools for checklist updates
+      final tools = [
+        ...ChecklistCompletionFunctions.getTools(),
+        ...TaskFunctions.getTools(),
+      ];
+
+      // Process with conversation
+      final result = await processor.processPromptWithConversation(
+        prompt: prompt,
+        entity: entity,
+        task: task,
+        model: model,
+        provider: provider,
+        promptConfig: promptConfig,
+        systemMessage: systemMessage,
+        tools: tools,
+        inferenceRepo: inferenceRepo,
+      );
+
+      // Update progress with final result
+      onProgress(result.responseText);
+
+      // Handle the result
+      developer.log(
+        'Conversation processing completed: ${result.totalCreated} items created, '
+        'duration: ${result.duration.inMilliseconds}ms, errors: ${result.hadErrors}',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      // Update status to idle or error
+      if (result.hadErrors) {
+        onStatusChange(InferenceStatus.error);
+      } else {
+        onStatusChange(InferenceStatus.idle);
+      }
+
+      // Log the response but don't create visible entry for checklist updates
+      developer.log(
+        'Checklist updates completed via conversation: ${result.totalCreated} items',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      // Force refresh of checklists UI
+      ref.invalidate(checklistItemControllerProvider);
+    } catch (e) {
+      developer.log(
+        'Error in conversation processing: $e',
+        name: 'UnifiedAiInferenceRepository',
+        error: e,
+      );
+      onStatusChange(InferenceStatus.error);
+      onProgress('Error: $e');
+    }
   }
 }
 

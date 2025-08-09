@@ -69,8 +69,8 @@ class _LatestAiResponseSummaryState
         ),
       ),
       error: (error, stackTrace) {
-        // Log the actual error for debugging
-        debugPrint('Error loading AI summary: $error\n$stackTrace');
+        // Log the actual error for debugging (without stack trace to avoid cluttering test output)
+        debugPrint('Error loading AI summary: $error');
 
         return Center(
           child: Padding(

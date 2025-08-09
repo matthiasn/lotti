@@ -52,7 +52,11 @@ void main() {
       );
       expect(
         checklistUpdatesPrompt.systemMessage,
-        contains('ONLY use if languageCode is null in the task data'),
+        contains('Use if languageCode is null in the task data'),
+      );
+      expect(
+        checklistUpdatesPrompt.systemMessage,
+        contains("Always set the language, even if it's English"),
       );
     });
 

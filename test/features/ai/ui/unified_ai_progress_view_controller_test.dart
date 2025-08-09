@@ -100,6 +100,7 @@ void main() {
         promptConfig: any(named: 'promptConfig'),
         onProgress: any(named: 'onProgress'),
         onStatusChange: any(named: 'onStatusChange'),
+        useConversationApproach: any(named: 'useConversationApproach'),
       ),
     ).thenAnswer((invocation) async {
       final onProgress =

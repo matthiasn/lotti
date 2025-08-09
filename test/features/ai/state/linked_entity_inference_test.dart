@@ -122,6 +122,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         capturedEntityId = invocation.namedArguments[#entityId] as String;
@@ -219,6 +220,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         final onStatusChange = invocation.namedArguments[#onStatusChange]
@@ -305,6 +307,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenThrow(Exception('Network error'));
 
@@ -357,6 +360,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         final promptConfig =
@@ -456,6 +460,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         final promptConfig =
@@ -576,6 +581,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         final promptConfig =
