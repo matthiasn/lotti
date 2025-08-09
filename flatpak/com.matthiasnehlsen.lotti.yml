@@ -32,24 +32,19 @@ modules:
       - cp -r lib/* /app/lib/ 2>/dev/null || echo "No lib files to copy"
       - echo "Searching for .so files in project root:"
       - find . -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files found"
-      - echo "Installing libkeybinder-3.0-0 package..."
-      - apt-get update && apt-get install -y libkeybinder-3.0-0 2>/dev/null || echo "Failed to install libkeybinder-3.0-0"
       - echo "Copying libkeybinder from system..."
       - cp /usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0 /app/lib/ 2>/dev/null || echo "libkeybinder not found in /usr/lib/x86_64-linux-gnu/"
       - cp /usr/lib/libkeybinder-3.0.so.0 /app/lib/ 2>/dev/null || echo "libkeybinder not found in /usr/lib/"
       - echo "Checking if libkeybinder was copied:"
       - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "libkeybinder not found"
-      - echo "If libkeybinder not found, creating minimal stub..."
-      - if [ ! -f /app/lib/libkeybinder-3.0.so.0 ]; then
-      -   echo "Creating minimal libkeybinder stub..."
-      -   echo "void keybinder_init(void) {}" > stub_keybinder.c
-      -   echo "void keybinder_bind(const char* keystring, void* handler, void* user_data) {}" >> stub_keybinder.c
-      -   echo "void keybinder_unbind(const char* keystring, void* handler) {}" >> stub_keybinder.c
-      -   gcc -shared -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c 2>/dev/null || echo "Failed to create stub"
-      -   rm -f stub_keybinder.c
-      -   echo "Stub created:"
-      -   ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Stub creation failed"
-      - fi
+      - echo "Creating minimal libkeybinder stub..."
+      - echo "void keybinder_init(void) {}" > stub_keybinder.c
+      - echo "void keybinder_bind(const char* keystring, void* handler, void* user_data) {}" >> stub_keybinder.c
+      - echo "void keybinder_unbind(const char* keystring, void* handler) {}" >> stub_keybinder.c
+      - gcc -shared -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c 2>/dev/null || echo "Failed to create stub"
+      - rm -f stub_keybinder.c
+      - echo "Stub created:"
+      - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Stub creation failed"
       - echo "Contents of /app/lib/ after copying:"
       - ls -la /app/lib/
       - echo "Creating wrapper script..."
