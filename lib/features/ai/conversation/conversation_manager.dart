@@ -166,8 +166,28 @@ class ConversationManager {
 
     for (final message in _messages) {
       final role = message.role.name.toUpperCase();
-      final content = message.content ?? '(function calls)';
-      buffer.writeln('$role: $content');
+      String contentStr;
+
+      if (message.content == null) {
+        contentStr = '(function calls)';
+      } else if (message.content is ChatCompletionUserMessageContent) {
+        // Extract the actual string value from ChatCompletionUserMessageContent
+        final userContent =
+            message.content as ChatCompletionUserMessageContent?;
+        // Use toString() but extract just the value part
+        final contentString = userContent.toString();
+        if (contentString.contains('value: ')) {
+          final valueMatch =
+              RegExp(r'value: (.+?)\)').firstMatch(contentString);
+          contentStr = valueMatch?.group(1) ?? contentString;
+        } else {
+          contentStr = contentString;
+        }
+      } else {
+        contentStr = message.content.toString();
+      }
+
+      buffer.writeln('$role: $contentStr');
     }
 
     return buffer.toString();

@@ -78,13 +78,39 @@ class OllamaInferenceRepository {
         // Extract text from ChatCompletionUserMessageContent properly
         try {
           final dynamic jsonContent = content.toJson();
-          if (jsonContent is List) {
-            // Handle list of content parts
+
+          // Handle the case where toJson() returns a Map with 'value' field
+          if (jsonContent is Map && jsonContent['value'] != null) {
+            final value = jsonContent['value'];
+            if (value is List) {
+              // Handle list of content parts
+              final textParts = <String>[];
+              for (final part in value) {
+                if (part is Map<String, dynamic>) {
+                  if (part['type'] == 'text' && part['text'] != null) {
+                    final text = (part['text'] as String).trim();
+                    if (text.isNotEmpty) {
+                      textParts.add(text);
+                    }
+                  }
+                }
+              }
+              contentStr = textParts.join(' ');
+            } else if (value is String) {
+              contentStr = value;
+            } else {
+              contentStr = jsonEncode(value);
+            }
+          } else if (jsonContent is List) {
+            // Handle direct list of content parts
             final textParts = <String>[];
             for (final part in jsonContent) {
               if (part is Map<String, dynamic>) {
                 if (part['type'] == 'text' && part['text'] != null) {
-                  textParts.add(part['text'] as String);
+                  final text = (part['text'] as String).trim();
+                  if (text.isNotEmpty) {
+                    textParts.add(text);
+                  }
                 }
               }
             }
