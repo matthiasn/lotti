@@ -71,7 +71,11 @@ class CloudInferenceRepository {
     List<ChatCompletionTool>? tools,
   }) {
     developer.log(
-      'CloudInferenceRepository.generate called with tools: ${tools?.length ?? 0}',
+      'CloudInferenceRepository.generate called with:\n'
+      '  model: $model\n'
+      '  provider: ${provider?.inferenceProviderType}\n'
+      '  tools: ${tools?.length ?? 0} - ${tools?.map((t) => t.function.name).join(', ') ?? 'none'}\n'
+      '  systemMessage: ${systemMessage?.substring(0, 100)}...',
       name: 'CloudInferenceRepository',
     );
 

@@ -116,6 +116,33 @@ void main() {
             ContentExtractionHelper.extractTextFromUserContent(content);
         expect(result, 'Test fallback');
       });
+
+      test('ChatCompletionMessageContentPart JSON schema stability', () {
+        // This test ensures that the toJson() output of ChatCompletionMessageContentPart
+        // maintains a stable schema that our code relies on
+        const textPart =
+            ChatCompletionMessageContentPart.text(text: 'Hello world');
+        final json = textPart.toJson();
+
+        // Assert the JSON structure matches our expectations
+        expect(json, isA<Map<String, dynamic>>());
+        expect(json['type'], 'text');
+        expect(json['text'], isA<String>());
+        expect(json['text'], 'Hello world');
+
+        // Test with empty text
+        const emptyTextPart = ChatCompletionMessageContentPart.text(text: '');
+        final emptyJson = emptyTextPart.toJson();
+        expect(emptyJson['type'], 'text');
+        expect(emptyJson['text'], '');
+
+        // Test with special characters
+        const specialTextPart = ChatCompletionMessageContentPart.text(
+            text: 'Line 1\nLine 2\t@#\$%');
+        final specialJson = specialTextPart.toJson();
+        expect(specialJson['type'], 'text');
+        expect(specialJson['text'], 'Line 1\nLine 2\t@#\$%');
+      });
     });
   });
 }

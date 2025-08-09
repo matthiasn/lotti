@@ -222,7 +222,18 @@ add_multiple_checklist_items with {"items": "cheese, pepperoni, dough"}''';
       },
     );
 
-    final handlers = <FunctionHandler>[checklistHandler];
+    final batchChecklistHandler = LottiBatchChecklistHandler(
+      task: currentTask,
+      autoChecklistService: effectiveAutoChecklistService,
+      checklistRepository: ref.read(checklistRepositoryProvider),
+      onTaskUpdated: (updatedTask) {
+        // Update task reference for subsequent operations
+        currentTask = updatedTask;
+        checklistHandler.task = updatedTask;
+      },
+    );
+
+    final handlers = <FunctionHandler>[checklistHandler, batchChecklistHandler];
 
     // Create conversation repository if needed
     final conversationRepo = ref.read(conversationRepositoryProvider.notifier);
@@ -266,14 +277,35 @@ IMPORTANT: The correct format is {"actionItemDescription": "item description"}.
         allResults.add(result);
 
         if (result.success && !handler.isDuplicate(result)) {
-          // Actually create the item
-          final created = await checklistHandler.createItem(result);
-          if (created) {
-            totalProcessed++;
-            developer.log(
-              'Created item: ${handler.getDescription(result)}',
-              name: 'LottiConversationProcessor',
+          // Check if this is a batch handler and use appropriate creation method
+          if (handler == batchChecklistHandler) {
+            // For batch items, use createBatchItems
+            final createdCount = await batchChecklistHandler.createBatchItems(
+              result,
+              existingDescriptions: checklistHandler.successfulItems
+                  .map((item) => item.toLowerCase().trim())
+                  .toSet(),
             );
+            if (createdCount > 0) {
+              totalProcessed += createdCount;
+              developer.log(
+                'Created $createdCount items from batch: ${handler.getDescription(result)}',
+                name: 'LottiConversationProcessor',
+              );
+              // Copy successful items to the single item handler for consistency
+              checklistHandler
+                  .addSuccessfulItems(batchChecklistHandler.successfulItems);
+            }
+          } else {
+            // For single items, use createItem
+            final created = await checklistHandler.createItem(result);
+            if (created) {
+              totalProcessed++;
+              developer.log(
+                'Created item: ${handler.getDescription(result)}',
+                name: 'LottiConversationProcessor',
+              );
+            }
           }
         } else if (!result.success) {
           hasErrors = true;
@@ -398,6 +430,7 @@ Please continue creating any remaining items from the original request.''';
         name: 'LottiConversationProcessor',
         error: e,
       );
+      hasErrors = true;
     } finally {
       conversationRepo.deleteConversation(conversationId);
     }

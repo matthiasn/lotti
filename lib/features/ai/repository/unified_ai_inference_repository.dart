@@ -261,7 +261,9 @@ class UnifiedAiInferenceRepository {
       developer.log(
         'Checking conversation approach: useConversationApproach=$useConversationApproach, '
         'responseType=${promptConfig.aiResponseType}, '
-        'supportsFunctionCalling=${model.supportsFunctionCalling}',
+        'supportsFunctionCalling=${model.supportsFunctionCalling}, '
+        'provider=${provider.inferenceProviderType}, '
+        'model=${model.providerModelId}',
         name: 'UnifiedAiInferenceRepository',
       );
 
@@ -313,9 +315,17 @@ class UnifiedAiInferenceRepository {
         // Accumulate tool calls from chunks
         if (chunk.choices?.isNotEmpty ?? false) {
           final delta = chunk.choices?.first.delta;
+          developer.log(
+            'Stream chunk received: hasContent=${text.isNotEmpty}, '
+            'hasToolCalls=${delta?.toolCalls != null}, '
+            'toolCallCount=${delta?.toolCalls?.length ?? 0}',
+            name: 'UnifiedAiInferenceRepository',
+          );
           if (delta?.toolCalls != null) {
             developer.log(
-              'Received tool call chunk with ${delta!.toolCalls!.length} tool calls',
+              'Tool call details: ${delta!.toolCalls!.map((tc) => 'id=${tc.id}, '
+                  'index=${tc.index}, function=${tc.function?.name}, '
+                  'hasArgs=${tc.function?.arguments != null}').join('; ')}',
               name: 'UnifiedAiInferenceRepository',
             );
             // Special handling: if we receive multiple tool calls in one chunk all with the same index,
