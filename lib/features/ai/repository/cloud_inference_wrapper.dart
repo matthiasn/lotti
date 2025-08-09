@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Wrapper that adapts CloudInferenceRepository to work with the conversation system
@@ -186,25 +187,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
     }
 
     if (content is ChatCompletionUserMessageContent) {
-      final value = content.value;
-      if (value is String) {
-        return value;
-      } else if (value is List) {
-        // Extract text from content parts
-        final textParts = <String>[];
-        for (final part in value) {
-          if (part is ChatCompletionMessageContentPart) {
-            final partMap = part.toJson();
-            if (partMap['type'] == 'text') {
-              final text = partMap['text'];
-              if (text is String && text.trim().isNotEmpty) {
-                textParts.add(text);
-              }
-            }
-          }
-        }
-        return textParts.join(' ');
-      }
+      return ContentExtractionHelper.extractTextFromUserContent(content);
     }
 
     // Fallback
