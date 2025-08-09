@@ -233,21 +233,21 @@ Do NOT recreate the items that were already successful.''';
               successCount++;
               _successfulItems.add(desc);
               _createdDescriptions.add(normalized);
-
-              // Refresh the task after each successful item
-              final refreshedEntity =
-                  await journalDb.journalEntityById(currentTask.id);
-              if (refreshedEntity is Task) {
-                task = refreshedEntity;
-                currentTask = refreshedEntity;
-              }
             }
           }
         }
 
-        // Call onTaskUpdated once after all items are processed
+        // Refresh the task once after all items are added
         if (successCount > 0) {
-          onTaskUpdated?.call(task);
+          final refreshedEntity =
+              await journalDb.journalEntityById(currentTask.id);
+          if (refreshedEntity is Task) {
+            task = refreshedEntity;
+            onTaskUpdated?.call(refreshedEntity);
+          }
+        } else {
+          // Call onTaskUpdated with current task if no items were added
+          onTaskUpdated?.call(currentTask);
         }
       }
     } catch (e, s) {

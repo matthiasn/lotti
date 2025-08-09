@@ -17,10 +17,10 @@ import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -1438,10 +1438,7 @@ class UnifiedAiInferenceRepository {
       final processor = LottiConversationProcessor(ref: ref);
 
       // Get the appropriate inference repository based on provider type
-      OllamaInferenceRepository? ollamaRepo;
-      if (provider.inferenceProviderType == InferenceProviderType.ollama) {
-        ollamaRepo = OllamaInferenceRepository();
-      } else {
+      if (provider.inferenceProviderType != InferenceProviderType.ollama) {
         // For cloud providers, we'll need to use a wrapper that implements OllamaInferenceRepository interface
         // For now, throw an error as cloud providers should use regular inference
         developer.log(
@@ -1459,6 +1456,9 @@ class UnifiedAiInferenceRepository {
         );
         return;
       }
+
+      // Get OllamaInferenceRepository instance for conversation processing
+      final ollamaRepo = ref.read(ollamaInferenceRepositoryProvider);
 
       // Define tools for checklist updates
       final tools = [

@@ -75,62 +75,58 @@ class OllamaInferenceRepository {
       String? contentStr;
 
       if (content is ChatCompletionUserMessageContent) {
-        // Extract text from ChatCompletionUserMessageContent properly
-        try {
-          final dynamic jsonContent = content.toJson();
-
-          // Handle the case where toJson() returns a Map with 'value' field
-          if (jsonContent is Map && jsonContent['value'] != null) {
+        // Extract text from ChatCompletionUserMessageContent using toJson()
+        final dynamic jsonContent = content.toJson();
+        if (jsonContent is String) {
+          contentStr = jsonContent;
+        } else if (jsonContent is List) {
+          // Handle list of content parts
+          final textParts = <String>[];
+          for (final part in jsonContent) {
+            if (part is Map<String, dynamic> &&
+                part['type'] == 'text' &&
+                part['text'] != null) {
+              final text = (part['text'] as String).trim();
+              if (text.isNotEmpty) {
+                textParts.add(text);
+              }
+            }
+          }
+          contentStr = textParts.join(' ');
+        } else if (jsonContent is Map<String, dynamic>) {
+          // Check if it's a wrapped structure with "value" field
+          if (jsonContent.containsKey('value')) {
             final value = jsonContent['value'];
-            if (value is List) {
+            if (value is String) {
+              contentStr = value;
+            } else if (value is List) {
               // Handle list of content parts
               final textParts = <String>[];
               for (final part in value) {
-                if (part is Map<String, dynamic>) {
-                  if (part['type'] == 'text' && part['text'] != null) {
-                    final text = (part['text'] as String).trim();
-                    if (text.isNotEmpty) {
-                      textParts.add(text);
-                    }
-                  }
-                }
-              }
-              contentStr = textParts.join(' ');
-            } else if (value is String) {
-              contentStr = value;
-            } else {
-              contentStr = jsonEncode(value);
-            }
-          } else if (jsonContent is List) {
-            // Handle direct list of content parts
-            final textParts = <String>[];
-            for (final part in jsonContent) {
-              if (part is Map<String, dynamic>) {
-                if (part['type'] == 'text' && part['text'] != null) {
+                if (part is Map<String, dynamic> &&
+                    part['type'] == 'text' &&
+                    part['text'] != null) {
                   final text = (part['text'] as String).trim();
                   if (text.isNotEmpty) {
                     textParts.add(text);
                   }
                 }
               }
-            }
-            contentStr = textParts.join(' ');
-          } else if (jsonContent is String) {
-            contentStr = jsonContent;
-          } else if (jsonContent is Map) {
-            // Handle single content object
-            if (jsonContent['type'] == 'text' && jsonContent['text'] != null) {
-              contentStr = jsonContent['text'] as String;
+              contentStr = textParts.join(' ');
             } else {
-              contentStr = jsonEncode(jsonContent);
+              // Fallback
+              contentStr = jsonEncode(value);
             }
+          } else if (jsonContent['type'] == 'text' &&
+              jsonContent['text'] != null) {
+            contentStr = jsonContent['text'] as String;
           } else {
             // Fallback: encode as JSON if structure is unknown
             contentStr = jsonEncode(jsonContent);
           }
-        } catch (e) {
-          // Fallback to JSON encoding if parsing fails
-          contentStr = jsonEncode(content.toJson());
+        } else {
+          // Fallback: encode as JSON if structure is unknown
+          contentStr = jsonEncode(jsonContent);
         }
       } else if (content is String) {
         contentStr = content;

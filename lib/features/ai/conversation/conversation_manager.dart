@@ -138,15 +138,22 @@ class ConversationManager {
       final hasSystem = _messages.isNotEmpty &&
           _messages.first.role == ChatCompletionMessageRole.system;
 
-      final trimCount =
-          _messages.length - maxHistorySize + 10; // Leave some buffer
+      // Calculate how many messages to keep
+      // We want final count to be maxHistorySize, including truncation notice
+      // So keep maxHistorySize - 1 total messages (including system if present)
+      final totalToKeep = maxHistorySize - 1; // -1 for truncation notice
 
-      // Calculate proper start and end indices
+      // Calculate how many to keep after system message (if present)
+      final messagesToKeepAfterSystem =
+          hasSystem ? totalToKeep - 1 : totalToKeep;
+
+      // Calculate trim range
       final start = hasSystem ? 1 : 0;
-      final end = start + trimCount;
+      final totalMessages = _messages.length;
+      final end = totalMessages - messagesToKeepAfterSystem;
 
-      // Ensure end doesn't exceed list length
-      if (end <= _messages.length) {
+      // Only trim if there are messages to remove
+      if (end > start) {
         _messages
           ..removeRange(start, end)
           // Add truncation notice
@@ -171,17 +178,50 @@ class ConversationManager {
       if (message.content == null) {
         contentStr = '(function calls)';
       } else if (message.content is ChatCompletionUserMessageContent) {
-        // Extract the actual string value from ChatCompletionUserMessageContent
+        // Extract text from ChatCompletionUserMessageContent using toJson()
         final userContent =
-            message.content as ChatCompletionUserMessageContent?;
-        // Use toString() but extract just the value part
-        final contentString = userContent.toString();
-        if (contentString.contains('value: ')) {
-          final valueMatch =
-              RegExp(r'value: (.+?)\)').firstMatch(contentString);
-          contentStr = valueMatch?.group(1) ?? contentString;
+            message.content! as ChatCompletionUserMessageContent;
+        final dynamic json = userContent.toJson();
+        if (json is String) {
+          contentStr = json;
+        } else if (json is List) {
+          // Handle list of content parts
+          final textParts = <String>[];
+          for (final part in json) {
+            if (part is Map<String, dynamic> &&
+                part['type'] == 'text' &&
+                part['text'] != null) {
+              textParts.add(part['text'] as String);
+            }
+          }
+          contentStr = textParts.join(' ');
+        } else if (json is Map<String, dynamic>) {
+          // Check if it's a wrapped structure with "value" field
+          if (json.containsKey('value')) {
+            final value = json['value'];
+            if (value is String) {
+              contentStr = value;
+            } else if (value is List) {
+              // Handle list of content parts
+              final textParts = <String>[];
+              for (final part in value) {
+                if (part is Map<String, dynamic> &&
+                    part['type'] == 'text' &&
+                    part['text'] != null) {
+                  textParts.add(part['text'] as String);
+                }
+              }
+              contentStr = textParts.join(' ');
+            } else {
+              contentStr = value.toString();
+            }
+          } else if (json['type'] == 'text' && json['text'] != null) {
+            contentStr = json['text'] as String;
+          } else {
+            contentStr = json.toString();
+          }
         } else {
-          contentStr = contentString;
+          contentStr = json.toString();
         }
       } else {
         contentStr = message.content.toString();

@@ -707,7 +707,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
               manager.addToolResponse(
                 toolCallId: call.id,
                 response:
-                    "Language set to $languageCode. Good! Now please use the add_checklist_item function to create each checklist item from the user's request.",
+                    "Language set to $languageCode. Good! Now please create the checklist items from the user's request.",
               );
             } catch (e) {
               developer.log(
