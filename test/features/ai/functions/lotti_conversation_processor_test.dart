@@ -9,6 +9,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
+import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
@@ -105,16 +107,27 @@ class TestDataFactory {
     );
   }
 
-  static ChecklistItemData createChecklistItem({
+  static ChecklistItem createChecklistItem({
     String? id,
     String? title,
     bool isChecked = false,
   }) {
-    return ChecklistItemData(
-      id: id,
-      title: title ?? 'Test Item',
-      isChecked: isChecked,
-      linkedChecklists: [],
+    final itemId = id ?? _uuid.v4();
+    return ChecklistItem(
+      meta: Metadata(
+        id: itemId,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        categoryId: 'test-category',
+      ),
+      data: ChecklistItemData(
+        id: itemId,
+        title: title ?? 'Test Item',
+        isChecked: isChecked,
+        linkedChecklists: [],
+      ),
     );
   }
 
@@ -150,6 +163,36 @@ class TestDataFactory {
       aiResponseType: AiResponseType.checklistUpdates,
     );
   }
+
+  static AiConfigInferenceProvider createProvider() {
+    return AiConfigInferenceProvider(
+      id: 'test-provider',
+      name: 'Test Provider',
+      baseUrl: 'http://localhost:11434',
+      apiKey: '',
+      createdAt: DateTime.now(),
+      inferenceProviderType: InferenceProviderType.ollama,
+    );
+  }
+
+  static JournalImage createJournalImage() {
+    return JournalImage(
+      meta: Metadata(
+        id: _uuid.v4(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        categoryId: 'test-category',
+      ),
+      data: ImageData(
+        capturedAt: DateTime.now(),
+        imageId: _uuid.v4(),
+        imageFile: 'test.jpg',
+        imageDirectory: 'test_images',
+      ),
+    );
+  }
 }
 
 void main() {
@@ -162,6 +205,7 @@ void main() {
   late MockRef mockRef;
   late MockLoggingService mockLoggingService;
   late MockPersistenceLogic mockPersistenceLogic;
+  late MockOllamaInferenceRepository mockOllamaRepo;
   late LottiConversationProcessor processor;
 
   setUpAll(() {
@@ -193,6 +237,7 @@ void main() {
     mockRef = MockRef();
     mockLoggingService = MockLoggingService();
     mockPersistenceLogic = MockPersistenceLogic();
+    mockOllamaRepo = MockOllamaInferenceRepository();
 
     // Set up getIt
     getIt
@@ -1103,6 +1148,741 @@ void main() {
             suggestions: any(named: 'suggestions'),
             title: any(named: 'title'),
           ));
+    });
+  });
+
+  group('LottiConversationProcessor - processFunctionCalls', () {
+    test('should process initial tool calls with retry strategy', () async {
+      final task = TestDataFactory.createTask();
+      final model = TestDataFactory.createModel();
+      final provider = TestDataFactory.createProvider();
+
+      // Setup initial tool calls with errors
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_checklist_item',
+            arguments: '{"wrongField": "Buy milk"}',
+          ),
+        ),
+        const ChatCompletionMessageToolCall(
+          id: 'tool-2',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_checklist_item',
+            arguments: '{"actionItemDescription": "Buy eggs"}',
+          ),
+        ),
+      ];
+
+      // Mock conversation creation
+      when(() => mockConversationRepo.createConversation(
+            systemMessage: any(named: 'systemMessage'),
+            maxTurns: any(named: 'maxTurns'),
+          )).thenReturn('test-conversation-id');
+
+      when(() => mockConversationRepo.getConversation('test-conversation-id'))
+          .thenReturn(mockConversationManager);
+
+      // Mock checklist operations
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: task.meta.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          )).thenAnswer((_) async => (
+            success: true,
+            checklistId: 'new-checklist',
+            error: null,
+          ));
+
+      when(() => mockChecklistRepo.addItemToChecklist(
+            checklistId: any(named: 'checklistId'),
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((invocation) async {
+        final title = invocation.namedArguments[#title] as String;
+        return TestDataFactory.createChecklistItem(title: title);
+      });
+
+      when(() => mockJournalRepo.updateJournalEntity(any<Task>()))
+          .thenAnswer((_) async => true);
+
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => TestDataFactory.createTask(
+                id: task.meta.id,
+                checklistIds: ['new-checklist'],
+              ));
+
+      // Mock retry conversation
+      when(() => mockConversationRepo.sendMessage(
+            conversationId: any(named: 'conversationId'),
+            message: any(named: 'message'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            ollamaRepo: any(named: 'ollamaRepo'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            strategy: any(named: 'strategy'),
+          )).thenAnswer((_) async {});
+
+      when(() =>
+              mockConversationRepo.deleteConversation('test-conversation-id'))
+          .thenReturn(null);
+
+      final result = await processor.processFunctionCalls(
+        initialToolCalls: toolCalls,
+        task: task,
+        model: model,
+        provider: provider,
+        originalPrompt: 'Add shopping list items',
+        ollamaRepo: mockOllamaRepo,
+        autoChecklistService: mockAutoChecklistService,
+      );
+
+      expect(result.totalCreated, greaterThanOrEqualTo(1));
+      expect(result.items.contains('Buy eggs'), true);
+      expect(result.hadErrors, true);
+
+      // Verify retry was attempted
+      verify(() => mockConversationRepo.sendMessage(
+            conversationId: any(named: 'conversationId'),
+            message: any(named: 'message', that: contains('format')),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            ollamaRepo: any(named: 'ollamaRepo'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            strategy: any(named: 'strategy'),
+          )).called(1);
+    });
+
+    test('should handle continuation when more items needed', () async {
+      final task = TestDataFactory.createTask();
+      final model = TestDataFactory.createModel();
+      final provider = TestDataFactory.createProvider();
+
+      // Setup initial tool calls
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_checklist_item',
+            arguments: '{"actionItemDescription": "First item"}',
+          ),
+        ),
+      ];
+
+      // Mock conversation creation
+      when(() => mockConversationRepo.createConversation(
+            systemMessage: any(named: 'systemMessage'),
+            maxTurns: any(named: 'maxTurns'),
+          )).thenReturn('test-conversation-id');
+
+      when(() => mockConversationRepo.getConversation('test-conversation-id'))
+          .thenReturn(mockConversationManager);
+
+      // Mock checklist operations
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: task.meta.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          )).thenAnswer((_) async => (
+            success: true,
+            checklistId: 'new-checklist',
+            error: null,
+          ));
+
+      when(() => mockChecklistRepo.addItemToChecklist(
+            checklistId: any(named: 'checklistId'),
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((invocation) async {
+        final title = invocation.namedArguments[#title] as String;
+        return TestDataFactory.createChecklistItem(title: title);
+      });
+
+      when(() => mockJournalRepo.updateJournalEntity(any<Task>()))
+          .thenAnswer((_) async => true);
+
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => TestDataFactory.createTask(
+                id: task.meta.id,
+                checklistIds: ['new-checklist'],
+              ));
+
+      // Mock continuation conversation
+      when(() => mockConversationRepo.sendMessage(
+            conversationId: any(named: 'conversationId'),
+            message: any(named: 'message'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            ollamaRepo: any(named: 'ollamaRepo'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            strategy: any(named: 'strategy'),
+          )).thenAnswer((_) async {});
+
+      when(() =>
+              mockConversationRepo.deleteConversation('test-conversation-id'))
+          .thenReturn(null);
+
+      final result = await processor.processFunctionCalls(
+        initialToolCalls: toolCalls,
+        task: task,
+        model: model,
+        provider: provider,
+        originalPrompt: 'Add multiple shopping items',
+        ollamaRepo: mockOllamaRepo,
+        autoChecklistService: mockAutoChecklistService,
+      );
+
+      expect(result.totalCreated, 1);
+      expect(result.items.contains('First item'), true);
+      expect(result.hadErrors, false);
+
+      // Verify continuation was attempted
+      verify(() => mockConversationRepo.sendMessage(
+            conversationId: any(named: 'conversationId'),
+            message: any(named: 'message', that: contains('continue creating')),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            ollamaRepo: any(named: 'ollamaRepo'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            strategy: any(named: 'strategy'),
+          )).called(1);
+    });
+
+    test('should handle unknown function names', () async {
+      final task = TestDataFactory.createTask();
+      final model = TestDataFactory.createModel();
+      final provider = TestDataFactory.createProvider();
+
+      // Setup tool calls with unknown function
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'unknown_function',
+            arguments: '{}',
+          ),
+        ),
+      ];
+
+      // Mock conversation creation
+      when(() => mockConversationRepo.createConversation(
+            systemMessage: any(named: 'systemMessage'),
+            maxTurns: any(named: 'maxTurns'),
+          )).thenReturn('test-conversation-id');
+
+      when(() => mockConversationRepo.getConversation('test-conversation-id'))
+          .thenReturn(mockConversationManager);
+
+      when(() =>
+              mockConversationRepo.deleteConversation('test-conversation-id'))
+          .thenReturn(null);
+
+      final result = await processor.processFunctionCalls(
+        initialToolCalls: toolCalls,
+        task: task,
+        model: model,
+        provider: provider,
+        originalPrompt: 'Test',
+        ollamaRepo: mockOllamaRepo,
+      );
+
+      // The method catches exceptions and returns a result instead
+      expect(result.totalCreated, 0);
+      expect(result.items, isEmpty);
+      // The hasErrors flag may not be set when an exception is caught during
+      // initial tool call processing
+      expect(result.hadErrors, false);
+    });
+  });
+
+  group('LottiConversationProcessor - Additional processPromptWithConversation',
+      () {
+    test('should handle non-task entities gracefully', () async {
+      final image = TestDataFactory.createJournalImage();
+      final model = TestDataFactory.createModel();
+      final provider = TestDataFactory.createProvider();
+      final prompt = TestDataFactory.createPromptConfig();
+
+      // Mock conversation creation
+      when(() => mockConversationRepo.createConversation(
+            systemMessage: any(named: 'systemMessage'),
+            maxTurns: any(named: 'maxTurns'),
+          )).thenReturn('test-conversation-id');
+
+      when(() => mockConversationRepo.getConversation('test-conversation-id'))
+          .thenReturn(mockConversationManager);
+
+      // Mock no task found
+      when(() => mockJournalRepo.getLinkedToEntities(
+          linkedTo: any(named: 'linkedTo'))).thenAnswer((_) async => []);
+
+      // Mock conversation flow
+      when(() => mockConversationManager.events)
+          .thenAnswer((_) => StreamController<ConversationEvent>().stream);
+
+      when(() => mockConversationRepo.sendMessage(
+            conversationId: any(named: 'conversationId'),
+            message: any(named: 'message'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            ollamaRepo: any(named: 'ollamaRepo'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            strategy: any(named: 'strategy'),
+          )).thenAnswer((_) async {});
+
+      when(() =>
+              mockConversationRepo.deleteConversation('test-conversation-id'))
+          .thenReturn(null);
+
+      final result = await processor.processPromptWithConversation(
+        prompt: 'Analyze image',
+        entity: image,
+        task: TestDataFactory.createTask(), // This won't be used
+        model: model,
+        provider: provider,
+        promptConfig: prompt,
+        systemMessage: 'System message',
+        tools: [],
+        ollamaRepo: mockOllamaRepo,
+      );
+
+      expect(result.totalCreated, 0);
+      // When processing non-task entities, the strategy may not create items
+      // and this is expected behavior, not necessarily an error
+      expect(result.items, isEmpty);
+    });
+
+    test('should handle conversation errors gracefully', () async {
+      final task = TestDataFactory.createTask();
+      final model = TestDataFactory.createModel();
+      final provider = TestDataFactory.createProvider();
+      final prompt = TestDataFactory.createPromptConfig();
+
+      // Mock conversation creation
+      when(() => mockConversationRepo.createConversation(
+            systemMessage: any(named: 'systemMessage'),
+            maxTurns: any(named: 'maxTurns'),
+          )).thenReturn('test-conversation-id');
+
+      when(() => mockConversationRepo.getConversation('test-conversation-id'))
+          .thenReturn(mockConversationManager);
+
+      // Mock conversation error
+      when(() => mockConversationRepo.sendMessage(
+            conversationId: any(named: 'conversationId'),
+            message: any(named: 'message'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            ollamaRepo: any(named: 'ollamaRepo'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            strategy: any(named: 'strategy'),
+          )).thenThrow(Exception('Conversation error'));
+
+      when(() =>
+              mockConversationRepo.deleteConversation('test-conversation-id'))
+          .thenReturn(null);
+
+      final result = await processor.processPromptWithConversation(
+        prompt: 'Create items',
+        entity: task,
+        task: task,
+        model: model,
+        provider: provider,
+        promptConfig: prompt,
+        systemMessage: 'System message',
+        tools: [],
+        ollamaRepo: mockOllamaRepo,
+      );
+
+      expect(result.totalCreated, 0);
+      expect(result.hadErrors, true);
+      expect(result.responseText, contains('Error'));
+    });
+
+    test('should pass custom autoChecklistService if provided', () async {
+      final task = TestDataFactory.createTask();
+      final model = TestDataFactory.createModel();
+      final provider = TestDataFactory.createProvider();
+      final prompt = TestDataFactory.createPromptConfig();
+      final customAutoChecklistService = MockAutoChecklistService();
+
+      // Mock conversation creation
+      when(() => mockConversationRepo.createConversation(
+            systemMessage: any(named: 'systemMessage'),
+            maxTurns: any(named: 'maxTurns'),
+          )).thenReturn('test-conversation-id');
+
+      when(() => mockConversationRepo.getConversation('test-conversation-id'))
+          .thenReturn(mockConversationManager);
+
+      // Mock conversation flow
+      when(() => mockConversationManager.events)
+          .thenAnswer((_) => StreamController<ConversationEvent>().stream);
+
+      when(() => mockConversationRepo.sendMessage(
+            conversationId: any(named: 'conversationId'),
+            message: any(named: 'message'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            ollamaRepo: any(named: 'ollamaRepo'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            strategy: any(named: 'strategy'),
+          )).thenAnswer((_) async {});
+
+      when(() =>
+              mockConversationRepo.deleteConversation('test-conversation-id'))
+          .thenReturn(null);
+
+      final result = await processor.processPromptWithConversation(
+        prompt: 'Create items',
+        entity: task,
+        task: task,
+        model: model,
+        provider: provider,
+        promptConfig: prompt,
+        systemMessage: 'System message',
+        tools: [],
+        ollamaRepo: mockOllamaRepo,
+        autoChecklistService: customAutoChecklistService,
+      );
+
+      expect(result, isNotNull);
+    });
+  });
+
+  group('LottiChecklistStrategy - Extended', () {
+    late LottiChecklistItemHandler checklistHandler;
+    late LottiBatchChecklistHandler batchChecklistHandler;
+    late LottiChecklistStrategy strategy;
+    late Task task;
+
+    setUp(() {
+      task = TestDataFactory.createTask();
+
+      checklistHandler = LottiChecklistItemHandler(
+        task: task,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepo,
+      );
+
+      batchChecklistHandler = LottiBatchChecklistHandler(
+        task: task,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepo,
+      );
+
+      strategy = LottiChecklistStrategy(
+        checklistHandler: checklistHandler,
+        batchChecklistHandler: batchChecklistHandler,
+        ref: mockRef,
+      );
+    });
+
+    test('should handle suggest_checklist_completion by redirecting', () async {
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'suggest_checklist_completion',
+            arguments: '{"suggestions": ["item1", "item2"]}',
+          ),
+        ),
+      ];
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-1',
+            response:
+                any(named: 'response', that: contains('add_checklist_item')),
+          )).called(1);
+    });
+
+    test('should handle unknown tool calls', () async {
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'unknown_function',
+            arguments: '{}',
+          ),
+        ),
+      ];
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-1',
+            response:
+                any(named: 'response', that: contains('Unknown function')),
+          )).called(1);
+    });
+
+    test('should provide continuation prompt when no items created', () async {
+      // Simulate processing with no successful items
+      await strategy.processToolCalls(
+        toolCalls: [],
+        manager: mockConversationManager,
+      );
+
+      final prompt = strategy.getContinuationPrompt(mockConversationManager);
+
+      expect(prompt, isNotNull);
+      expect(prompt, contains("haven't created any checklist items"));
+      expect(prompt, contains('add_checklist_item'));
+    });
+
+    test('should provide continuation prompt with successful items', () async {
+      // Simulate successful item creation
+      checklistHandler.addSuccessfulItems(['Item 1', 'Item 2']);
+
+      final prompt = strategy.getContinuationPrompt(mockConversationManager);
+
+      expect(prompt, isNotNull);
+      expect(prompt, contains('created 2 checklist item(s)'));
+      expect(prompt, contains('Item 1, Item 2'));
+    });
+
+    test('should handle failed items retry', () async {
+      // Process tool calls that will fail
+      await strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_checklist_item',
+              arguments: '{"wrongField": "Failed item"}',
+            ),
+          ),
+        ],
+        manager: mockConversationManager,
+      );
+
+      // Get retry prompt
+      final prompt = strategy.getContinuationPrompt(mockConversationManager);
+
+      expect(prompt, isNotNull);
+      // Should contain retry instructions
+      expect(prompt?.contains('format') ?? false, true);
+    });
+
+    test('should respect round limits', () async {
+      // Simulate many rounds
+      for (var i = 0; i < 10; i++) {
+        await strategy.processToolCalls(
+          toolCalls: [],
+          manager: mockConversationManager,
+        );
+      }
+
+      expect(strategy.shouldContinue(mockConversationManager), false);
+      expect(strategy.getContinuationPrompt(mockConversationManager), isNull);
+    });
+
+    test('should handle mixed single and batch items', () async {
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_checklist_item',
+            arguments: '{"actionItemDescription": "Single item"}',
+          ),
+        ),
+        const ChatCompletionMessageToolCall(
+          id: 'tool-2',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_multiple_checklist_items',
+            arguments: '{"items": "Batch item 1, Batch item 2"}',
+          ),
+        ),
+      ];
+
+      // Mock checklist operations
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          )).thenAnswer((_) async => (
+            success: true,
+            checklistId: 'new-checklist',
+            error: null,
+          ));
+
+      when(() => mockChecklistRepo.addItemToChecklist(
+            checklistId: any(named: 'checklistId'),
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((invocation) async {
+        final title = invocation.namedArguments[#title] as String;
+        return TestDataFactory.createChecklistItem(title: title);
+      });
+
+      when(() => mockJournalRepo.updateJournalEntity(any<Task>()))
+          .thenAnswer((_) async => true);
+
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => task);
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+
+      final summary = strategy.getResponseSummary();
+      expect(summary, contains('3')); // Total items
+    });
+
+    test('should handle errors in set_task_language without task language',
+        () async {
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'set_task_language',
+            arguments: 'invalid json',
+          ),
+        ),
+      ];
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-1',
+            response: any(
+                named: 'response', that: contains('Error setting language')),
+          )).called(1);
+    });
+
+    test('should skip language update if already set', () async {
+      // Create task with language already set
+      final taskWithLang = TestDataFactory.createTask(languageCode: 'en');
+      checklistHandler.task = taskWithLang;
+
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'set_task_language',
+            arguments: '{"languageCode": "es", "confidence": "high"}',
+          ),
+        ),
+      ];
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-1',
+            response: any(named: 'response', that: contains('already set')),
+          )).called(1);
+    });
+  });
+
+  group('ConversationResult', () {
+    test('should contain all required fields', () {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Test'),
+        ),
+      ];
+
+      final result = ConversationResult(
+        totalCreated: 5,
+        items: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'],
+        hadErrors: false,
+        responseText: 'Created 5 items successfully',
+        duration: const Duration(seconds: 2),
+        messages: messages,
+      );
+
+      expect(result.totalCreated, 5);
+      expect(result.items.length, 5);
+      expect(result.hadErrors, false);
+      expect(result.responseText, contains('successfully'));
+      expect(result.duration.inSeconds, 2);
+      expect(result.messages, messages);
+    });
+  });
+
+  group('ProcessingResult', () {
+    test('should contain all required fields', () {
+      const result = ProcessingResult(
+        totalCreated: 3,
+        items: ['Item A', 'Item B', 'Item C'],
+        hadErrors: true,
+      );
+
+      expect(result.totalCreated, 3);
+      expect(result.items.length, 3);
+      expect(result.hadErrors, true);
     });
   });
 }

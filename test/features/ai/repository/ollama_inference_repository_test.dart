@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -871,5 +872,590 @@ void main() {
       expect(firstMessage['role'], 'tool');
       expect(firstMessage['content'], 'Tool execution result');
     });
+
+    test('should handle messages with null content', () async {
+      final messages = [
+        const ChatCompletionMessage.assistant(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'tool-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'test_function',
+                arguments: '{}',
+              ),
+            ),
+          ],
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+      );
+
+      await stream.toList();
+
+      final captured = verify(() => mockHttpClient.send(captureAny())).captured;
+      final request = captured.first as http.Request;
+      final body = request.body;
+      final jsonBody = jsonDecode(body) as Map<String, dynamic>;
+
+      final jsonMessages = jsonBody['messages'] as List<dynamic>;
+      final firstMessage = jsonMessages[0] as Map<String, dynamic>;
+      expect(firstMessage['content'], '');
+    });
+
+    test('should handle content that cannot be JSON encoded', () async {
+      // Create a message with standard content
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('test content'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+      );
+
+      await stream.toList();
+
+      final captured = verify(() => mockHttpClient.send(captureAny())).captured;
+      final request = captured.first as http.Request;
+      final body = request.body;
+      final jsonBody = jsonDecode(body) as Map<String, dynamic>;
+
+      final jsonMessages = jsonBody['messages'] as List<dynamic>;
+      final firstMessage = jsonMessages[0] as Map<String, dynamic>;
+      // Should have the standard content
+      expect(firstMessage['content'], 'test content');
+    });
+
+    test('should include maxCompletionTokens in options', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Test'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+        maxCompletionTokens: 500,
+      );
+
+      await stream.toList();
+
+      final captured = verify(() => mockHttpClient.send(captureAny())).captured;
+      final request = captured.first as http.Request;
+      final body = request.body;
+      final jsonBody = jsonDecode(body) as Map<String, dynamic>;
+
+      final options = jsonBody['options'] as Map<String, dynamic>;
+      expect(options['num_predict'], 500);
+    });
+
+    test('should handle empty text parts in content', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.parts([
+            ChatCompletionMessageContentPart.text(text: ''),
+            ChatCompletionMessageContentPart.text(
+                text: '  '), // Only whitespace
+            ChatCompletionMessageContentPart.text(text: 'Valid text'),
+          ]),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+      );
+
+      await stream.toList();
+
+      final captured = verify(() => mockHttpClient.send(captureAny())).captured;
+      final request = captured.first as http.Request;
+      final body = request.body;
+      final jsonBody = jsonDecode(body) as Map<String, dynamic>;
+
+      final jsonMessages = jsonBody['messages'] as List<dynamic>;
+      final firstMessage = jsonMessages[0] as Map<String, dynamic>;
+      // Should only contain the valid text
+      expect(firstMessage['content'], 'Valid text');
+    });
+  });
+
+  group('Additional Error handling and retries', () {
+    late OllamaInferenceRepository repository;
+    late MockHttpClient mockHttpClient;
+
+    setUp(() {
+      mockHttpClient = MockHttpClient();
+      repository = OllamaInferenceRepository(httpClient: mockHttpClient);
+    });
+
+    test('should handle malformed JSON in stream', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Test'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+          Stream.value(utf8.encode('invalid json\n{"done": true}'))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+      );
+
+      // Should handle the error gracefully and continue
+      final responses = await stream.toList();
+      expect(responses, isEmpty);
+    });
+
+    test('should retry on SocketException', () async {
+      var attemptCount = 0;
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+
+      when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+        attemptCount++;
+        if (attemptCount < 2) {
+          throw const SocketException('Connection failed');
+        }
+        return mockResponse;
+      });
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateText(
+        prompt: 'Test prompt',
+        model: 'test-model',
+        temperature: 0.7,
+        systemMessage: null,
+        provider: provider,
+      );
+
+      await stream.toList();
+
+      // Should have retried
+      expect(attemptCount, 2);
+    });
+
+    test('should throw after max retries on SocketException', () async {
+      when(() => mockHttpClient.send(any())).thenThrow(
+        const SocketException('Connection failed'),
+      );
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateText(
+        prompt: 'Test prompt',
+        model: 'test-model',
+        temperature: 0.7,
+        systemMessage: null,
+        provider: provider,
+      );
+
+      expect(
+        stream.toList(),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Network error'),
+          ),
+        ),
+      );
+    });
+
+    test('should rethrow non-retryable exceptions immediately', () async {
+      when(() => mockHttpClient.send(any())).thenThrow(
+        Exception('Some other error'),
+      );
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateText(
+        prompt: 'Test prompt',
+        model: 'test-model',
+        temperature: 0.7,
+        systemMessage: null,
+        provider: provider,
+      );
+
+      await expectLater(
+        stream.toList(),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Some other error'),
+          ),
+        ),
+      );
+
+      // Should not retry
+      verify(() => mockHttpClient.send(any())).called(1);
+    });
+
+    test('should detect model not found in error message', () async {
+      final mockResponse = MockStreamedResponse();
+      // Model not found should return 404
+      when(() => mockResponse.statusCode).thenReturn(404);
+      when(() =>
+          mockResponse
+              .stream).thenAnswer((_) => http.ByteStream(Stream.value(utf8.encode(
+          '{"error": "model \'missing-model\' not found, try pulling it first"}'))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateText(
+        prompt: 'Test prompt',
+        model: 'missing-model',
+        temperature: 0.7,
+        systemMessage: null,
+        provider: provider,
+      );
+
+      await expectLater(
+        stream.toList(),
+        throwsA(isA<ModelNotInstalledException>()),
+      );
+    });
+  });
+
+  group('Additional Tool call handling', () {
+    late OllamaInferenceRepository repository;
+    late MockHttpClient mockHttpClient;
+
+    setUp(() {
+      mockHttpClient = MockHttpClient();
+      repository = OllamaInferenceRepository(httpClient: mockHttpClient);
+    });
+
+    test('should handle tool calls with existing ID in stream', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Test'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+
+      // Stream that sends tool call in multiple chunks
+      final streamController = StreamController<List<int>>();
+      when(() => mockResponse.stream)
+          .thenAnswer((_) => http.ByteStream(streamController.stream));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+        tools: [
+          const ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(
+              name: 'test_function',
+              description: 'Test function',
+            ),
+          ),
+        ],
+      );
+
+      final futureList = stream.toList();
+
+      // Send tool call response
+      streamController
+        ..add(utf8.encode('${jsonEncode({
+              'message': {
+                'tool_calls': [
+                  {
+                    'id': 'tool-1',
+                    'function': {
+                      'name': 'test_function',
+                      'arguments': '{"partial": true}',
+                    },
+                  },
+                ],
+              },
+              'done': false,
+            })}\n'))
+
+        // Send completion
+        ..add(utf8.encode('${jsonEncode({
+              'done': true,
+            })}\n'));
+
+      await streamController.close();
+
+      final responses = await futureList;
+      expect(responses.length, 1);
+      expect(responses.first.choices?.first.delta?.toolCalls, isNotNull);
+      expect(responses.first.choices?.first.delta?.toolCalls?.length, 1);
+    });
+
+    test('should handle tool calls with pre-encoded arguments', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Test'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(Stream.value(utf8.encode(jsonEncode({
+                'message': {
+                  'tool_calls': [
+                    {
+                      'id': 'tool-1',
+                      'function': {
+                        'name': 'test_function',
+                        'arguments':
+                            '{"already": "encoded"}', // Already a string
+                      },
+                    },
+                  ],
+                },
+                'done': true,
+              })))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+        tools: [
+          const ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(
+              name: 'test_function',
+              description: 'Test function',
+            ),
+          ),
+        ],
+      );
+
+      final responses = await stream.toList();
+      expect(responses.length, 1);
+      final toolCall = responses.first.choices?.first.delta?.toolCalls?.first;
+      expect(toolCall?.function?.arguments, '{"already": "encoded"}');
+    });
+
+    test('should generate tool call ID if missing', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Test'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(Stream.value(utf8.encode(jsonEncode({
+                'message': {
+                  'tool_calls': [
+                    {
+                      // No ID provided
+                      'function': {
+                        'name': 'test_function',
+                        'arguments': {'test': 'args'},
+                      },
+                    },
+                  ],
+                },
+                'done': true,
+              })))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+        tools: [
+          const ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(
+              name: 'test_function',
+              description: 'Test function',
+            ),
+          ),
+        ],
+      );
+
+      final responses = await stream.toList();
+      expect(responses.length, 1);
+      final toolCall = responses.first.choices?.first.delta?.toolCalls?.first;
+      expect(toolCall?.id, startsWith('tool-'));
+    });
   });
 }
+
+// Test helper classes
