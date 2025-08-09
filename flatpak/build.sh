@@ -67,20 +67,18 @@ if ! cp assets/icon/app_icon_1024.png flatpak/app_icon_1024.png; then
 fi
 echo "Icon file copied successfully to flatpak/app_icon_1024.png"
 
-# Build Flutter app if it doesn't exist
-if [ ! -d "build/linux/x64/release/bundle" ]; then
-    echo "Flutter app not built. Building now..."
-    echo "Getting Flutter dependencies..."
-    flutter pub get
-    echo "Building Flutter app with all dependencies..."
-    if ! flutter build linux --release; then
-        echo "Error: Failed to build Flutter app"
-        exit 1
-    fi
-    echo "Flutter app built successfully"
-else
-    echo "Flutter app already built, skipping build"
+# Force a clean Flutter build to ensure proper bundle structure
+echo "Building Flutter app (forced clean build)..."
+echo "Cleaning previous build..."
+flutter clean
+echo "Getting Flutter dependencies..."
+flutter pub get
+echo "Building Flutter app with all dependencies..."
+if ! flutter build linux --release; then
+    echo "Error: Failed to build Flutter app"
+    exit 1
 fi
+echo "Flutter app built successfully"
 
 # Copy built app to project root for Flatpak build
 echo "Copying built app to project root..."
@@ -90,9 +88,21 @@ if ! cp -r build/linux/x64/release/bundle .; then
 fi
 echo "Built app copied to project root"
 
+# Debug: Check what Flutter actually built
+echo "Debugging Flutter build structure..."
+echo "Contents of build/linux/x64/release/bundle/:"
+ls -la build/linux/x64/release/bundle/ 2>/dev/null || echo "No bundle directory"
+echo "Contents of build/linux/x64/release/bundle/lib/:"
+ls -la build/linux/x64/release/bundle/lib/ 2>/dev/null || echo "No lib directory in bundle"
+echo "Contents of build/linux/x64/release/bundle/data/:"
+ls -la build/linux/x64/release/bundle/data/ 2>/dev/null || echo "No data directory in bundle"
+echo "Searching for .so files in build directory:"
+find build/ -name "*.so" -type f 2>/dev/null | head -10 || echo "No .so files found anywhere"
+
 # Copy all .so files and Flutter assets to project root for Flatpak sources
 echo "Copying individual Flutter files to project root..."
-cp build/linux/x64/release/bundle/*.so . 2>/dev/null || echo "No .so files to copy"
+cp build/linux/x64/release/bundle/lib/*.so . 2>/dev/null || echo "No .so files in bundle/lib/"
+cp build/linux/x64/release/bundle/*.so . 2>/dev/null || echo "No .so files in bundle root"
 cp build/linux/x64/release/bundle/lotti . 2>/dev/null || echo "No lotti executable to copy"
 cp build/linux/x64/release/bundle/data/icudtl.dat . 2>/dev/null || echo "No icudtl.dat to copy"
 cp -r build/linux/x64/release/bundle/data/flutter_assets . 2>/dev/null || echo "No flutter_assets to copy"
