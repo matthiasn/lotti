@@ -36,6 +36,8 @@ modules:
       - echo "Copying any .so files from project root..."
       - find . -maxdepth 1 -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files in project root"
       - echo "Copying data directory..."
+      - ls -la data/ 2>/dev/null || echo "No data directory in source"
+      - find data/ -type f 2>/dev/null | head -10 || echo "No files in data directory"
       - cp -r data /app/ 2>/dev/null || echo "Failed to copy data directory"
       - echo "Copying share directory..."
       - cp -r share /app/ 2>/dev/null || echo "Failed to copy share directory"
@@ -47,6 +49,8 @@ modules:
       - ls -la /app/lib/ 2>/dev/null || echo "No lib directory"
       - echo "Checking data directory:"
       - ls -la /app/data/ 2>/dev/null || echo "No data directory"
+      - ls -la /app/data/flutter_assets/ 2>/dev/null || echo "No flutter_assets directory"
+      - find /app/data/ -name "icudtl.dat" 2>/dev/null || echo "No ICU data file"
       - echo "Creating comprehensive libkeybinder stub with all required symbols..."
       - |
         cat > stub_keybinder.c << 'EOF'
