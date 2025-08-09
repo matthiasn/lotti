@@ -45,26 +45,11 @@ modules:
       - echo "Installing pre-built Flutter application..."
       - echo "Contents of project directory:"
       - ls -la
-      - echo "Copying Flutter executable..."
-      - cp lotti /app/
-      - echo "Copying Flutter libraries to /app/lib/..."
-      - cp *.so /app/lib/ 2>/dev/null || echo "No .so files found"
-      - echo "Creating data directory and copying Flutter assets..."
-      - mkdir -p /app/data
-      - cp icudtl.dat /app/data/ 2>/dev/null || echo "No icudtl.dat found"
-      - echo "Creating flutter_assets directory structure..."
-      - mkdir -p /app/data/flutter_assets
-      - cp AssetManifest.bin /app/data/flutter_assets/ 2>/dev/null || echo "No AssetManifest.bin"
-      - cp AssetManifest.json /app/data/flutter_assets/ 2>/dev/null || echo "No AssetManifest.json"
-      - cp FontManifest.json /app/data/flutter_assets/ 2>/dev/null || echo "No FontManifest.json"
-      - cp version.json /app/data/flutter_assets/ 2>/dev/null || echo "No version.json"
-      - cp NOTICES.Z /app/data/flutter_assets/ 2>/dev/null || echo "No NOTICES.Z"
-      - cp NativeAssetsManifest.json /app/data/flutter_assets/ 2>/dev/null || echo "No NativeAssetsManifest.json"
-      - cp kernel_blob.bin /app/data/flutter_assets/ 2>/dev/null || echo "No kernel_blob.bin"
-      - cp -r packages /app/data/flutter_assets/ 2>/dev/null || echo "No packages directory"
-      - cp -r shaders /app/data/flutter_assets/ 2>/dev/null || echo "No shaders directory"
-      - cp -r fonts /app/data/flutter_assets/ 2>/dev/null || echo "No fonts directory"
-      - cp -r assets /app/data/flutter_assets/ 2>/dev/null || echo "No assets directory"
+      - echo "Copying complete Flutter bundle..."
+      - cp bundle/lotti /app/
+      - cp -r bundle/lib /app/
+      - cp -r bundle/data /app/
+      - cp -r bundle/share /app/
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
       - echo "Checking if lotti executable was copied:"
@@ -159,30 +144,8 @@ modules:
         path: ../libvodozemac_bindings_dart.so
       - type: file
         path: ../libwindow_manager_plugin.so
-      - type: file
-        path: ../icudtl.dat
-      - type: file
-        path: ../AssetManifest.bin
-      - type: file
-        path: ../AssetManifest.json
-      - type: file
-        path: ../FontManifest.json
-      - type: file
-        path: ../version.json
-      - type: file
-        path: ../NOTICES.Z
-      - type: file
-        path: ../NativeAssetsManifest.json
-      - type: file
-        path: ../kernel_blob.bin
       - type: dir
-        path: ../packages
-      - type: dir
-        path: ../shaders
-      - type: dir
-        path: ../fonts
-      - type: dir
-        path: ../assets
+        path: ../bundle
   - name: flutter-common
     buildsystem: simple
     build-commands:
