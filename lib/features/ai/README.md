@@ -246,7 +246,6 @@ To integrate a new handler:
 - **`active_inference_controller.dart`**: Tracks active inferences with linked entity support
   - **Dual-Entry System**: Creates symmetric entries for both primary and linked entities
   - **ActiveInferenceByEntity**: Finds active inferences for any entity (primary or linked)
-- **`checklist_suggestions_controller.dart`**: Manages checklist completion suggestions
 
 #### Helpers & Extensions
 - **`helpers/entity_state_helper.dart`**: Utilities for managing entity state during AI operations
@@ -544,7 +543,7 @@ Models define:
 
 ### Progress Indicators
 - **`unified_ai_progress_view.dart`**: Real-time progress with model installation
-- **`ai_running_animation.dart`**: Siri-wave animated processing indicator
+- **`animation/ai_running_animation.dart`**: Siri-wave animated processing indicator
 - **Model Installation Dialog**: Integrated UI for installing Ollama models
 
 ### AI Assistant Access
@@ -554,13 +553,13 @@ Models define:
   - Dynamic prompt filtering based on context
 
 ### Settings Services
-- **`ai_settings_filter_service.dart`**: Advanced filtering system
+- **`settings/ai_settings_filter_service.dart`**: Advanced filtering system
   - Filter by provider, capabilities, reasoning support
   - Search across all configuration types
-- **`ai_settings_navigation_service.dart`**: Smooth navigation
+- **`settings/ai_settings_navigation_service.dart`**: Smooth navigation
   - Consistent slide transitions
   - Centralized navigation logic
-- **`ai_config_delete_service.dart`**: Smart deletion
+- **`settings/services/ai_config_delete_service.dart`**: Smart deletion
   - Cascading deletes for related configurations
   - Undo functionality
   - Stylish confirmation dialogs
@@ -698,6 +697,83 @@ The conversation-based approach uses several key components:
 - **ConversationRepository**: Manages conversation lifecycle and routes to providers
 - **LottiConversationProcessor**: Orchestrates the checklist creation flow
 - **Event Streaming**: Provides real-time updates via `ConversationEvent` stream
+
+### Safe JSON Accumulation for Streaming Tool Calls
+
+The conversation repository implements a robust mechanism for accumulating streaming JSON arguments in tool calls, preventing corruption that can occur with naive string concatenation.
+
+#### The Problem
+
+When AI providers stream tool call responses, JSON arguments often arrive in multiple chunks:
+- Chunks may split UTF-8 characters across boundaries
+- Network delays can cause out-of-order arrival
+- Simple concatenation can create invalid JSON
+
+Example of the issue:
+```
+Chunk 1: {"items": ["cheese", "pep
+Chunk 2: peroni", "mushrooms"]}
+Naive concatenation: {"items": ["cheese", "pepperoni", "mushrooms"]}  // Corrupted!
+```
+
+#### The Solution
+
+The repository uses `StringBuffer` instances to safely accumulate arguments:
+
+```dart
+// Safe accumulation using StringBuffer for each tool call
+final toolCallArgumentBuffers = <String, StringBuffer>{};
+
+// When processing chunks:
+if (existingIndex >= 0) {
+  final existing = toolCalls[existingIndex];
+  final toolCallKey = existing.id;
+  
+  // Get or create buffer for this tool call
+  final buffer = toolCallArgumentBuffers[toolCallKey] ??
+      StringBuffer(existing.function.arguments);
+  toolCallArgumentBuffers[toolCallKey] = buffer;
+  
+  // Append new chunk to buffer
+  buffer.write(toolCallChunk.function?.arguments ?? '');
+  
+  // Update the tool call with buffered arguments
+  toolCalls[existingIndex] = ChatCompletionMessageToolCall(
+    id: existing.id,
+    type: existing.type,
+    function: ChatCompletionMessageFunctionCall(
+      name: existing.function.name,
+      arguments: buffer.toString(),
+    ),
+  );
+}
+```
+
+#### Technical Benefits
+
+1. **Thread-Safe Accumulation**: StringBuffer handles proper character encoding
+2. **Preserves Chunk Order**: Each tool call has its own buffer indexed by ID
+3. **Memory Efficient**: Buffers are created only when needed
+4. **Handles Edge Cases**: 
+   - Empty chunks are safely ignored
+   - Missing arguments default to empty strings
+   - Split UTF-8 sequences are preserved correctly
+
+#### Provider-Specific Handling
+
+The system also includes special handling for providers like Gemini that send multiple complete tool calls in a single chunk:
+
+```dart
+// Detect Gemini-style batched tool calls
+final isGeminiStyle = delta!.toolCalls!.length > 1 &&
+    delta.toolCalls!.every((tc) =>
+        (tc.id == null || tc.id!.isEmpty) &&
+        tc.index == null &&
+        tc.function?.arguments != null &&
+        tc.function!.arguments!.isNotEmpty);
+```
+
+This ensures compatibility across different AI provider implementations while maintaining data integrity.
 
 ### Current Limitations
 

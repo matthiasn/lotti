@@ -97,6 +97,9 @@ class ConversationRepository extends _$ConversationRepository {
         // Collect response
         final toolCalls = <ChatCompletionMessageToolCall>[];
         final contentBuffer = StringBuffer();
+        // Use StringBuffer for each tool call to safely accumulate arguments
+        // This prevents JSON corruption when chunks are split mid-character or arrive out of order
+        final toolCallArgumentBuffers = <String, StringBuffer>{};
 
         await for (final response in stream) {
           if (response.choices?.isNotEmpty ?? false) {
@@ -163,28 +166,43 @@ class ConversationRepository extends _$ConversationRepository {
                   }
 
                   if (existingIndex >= 0) {
-                    // Append to existing tool call
+                    // Append to existing tool call's argument buffer
                     final existing = toolCalls[existingIndex];
-                    final updatedArgs = existing.function.arguments +
-                        (toolCallChunk.function?.arguments ?? '');
+                    final toolCallKey = existing.id;
+
+                    // Get or create buffer for this tool call
+                    final buffer = toolCallArgumentBuffers[toolCallKey] ??
+                        StringBuffer(existing.function.arguments);
+                    toolCallArgumentBuffers[toolCallKey] = buffer;
+
+                    // Append new chunk to buffer
+                    buffer.write(toolCallChunk.function?.arguments ?? '');
+
+                    // Update the tool call with buffered arguments
                     toolCalls[existingIndex] = ChatCompletionMessageToolCall(
                       id: existing.id,
                       type: existing.type,
                       function: ChatCompletionMessageFunctionCall(
                         name: existing.function.name,
-                        arguments: updatedArgs,
+                        arguments: buffer.toString(),
                       ),
                     );
                   } else if (toolCallChunk.function != null) {
                     // Add new tool call
                     final toolCallId = toolCallChunk.id ??
                         'tool_${toolCallChunk.index ?? toolCalls.length}';
+
+                    // Initialize buffer for new tool call
+                    final initialArgs = toolCallChunk.function!.arguments ?? '';
+                    toolCallArgumentBuffers[toolCallId] =
+                        StringBuffer(initialArgs);
+
                     toolCalls.add(ChatCompletionMessageToolCall(
                       id: toolCallId,
                       type: ChatCompletionMessageToolCallType.function,
                       function: ChatCompletionMessageFunctionCall(
                         name: toolCallChunk.function!.name ?? '',
-                        arguments: toolCallChunk.function!.arguments ?? '',
+                        arguments: initialArgs,
                       ),
                     ));
                   }

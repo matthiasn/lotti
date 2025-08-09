@@ -1055,6 +1055,7 @@ class UnifiedAiInferenceRepository {
     required Task task,
   }) async {
     var languageWasSet = false;
+    var currentTask = task; // Create mutable copy for updates
     developer.log(
       'Starting to process ${toolCalls.length} tool calls for checklist operations',
       name: 'UnifiedAiInferenceRepository',
@@ -1209,7 +1210,7 @@ class UnifiedAiInferenceRepository {
             );
 
             // Check if task has existing checklists
-            final checklistIds = task.data.checklistIds ?? [];
+            final checklistIds = currentTask.data.checklistIds ?? [];
 
             if (checklistIds.isEmpty) {
               // Create a new "to-do" checklist with the item
@@ -1219,7 +1220,7 @@ class UnifiedAiInferenceRepository {
               );
 
               final result = await autoChecklistService.autoCreateChecklist(
-                taskId: task.id,
+                taskId: currentTask.id,
                 suggestions: [
                   ChecklistItemData(
                     title: itemDescription,
@@ -1239,18 +1240,18 @@ class UnifiedAiInferenceRepository {
                 // Refresh the task to get the updated checklistIds
                 final journalDb = getIt<JournalDb>();
                 final updatedEntity =
-                    await journalDb.journalEntityById(task.id);
+                    await journalDb.journalEntityById(currentTask.id);
                 if (updatedEntity is Task) {
-                  task = updatedEntity;
+                  currentTask = updatedEntity;
                   developer.log(
-                    'Refreshed task, now has ${task.data.checklistIds?.length ?? 0} checklists',
+                    'Refreshed task, now has ${currentTask.data.checklistIds?.length ?? 0} checklists',
                     name: 'UnifiedAiInferenceRepository',
                   );
                 } else {
                   // The task should exist since we just created a checklist for it.
                   // If not, it was likely deleted concurrently. Stop processing to avoid further errors.
                   developer.log(
-                    'Failed to refresh task ${task.id} after creating checklist. It might have been deleted concurrently.',
+                    'Failed to refresh task ${currentTask.id} after creating checklist. It might have been deleted concurrently.',
                     name: 'UnifiedAiInferenceRepository',
                     level: 1000, // SEVERE
                   );
@@ -1275,7 +1276,7 @@ class UnifiedAiInferenceRepository {
                 checklistId: checklistId,
                 title: itemDescription,
                 isChecked: false,
-                categoryId: task.meta.categoryId,
+                categoryId: currentTask.meta.categoryId,
               );
 
               if (newItem != null) {
@@ -1313,11 +1314,12 @@ class UnifiedAiInferenceRepository {
 
           // Re-fetch the task to get the latest state and avoid race conditions
           final journalRepo = ref.read(journalRepositoryProvider);
-          final freshEntity = await journalRepo.getJournalEntityById(task.id);
+          final freshEntity =
+              await journalRepo.getJournalEntityById(currentTask.id);
 
           if (freshEntity is! Task) {
             developer.log(
-              'Task ${task.id} not found or is not a Task anymore, skipping language update',
+              'Task ${currentTask.id} not found or is not a Task anymore, skipping language update',
               name: 'UnifiedAiInferenceRepository',
             );
             continue;
@@ -1336,20 +1338,20 @@ class UnifiedAiInferenceRepository {
             try {
               await journalRepo.updateJournalEntity(updated);
               developer.log(
-                'Successfully set task language to $languageCode for task ${task.id}',
+                'Successfully set task language to $languageCode for task ${currentTask.id}',
                 name: 'UnifiedAiInferenceRepository',
               );
               languageWasSet = true;
             } catch (e) {
               developer.log(
-                'Failed to update task language for task ${task.id}',
+                'Failed to update task language for task ${currentTask.id}',
                 name: 'UnifiedAiInferenceRepository',
                 error: e,
               );
             }
           } else {
             developer.log(
-              'Task ${task.id} already has language set to ${freshTask.data.languageCode}, not overwriting',
+              'Task ${currentTask.id} already has language set to ${freshTask.data.languageCode}, not overwriting',
               name: 'UnifiedAiInferenceRepository',
             );
           }
@@ -1408,7 +1410,7 @@ class UnifiedAiInferenceRepository {
                 await checklistRepository.updateChecklistItem(
                   checklistItemId: suggestion.checklistItemId,
                   data: checklistItem.data.copyWith(isChecked: true),
-                  taskId: task.id,
+                  taskId: currentTask.id,
                 );
 
                 developer.log(
@@ -1437,7 +1439,7 @@ class UnifiedAiInferenceRepository {
       ref.invalidate(checklistItemControllerProvider);
 
       developer.log(
-        'Processed ${suggestions.length} checklist completion suggestions for task ${task.id}',
+        'Processed ${suggestions.length} checklist completion suggestions for task ${currentTask.id}',
         name: 'UnifiedAiInferenceRepository',
       );
     } else {

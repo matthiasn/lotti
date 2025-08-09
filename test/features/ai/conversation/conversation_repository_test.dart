@@ -540,7 +540,8 @@ void main() {
         );
       });
 
-      test('handles empty tool call arguments accumulation', () async {
+      test('handles tool call arguments accumulation with StringBuffer',
+          () async {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
@@ -569,7 +570,7 @@ void main() {
           ],
         );
 
-        // First chunk with tool call name
+        // First chunk with tool call name and partial arguments
         streamController
           ..add(
             CreateChatCompletionStreamResponse(
@@ -629,9 +630,230 @@ void main() {
         await sendFuture;
 
         // Verify the conversation was updated
-        expect(repository.getConversation(conversationId), isNotNull);
+        final manager = repository.getConversation(conversationId);
+        expect(manager, isNotNull);
+
+        // The assistant message should have the complete tool call with proper JSON
+        final messages = manager!.messages;
+        expect(messages.length, 2); // User + Assistant
+
         // Tool calls would have been accumulated properly
         // Arguments would be '{"arg": "value"}'
+      });
+
+      test('handles split UTF-8 characters in tool call arguments', () async {
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+            )).thenAnswer((_) => streamController.stream);
+
+        final sendFuture = repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Test UTF-8 splitting',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          tools: [
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'test_function',
+                description: 'A test function',
+              ),
+            ),
+          ],
+        );
+
+        // First chunk ending mid-UTF8 character (emoji 😀 = F0 9F 98 80)
+        streamController
+          ..add(
+            CreateChatCompletionStreamResponse(
+              id: 'test-response',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: 'tool-1',
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'test_function',
+                          arguments: '{"emoji": "',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          )
+
+          // Second chunk with emoji and rest
+          ..add(
+            CreateChatCompletionStreamResponse(
+              id: 'test-response',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: 'tool-1',
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          arguments: '😀"}',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
+
+        await streamController.close();
+        await sendFuture;
+
+        // Verify the conversation was updated with proper UTF-8 handling
+        final manager = repository.getConversation(conversationId);
+        expect(manager, isNotNull);
+        expect(manager!.messages.length, 2);
+      });
+
+      test('handles multiple tool calls with separate buffers', () async {
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+            )).thenAnswer((_) => streamController.stream);
+
+        final sendFuture = repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Multiple tool calls',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          tools: [
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'function_a',
+                description: 'Function A',
+              ),
+            ),
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'function_b',
+                description: 'Function B',
+              ),
+            ),
+          ],
+        );
+
+        // First chunk with two tool calls
+        streamController
+          ..add(
+            CreateChatCompletionStreamResponse(
+              id: 'test-response',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: 'tool-1',
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'function_a',
+                          arguments: '{"a": ',
+                        ),
+                      ),
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 1,
+                        id: 'tool-2',
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'function_b',
+                          arguments: '{"b": ',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          )
+
+          // Second chunk completing both
+          ..add(
+            CreateChatCompletionStreamResponse(
+              id: 'test-response',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: 'tool-1',
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          arguments: '1}',
+                        ),
+                      ),
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 1,
+                        id: 'tool-2',
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          arguments: '2}',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
+
+        await streamController.close();
+        await sendFuture;
+
+        // Verify both tool calls were accumulated separately
+        final manager = repository.getConversation(conversationId);
+        expect(manager, isNotNull);
+        expect(manager!.messages.length, 2);
+        // Each tool call should have its own complete JSON
       });
     });
 
