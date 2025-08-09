@@ -26,14 +26,8 @@ modules:
     build-commands:
       - echo "Installing complete Flutter bundle structure..."
       - ls -la
-      - echo "Copying executable..."
-      - cp lotti /app/
-      - echo "Copying lib directory..."
-      - cp -r lib /app/ 2>/dev/null || echo "No lib directory found"
-      - echo "Copying data directory..."
-      - cp -r data /app/ 2>/dev/null || echo "No data directory found"
-      - echo "Copying share directory..."
-      - cp -r share /app/ 2>/dev/null || echo "No share directory found"
+      - echo "Copying bundle structure..."
+      - cp -r bundle/* /app/ 2>/dev/null || echo "No bundle directory found"
       - echo "Copying any remaining .so files from project root..."
       - find . -maxdepth 1 -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files found in project root"
       - echo "Copying libkeybinder from project root..."
@@ -83,6 +77,8 @@ modules:
       - type: git
         url: {{LOTTI_REPO_URL}}
         branch: fix/flatpak-kb-fix-v2
+      - type: dir
+        path: ../bundle
       - type: file
         path: ../lotti
       - type: dir

@@ -84,7 +84,7 @@ fi
 
 # Copy built app to project root for Flatpak build
 echo "Copying built app to project root..."
-if ! cp -r build/linux/x64/release/bundle/* .; then
+if ! cp -r build/linux/x64/release/bundle .; then
     echo "Error: Failed to copy built app to project root"
     exit 1
 fi
