@@ -24,22 +24,22 @@ modules:
       strip: true
       no-debuginfo: true
     build-commands:
-      - echo "Installing pre-built Flutter app..."
+      - echo "Installing complete Flutter bundle structure..."
       - ls -la
+      - echo "Copying executable..."
       - cp lotti /app/
-      - echo "Installing shared libraries..."
-      - mkdir -p /app/lib
-      - cp -r lib/* /app/lib/ 2>/dev/null || echo "No lib files to copy"
-      - echo "Searching for .so files in project root:"
-      - find . -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files found"
-      - echo "Copying libkeybinder from project root (pre-copied by build script)..."
+      - echo "Copying lib directory..."
+      - cp -r lib /app/ 2>/dev/null || echo "No lib directory found"
+      - echo "Copying data directory..."
+      - cp -r data /app/ 2>/dev/null || echo "No data directory found"
+      - echo "Copying share directory..."
+      - cp -r share /app/ 2>/dev/null || echo "No share directory found"
+      - echo "Copying any remaining .so files from project root..."
+      - find . -maxdepth 1 -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files found in project root"
+      - echo "Copying libkeybinder from project root..."
       - cp libkeybinder-3.0.so.0 /app/lib/ 2>/dev/null || echo "libkeybinder not found in project root"
-      - echo "Checking if libkeybinder was copied:"
-      - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "libkeybinder not found"
-      - echo "Final check - libkeybinder in /app/lib/:"
-      - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Real libkeybinder not found, creating minimal stub as fallback"
+      - echo "Creating comprehensive libkeybinder stub with all required symbols..."
       - |
-        echo "Creating comprehensive libkeybinder stub with all required symbols..."
         cat > stub_keybinder.c << 'EOF'
         #include <stddef.h>
         
@@ -66,8 +66,10 @@ modules:
         rm -f stub_keybinder.c
         echo "Comprehensive stub created:"
         ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Stub creation failed"
-      - echo "Contents of /app/lib/ after copying:"
-      - ls -la /app/lib/
+      - echo "Final bundle structure:"
+      - ls -la /app/
+      - ls -la /app/lib/ 2>/dev/null || echo "No lib directory"
+      - ls -la /app/data/ 2>/dev/null || echo "No data directory"
       - echo "Creating wrapper script..."
       - echo '#!/bin/bash' > /app/lotti-wrapper
       - echo 'export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH' >> /app/lotti-wrapper
