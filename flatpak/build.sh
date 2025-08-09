@@ -90,62 +90,36 @@ if ! cp -r build/linux/x64/release/bundle .; then
 fi
 echo "Built app copied to project root"
 
-# Copy all shared libraries to lib directory for Flatpak
-echo "Copying shared libraries..."
-rm -rf lib
-mkdir -p lib
-echo "Checking bundle structure:"
-ls -la build/linux/x64/release/bundle/ || echo "Bundle not found"
-echo "Searching for .so files in bundle:"
-find build/linux/x64/release/bundle -name "*.so" -type f || echo "No .so files found"
-# Copy all .so files to lib directory
-if find build/linux/x64/release/bundle -name "*.so" -type f | grep -q .; then
-    echo "Found .so files, copying to lib/:"
-    find build/linux/x64/release/bundle -name "*.so" -type f -exec cp {} lib/ \;
-    echo "Copied .so files to lib/:"
-    ls -la lib/
-else
-    echo "No .so files found in bundle"
-fi
-
-# Also copy any .so files that might be in the project root
-echo "Searching for .so files in project root:"
-find . -maxdepth 1 -name "*.so" -type f || echo "No .so files found in project root"
-if find . -maxdepth 1 -name "*.so" -type f | grep -q .; then
-    echo "Found .so files in project root, copying to lib/:"
-    find . -maxdepth 1 -name "*.so" -type f -exec cp {} lib/ \;
-    echo "Copied .so files from project root to lib/:"
-    ls -la lib/
-fi
-
-# Copy system libraries that might be needed
-echo "Copying system libraries..."
+# Copy libkeybinder from system to bundle/lib for Flatpak
+echo "Copying libkeybinder from system to bundle/lib..."
 if [ -f "/usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0" ]; then
-    echo "Found libkeybinder-3.0.so.0 in system, copying to lib/:"
-    cp /usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
+    echo "Found libkeybinder-3.0.so.0 in system, copying to bundle/lib/:"
+    cp /usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0 bundle/lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
 elif [ -f "/usr/lib/libkeybinder-3.0.so.0" ]; then
-    echo "Found libkeybinder-3.0.so.0 in /usr/lib, copying to lib/:"
-    cp /usr/lib/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
+    echo "Found libkeybinder-3.0.so.0 in /usr/lib, copying to bundle/lib/:"
+    cp /usr/lib/libkeybinder-3.0.so.0 bundle/lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
 else
     echo "libkeybinder-3.0.so.0 not found in system, trying to install it..."
     sudo apt-get update && sudo apt-get install -y libkeybinder-3.0-0 2>/dev/null || echo "Failed to install libkeybinder-3.0-0"
     # Try copying again after installation
     if [ -f "/usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0" ]; then
-        echo "Found libkeybinder-3.0.so.0 after installation, copying to lib/:"
-        cp /usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
+        echo "Found libkeybinder-3.0.so.0 after installation, copying to bundle/lib/:"
+        cp /usr/lib/x86_64-linux-gnu/libkeybinder-3.0.so.0 bundle/lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
     elif [ -f "/usr/lib/libkeybinder-3.0.so.0" ]; then
-        echo "Found libkeybinder-3.0.so.0 after installation, copying to lib/:"
-        cp /usr/lib/libkeybinder-3.0.so.0 lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
+        echo "Found libkeybinder-3.0.so.0 after installation, copying to bundle/lib/:"
+        cp /usr/lib/libkeybinder-3.0.so.0 bundle/lib/ 2>/dev/null || echo "Failed to copy libkeybinder-3.0.so.0"
     else
         echo "libkeybinder-3.0.so.0 still not found after installation attempt"
     fi
 fi
-echo "Files in project root:"
-ls -la
 
-# Check if lotti executable exists
-if [ ! -f "lotti" ]; then
-    echo "Error: lotti executable not found after copy"
+echo "Bundle structure:"
+ls -la bundle/
+ls -la bundle/lib/ 2>/dev/null || echo "No lib directory in bundle"
+
+# Check if lotti executable exists in bundle
+if [ ! -f "bundle/lotti" ]; then
+    echo "Error: lotti executable not found in bundle"
     echo "Contents of build/linux/x64/release/bundle/:"
     ls -la build/linux/x64/release/bundle/
     exit 1
