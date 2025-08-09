@@ -45,11 +45,14 @@ modules:
       - echo "Installing pre-built Flutter application..."
       - echo "Contents of project directory:"
       - ls -la
-      - echo "Copying complete Flutter bundle..."
-      - cp bundle/lotti /app/
-      - cp -r bundle/lib /app/
-      - cp -r bundle/data /app/
-      - cp -r bundle/share /app/
+      - echo "Copying Flutter application files..."
+      - cp lotti /app/
+      - echo "Creating lib directory and copying .so files..."
+      - mkdir -p /app/lib
+      - cp *.so /app/lib/
+      - echo "Copying data and share directories..."
+      - cp -r data /app/
+      - cp -r share /app/
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
       - echo "Checking if lotti executable was copied:"
@@ -145,7 +148,9 @@ modules:
       - type: file
         path: ../libwindow_manager_plugin.so
       - type: dir
-        path: ../bundle
+        path: ../data
+      - type: dir
+        path: ../share
   - name: flutter-common
     buildsystem: simple
     build-commands:
