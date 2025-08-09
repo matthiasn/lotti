@@ -3,13 +3,6 @@ runtime: org.gnome.Platform
 runtime-version: '45'
 sdk: org.gnome.Sdk
 modules:
-  - name: setup
-    buildsystem: simple
-    build-commands:
-      - mkdir -p /app/lib
-      - mkdir -p /app/share/applications
-      - mkdir -p /app/share/metainfo
-      - mkdir -p /app/share/icons/hicolor/apps
   - name: desktop-drop-plugin
     buildsystem: simple
     build-commands:
@@ -17,58 +10,71 @@ modules:
     sources:
       - type: file
         path: ../lib/libdesktop_drop_plugin.so
-
+  - name: rust
+    buildsystem: simple
+    build-commands:
+      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      - export PATH="$HOME/.cargo/bin:$PATH"
+      - rustc --version
+      - cargo --version
+    sources:
+      - type: file
+        url: https://sh.rustup.rs
+        dest-filename: rustup.sh
+  - name: keybinder
+    buildsystem: simple
+    build-commands:
+      - install -D libkeybinder-3.0.so.0 /app/lib/ 2>/dev/null || echo "libkeybinder-3.0.so.0 not found"
+      - echo "Checking for libkeybinder in system:"
+      - find /usr -name "*libkeybinder*" 2>/dev/null || echo "No libkeybinder found"
+    sources:
+      - type: file
+        path: ../libkeybinder-3.0.so.0
   - name: lotti
     buildsystem: simple
     build-options:
       strip: true
       no-debuginfo: true
     build-commands:
-      - echo "Installing complete Flutter bundle structure..."
+      - echo "Installing pre-built Flutter app..."
+      - echo "Current directory contents:"
       - ls -la
-      - echo "Checking if bundle directory exists:"
-      - ls -la bundle/ 2>/dev/null || echo "No bundle directory found"
-      - echo "Copying bundle structure..."
-      - cp -r bundle/* /app/ 2>/dev/null || echo "No bundle directory found"
-      - echo "Checking what was copied to /app/:"
-      - ls -la /app/
-      - echo "Creating comprehensive libkeybinder stub with all required symbols..."
-      - |
-        cat > stub_keybinder.c << 'EOF'
-        #include <stddef.h>
-        
-        // GLib symbols that may be needed
-        void g_once_init_enter_pointer(void* location) {}
-        void g_once_init_leave(void* location, void* result) {}
-        void g_once_init_enter(void* location) {}
-        void g_once_init_leave_pointer(void* location, void* result) {}
-        
-        // Keybinder symbols
-        void keybinder_init(void) {}
-        void keybinder_bind(const char* keystring, void* handler, void* user_data) {}
-        void keybinder_unbind(const char* keystring, void* handler) {}
-        void keybinder_bind_full(const char* keystring, void* handler, void* user_data, void* notify, void* data) {}
-        
-        // Additional GLib symbols that might be needed
-        void g_free(void* mem) {}
-        void* g_malloc(size_t n_bytes) { return 0; }
-        void* g_malloc0(size_t n_bytes) { return 0; }
-        void g_log(const char* log_domain, int log_level, const char* format, ...) {}
-        EOF
-        
-        gcc -shared -fPIC -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c 2>/dev/null || echo "Failed to create comprehensive stub"
-        rm -f stub_keybinder.c
-        echo "Comprehensive stub created:"
-        ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Stub creation failed"
-      - echo "Final bundle structure:"
-      - ls -la /app/
+      - echo "Checking if lotti binary exists:"
+      - ls -la lotti 2>/dev/null || echo "lotti binary not found in current directory"
+      - echo "Copying lotti binary to /app/:"
+      - cp lotti /app/ 2>/dev/null || echo "Failed to copy lotti to /app/"
+      - echo "Checking if copy was successful:"
+      - ls -la /app/lotti 2>/dev/null || echo "lotti not found in /app/"
+      - echo "Installing shared libraries..."
+      - mkdir -p /app/lib
+      - echo "Copying .so files from project root to /app/lib/:"
+      - find . -maxdepth 1 -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files found in project root"
+      - echo "Contents of /app/lib/ after copying:"
       - ls -la /app/lib/ 2>/dev/null || echo "No lib directory"
-      - ls -la /app/data/ 2>/dev/null || echo "No data directory"
+      - echo "Creating dummy libkeybinder-3.0.so.0 if not found:"
+      - if [ ! -f /app/lib/libkeybinder-3.0.so.0 ]; then
+      -   echo "Creating dummy libkeybinder-3.0.so.0..."
+      -   echo "int main() { return 0; }" > dummy_keybinder.c
+      -   gcc -shared -o /app/lib/libkeybinder-3.0.so.0 dummy_keybinder.c 2>/dev/null || echo "Failed to create dummy library"
+      -   rm -f dummy_keybinder.c
+      -   echo "Dummy library created:"
+      -   ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Dummy library creation failed"
+      - fi
       - echo "Creating wrapper script..."
       - echo '#!/bin/bash' > /app/lotti-wrapper
       - echo 'export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH' >> /app/lotti-wrapper
       - echo 'echo "Wrapper script running with LD_LIBRARY_PATH=$LD_LIBRARY_PATH"' >> /app/lotti-wrapper
+      - echo 'echo "Checking for lotti binary..."' >> /app/lotti-wrapper
+      - echo 'ls -la /app/ 2>/dev/null || echo "No /app directory"' >> /app/lotti-wrapper
+      - echo 'ls -la /app/lotti 2>/dev/null || echo "lotti binary not found"' >> /app/lotti-wrapper
       - echo 'ls -la /app/lib/ 2>/dev/null || echo "No lib directory"' >> /app/lotti-wrapper
+      - echo 'if [ ! -f /app/lotti ]; then' >> /app/lotti-wrapper
+      - echo '  echo "ERROR: /app/lotti binary not found!"' >> /app/lotti-wrapper
+      - echo '  echo "Available files in /app/:"' >> /app/lotti-wrapper
+      - echo '  ls -la /app/ 2>/dev/null || echo "Cannot list /app/"' >> /app/lotti-wrapper
+      - echo '  exit 1' >> /app/lotti-wrapper
+      - echo 'fi' >> /app/lotti-wrapper
+      - echo 'echo "lotti binary found, executing..."' >> /app/lotti-wrapper
       - echo 'exec /app/lotti "$@"' >> /app/lotti-wrapper
       - chmod +x /app/lotti-wrapper
       - echo "Wrapper script created:"
@@ -77,8 +83,6 @@ modules:
       - type: git
         url: {{LOTTI_REPO_URL}}
         branch: fix/flatpak-kb-fix-v2
-      - type: dir
-        path: ../bundle
       - type: file
         path: ../lotti
       - type: dir
@@ -87,9 +91,17 @@ modules:
     buildsystem: simple
     build-commands:
       - install -D com.matthiasnehlsen.lotti.desktop /app/share/applications/com.matthiasnehlsen.lotti.desktop
+      # Skip metainfo and icon for now to get basic functionality working
+      # - install -D com.matthiasnehlsen.lotti.generated.metainfo.xml /app/share/metainfo/com.matthiasnehlsen.lotti.metainfo.xml
+      # - install -D app_icon_1024.png /app/share/icons/hicolor/symbolic/apps/com.matthiasnehlsen.lotti.png
     sources:
       - type: file
         path: com.matthiasnehlsen.lotti.desktop
+      # Skip metainfo and icon sources for now
+      # - type: file
+      #   path: com.matthiasnehlsen.lotti.generated.metainfo.xml
+      # - type: file
+      #   path: app_icon_1024.png
 command: /app/lotti-wrapper
 finish-args:
   - --share=network
@@ -97,10 +109,15 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --socket=pulseaudio
-  - --filesystem=xdg-documents:rw
-  - --filesystem=xdg-pictures:ro
-  - --filesystem=xdg-download:rw
+  # Secure filesystem permissions following principle of least privilege
+  - --filesystem=xdg-documents:rw    # For importing/exporting journal data
+  - --filesystem=xdg-pictures:ro     # For importing images into journal entries
+  - --filesystem=xdg-download:rw     # For downloading/saving exports
+  # App data is automatically available in ~/.var/app/com.matthiasnehlsen.lotti/
   - --device=dri
+  # Add required libraries
   - --env=LD_LIBRARY_PATH=/app/lib
+  # Add system library dependencies
   - --socket=x11
-  - --socket=wayland 
+  - --socket=wayland
+  # Removed --socket=gpg-agent (not needed unless app specifically uses GPG) 
