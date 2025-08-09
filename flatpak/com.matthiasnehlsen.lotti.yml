@@ -10,17 +10,6 @@ modules:
     sources:
       - type: file
         path: ../lib/libdesktop_drop_plugin.so
-  - name: rust
-    buildsystem: simple
-    build-commands:
-      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      - export PATH="$HOME/.cargo/bin:$PATH"
-      - rustc --version
-      - cargo --version
-    sources:
-      - type: file
-        url: https://sh.rustup.rs
-        dest-filename: rustup.sh
   - name: keybinder
     buildsystem: simple
     build-commands:
@@ -28,26 +17,6 @@ modules:
     sources:
       - type: file
         path: ../libkeybinder-3.0.so.0
-command: /app/lotti-wrapper
-finish-args:
-  - --share=network
-  - --share=ipc
-  - --socket=fallback-x11
-  - --socket=wayland
-  - --socket=pulseaudio
-  # Secure filesystem permissions following principle of least privilege
-  - --filesystem=xdg-documents:rw    # For importing/exporting journal data
-  - --filesystem=xdg-pictures:ro     # For importing images into journal entries
-  - --filesystem=xdg-download:rw     # For downloading/saving exports
-  # App data is automatically available in ~/.var/app/com.matthiasnehlsen.lotti/
-  - --device=dri
-  # Add required libraries
-  - --env=LD_LIBRARY_PATH=/app/lib
-  # Add system library dependencies
-  - --socket=x11
-  - --socket=wayland
-  # Removed --socket=gpg-agent (not needed unless app specifically uses GPG)
-modules:
   - name: lotti
     buildsystem: simple
     build-options:
@@ -79,19 +48,24 @@ modules:
         path: ../lotti
       - type: dir
         path: ../lib
-    modules:
-      - name: flutter-common
-        buildsystem: simple
-        build-commands:
-          - install -D com.matthiasnehlsen.lotti.desktop /app/share/applications/com.matthiasnehlsen.lotti.desktop
-          # Skip metainfo and icon for now to get basic functionality working
-          # - install -D com.matthiasnehlsen.lotti.generated.metainfo.xml /app/share/metainfo/com.matthiasnehlsen.lotti.metainfo.xml
-          # - install -D app_icon_1024.png /app/share/icons/hicolor/symbolic/apps/com.matthiasnehlsen.lotti.png
-        sources:
-          - type: file
-            path: com.matthiasnehlsen.lotti.desktop
-          # Skip metainfo and icon sources for now
-          # - type: file
-          #   path: com.matthiasnehlsen.lotti.generated.metainfo.xml
-          # - type: file
-          #   path: app_icon_1024.png 
+  - name: flutter-common
+    buildsystem: simple
+    build-commands:
+      - install -D com.matthiasnehlsen.lotti.desktop /app/share/applications/com.matthiasnehlsen.lotti.desktop
+    sources:
+      - type: file
+        path: com.matthiasnehlsen.lotti.desktop
+command: /app/lotti-wrapper
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --filesystem=xdg-documents:rw
+  - --filesystem=xdg-pictures:ro
+  - --filesystem=xdg-download:rw
+  - --device=dri
+  - --env=LD_LIBRARY_PATH=/app/lib
+  - --socket=x11
+  - --socket=wayland 
