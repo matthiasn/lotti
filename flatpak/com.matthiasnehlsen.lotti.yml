@@ -26,12 +26,14 @@ modules:
     build-commands:
       - echo "Installing complete Flutter bundle structure..."
       - ls -la
-      - echo "Checking if bundle directory exists:"
-      - ls -la bundle/ 2>/dev/null || echo "No bundle directory found"
-      - echo "Bundle contents:"
-      - ls -la bundle/ 2>/dev/null || echo "Cannot list bundle"
-      - echo "Copying bundle structure..."
-      - cp -r bundle/* /app/ 2>/dev/null || echo "No bundle directory found"
+      - echo "Copying executable..."
+      - cp lotti /app/ 2>/dev/null || echo "Failed to copy lotti executable"
+      - echo "Copying lib directory..."
+      - cp -r lib /app/ 2>/dev/null || echo "Failed to copy lib directory"
+      - echo "Copying data directory..."
+      - cp -r data /app/ 2>/dev/null || echo "Failed to copy data directory"
+      - echo "Copying share directory..."
+      - cp -r share /app/ 2>/dev/null || echo "Failed to copy share directory"
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
       - echo "Checking if lotti executable was copied:"
@@ -77,10 +79,14 @@ modules:
       - type: git
         url: {{LOTTI_REPO_URL}}
         branch: fix/flatpak-kb-fix-v2
+      - type: file
+        path: ../bundle/lotti
       - type: dir
-        path: ../bundle
+        path: ../bundle/lib
       - type: dir
-        path: ../lib
+        path: ../bundle/data
+      - type: dir
+        path: ../bundle/share
   - name: flutter-common
     buildsystem: simple
     build-commands:
