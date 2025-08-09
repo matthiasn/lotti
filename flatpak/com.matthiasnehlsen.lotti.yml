@@ -10,13 +10,7 @@ modules:
     sources:
       - type: file
         path: ../lib/libdesktop_drop_plugin.so
-  - name: keybinder
-    buildsystem: simple
-    build-commands:
-      - install -D libkeybinder-3.0.so.0 /app/lib/ 2>/dev/null || echo "libkeybinder-3.0.so.0 not found"
-    sources:
-      - type: file
-        path: ../libkeybinder-3.0.so.0
+
   - name: lotti
     buildsystem: simple
     build-options:
