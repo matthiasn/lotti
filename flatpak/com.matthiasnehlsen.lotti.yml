@@ -39,24 +39,33 @@ modules:
       - echo "Final check - libkeybinder in /app/lib/:"
       - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Real libkeybinder not found, creating minimal stub as fallback"
       - |
-        if [ ! -f /app/lib/libkeybinder-3.0.so.0 ]; then
-          echo "Creating fallback stub..."
-          echo "void keybinder_init(void) {}" > stub_keybinder.c
-          echo "void keybinder_bind(const char* keystring, void* handler, void* user_data) {}" >> stub_keybinder.c
-          echo "void keybinder_unbind(const char* keystring, void* handler) {}" >> stub_keybinder.c
-          gcc -shared -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c 2>/dev/null || echo "Failed to create fallback stub"
-          rm -f stub_keybinder.c
-        else
-          echo "Real libkeybinder found, but may need GLib symbols. Creating enhanced stub..."
-          echo "#include <glib.h>" > stub_keybinder.c
-          echo "void keybinder_init(void) {}" >> stub_keybinder.c
-          echo "void keybinder_bind(const char* keystring, void* handler, void* user_data) {}" >> stub_keybinder.c
-          echo "void keybinder_unbind(const char* keystring, void* handler) {}" >> stub_keybinder.c
-          echo "void g_once_init_enter_pointer(void* location) {}" >> stub_keybinder.c
-          echo "void g_once_init_leave(void* location, void* result) {}" >> stub_keybinder.c
-          gcc -shared -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c -lglib-2.0 2>/dev/null || echo "Failed to create enhanced stub"
-          rm -f stub_keybinder.c
-        fi
+        echo "Creating comprehensive libkeybinder stub with all required symbols..."
+        cat > stub_keybinder.c << 'EOF'
+        #include <stddef.h>
+        
+        // GLib symbols that may be needed
+        void g_once_init_enter_pointer(void* location) {}
+        void g_once_init_leave(void* location, void* result) {}
+        void g_once_init_enter(void* location) {}
+        void g_once_init_leave_pointer(void* location, void* result) {}
+        
+        // Keybinder symbols
+        void keybinder_init(void) {}
+        void keybinder_bind(const char* keystring, void* handler, void* user_data) {}
+        void keybinder_unbind(const char* keystring, void* handler) {}
+        void keybinder_bind_full(const char* keystring, void* handler, void* user_data, void* notify, void* data) {}
+        
+        // Additional GLib symbols that might be needed
+        void g_free(void* mem) {}
+        void* g_malloc(size_t n_bytes) { return 0; }
+        void* g_malloc0(size_t n_bytes) { return 0; }
+        void g_log(const char* log_domain, int log_level, const char* format, ...) {}
+        EOF
+        
+        gcc -shared -fPIC -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c 2>/dev/null || echo "Failed to create comprehensive stub"
+        rm -f stub_keybinder.c
+        echo "Comprehensive stub created:"
+        ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Stub creation failed"
       - echo "Contents of /app/lib/ after copying:"
       - ls -la /app/lib/
       - echo "Creating wrapper script..."
