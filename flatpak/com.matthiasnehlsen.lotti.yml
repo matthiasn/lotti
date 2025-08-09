@@ -24,20 +24,20 @@ modules:
       strip: true
       no-debuginfo: true
     build-commands:
-      - echo "Installing complete Flutter bundle structure..."
+      - echo "Installing Flutter bundle structure..."
+      - echo "Contents of build directory:"
       - ls -la
       - echo "Copying Flutter app components:"
       - echo "Copying executable..."
       - cp lotti /app/ 2>/dev/null || echo "Failed to copy lotti executable"
-      - echo "Copying lib directory..."
+      - echo "Copying lib directory (should contain .so files)..."
       - ls -la lib/ 2>/dev/null || echo "No lib directory in source"
       - find lib/ -name "*.so" 2>/dev/null | head -10 || echo "No .so files in lib directory"
       - cp -r lib /app/ 2>/dev/null || echo "Failed to copy lib directory"
-      - echo "Copying any .so files from project root..."
-      - find . -maxdepth 1 -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files in project root"
-      - echo "Copying data directory..."
+      - echo "Copying data directory (should contain flutter_assets)..."
       - ls -la data/ 2>/dev/null || echo "No data directory in source"
-      - find data/ -type f 2>/dev/null | head -10 || echo "No files in data directory"
+      - find data/ -name "flutter_assets" -type d 2>/dev/null || echo "No flutter_assets directory"
+      - find data/ -name "icudtl.dat" 2>/dev/null || echo "No ICU data file"
       - cp -r data /app/ 2>/dev/null || echo "Failed to copy data directory"
       - echo "Copying share directory..."
       - cp -r share /app/ 2>/dev/null || echo "Failed to copy share directory"
@@ -47,10 +47,12 @@ modules:
       - ls -la /app/lotti 2>/dev/null || echo "lotti executable not found in /app/"
       - echo "Checking lib directory:"
       - ls -la /app/lib/ 2>/dev/null || echo "No lib directory"
-      - echo "Checking data directory:"
+      - echo "Checking data directory (critical for Flutter):"
       - ls -la /app/data/ 2>/dev/null || echo "No data directory"
       - ls -la /app/data/flutter_assets/ 2>/dev/null || echo "No flutter_assets directory"
-      - find /app/data/ -name "icudtl.dat" 2>/dev/null || echo "No ICU data file"
+      - find /app/data/ -name "icudtl.dat" 2>/dev/null || echo "No ICU data file found"
+      - echo "Checking share directory:"
+      - ls -la /app/share/ 2>/dev/null || echo "No share directory"
       - echo "Creating comprehensive libkeybinder stub with all required symbols..."
       - |
         cat > stub_keybinder.c << 'EOF'
@@ -93,13 +95,13 @@ modules:
         url: {{LOTTI_REPO_URL}}
         branch: fix/flatpak-kb-fix-v2
       - type: file
-        path: ../lotti
+        path: ../bundle/lotti
       - type: dir
-        path: ../lib
+        path: ../bundle/lib
       - type: dir
-        path: ../data
+        path: ../bundle/data
       - type: dir
-        path: ../share
+        path: ../bundle/share
   - name: flutter-common
     buildsystem: simple
     build-commands:
