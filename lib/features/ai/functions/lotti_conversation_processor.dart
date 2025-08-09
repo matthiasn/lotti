@@ -77,8 +77,18 @@ class LottiConversationProcessor {
     final conversationRepo = ref.read(conversationRepositoryProvider.notifier);
 
     // Create conversation with appropriate system message
+    if (systemMessage == null || systemMessage.isEmpty) {
+      developer.log(
+        'No system message provided for conversation processor',
+        name: 'LottiConversationProcessor',
+        level: 900, // WARNING level
+      );
+      throw ArgumentError(
+          'System message is required for conversation processing');
+    }
+
     final conversationId = conversationRepo.createConversation(
-      systemMessage: systemMessage ?? _defaultSystemMessage,
+      systemMessage: systemMessage,
       maxTurns: 10,
     );
 
@@ -163,30 +173,6 @@ class LottiConversationProcessor {
       conversationRepo.deleteConversation(conversationId);
     }
   }
-
-  static const _defaultSystemMessage = '''
-You are a helpful assistant that creates checklist items based on the user's request.
-
-Your primary task is to create checklist items from the user's request. You have two options:
-
-1. Use add_multiple_checklist_items for efficiency when you have multiple items:
-   - This is the PREFERRED method when you have 2 or more items
-   - Format: {"items": "item1, item2, item3"}
-   - Example: {"items": "cheese, tomatoes, pepperoni"}
-
-2. Use add_checklist_item for single items:
-   - Format: {"actionItemDescription": "item description"}
-   - Use this only when adding a single item
-
-Guidelines:
-- If you detect a language, call set_task_language first, then create items
-- Do not use suggest_checklist_completion
-- When the user provides a list, use add_multiple_checklist_items for efficiency
-- CRITICAL: Each function must be called as a separate tool call - never combine multiple function calls into one
-- CRITICAL: If you need to call both set_task_language and add_multiple_checklist_items, make them as two distinct tool calls
-
-Example: If user says "Pizza shopping: cheese, pepperoni, dough", use:
-add_multiple_checklist_items with {"items": "cheese, pepperoni, dough"}''';
 }
 
 /// Result of conversation-based processing
@@ -371,7 +357,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
               manager.addToolResponse(
                 toolCallId: call.id,
                 response:
-                    "Language set to $languageCode. Good! Now please create the checklist items from the user's request.",
+                    'Language set to $languageCode. Task language updated successfully.',
               );
             } catch (e) {
               developer.log(
@@ -382,7 +368,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
               manager.addToolResponse(
                 toolCallId: call.id,
                 response:
-                    'Failed to set language, but continuing with checklist items.',
+                    'Failed to set language. Continuing without language update.',
               );
             }
           } else if (checklistHandler.task.data.languageCode != null) {
@@ -392,12 +378,13 @@ class LottiChecklistStrategy extends ConversationStrategy {
             );
             manager.addToolResponse(
               toolCallId: call.id,
-              response: 'Language already set. Creating checklist items.',
+              response:
+                  'Language already set to ${checklistHandler.task.data.languageCode}.',
             );
           } else {
             manager.addToolResponse(
               toolCallId: call.id,
-              response: 'Invalid language data. Creating checklist items.',
+              response: 'Invalid language data received.',
             );
           }
         } catch (e) {
@@ -408,8 +395,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
           );
           manager.addToolResponse(
             toolCallId: call.id,
-            response:
-                'Error setting language, but continuing with checklist items.',
+            response: 'Error processing language detection.',
           );
         }
       } else if (call.function.name == 'suggest_checklist_completion') {
@@ -522,23 +508,29 @@ class LottiChecklistStrategy extends ConversationStrategy {
     // If no items created yet, provide explicit instructions
     if (allSuccessfulItems.isEmpty) {
       return '''
-You haven't created any checklist items yet. Please review the user's original request and use the add_checklist_item function to create each item.
+You haven't created any checklist items yet. Please review the user's original request.
 
-Remember to use the format: {"actionItemDescription": "item description"}
+IMPORTANT: When you have multiple items to add (2 or more), you MUST use add_multiple_checklist_items for efficiency.
 
-For example, if the user asked for a pizza shopping list with cheese, pepperoni, and dough, you would call add_checklist_item three times:
-1. {"actionItemDescription": "cheese"}
-2. {"actionItemDescription": "pepperoni"}
-3. {"actionItemDescription": "dough"}
+For multiple items, use this format:
+{"items": "item1, item2, item3"}
 
-Please create the checklist items now.''';
+Example: If the user asked for a pizza shopping list with cheese, pepperoni, and dough, use ONE call:
+add_multiple_checklist_items with {"items": "cheese, pepperoni, dough"}
+
+Only use add_checklist_item for single items:
+{"actionItemDescription": "single item"}
+
+Please create the checklist items now using the appropriate function.''';
     }
 
     return '''
 Great! You've created ${allSuccessfulItems.length} checklist item(s) so far: ${allSuccessfulItems.join(', ')}.
 
-The user's original request mentioned multiple items. Please continue using the add_checklist_item function to create each of the remaining items.
+If there are more items to add from the user's original request:
+- For multiple remaining items: Use add_multiple_checklist_items with {"items": "item1, item2, item3"}
+- For a single remaining item: Use add_checklist_item with {"actionItemDescription": "item"}
 
-Remember: Create one item per function call. Continue until all items from the user's request have been added.''';
+Continue until all items from the user's request have been added.''';
   }
 }

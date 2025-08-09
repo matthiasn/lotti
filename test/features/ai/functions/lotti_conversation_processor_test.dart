@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -379,7 +380,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         ),
         promptConfig: promptConfig,
-        systemMessage: null,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
@@ -504,7 +505,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         ),
         promptConfig: promptConfig,
-        systemMessage: null,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
@@ -648,7 +649,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         ),
         promptConfig: promptConfig,
-        systemMessage: null,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
@@ -827,7 +828,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         ),
         promptConfig: promptConfig,
-        systemMessage: null,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
@@ -924,7 +925,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         ),
         promptConfig: promptConfig,
-        systemMessage: null,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
@@ -990,7 +991,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         ),
         promptConfig: promptConfig,
-        systemMessage: null,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
@@ -1122,7 +1123,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         ),
         promptConfig: promptConfig,
-        systemMessage: null,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
         autoChecklistService: mockAutoChecklistService,
@@ -1198,7 +1199,7 @@ void main() {
         model: model,
         provider: provider,
         promptConfig: prompt,
-        systemMessage: 'System message',
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
       );
@@ -1247,7 +1248,7 @@ void main() {
         model: model,
         provider: provider,
         promptConfig: prompt,
-        systemMessage: 'System message',
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
       );
@@ -1299,7 +1300,7 @@ void main() {
         model: model,
         provider: provider,
         promptConfig: prompt,
-        systemMessage: 'System message',
+        systemMessage: checklistUpdatesPrompt.systemMessage,
         tools: [],
         inferenceRepo: mockOllamaRepo,
         autoChecklistService: customAutoChecklistService,
@@ -1560,7 +1561,7 @@ void main() {
       verify(() => mockConversationManager.addToolResponse(
             toolCallId: 'tool-1',
             response: any(
-                named: 'response', that: contains('Error setting language')),
+                named: 'response', that: contains('Error processing language')),
           )).called(1);
     });
 
