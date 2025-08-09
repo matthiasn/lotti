@@ -101,11 +101,19 @@ find build/ -name "*.so" -type f 2>/dev/null | head -10 || echo "No .so files fo
 
 # Copy all .so files and Flutter assets to project root for Flatpak sources
 echo "Copying individual Flutter files to project root..."
-cp build/linux/x64/release/bundle/lib/*.so . 2>/dev/null || echo "No .so files in bundle/lib/"
-cp build/linux/x64/release/bundle/*.so . 2>/dev/null || echo "No .so files in bundle root"
-cp build/linux/x64/release/bundle/lotti . 2>/dev/null || echo "No lotti executable to copy"
-cp build/linux/x64/release/bundle/data/icudtl.dat . 2>/dev/null || echo "No icudtl.dat to copy"
-cp -r build/linux/x64/release/bundle/data/flutter_assets . 2>/dev/null || echo "No flutter_assets to copy"
+echo "Copying .so files from bundle/lib/..."
+cp build/linux/x64/release/bundle/lib/*.so . && echo "Successfully copied .so files" || echo "Failed to copy .so files"
+echo "Copying lotti executable..."
+cp build/linux/x64/release/bundle/lotti . && echo "Successfully copied lotti" || echo "Failed to copy lotti"
+echo "Copying icudtl.dat..."
+cp build/linux/x64/release/bundle/data/icudtl.dat . && echo "Successfully copied icudtl.dat" || echo "Failed to copy icudtl.dat"
+echo "Copying flutter_assets..."
+cp -r build/linux/x64/release/bundle/data/flutter_assets . && echo "Successfully copied flutter_assets" || echo "Failed to copy flutter_assets"
+echo "Files in project root:"
+ls -la *.so 2>/dev/null || echo "No .so files in project root"
+ls -la lotti 2>/dev/null || echo "No lotti in project root"
+ls -la icudtl.dat 2>/dev/null || echo "No icudtl.dat in project root"
+ls -la flutter_assets/ 2>/dev/null || echo "No flutter_assets in project root"
 
 # Copy libkeybinder from system to bundle/lib for Flatpak
 echo "Copying libkeybinder from system to bundle/lib..."
