@@ -75,58 +75,30 @@ class OllamaInferenceRepository {
       String? contentStr;
 
       if (content is ChatCompletionUserMessageContent) {
-        // Extract text from ChatCompletionUserMessageContent using toJson()
-        final dynamic jsonContent = content.toJson();
-        if (jsonContent is String) {
-          contentStr = jsonContent;
-        } else if (jsonContent is List) {
-          // Handle list of content parts
+        // Extract text from ChatCompletionUserMessageContent
+        // Check if it's a string type
+        final value = content.value;
+        if (value is String) {
+          contentStr = value;
+        } else if (value is List) {
+          // Handle list of content parts - extract text from each part
           final textParts = <String>[];
-          for (final part in jsonContent) {
-            if (part is Map<String, dynamic> &&
-                part['type'] == 'text' &&
-                part['text'] != null) {
-              final text = (part['text'] as String).trim();
-              if (text.isNotEmpty) {
-                textParts.add(text);
-              }
-            }
-          }
-          contentStr = textParts.join(' ');
-        } else if (jsonContent is Map<String, dynamic>) {
-          // Check if it's a wrapped structure with "value" field
-          if (jsonContent.containsKey('value')) {
-            final value = jsonContent['value'];
-            if (value is String) {
-              contentStr = value;
-            } else if (value is List) {
-              // Handle list of content parts
-              final textParts = <String>[];
-              for (final part in value) {
-                if (part is Map<String, dynamic> &&
-                    part['type'] == 'text' &&
-                    part['text'] != null) {
-                  final text = (part['text'] as String).trim();
-                  if (text.isNotEmpty) {
-                    textParts.add(text);
-                  }
+          for (final part in value) {
+            if (part is ChatCompletionMessageContentPart) {
+              // Use pattern matching to handle different part types
+              final partMap = part.toJson();
+              if (partMap['type'] == 'text') {
+                final text = partMap['text'];
+                if (text is String && text.trim().isNotEmpty) {
+                  textParts.add(text);
                 }
               }
-              contentStr = textParts.join(' ');
-            } else {
-              // Fallback
-              contentStr = jsonEncode(value);
             }
-          } else if (jsonContent['type'] == 'text' &&
-              jsonContent['text'] != null) {
-            contentStr = jsonContent['text'] as String;
-          } else {
-            // Fallback: encode as JSON if structure is unknown
-            contentStr = jsonEncode(jsonContent);
           }
+          contentStr = textParts.join();
         } else {
-          // Fallback: encode as JSON if structure is unknown
-          contentStr = jsonEncode(jsonContent);
+          // Fallback
+          contentStr = content.toString();
         }
       } else if (content is String) {
         contentStr = content;

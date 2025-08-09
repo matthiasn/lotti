@@ -362,7 +362,7 @@ Please continue creating any remaining items from the original request.''';
           message: continuationPrompt,
           model: model.providerModelId,
           provider: provider,
-          ollamaRepo: OllamaInferenceRepository(),
+          ollamaRepo: ollamaRepo,
           tools: [
             const ChatCompletionTool(
               type: ChatCompletionToolType.function,
@@ -754,10 +754,39 @@ class LottiChecklistStrategy extends ConversationStrategy {
           'Redirecting suggest_checklist_completion to item creation: ${call.function.arguments}',
           name: 'LottiConversationProcessor',
         );
+
+        // Try to extract the suggested items for a more descriptive response
+        String detailedResponse;
+        try {
+          final args =
+              jsonDecode(call.function.arguments) as Map<String, dynamic>;
+          final suggestions = args['suggestions'] as List<dynamic>?;
+          if (suggestions != null && suggestions.isNotEmpty) {
+            final itemDescriptions = suggestions
+                .map((s) => s is Map<String, dynamic>
+                    ? s['title'] ?? s['description']
+                    : s.toString())
+                .where(
+                    (desc) => desc != null && desc.toString().trim().isNotEmpty)
+                .take(5) // Limit to first 5 for brevity
+                .join(', ');
+
+            detailedResponse = suggestions.length > 5
+                ? 'Found ${suggestions.length} suggested items ($itemDescriptions, ...). Please use add_checklist_item or add_multiple_checklist_items to create these items.'
+                : 'Found ${suggestions.length} suggested items: $itemDescriptions. Please use add_checklist_item or add_multiple_checklist_items to create these items.';
+          } else {
+            detailedResponse =
+                'No items to suggest. Please use add_checklist_item if you want to create new items.';
+          }
+        } catch (e) {
+          // If we can't parse the arguments, use a generic response
+          detailedResponse =
+              'Please use add_checklist_item or add_multiple_checklist_items to create the suggested items.';
+        }
+
         manager.addToolResponse(
           toolCallId: call.id,
-          response:
-              'Please use add_checklist_item to create the suggested items.',
+          response: detailedResponse,
         );
       } else {
         developer.log(

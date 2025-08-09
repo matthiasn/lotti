@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -13,7 +14,7 @@ part 'cloud_inference_repository.g.dart';
 
 class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
-      : _ollamaRepository = OllamaInferenceRepository(httpClient: httpClient),
+      : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
         _whisperRepository = WhisperInferenceRepository(httpClient: httpClient);
 
   final Ref ref;

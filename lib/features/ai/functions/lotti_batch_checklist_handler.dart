@@ -202,7 +202,7 @@ Do NOT recreate the items that were already successful.''';
               _createdDescriptions.add(item.title.toLowerCase().trim());
             }
 
-            // Refresh the task
+            // Refresh the task after creating checklist
             final refreshedEntity =
                 await journalDb.journalEntityById(currentTask.id);
             if (refreshedEntity is Task) {
@@ -237,7 +237,7 @@ Do NOT recreate the items that were already successful.''';
           }
         }
 
-        // Refresh the task once after all items are added
+        // Only refresh the task if items were actually added
         if (successCount > 0) {
           final refreshedEntity =
               await journalDb.journalEntityById(currentTask.id);
@@ -245,9 +245,6 @@ Do NOT recreate the items that were already successful.''';
             task = refreshedEntity;
             onTaskUpdated?.call(refreshedEntity);
           }
-        } else {
-          // Call onTaskUpdated with current task if no items were added
-          onTaskUpdated?.call(currentTask);
         }
       }
     } catch (e, s) {

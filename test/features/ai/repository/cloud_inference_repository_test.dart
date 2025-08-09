@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -14,6 +16,9 @@ class MockOpenAIClient extends Mock implements OpenAIClient {}
 class MockHttpClient extends Mock implements http.Client {}
 
 class MockRef extends Mock implements Ref<Object?> {}
+
+class MockOllamaInferenceRepository extends Mock
+    implements OllamaInferenceRepository {}
 
 // We need to register fallback values for complex types that will be used with 'any()' matcher
 class FakeCreateChatCompletionRequest extends Fake
@@ -43,8 +48,17 @@ void main() {
       mockClient = MockOpenAIClient();
       mockHttpClient = MockHttpClient();
       container = ProviderContainer();
+
+      // Create and configure the mock ref
+      final mockRef = MockRef();
+      final mockOllamaRepo = MockOllamaInferenceRepository();
+
+      // Configure the mock ref to return the mocked OllamaInferenceRepository
+      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
+          .thenReturn(mockOllamaRepo);
+
       repository =
-          CloudInferenceRepository(MockRef(), httpClient: mockHttpClient);
+          CloudInferenceRepository(mockRef, httpClient: mockHttpClient);
       testProvider = AiConfig.inferenceProvider(
         id: 'test-provider-id',
         name: 'Test Provider',
@@ -1241,8 +1255,16 @@ void main() {
 
     test('constructor with custom httpClient parameter', () {
       final customHttpClient = MockHttpClient();
+
+      // Create and configure a new mock ref for this test
+      final mockRef = MockRef();
+      final mockOllamaRepo = MockOllamaInferenceRepository();
+
+      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
+          .thenReturn(mockOllamaRepo);
+
       final customRepository = CloudInferenceRepository(
-        MockRef(),
+        mockRef,
         httpClient: customHttpClient,
       );
 

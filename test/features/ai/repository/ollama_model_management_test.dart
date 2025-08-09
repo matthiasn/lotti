@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -12,6 +13,9 @@ import 'package:mocktail/mocktail.dart';
 class MockHttpClient extends Mock implements http.Client {}
 
 class MockRef extends Mock implements Ref<Object?> {}
+
+class MockOllamaInferenceRepository extends Mock
+    implements OllamaInferenceRepository {}
 
 // Add this fake for mocktail
 class FakeBaseRequest extends Fake implements http.BaseRequest {}
@@ -35,8 +39,20 @@ void main() {
     setUp(() {
       mockHttpClient = MockHttpClient();
       container = ProviderContainer();
+
+      // Create and configure the mock ref
+      final mockRef = MockRef();
+
+      // Create a real OllamaInferenceRepository with the mocked HTTP client
+      // This allows the tests to verify HTTP calls as originally intended
+      final ollamaRepo = OllamaInferenceRepository(httpClient: mockHttpClient);
+
+      // Configure the mock ref to return the OllamaInferenceRepository with mocked HTTP
+      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
+          .thenReturn(ollamaRepo);
+
       repository =
-          CloudInferenceRepository(MockRef(), httpClient: mockHttpClient);
+          CloudInferenceRepository(mockRef, httpClient: mockHttpClient);
       ollamaProvider = AiConfig.inferenceProvider(
         id: 'ollama-provider',
         name: 'Ollama Provider',
@@ -395,8 +411,15 @@ void main() {
         const temperature = 0.7;
 
         // Use test subclass to override warmUpModel
-        repository =
-            TestCloudInferenceRepository(MockRef(), httpClient: mockHttpClient);
+        final testMockRef = MockRef();
+        final testOllamaRepo =
+            OllamaInferenceRepository(httpClient: mockHttpClient);
+
+        when(() => testMockRef.read(ollamaInferenceRepositoryProvider))
+            .thenReturn(testOllamaRepo);
+
+        repository = TestCloudInferenceRepository(testMockRef,
+            httpClient: mockHttpClient);
         ollamaProvider = AiConfig.inferenceProvider(
           id: 'ollama-provider',
           name: 'Ollama Provider',

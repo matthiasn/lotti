@@ -134,26 +134,33 @@ class ConversationManager {
   /// Trim history if it exceeds max size
   void _trimHistoryIfNeeded() {
     if (_messages.length > maxHistorySize) {
+      // Ensure maxHistorySize is at least 2 to accommodate system message and at least one other message
+      final effectiveMaxSize = maxHistorySize < 2 ? 2 : maxHistorySize;
+
       // Keep system message if present
       final hasSystem = _messages.isNotEmpty &&
           _messages.first.role == ChatCompletionMessageRole.system;
 
       // Calculate how many messages to keep
-      // We want final count to be maxHistorySize, including truncation notice
-      // So keep maxHistorySize - 1 total messages (including system if present)
-      final totalToKeep = maxHistorySize - 1; // -1 for truncation notice
+      // We want final count to be effectiveMaxSize, including truncation notice
+      // So keep effectiveMaxSize - 1 total messages (including system if present)
+      final totalToKeep = effectiveMaxSize - 1; // -1 for truncation notice
 
       // Calculate how many to keep after system message (if present)
       final messagesToKeepAfterSystem =
           hasSystem ? totalToKeep - 1 : totalToKeep;
 
+      // Ensure we keep at least one message after system
+      final keepAfterSystem =
+          messagesToKeepAfterSystem < 1 ? 1 : messagesToKeepAfterSystem;
+
       // Calculate trim range
       final start = hasSystem ? 1 : 0;
       final totalMessages = _messages.length;
-      final end = totalMessages - messagesToKeepAfterSystem;
+      final end = totalMessages - keepAfterSystem;
 
-      // Only trim if there are messages to remove
-      if (end > start) {
+      // Only trim if there are messages to remove and end > start
+      if (end > start && end <= totalMessages) {
         _messages
           ..removeRange(start, end)
           // Add truncation notice
@@ -178,50 +185,30 @@ class ConversationManager {
       if (message.content == null) {
         contentStr = '(function calls)';
       } else if (message.content is ChatCompletionUserMessageContent) {
-        // Extract text from ChatCompletionUserMessageContent using toJson()
+        // Extract text from ChatCompletionUserMessageContent
         final userContent =
             message.content! as ChatCompletionUserMessageContent;
-        final dynamic json = userContent.toJson();
-        if (json is String) {
-          contentStr = json;
-        } else if (json is List) {
+        final value = userContent.value;
+        if (value is String) {
+          contentStr = value;
+        } else if (value is List) {
           // Handle list of content parts
           final textParts = <String>[];
-          for (final part in json) {
-            if (part is Map<String, dynamic> &&
-                part['type'] == 'text' &&
-                part['text'] != null) {
-              textParts.add(part['text'] as String);
-            }
-          }
-          contentStr = textParts.join(' ');
-        } else if (json is Map<String, dynamic>) {
-          // Check if it's a wrapped structure with "value" field
-          if (json.containsKey('value')) {
-            final value = json['value'];
-            if (value is String) {
-              contentStr = value;
-            } else if (value is List) {
-              // Handle list of content parts
-              final textParts = <String>[];
-              for (final part in value) {
-                if (part is Map<String, dynamic> &&
-                    part['type'] == 'text' &&
-                    part['text'] != null) {
-                  textParts.add(part['text'] as String);
+          for (final part in value) {
+            if (part is ChatCompletionMessageContentPart) {
+              final partMap = part.toJson();
+              if (partMap['type'] == 'text') {
+                final text = partMap['text'];
+                if (text is String) {
+                  textParts.add(text);
                 }
               }
-              contentStr = textParts.join(' ');
-            } else {
-              contentStr = value.toString();
             }
-          } else if (json['type'] == 'text' && json['text'] != null) {
-            contentStr = json['text'] as String;
-          } else {
-            contentStr = json.toString();
           }
+          contentStr = textParts.join();
         } else {
-          contentStr = json.toString();
+          // Fallback
+          contentStr = userContent.toString();
         }
       } else {
         contentStr = message.content.toString();
