@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -213,7 +214,13 @@ Do NOT recreate the items that were already successful.''';
 
         return newItem != null;
       }
-    } catch (e) {
+    } catch (e, s) {
+      developer.log(
+        'Error creating checklist item for task ${task.id}',
+        name: 'LottiChecklistItemHandler',
+        error: e,
+        stackTrace: s,
+      );
       return false;
     }
   }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -214,8 +215,14 @@ Do NOT recreate the items that were already successful.''';
           }
         }
       }
-    } catch (e) {
-      // Log error but return partial success count
+    } catch (e, s) {
+      developer.log(
+        'Error creating batch checklist items for task ${task.id}',
+        name: 'LottiBatchChecklistHandler',
+        error: e,
+        stackTrace: s,
+      );
+      // Return partial success count
     }
 
     return successCount;

@@ -630,8 +630,17 @@ class LottiChecklistStrategy extends ConversationStrategy {
             'Batch creation result: created $createdCount items',
             name: 'LottiConversationProcessor',
           );
-          if (createdCount == 0) {
-            _hadErrors = true;
+          // Only flag as error if we tried to create items but failed
+          // (not if all items were duplicates)
+          final items = result.data['items'] as List<String>?;
+          if (createdCount == 0 && items != null && items.isNotEmpty) {
+            // Check if all items were duplicates
+            final allDuplicates = items.every((item) =>
+                existingDescriptions.contains(item.toLowerCase().trim()));
+            if (!allDuplicates) {
+              // Some items should have been created but weren't
+              _hadErrors = true;
+            }
           }
           // Copy successful items to the single item handler for consistency
           checklistHandler
