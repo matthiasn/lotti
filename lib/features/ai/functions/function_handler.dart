@@ -6,22 +6,22 @@ import 'package:openai_dart/openai_dart.dart';
 abstract class FunctionHandler {
   /// The name of the function this handler processes
   String get functionName;
-  
+
   /// Process a function call and return the result
   FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call);
-  
+
   /// Check if this result would be a duplicate
   bool isDuplicate(FunctionCallResult result);
-  
+
   /// Get a retry prompt for failed items of this type
   String getRetryPrompt({
     required List<FunctionCallResult> failedItems,
     required List<String> successfulDescriptions,
   });
-  
+
   /// Extract the human-readable description from the result
   String? getDescription(FunctionCallResult result);
-  
+
   /// Create a tool response message
   String createToolResponse(FunctionCallResult result);
 }
@@ -35,13 +35,13 @@ class FunctionCallResult {
     required this.data,
     this.error,
   });
-  
+
   final bool success;
   final String functionName;
   final String arguments; // Raw JSON string
   final Map<String, dynamic> data; // Parsed data or error info
   final String? error;
-  
+
   Map<String, dynamic> get parsedArguments {
     try {
       return jsonDecode(arguments) as Map<String, dynamic>;
@@ -54,18 +54,18 @@ class FunctionCallResult {
 /// Handler for checklist item creation
 class ChecklistItemHandler extends FunctionHandler {
   ChecklistItemHandler();
-  
+
   final Set<String> _createdDescriptions = {};
-  
+
   @override
   String get functionName => 'createChecklistItem';
-  
+
   @override
   FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call) {
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
       final description = args['actionItemDescription'] as String?;
-      
+
       if (description != null) {
         return FunctionCallResult(
           success: true,
@@ -80,7 +80,7 @@ class ChecklistItemHandler extends FunctionHandler {
         // Try to extract attempted item
         String? attemptedItem;
         String? wrongFieldName;
-        
+
         for (final entry in args.entries) {
           if (entry.value is String && entry.value.toString().isNotEmpty) {
             attemptedItem = entry.value.toString();
@@ -88,7 +88,7 @@ class ChecklistItemHandler extends FunctionHandler {
             break;
           }
         }
-        
+
         return FunctionCallResult(
           success: false,
           functionName: functionName,
@@ -98,7 +98,8 @@ class ChecklistItemHandler extends FunctionHandler {
             'wrongFieldName': wrongFieldName,
             'toolCallId': call.id,
           },
-          error: 'Found "${wrongFieldName ?? "unknown"}" instead of "actionItemDescription"',
+          error:
+              'Found "${wrongFieldName ?? "unknown"}" instead of "actionItemDescription"',
         );
       }
     } catch (e) {
@@ -111,23 +112,23 @@ class ChecklistItemHandler extends FunctionHandler {
       );
     }
   }
-  
+
   @override
   bool isDuplicate(FunctionCallResult result) {
     if (!result.success) return false;
-    
+
     final description = result.data['description'] as String?;
     if (description == null) return false;
-    
+
     final normalized = description.toLowerCase().trim();
     if (_createdDescriptions.contains(normalized)) {
       return true;
     }
-    
+
     _createdDescriptions.add(normalized);
     return false;
   }
-  
+
   @override
   String? getDescription(FunctionCallResult result) {
     if (result.success) {
@@ -136,7 +137,7 @@ class ChecklistItemHandler extends FunctionHandler {
       return result.data['attemptedItem'] as String?;
     }
   }
-  
+
   @override
   String createToolResponse(FunctionCallResult result) {
     if (result.success) {
@@ -146,7 +147,7 @@ class ChecklistItemHandler extends FunctionHandler {
       return 'Error: ${result.error}';
     }
   }
-  
+
   @override
   String getRetryPrompt({
     required List<FunctionCallResult> failedItems,
@@ -157,12 +158,12 @@ class ChecklistItemHandler extends FunctionHandler {
       final attemptedStr = attempted != null ? ' for "$attempted"' : '';
       return '- ${item.error}$attemptedStr';
     }).join('\n');
-    
+
     final itemsToRetry = failedItems
-        .map((item) => getDescription(item))
+        .map(getDescription)
         .where((desc) => desc != null && desc.isNotEmpty)
         .toList();
-    
+
     return '''
 I noticed ${failedItems.length == 1 ? 'an error' : 'errors'} in your function call${failedItems.length > 1 ? 's' : ''}:
 $errorSummary
@@ -176,7 +177,7 @@ Use the correct format:
 
 Do NOT recreate the items that were already successful.''';
   }
-  
+
   void reset() {
     _createdDescriptions.clear();
   }
@@ -185,19 +186,19 @@ Do NOT recreate the items that were already successful.''';
 /// Example: Handler for a different function type (e.g., adding calendar events)
 class CalendarEventHandler extends FunctionHandler {
   CalendarEventHandler();
-  
+
   final Set<String> _createdEvents = {};
-  
+
   @override
   String get functionName => 'createCalendarEvent';
-  
+
   @override
   FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call) {
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
       final title = args['title'] as String?;
       final date = args['date'] as String?;
-      
+
       if (title != null && date != null) {
         return FunctionCallResult(
           success: true,
@@ -213,7 +214,7 @@ class CalendarEventHandler extends FunctionHandler {
         final missingFields = <String>[];
         if (title == null) missingFields.add('title');
         if (date == null) missingFields.add('date');
-        
+
         return FunctionCallResult(
           success: false,
           functionName: functionName,
@@ -236,24 +237,24 @@ class CalendarEventHandler extends FunctionHandler {
       );
     }
   }
-  
+
   @override
   bool isDuplicate(FunctionCallResult result) {
     if (!result.success) return false;
-    
+
     final title = result.data['title'] as String?;
     final date = result.data['date'] as String?;
     if (title == null || date == null) return false;
-    
+
     final key = '${title.toLowerCase()}|$date';
     if (_createdEvents.contains(key)) {
       return true;
     }
-    
+
     _createdEvents.add(key);
     return false;
   }
-  
+
   @override
   String? getDescription(FunctionCallResult result) {
     if (result.success) {
@@ -267,7 +268,7 @@ class CalendarEventHandler extends FunctionHandler {
       return null;
     }
   }
-  
+
   @override
   String createToolResponse(FunctionCallResult result) {
     if (result.success) {
@@ -276,7 +277,7 @@ class CalendarEventHandler extends FunctionHandler {
       return 'Error: ${result.error}';
     }
   }
-  
+
   @override
   String getRetryPrompt({
     required List<FunctionCallResult> failedItems,
@@ -287,7 +288,7 @@ class CalendarEventHandler extends FunctionHandler {
       final attemptedStr = attempted != null ? ' for "$attempted"' : '';
       return '- ${item.error}$attemptedStr';
     }).join('\n');
-    
+
     return '''
 I noticed errors in your calendar event creation:
 $errorSummary
@@ -297,7 +298,7 @@ Successfully created events: ${successfulDescriptions.join(', ')}
 Please retry with the correct format:
 {"title": "event title", "date": "YYYY-MM-DD"}''';
   }
-  
+
   void reset() {
     _createdEvents.clear();
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -37,9 +38,7 @@ class ConversationRepository extends _$ConversationRepository {
     final manager = ConversationManager(
       conversationId: conversationId,
       maxTurns: maxTurns,
-    );
-
-    manager.initialize(systemMessage: systemMessage);
+    )..initialize(systemMessage: systemMessage);
     _conversations[conversationId] = manager;
 
     return conversationId;
@@ -83,23 +82,14 @@ class ConversationRepository extends _$ConversationRepository {
         // Emit thinking event
         manager.emitThinking();
 
-        // Get the last user message as the prompt
+        // Get all messages for the request
         final messages = manager.getMessagesForRequest();
-        final lastUserMessage = messages
-            .where((m) => m.role == ChatCompletionMessageRole.user)
-            .lastOrNull;
 
-        final systemMessage = messages
-            .where((m) => m.role == ChatCompletionMessageRole.system)
-            .firstOrNull
-            ?.content;
-
-        // Make API call
-        final stream = ollamaRepo.generateText(
-          prompt: lastUserMessage?.content?.toString() ?? '',
+        // Make API call with full conversation history
+        final stream = ollamaRepo.generateTextWithMessages(
+          messages: messages,
           model: model,
           provider: provider,
-          systemMessage: systemMessage?.toString(),
           tools: tools,
           temperature: temperature,
         );
@@ -157,6 +147,13 @@ class ConversationRepository extends _$ConversationRepository {
 
         // Add assistant message
         final content = contentBuffer.toString();
+
+        developer.log(
+          'Stream completed: collected ${toolCalls.length} tool calls and '
+          '${content.length} chars of content',
+          name: 'ConversationRepository',
+        );
+
         manager.addAssistantMessage(
           content: content.isNotEmpty ? content : null,
           toolCalls: toolCalls.isNotEmpty ? toolCalls : null,
@@ -164,6 +161,10 @@ class ConversationRepository extends _$ConversationRepository {
 
         // Process with strategy if provided
         if (strategy != null && toolCalls.isNotEmpty) {
+          developer.log(
+            'Processing ${toolCalls.length} tool calls with strategy',
+            name: 'ConversationRepository',
+          );
           final action = await strategy.processToolCalls(
             toolCalls: toolCalls,
             manager: manager,
@@ -195,7 +196,16 @@ class ConversationRepository extends _$ConversationRepository {
           shouldContinue = false;
         }
       } catch (e) {
-        manager.emitError(e.toString());
+        developer.log(
+          'Error during conversation turn',
+          name: 'ConversationRepository',
+          error: e,
+        );
+        try {
+          manager.emitError(e.toString());
+        } catch (_) {
+          // Ignore errors when emitting error events
+        }
         shouldContinue = false;
       }
     }
@@ -216,7 +226,7 @@ class ConversationRepository extends _$ConversationRepository {
 /// Provider for accessing conversation events
 @riverpod
 Stream<ConversationEvent> conversationEvents(
-  ConversationEventsRef ref,
+  Ref ref,
   String conversationId,
 ) {
   final repo = ref.watch(conversationRepositoryProvider.notifier);

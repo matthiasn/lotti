@@ -137,6 +137,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         final onProgress =
@@ -189,6 +190,7 @@ void main() {
           promptConfig: promptConfig,
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).called(1);
 
@@ -246,6 +248,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         final onStatusChange = invocation.namedArguments[#onStatusChange]
@@ -475,6 +478,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         runInferenceCallCount++;
@@ -497,6 +501,7 @@ void main() {
           promptConfig: promptConfig,
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).called(1);
     });
@@ -562,6 +567,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         final onStatusChange = invocation.namedArguments[#onStatusChange]
@@ -653,6 +659,7 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
         ),
       ).thenAnswer((invocation) async {
         final onStatusChange = invocation.namedArguments[#onStatusChange]

@@ -70,7 +70,10 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) {
+      // Suppress stack trace logging in tests
+      return null;
+    });
   });
 
   tearDown(() {

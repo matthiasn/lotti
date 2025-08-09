@@ -152,9 +152,14 @@ Available functions:
    - Look for clear evidence in recent logs/transcripts
    - Examples: "I finished X", "X is done", "Completed X"
    
-3. add_checklist_item: Add new action items discovered in the logs
-   - Look for new tasks mentioned in recent content
-   - Examples: "I need to X", "Next I'll do Y", "Don't forget to Z"
+3. add_multiple_checklist_items: Add multiple checklist items at once (PREFERRED for 2+ items)
+   - Use this when you have multiple items to add
+   - Format: {"items": "item1, item2, item3"}
+   - More efficient than calling add_checklist_item multiple times
+   
+4. add_checklist_item: Add a single new action item
+   - Only use this for adding a single item
+   - Format: {"actionItemDescription": "item description"}
 
 IMPORTANT RULES:
 - You should ONLY output function calls, no other text

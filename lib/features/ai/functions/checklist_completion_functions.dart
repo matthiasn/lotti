@@ -9,6 +9,8 @@ class ChecklistCompletionFunctions {
   static const String suggestChecklistCompletion =
       'suggest_checklist_completion';
   static const String addChecklistItem = 'add_checklist_item';
+  static const String addMultipleChecklistItems =
+      'add_multiple_checklist_items';
 
   /// Get all available function definitions for checklist operations
   static List<ChatCompletionTool> getTools() {
@@ -57,6 +59,25 @@ class ChecklistCompletionFunctions {
               },
             },
             'required': ['actionItemDescription'],
+          },
+        ),
+      ),
+      const ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(
+          name: addMultipleChecklistItems,
+          description:
+              'Add multiple checklist items to the task at once. Provide a comma-separated list of items. If no checklist exists, create a "TODOs" checklist first.',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'items': {
+                'type': 'string',
+                'description':
+                    'Comma-separated list of checklist items to add (e.g., "cheese, tomatoes, pepperoni")',
+              },
+            },
+            'required': ['items'],
           },
         ),
       ),

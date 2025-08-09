@@ -13,6 +13,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -173,6 +174,8 @@ class UnifiedAiInferenceRepository {
     required AiConfigPrompt promptConfig,
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
+    bool useConversationApproach =
+        false, // Flag to enable new conversation approach
   }) async {
     await _runInferenceInternal(
       entityId: entityId,
@@ -180,6 +183,7 @@ class UnifiedAiInferenceRepository {
       onProgress: onProgress,
       onStatusChange: onStatusChange,
       isRerun: false,
+      useConversationApproach: useConversationApproach,
     );
   }
 
@@ -190,6 +194,7 @@ class UnifiedAiInferenceRepository {
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
     required bool isRerun,
+    bool useConversationApproach = false,
     JournalEntity? entity, // Optional entity to avoid redundant fetches
   }) async {
     final start = DateTime.now();
@@ -249,6 +254,38 @@ class UnifiedAiInferenceRepository {
           systemMessage =
               '$systemMessage\n\nIMPORTANT: The task has a language preference set to ${language.name} (${language.code}). Generate the entire summary in this language.';
         }
+      }
+
+      // Check if we should use conversation approach for checklist updates
+      developer.log(
+        'Checking conversation approach: useConversationApproach=$useConversationApproach, '
+        'responseType=${promptConfig.aiResponseType}, '
+        'supportsFunctionCalling=${model.supportsFunctionCalling}',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      if (useConversationApproach &&
+          promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
+          model.supportsFunctionCalling) {
+        developer.log(
+          'Using conversation approach for checklist updates',
+          name: 'UnifiedAiInferenceRepository',
+        );
+
+        // Use conversation processor for better batching and error handling
+        await _processWithConversation(
+          prompt: prompt,
+          entity: entity,
+          promptConfig: promptConfig,
+          model: model,
+          provider: provider,
+          systemMessage: systemMessage,
+          onProgress: onProgress,
+          onStatusChange: onStatusChange,
+          start: start,
+          isRerun: isRerun,
+        );
+        return; // Exit early, conversation processor handles everything
       }
 
       final stream = await _runCloudInference(
@@ -1356,6 +1393,101 @@ class UnifiedAiInferenceRepository {
       return linkedEntities.firstWhereOrNull((e) => e is Task) as Task?;
     }
     return null;
+  }
+
+  /// Process checklist updates using conversation approach for better batching
+  Future<void> _processWithConversation({
+    required String prompt,
+    required JournalEntity entity,
+    required AiConfigPrompt promptConfig,
+    required AiConfigModel model,
+    required AiConfigInferenceProvider provider,
+    required String systemMessage,
+    required void Function(String) onProgress,
+    required void Function(InferenceStatus) onStatusChange,
+    required DateTime start,
+    required bool isRerun,
+  }) async {
+    developer.log(
+      'Starting conversation-based processing for ${entity.runtimeType}',
+      name: 'UnifiedAiInferenceRepository',
+    );
+
+    // Get the task for this entity
+    final task = await _getTaskForEntity(entity);
+    if (task == null) {
+      developer.log(
+        'No task found for entity ${entity.id}, falling back to regular processing',
+        name: 'UnifiedAiInferenceRepository',
+      );
+      // Fall back to regular processing
+      await _runInferenceInternal(
+        entityId: entity.id,
+        promptConfig: promptConfig,
+        onProgress: onProgress,
+        onStatusChange: onStatusChange,
+        isRerun: isRerun,
+        entity: entity,
+      );
+      return;
+    }
+
+    try {
+      // Create conversation processor
+      final processor = LottiConversationProcessor(ref: ref);
+
+      // Define tools for checklist updates
+      final tools = [
+        ...ChecklistCompletionFunctions.getTools(),
+        ...TaskFunctions.getTools(),
+      ];
+
+      // Process with conversation
+      final result = await processor.processPromptWithConversation(
+        prompt: prompt,
+        entity: entity,
+        task: task,
+        model: model,
+        provider: provider,
+        promptConfig: promptConfig,
+        systemMessage: systemMessage,
+        tools: tools,
+      );
+
+      // Update progress with final result
+      onProgress(result.responseText);
+
+      // Handle the result
+      developer.log(
+        'Conversation processing completed: ${result.totalCreated} items created, '
+        'duration: ${result.duration.inMilliseconds}ms, errors: ${result.hadErrors}',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      // Update status to idle or error
+      if (result.hadErrors) {
+        onStatusChange(InferenceStatus.error);
+      } else {
+        onStatusChange(InferenceStatus.idle);
+      }
+
+      // Log the response but don't create visible entry for checklist updates
+      developer.log(
+        'Checklist updates completed via conversation: ${result.totalCreated} items',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      // Force refresh of checklists UI
+      ref.invalidate(checklistItemControllerProvider);
+    } catch (e) {
+      developer.log(
+        'Error in conversation processing: $e',
+        name: 'UnifiedAiInferenceRepository',
+        error: e,
+      );
+      onStatusChange(InferenceStatus.error);
+      onProgress('Error: $e');
+    }
   }
 }
 

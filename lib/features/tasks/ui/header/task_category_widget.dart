@@ -56,7 +56,8 @@ class TaskCategoryWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(right: CategoryIconConstants.smallSectionSpacing),
+                  padding: const EdgeInsets.only(
+                      right: CategoryIconConstants.smallSectionSpacing),
                   child: CategoryIconCompact(
                     category?.id,
                     size: CategoryIconConstants.iconSizeMedium,

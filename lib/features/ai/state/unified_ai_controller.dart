@@ -200,6 +200,7 @@ class UnifiedAiController extends _$UnifiedAiController {
                 );
               }
             },
+            useConversationApproach: true, // Enable new conversation approach
           );
     } catch (e, stackTrace) {
       // Categorize the error for better user feedback
