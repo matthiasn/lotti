@@ -29,8 +29,20 @@ modules:
       - echo "Checking bundle contents:"
       - ls -la bundle/ 2>/dev/null || echo "No bundle directory"
       - ls -la bundle/lib/ 2>/dev/null || echo "No bundle/lib directory"
+      - echo "Bundle structure:"
+      - find bundle/ -type f 2>/dev/null | head -20 || echo "Cannot find bundle files"
       - echo "Copying bundle structure to /app/:"
       - cp -r bundle/* /app/ 2>/dev/null || echo "Failed to copy bundle structure"
+      - echo "Alternative copy method if above failed:"
+      - if [ -d bundle ]; then
+      -   echo "Bundle directory exists, copying contents..."
+      -   cp bundle/lotti /app/ 2>/dev/null || echo "Failed to copy lotti executable"
+      -   cp -r bundle/lib /app/ 2>/dev/null || echo "Failed to copy lib directory"
+      -   cp -r bundle/data /app/ 2>/dev/null || echo "Failed to copy data directory"
+      -   cp -r bundle/share /app/ 2>/dev/null || echo "Failed to copy share directory"
+      - else
+      -   echo "Bundle directory does not exist"
+      - fi
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
       - echo "Checking if lotti executable was copied:"
