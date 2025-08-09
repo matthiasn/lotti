@@ -1453,6 +1453,8 @@ class UnifiedAiInferenceRepository {
           onStatusChange: onStatusChange,
           isRerun: isRerun,
           entity: entity,
+          // ignore: avoid_redundant_argument_values
+          useConversationApproach: false,
         );
         return;
       }

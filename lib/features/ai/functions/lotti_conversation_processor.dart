@@ -697,6 +697,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
 
               // Update the handler's task reference
               checklistHandler.task = updatedTask;
+              batchChecklistHandler.task = updatedTask;
               checklistHandler.onTaskUpdated?.call(updatedTask);
 
               developer.log(

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Manages AI conversations with context preservation and multi-turn support
@@ -188,28 +189,8 @@ class ConversationManager {
         // Extract text from ChatCompletionUserMessageContent
         final userContent =
             message.content! as ChatCompletionUserMessageContent;
-        final value = userContent.value;
-        if (value is String) {
-          contentStr = value;
-        } else if (value is List) {
-          // Handle list of content parts
-          final textParts = <String>[];
-          for (final part in value) {
-            if (part is ChatCompletionMessageContentPart) {
-              final partMap = part.toJson();
-              if (partMap['type'] == 'text') {
-                final text = partMap['text'];
-                if (text is String) {
-                  textParts.add(text);
-                }
-              }
-            }
-          }
-          contentStr = textParts.join();
-        } else {
-          // Fallback
-          contentStr = userContent.toString();
-        }
+        contentStr =
+            ContentExtractionHelper.extractTextFromUserContent(userContent);
       } else {
         contentStr = message.content.toString();
       }

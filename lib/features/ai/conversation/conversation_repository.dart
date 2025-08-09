@@ -110,14 +110,25 @@ class ConversationRepository extends _$ConversationRepository {
             // Collect tool calls
             if (delta?.toolCalls != null) {
               for (final toolCallChunk in delta!.toolCalls!) {
-                // Create or update tool call
-                final toolCallId =
-                    toolCallChunk.id ?? 'tool_${toolCalls.length}';
-                final existingIndex =
-                    toolCalls.indexWhere((tc) => tc.id == toolCallId);
+                // Find existing tool call by ID or index
+                var existingIndex = -1;
+
+                // First try to find by ID if available
+                if (toolCallChunk.id != null) {
+                  existingIndex =
+                      toolCalls.indexWhere((tc) => tc.id == toolCallChunk.id);
+                }
+
+                // If not found by ID and we have an index, use the index
+                if (existingIndex < 0 && toolCallChunk.index != null) {
+                  final chunkIndex = toolCallChunk.index!;
+                  if (chunkIndex < toolCalls.length) {
+                    existingIndex = chunkIndex;
+                  }
+                }
 
                 if (existingIndex >= 0) {
-                  // Append to existing
+                  // Append to existing tool call
                   final existing = toolCalls[existingIndex];
                   final updatedArgs = existing.function.arguments +
                       (toolCallChunk.function?.arguments ?? '');
@@ -130,7 +141,9 @@ class ConversationRepository extends _$ConversationRepository {
                     ),
                   );
                 } else if (toolCallChunk.function != null) {
-                  // Add new
+                  // Add new tool call
+                  final toolCallId = toolCallChunk.id ??
+                      'tool_${toolCallChunk.index ?? toolCalls.length}';
                   toolCalls.add(ChatCompletionMessageToolCall(
                     id: toolCallId,
                     type: ChatCompletionMessageToolCallType.function,

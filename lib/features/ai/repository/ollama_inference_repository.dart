@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for Ollama-specific inference operations
@@ -76,30 +77,8 @@ class OllamaInferenceRepository {
 
       if (content is ChatCompletionUserMessageContent) {
         // Extract text from ChatCompletionUserMessageContent
-        // Check if it's a string type
-        final value = content.value;
-        if (value is String) {
-          contentStr = value;
-        } else if (value is List) {
-          // Handle list of content parts - extract text from each part
-          final textParts = <String>[];
-          for (final part in value) {
-            if (part is ChatCompletionMessageContentPart) {
-              // Use pattern matching to handle different part types
-              final partMap = part.toJson();
-              if (partMap['type'] == 'text') {
-                final text = partMap['text'];
-                if (text is String && text.trim().isNotEmpty) {
-                  textParts.add(text);
-                }
-              }
-            }
-          }
-          contentStr = textParts.join();
-        } else {
-          // Fallback
-          contentStr = content.toString();
-        }
+        contentStr =
+            ContentExtractionHelper.extractTextFromUserContent(content);
       } else if (content is String) {
         contentStr = content;
       } else if (content != null) {
