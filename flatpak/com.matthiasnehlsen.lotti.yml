@@ -37,11 +37,16 @@ modules:
       - cp /usr/lib/libkeybinder-3.0.so.0 /app/lib/ 2>/dev/null || echo "libkeybinder not found in /usr/lib/"
       - echo "Checking if libkeybinder was copied:"
       - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "libkeybinder not found"
-      - echo "Creating minimal libkeybinder stub..."
-      - echo "void keybinder_init(void) {}" > stub_keybinder.c
+      - echo "Creating minimal libkeybinder stub with GLib symbols..."
+      - echo "#include <glib.h>" > stub_keybinder.c
+      - echo "void g_once_init_enter_pointer(void* location) {}" >> stub_keybinder.c
+      - echo "void g_once_init_leave(void* location, gpointer result) {}" >> stub_keybinder.c
+      - echo "void keybinder_init(void) {}" >> stub_keybinder.c
       - echo "void keybinder_bind(const char* keystring, void* handler, void* user_data) {}" >> stub_keybinder.c
       - echo "void keybinder_unbind(const char* keystring, void* handler) {}" >> stub_keybinder.c
-      - gcc -shared -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c 2>/dev/null || echo "Failed to create stub"
+      - echo "typedef void (*KeybinderHandler)(const char* keystring, void* user_data);" >> stub_keybinder.c
+      - gcc -shared -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c -lglib-2.0 2>/dev/null || echo "Failed to create stub with glib"
+      - gcc -shared -o /app/lib/libkeybinder-3.0.so.0 stub_keybinder.c 2>/dev/null || echo "Failed to create stub without glib"
       - rm -f stub_keybinder.c
       - echo "Stub created:"
       - ls -la /app/lib/libkeybinder-3.0.so.0 2>/dev/null || echo "Stub creation failed"
