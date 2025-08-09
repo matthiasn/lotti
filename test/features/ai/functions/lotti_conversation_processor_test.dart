@@ -46,7 +46,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
-const _uuid = Uuid();
+// ignore: prefer_const_constructors
+final _uuid = Uuid();
 
 // Test data factory
 class TestDataFactory {

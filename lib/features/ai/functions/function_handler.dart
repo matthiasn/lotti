@@ -101,6 +101,12 @@ class ChecklistItemHandler extends FunctionHandler {
           }
         }
 
+        final errorMsg = attemptedItem?.trim().isEmpty ?? false
+            ? 'Empty description provided. Please provide a meaningful description.'
+            : wrongFieldName != null
+                ? 'Found "$wrongFieldName" instead of "actionItemDescription"'
+                : 'Missing required field "actionItemDescription"';
+
         return FunctionCallResult(
           success: false,
           functionName: functionName,
@@ -110,8 +116,7 @@ class ChecklistItemHandler extends FunctionHandler {
             'wrongFieldName': wrongFieldName,
             'toolCallId': call.id,
           },
-          error:
-              'Found "${wrongFieldName ?? "unknown"}" instead of "actionItemDescription"',
+          error: errorMsg,
         );
       }
     } catch (e) {

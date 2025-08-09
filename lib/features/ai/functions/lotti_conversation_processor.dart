@@ -114,8 +114,14 @@ class LottiConversationProcessor {
       hasErrors = strategy.hadErrors;
       responseText = strategy.getResponseSummary();
 
+      // Combine items from both handlers for logging
+      final totalItems = checklistHandler.successfulItems.length +
+          batchChecklistHandler.successfulItems.length;
+
       developer.log(
-        'Conversation completed: ${checklistHandler.successfulItems.length} items created, '
+        'Conversation completed: $totalItems items created '
+        '(checklist: ${checklistHandler.successfulItems.length}, '
+        'batch: ${batchChecklistHandler.successfulItems.length}), '
         'errors: $hasErrors',
         name: 'LottiConversationProcessor',
       );
@@ -123,9 +129,12 @@ class LottiConversationProcessor {
       // Store messages before cleanup
       final messages = List<ChatCompletionMessage>.from(manager.messages);
 
+      // Use only checklistHandler items since batch items are copied there
+      final allItems = checklistHandler.successfulItems;
+
       return ConversationResult(
-        totalCreated: checklistHandler.successfulItems.length,
-        items: checklistHandler.successfulItems,
+        totalCreated: allItems.length,
+        items: allItems,
         hadErrors: hasErrors,
         responseText: responseText,
         duration: DateTime.now().difference(startTime),
@@ -140,9 +149,12 @@ class LottiConversationProcessor {
       hasErrors = true;
       responseText = 'Error processing request: $e';
 
+      // Use only checklistHandler items since batch items are copied there
+      final allItems = checklistHandler.successfulItems;
+
       return ConversationResult(
-        totalCreated: checklistHandler.successfulItems.length,
-        items: checklistHandler.successfulItems,
+        totalCreated: allItems.length,
+        items: allItems,
         hadErrors: true,
         responseText: responseText,
         duration: DateTime.now().difference(startTime),
@@ -762,12 +774,15 @@ class LottiChecklistStrategy extends ConversationStrategy {
 
     // Continue if we haven't tried too many times and haven't created any items yet
     // OR if we've created at least one item and haven't exceeded our round limit
-    final shouldContinue = _rounds < 10 &&
-        (_rounds == 1 || checklistHandler.successfulItems.isNotEmpty);
+    final totalSuccessfulItems = checklistHandler.successfulItems.length +
+        batchChecklistHandler.successfulItems.length;
+    final shouldContinue =
+        _rounds < 10 && (_rounds == 1 || totalSuccessfulItems > 0);
 
     developer.log(
-      'Deciding whether to continue: successfulItems=${checklistHandler.successfulItems.length}, '
-      'rounds=$_rounds, shouldContinue=$shouldContinue',
+      'Deciding whether to continue: checklistItems=${checklistHandler.successfulItems.length}, '
+      'batchItems=${batchChecklistHandler.successfulItems.length}, '
+      'totalItems=$totalSuccessfulItems, rounds=$_rounds, shouldContinue=$shouldContinue',
       name: 'LottiConversationProcessor',
     );
 
@@ -780,8 +795,9 @@ class LottiChecklistStrategy extends ConversationStrategy {
 
   @override
   bool shouldContinue(ConversationManager manager) {
-    return _rounds < 10 &&
-        (_rounds == 1 || checklistHandler.successfulItems.isNotEmpty);
+    final totalSuccessfulItems = checklistHandler.successfulItems.length +
+        batchChecklistHandler.successfulItems.length;
+    return _rounds < 10 && (_rounds == 1 || totalSuccessfulItems > 0);
   }
 
   @override
@@ -798,8 +814,14 @@ class LottiChecklistStrategy extends ConversationStrategy {
       return retryPrompt;
     }
 
+    // Combine successful items from both handlers
+    final allSuccessfulItems = <String>[
+      ...checklistHandler.successfulItems,
+      ...batchChecklistHandler.successfulItems,
+    ];
+
     // If no items created yet, provide explicit instructions
-    if (checklistHandler.successfulItems.isEmpty) {
+    if (allSuccessfulItems.isEmpty) {
       return '''
 You haven't created any checklist items yet. Please review the user's original request and use the add_checklist_item function to create each item.
 
@@ -814,7 +836,7 @@ Please create the checklist items now.''';
     }
 
     return '''
-Great! You've created ${checklistHandler.successfulItems.length} checklist item(s) so far: ${checklistHandler.successfulItems.join(', ')}.
+Great! You've created ${allSuccessfulItems.length} checklist item(s) so far: ${allSuccessfulItems.join(', ')}.
 
 The user's original request mentioned multiple items. Please continue using the add_checklist_item function to create each of the remaining items.
 
