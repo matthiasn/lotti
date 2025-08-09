@@ -28,10 +28,14 @@ modules:
       - ls -la
       - echo "Checking if bundle directory exists:"
       - ls -la bundle/ 2>/dev/null || echo "No bundle directory found"
+      - echo "Bundle contents:"
+      - ls -la bundle/ 2>/dev/null || echo "Cannot list bundle"
       - echo "Copying bundle structure..."
       - cp -r bundle/* /app/ 2>/dev/null || echo "No bundle directory found"
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
+      - echo "Checking if lotti executable was copied:"
+      - ls -la /app/lotti 2>/dev/null || echo "lotti executable not found in /app/"
       - echo "Creating comprehensive libkeybinder stub with all required symbols..."
       - |
         cat > stub_keybinder.c << 'EOF'
