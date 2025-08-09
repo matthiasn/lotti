@@ -45,13 +45,14 @@ modules:
       - echo "Installing pre-built Flutter application..."
       - echo "Contents of project directory:"
       - ls -la
-      - echo "Checking for bundle directory:"
-      - ls -la bundle/ 2>/dev/null || echo "No bundle directory"
-      - echo "Copying Flutter application..."
-      - cp bundle/lotti /app/ 2>/dev/null || echo "Failed to copy lotti executable"
-      - cp -r bundle/lib /app/ 2>/dev/null || echo "Failed to copy lib directory"
-      - cp -r bundle/data /app/ 2>/dev/null || echo "Failed to copy data directory"
-      - cp -r bundle/share /app/ 2>/dev/null || echo "Failed to copy share directory"
+      - echo "Copying Flutter executable..."
+      - cp lotti /app/
+      - echo "Copying Flutter libraries to /app/lib/..."
+      - cp *.so /app/lib/ 2>/dev/null || echo "No .so files found"
+      - echo "Creating data directory and copying Flutter assets..."
+      - mkdir -p /app/data
+      - cp icudtl.dat /app/data/ 2>/dev/null || echo "No icudtl.dat found"
+      - cp -r flutter_assets /app/data/ 2>/dev/null || echo "No flutter_assets found"
       - echo "Checking what was copied to /app/:"
       - ls -la /app/
       - echo "Checking if lotti executable was copied:"
@@ -108,6 +109,44 @@ modules:
       - type: git
         url: {{LOTTI_REPO_URL}}
         branch: fix/flatpak-kb-fix-v2
+      - type: file
+        path: ../lotti
+      - type: file
+        path: ../libapp.so
+      - type: file
+        path: ../libfile_selector_linux_plugin.so
+      - type: file
+        path: ../libflutter_linux_gtk.so
+      - type: file
+        path: ../libflutter_secure_storage_linux_plugin.so
+      - type: file
+        path: ../libhotkey_manager_linux_plugin.so
+      - type: file
+        path: ../libirondash_engine_context_plugin.so
+      - type: file
+        path: ../libmedia_kit_libs_linux_plugin.so
+      - type: file
+        path: ../libmedia_kit_native_event_loop.so
+      - type: file
+        path: ../librecord_linux_plugin.so
+      - type: file
+        path: ../libscreen_retriever_linux_plugin.so
+      - type: file
+        path: ../libsqlite3_flutter_libs_plugin.so
+      - type: file
+        path: ../libsuper_native_extensions_plugin.so
+      - type: file
+        path: ../libsuper_native_extensions.so
+      - type: file
+        path: ../liburl_launcher_linux_plugin.so
+      - type: file
+        path: ../libvodozemac_bindings_dart.so
+      - type: file
+        path: ../libwindow_manager_plugin.so
+      - type: file
+        path: ../icudtl.dat
+      - type: dir
+        path: ../flutter_assets
   - name: flutter-common
     buildsystem: simple
     build-commands:
