@@ -33,6 +33,7 @@ modules:
       - echo "Searching for .so files in project root:"
       - find . -name "*.so" -type f -exec cp {} /app/lib/ \; 2>/dev/null || echo "No .so files found"
       - echo "Creating dummy libkeybinder-3.0.so.0..."
+      - mkdir -p /app/lib
       - echo "#include <glib.h>" > dummy_keybinder.c
       - echo "void g_once_init_enter_pointer(void* location) {}" >> dummy_keybinder.c
       - echo "void g_once_init_leave(void* location, gpointer result) {}" >> dummy_keybinder.c
