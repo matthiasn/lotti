@@ -391,6 +391,51 @@ void main() {
         expect(capturedCall.first.title, 'pepperoni');
       });
 
+      test('should filter duplicates within the same batch', () async {
+        // Arrange - batch contains "cheese", "Cheese", and "tomatoes"
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'add_multiple_checklist_items',
+          arguments: '',
+          data: {
+            'items': ['cheese', 'Cheese', 'tomatoes'],
+            'taskId': testTask.meta.id,
+          },
+        );
+
+        when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+            .thenAnswer((_) async => testTask);
+
+        when(() => mockAutoChecklistService.autoCreateChecklist(
+              taskId: testTask.meta.id,
+              suggestions: any(named: 'suggestions'),
+              title: 'TODOs',
+            )).thenAnswer((_) async => (
+              success: true,
+              checklistId: 'new-checklist',
+              error: null,
+            ));
+
+        // Act
+        final count = await handler.createBatchItems(result);
+
+        // Assert - only 2 items should be created (cheese and tomatoes)
+        expect(count, 2);
+        expect(handler.successfulItems, ['cheese', 'tomatoes']);
+
+        // Verify only unique items were created
+        final capturedCall =
+            verify(() => mockAutoChecklistService.autoCreateChecklist(
+                  taskId: testTask.meta.id,
+                  suggestions: captureAny(named: 'suggestions'),
+                  title: 'TODOs',
+                )).captured.single as List<ChecklistItemData>;
+
+        expect(capturedCall.length, 2);
+        expect(capturedCall.map((item) => item.title).toList(),
+            ['cheese', 'tomatoes']);
+      });
+
       test('should handle case-insensitive duplicate detection', () async {
         // Arrange
         final result = FunctionCallResult(

@@ -102,7 +102,7 @@ class LottiConversationProcessor {
       await conversationRepo.sendMessage(
         conversationId: conversationId,
         message: prompt,
-        model: model.name,
+        model: model.providerModelId,
         provider: provider,
         ollamaRepo: ollamaRepo,
         tools: tools,
@@ -183,6 +183,7 @@ add_multiple_checklist_items with {"items": "cheese, pepperoni, dough"}''';
     required AiConfigModel model,
     required AiConfigInferenceProvider provider,
     required String originalPrompt,
+    required OllamaInferenceRepository ollamaRepo,
     AutoChecklistService? autoChecklistService,
   }) async {
     developer.log(
@@ -196,13 +197,16 @@ add_multiple_checklist_items with {"items": "cheese, pepperoni, dough"}''';
           checklistRepository: ref.read(checklistRepositoryProvider),
         );
 
+    // Create a mutable copy of task to avoid reassigning the parameter
+    var currentTask = task;
+
     final checklistHandler = LottiChecklistItemHandler(
-      task: task,
+      task: currentTask,
       autoChecklistService: effectiveAutoChecklistService,
       checklistRepository: ref.read(checklistRepositoryProvider),
       onTaskUpdated: (updatedTask) {
         // Update task reference for subsequent operations
-        task = updatedTask;
+        currentTask = updatedTask;
       },
     );
 
@@ -295,14 +299,14 @@ IMPORTANT: The correct format is {"actionItemDescription": "item description"}.
           await conversationRepo.sendMessage(
             conversationId: conversationId,
             message: retryPrompt,
-            model: model.name,
+            model: model.providerModelId,
             provider: provider,
-            ollamaRepo: OllamaInferenceRepository(),
+            ollamaRepo: ollamaRepo,
             tools: [
               const ChatCompletionTool(
                 type: ChatCompletionToolType.function,
                 function: FunctionObject(
-                  name: 'addChecklistItem',
+                  name: 'add_checklist_item',
                   description: 'Create a checklist item',
                   parameters: {
                     'type': 'object',
@@ -344,14 +348,14 @@ Please continue creating any remaining items from the original request.''';
         await conversationRepo.sendMessage(
           conversationId: conversationId,
           message: continuationPrompt,
-          model: model.name,
+          model: model.providerModelId,
           provider: provider,
           ollamaRepo: OllamaInferenceRepository(),
           tools: [
             const ChatCompletionTool(
               type: ChatCompletionToolType.function,
               function: FunctionObject(
-                name: 'addChecklistItem',
+                name: 'add_checklist_item',
                 description: 'Create a checklist item',
                 parameters: {
                   'type': 'object',
@@ -691,7 +695,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
               manager.addToolResponse(
                 toolCallId: call.id,
                 response:
-                    "Language set to $languageCode. Good! Now please use the addChecklistItem function to create each checklist item from the user's request.",
+                    "Language set to $languageCode. Good! Now please use the add_checklist_item function to create each checklist item from the user's request.",
               );
             } catch (e) {
               developer.log(
@@ -741,7 +745,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
         manager.addToolResponse(
           toolCallId: call.id,
           response:
-              'Please use addChecklistItem to create the suggested items.',
+              'Please use add_checklist_item to create the suggested items.',
         );
       } else {
         developer.log(
@@ -751,7 +755,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
         manager.addToolResponse(
           toolCallId: call.id,
           response:
-              'Unknown function. Please use addChecklistItem to create checklist items.',
+              'Unknown function. Please use add_checklist_item to create checklist items.',
         );
       }
     }
@@ -797,11 +801,11 @@ class LottiChecklistStrategy extends ConversationStrategy {
     // If no items created yet, provide explicit instructions
     if (checklistHandler.successfulItems.isEmpty) {
       return '''
-You haven't created any checklist items yet. Please review the user's original request and use the addChecklistItem function to create each item.
+You haven't created any checklist items yet. Please review the user's original request and use the add_checklist_item function to create each item.
 
 Remember to use the format: {"actionItemDescription": "item description"}
 
-For example, if the user asked for a pizza shopping list with cheese, pepperoni, and dough, you would call addChecklistItem three times:
+For example, if the user asked for a pizza shopping list with cheese, pepperoni, and dough, you would call add_checklist_item three times:
 1. {"actionItemDescription": "cheese"}
 2. {"actionItemDescription": "pepperoni"}
 3. {"actionItemDescription": "dough"}

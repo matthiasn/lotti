@@ -172,15 +172,21 @@ Do NOT recreate the items that were already successful.''';
 
       if (checklistIds.isEmpty) {
         // Create a new "TODOs" checklist with all items
-        final checklistItems = items
-            .where((desc) =>
-                !_createdDescriptions.contains(desc.toLowerCase().trim()))
-            .map((desc) => ChecklistItemData(
-                  title: desc,
-                  isChecked: false,
-                  linkedChecklists: [],
-                ))
-            .toList();
+        final seenInBatch = <String>{};
+        final checklistItems = <ChecklistItemData>[];
+
+        for (final desc in items) {
+          final normalized = desc.toLowerCase().trim();
+          if (!_createdDescriptions.contains(normalized) &&
+              !seenInBatch.contains(normalized)) {
+            seenInBatch.add(normalized);
+            checklistItems.add(ChecklistItemData(
+              title: desc,
+              isChecked: false,
+              linkedChecklists: [],
+            ));
+          }
+        }
 
         if (checklistItems.isNotEmpty) {
           final createResult = await autoChecklistService.autoCreateChecklist(
@@ -208,10 +214,14 @@ Do NOT recreate the items that were already successful.''';
       } else {
         // Add items to the first existing checklist
         final checklistId = checklistIds.first;
+        final seenInBatch = <String>{};
 
         for (final desc in items) {
           final normalized = desc.toLowerCase().trim();
-          if (!_createdDescriptions.contains(normalized)) {
+          if (!_createdDescriptions.contains(normalized) &&
+              !seenInBatch.contains(normalized)) {
+            seenInBatch.add(normalized);
+
             final newItem = await checklistRepository.addItemToChecklist(
               checklistId: checklistId,
               title: desc,
@@ -223,8 +233,21 @@ Do NOT recreate the items that were already successful.''';
               successCount++;
               _successfulItems.add(desc);
               _createdDescriptions.add(normalized);
+
+              // Refresh the task after each successful item
+              final refreshedEntity =
+                  await journalDb.journalEntityById(currentTask.id);
+              if (refreshedEntity is Task) {
+                task = refreshedEntity;
+                currentTask = refreshedEntity;
+              }
             }
           }
+        }
+
+        // Call onTaskUpdated once after all items are processed
+        if (successCount > 0) {
+          onTaskUpdated?.call(task);
         }
       }
     } catch (e, s) {

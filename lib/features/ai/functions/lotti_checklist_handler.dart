@@ -72,7 +72,7 @@ class LottiChecklistItemHandler extends FunctionHandler {
           }
         }
 
-        final errorMsg = description == ''
+        final errorMsg = attemptedItem?.trim().isEmpty ?? false
             ? 'Empty description provided. Please provide a meaningful description.'
             : wrongFieldName != null
                 ? 'Found "$wrongFieldName" instead of "actionItemDescription"'
@@ -175,7 +175,6 @@ Do NOT recreate the items that were already successful.''';
     if (!result.success) return false;
 
     final description = result.data['description'] as String;
-    _successfulItems.add(description);
 
     try {
       // Get current task state
@@ -204,10 +203,15 @@ Do NOT recreate the items that were already successful.''';
         );
 
         if (createResult.success) {
+          // Add to successful items after DB write succeeds
+          _successfulItems.add(description);
+          _createdDescriptions.add(description.toLowerCase().trim());
+
           // Refresh the task
           final refreshedEntity =
               await journalDb.journalEntityById(currentTask.id);
           if (refreshedEntity is Task) {
+            task = refreshedEntity;
             onTaskUpdated?.call(refreshedEntity);
           }
           return true;
@@ -224,7 +228,21 @@ Do NOT recreate the items that were already successful.''';
           categoryId: currentTask.meta.categoryId,
         );
 
-        return newItem != null;
+        if (newItem != null) {
+          // Add to successful items after DB write succeeds
+          _successfulItems.add(description);
+          _createdDescriptions.add(description.toLowerCase().trim());
+
+          // Refresh the task
+          final refreshedEntity =
+              await journalDb.journalEntityById(currentTask.id);
+          if (refreshedEntity is Task) {
+            task = refreshedEntity;
+            onTaskUpdated?.call(refreshedEntity);
+          }
+          return true;
+        }
+        return false;
       }
     } catch (e, s) {
       developer.log(

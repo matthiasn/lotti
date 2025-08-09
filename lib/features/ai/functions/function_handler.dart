@@ -78,7 +78,7 @@ class ChecklistItemHandler extends FunctionHandler {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
       final description = args['actionItemDescription'] as String?;
 
-      if (description != null) {
+      if (description?.trim().isNotEmpty ?? false) {
         return FunctionCallResult(
           success: true,
           functionName: functionName,

@@ -75,11 +75,46 @@ class OllamaInferenceRepository {
       String? contentStr;
 
       if (content is ChatCompletionUserMessageContent) {
-        contentStr = content.toString();
+        // Extract text from ChatCompletionUserMessageContent properly
+        try {
+          final dynamic jsonContent = content.toJson();
+          if (jsonContent is List) {
+            // Handle list of content parts
+            final textParts = <String>[];
+            for (final part in jsonContent) {
+              if (part is Map<String, dynamic>) {
+                if (part['type'] == 'text' && part['text'] != null) {
+                  textParts.add(part['text'] as String);
+                }
+              }
+            }
+            contentStr = textParts.join(' ');
+          } else if (jsonContent is String) {
+            contentStr = jsonContent;
+          } else if (jsonContent is Map) {
+            // Handle single content object
+            if (jsonContent['type'] == 'text' && jsonContent['text'] != null) {
+              contentStr = jsonContent['text'] as String;
+            } else {
+              contentStr = jsonEncode(jsonContent);
+            }
+          } else {
+            // Fallback: encode as JSON if structure is unknown
+            contentStr = jsonEncode(jsonContent);
+          }
+        } catch (e) {
+          // Fallback to JSON encoding if parsing fails
+          contentStr = jsonEncode(content.toJson());
+        }
       } else if (content is String) {
         contentStr = content;
-      } else {
-        contentStr = content?.toString();
+      } else if (content != null) {
+        // For other types, try to get JSON representation
+        try {
+          contentStr = jsonEncode(content);
+        } catch (_) {
+          contentStr = content.toString();
+        }
       }
 
       // For tool responses, Ollama expects a different format
@@ -339,9 +374,11 @@ class OllamaInferenceRepository {
         try {
           final json = jsonDecode(chunk) as Map<String, dynamic>;
 
-          // Skip logging for thinking chunks to reduce noise
+          // Cast message once to avoid dynamic calls
           final message = json['message'] as Map<String, dynamic>?;
-          if (message?['thinking'] == null) {
+
+          // Skip logging for thinking chunks to reduce noise
+          if (message != null && message['thinking'] == null) {
             developer.log(
               'Ollama response: ${chunk.substring(0, chunk.length > 500 ? 500 : chunk.length)}',
               name: 'OllamaInferenceRepository',
@@ -349,9 +386,7 @@ class OllamaInferenceRepository {
           }
 
           // Check if this is a tool call response
-          if (json['message'] != null) {
-            final message = json['message'] as Map<String, dynamic>;
-
+          if (message != null) {
             // Skip thinking content - we only care about actual content or tool calls
             if (message['thinking'] != null) {
               continue;

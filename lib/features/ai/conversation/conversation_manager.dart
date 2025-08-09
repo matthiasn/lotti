@@ -141,19 +141,22 @@ class ConversationManager {
       final trimCount =
           _messages.length - maxHistorySize + 10; // Leave some buffer
 
-      _messages
-        ..removeRange(
-          hasSystem ? 1 : 0,
-          trimCount,
-        )
+      // Calculate proper start and end indices
+      final start = hasSystem ? 1 : 0;
+      final end = start + trimCount;
 
-        // Add truncation notice
-        ..insert(
-          hasSystem ? 1 : 0,
-          const ChatCompletionMessage.system(
-            content: '[Previous messages truncated for context length]',
-          ),
-        );
+      // Ensure end doesn't exceed list length
+      if (end <= _messages.length) {
+        _messages
+          ..removeRange(start, end)
+          // Add truncation notice
+          ..insert(
+            start,
+            const ChatCompletionMessage.system(
+              content: '[Previous messages truncated for context length]',
+            ),
+          );
+      }
     }
   }
 

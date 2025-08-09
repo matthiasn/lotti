@@ -85,7 +85,6 @@ class TestDataFactory {
   static Checklist createChecklist({
     String? id,
     String? title,
-    List<ChecklistItemData>? items,
   }) {
     final checklistId = id ?? _uuid.v4();
     return Checklist(
@@ -615,7 +614,15 @@ void main() {
       // TODO: Fix hadErrors issue
       // expect(result.hadErrors, false);
       expect(result.responseText, contains('Created 1 checklist item'));
-      verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+
+      // Verify language was set correctly
+      final capturedEntity = verify(() => mockJournalRepo.updateJournalEntity(
+            captureAny(),
+          )).captured.single as JournalEntity;
+
+      expect(capturedEntity, isA<Task>());
+      final capturedTaskEntity = capturedEntity as Task;
+      expect(capturedTaskEntity.data.languageCode, 'es');
     });
 
     test('should prevent duplicate items when mixing single and batch creation',
@@ -954,9 +961,6 @@ void main() {
       // Arrange
       final existingChecklist = TestDataFactory.createChecklist(
         id: 'existing-checklist',
-        items: [
-          TestDataFactory.createChecklistItem(title: 'existing item'),
-        ],
       );
 
       final task = TestDataFactory.createTask(

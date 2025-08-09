@@ -102,7 +102,7 @@ abstract class AppLocalizations {
     Locale('en', 'GB'),
     Locale('es'),
     Locale('fr'),
-    Locale('ro')
+    Locale('ro'),
   ];
 
   /// No description provided for @addActionAddAudioRecording.
@@ -3272,7 +3272,9 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ve successfully verified {deviceName} ({deviceID})'**
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID);
+    String deviceName,
+    String deviceID,
+  );
 
   /// No description provided for @settingsMatrixVerifyConfirm.
   ///
@@ -3968,8 +3970,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }
