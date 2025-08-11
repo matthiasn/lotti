@@ -34,17 +34,26 @@ import 'package:lotti/services/vector_clock_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
-/// Helper function to safely register services that might fail in sandboxed environments
-/// Logs errors using the logging service if available, otherwise falls back to print
-void _registerServiceSafely<T extends Object>(
+/// Helper function to lazily register services that might fail in sandboxed environments
+/// Services are only created on first access, with safe error handling
+void _registerLazyServiceSafely<T extends Object>(
   T Function() factory,
   String serviceName,
 ) {
   try {
-    getIt.registerSingleton<T>(factory());
-    _safeLog('Successfully registered $serviceName', isError: false);
+    getIt.registerLazySingleton<T>(() {
+      try {
+        final instance = factory();
+        _safeLog('Successfully created lazy instance of $serviceName', isError: false);
+        return instance;
+      } catch (e) {
+        _safeLog('Failed to create lazy instance of $serviceName: $e', isError: true);
+        rethrow; // Let GetIt handle the failure appropriately
+      }
+    });
+    _safeLog('Successfully registered lazy $serviceName', isError: false);
   } catch (e) {
-    _safeLog('Failed to register $serviceName: $e', isError: true);
+    _safeLog('Failed to register lazy $serviceName: $e', isError: true);
   }
 }
 
@@ -111,13 +120,13 @@ Future<void> registerSingletons() async {
     ..registerSingleton<AiConfigRepository>(AiConfigRepository(AiConfigDb()))
     ..registerSingleton<NavService>(NavService());
 
-  // Register services that might fail in sandboxed environments
-  _registerServiceSafely<NotificationService>(
+  // Register services that might fail in sandboxed environments using lazy loading
+  _registerLazyServiceSafely<NotificationService>(
     NotificationService.new,
     'NotificationService',
   );
 
-  _registerServiceSafely<AudioPlayerCubit>(
+  _registerLazyServiceSafely<AudioPlayerCubit>(
     AudioPlayerCubit.new,
     'AudioPlayerCubit',
   );
