@@ -535,7 +535,8 @@ void main() {
           stream.first,
           throwsA(
             isA<WhisperTranscriptionException>()
-                .having((e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
+                .having(
+                    (e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
                 .having((e) => e.message, 'message', contains('1 minute')),
           ),
         );
@@ -543,12 +544,15 @@ void main() {
 
       test('handles timeout via onTimeout callback', () async {
         // Arrange - mock a request that never completes to trigger onTimeout
-        const customTimeout = Duration(milliseconds: 100); // Short timeout for testing
+        const customTimeout =
+            Duration(milliseconds: 100); // Short timeout for testing
         when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) => Completer<http.Response>().future); // Never completes
+                  any(),
+                  headers: any(named: 'headers'),
+                  body: any(named: 'body'),
+                ))
+            .thenAnswer(
+                (_) => Completer<http.Response>().future); // Never completes
 
         // Act
         final stream = repository.transcribeAudio(
@@ -564,8 +568,10 @@ void main() {
           stream.first,
           throwsA(
             isA<WhisperTranscriptionException>()
-                .having((e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
-                .having((e) => e.message, 'message', contains('0 minutes')), // 100ms = 0 minutes
+                .having(
+                    (e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
+                .having((e) => e.message, 'message',
+                    contains('0 minutes')), // 100ms = 0 minutes
           ),
         );
       });
@@ -592,12 +598,15 @@ void main() {
 
         // Assert
         final response = await stream.first;
-        expect(response.choices?.first.delta?.content, equals('Test transcription'));
+        expect(response.choices?.first.delta?.content,
+            equals('Test transcription'));
       });
 
-      test('handles timeout with default duration and status code 408', () async {
+      test('handles timeout with default duration and status code 408',
+          () async {
         // Arrange - mock a timeout by throwing TimeoutException
-        const defaultTimeout = Duration(seconds: whisperTranscriptionTimeoutSeconds);
+        const defaultTimeout =
+            Duration(seconds: whisperTranscriptionTimeoutSeconds);
         when(() => mockHttpClient.post(
               any(),
               headers: any(named: 'headers'),
@@ -617,7 +626,8 @@ void main() {
           stream.first,
           throwsA(
             isA<WhisperTranscriptionException>()
-                .having((e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
+                .having(
+                    (e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
                 .having((e) => e.message, 'message', contains('10 minutes')),
           ),
         );

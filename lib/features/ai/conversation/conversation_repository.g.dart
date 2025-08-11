@@ -7,7 +7,7 @@ part of 'conversation_repository.dart';
 // **************************************************************************
 
 String _$conversationEventsHash() =>
-    r'985b20700b7fbbf678c18053543c4e2bbbdfda09';
+    r'7359731041c3c8e6b9e96c3362b3ccf815f59659';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -324,7 +324,7 @@ class _ConversationMessagesProviderElement
 }
 
 String _$conversationRepositoryHash() =>
-    r'7b2a5a7a648362a2060b48304555fef87b7f56e8';
+    r'7aabed8fee944aca696abb0f11bdfb650e885bcf';
 
 /// Repository for managing AI conversations
 ///

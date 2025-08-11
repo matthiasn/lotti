@@ -51,7 +51,8 @@ class WhisperInferenceRepository {
     }
 
     // Use provided timeout or default
-    final requestTimeout = timeout ?? const Duration(seconds: whisperTranscriptionTimeoutSeconds);
+    final requestTimeout =
+        timeout ?? const Duration(seconds: whisperTranscriptionTimeoutSeconds);
 
     // Define timeout error message once to avoid duplication
     final timeoutMinutes = requestTimeout.inMinutes;
@@ -87,7 +88,8 @@ class WhisperInferenceRepository {
             onTimeout: () {
               throw WhisperTranscriptionException(
                 timeoutErrorMessage,
-                statusCode: httpStatusRequestTimeout, // HTTP 408 Request Timeout
+                statusCode:
+                    httpStatusRequestTimeout, // HTTP 408 Request Timeout
               );
             },
           );
