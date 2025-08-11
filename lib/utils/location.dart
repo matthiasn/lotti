@@ -6,6 +6,7 @@ import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 
@@ -24,7 +25,17 @@ class DeviceLocation {
       return;
     }
 
-    serviceEnabled = await location.serviceEnabled();
+    try {
+      serviceEnabled = await location.serviceEnabled();
+    } catch (e) {
+      // Location services not available in flatpak environment
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'LOCATION_SERVICE',
+        subDomain: 'initialization',
+      );
+      return;
+    }
     if (!serviceEnabled) {
       serviceEnabled = await location.requestService();
       if (!serviceEnabled) {

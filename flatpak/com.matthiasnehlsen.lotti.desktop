@@ -5,5 +5,5 @@ Exec=lotti
 Icon=com.matthiasnehlsen.lotti
 Terminal=false
 Type=Application
-Categories=Productivity;Office;
+Categories=Office;
 StartupWMClass=lotti

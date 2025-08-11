@@ -25,12 +25,35 @@ Future<void> main() async {
       ..registerSingleton<LoggingService>(LoggingService());
 
     WidgetsFlutterBinding.ensureInitialized();
-    MediaKit.ensureInitialized();
+    try {
+      MediaKit.ensureInitialized();
+    } catch (e) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'MAIN',
+        subDomain:
+            'MediaKit initialization failed - continuing without media support',
+      );
+    }
     Animate.restartOnHotReload = true;
 
     if (isDesktop) {
       await windowManager.ensureInitialized();
       await hotKeyManager.unregisterAll();
+
+      // Configure window options for flatpak compatibility
+      const windowOptions = WindowOptions(
+        size: Size(1280, 720),
+        minimumSize: Size(800, 600),
+        center: true,
+        backgroundColor: Colors.transparent,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.normal,
+      );
+      await windowManager.waitUntilReadyToShow(windowOptions, () async {
+        await windowManager.show();
+        await windowManager.focus();
+      });
     }
 
     final docDir = await findDocumentsDirectory();
