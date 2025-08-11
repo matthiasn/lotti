@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
+import 'dart:async';
 
 /// Repository for handling Whisper-specific inference operations
 ///
@@ -25,6 +26,7 @@ class WhisperInferenceRepository {
   ///   baseUrl: The base URL of the local Whisper server
   ///   prompt: Optional text prompt for context (not used by Whisper)
   ///   maxCompletionTokens: Optional token limit (not used by Whisper)
+  ///   timeout: Optional timeout override (defaults to whisperTranscriptionTimeoutSeconds)
   ///
   /// Returns:
   ///   Stream of chat completion responses containing the transcribed text
@@ -38,6 +40,7 @@ class WhisperInferenceRepository {
     required String baseUrl,
     String? prompt, // Made optional since it's not used
     int? maxCompletionTokens, // Already optional, not used
+    Duration? timeout, // Optional timeout override
   }) {
     // Validate required inputs consistently
     if (model.isEmpty) {
@@ -47,13 +50,17 @@ class WhisperInferenceRepository {
       throw ArgumentError('Base URL cannot be empty');
     }
 
+    // Use provided timeout or default
+    final requestTimeout = timeout ?? Duration(seconds: whisperTranscriptionTimeoutSeconds);
+
     // Create a stream that performs the async transcription operation
     return Stream.fromFuture(
       () async {
         try {
           developer.log(
             'Sending audio transcription request to local Whisper server - '
-            'baseUrl: $baseUrl, model: $model, audioLength: ${audioBase64.length}',
+            'baseUrl: $baseUrl, model: $model, audioLength: ${audioBase64.length}, '
+            'timeout: ${requestTimeout.inMinutes} minutes',
             name: 'WhisperInferenceRepository',
           );
 
@@ -69,12 +76,13 @@ class WhisperInferenceRepository {
             }),
           )
               .timeout(
-            const Duration(seconds: whisperTranscriptionTimeoutSeconds),
+            requestTimeout,
             onTimeout: () {
               throw WhisperTranscriptionException(
-                'Transcription request timed out after ${whisperTranscriptionTimeoutSeconds ~/ 60} minutes. '
-                'This can happen with very long audio files. '
+                'Transcription request timed out after ${requestTimeout.inMinutes} minutes. '
+                'This can happen with very long audio files or slow processing. '
                 'Please try with a shorter recording or check your Whisper server performance.',
+                statusCode: 408, // HTTP 408 Request Timeout
               );
             },
           );
@@ -130,6 +138,20 @@ class WhisperInferenceRepository {
         } on WhisperTranscriptionException {
           // Re-throw our custom exceptions as-is
           rethrow;
+        } on TimeoutException catch (e) {
+          // Handle timeout exceptions from HTTP client
+          developer.log(
+            'Transcription request timed out',
+            name: 'WhisperInferenceRepository',
+            error: e,
+          );
+          throw WhisperTranscriptionException(
+            'Transcription request timed out after ${requestTimeout.inMinutes} minutes. '
+            'This can happen with very long audio files or slow processing. '
+            'Please try with a shorter recording or check your Whisper server performance.',
+            statusCode: 408, // HTTP 408 Request Timeout
+            originalError: e,
+          );
         } on FormatException catch (e) {
           // Handle JSON parsing errors
           developer.log(
