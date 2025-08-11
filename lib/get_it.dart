@@ -35,24 +35,45 @@ import 'package:lotti/services/vector_clock_service.dart';
 final GetIt getIt = GetIt.instance;
 
 /// Helper function to safely register services that might fail in sandboxed environments
-/// Logs errors using the logging service and continues execution
+/// Logs errors using the logging service if available, otherwise falls back to print
 void _registerServiceSafely<T extends Object>(
   T Function() factory,
   String serviceName,
 ) {
   try {
     getIt.registerSingleton<T>(factory());
-    getIt<LoggingService>().captureEvent(
-      'Successfully registered $serviceName',
-      domain: 'SERVICE_REGISTRATION',
-    );
-  } catch (e, stackTrace) {
-    getIt<LoggingService>().captureException(
-      e,
-      domain: 'SERVICE_REGISTRATION',
-      subDomain: serviceName.toLowerCase(),
-      stackTrace: stackTrace,
-    );
+    _safeLog('Successfully registered $serviceName', isError: false);
+  } catch (e) {
+    _safeLog('Failed to register $serviceName: $e', isError: true);
+  }
+}
+
+/// Safe logging helper that falls back to print if LoggingService is unavailable
+void _safeLog(String message, {required bool isError}) {
+  try {
+    if (getIt.isRegistered<LoggingService>()) {
+      final loggingService = getIt<LoggingService>();
+      if (isError) {
+        loggingService.captureEvent(
+          message,
+          domain: 'SERVICE_REGISTRATION',
+          subDomain: 'error',
+        );
+      } else {
+        loggingService.captureEvent(
+          message,
+          domain: 'SERVICE_REGISTRATION',
+        );
+      }
+    } else {
+      // Fallback to print if LoggingService not available
+      // ignore: avoid_print
+      print('SERVICE_REGISTRATION: $message');
+    }
+  } catch (e) {
+    // Ultimate fallback if even the safe check fails
+    // ignore: avoid_print
+    print('SERVICE_REGISTRATION: $message (logging failed: $e)');
   }
 }
 
