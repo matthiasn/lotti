@@ -57,7 +57,8 @@ class WhisperInferenceRepository {
             name: 'WhisperInferenceRepository',
           );
 
-          final response = await _httpClient.post(
+          final response = await _httpClient
+              .post(
             Uri.parse('$baseUrl/v1/audio/transcriptions'),
             headers: {
               'Content-Type': 'application/json',
@@ -66,8 +67,9 @@ class WhisperInferenceRepository {
               'model': model,
               'audio': audioBase64,
             }),
-          ).timeout(
-            Duration(seconds: whisperTranscriptionTimeoutSeconds),
+          )
+              .timeout(
+            const Duration(seconds: whisperTranscriptionTimeoutSeconds),
             onTimeout: () {
               throw WhisperTranscriptionException(
                 'Transcription request timed out after ${whisperTranscriptionTimeoutSeconds ~/ 60} minutes. '
@@ -166,7 +168,7 @@ class WhisperTranscriptionException implements Exception {
 
   final String message;
   final int? statusCode;
-  final dynamic originalError;
+  final Object? originalError;
 
   @override
   String toString() => 'WhisperTranscriptionException: $message';

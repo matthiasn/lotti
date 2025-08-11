@@ -516,7 +516,8 @@ void main() {
         const message = 'Test error message';
         final exception = WhisperTranscriptionException(message);
 
-        expect(exception.toString(), equals('WhisperTranscriptionException: $message'));
+        expect(exception.toString(),
+            equals('WhisperTranscriptionException: $message'));
       });
 
       test('preserves status code', () {
