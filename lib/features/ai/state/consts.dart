@@ -18,6 +18,9 @@ const ollamaMinTemperature = 0.0;
 const ollamaContentType = 'application/json';
 const ollamaResponseIdPrefix = 'ollama-';
 
+// Whisper API constants
+const whisperTranscriptionTimeoutSeconds = 600; // 10 minutes for audio transcription
+
 // HTTP status codes
 const httpStatusOk = 200;
 const httpStatusBadRequest = 400;

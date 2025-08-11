@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Whisper-specific inference operations
@@ -65,6 +66,15 @@ class WhisperInferenceRepository {
               'model': model,
               'audio': audioBase64,
             }),
+          ).timeout(
+            Duration(seconds: whisperTranscriptionTimeoutSeconds),
+            onTimeout: () {
+              throw WhisperTranscriptionException(
+                'Transcription request timed out after ${whisperTranscriptionTimeoutSeconds ~/ 60} minutes. '
+                'This can happen with very long audio files. '
+                'Please try with a shorter recording or check your Whisper server performance.',
+              );
+            },
           );
 
           if (response.statusCode != 200) {
@@ -156,8 +166,8 @@ class WhisperTranscriptionException implements Exception {
 
   final String message;
   final int? statusCode;
-  final Object? originalError;
+  final dynamic originalError;
 
   @override
-  String toString() => message;
+  String toString() => 'WhisperTranscriptionException: $message';
 }
