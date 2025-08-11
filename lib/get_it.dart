@@ -34,6 +34,28 @@ import 'package:lotti/services/vector_clock_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
+/// Helper function to safely register services that might fail in sandboxed environments
+/// Logs errors using the logging service and continues execution
+void _registerServiceSafely<T extends Object>(
+  T Function() factory,
+  String serviceName,
+) {
+  try {
+    getIt.registerSingleton<T>(factory());
+    getIt<LoggingService>().captureEvent(
+      'Successfully registered $serviceName',
+      domain: 'SERVICE_REGISTRATION',
+    );
+  } catch (e, stackTrace) {
+    getIt<LoggingService>().captureException(
+      e,
+      domain: 'SERVICE_REGISTRATION',
+      subDomain: serviceName.toLowerCase(),
+      stackTrace: stackTrace,
+    );
+  }
+}
+
 Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
@@ -64,11 +86,22 @@ Future<void> registerSingletons() async {
       ),
     )
     ..registerSingleton<LinkService>(LinkService())
-    ..registerSingleton<NotificationService>(NotificationService())
     ..registerSingleton<Maintenance>(Maintenance())
     ..registerSingleton<AiConfigRepository>(AiConfigRepository(AiConfigDb()))
     ..registerSingleton<NavService>(NavService())
-    ..registerSingleton<AudioPlayerCubit>(AudioPlayerCubit());
+    // Register LoggingService so it's available for error reporting
+    ..registerSingleton<LoggingService>(LoggingService());
+
+  // Register services that might fail in sandboxed environments
+  _registerServiceSafely<NotificationService>(
+    NotificationService.new,
+    'NotificationService',
+  );
+
+  _registerServiceSafely<AudioPlayerCubit>(
+    AudioPlayerCubit.new,
+    'AudioPlayerCubit',
+  );
 
   unawaited(getIt<MatrixService>().init());
   getIt<LoggingService>().listenToConfigFlag();
