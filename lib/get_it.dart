@@ -109,9 +109,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<Maintenance>(Maintenance())
     ..registerSingleton<AiConfigRepository>(AiConfigRepository(AiConfigDb()))
-    ..registerSingleton<NavService>(NavService())
-    // Register LoggingService so it's available for error reporting
-    ..registerSingleton<LoggingService>(LoggingService());
+    ..registerSingleton<NavService>(NavService());
 
   // Register services that might fail in sandboxed environments
   _registerServiceSafely<NotificationService>(
