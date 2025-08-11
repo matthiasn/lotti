@@ -1,10 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
-import 'dart:async';
 
 /// Repository for handling Whisper-specific inference operations
 ///
@@ -51,7 +51,12 @@ class WhisperInferenceRepository {
     }
 
     // Use provided timeout or default
-    final requestTimeout = timeout ?? Duration(seconds: whisperTranscriptionTimeoutSeconds);
+    final requestTimeout = timeout ?? const Duration(seconds: whisperTranscriptionTimeoutSeconds);
+
+    // Define timeout error message once to avoid duplication
+    final timeoutErrorMessage = 'Transcription request timed out after ${requestTimeout.inMinutes} minutes. '
+        'This can happen with very long audio files or slow processing. '
+        'Please try with a shorter recording or check your Whisper server performance.';
 
     // Create a stream that performs the async transcription operation
     return Stream.fromFuture(
@@ -79,9 +84,7 @@ class WhisperInferenceRepository {
             requestTimeout,
             onTimeout: () {
               throw WhisperTranscriptionException(
-                'Transcription request timed out after ${requestTimeout.inMinutes} minutes. '
-                'This can happen with very long audio files or slow processing. '
-                'Please try with a shorter recording or check your Whisper server performance.',
+                timeoutErrorMessage,
                 statusCode: 408, // HTTP 408 Request Timeout
               );
             },
@@ -146,9 +149,7 @@ class WhisperInferenceRepository {
             error: e,
           );
           throw WhisperTranscriptionException(
-            'Transcription request timed out after ${requestTimeout.inMinutes} minutes. '
-            'This can happen with very long audio files or slow processing. '
-            'Please try with a shorter recording or check your Whisper server performance.',
+            timeoutErrorMessage,
             statusCode: 408, // HTTP 408 Request Timeout
             originalError: e,
           );

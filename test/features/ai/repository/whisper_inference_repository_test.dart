@@ -541,6 +541,35 @@ void main() {
         );
       });
 
+      test('handles timeout via onTimeout callback', () async {
+        // Arrange - mock a request that never completes to trigger onTimeout
+        const customTimeout = Duration(milliseconds: 100); // Short timeout for testing
+        when(() => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            )).thenAnswer((_) => Completer<http.Response>().future); // Never completes
+
+        // Act
+        final stream = repository.transcribeAudio(
+          model: model,
+          audioBase64: audioBase64,
+          baseUrl: baseUrl,
+          prompt: prompt,
+          timeout: customTimeout,
+        );
+
+        // Assert
+        await expectLater(
+          stream.first,
+          throwsA(
+            isA<WhisperTranscriptionException>()
+                .having((e) => e.statusCode, 'statusCode', 408)
+                .having((e) => e.message, 'message', contains('0 minutes')), // 100ms = 0 minutes
+          ),
+        );
+      });
+
       test('uses default timeout when no custom timeout provided', () async {
         // Arrange
         when(() => mockHttpClient.post(
