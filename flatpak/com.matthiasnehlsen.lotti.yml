@@ -138,8 +138,8 @@ modules:
         int mpv_load_config_file(void* ctx, const char* filename) { return ctx ? 0 : -1; }
         EOF
         
-        gcc -shared -fPIC -o /app/lib/libmpv.so.1 stub_libmpv.c 2>/dev/null || echo "Failed to create libmpv stub"
-        ln -sf libmpv.so.1 /app/lib/libmpv.so 2>/dev/null || echo "Failed to link libmpv stub"
+        gcc -shared -fPIC -o /app/lib/libmpv.so.1 stub_libmpv.c
+        ln -sf libmpv.so.1 /app/lib/libmpv.so
         rm -f stub_libmpv.c
         echo "Functional stub libmpv created"
       - echo "Creating wrapper script for KDE Wayland compatibility..."
