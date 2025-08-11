@@ -535,7 +535,7 @@ void main() {
           stream.first,
           throwsA(
             isA<WhisperTranscriptionException>()
-                .having((e) => e.statusCode, 'statusCode', 408)
+                .having((e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
                 .having((e) => e.message, 'message', contains('1 minute')),
           ),
         );
@@ -564,7 +564,7 @@ void main() {
           stream.first,
           throwsA(
             isA<WhisperTranscriptionException>()
-                .having((e) => e.statusCode, 'statusCode', 408)
+                .having((e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
                 .having((e) => e.message, 'message', contains('0 minutes')), // 100ms = 0 minutes
           ),
         );
@@ -617,7 +617,7 @@ void main() {
           stream.first,
           throwsA(
             isA<WhisperTranscriptionException>()
-                .having((e) => e.statusCode, 'statusCode', 408)
+                .having((e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
                 .having((e) => e.message, 'message', contains('10 minutes')),
           ),
         );

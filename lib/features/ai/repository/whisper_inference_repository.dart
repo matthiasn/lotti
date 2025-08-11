@@ -54,7 +54,9 @@ class WhisperInferenceRepository {
     final requestTimeout = timeout ?? const Duration(seconds: whisperTranscriptionTimeoutSeconds);
 
     // Define timeout error message once to avoid duplication
-    final timeoutErrorMessage = 'Transcription request timed out after ${requestTimeout.inMinutes} minutes. '
+    final timeoutMinutes = requestTimeout.inMinutes;
+    final timeoutErrorMessage = 'Transcription request timed out after '
+        '${timeoutMinutes == 1 ? '1 minute' : '$timeoutMinutes minutes'}. '
         'This can happen with very long audio files or slow processing. '
         'Please try with a shorter recording or check your Whisper server performance.';
 
@@ -71,7 +73,7 @@ class WhisperInferenceRepository {
 
           final response = await _httpClient
               .post(
-            Uri.parse('$baseUrl/v1/audio/transcriptions'),
+            Uri.parse(baseUrl).resolve('/v1/audio/transcriptions'),
             headers: {
               'Content-Type': 'application/json',
             },
@@ -85,7 +87,7 @@ class WhisperInferenceRepository {
             onTimeout: () {
               throw WhisperTranscriptionException(
                 timeoutErrorMessage,
-                statusCode: 408, // HTTP 408 Request Timeout
+                statusCode: httpStatusRequestTimeout, // HTTP 408 Request Timeout
               );
             },
           );
@@ -150,7 +152,7 @@ class WhisperInferenceRepository {
           );
           throw WhisperTranscriptionException(
             timeoutErrorMessage,
-            statusCode: 408, // HTTP 408 Request Timeout
+            statusCode: httpStatusRequestTimeout, // HTTP 408 Request Timeout
             originalError: e,
           );
         } on FormatException catch (e) {
