@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Whisper-specific inference operations
@@ -24,6 +26,7 @@ class WhisperInferenceRepository {
   ///   baseUrl: The base URL of the local Whisper server
   ///   prompt: Optional text prompt for context (not used by Whisper)
   ///   maxCompletionTokens: Optional token limit (not used by Whisper)
+  ///   timeout: Optional timeout override (defaults to whisperTranscriptionTimeoutSeconds)
   ///
   /// Returns:
   ///   Stream of chat completion responses containing the transcribed text
@@ -37,6 +40,7 @@ class WhisperInferenceRepository {
     required String baseUrl,
     String? prompt, // Made optional since it's not used
     int? maxCompletionTokens, // Already optional, not used
+    Duration? timeout, // Optional timeout override
   }) {
     // Validate required inputs consistently
     if (model.isEmpty) {
@@ -46,18 +50,30 @@ class WhisperInferenceRepository {
       throw ArgumentError('Base URL cannot be empty');
     }
 
+    // Use provided timeout or default
+    final requestTimeout = timeout ?? const Duration(seconds: whisperTranscriptionTimeoutSeconds);
+
+    // Define timeout error message once to avoid duplication
+    final timeoutMinutes = requestTimeout.inMinutes;
+    final timeoutErrorMessage = 'Transcription request timed out after '
+        '${timeoutMinutes == 1 ? '1 minute' : '$timeoutMinutes minutes'}. '
+        'This can happen with very long audio files or slow processing. '
+        'Please try with a shorter recording or check your Whisper server performance.';
+
     // Create a stream that performs the async transcription operation
     return Stream.fromFuture(
       () async {
         try {
           developer.log(
             'Sending audio transcription request to local Whisper server - '
-            'baseUrl: $baseUrl, model: $model, audioLength: ${audioBase64.length}',
+            'baseUrl: $baseUrl, model: $model, audioLength: ${audioBase64.length}, '
+            'timeout: ${requestTimeout.inMinutes} minutes',
             name: 'WhisperInferenceRepository',
           );
 
-          final response = await _httpClient.post(
-            Uri.parse('$baseUrl/v1/audio/transcriptions'),
+          final response = await _httpClient
+              .post(
+            Uri.parse(baseUrl).resolve('/v1/audio/transcriptions'),
             headers: {
               'Content-Type': 'application/json',
             },
@@ -65,6 +81,15 @@ class WhisperInferenceRepository {
               'model': model,
               'audio': audioBase64,
             }),
+          )
+              .timeout(
+            requestTimeout,
+            onTimeout: () {
+              throw WhisperTranscriptionException(
+                timeoutErrorMessage,
+                statusCode: httpStatusRequestTimeout, // HTTP 408 Request Timeout
+              );
+            },
           );
 
           if (response.statusCode != 200) {
@@ -118,6 +143,18 @@ class WhisperInferenceRepository {
         } on WhisperTranscriptionException {
           // Re-throw our custom exceptions as-is
           rethrow;
+        } on TimeoutException catch (e) {
+          // Handle timeout exceptions from HTTP client
+          developer.log(
+            'Transcription request timed out',
+            name: 'WhisperInferenceRepository',
+            error: e,
+          );
+          throw WhisperTranscriptionException(
+            timeoutErrorMessage,
+            statusCode: httpStatusRequestTimeout, // HTTP 408 Request Timeout
+            originalError: e,
+          );
         } on FormatException catch (e) {
           // Handle JSON parsing errors
           developer.log(
@@ -159,5 +196,5 @@ class WhisperTranscriptionException implements Exception {
   final Object? originalError;
 
   @override
-  String toString() => message;
+  String toString() => 'WhisperTranscriptionException: $message';
 }
