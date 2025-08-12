@@ -20,6 +20,8 @@ finish-args:
   - --filesystem=xdg-pictures:ro               # Read-only access to pictures for import
   - --filesystem=xdg-download/Lotti:create     # Only create Lotti folder in downloads
   # App data is automatically available in ~/.var/app/com.matthiasnehlsen.lotti/
+  # Graphics environment variables
+  - --env=GDK_BACKEND=x11
   
 modules:
   - name: libsecret
@@ -150,18 +152,11 @@ modules:
         #!/bin/bash
         export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH
         
-        # Set GDK_BACKEND conditionally: prefer Wayland, fallback to X11 when needed
-        if [ -z "$WAYLAND_DISPLAY" ] || [ "$XDG_SESSION_TYPE" != "wayland" ]; then
-          # Fallback to X11 when Wayland is not available
-          export GDK_BACKEND=x11
-        fi
-        # If Wayland is available, leave GDK_BACKEND unset to use Wayland by default
-        
         cd /app
         exec ./lotti "$@"
         EOF
       - chmod +x /app/lotti-wrapper
-      - echo "Wrapper script created with conditional GDK_BACKEND setting"
+      - echo "Wrapper script created for KDE Wayland compatibility"
     sources:
       - type: dir
         path: flutter-bundle
