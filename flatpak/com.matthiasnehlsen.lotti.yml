@@ -146,7 +146,7 @@ modules:
         ln -sf libmpv.so.1 /app/lib/libmpv.so
         rm -f stub_libmpv.c
         echo "Functional stub libmpv created"
-      - echo "Creating wrapper script for KDE Wayland compatibility..."
+      - echo "Creating wrapper script to set library search path..."
       - |
         cat > /app/lotti-wrapper << 'EOF'
         #!/bin/bash
