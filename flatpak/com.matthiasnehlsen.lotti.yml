@@ -152,8 +152,6 @@ modules:
         #!/bin/bash
         export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH
         
-        echo "Lotti: Starting with library path configured"
-        
         cd /app
         exec ./lotti "$@"
         EOF
