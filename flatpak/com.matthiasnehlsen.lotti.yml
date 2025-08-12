@@ -48,7 +48,7 @@ modules:
       - install -D libdesktop_drop_plugin.so /app/lib/
     sources:
       - type: file
-        path: ../libdesktop_drop_plugin.so
+        path: libdesktop_drop_plugin.so
 
   - name: lotti
     buildsystem: simple
