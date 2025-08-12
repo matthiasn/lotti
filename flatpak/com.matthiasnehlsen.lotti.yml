@@ -193,5 +193,3 @@ modules:
         path: app_icon_32.png
       - type: file
         path: app_icon_16.png
-      - type: dir
-        path: assets
