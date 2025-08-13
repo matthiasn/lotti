@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -167,5 +169,20 @@ void main() {
     // Verify create category option is shown
     expect(find.text('New Category'), findsNWidgets(2));
     expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+  });
+
+  testWidgets('displays category icon with correct size', (tester) async {
+    when(() => mockCacheService.getCategoryById('test-id'))
+        .thenReturn(testCategory);
+
+    await tester.pumpWidget(
+      createTestWidget(
+        categoryId: 'test-id',
+        onSave: (_) {},
+      ),
+    );
+
+    final icon = tester.widget<CategoryIconCompact>(find.byType(CategoryIconCompact));
+    expect(icon.size, equals(CategoryIconConstants.iconSizeMedium));
   });
 }
