@@ -9,6 +9,7 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 class OutboxMonitorPage extends StatefulWidget {
   const OutboxMonitorPage({
@@ -199,11 +200,13 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(context.messages.outboxMonitorSwitchLabel),
-                  CupertinoSwitch(
+                  const SizedBox(width: 8),
+                  UnifiedToggle(
                     value: onlineStatus,
                     onChanged: (_) {
                       context.read<OutboxCubit>().toggleStatus();
                     },
+                    variant: UnifiedToggleVariant.cupertino,
                   ),
                 ],
               ),
