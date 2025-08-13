@@ -82,7 +82,10 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
             semanticsLabel: 'Select category',
             themeData: Theme.of(context),
           ).copyWith(
-            icon: CategoryIconCompact(category?.id),
+            icon: CategoryIconCompact(
+              category?.id,
+              size: CategoryIconConstants.iconSizeMedium,
+            ),
             suffixIcon: categoryUndefined
                 ? null
                 : GestureDetector(
