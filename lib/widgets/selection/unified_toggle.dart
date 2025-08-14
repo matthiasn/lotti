@@ -177,6 +177,7 @@ class UnifiedToggleField extends StatelessWidget {
     this.dense = false,
     this.contentPadding,
     this.leading,
+    this.semanticLabel,
     super.key,
   });
 
@@ -210,6 +211,9 @@ class UnifiedToggleField extends StatelessWidget {
   /// Optional leading widget (e.g., icon)
   final Widget? leading;
 
+  /// Semantic label for accessibility
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final toggle = UnifiedToggle(
@@ -217,7 +221,7 @@ class UnifiedToggleField extends StatelessWidget {
       onChanged: enabled ? onChanged : null,
       variant: variant,
       activeColor: activeColor,
-      semanticLabel: title,
+      semanticLabel: semanticLabel ?? title,
       enabled: enabled,
     );
 
@@ -292,6 +296,8 @@ class UnifiedFormBuilderToggle extends StatelessWidget {
     this.enabled = true,
     this.onChanged,
     this.validator,
+    this.semanticLabel,
+    this.semanticsLabel,
     super.key,
   });
 
@@ -323,6 +329,12 @@ class UnifiedFormBuilderToggle extends StatelessWidget {
   // ignore: avoid_positional_boolean_parameters
   final String? Function(bool?)? validator;
 
+  /// Semantic label for accessibility (old naming)
+  final String? semanticLabel;
+
+  /// Semantic label for accessibility (FormSwitch naming)
+  final String? semanticsLabel;
+
   @override
   Widget build(BuildContext context) {
     return FormField<bool>(
@@ -345,6 +357,7 @@ class UnifiedFormBuilderToggle extends StatelessWidget {
               variant: variant,
               activeColor: activeColor,
               enabled: enabled,
+              semanticLabel: semanticsLabel ?? semanticLabel,
             ),
             if (field.hasError)
               Padding(
