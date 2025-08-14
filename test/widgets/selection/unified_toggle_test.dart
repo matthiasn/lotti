@@ -602,5 +602,27 @@ void main() {
       // The toggle's enabled property defaults to true
       expect(toggle.enabled, true);
     });
+
+    testWidgets('semantic label is properly set', (WidgetTester tester) async {
+      var value = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: Scaffold(
+            body: UnifiedAiToggleField(
+              label: 'Enable AI suggestions',
+              value: value,
+              onChanged: (newValue) {
+                value = newValue;
+              },
+            ),
+          ),
+        ),
+      );
+
+      final toggle = tester.widget<UnifiedToggle>(find.byType(UnifiedToggle));
+      expect(toggle.semanticLabel, 'Enable AI suggestions');
+    });
   });
 }
