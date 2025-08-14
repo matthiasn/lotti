@@ -216,7 +216,7 @@ class UnifiedToggleField extends StatelessWidget {
       onChanged: onChanged,
       variant: variant,
       activeColor: activeColor,
-      semanticLabel: semanticsLabel ?? semanticLabel ?? title,
+      semanticLabel: semanticLabel ?? semanticsLabel ?? title,
       enabled: enabled,
     );
 
@@ -352,7 +352,7 @@ class UnifiedFormBuilderToggle extends StatelessWidget {
               variant: variant,
               activeColor: activeColor,
               enabled: enabled,
-              semanticsLabel: semanticsLabel ?? semanticLabel,
+              semanticsLabel: semanticLabel ?? semanticsLabel,
             ),
             if (field.hasError)
               Padding(
