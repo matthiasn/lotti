@@ -450,7 +450,7 @@ class UnifiedAiToggleField extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: TextStyle(
+                        style: context.textTheme.titleMedium?.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: enabled
@@ -464,7 +464,7 @@ class UnifiedAiToggleField extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           description!,
-                          style: TextStyle(
+                          style: context.textTheme.bodyMedium?.copyWith(
                             fontSize: 13,
                             fontWeight: FontWeight.w400,
                             color: context.colorScheme.onSurfaceVariant
