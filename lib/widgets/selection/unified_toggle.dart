@@ -178,6 +178,7 @@ class UnifiedToggleField extends StatelessWidget {
     this.contentPadding,
     this.leading,
     this.semanticLabel,
+    this.semanticsLabel,
     super.key,
   });
 
@@ -214,6 +215,9 @@ class UnifiedToggleField extends StatelessWidget {
   /// Semantic label for accessibility
   final String? semanticLabel;
 
+  /// Semantic label for accessibility (FormSwitch naming convention)
+  final String? semanticsLabel;
+
   @override
   Widget build(BuildContext context) {
     final toggle = UnifiedToggle(
@@ -221,7 +225,7 @@ class UnifiedToggleField extends StatelessWidget {
       onChanged: onChanged,
       variant: variant,
       activeColor: activeColor,
-      semanticLabel: semanticLabel ?? title,
+      semanticLabel: semanticsLabel ?? semanticLabel ?? title,
       enabled: enabled,
     );
 
@@ -357,7 +361,7 @@ class UnifiedFormBuilderToggle extends StatelessWidget {
               variant: variant,
               activeColor: activeColor,
               enabled: enabled,
-              semanticLabel: semanticsLabel ?? semanticLabel,
+              semanticsLabel: semanticsLabel ?? semanticLabel,
             ),
             if (field.hasError)
               Padding(

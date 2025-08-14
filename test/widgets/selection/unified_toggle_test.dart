@@ -472,7 +472,7 @@ void main() {
       
       // Verify semanticsLabel is passed through
       final toggleField = tester.widget<UnifiedToggleField>(find.byType(UnifiedToggleField));
-      expect(toggleField.semanticLabel, 'Custom accessibility label');
+      expect(toggleField.semanticsLabel, 'Custom accessibility label');
     });
   });
 
