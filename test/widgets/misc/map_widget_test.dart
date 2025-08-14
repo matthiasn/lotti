@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/map/cached_tile_provider.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Note: Some tests in this file require assets (e.g., marker images) to be loaded.
+  // These tests may fail if assets are not properly configured in the test environment.
   group('MapWidget', () {
     Widget createTestWidget({
       Geolocation? geolocation,
@@ -253,6 +258,34 @@ void main() {
         tileLayer.urlTemplate,
         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       );
+    });
+
+    testWidgets('TileLayer uses CachedTileProvider', (tester) async {
+      final geolocation = Geolocation(
+        createdAt: DateTime.now(),
+        latitude: 37.7749,
+        longitude: -122.4194,
+        geohashString: '9q8yy',
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          geolocation: geolocation,
+        ),
+      );
+
+      // Allow the widget tree to settle
+      await tester.pump();
+
+      // Find TileLayer widgets
+      final tileLayers = find.byType(TileLayer);
+      expect(tileLayers, findsOneWidget);
+
+      final tileLayer = tester.widget<TileLayer>(tileLayers);
+
+      // Verify tileProvider is CachedTileProvider
+      expect(tileLayer.tileProvider, isNotNull);
+      expect(tileLayer.tileProvider, isA<CachedTileProvider>());
     });
   });
 }
