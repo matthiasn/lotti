@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../test_helper.dart';
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
+
 class MockJournalDb extends Mock implements JournalDb {}
 
 void main() {
@@ -31,12 +32,14 @@ void main() {
   setUp(() {
     mockCacheService = MockEntitiesCacheService();
     mockJournalDb = MockJournalDb();
-    
+
     // Mock JournalDb methods
     when(() => mockJournalDb.watchCategories()).thenAnswer(
-      (_) => Stream<List<CategoryDefinition>>.fromIterable([[testCategory]]),
+      (_) => Stream<List<CategoryDefinition>>.fromIterable([
+        [testCategory]
+      ]),
     );
-    
+
     getIt
       ..registerSingleton<EntitiesCacheService>(mockCacheService)
       ..registerSingleton<JournalDb>(mockJournalDb);
@@ -71,7 +74,8 @@ void main() {
       ),
     );
 
-    final icon = tester.widget<CategoryIconCompact>(find.byType(CategoryIconCompact));
+    final icon =
+        tester.widget<CategoryIconCompact>(find.byType(CategoryIconCompact));
     expect(icon.size, equals(CategoryIconConstants.iconSizeMedium));
   });
 }

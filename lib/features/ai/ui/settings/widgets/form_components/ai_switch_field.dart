@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 /// DEPRECATED: Use UnifiedAiToggleField directly instead
-/// 
+///
 /// This wrapper is being removed to consolidate toggle implementations.
 /// Replace usage with:
 /// ```dart

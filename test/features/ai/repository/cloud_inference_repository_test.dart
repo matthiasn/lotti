@@ -1316,5 +1316,154 @@ void main() {
       expect(response.choices?[0].delta?.content, equals(transcribedText));
       expect(response.choices?[0].delta?.role, isNull);
     });
+
+    test('generate sets verbosity to null for Gemini compatibility', () async {
+      // Arrange
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      await repository
+          .generate(
+            prompt,
+            model: model,
+            temperature: temperature,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            overrideClient: mockClient,
+          )
+          .toList();
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      expect(request.verbosity, isNull);
+    });
+
+    test('generateWithImages sets verbosity to null for Gemini compatibility',
+        () async {
+      // Arrange
+      const images = ['base64-image-data'];
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      await repository
+          .generateWithImages(
+            prompt,
+            model: model,
+            temperature: temperature,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            images: images,
+            overrideClient: mockClient,
+          )
+          .toList();
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      expect(request.verbosity, isNull);
+    });
+
+    test('generateWithAudio sets verbosity to null for Gemini compatibility',
+        () async {
+      // Arrange
+      const audioBase64 = 'base64-audio-data';
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      await repository
+          .generateWithAudio(
+            prompt,
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            provider: testProvider,
+            overrideClient: mockClient,
+          )
+          .toList();
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      expect(request.verbosity, isNull);
+    });
   });
 }
