@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.d
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
+import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 class InferenceModelEditPage extends ConsumerStatefulWidget {
   const InferenceModelEditPage({
@@ -325,7 +326,7 @@ class _InferenceModelEditPageState
               const SizedBox(height: 20),
 
               // Is Reasoning Model Switch
-              AiSwitchField(
+              UnifiedAiToggleField(
                 label: 'Reasoning Model',
                 description: 'This model has advanced reasoning capabilities',
                 value: formState.isReasoningModel,
@@ -335,7 +336,7 @@ class _InferenceModelEditPageState
               const SizedBox(height: 20),
 
               // Supports Function Calling Switch
-              AiSwitchField(
+              UnifiedAiToggleField(
                 label: 'Function Calling',
                 description: 'This model supports function/tool calling',
                 value: formState.supportsFunctionCalling,

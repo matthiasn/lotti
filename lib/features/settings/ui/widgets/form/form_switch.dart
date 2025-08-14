@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 class FormSwitch extends StatelessWidget {
   const FormSwitch({
@@ -20,17 +19,12 @@ class FormSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FormBuilderSwitch(
+    return UnifiedFormBuilderToggle(
       name: name,
+      title: title,
       initialValue: initialValue,
-      title: Text(
-        title,
-        semanticsLabel: semanticsLabel,
-      ),
       activeColor: activeColor,
-      inactiveThumbColor: context.colorScheme.outline,
-      inactiveTrackColor: context.colorScheme.outline.withAlpha(51),
-      decoration: switchDecoration,
+      semanticsLabel: semanticsLabel,
     );
   }
 }
