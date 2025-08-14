@@ -601,10 +601,9 @@ void main() {
       );
 
       final toggle = tester.widget<UnifiedToggle>(find.byType(UnifiedToggle));
-      // UnifiedAiToggleField sets onChanged to null when disabled rather than passing enabled
+      // UnifiedAiToggleField now properly forwards the enabled flag
       expect(toggle.onChanged, null);
-      // The toggle's enabled property defaults to true
-      expect(toggle.enabled, true);
+      expect(toggle.enabled, false);
     });
 
     testWidgets('semantic label is properly set', (WidgetTester tester) async {

@@ -479,6 +479,7 @@ class UnifiedAiToggleField extends StatelessWidget {
                 UnifiedToggle(
                   value: value,
                   onChanged: enabled ? onChanged : null,
+                  enabled: enabled,
                   semanticLabel: label,
                 ),
               ],
