@@ -40,9 +40,6 @@ enum UnifiedToggleVariant {
   /// Uses outline color
   archived,
 
-  /// AI variant for AI settings (matches AiSwitchField styling)
-  ai,
-
   /// Cupertino variant for iOS-style switches
   cupertino,
 }
@@ -89,8 +86,6 @@ class UnifiedToggle extends StatelessWidget {
         return starredGold;
       case UnifiedToggleVariant.archived:
         return context.colorScheme.outline;
-      case UnifiedToggleVariant.ai:
-        return context.colorScheme.primary;
       case UnifiedToggleVariant.cupertino:
         // CupertinoSwitch uses default iOS green
         return _UnifiedToggleConstants.iosSystemGreen;
@@ -102,8 +97,6 @@ class UnifiedToggle extends StatelessWidget {
 
   Color _getInactiveThumbColor(BuildContext context) {
     switch (variant) {
-      case UnifiedToggleVariant.ai:
-        return context.colorScheme.onSurfaceVariant;
       case UnifiedToggleVariant.cupertino:
         // CupertinoSwitch default behavior
         return context.colorScheme.outline;
@@ -118,8 +111,6 @@ class UnifiedToggle extends StatelessWidget {
 
   Color _getInactiveTrackColor(BuildContext context) {
     switch (variant) {
-      case UnifiedToggleVariant.ai:
-        return context.colorScheme.surfaceContainerHighest;
       case UnifiedToggleVariant.cupertino:
         // CupertinoSwitch default behavior
         return context.colorScheme.outline
@@ -381,7 +372,7 @@ class UnifiedFormBuilderToggle extends StatelessWidget {
   }
 }
 
-/// AI-specific toggle field that matches the exact AiSwitchField styling
+/// AI-specific toggle field that matches the AI Settings design language
 class UnifiedAiToggleField extends StatelessWidget {
   const UnifiedAiToggleField({
     required this.label,
@@ -488,7 +479,6 @@ class UnifiedAiToggleField extends StatelessWidget {
                 UnifiedToggle(
                   value: value,
                   onChanged: enabled ? onChanged : null,
-                  variant: UnifiedToggleVariant.ai,
                   semanticLabel: label,
                 ),
               ],

@@ -193,7 +193,7 @@ void main() {
       // Verify the switch uses outline color for archived variant
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
       expect(switchWidget.value, false);
-      
+
       final context = tester.element(find.byType(Switch));
       expect(
           switchWidget.activeTrackColor, Theme.of(context).colorScheme.outline);
@@ -211,7 +211,6 @@ void main() {
               onChanged: (newValue) {
                 value = newValue;
               },
-              variant: UnifiedToggleVariant.ai,
             ),
           ),
         ),
@@ -222,7 +221,7 @@ void main() {
       // Verify the switch uses primary color for ai variant
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
       expect(switchWidget.value, false);
-      
+
       final context = tester.element(find.byType(Switch));
       expect(
           switchWidget.activeTrackColor, Theme.of(context).colorScheme.primary);
@@ -250,11 +249,13 @@ void main() {
       expect(find.byType(Switch), findsNothing);
 
       // Verify the CupertinoSwitch is rendered
-      final cupertinoSwitch = tester.widget<CupertinoSwitch>(find.byType(CupertinoSwitch));
+      final cupertinoSwitch =
+          tester.widget<CupertinoSwitch>(find.byType(CupertinoSwitch));
       expect(cupertinoSwitch.value, false);
     });
 
-    testWidgets('custom active color overrides variant color', (WidgetTester tester) async {
+    testWidgets('custom active color overrides variant color',
+        (WidgetTester tester) async {
       const customColor = Colors.purple;
       var value = false;
 
@@ -376,9 +377,10 @@ void main() {
 
       expect(find.text('Form Toggle'), findsOneWidget);
       expect(find.byType(UnifiedToggleField), findsOneWidget);
-      
+
       // Verify initial value
-      final toggleField = tester.widget<UnifiedToggleField>(find.byType(UnifiedToggleField));
+      final toggleField =
+          tester.widget<UnifiedToggleField>(find.byType(UnifiedToggleField));
       expect(toggleField.value, true);
     });
 
@@ -469,15 +471,17 @@ void main() {
       );
 
       expect(find.byType(UnifiedToggleField), findsOneWidget);
-      
+
       // Verify semanticsLabel is passed through
-      final toggleField = tester.widget<UnifiedToggleField>(find.byType(UnifiedToggleField));
+      final toggleField =
+          tester.widget<UnifiedToggleField>(find.byType(UnifiedToggleField));
       expect(toggleField.semanticsLabel, 'Custom accessibility label');
     });
   });
 
   group('UnifiedAiToggleField', () {
-    testWidgets('renders with AI-specific styling', (WidgetTester tester) async {
+    testWidgets('renders with AI-specific styling',
+        (WidgetTester tester) async {
       var value = false;
 
       await tester.pumpWidget(
@@ -497,10 +501,10 @@ void main() {
 
       expect(find.text('AI Feature'), findsOneWidget);
       expect(find.byType(UnifiedToggle), findsOneWidget);
-      
-      // Verify it uses AI variant
+
+      // Verify it uses normal variant
       final toggle = tester.widget<UnifiedToggle>(find.byType(UnifiedToggle));
-      expect(toggle.variant, UnifiedToggleVariant.ai);
+      expect(toggle.variant, UnifiedToggleVariant.normal);
     });
 
     testWidgets('with description', (WidgetTester tester) async {

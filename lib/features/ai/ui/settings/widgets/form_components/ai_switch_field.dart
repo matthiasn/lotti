@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
 
-/// A styled switch field component that matches the AI Settings design language
+/// DEPRECATED: Use UnifiedAiToggleField directly instead
+/// 
+/// This wrapper is being removed to consolidate toggle implementations.
+/// Replace usage with:
+/// ```dart
+/// UnifiedAiToggleField(
+///   label: 'Your Label',
+///   value: value,
+///   onChanged: onChanged,
+///   description: 'Optional description',
+///   icon: Icons.your_icon,
+/// )
+/// ```
+@Deprecated('Use UnifiedAiToggleField directly instead')
 class AiSwitchField extends StatelessWidget {
+  @Deprecated('Use UnifiedAiToggleField directly instead')
   const AiSwitchField({
     required this.label,
     required this.value,

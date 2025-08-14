@@ -59,12 +59,12 @@ AiTextField(
 - Password/obscure text support
 - Read-only mode for display fields
 
-#### `AiSwitchField`
-A toggle switch with label and description.
+#### `UnifiedAiToggleField`
+A toggle switch with label and description that matches the AI Settings design language.
 
 **Usage:**
 ```dart
-AiSwitchField(
+UnifiedAiToggleField(
   label: 'Reasoning Mode',
   description: 'Enable for prompts requiring deep thinking',
   value: useReasoning,
@@ -72,6 +72,8 @@ AiSwitchField(
   icon: Icons.psychology_rounded,
 )
 ```
+
+**Note:** `AiSwitchField` is deprecated. Use `UnifiedAiToggleField` directly from `package:lotti/widgets/selection/unified_toggle.dart`.
 
 #### `AiDropdownField`
 A dropdown selection field with consistent styling.

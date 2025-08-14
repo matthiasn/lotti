@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/form_components/ai_switch_field.dart';
+import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 void main() {
-  group('AiSwitchField', () {
+  group('UnifiedAiToggleField', () {
     Widget buildTestWidget(Widget child) {
       return MaterialApp(
         theme: ThemeData.dark(),
@@ -19,7 +19,7 @@ void main() {
     testWidgets('renders label and switch', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          AiSwitchField(
+          UnifiedAiToggleField(
             label: 'Test Switch',
             value: false,
             onChanged: (_) {},
@@ -34,7 +34,7 @@ void main() {
     testWidgets('shows icon when provided', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          AiSwitchField(
+          UnifiedAiToggleField(
             label: 'Test',
             value: false,
             onChanged: (_) {},
@@ -49,7 +49,7 @@ void main() {
     testWidgets('shows description when provided', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          AiSwitchField(
+          UnifiedAiToggleField(
             label: 'Test',
             value: false,
             onChanged: (_) {},
@@ -66,7 +66,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          AiSwitchField(
+          UnifiedAiToggleField(
             label: 'Test',
             value: false,
             onChanged: (value) => changedValue = value,
@@ -81,7 +81,7 @@ void main() {
     testWidgets('reflects initial value correctly', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          AiSwitchField(
+          UnifiedAiToggleField(
             label: 'Test',
             value: true,
             onChanged: (_) {},
@@ -98,7 +98,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          AiSwitchField(
+          UnifiedAiToggleField(
             label: 'Test',
             value: false,
             onChanged: (_) => wasChanged = true,
@@ -117,7 +117,7 @@ void main() {
     testWidgets('has proper container styling', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          AiSwitchField(
+          UnifiedAiToggleField(
             label: 'Test',
             value: false,
             onChanged: (_) {},
@@ -127,7 +127,7 @@ void main() {
 
       final container = tester.widget<Container>(
         find.descendant(
-          of: find.byType(AiSwitchField),
+          of: find.byType(UnifiedAiToggleField),
           matching: find.byType(Container).first,
         ),
       );
@@ -144,7 +144,7 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(
           StatefulBuilder(
-            builder: (context, setState) => AiSwitchField(
+            builder: (context, setState) => UnifiedAiToggleField(
               label: 'Test',
               value: value,
               onChanged: (newValue) => setState(() => value = newValue),
@@ -163,7 +163,7 @@ void main() {
     testWidgets('layout adjusts properly with all elements', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          AiSwitchField(
+          UnifiedAiToggleField(
             label: 'Complete Switch',
             value: false,
             onChanged: (_) {},

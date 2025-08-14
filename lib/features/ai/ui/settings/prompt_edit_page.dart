@@ -19,6 +19,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 class PromptEditPage extends ConsumerStatefulWidget {
   const PromptEditPage({
@@ -307,7 +308,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
               const SizedBox(height: 20),
 
               // Reasoning Mode Switch
-              AiSwitchField(
+              UnifiedAiToggleField(
                 label: context.messages.promptReasoningModeLabel,
                 description: context.messages.promptReasoningModeDescription,
                 value: formState.useReasoning,
