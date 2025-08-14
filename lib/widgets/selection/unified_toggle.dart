@@ -218,7 +218,7 @@ class UnifiedToggleField extends StatelessWidget {
   Widget build(BuildContext context) {
     final toggle = UnifiedToggle(
       value: value,
-      onChanged: enabled ? onChanged : null,
+      onChanged: onChanged,
       variant: variant,
       activeColor: activeColor,
       semanticLabel: semanticLabel ?? title,
