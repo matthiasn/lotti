@@ -117,6 +117,7 @@ class CloudInferenceRepository {
         ],
         model: ChatCompletionModel.modelId(model),
         temperature: temperature,
+        verbosity: null,
         maxCompletionTokens: maxCompletionTokens,
         stream: true,
         tools: tools,
@@ -193,6 +194,7 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxTokens: maxCompletionTokens,
         stream: true,
+        verbosity: null,
         tools: tools,
         toolChoice: tools != null
             ? const ChatCompletionToolChoiceOption.mode(
@@ -281,6 +283,7 @@ class CloudInferenceRepository {
             model: ChatCompletionModel.modelId(model),
             maxCompletionTokens: maxCompletionTokens,
             stream: true,
+            verbosity: null,
             tools: tools,
             toolChoice: tools != null
                 ? const ChatCompletionToolChoiceOption.mode(
