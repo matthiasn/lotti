@@ -39,7 +39,7 @@ class CloudInferenceRepository {
       stream: true,
       verbosity: null, // Explicitly null for Gemini compatibility
       tools: tools,
-      toolChoice: tools != null
+      toolChoice: tools != null && tools.isNotEmpty
           ? const ChatCompletionToolChoiceOption.mode(
               ChatCompletionToolChoiceMode.auto,
             )

@@ -1465,5 +1465,115 @@ void main() {
       final request = captured.first as CreateChatCompletionRequest;
       expect(request.verbosity, isNull);
     });
+
+    test('generate with empty tools list does not set toolChoice', () async {
+      // Arrange
+      final emptyTools = <ChatCompletionTool>[];
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      await repository
+          .generate(
+            prompt,
+            model: model,
+            temperature: temperature,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            overrideClient: mockClient,
+            tools: emptyTools,
+          )
+          .toList();
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      expect(request.toolChoice, isNull);
+      expect(request.tools, isEmpty);
+    });
+
+    test('generate with non-empty tools list sets toolChoice', () async {
+      // Arrange
+      final tools = [
+        const ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(
+            name: 'test_function',
+            description: 'A test function',
+          ),
+        ),
+      ];
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      await repository
+          .generate(
+            prompt,
+            model: model,
+            temperature: temperature,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            overrideClient: mockClient,
+            tools: tools,
+          )
+          .toList();
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      expect(request.toolChoice, isNotNull);
+      expect(request.tools, hasLength(1));
+    });
   });
 }
