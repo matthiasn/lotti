@@ -233,7 +233,7 @@ void main() {
       // For a field to be invalid and have an error, it usually needs to be dirty and fail validation.
       // The validator for PromptAiResponseType returns notSelected if value is null.
       // So, a dirty field with a null value should trigger the error.
-      const dirtyEmptyResponseType = PromptAiResponseType.dirty(null);
+      const dirtyEmptyResponseType = PromptAiResponseType.dirty();
       // Manually validate to update error state if necessary, though dirty(null) should suffice
       // due to how FormzInput works (validator is called on construction of dirty).
       // However, to be certain the error is set for the test, we can prime it.

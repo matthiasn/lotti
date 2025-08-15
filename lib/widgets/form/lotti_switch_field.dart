@@ -92,7 +92,7 @@ class LottiSwitchField extends StatelessWidget {
                   ),
                 )
               : null,
-          activeColor: colorScheme.primary,
+          activeThumbColor: colorScheme.primary,
           inactiveThumbColor: colorScheme.outline,
           inactiveTrackColor: colorScheme.surfaceContainerHighest,
           shape: RoundedRectangleBorder(
