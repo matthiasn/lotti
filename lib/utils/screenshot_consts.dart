@@ -20,9 +20,30 @@ const String screenshotDateFormat = 'yyyy-MM-dd';
 // Timing constants
 const int screenshotDelaySeconds = 1;
 const int screenshotProcessTimeoutSeconds = 30;
+/// Window minimization delay to ensure proper window state before screenshot
+const int windowMinimizationDelayMs = 500;
 
 // Domain constants for logging
 const String screenshotDomain = 'SCREENSHOT';
+
+// D-Bus portal constants
+const String dbusPortalDesktopName = 'org.freedesktop.portal.Desktop';
+const String dbusPortalDesktopPath = '/org/freedesktop/portal/desktop';
+const String dbusPortalScreenshotInterface = 'org.freedesktop.portal.Screenshot';
+const String dbusPortalRequestInterface = 'org.freedesktop.portal.Request';
+const String dbusPortalResponseSignal = 'Response';
+
+// Portal option keys
+const String portalHandleTokenKey = 'handle_token';
+const String portalModalKey = 'modal';  
+const String portalInteractiveKey = 'interactive';
+const String portalUriKey = 'uri';
+
+// Token generation format
+const String screenshotTokenPrefix = 'lotti_screenshot_';
+
+// Portal response codes
+const int portalSuccessResponse = 0;
 
 // Linux screenshot tools (in order of preference)
 const String spectacleTool = 'spectacle';
@@ -59,6 +80,16 @@ const String screencaptureFailedMessage =
     'macOS screencapture failed with exit code ';
 const String unsupportedPlatformMessage =
     'Screenshot functionality is not supported on ';
+
+// Flatpak portal specific error messages
+const String portalNoUriMessage = 'Screenshot succeeded but no URI provided';
+const String portalUnexpectedUriMessage = 'Unexpected screenshot URI format: ';
+const String portalFileNotFoundMessage = 'Screenshot file not found at: ';
+const String portalTimeoutMessage = 'Screenshot portal timed out after ';
+const String portalCancelledMessage = 'Screenshot cancelled or failed: ';
+
+// File URI constants
+const String fileUriScheme = 'file://';
 
 // Process configuration
 /// Set to false to prevent shell injection vulnerabilities.
