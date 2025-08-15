@@ -6,6 +6,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
+import 'package:vector_math/vector_math_64.dart' show Vector3;
 
 /// Enhanced preconfigured prompt selection modal with Series A quality design
 ///
@@ -103,7 +104,8 @@ class _PromptTemplateCardState extends State<_PromptTemplateCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        transform: Matrix4.identity()..translate(0.0, _isHovered ? -2.0 : 0.0),
+        transform: Matrix4.identity()
+          ..translateByVector3(Vector3(0, _isHovered ? -2 : 0, 0)),
         decoration: BoxDecoration(
           color: _isHovered
               ? context.colorScheme.surfaceContainerHighest
@@ -184,8 +186,7 @@ class _PromptTemplateCardState extends State<_PromptTemplateCard> {
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         transform: Matrix4.identity()
-                          // ignore_for_file: avoid_redundant_argument_values
-                          ..translate(_isHovered ? 4.0 : 0.0, 0),
+                          ..translateByVector3(Vector3(_isHovered ? 4 : 0, 0, 0)),
                         child: Icon(
                           Icons.arrow_forward_rounded,
                           color: context.colorScheme.onSurface.withValues(

@@ -242,7 +242,7 @@ SPEC CHECKSUMS:
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
-  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_image_compress_common: 1697a328fd72bfb335507c6bca1a65fa5ad87df1
   flutter_keyboard_visibility_temp_fork: 95b2d534bacf6ac62e7fcbe5c2a9e2c2a17ce06f
   flutter_local_notifications: a5a732f069baa862e728d839dd2ebb904737effb

@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/enhanced_preconfigured_pro
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:vector_math/vector_math_64.dart' show Vector3;
 
 /// Reusable button widget for selecting preconfigured prompts
 ///
@@ -180,8 +181,7 @@ class _PreconfiguredPromptButtonState extends State<PreconfiguredPromptButton>
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     transform: Matrix4.identity()
-                      // ignore_for_file: avoid_redundant_argument_values, prefer_int_literals
-                      ..translate(_isPressed ? 2.0 : 0.0, 0.0),
+                      ..translateByVector3(Vector3(_isPressed ? 2 : 0, 0, 0)),
                     child: Icon(
                       Icons.chevron_right_rounded,
                       color:
