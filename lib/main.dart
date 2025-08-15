@@ -44,7 +44,7 @@ Future<void> main() async {
       // Configure window options for flatpak compatibility
       const windowOptions = WindowOptions(
         size: Size(1280, 720),
-        minimumSize: Size(800, 600),
+        minimumSize: Size(320, 568),
         center: true,
         backgroundColor: Colors.transparent,
         skipTaskbar: false,

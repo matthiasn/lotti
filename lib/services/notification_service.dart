@@ -17,7 +17,7 @@ class NotificationService {
       flutterLocalNotificationsPlugin.initialize(
         const InitializationSettings(
           linux: LinuxInitializationSettings(
-            defaultActionName: 'Open notification',
+            defaultActionName: 'Lotti notification',
           ),
           macOS: DarwinInitializationSettings(
             requestSoundPermission: false,
