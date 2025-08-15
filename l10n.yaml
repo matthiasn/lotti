@@ -5,4 +5,3 @@ untranslated-messages-file: missing_translations.txt
 preferred-supported-locales: [ en ]
 arb-translate-model-provider: gemini
 arb-translate-model: gemini-1.5-pro
-synthetic-package: false
