@@ -1,111 +1,68 @@
-# Lotti Flatpak
+# Lotti Flatpak Build
 
-This directory contains the Flatpak configuration for distributing Lotti on Linux.
-
-## Files
-
-- `com.matthiasnehlsen.lotti.yml` - Main Flatpak manifest
-- `com.matthiasnehlsen.lotti.desktop` - Desktop entry file
-- `com.matthiasnehlsen.lotti.metainfo.xml` - AppStream metadata
-- `build.sh` - Build script
+This directory contains the Flatpak manifest and related files for building Lotti as a Flatpak application.
 
 ## Prerequisites
 
-1. Install Flatpak and flatpak-builder:
+Before building the Flatpak, you need to prepare the Flutter bundle:
+
+1. Build the Flutter Linux application:
    ```bash
-   sudo apt install flatpak flatpak-builder
+   flutter build linux --release
    ```
 
-2. Add the Flutter runtime (if not already added):
+2. Create the `flutter-bundle` directory structure:
    ```bash
-   flatpak install org.gnome.Platform//45 org.gnome.Sdk//45
+   mkdir -p flatpak/flutter-bundle
+   cp -r build/linux/x64/release/bundle/* flatpak/flutter-bundle/
    ```
 
-## Configuration
+3. Ensure the MaterialIcons font is included:
+   ```bash
+   cp fonts/MaterialIcons-Regular.otf flatpak/flutter-bundle/data/flutter_assets/fonts/
+   ```
 
-The build process supports environment variables for customization:
+## Building the Flatpak
 
-- `LOTTI_REPO_URL` - Git repository URL (default: https://github.com/matthiasn/lotti.git)
-- `LOTTI_VERSION` - Version/tag to build (default: v0.9.645)
-- `LOTTI_RELEASE_DATE` - Release date in YYYY-MM-DD format (default: 2025-01-26)
+1. Install flatpak-builder:
+   ```bash
+   sudo apt install flatpak-builder
+   ```
 
-### Example Configuration
-```bash
-export LOTTI_REPO_URL="https://github.com/yourusername/lotti.git"
-export LOTTI_VERSION="v1.0.0"
-export LOTTI_RELEASE_DATE="2025-02-01"
+2. Add the required runtime:
+   ```bash
+   flatpak install org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
+   ```
+
+3. Build and install:
+   ```bash
+   cd flatpak
+   flatpak-builder --user --install --force-clean build-dir com.matthiasnehlsen.lotti.yml
+   ```
+
+## Directory Structure
+
+The build expects this structure in `flutter-bundle/`:
+```
+flutter-bundle/
+├── lotti                    # Main executable
+├── lib/                     # Shared libraries (.so files)
+├── data/                    # Flutter runtime data
+│   ├── flutter_assets/      # Flutter assets
+│   │   └── fonts/          # Including MaterialIcons-Regular.otf
+│   └── icudtl.dat          # ICU data
+└── share/                   # Desktop integration files
 ```
 
-Or copy and customize the example file:
-```bash
-cp flatpak/env.example .env
-# Edit .env file with your values
-source .env
-```
+## Manifest Improvements
 
-## Building
+The new manifest uses a maintainable approach:
+- **Single source**: `type: dir` pointing to `flutter-bundle/`
+- **Automatic**: Captures all Flutter build outputs without manual listing
+- **Future-proof**: Works with any Flutter build changes
+- **Clean**: Reduced from 200+ lines to ~10 lines for the main module
 
-### Quick Build (Recommended)
-```bash
-./flatpak/build.sh
-```
-
-### Manual Build
-The template files contain placeholders that need variable substitution. You have two options:
-
-```bash
-# Option 1: Use the build script (recommended)
-./flatpak/build.sh
-
-# Option 2: Manual substitution (advanced users)
-# First, set environment variables
-export LOTTI_REPO_URL="https://github.com/matthiasn/lotti.git"
-export LOTTI_VERSION="v0.9.645" 
-export LOTTI_RELEASE_DATE="2025-01-26"
-
-# Generate manifest with substituted variables
-sed -e "s|{{LOTTI_REPO_URL}}|$LOTTI_REPO_URL|g" \
-    -e "s|{{LOTTI_VERSION}}|$LOTTI_VERSION|g" \
-    flatpak/com.matthiasnehlsen.lotti.yml > flatpak/com.matthiasnehlsen.lotti.generated.yml
-
-# Generate metainfo with substituted variables  
-sed -e "s|{{LOTTI_VERSION}}|$LOTTI_VERSION|g" \
-    -e "s|{{LOTTI_RELEASE_DATE}}|$LOTTI_RELEASE_DATE|g" \
-    flatpak/com.matthiasnehlsen.lotti.metainfo.xml > flatpak/com.matthiasnehlsen.lotti.generated.metainfo.xml
-
-# Build with generated manifest
-flatpak-builder --force-clean --repo=repo build-dir flatpak/com.matthiasnehlsen.lotti.generated.yml
-```
-
-## Installing
-
-### Install Locally
-The build script will show you the correct installation command. Alternatively, you can use:
-
-**Option 1: Use the build script (recommended)**
-```bash
-./flatpak/build.sh
-# Follow the installation instructions shown by the script
-```
-
-**Option 2: Manual installation after build**
-```bash
-# After running ./flatpak/build.sh successfully, install with the generated manifest
-flatpak-builder --user --install --force-clean build-dir com.matthiasnehlsen.lotti.generated.yml
-```
-
-**Option 3: Install from template (requires environment variables)**
-```bash
-# Set your environment variables first
-export LOTTI_REPO_URL="https://github.com/matthiasn/lotti.git"
-export LOTTI_VERSION="v0.9.645"
-export LOTTI_RELEASE_DATE="2025-01-26"
-
-# Install directly from template
-flatpak-builder --user --install --force-clean build-dir flatpak/com.matthiasnehlsen.lotti.yml
-```
-
-Note: The `com.matthiasnehlsen.lotti.generated.yml` file is generated in the project root by the build script.
+This eliminates the need to manually maintain lists of individual files and makes the build process more robust.
 
 ### Create Bundle
 ```bash

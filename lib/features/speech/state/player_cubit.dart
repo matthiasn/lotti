@@ -8,6 +8,14 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:media_kit/media_kit.dart';
 
+/// Constants for audio player configuration
+class PlayerConstants {
+  PlayerConstants._();
+
+  /// Delay before updating progress when playback completes
+  static const int completionDelayMs = 50;
+}
+
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   AudioPlayerCubit()
       : super(
@@ -68,7 +76,8 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       _audioPlayer.stream.completed.listen((completed) {
         final duration = state.audioNote?.data.duration;
         if (completed && duration != null) {
-          Timer(const Duration(milliseconds: 50), () {
+          Timer(const Duration(milliseconds: PlayerConstants.completionDelayMs),
+              () {
             emit(state.copyWith(progress: duration));
           });
         }

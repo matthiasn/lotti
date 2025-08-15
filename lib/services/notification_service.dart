@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:timezone/timezone.dart';
@@ -12,18 +13,30 @@ final JournalDb _db = getIt<JournalDb>();
 
 class NotificationService {
   NotificationService() {
-    flutterLocalNotificationsPlugin.initialize(
-      const InitializationSettings(
-        macOS: DarwinInitializationSettings(
-          requestSoundPermission: false,
+    try {
+      flutterLocalNotificationsPlugin.initialize(
+        const InitializationSettings(
+          linux: LinuxInitializationSettings(
+            defaultActionName: 'Lotti notification',
+          ),
+          macOS: DarwinInitializationSettings(
+            requestSoundPermission: false,
+          ),
+          iOS: DarwinInitializationSettings(
+            requestSoundPermission: false,
+            requestBadgePermission: false,
+            requestAlertPermission: false,
+          ),
         ),
-        iOS: DarwinInitializationSettings(
-          requestSoundPermission: false,
-          requestBadgePermission: false,
-          requestAlertPermission: false,
-        ),
-      ),
-    );
+      );
+    } catch (e) {
+      // Gracefully handle notification initialization failure in flatpak
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'NOTIFICATION_SERVICE',
+        subDomain: 'initialization',
+      );
+    }
   }
 
   int badgeCount = 0;

@@ -34,6 +34,58 @@ import 'package:lotti/services/vector_clock_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
+/// Helper function to lazily register services that might fail in sandboxed environments
+/// Services are only created on first access, with safe error handling
+void _registerLazyServiceSafely<T extends Object>(
+  T Function() factory,
+  String serviceName,
+) {
+  try {
+    getIt.registerLazySingleton<T>(() {
+      try {
+        final instance = factory();
+        _safeLog('Successfully created lazy instance of $serviceName', isError: false);
+        return instance;
+      } catch (e) {
+        _safeLog('Failed to create lazy instance of $serviceName: $e', isError: true);
+        rethrow; // Let GetIt handle the failure appropriately
+      }
+    });
+    _safeLog('Successfully registered lazy $serviceName', isError: false);
+  } catch (e) {
+    _safeLog('Failed to register lazy $serviceName: $e', isError: true);
+  }
+}
+
+/// Safe logging helper that falls back to print if LoggingService is unavailable
+void _safeLog(String message, {required bool isError}) {
+  try {
+    if (getIt.isRegistered<LoggingService>()) {
+      final loggingService = getIt<LoggingService>();
+      if (isError) {
+        loggingService.captureEvent(
+          message,
+          domain: 'SERVICE_REGISTRATION',
+          subDomain: 'error',
+        );
+      } else {
+        loggingService.captureEvent(
+          message,
+          domain: 'SERVICE_REGISTRATION',
+        );
+      }
+    } else {
+      // Fallback to print if LoggingService not available
+      // ignore: avoid_print
+      print('SERVICE_REGISTRATION: $message');
+    }
+  } catch (e) {
+    // Ultimate fallback if even the safe check fails
+    // ignore: avoid_print
+    print('SERVICE_REGISTRATION: $message (logging failed: $e)');
+  }
+}
+
 Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
@@ -64,11 +116,20 @@ Future<void> registerSingletons() async {
       ),
     )
     ..registerSingleton<LinkService>(LinkService())
-    ..registerSingleton<NotificationService>(NotificationService())
     ..registerSingleton<Maintenance>(Maintenance())
     ..registerSingleton<AiConfigRepository>(AiConfigRepository(AiConfigDb()))
-    ..registerSingleton<NavService>(NavService())
-    ..registerSingleton<AudioPlayerCubit>(AudioPlayerCubit());
+    ..registerSingleton<NavService>(NavService());
+
+  // Register services that might fail in sandboxed environments using lazy loading
+  _registerLazyServiceSafely<NotificationService>(
+    NotificationService.new,
+    'NotificationService',
+  );
+
+  _registerLazyServiceSafely<AudioPlayerCubit>(
+    AudioPlayerCubit.new,
+    'AudioPlayerCubit',
+  );
 
   unawaited(getIt<MatrixService>().init());
   getIt<LoggingService>().listenToConfigFlag();
