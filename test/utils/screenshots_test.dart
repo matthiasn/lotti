@@ -143,9 +143,12 @@ void main() {
 
       test('Flatpak portal constants are properly defined', () {
         expect(dbusPortalDesktopName, equals('org.freedesktop.portal.Desktop'));
-        expect(dbusPortalDesktopPath, equals('/org/freedesktop/portal/desktop'));
-        expect(dbusPortalScreenshotInterface, equals('org.freedesktop.portal.Screenshot'));
-        expect(dbusPortalRequestInterface, equals('org.freedesktop.portal.Request'));
+        expect(
+            dbusPortalDesktopPath, equals('/org/freedesktop/portal/desktop'));
+        expect(dbusPortalScreenshotInterface,
+            equals('org.freedesktop.portal.Screenshot'));
+        expect(dbusPortalRequestInterface,
+            equals('org.freedesktop.portal.Request'));
         expect(dbusPortalResponseSignal, equals('Response'));
         expect(portalHandleTokenKey, equals('handle_token'));
         expect(portalModalKey, equals('modal'));

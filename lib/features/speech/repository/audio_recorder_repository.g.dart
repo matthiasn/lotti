@@ -7,7 +7,7 @@ part of 'audio_recorder_repository.dart';
 // **************************************************************************
 
 String _$audioRecorderRepositoryHash() =>
-    r'f0050ec0bfccbaaedbeddb0f560f661558313922';
+    r'dcb0b868cb2b8e84b9fedc6e31130a0e9f562031';
 
 /// Provider for the audio recorder repository.
 /// Kept alive to maintain recording state across navigation.

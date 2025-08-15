@@ -38,7 +38,7 @@ Future<bool> _isPortalAvailable() async {
         name: dbusPortalDesktopName,
         path: DBusObjectPath(dbusPortalDesktopPath),
       );
-      
+
       // Try to introspect the portal to see if it's available
       await portal.introspect();
       return true;
@@ -111,7 +111,7 @@ Future<ImageData> takeFlatpakPortalScreenshot() async {
     if (!await _isPortalAvailable()) {
       throw Exception('D-Bus screenshot portal is not available');
     }
-    
+
     final id = uuid.v1();
     final filename = '$id$screenshotFileExtension';
     final created = DateTime.now();
@@ -122,22 +122,24 @@ Future<ImageData> takeFlatpakPortalScreenshot() async {
 
     // Minimize window before taking screenshot
     await windowManager.minimize();
-    
+
     // Add a small delay to ensure window is fully minimized
-    await Future<void>.delayed(const Duration(milliseconds: windowMinimizationDelayMs));
-    
+    await Future<void>.delayed(
+        const Duration(milliseconds: windowMinimizationDelayMs));
+
     // Connect to D-Bus session bus
     final client = DBusClient.session();
-    
+
     getIt<LoggingService>().captureEvent(
       'Starting Flatpak screenshot portal request',
       domain: screenshotDomain,
     );
-    
+
     try {
       // Create a unique token for this request
-      final token = '$screenshotTokenPrefix${DateTime.now().millisecondsSinceEpoch}';
-      
+      final token =
+          '$screenshotTokenPrefix${DateTime.now().millisecondsSinceEpoch}';
+
       // Call the Screenshot portal
       final portal = DBusRemoteObject(
         client,
@@ -165,10 +167,10 @@ Future<ImageData> takeFlatpakPortalScreenshot() async {
 
       // Get the request path
       final requestPath = (result.values[0] as DBusObjectPath).value;
-      
+
       // Wait for the response signal
       final completer = Completer<String>();
-      
+
       // Subscribe to Response signal using DBusSignalStream
       final signalStream = DBusSignalStream(
         client,
@@ -177,12 +179,12 @@ Future<ImageData> takeFlatpakPortalScreenshot() async {
         interface: dbusPortalRequestInterface,
         name: dbusPortalResponseSignal,
       );
-      
+
       final subscription = signalStream.listen((signal) {
         if (signal.values.length >= 2) {
           final response = signal.values[0] as DBusUint32;
           final results = signal.values[1] as DBusDict;
-          
+
           if (response.value == portalSuccessResponse) {
             // Success - extract URI from results dictionary
             final resultsMap = results.asStringVariantDict();
@@ -222,7 +224,7 @@ Future<ImageData> takeFlatpakPortalScreenshot() async {
           );
         },
       );
-      
+
       await subscription.cancel();
 
       // Copy the screenshot file to our directory
@@ -230,11 +232,11 @@ Future<ImageData> takeFlatpakPortalScreenshot() async {
       if (screenshotUri.startsWith(fileUriScheme)) {
         final sourcePath = Uri.parse(screenshotUri).toFilePath();
         final sourceFile = File(sourcePath);
-        
+
         if (sourceFile.existsSync()) {
           // Read the source file and write to our destination
           await sourceFile.copy(fullPath);
-          
+
           // Clean up the temporary file
           try {
             await sourceFile.delete();
@@ -257,7 +259,7 @@ Future<ImageData> takeFlatpakPortalScreenshot() async {
 
       // Restore window after screenshot
       await _safelyRestoreWindow();
-      
+
       return imageData;
     } finally {
       await client.close();
@@ -265,7 +267,7 @@ Future<ImageData> takeFlatpakPortalScreenshot() async {
   } catch (exception, stackTrace) {
     // Ensure window is restored even on error
     await _safelyRestoreWindow();
-    
+
     getIt<LoggingService>().captureException(
       exception,
       domain: screenshotDomain,

@@ -758,10 +758,10 @@ packages:
     dependency: "direct main"
     description:
       name: flex_color_scheme
-      sha256: "14681bcc7e3db4c2717ccba74e311cd57ce63a10e85e6552b6eced3dd049391f"
+      sha256: "034d5720747e6af39b2ad090d82dd92d33fde68e7964f1814b714c9d49ddbd64"
       url: "https://pub.dev"
     source: hosted
-    version: "8.2.1-dev.2"
+    version: "8.3.0"
   flex_seed_scheme:
     dependency: transitive
     description:
@@ -824,10 +824,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_form_builder
-      sha256: db01493da4ef0f9ca1b2367fd1653569e933052eb06d6fbd944be97c76764fb8
+      sha256: ec74389c4af2361a5e9fe9a36fcfe722698be3f681d713cb3ebe099ae15ed863
       url: "https://pub.dev"
     source: hosted
-    version: "10.1.0"
+    version: "10.2.0"
   flutter_image_compress:
     dependency: "direct main"
     description:
@@ -2338,26 +2338,26 @@ packages:
     dependency: "direct main"
     description:
       name: record
-      sha256: daeb3f9b3fea9797094433fe6e49a879d8e4ca4207740bc6dc7e4a58764f0817
+      sha256: "3d08502b77edf2a864aa6e4cd7874b983d42a80f3689431da053cc5e85c1ad21"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.0"
+    version: "6.1.0"
   record_android:
     dependency: transitive
     description:
       name: record_android
-      sha256: "97d7122455f30de89a01c6c244c839085be6b12abca251fc0e78f67fed73628b"
+      sha256: "8b170e33d9866f9b51e01a767d7e1ecb97b9ecd629950bd87a47c79359ec57f8"
       url: "https://pub.dev"
     source: hosted
-    version: "1.3.3"
+    version: "1.4.0"
   record_ios:
     dependency: transitive
     description:
       name: record_ios
-      sha256: "73706ebbece6150654c9d6f57897cf9b622c581148304132ba85dba15df0fdfb"
+      sha256: ad97d0a75933c44bcf5aff648e86e32fc05eb61f8fbef190f14968c8eaf86692
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.1.0"
   record_linux:
     dependency: "direct overridden"
     description:
@@ -2371,26 +2371,26 @@ packages:
     dependency: transitive
     description:
       name: record_macos
-      sha256: "02240833fde16c33fcf2c589f3e08d4394b704761b4a3bb609d872ff3043fbbd"
+      sha256: f1399bca76a1634da109e5b0cba764ed8332a2b4da49c704c66d2c553405ed81
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.1.0"
   record_platform_interface:
     dependency: transitive
     description:
       name: record_platform_interface
-      sha256: c1ad38f51e4af88a085b3e792a22c685cb3e7c23fc37aa7ce44c4cf18f25fe89
+      sha256: b0065fdf1ec28f5a634d676724d388a77e43ce7646fb049949f58c69f3fcb4ed
       url: "https://pub.dev"
     source: hosted
-    version: "1.3.0"
+    version: "1.4.0"
   record_web:
     dependency: transitive
     description:
       name: record_web
-      sha256: a12856d0b3dd03d336b4b10d7520a8b3e21649a06a8f95815318feaa8f07adbb
+      sha256: "4f0adf20c9ccafcc02d71111fd91fba1ca7b17a7453902593e5a9b25b74a5c56"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.9"
+    version: "1.2.0"
   record_windows:
     dependency: transitive
     description:
@@ -3121,10 +3121,10 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics_compiler
-      sha256: "557a315b7d2a6dbb0aaaff84d857967ce6bdc96a63dc6ee2a57ce5a6ee5d3331"
+      sha256: ca81fdfaf62a5ab45d7296614aea108d2c7d0efca8393e96174bf4d51e6725b0
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.17"
+    version: "1.1.18"
   vector_math:
     dependency: "direct main"
     description:
@@ -3153,10 +3153,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: d26f8791c8f670825cc227e2cad4319d2ac02b71b2ad5c2b67786bb873ac43b1
+      sha256: "53f3b57c7ac88c18e6074d0f94c7146e128c515f0a4503c3061b8e71dea3a0f2"
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.11"
+    version: "2.8.12"
   video_player_avfoundation:
     dependency: transitive
     description:
@@ -3358,5 +3358,5 @@ packages:
     source: hosted
     version: "3.1.3"
 sdks:
-  dart: ">=3.8.0 <4.0.0"
-  flutter: ">=3.35.0-0"
+  dart: ">=3.9.0 <4.0.0"
+  flutter: ">=3.35.0"
