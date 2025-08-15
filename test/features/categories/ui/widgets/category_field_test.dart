@@ -182,7 +182,8 @@ void main() {
       ),
     );
 
-    final icon = tester.widget<CategoryIconCompact>(find.byType(CategoryIconCompact));
+    final icon =
+        tester.widget<CategoryIconCompact>(find.byType(CategoryIconCompact));
     expect(icon.size, equals(CategoryIconConstants.iconSizeMedium));
   });
 }

@@ -21,6 +21,32 @@ class CloudInferenceRepository {
   final OllamaInferenceRepository _ollamaRepository;
   final WhisperInferenceRepository _whisperRepository;
 
+  /// Helper method to create common request parameters
+  CreateChatCompletionRequest _createBaseRequest({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    double? temperature,
+    int? maxCompletionTokens,
+    int? maxTokens,
+    List<ChatCompletionTool>? tools,
+  }) {
+    return CreateChatCompletionRequest(
+      messages: messages,
+      model: ChatCompletionModel.modelId(model),
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+      maxTokens: maxTokens,
+      stream: true,
+      verbosity: null, // Explicitly null for Gemini compatibility
+      tools: tools,
+      toolChoice: tools != null && tools.isNotEmpty
+          ? const ChatCompletionToolChoiceOption.mode(
+              ChatCompletionToolChoiceMode.auto,
+            )
+          : null,
+    );
+  }
+
   /// Filters out Anthropic ping messages from the stream
   Stream<CreateChatCompletionStreamResponse> _filterAnthropicPings(
     Stream<CreateChatCompletionStreamResponse> stream,
@@ -107,7 +133,7 @@ class CloudInferenceRepository {
     }
 
     final res = client.createChatCompletionStream(
-      request: CreateChatCompletionRequest(
+      request: _createBaseRequest(
         messages: [
           if (systemMessage != null)
             ChatCompletionMessage.system(content: systemMessage),
@@ -115,16 +141,10 @@ class CloudInferenceRepository {
             content: ChatCompletionUserMessageContent.string(prompt),
           ),
         ],
-        model: ChatCompletionModel.modelId(model),
+        model: model,
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
-        stream: true,
         tools: tools,
-        toolChoice: tools != null
-            ? const ChatCompletionToolChoiceOption.mode(
-                ChatCompletionToolChoiceMode.auto,
-              )
-            : null,
       ),
     );
 
@@ -170,7 +190,7 @@ class CloudInferenceRepository {
     }
 
     final res = client.createChatCompletionStream(
-      request: CreateChatCompletionRequest(
+      request: _createBaseRequest(
         messages: [
           ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.parts(
@@ -189,16 +209,10 @@ class CloudInferenceRepository {
             ),
           ),
         ],
-        model: ChatCompletionModel.modelId(model),
+        model: model,
         temperature: temperature,
         maxTokens: maxCompletionTokens,
-        stream: true,
         tools: tools,
-        toolChoice: tools != null
-            ? const ChatCompletionToolChoiceOption.mode(
-                ChatCompletionToolChoiceMode.auto,
-              )
-            : null,
       ),
     );
 
@@ -262,7 +276,7 @@ class CloudInferenceRepository {
 
     return client
         .createChatCompletionStream(
-          request: CreateChatCompletionRequest(
+          request: _createBaseRequest(
             messages: [
               ChatCompletionMessage.user(
                 content: ChatCompletionUserMessageContent.parts(
@@ -278,15 +292,9 @@ class CloudInferenceRepository {
                 ),
               ),
             ],
-            model: ChatCompletionModel.modelId(model),
+            model: model,
             maxCompletionTokens: maxCompletionTokens,
-            stream: true,
             tools: tools,
-            toolChoice: tools != null
-                ? const ChatCompletionToolChoiceOption.mode(
-                    ChatCompletionToolChoiceMode.auto,
-                  )
-                : null,
           ),
         )
         .asBroadcastStream();
