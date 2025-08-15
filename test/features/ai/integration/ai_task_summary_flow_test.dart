@@ -41,13 +41,6 @@ void main() {
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     // Register mocks in GetIt
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
-
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
@@ -78,12 +71,7 @@ void main() {
 
   tearDown(() {
     updateStreamController.close();
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
+    getIt.reset();
   });
 
   Widget buildTestWidget(

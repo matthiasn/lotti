@@ -27,9 +27,6 @@ void main() {
     mockLoggingService = MockLoggingService();
 
     // Register mocks in GetIt
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     // Setup mock behaviors
@@ -42,11 +39,7 @@ void main() {
     ).thenReturn(null);
   });
 
-  tearDown(() {
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
-  });
+  tearDown(getIt.reset);
 
   group('AI Animation Modal Interaction Tests', () {
     const testId = 'test-entity-id';
