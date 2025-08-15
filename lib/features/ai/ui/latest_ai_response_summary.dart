@@ -4,8 +4,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
-import 'package:lotti/features/ai/ui/helpers/thoughts_modal_helper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -49,12 +49,16 @@ class _LatestAiResponseSummaryState
 
     final isRunning = inferenceStatus == InferenceStatus.running;
 
-    Future<void> showThoughtsModal(String? promptId) async {
-      await ThoughtsModalHelper.showThoughtsModal(
-        context: context,
-        ref: ref,
-        promptId: promptId,
-        entityId: widget.id,
+    Future<void> triggerRefresh(String? promptId) async {
+      if (promptId == null) return;
+
+      // Just trigger the inference without showing a modal
+      // The animation at the bottom will be shown automatically
+      await ref.read(
+        triggerNewInferenceProvider(
+          entityId: widget.id,
+          promptId: promptId,
+        ).future,
       );
     }
 
@@ -115,7 +119,7 @@ class _LatestAiResponseSummaryState
                 if (isRunning)
                   IconButton(
                     onPressed: promptId != null
-                        ? () => showThoughtsModal(promptId)
+                        ? () => triggerRefresh(promptId)
                         : null,
                     icon: const SizedBox(
                       width: 14,
@@ -129,7 +133,7 @@ class _LatestAiResponseSummaryState
                       Icons.refresh,
                       color: context.colorScheme.outline,
                     ),
-                    onPressed: () => showThoughtsModal(promptId),
+                    onPressed: () => triggerRefresh(promptId),
                   ),
                   if (isOutdated)
                     // ignore: dead_code
