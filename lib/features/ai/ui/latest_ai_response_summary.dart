@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/state/task_summary_auto_refresh_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -33,6 +34,15 @@ class _LatestAiResponseSummaryState
 
   @override
   Widget build(BuildContext context) {
+    // Enable auto-refresh for task summaries
+    if (widget.aiResponseType == AiResponseType.taskSummary) {
+      ref.watch(
+        taskSummaryAutoRefreshControllerProvider(
+          taskId: widget.id,
+        ),
+      );
+    }
+
     final latestSummaryAsync = ref.watch(
       latestSummaryControllerProvider(
         id: widget.id,

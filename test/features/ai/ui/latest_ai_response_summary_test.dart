@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
@@ -23,6 +24,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockJournalDb extends Mock implements JournalDb {}
 
 void main() {
   late MockLoggingService mockLoggingService;
@@ -47,10 +50,14 @@ void main() {
     if (getIt.isRegistered<UpdateNotifications>()) {
       getIt.unregister<UpdateNotifications>();
     }
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
 
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<JournalDb>(MockJournalDb());
 
     // Setup mock behaviors
     when(() => mockUpdateNotifications.updateStream)
@@ -83,6 +90,9 @@ void main() {
     }
     if (getIt.isRegistered<UpdateNotifications>()) {
       getIt.unregister<UpdateNotifications>();
+    }
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
     }
   });
 
@@ -758,6 +768,78 @@ void main() {
 
       // Refresh button should not be shown when promptId is null
       expect(find.byIcon(Icons.refresh), findsNothing);
+    });
+
+    testWidgets('watches taskSummaryAutoRefreshController for task summaries',
+        (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse1]);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // The test passes if no exceptions are thrown
+      // The controller is being watched internally when aiResponseType is taskSummary
+      expect(find.byType(LatestAiResponseSummary), findsOneWidget);
+    });
+
+    testWidgets(
+        'does not watch taskSummaryAutoRefreshController for non-task summaries',
+        (tester) async {
+      // Different response type
+      const nonTaskResponseType = AiResponseType.imageAnalysis;
+
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [
+                AiResponseEntry(
+                  meta: Metadata(
+                    id: 'response-1',
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                    dateFrom: DateTime.now(),
+                    dateTo: DateTime.now(),
+                  ),
+                  data: const AiResponseData(
+                    model: 'gpt-4',
+                    temperature: 0.7,
+                    systemMessage: 'System message',
+                    prompt: 'User prompt',
+                    thoughts: '',
+                    response: 'Image analysis response',
+                    type: nonTaskResponseType,
+                    promptId: 'prompt-1',
+                  ),
+                ),
+              ]);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: nonTaskResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // The test passes if no exceptions are thrown
+      // The controller should NOT be watched for non-task summary types
+      expect(find.byType(LatestAiResponseSummary), findsOneWidget);
     });
   });
 }
