@@ -44,24 +44,25 @@ class TaskCategoryWidget extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(right: 5),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              context.messages.taskCategoryLabel,
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.outline,
+            Padding(
+              padding: const EdgeInsets.only(
+                left: CategoryIconConstants.smallSectionSpacing,
+              ),
+              child: Text(
+                context.messages.taskCategoryLabel,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.outline,
+                ),
               ),
             ),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                      right: CategoryIconConstants.smallSectionSpacing),
-                  child: CategoryIconCompact(
-                    category?.id,
-                    size: CategoryIconConstants.iconSizeMedium,
-                  ),
+                CategoryIconCompact(
+                  category?.id,
+                  size: CategoryIconConstants.iconSizeMedium,
                 ),
                 Flexible(
                   child: Text(
