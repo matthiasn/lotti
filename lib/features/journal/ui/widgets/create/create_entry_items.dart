@@ -25,17 +25,13 @@ class CreateEventItem extends ConsumerWidget {
       icon: Icons.event_rounded,
       title: 'Event',
       onTap: () async {
-        final event = await createEvent(
+        await createEvent(
           linkedId: linkedFromId,
           categoryId: categoryId,
         );
-        if (!context.mounted) {
-          return;
+        if (context.mounted) {
+          Navigator.of(context).pop();
         }
-        if (event != null) {
-          beamToNamed('/journal/${event.meta.id}');
-        }
-        Navigator.of(context).pop();
       },
     );
   }

@@ -43,7 +43,7 @@ class CategoryIconConstants {
   static const double iconSizeMedium = 35.2;
 
   /// Small icons for compact lists, inline displays (journal entries)
-  static const double iconSizeSmall = 24;
+  static const double iconSizeSmall = 20;
 
   /// Extra small icons for dense interfaces
   static const double iconSizeExtraSmall = 16;

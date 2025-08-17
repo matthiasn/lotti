@@ -18,6 +18,13 @@ import 'package:media_kit/media_kit.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
+class AppConstants {
+  const AppConstants._();
+  
+  static const Size defaultWindowSize = Size(1280, 720);
+  static const Size minimumWindowSize = Size(360, 640);
+}
+
 Future<void> main() async {
   await runZonedGuarded(() async {
     getIt
@@ -43,8 +50,8 @@ Future<void> main() async {
 
       // Configure window options for flatpak compatibility
       const windowOptions = WindowOptions(
-        size: Size(1280, 720),
-        minimumSize: Size(320, 568),
+        size: AppConstants.defaultWindowSize,
+        minimumSize: AppConstants.minimumWindowSize,
         center: true,
         backgroundColor: Colors.transparent,
         skipTaskbar: false,

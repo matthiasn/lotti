@@ -477,13 +477,7 @@ void main() {
 
     test('should properly handle provider lifecycle', () {
       // Arrange
-      final container = ProviderContainer(
-        overrides: [
-          audioRecorderRepositoryProvider.overrideWithValue(
-            mockAudioRecorderRepository,
-          ),
-        ],
-      );
+      final container = ProviderContainer();
 
       // Act - Read the provider to initialize it
       final _ = container.read(audioRecorderControllerProvider);
@@ -498,20 +492,8 @@ void main() {
 
     test('should handle multiple provider instances independently', () {
       // Arrange
-      final container1 = ProviderContainer(
-        overrides: [
-          audioRecorderRepositoryProvider.overrideWithValue(
-            mockAudioRecorderRepository,
-          ),
-        ],
-      );
-      final container2 = ProviderContainer(
-        overrides: [
-          audioRecorderRepositoryProvider.overrideWithValue(
-            mockAudioRecorderRepository,
-          ),
-        ],
-      );
+      final container1 = ProviderContainer();
+      final container2 = ProviderContainer();
 
       // Act
       final controller1 =

@@ -11,7 +11,6 @@ import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -27,6 +26,18 @@ import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
 import 'package:lotti/widgets/sync/matrix/incoming_verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
+class AppScreenConstants {
+  const AppScreenConstants._();
+  
+  static const double navigationElevation = 8;
+  static const double navigationIconSize = 30;
+  static const double navigationTextHeight = 2;
+  static const double navigationPadding = 10;
+  static const double navigationTimeIndicatorBottom = 0;
+  // Audio recording indicator disabled for Flatpak compatibility
+  // static const double navigationAudioIndicatorRight = 100;
+}
 
 class AppScreen extends StatefulWidget {
   const AppScreen({
@@ -91,15 +102,16 @@ class _AppScreenState extends State<AppScreen> {
                 ],
               ),
               const Positioned(
-                left: 10,
-                bottom: 0,
+                left: AppScreenConstants.navigationPadding,
+                bottom: AppScreenConstants.navigationTimeIndicatorBottom,
                 child: TimeRecordingIndicator(),
               ),
-              const Positioned(
-                right: 100,
-                bottom: 0,
-                child: AudioRecordingIndicator(),
-              ),
+              // AudioRecordingIndicator disabled in Flatpak due to MediaKit dependencies
+              // const Positioned(
+              //   right: 100,
+              //   bottom: 0,
+              //   child: AudioRecordingIndicator(),
+              // ),
             ],
           ),
           bottomNavigationBar: SpotifyStyleBottomNavigationBar(
@@ -107,15 +119,15 @@ class _AppScreenState extends State<AppScreen> {
             unselectedItemColor: context.colorScheme.primary.withAlpha(127),
             enableFeedback: true,
             backgroundColor: context.colorScheme.surface,
-            elevation: 8,
-            iconSize: 30,
+            elevation: AppScreenConstants.navigationElevation,
+            iconSize: AppScreenConstants.navigationIconSize,
             selectedLabelStyle: const TextStyle(
-              height: 2,
+              height: AppScreenConstants.navigationTextHeight,
               fontWeight: FontWeight.normal,
               fontSize: fontSizeSmall,
             ),
             unselectedLabelStyle: const TextStyle(
-              height: 2,
+              height: AppScreenConstants.navigationTextHeight,
               fontWeight: FontWeight.w300,
               fontSize: fontSizeSmall,
             ),
@@ -267,7 +279,6 @@ class _MyBeamerAppState extends State<MyBeamerApp> {
                     .updateActivity;
 
             return Listener(
-              behavior: HitTestBehavior.translucent,
               onPointerDown: (event) => updateActivity(),
               onPointerMove: (event) => updateActivity(),
               onPointerPanZoomStart: (event) => updateActivity(),

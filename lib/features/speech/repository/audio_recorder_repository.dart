@@ -16,7 +16,7 @@ part 'audio_recorder_repository.g.dart';
 /// Kept alive to maintain recording state across navigation.
 @Riverpod(keepAlive: true)
 AudioRecorderRepository audioRecorderRepository(Ref ref) {
-  final repository = AudioRecorderRepository(AudioRecorder());
+  final repository = AudioRecorderRepository();
   ref.onDispose(() async {
     await repository.dispose();
   });
@@ -35,7 +35,8 @@ AudioRecorderRepository audioRecorderRepository(Ref ref) {
 ///
 /// All methods include error handling to ensure graceful degradation.
 class AudioRecorderRepository {
-  AudioRecorderRepository(this._audioRecorder);
+  AudioRecorderRepository([AudioRecorder? audioRecorder])
+      : _audioRecorder = audioRecorder ?? AudioRecorder();
 
   final AudioRecorder _audioRecorder;
   final LoggingService _loggingService = getIt<LoggingService>();
