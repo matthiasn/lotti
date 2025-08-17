@@ -10,7 +10,7 @@ import 'package:media_kit/media_kit.dart';
 
 /// Constants for audio player configuration
 class PlayerConstants {
-  PlayerConstants._();
+  const PlayerConstants._();
 
   /// Delay before updating progress when playback completes
   static const int completionDelayMs = 50;

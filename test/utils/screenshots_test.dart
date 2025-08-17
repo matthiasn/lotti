@@ -90,22 +90,6 @@ void main() {
       });
     });
 
-    group('isRunningInFlatpak', () {
-      test('returns true when FLATPAK_ID environment variable is set', () {
-        // This test is environmental and may not work in all test environments
-        // We test the logic exists rather than the specific result
-        final result = isRunningInFlatpak();
-        expect(result, isA<bool>());
-      });
-
-      test('detects Flatpak environment correctly based on file existence', () {
-        // Since we can't easily mock File.existsSync in this context,
-        // we just verify the function returns a boolean
-        final result = isRunningInFlatpak();
-        expect(result, isA<bool>());
-      });
-    });
-
     group('takeScreenshot', () {
       test('creates ImageData with correct properties on supported platform',
           () async {
@@ -134,40 +118,9 @@ void main() {
         expect(screenshotDirectoryPath, isNotEmpty);
         expect(screenshotDateFormat, isNotEmpty);
         expect(screenshotDelaySeconds, isPositive);
-        expect(screenshotProcessTimeoutSeconds, isPositive);
-        expect(windowMinimizationDelayMs, isPositive);
         expect(screenshotDomain, isNotEmpty);
         expect(linuxScreenshotTools, isNotEmpty);
         expect(screenshotToolConfigs, isNotEmpty);
-      });
-
-      test('Flatpak portal constants are properly defined', () {
-        expect(dbusPortalDesktopName, equals('org.freedesktop.portal.Desktop'));
-        expect(
-            dbusPortalDesktopPath, equals('/org/freedesktop/portal/desktop'));
-        expect(dbusPortalScreenshotInterface,
-            equals('org.freedesktop.portal.Screenshot'));
-        expect(dbusPortalRequestInterface,
-            equals('org.freedesktop.portal.Request'));
-        expect(dbusPortalResponseSignal, equals('Response'));
-        expect(portalHandleTokenKey, equals('handle_token'));
-        expect(portalModalKey, equals('modal'));
-        expect(portalInteractiveKey, equals('interactive'));
-        expect(portalUriKey, equals('uri'));
-        expect(screenshotTokenPrefix, equals('lotti_screenshot_'));
-        expect(portalSuccessResponse, equals(0));
-      });
-
-      test('portal error messages are defined', () {
-        expect(portalNoUriMessage, isNotEmpty);
-        expect(portalUnexpectedUriMessage, isNotEmpty);
-        expect(portalFileNotFoundMessage, isNotEmpty);
-        expect(portalTimeoutMessage, isNotEmpty);
-        expect(portalCancelledMessage, isNotEmpty);
-      });
-
-      test('file URI constants are defined', () {
-        expect(fileUriScheme, equals('file://'));
       });
 
       test('Linux screenshot tools list contains all expected tools', () {
