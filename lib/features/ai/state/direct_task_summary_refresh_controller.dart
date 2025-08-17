@@ -107,6 +107,7 @@ class DirectTaskSummaryRefreshController
           error: {'taskId': taskId},
         );
         _pendingRefreshTasks.add(taskId);
+        _refreshingTasks.remove(taskId); // Clean up before returning
         return;
       }
 
