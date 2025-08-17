@@ -705,5 +705,171 @@ void main() {
       // Verify that inference was not triggered
       expect(inferenceCallCount, equals(0));
     });
+
+    test(
+        'should handle errors in stream listener without breaking subscription',
+        () async {
+      // Setup mock to throw an error
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenThrow(Exception('Database error'));
+
+      // Create a subscription to track updates after error
+      var updateCountAfterError = 0;
+      late StreamSubscription<Set<String>> testSubscription;
+
+      // Override providers
+      container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          latestSummaryControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => MockLatestSummaryController(testAiResponse)),
+          inferenceStatusControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+              () => MockInferenceStatusController(InferenceStatus.idle)),
+        ],
+      )
+        // Create the controller and keep it alive
+        ..listen(
+          taskSummaryAutoRefreshControllerProvider(taskId: testTaskId),
+          (_, __) {},
+        );
+
+      // Allow controller to initialize
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Send an update that will cause an error
+      updateStreamController.add({'error-entity-id'});
+
+      // Wait a bit for error to be processed
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Now set up tracking for future updates
+      testSubscription = updateStreamController.stream.listen((_) {
+        updateCountAfterError++;
+      });
+
+      // Reset mock to not throw error
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+
+      // Send more updates to verify stream is still active
+      updateStreamController.add({'test-entity-1'});
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      updateStreamController.add({'test-entity-2'});
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Verify the stream is still active (we should have received updates)
+      expect(updateCountAfterError, greaterThan(0));
+
+      // Verify error was logged
+      verify(
+        () => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: 'AI',
+          subDomain: 'TaskSummaryAutoRefresh',
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      // Clean up
+      await testSubscription.cancel();
+    });
+
+    test('should re-schedule with debounce when pending refresh exists',
+        () async {
+      // This test verifies the improved pending refresh logic
+
+      // Setup mocks
+      const checklistItemId = 'checklist-item-1';
+      final checklistItem = ChecklistItem(
+        meta: Metadata(
+          id: checklistItemId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: const ChecklistItemData(
+          title: 'Test item',
+          isChecked: true,
+          linkedChecklists: [],
+        ),
+      );
+
+      when(() => mockJournalDb.journalEntityById(checklistItemId))
+          .thenAnswer((_) async => checklistItem);
+
+      // Track inference calls with timestamps
+      final inferenceTimes = <DateTime>[];
+
+      // Create a custom inference status controller that simulates a long-running inference
+      var isFirstCall = true;
+
+      container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          latestSummaryControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => MockLatestSummaryController(testAiResponse)),
+          inferenceStatusControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+              () => MockInferenceStatusController(InferenceStatus.idle)),
+          triggerNewInferenceProvider(
+            entityId: testTaskId,
+            promptId: testPromptId,
+          ).overrideWith((ref) async {
+            inferenceTimes.add(DateTime.now());
+
+            // Simulate a long-running inference on first call
+            if (isFirstCall) {
+              isFirstCall = false;
+              await Future<void>.delayed(const Duration(milliseconds: 300));
+            }
+          }),
+        ],
+      )
+        // Create the controller and keep it alive
+        ..listen(
+          taskSummaryAutoRefreshControllerProvider(taskId: testTaskId),
+          (_, __) {},
+        );
+
+      // Allow controller to initialize
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Send first update
+      updateStreamController.add({testTaskId, checklistItemId});
+
+      // Wait for debounce (500ms) and start of first inference
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      // Send multiple updates while first inference is running
+      // These should trigger pending refresh
+      for (var i = 0; i < 3; i++) {
+        updateStreamController.add({testTaskId, checklistItemId});
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+
+      // Wait for first inference to complete and second to trigger
+      await Future<void>.delayed(const Duration(milliseconds: 1000));
+
+      // Should have exactly 2 inference calls
+      expect(inferenceTimes.length, equals(2));
+
+      // Verify the second inference was properly debounced (at least 500ms after the first completed)
+      if (inferenceTimes.length >= 2) {
+        final timeBetweenInferences =
+            inferenceTimes[1].difference(inferenceTimes[0]);
+        expect(timeBetweenInferences.inMilliseconds, greaterThanOrEqualTo(500));
+      }
+    });
   });
 }

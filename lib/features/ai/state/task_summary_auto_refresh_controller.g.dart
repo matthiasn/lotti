@@ -7,7 +7,7 @@ part of 'task_summary_auto_refresh_controller.dart';
 // **************************************************************************
 
 String _$taskSummaryAutoRefreshControllerHash() =>
-    r'8ee2cde039d239e4f6a1af6a94c67819379839c4';
+    r'81344fd0e66cbfd3f963ed3c774c75960182578c';
 
 /// Copied from Dart SDK
 class _SystemHash {
