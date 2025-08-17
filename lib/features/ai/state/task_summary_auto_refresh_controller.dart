@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/state/task_relevance_checker.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -20,11 +19,14 @@ class TaskSummaryAutoRefreshController
   Timer? _debounceTimer;
   bool _isRefreshing = false;
   bool _hasPendingRefresh = false;
+  late final TaskRelevanceChecker _relevanceChecker;
 
   @override
   void build({
     required String taskId,
   }) {
+    _relevanceChecker = TaskRelevanceChecker(taskId: taskId);
+
     ref.onDispose(() {
       _updateSubscription?.cancel();
       _debounceTimer?.cancel();
@@ -38,68 +40,15 @@ class TaskSummaryAutoRefreshController
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
       try {
         // Skip only if the update is solely an AI response notification
-        if (affectedIds.length == 1 &&
-            affectedIds.contains(aiResponseNotification)) {
+        if (_relevanceChecker.shouldSkipNotification(affectedIds)) {
           return;
         }
 
-        // Process all affected IDs in a single loop
-        for (final id in affectedIds) {
-          // Skip notification constants and AI response notifications
-          if (id.endsWith('_NOTIFICATION') || id == aiResponseNotification) {
-            continue;
-          }
-
-          // Skip processing the task ID itself - we're interested in linked entities
-          if (id == taskId) {
-            continue;
-          }
-
-          // Get the entity to determine its type and relationship to the task
-          final entity = await getIt<JournalDb>().journalEntityById(id);
-          if (entity == null) continue;
-
-          // Check if this is a checklist item or checklist update
-          if (entity is ChecklistItem) {
-            // If task ID is in affected IDs, this item is already linked to our task
-            if (affectedIds.contains(taskId)) {
-              _scheduleRefresh();
-              return;
-            }
-
-            // Otherwise, check if this item is linked through its checklists
-            for (final checklistId in entity.data.linkedChecklists) {
-              final checklist =
-                  await getIt<JournalDb>().journalEntityById(checklistId);
-              if (checklist is Checklist &&
-                  checklist.data.linkedTasks.contains(taskId)) {
-                _scheduleRefresh();
-                return;
-              }
-            }
-          } else if (entity is Checklist) {
-            // Handle checklist updates (e.g., when items are removed)
-            if (entity.data.linkedTasks.contains(taskId)) {
-              _scheduleRefresh();
-              return;
-            }
-          } else if (entity is JournalEntry) {
-            // For other entries (text/audio/image), check if they're linked to this task
-            final hasText =
-                entity.entryText?.plainText.trim().isNotEmpty ?? false;
-
-            if (hasText) {
-              // Check if this entry is linked to our task
-              final links =
-                  await getIt<JournalDb>().linksFromId(id, [false]).get();
-              final isLinkedToTask = links.any((link) => link.toId == taskId);
-
-              if (isLinkedToTask) {
-                _scheduleRefresh();
-                return;
-              }
-            }
-          }
+        // Check if any of the affected IDs are relevant to this task
+        final isRelevant =
+            await _relevanceChecker.isUpdateRelevantToTask(affectedIds);
+        if (isRelevant) {
+          _scheduleRefresh();
         }
       } catch (e, stackTrace) {
         // Log the error but don't break the stream subscription
