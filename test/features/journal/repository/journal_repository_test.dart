@@ -739,6 +739,56 @@ void main() {
       });
     });
 
+    group('getJournalEntityById', () {
+      test('returns the journal entity when found', () async {
+        // Arrange
+        const entityId = 'test-entity-id';
+        final testEntity = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Test content',
+            markdown: 'test',
+          ),
+          meta: Metadata(
+            id: entityId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            starred: false,
+            private: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        // Mock the journalEntityById call
+        when(() => mockJournalDb.journalEntityById(entityId))
+            .thenAnswer((_) async => testEntity);
+
+        // Act
+        final result = await repository.getJournalEntityById(entityId);
+
+        // Assert
+        expect(result, equals(testEntity));
+        verify(() => mockJournalDb.journalEntityById(entityId)).called(1);
+      });
+
+      test('returns null when entity not found', () async {
+        // Arrange
+        const entityId = 'non-existent-id';
+
+        // Mock the journalEntityById call to return null
+        when(() => mockJournalDb.journalEntityById(entityId))
+            .thenAnswer((_) async => null);
+
+        // Act
+        final result = await repository.getJournalEntityById(entityId);
+
+        // Assert
+        expect(result, isNull);
+        verify(() => mockJournalDb.journalEntityById(entityId)).called(1);
+      });
+    });
+
     group('getLinksFromId', () {
       test('returns links from a specific ID with sorted order', () async {
         // Arrange

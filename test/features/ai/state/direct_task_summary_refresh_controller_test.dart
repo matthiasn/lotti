@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -29,6 +30,25 @@ class MockInferenceStatusController extends InferenceStatusController {
     required AiResponseType aiResponseType,
   }) {
     return _status;
+  }
+}
+
+class MockLatestSummaryController extends LatestSummaryController {
+  MockLatestSummaryController(this._response);
+
+  final AiResponseEntry? _response;
+
+  @override
+  Future<AiResponseEntry?> build({
+    required String id,
+    required AiResponseType aiResponseType,
+  }) async {
+    return _response;
+  }
+
+  @override
+  void listen() {
+    // Mock implementation - don't listen to actual updates
   }
 }
 
@@ -69,7 +89,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenAnswer((_) {});
+    ).thenAnswer((_) async => true);
 
     container = ProviderContainer(
       overrides: [
@@ -560,6 +580,76 @@ void main() {
       await controller.requestTaskSummaryRefresh('duplicate-test');
 
       // Test passes if no exceptions are thrown (duplicate listeners would cause issues)
+      testContainer.dispose();
+    });
+
+    test('should successfully trigger refresh with valid promptId', () async {
+      // Mock response with valid promptId
+      final testResponse = AiResponseEntry(
+        meta: Metadata(
+          id: 'ai-response-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: const AiResponseData(
+          model: 'gpt-4',
+          temperature: 0.7,
+          systemMessage: 'System',
+          prompt: 'Prompt',
+          thoughts: '',
+          response: 'Test response',
+          type: AiResponseType.taskSummary,
+          promptId: 'valid-prompt-id',
+        ),
+      );
+
+      // Create a test container with overrides
+      final testContainer = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          // Override latestSummaryControllerProvider to return the test response
+          latestSummaryControllerProvider(
+            id: 'valid-prompt-test',
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => MockLatestSummaryController(testResponse)),
+          // Override trigger to track calls
+          triggerNewInferenceProvider(
+            entityId: 'valid-prompt-test',
+            promptId: 'valid-prompt-id',
+          ).overrideWith((ref) async {
+            // This will be called if the correct promptId is used
+            return;
+          }),
+        ],
+      );
+
+      final controller = testContainer.read(
+        directTaskSummaryRefreshControllerProvider.notifier,
+      );
+
+      var triggerCalled = false;
+
+      // Listen to the trigger provider to see if it gets called
+      testContainer.listen(
+        triggerNewInferenceProvider(
+          entityId: 'valid-prompt-test',
+          promptId: 'valid-prompt-id',
+        ),
+        (previous, next) {
+          triggerCalled = true;
+        },
+      );
+
+      await controller.requestTaskSummaryRefresh('valid-prompt-test');
+
+      // Wait for debounce
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      // Should have triggered with the correct prompt ID
+      expect(triggerCalled, true);
+
       testContainer.dispose();
     });
   });
