@@ -352,9 +352,14 @@ void main() {
       // The onDismissed callback should exist
       expect(dismissible.onDismissed, isNotNull);
 
-      // The test verifies that our implementation has both the onDismissed callback
-      // and that it captures the notifiers before disposal, which prevents the
-      // "Cannot use ref after the widget was disposed" error
+      // Invoke onDismissed and allow async work to settle
+      dismissible.onDismissed?.call(DismissDirection.endToStart);
+      await tester.pumpAndSettle();
+
+      // Verify both delete and unlink were called
+      expect(mockItemController.deleteWasCalled, isTrue);
+      expect(mockChecklistController.unlinkItemWasCalled, isTrue);
+      expect(mockChecklistController.unlinkedItemId, testItemId);
     });
 
     testWidgets('properly captures notifiers before disposal', (tester) async {

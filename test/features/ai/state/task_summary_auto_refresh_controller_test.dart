@@ -205,6 +205,64 @@ void main() {
       expect(inferenceCompleter.isCompleted, isTrue);
     });
 
+    test(
+        'should not skip when aiResponseNotification is bundled with relevant IDs',
+        () async {
+      // Setup mocks
+      const checklistItemId = 'checklist-item-bundled';
+      final checklistItem = ChecklistItem(
+        meta: Metadata(
+          id: checklistItemId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: const ChecklistItemData(
+          title: 'Bundled item',
+          isChecked: true,
+          linkedChecklists: [],
+        ),
+      );
+      when(() => mockJournalDb.journalEntityById(checklistItemId))
+          .thenAnswer((_) async => checklistItem);
+
+      final inferenceCompleter = Completer<void>();
+
+      container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          latestSummaryControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => MockLatestSummaryController(testAiResponse)),
+          inferenceStatusControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+              () => MockInferenceStatusController(InferenceStatus.idle)),
+          triggerNewInferenceProvider(
+            entityId: testTaskId,
+            promptId: testPromptId,
+          ).overrideWith((ref) async {
+            inferenceCompleter.complete();
+          }),
+        ],
+      )..listen(
+          taskSummaryAutoRefreshControllerProvider(taskId: testTaskId),
+          (_, __) {},
+        );
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Emit a bundled notification including aiResponseNotification
+      updateStreamController
+          .add({aiResponseNotification, testTaskId, checklistItemId});
+
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      expect(inferenceCompleter.isCompleted, isTrue);
+    });
+
     test('should debounce multiple rapid updates', () async {
       // Setup mocks
       const checklistItemId = 'checklist-item-1';
@@ -273,7 +331,8 @@ void main() {
       expect(inferenceCallCount, equals(1));
     });
 
-    test('should not trigger refresh when inference is already running',
+    test(
+        'should not trigger immediate refresh when inference is already running',
         () async {
       // Setup mocks
       const checklistItemId = 'checklist-item-1';
@@ -709,13 +768,29 @@ void main() {
     test(
         'should handle errors in stream listener without breaking subscription',
         () async {
-      // Setup mock to throw an error
+      // Setup mock to throw an error initially
       when(() => mockJournalDb.journalEntityById(any()))
           .thenThrow(Exception('Database error'));
 
-      // Create a subscription to track updates after error
-      var updateCountAfterError = 0;
-      late StreamSubscription<Set<String>> testSubscription;
+      // Track inference calls to verify controller still works after error
+      var inferenceCallCount = 0;
+
+      // Setup a valid checklist item for post-error testing
+      const checklistItemId = 'checklist-item-1';
+      final checklistItem = ChecklistItem(
+        meta: Metadata(
+          id: checklistItemId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: const ChecklistItemData(
+          title: 'Test item',
+          isChecked: true,
+          linkedChecklists: [],
+        ),
+      );
 
       // Override providers
       container = ProviderContainer(
@@ -730,6 +805,12 @@ void main() {
             aiResponseType: AiResponseType.taskSummary,
           ).overrideWith(
               () => MockInferenceStatusController(InferenceStatus.idle)),
+          triggerNewInferenceProvider(
+            entityId: testTaskId,
+            promptId: testPromptId,
+          ).overrideWith((ref) async {
+            inferenceCallCount++;
+          }),
         ],
       )
         // Create the controller and keep it alive
@@ -747,25 +828,6 @@ void main() {
       // Wait a bit for error to be processed
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Now set up tracking for future updates
-      testSubscription = updateStreamController.stream.listen((_) {
-        updateCountAfterError++;
-      });
-
-      // Reset mock to not throw error
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
-
-      // Send more updates to verify stream is still active
-      updateStreamController.add({'test-entity-1'});
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      updateStreamController.add({'test-entity-2'});
-
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Verify the stream is still active (we should have received updates)
-      expect(updateCountAfterError, greaterThan(0));
-
       // Verify error was logged
       verify(
         () => mockLoggingService.captureException(
@@ -776,8 +838,154 @@ void main() {
         ),
       ).called(1);
 
-      // Clean up
-      await testSubscription.cancel();
+      // Reset mock to return valid data for specific entities
+      // Note: More specific mocks must come after general ones
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockJournalDb.journalEntityById(checklistItemId))
+          .thenAnswer((_) async => checklistItem);
+
+      // Send a valid update that should trigger refresh
+      updateStreamController.add({testTaskId, checklistItemId});
+
+      // Wait for debounce timer and processing
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+
+      // Verify that controller recovered and triggered inference after error
+      expect(inferenceCallCount, equals(1),
+          reason: 'Controller should recover from errors and trigger refresh');
+    });
+
+    test('should skip updates when only AI response notification is present',
+        () async {
+      // This test verifies that updates containing only AI response notification are skipped
+
+      // Track inference calls
+      var inferenceCallCount = 0;
+
+      // Override providers
+      container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          latestSummaryControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => MockLatestSummaryController(testAiResponse)),
+          inferenceStatusControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+              () => MockInferenceStatusController(InferenceStatus.idle)),
+          triggerNewInferenceProvider(
+            entityId: testTaskId,
+            promptId: testPromptId,
+          ).overrideWith((ref) async {
+            inferenceCallCount++;
+          }),
+        ],
+      )
+        // Create the controller and keep it alive
+        ..listen(
+          taskSummaryAutoRefreshControllerProvider(taskId: testTaskId),
+          (_, __) {},
+        );
+
+      // Allow controller to initialize
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Send update with only AI response notification
+      updateStreamController.add({aiResponseNotification});
+
+      // Wait for processing and debounce
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+
+      // Should NOT trigger inference when only AI response notification is present
+      expect(inferenceCallCount, equals(0));
+    });
+
+    test('should set pending refresh and retry when inference is running',
+        () async {
+      // This test verifies that when inference is already running,
+      // a pending refresh is set and retried after the current inference completes
+
+      // Setup mocks
+      const checklistItemId = 'checklist-item-1';
+      final checklistItem = ChecklistItem(
+        meta: Metadata(
+          id: checklistItemId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: const ChecklistItemData(
+          title: 'Test item',
+          isChecked: true,
+          linkedChecklists: [],
+        ),
+      );
+
+      when(() => mockJournalDb.journalEntityById(checklistItemId))
+          .thenAnswer((_) async => checklistItem);
+
+      // Track inference calls
+      var inferenceCallCount = 0;
+      var currentStatus = InferenceStatus.idle;
+
+      // Override providers
+      container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          latestSummaryControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => MockLatestSummaryController(testAiResponse)),
+          inferenceStatusControllerProvider(
+            id: testTaskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() {
+            // Return a controller that reports the current status
+            return MockInferenceStatusController(currentStatus);
+          }),
+          triggerNewInferenceProvider(
+            entityId: testTaskId,
+            promptId: testPromptId,
+          ).overrideWith((ref) async {
+            inferenceCallCount++;
+            // Simulate inference running for a bit
+            currentStatus = InferenceStatus.running;
+            await Future<void>.delayed(const Duration(milliseconds: 300));
+            currentStatus = InferenceStatus.idle;
+          }),
+        ],
+      )
+        // Create the controller and keep it alive
+        ..listen(
+          taskSummaryAutoRefreshControllerProvider(taskId: testTaskId),
+          (_, __) {},
+        );
+
+      // Allow controller to initialize
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Send first update
+      updateStreamController.add({testTaskId, checklistItemId});
+
+      // Wait for debounce and first inference to start
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      // First inference should be running now
+      expect(inferenceCallCount, equals(1));
+
+      // Send another update while inference is running
+      // This should set pending refresh
+      updateStreamController.add({testTaskId, checklistItemId});
+
+      // Wait for the first inference to complete and pending refresh to trigger
+      await Future<void>.delayed(const Duration(milliseconds: 1000));
+
+      // Should have triggered a second inference due to pending refresh
+      expect(inferenceCallCount, equals(2));
     });
 
     test('should re-schedule with debounce when pending refresh exists',

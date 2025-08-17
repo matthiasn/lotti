@@ -37,8 +37,9 @@ class TaskSummaryAutoRefreshController
     _updateSubscription =
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
       try {
-        // Skip if this update includes AI response notification
-        if (affectedIds.contains(aiResponseNotification)) {
+        // Skip only if the update is solely an AI response notification
+        if (affectedIds.length == 1 &&
+            affectedIds.contains(aiResponseNotification)) {
           return;
         }
 
@@ -140,6 +141,8 @@ class TaskSummaryAutoRefreshController
       );
 
       if (isRunning == InferenceStatus.running) {
+        // Ensure we attempt again after the current run settles
+        _hasPendingRefresh = true;
         return;
       }
 
