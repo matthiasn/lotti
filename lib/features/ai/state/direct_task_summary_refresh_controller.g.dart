@@ -7,7 +7,7 @@ part of 'direct_task_summary_refresh_controller.dart';
 // **************************************************************************
 
 String _$directTaskSummaryRefreshControllerHash() =>
-    r'6b4537a2e6b022fae125191c51a71ebaf9ec34da';
+    r'82957f54834ef048218db1bd870457680a1dd637';
 
 /// Manages direct task summary refresh requests from checklist actions
 /// This bypasses the notification system to avoid circular dependencies and infinite loops

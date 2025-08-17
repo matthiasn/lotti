@@ -7,6 +7,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -19,6 +20,9 @@ import '../../../test_data/test_data.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockTaskSummaryRefreshService extends Mock
+    implements TaskSummaryRefreshService {}
+
 class MockRef extends Mock implements Ref {}
 
 void main() {
@@ -26,6 +30,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockLoggingService mockLoggingService;
+  late MockTaskSummaryRefreshService mockTaskSummaryRefreshService;
 
   setUpAll(() {
     registerFallbackValue(FakeJournalEntity());
@@ -69,6 +74,7 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockPersistenceLogic = MockPersistenceLogic();
     mockLoggingService = MockLoggingService();
+    mockTaskSummaryRefreshService = MockTaskSummaryRefreshService();
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
@@ -76,6 +82,18 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService);
 
     final mockRef = MockRef();
+
+    // Configure MockRef to return the mock TaskSummaryRefreshService
+    when(() => mockRef.read(taskSummaryRefreshServiceProvider))
+        .thenReturn(mockTaskSummaryRefreshService);
+
+    // Set up default behavior for the triggerTaskSummaryRefreshForChecklist method
+    when(() =>
+        mockTaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist(
+          checklistId: any(named: 'checklistId'),
+          callingDomain: any(named: 'callingDomain'),
+        )).thenAnswer((_) async => {});
+
     repository = ChecklistRepository(mockRef);
   });
 

@@ -39,7 +39,9 @@ void main() {
   late MockJournalRepository mockJournalRepository;
 
   setUpAll(() {
-    registerFallbackValue(StackTrace.current);
+    // Register fallback values for Mocktail
+    registerFallbackValue(''); // Fallback for String
+    registerFallbackValue(StackTrace.current); // Fallback for StackTrace
   });
 
   setUp(() {
@@ -442,6 +444,123 @@ void main() {
 
       // Should have triggered with the correct prompt ID
       expect(triggerCalled, true);
+    });
+
+    test('should handle listener when inference is already running', () async {
+      final testContainer = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          inferenceStatusControllerProvider(
+            id: 'test-task-listener',
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+            () => MockInferenceStatusController(InferenceStatus.running),
+          ),
+        ],
+      );
+
+      final controller = testContainer.read(
+        directTaskSummaryRefreshControllerProvider.notifier,
+      );
+
+      // Request refresh while inference is running - should set up listener
+      await expectLater(
+        controller.requestTaskSummaryRefresh('test-task-listener'),
+        completes,
+      );
+
+      testContainer.dispose();
+    });
+
+    test('should clean up listeners on dispose', () async {
+      // Create a test-specific container
+      final testContainer = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          inferenceStatusControllerProvider(
+            id: 'test-cleanup',
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+            () => MockInferenceStatusController(InferenceStatus.running),
+          ),
+        ],
+      );
+
+      final controller = testContainer.read(
+        directTaskSummaryRefreshControllerProvider.notifier,
+      );
+
+      // Request refresh to set up listener
+      await controller.requestTaskSummaryRefresh('test-cleanup');
+
+      // Dispose the container (which should clean up listeners)
+      testContainer.dispose();
+
+      // Test passes if no exceptions are thrown during cleanup
+    });
+
+    test('should handle listener cleanup for multiple tasks', () async {
+      final testContainer = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          inferenceStatusControllerProvider(
+            id: 'task-1',
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+            () => MockInferenceStatusController(InferenceStatus.running),
+          ),
+          inferenceStatusControllerProvider(
+            id: 'task-2',
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+            () => MockInferenceStatusController(InferenceStatus.running),
+          ),
+          inferenceStatusControllerProvider(
+            id: 'task-3',
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+            () => MockInferenceStatusController(InferenceStatus.running),
+          ),
+        ],
+      );
+
+      final controller = testContainer.read(
+        directTaskSummaryRefreshControllerProvider.notifier,
+      );
+
+      // Request refresh for multiple tasks
+      await controller.requestTaskSummaryRefresh('task-1');
+      await controller.requestTaskSummaryRefresh('task-2');
+      await controller.requestTaskSummaryRefresh('task-3');
+
+      // Dispose should clean up all listeners
+      testContainer.dispose();
+    });
+
+    test('should not set up duplicate listeners for same task', () async {
+      final testContainer = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          inferenceStatusControllerProvider(
+            id: 'duplicate-test',
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+            () => MockInferenceStatusController(InferenceStatus.running),
+          ),
+        ],
+      );
+
+      final controller = testContainer.read(
+        directTaskSummaryRefreshControllerProvider.notifier,
+      );
+
+      // Request refresh multiple times while running
+      await controller.requestTaskSummaryRefresh('duplicate-test');
+      await controller.requestTaskSummaryRefresh('duplicate-test');
+      await controller.requestTaskSummaryRefresh('duplicate-test');
+
+      // Test passes if no exceptions are thrown (duplicate listeners would cause issues)
+      testContainer.dispose();
     });
   });
 }

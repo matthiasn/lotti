@@ -6,7 +6,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
+import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -28,24 +28,12 @@ class JournalRepository {
   /// Triggers a task summary refresh for all tasks linked to the given checklist
   Future<void> _triggerTaskSummaryRefreshForChecklist(
       String checklistId) async {
-    try {
-      final checklist = await getIt<JournalDb>().journalEntityById(checklistId);
-      if (checklist is Checklist) {
-        // Trigger refresh for all linked tasks
-        for (final taskId in checklist.data.linkedTasks) {
-          await _ref
-              .read(directTaskSummaryRefreshControllerProvider.notifier)
-              .requestTaskSummaryRefresh(taskId);
-        }
-      }
-    } catch (e) {
-      // Log but don't fail the operation
-      getIt<LoggingService>().captureException(
-        e,
-        domain: 'JournalRepository',
-        subDomain: '_triggerTaskSummaryRefreshForChecklist',
-      );
-    }
+    await _ref
+        .read(taskSummaryRefreshServiceProvider)
+        .triggerTaskSummaryRefreshForChecklist(
+          checklistId: checklistId,
+          callingDomain: 'JournalRepository',
+        );
   }
 
   Future<JournalEntity?> getJournalEntityById(String id) async {

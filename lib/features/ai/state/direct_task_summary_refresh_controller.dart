@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
@@ -17,16 +18,23 @@ part 'direct_task_summary_refresh_controller.g.dart';
 class DirectTaskSummaryRefreshController
     extends _$DirectTaskSummaryRefreshController {
   final Map<String, Timer> _debounceTimers = {};
-  final Set<String> _refreshingTasks = {};
-  final Set<String> _pendingRefreshTasks = {};
+  final Map<String, ProviderSubscription<InferenceStatus>>
+      _statusListenerCleanups = {};
 
   @override
   void build() {
     ref.onDispose(() {
+      // Cancel all timers
       for (final timer in _debounceTimers.values) {
         timer.cancel();
       }
       _debounceTimers.clear();
+
+      // Clean up all status listeners
+      for (final subscription in _statusListenerCleanups.values) {
+        subscription.close();
+      }
+      _statusListenerCleanups.clear();
     });
   }
 
@@ -39,14 +47,21 @@ class DirectTaskSummaryRefreshController
       error: {'taskId': taskId},
     );
 
-    // If we're currently refreshing this task, just mark that we need another refresh
-    if (_refreshingTasks.contains(taskId)) {
+    // Check if inference is already running
+    final isRunning = ref.read(
+      inferenceStatusControllerProvider(
+        id: taskId,
+        aiResponseType: AiResponseType.taskSummary,
+      ),
+    );
+
+    if (isRunning == InferenceStatus.running) {
       developer.log(
-        'Already refreshing, marking pending refresh',
+        'Inference already running, setting up listener',
         name: 'DirectTaskSummaryRefresh',
         error: {'taskId': taskId},
       );
-      _pendingRefreshTasks.add(taskId);
+      _setupStatusListener(taskId);
       return;
     }
 
@@ -67,6 +82,50 @@ class DirectTaskSummaryRefreshController
     );
   }
 
+  /// Sets up a listener for when inference status changes from running to idle/error
+  void _setupStatusListener(String taskId) {
+    // Clean up any existing listener for this task
+    _statusListenerCleanups[taskId]?.close();
+
+    // Create a new listener
+    final cleanup = ref.listen(
+      inferenceStatusControllerProvider(
+        id: taskId,
+        aiResponseType: AiResponseType.taskSummary,
+      ),
+      (previous, next) {
+        developer.log(
+          'Inference status changed',
+          name: 'DirectTaskSummaryRefresh',
+          error: {
+            'taskId': taskId,
+            'previous': previous?.toString(),
+            'next': next.toString(),
+          },
+        );
+
+        // If status changed from running to idle or error, trigger refresh
+        if (previous == InferenceStatus.running &&
+            (next == InferenceStatus.idle || next == InferenceStatus.error)) {
+          developer.log(
+            'Inference completed, triggering pending refresh',
+            name: 'DirectTaskSummaryRefresh',
+            error: {'taskId': taskId},
+          );
+
+          // Clean up the listener
+          _statusListenerCleanups.remove(taskId)?.close();
+
+          // Trigger the refresh
+          requestTaskSummaryRefresh(taskId);
+        }
+      },
+      fireImmediately: false,
+    );
+
+    _statusListenerCleanups[taskId] = cleanup;
+  }
+
   Future<void> _triggerTaskSummaryRefresh(String taskId) async {
     developer.log(
       'Starting direct refresh trigger',
@@ -74,43 +133,10 @@ class DirectTaskSummaryRefreshController
       error: {'taskId': taskId},
     );
 
-    // Mark that we're refreshing this task
-    _refreshingTasks.add(taskId);
-    _pendingRefreshTasks.remove(taskId);
-
     // Remove the timer since it fired
     _debounceTimers.remove(taskId);
 
     try {
-      // Check if inference is already running
-      final isRunning = ref.read(
-        inferenceStatusControllerProvider(
-          id: taskId,
-          aiResponseType: AiResponseType.taskSummary,
-        ),
-      );
-
-      developer.log(
-        'Checking inference status',
-        name: 'DirectTaskSummaryRefresh',
-        error: {
-          'taskId': taskId,
-          'status': isRunning.toString(),
-        },
-      );
-
-      if (isRunning == InferenceStatus.running) {
-        // Ensure we attempt again after the current run settles
-        developer.log(
-          'Inference already running, marking pending refresh',
-          name: 'DirectTaskSummaryRefresh',
-          error: {'taskId': taskId},
-        );
-        _pendingRefreshTasks.add(taskId);
-        _refreshingTasks.remove(taskId); // Clean up before returning
-        return;
-      }
-
       // Get the latest summary to find the prompt ID
       final latestSummary = await ref.read(
         latestSummaryControllerProvider(
@@ -173,20 +199,6 @@ class DirectTaskSummaryRefreshController
         subDomain: 'DirectTaskSummaryRefresh',
         stackTrace: stackTrace,
       );
-    } finally {
-      _refreshingTasks.remove(taskId);
-
-      // If we have a pending refresh for this task, re-schedule with debounce
-      if (_pendingRefreshTasks.contains(taskId)) {
-        developer.log(
-          'Has pending refresh, re-scheduling',
-          name: 'DirectTaskSummaryRefresh',
-          error: {'taskId': taskId},
-        );
-        _pendingRefreshTasks.remove(taskId);
-        // Re-schedule with debounce to handle bursts of updates gracefully
-        await requestTaskSummaryRefresh(taskId);
-      }
     }
   }
 }
