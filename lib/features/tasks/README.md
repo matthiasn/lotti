@@ -98,6 +98,46 @@ All 38 languages from Gemini Code Assist are supported:
 
 ## AI-Powered Features
 
+### Automatic Task Summary Updates
+
+Task summaries automatically refresh when you interact with checklists, ensuring your AI-generated summaries always reflect the current state of your task. This feature works seamlessly in the background without requiring manual refresh actions.
+
+#### How It Works
+
+1. **Triggered by Checklist Actions**:
+   - Adding new checklist items
+   - Checking or unchecking items
+   - Updating item text
+   - Reordering items
+   - Any modification to linked checklists
+
+2. **Smart Debouncing**: Multiple rapid changes are intelligently batched:
+   - 500ms debounce timer per task
+   - Prevents excessive API calls during bulk operations
+   - Each task has its own timer to avoid interference
+
+3. **Status-Aware Updates**:
+   - If a summary is already being generated, waits for completion
+   - Automatically retries after current generation finishes
+   - No duplicate or conflicting requests
+
+4. **Seamless Experience**:
+   - Updates happen in the background
+   - No manual intervention required
+   - Task summary refreshes automatically
+   - Progress indicators show when updates are running
+
+#### Benefits
+
+- **Always Current**: Task summaries reflect the latest checklist state
+- **Context-Aware**: AI understands what items are completed vs. pending
+- **Automatic Progress Tracking**: Summaries update to show task progress
+- **No Manual Refresh**: Works automatically as you interact with checklists
+
+#### Technical Implementation
+
+For detailed technical information about the direct refresh mechanism, see the [AI Feature README - Direct Task Summary Refresh](../ai/README.md#direct-task-summary-refresh).
+
 ### Checklist Completion Suggestions
 
 The system uses AI function calling to intelligently suggest when checklist items might be completed:

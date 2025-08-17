@@ -60,6 +60,10 @@ The repository layer has been refactored for better separation of concerns:
 #### Services (`services/`)
 - **`auto_checklist_service.dart`**: Handles automatic checklist creation logic and decision making
 - **`checklist_completion_service.dart`**: Manages checklist item completion suggestions and tracking
+- **`task_summary_refresh_service.dart`**: Centralizes task summary refresh logic for checklist modifications
+  - Eliminates code duplication across repositories
+  - Handles checklist-to-task relationship resolution
+  - Provides consistent error handling
 
 #### Conversation Management (`conversation/`)
 - **`conversation_manager.dart`**: Manages multi-turn AI conversations
@@ -246,6 +250,10 @@ To integrate a new handler:
 - **`active_inference_controller.dart`**: Tracks active inferences with linked entity support
   - **Dual-Entry System**: Creates symmetric entries for both primary and linked entities
   - **ActiveInferenceByEntity**: Finds active inferences for any entity (primary or linked)
+- **`direct_task_summary_refresh_controller.dart`**: Manages direct task summary refresh requests
+  - Implements debouncing with per-task timers
+  - Monitors inference status to avoid conflicts
+  - Provides direct refresh path bypassing notification system
 
 #### Helpers & Extensions
 - **`helpers/entity_state_helper.dart`**: Utilities for managing entity state during AI operations
@@ -367,6 +375,67 @@ When generating task summaries, the system automatically extracts suggested titl
 - This enables automatic title generation for tasks created from audio recordings
 - The extracted title updates the task entity in the database
 - When displaying summaries, the H1 title is filtered out to avoid redundancy
+
+### 5. Direct Task Summary Refresh
+
+The system includes a direct refresh mechanism that updates task summaries when checklist items are modified. For a user-focused description of this feature, see the [Tasks Feature README - Automatic Task Summary Updates](../tasks/README.md#automatic-task-summary-updates).
+
+#### Overview
+
+When users interact with checklists (adding items, checking/unchecking items, updating items), the system automatically triggers a refresh of the associated task's AI summary. This ensures task summaries stay up-to-date with the latest checklist state.
+
+#### Implementation Components
+
+1. **`DirectTaskSummaryRefreshController`**: Core controller managing refresh requests
+   - Implements per-task debouncing (500ms) to batch rapid changes
+   - Uses listener-based approach to handle ongoing inferences
+   - Maintains separate timers for each task to prevent interference
+
+2. **`TaskSummaryRefreshService`**: Centralized service for refresh operations
+   - Eliminates code duplication across repositories
+   - Handles checklist-to-task relationship lookups
+   - Provides error isolation to prevent cascade failures
+
+3. **Integration Points**: Automatic triggers in checklist operations
+   - `createChecklistItem()`: Triggers refresh when new items are added
+   - `updateChecklistItem()`: Triggers refresh when items are modified
+   - `addItemToChecklist()`: Triggers refresh for batch additions
+
+#### How It Works
+
+1. **User Action**: User modifies a checklist item (add, update, check/uncheck)
+2. **Repository Call**: The checklist repository calls `TaskSummaryRefreshService`
+3. **Task Lookup**: Service finds all tasks linked to the modified checklist
+4. **Refresh Request**: For each linked task, requests a summary refresh
+5. **Debouncing**: Multiple rapid changes are batched with 500ms debounce
+6. **Inference Check**: If inference is already running, sets up a listener to retry when complete
+7. **Summary Update**: New task summary is generated reflecting checklist changes
+
+#### Key Features
+
+- **Direct Communication**: Bypasses notification system to avoid circular dependencies
+- **Smart Debouncing**: Per-task timers prevent unnecessary API calls
+- **Concurrent Safety**: Handles multiple tasks and checklists independently
+- **Error Resilience**: Failures in one refresh don't affect others
+- **Status Awareness**: Monitors inference status to avoid conflicts
+
+#### Example Flow
+
+```
+User checks off "Buy milk" in shopping checklist
+    ↓
+ChecklistRepository.updateChecklistItem()
+    ↓
+TaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist()
+    ↓
+DirectTaskSummaryRefreshController.requestTaskSummaryRefresh()
+    ↓
+[500ms debounce timer]
+    ↓
+Triggers new AI inference for task summary
+    ↓
+Task summary updates to reflect completed item
+```
 
 ## Automatic Checklist Creation with Smart Re-run
 
