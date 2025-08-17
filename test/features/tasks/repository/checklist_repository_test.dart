@@ -1,5 +1,6 @@
 // ignore_for_file: inference_failure_on_function_invocation
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -17,6 +18,8 @@ import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockRef extends Mock implements Ref {}
 
 void main() {
   late ChecklistRepository repository;
@@ -72,7 +75,8 @@ void main() {
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<LoggingService>(mockLoggingService);
 
-    repository = ChecklistRepository();
+    final mockRef = MockRef();
+    repository = ChecklistRepository(mockRef);
   });
 
   tearDown(getIt.reset);

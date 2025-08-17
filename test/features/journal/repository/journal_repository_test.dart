@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart' as drift;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -34,6 +35,8 @@ class MockVectorClockService extends Mock implements VectorClockService {}
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockOutboxService extends Mock implements OutboxService {}
+
+class MockRef extends Mock implements Ref {}
 
 class MockSelectableLinkedDbEntry extends Mock
     implements drift.Selectable<LinkedDbEntry> {}
@@ -72,8 +75,9 @@ void main() {
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<OutboxService>(mockOutboxService);
 
-    // Create repository instance
-    repository = JournalRepository();
+    // Create repository instance with mock ref
+    final mockRef = MockRef();
+    repository = JournalRepository(mockRef);
 
     // Register fallback values for any complex types
     registerFallbackValue(

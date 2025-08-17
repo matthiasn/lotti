@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -20,7 +21,32 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'journal_repository.g.dart';
 
 class JournalRepository {
-  JournalRepository();
+  JournalRepository(this._ref);
+
+  final Ref _ref;
+
+  /// Triggers a task summary refresh for all tasks linked to the given checklist
+  Future<void> _triggerTaskSummaryRefreshForChecklist(
+      String checklistId) async {
+    try {
+      final checklist = await getIt<JournalDb>().journalEntityById(checklistId);
+      if (checklist is Checklist) {
+        // Trigger refresh for all linked tasks
+        for (final taskId in checklist.data.linkedTasks) {
+          await _ref
+              .read(directTaskSummaryRefreshControllerProvider.notifier)
+              .requestTaskSummaryRefresh(taskId);
+        }
+      }
+    } catch (e) {
+      // Log but don't fail the operation
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'JournalRepository',
+        subDomain: '_triggerTaskSummaryRefreshForChecklist',
+      );
+    }
+  }
 
   Future<JournalEntity?> getJournalEntityById(String id) async {
     return getIt<JournalDb>().journalEntityById(id);
@@ -71,6 +97,13 @@ class JournalRepository {
 
       if (journalEntity == null) {
         return false;
+      }
+
+      // If deleting a checklist item, trigger task summary refresh
+      if (journalEntity is ChecklistItem) {
+        for (final checklistId in journalEntity.data.linkedChecklists) {
+          await _triggerTaskSummaryRefreshForChecklist(checklistId);
+        }
       }
 
       await persistenceLogic.updateDbEntity(
@@ -284,4 +317,4 @@ class JournalRepository {
 }
 
 @riverpod
-JournalRepository journalRepository(Ref ref) => JournalRepository();
+JournalRepository journalRepository(Ref ref) => JournalRepository(ref);

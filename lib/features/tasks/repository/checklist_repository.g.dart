@@ -7,7 +7,7 @@ part of 'checklist_repository.dart';
 // **************************************************************************
 
 String _$checklistRepositoryHash() =>
-    r'01da903b25b6648bc4f1b17cbb3915e03c09c5bd';
+    r'ddd5a084b352361abb5a29fbe1ab58099dbc9585';
 
 /// See also [checklistRepository].
 @ProviderFor(checklistRepository)

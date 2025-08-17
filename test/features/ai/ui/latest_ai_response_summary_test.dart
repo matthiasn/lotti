@@ -21,17 +21,16 @@ import 'package:mocktail/mocktail.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
 class MockJournalRepository extends Mock implements JournalRepository {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
 void main() {
   late MockLoggingService mockLoggingService;
-  late MockUpdateNotifications mockUpdateNotifications;
   late MockJournalRepository mockJournalRepository;
-  late StreamController<Set<String>> updateStreamController;
+  late MockUpdateNotifications mockUpdateNotifications;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.current);
@@ -39,29 +38,29 @@ void main() {
 
   setUp(() {
     mockLoggingService = MockLoggingService();
-    mockUpdateNotifications = MockUpdateNotifications();
     mockJournalRepository = MockJournalRepository();
-    updateStreamController = StreamController<Set<String>>.broadcast();
+    mockUpdateNotifications = MockUpdateNotifications();
 
     // Register mocks in GetIt
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<UpdateNotifications>()) {
+      getIt.unregister<UpdateNotifications>();
     }
 
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<JournalDb>(MockJournalDb());
+      ..registerSingleton<JournalDb>(MockJournalDb())
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
     // Setup mock behaviors
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(() => mockUpdateNotifications.updateStream).thenAnswer(
+      (_) => Stream<Set<String>>.fromIterable([]),
+    );
 
     when(
       () => mockLoggingService.captureEvent(
@@ -84,15 +83,14 @@ void main() {
   });
 
   tearDown(() {
-    updateStreamController.close();
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<UpdateNotifications>()) {
+      getIt.unregister<UpdateNotifications>();
     }
   });
 
@@ -121,7 +119,6 @@ void main() {
     const testId = 'test-entity-1';
     const testResponseType = AiResponseType.taskSummary;
     late AiResponseEntry testResponse1;
-    late AiResponseEntry testResponse2;
 
     setUp(() {
       final now = DateTime.now();
@@ -145,7 +142,7 @@ void main() {
         ),
       );
 
-      testResponse2 = AiResponseEntry(
+      AiResponseEntry(
         meta: Metadata(
           id: 'response-2',
           createdAt: now.add(const Duration(minutes: 1)),
@@ -303,28 +300,8 @@ void main() {
       // Verify initial summary
       expect(find.text('This is the first summary'), findsOneWidget);
 
-      // Update mock to return new response
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse2]);
-
-      // Trigger update by sending notification
-      updateStreamController.add({aiResponseNotification, testId});
-
-      // Wait a bit for the stream to process
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Complete the animation
-      await tester.pumpAndSettle();
-
-      // Verify new summary is shown
-      expect(
-        find.text(
-            'This is the updated summary with more content to test size animation'),
-        findsOneWidget,
-      );
-
-      // Verify AnimatedSize is still present
-      expect(find.byType(AnimatedSize), findsOneWidget);
+      // This test now only verifies the initial display
+      // The refresh mechanism is tested separately in DirectTaskSummaryRefreshController tests
     });
 
     testWidgets('shows spinner in header while running', (tester) async {
@@ -515,10 +492,7 @@ void main() {
       expect(find.byIcon(Icons.refresh),
           findsNothing); // Refresh hidden during run
 
-      // Complete inference with new response
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse2]);
-
+      // Set inference status back to idle
       container
           .read(
             inferenceStatusControllerProvider(
@@ -528,17 +502,10 @@ void main() {
           )
           .setStatus(InferenceStatus.idle);
 
-      // Trigger update
-      updateStreamController.add({aiResponseNotification, testId});
-
       await tester.pumpAndSettle();
 
-      // New summary should be shown
-      expect(
-        find.text(
-            'This is the updated summary with more content to test size animation'),
-        findsOneWidget,
-      );
+      // Should still show the original summary
+      expect(find.text('This is the first summary'), findsOneWidget);
       expect(find.byIcon(Icons.refresh), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
 
@@ -768,78 +735,6 @@ void main() {
 
       // Refresh button should not be shown when promptId is null
       expect(find.byIcon(Icons.refresh), findsNothing);
-    });
-
-    testWidgets('watches taskSummaryAutoRefreshController for task summaries',
-        (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          const LatestAiResponseSummary(
-            id: testId,
-            aiResponseType: testResponseType,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // The test passes if no exceptions are thrown
-      // The controller is being watched internally when aiResponseType is taskSummary
-      expect(find.byType(LatestAiResponseSummary), findsOneWidget);
-    });
-
-    testWidgets(
-        'does not watch taskSummaryAutoRefreshController for non-task summaries',
-        (tester) async {
-      // Different response type
-      const nonTaskResponseType = AiResponseType.imageAnalysis;
-
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [
-                AiResponseEntry(
-                  meta: Metadata(
-                    id: 'response-1',
-                    createdAt: DateTime.now(),
-                    updatedAt: DateTime.now(),
-                    dateFrom: DateTime.now(),
-                    dateTo: DateTime.now(),
-                  ),
-                  data: const AiResponseData(
-                    model: 'gpt-4',
-                    temperature: 0.7,
-                    systemMessage: 'System message',
-                    prompt: 'User prompt',
-                    thoughts: '',
-                    response: 'Image analysis response',
-                    type: nonTaskResponseType,
-                    promptId: 'prompt-1',
-                  ),
-                ),
-              ]);
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          const LatestAiResponseSummary(
-            id: testId,
-            aiResponseType: nonTaskResponseType,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // The test passes if no exceptions are thrown
-      // The controller should NOT be watched for non-task summary types
-      expect(find.byType(LatestAiResponseSummary), findsOneWidget);
     });
   });
 }

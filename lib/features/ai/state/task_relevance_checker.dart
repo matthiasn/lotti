@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -18,8 +20,104 @@ class TaskRelevanceChecker {
 
   /// Determines if any of the affected IDs represent updates relevant to this task
   Future<bool> isUpdateRelevantToTask(Set<String> affectedIds) async {
-    // Quick check: if task ID is in affected IDs, it's definitely relevant
+    // If this is an AI response notification with entity IDs, check if any are AI responses
+    if (affectedIds.contains(aiResponseNotification)) {
+      developer.log(
+        'AI response notification detected',
+        name: 'TaskRelevanceChecker.$taskId',
+        error: {'affectedIds': affectedIds.join(', ')},
+      );
+
+      // Check if this is an AI response being linked to our task
+      if (affectedIds.contains(taskId)) {
+        // Filter to get only entity IDs (not notification constants and not the task ID)
+        final entityIds = _filterRelevantIds(affectedIds);
+
+        developer.log(
+          'AI response with task ID detected',
+          name: 'TaskRelevanceChecker.$taskId',
+          error: {
+            'affectedIds': affectedIds.join(', '),
+            'filteredEntityIds': entityIds.join(', '),
+          },
+        );
+
+        if (entityIds.isNotEmpty) {
+          // Check if all non-task entities are AI responses
+          final entities = await _batchFetchEntities(entityIds);
+
+          // Check both existing entities and if they're AiResponseEntry
+          final nonNullEntities = entities.where((e) => e != null).toList();
+          final aiResponseCount =
+              nonNullEntities.whereType<AiResponseEntry>().length;
+
+          developer.log(
+            'Checking if AI response is being linked to task',
+            name: 'TaskRelevanceChecker.$taskId',
+            error: {
+              'totalEntities': entityIds.length,
+              'foundEntities': nonNullEntities.length,
+              'aiResponseCount': aiResponseCount,
+              'entityTypes': entities
+                  .map((e) => e?.runtimeType.toString() ?? 'null')
+                  .join(', '),
+            },
+          );
+
+          // If all entities are either null (not yet saved) or AI responses, skip
+          if (aiResponseCount == nonNullEntities.length &&
+              nonNullEntities.isNotEmpty) {
+            developer.log(
+              'Skipping update: AI response linked to task',
+              name: 'TaskRelevanceChecker.$taskId',
+            );
+            return false;
+          }
+        } else if (affectedIds.length == 2) {
+          // Special case: just task ID + AI_RESPONSE notification
+          developer.log(
+            'Skipping update: Only task ID and AI response notification',
+            name: 'TaskRelevanceChecker.$taskId',
+          );
+          return false;
+        }
+      }
+    }
+
+    // Check if task ID is in affected IDs
     if (affectedIds.contains(taskId)) {
+      // Special case: if it's just task ID + one other ID, check if it's an AI response
+      if (affectedIds.length == 2) {
+        final otherId = affectedIds.firstWhere((id) => id != taskId);
+
+        // Quick check: does the other ID look like a UUID (potential AI response)?
+        if (_isUuid(otherId)) {
+          final entity = await getIt<JournalDb>().journalEntityById(otherId);
+
+          developer.log(
+            'Checking two-ID pattern with task',
+            name: 'TaskRelevanceChecker.$taskId',
+            error: {
+              'otherId': otherId,
+              'entityType': entity?.runtimeType.toString() ?? 'null',
+              'isAiResponse': entity is AiResponseEntry,
+            },
+          );
+
+          if (entity is AiResponseEntry) {
+            developer.log(
+              'Skipping update: AI response being created with task',
+              name: 'TaskRelevanceChecker.$taskId',
+            );
+            return false;
+          }
+        }
+      }
+
+      developer.log(
+        'Task ID found in affected IDs',
+        name: 'TaskRelevanceChecker.$taskId',
+      );
       return true;
     }
 
@@ -38,6 +136,14 @@ class TaskRelevanceChecker {
 
       final isRelevant = await isEntityRelevantToTask(entity, affectedIds);
       if (isRelevant) {
+        developer.log(
+          'Found relevant entity',
+          name: 'TaskRelevanceChecker.$taskId',
+          error: {
+            'entityId': entity.id,
+            'entityType': entity.runtimeType.toString(),
+          },
+        );
         return true;
       }
     }
@@ -53,6 +159,16 @@ class TaskRelevanceChecker {
             id != aiResponseNotification &&
             id != taskId)
         .toList();
+  }
+
+  /// Simple UUID format check
+  bool _isUuid(String id) {
+    // Basic UUID format: 8-4-4-4-12 hexadecimal characters
+    final uuidRegex = RegExp(
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      caseSensitive: false,
+    );
+    return uuidRegex.hasMatch(id);
   }
 
   /// Batch fetches entities by their IDs
@@ -75,6 +191,9 @@ class TaskRelevanceChecker {
       return isChecklistRelevant(entity);
     } else if (entity is JournalEntry) {
       return isJournalEntryRelevant(entity);
+    } else if (entity is AiResponseEntry) {
+      // AI response entries should never trigger updates
+      return false;
     }
     return false;
   }

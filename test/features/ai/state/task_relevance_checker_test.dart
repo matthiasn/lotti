@@ -2,9 +2,11 @@ import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/task_relevance_checker.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -76,6 +78,84 @@ void main() {
           aiResponseNotification,
         });
         expect(result, isFalse);
+      });
+
+      test(
+          'returns false when AI response notification comes with AI response entity',
+          () async {
+        final aiResponse = JournalEntity.aiResponse(
+          meta: Metadata(
+            id: 'ai-response-1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: 'thoughts',
+            response: 'AI generated summary',
+            promptId: 'prompt-1',
+            type: AiResponseType.taskSummary,
+          ),
+        );
+
+        when(() => mockDb.journalEntityById('ai-response-1'))
+            .thenAnswer((_) async => aiResponse);
+
+        final result = await checker.isUpdateRelevantToTask({
+          'ai-response-1',
+          aiResponseNotification,
+        });
+        expect(result, isFalse);
+      });
+
+      test('returns false when AI response is linked to task', () async {
+        final aiResponse = JournalEntity.aiResponse(
+          meta: Metadata(
+            id: 'ai-response-1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: 'thoughts',
+            response: 'AI generated summary',
+            promptId: 'prompt-1',
+            type: AiResponseType.taskSummary,
+          ),
+        );
+
+        when(() => mockDb.journalEntityById('ai-response-1'))
+            .thenAnswer((_) async => aiResponse);
+
+        // This simulates an AI response being linked to the task
+        final result = await checker.isUpdateRelevantToTask({
+          'ai-response-1',
+          aiResponseNotification,
+          testTaskId, // Task ID is included when AI response is linked
+        });
+        expect(result, isFalse);
+      });
+
+      test('returns true when task ID is with non-AI entities', () async {
+        final checklistItem = _createChecklistItem('item-1', []);
+
+        when(() => mockDb.journalEntityById('item-1'))
+            .thenAnswer((_) async => checklistItem);
+
+        // Task ID with a checklist item update should still be relevant
+        final result = await checker.isUpdateRelevantToTask({
+          'item-1',
+          testTaskId,
+        });
+        expect(result, isTrue);
       });
 
       test('returns false when no entities are found', () async {
@@ -242,6 +322,33 @@ void main() {
         final result = await checker.isEntityRelevantToTask(
           surveyEntity,
           {'survey-1'},
+        );
+        expect(result, isFalse);
+      });
+
+      test('returns false for AI response entities', () async {
+        // Create an AI response entity which should never trigger updates
+        final aiResponseEntity = JournalEntity.aiResponse(
+          meta: Metadata(
+            id: 'ai-response-1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: 'thoughts',
+            response: 'AI generated summary',
+            promptId: 'prompt-1',
+            type: AiResponseType.taskSummary,
+          ),
+        );
+        final result = await checker.isEntityRelevantToTask(
+          aiResponseEntity,
+          {'ai-response-1'},
         );
         expect(result, isFalse);
       });
