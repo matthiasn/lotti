@@ -208,9 +208,16 @@ class ChecklistRepository {
           );
 
           // Trigger task summary refresh for linked tasks
-          for (final linkedChecklistId in checklistItem.data.linkedChecklists) {
-            await _triggerTaskSummaryRefresh(linkedChecklistId);
-          }
+          // Compute union of old and new linkedChecklists to handle both removals and additions
+          final allChecklistIds = {
+            ...checklistItem.data.linkedChecklists, // old linked checklists
+            ...data.linkedChecklists, // new linked checklists
+          };
+
+          // Trigger refreshes concurrently for all affected checklists
+          await Future.wait(
+            allChecklistIds.map(_triggerTaskSummaryRefresh),
+          );
         },
         orElse: () async => _loggingService.captureException(
           'not a checklist item',
