@@ -67,7 +67,7 @@ modules:
       no-debuginfo: true
     build-commands:
       - echo "Installing Flutter bundle..."
-      - cp -r flutter-bundle/* /app/
+      - cp -r flutter-bundle/. /app/
       - chmod +x /app/lotti
       - echo "Creating lib directory for additional libraries..."
       - mkdir -p /app/lib/ffmpeg
