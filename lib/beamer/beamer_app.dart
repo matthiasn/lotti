@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +13,7 @@ import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -35,8 +38,14 @@ class AppScreenConstants {
   static const double navigationTextHeight = 2;
   static const double navigationPadding = 10;
   static const double navigationTimeIndicatorBottom = 0;
-  // Audio recording indicator disabled for Flatpak compatibility
-  // static const double navigationAudioIndicatorRight = 100;
+  static const double navigationAudioIndicatorRight = 100;
+}
+
+/// Check if the app is running inside Flatpak sandbox
+bool _isRunningInFlatpak() {
+  return Platform.isLinux && 
+         (Platform.environment['FLATPAK_ID'] != null && 
+          Platform.environment['FLATPAK_ID']!.isNotEmpty);
 }
 
 class AppScreen extends StatefulWidget {
@@ -106,12 +115,14 @@ class _AppScreenState extends State<AppScreen> {
                 bottom: AppScreenConstants.navigationTimeIndicatorBottom,
                 child: TimeRecordingIndicator(),
               ),
-              // AudioRecordingIndicator disabled in Flatpak due to MediaKit dependencies
-              // const Positioned(
-              //   right: 100,
-              //   bottom: 0,
-              //   child: AudioRecordingIndicator(),
-              // ),
+              // Only show AudioRecordingIndicator when not running in Flatpak
+              // Flatpak builds have MediaKit compatibility issues
+              if (!_isRunningInFlatpak())
+                const Positioned(
+                  right: AppScreenConstants.navigationAudioIndicatorRight,
+                  bottom: AppScreenConstants.navigationTimeIndicatorBottom,
+                  child: AudioRecordingIndicator(),
+                ),
             ],
           ),
           bottomNavigationBar: SpotifyStyleBottomNavigationBar(
