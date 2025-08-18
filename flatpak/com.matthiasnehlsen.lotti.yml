@@ -63,6 +63,9 @@ modules:
     build-commands:
       - echo "Installing Flutter bundle..."
       - cp -r . /app/
+      # Remove 1024x1024 icons to comply with Flatpak's maximum icon size limit of 512x512
+      - echo "Removing 1024x1024 icons to comply with Flatpak size limits..."
+      - find /app -name "*1024*" -type f -delete
       - chmod +x /app/lotti
       - echo "Creating lib directory for additional libraries..."
       - mkdir -p /app/lib/ffmpeg
