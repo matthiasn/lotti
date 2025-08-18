@@ -14,7 +14,7 @@ Before building the Flatpak, you need to prepare the Flutter bundle:
 2. Create the `flutter-bundle` directory structure:
    ```bash
    mkdir -p flatpak/flutter-bundle
-   cp -r build/linux/x64/release/bundle/* flatpak/flutter-bundle/
+   cp -r build/linux/x64/release/bundle/. flatpak/flutter-bundle/
    ```
 
 3. Ensure the MaterialIcons font is included:
