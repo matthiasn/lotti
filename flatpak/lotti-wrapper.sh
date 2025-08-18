@@ -9,7 +9,12 @@ readonly LIB_DIR="/app/lib"
 readonly LOTTI_BINARY="/app/bin/lotti"
 
 # Set the library path to include both locations
-export LD_LIBRARY_PATH="${LIB_DIR}:${LD_LIBRARY_PATH:-}"
+# Only append existing LD_LIBRARY_PATH if non-empty to prevent trailing colon
+if [[ -n "${LD_LIBRARY_PATH:-}" ]]; then
+    export LD_LIBRARY_PATH="${LIB_DIR}:${LD_LIBRARY_PATH}"
+else
+    export LD_LIBRARY_PATH="${LIB_DIR}"
+fi
 
 # Change to the app directory where the Flutter bundle is
 cd "${APP_DIR}" || {
