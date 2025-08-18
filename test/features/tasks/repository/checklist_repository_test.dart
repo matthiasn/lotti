@@ -1,11 +1,13 @@
 // ignore_for_file: inference_failure_on_function_invocation
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -18,11 +20,17 @@ import '../../../test_data/test_data.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockTaskSummaryRefreshService extends Mock
+    implements TaskSummaryRefreshService {}
+
+class MockRef extends Mock implements Ref {}
+
 void main() {
   late ChecklistRepository repository;
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockLoggingService mockLoggingService;
+  late MockTaskSummaryRefreshService mockTaskSummaryRefreshService;
 
   setUpAll(() {
     registerFallbackValue(FakeJournalEntity());
@@ -66,13 +74,27 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockPersistenceLogic = MockPersistenceLogic();
     mockLoggingService = MockLoggingService();
+    mockTaskSummaryRefreshService = MockTaskSummaryRefreshService();
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<LoggingService>(mockLoggingService);
 
-    repository = ChecklistRepository();
+    final mockRef = MockRef();
+
+    // Configure MockRef to return the mock TaskSummaryRefreshService
+    when(() => mockRef.read(taskSummaryRefreshServiceProvider))
+        .thenReturn(mockTaskSummaryRefreshService);
+
+    // Set up default behavior for the triggerTaskSummaryRefreshForChecklist method
+    when(() =>
+        mockTaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist(
+          checklistId: any(named: 'checklistId'),
+          callingDomain: any(named: 'callingDomain'),
+        )).thenAnswer((_) async => {});
+
+    repository = ChecklistRepository(mockRef);
   });
 
   tearDown(getIt.reset);
@@ -375,6 +397,72 @@ void main() {
       verify(() => mockPersistenceLogic.createDbEntity(any())).called(1);
     });
 
+    test('handles task summary refresh errors gracefully', () async {
+      // Arrange
+      const checklistId = 'checklist-id';
+      const title = 'Test Item';
+      const isChecked = false;
+      const categoryId = 'category-id';
+
+      final metadata = Metadata(
+        id: 'checklist-item-id',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        categoryId: categoryId,
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+      );
+
+      when(() => mockPersistenceLogic.createMetadata())
+          .thenAnswer((_) async => metadata);
+      when(() => mockPersistenceLogic.createDbEntity(any()))
+          .thenAnswer((_) async => true);
+
+      // Configure the task summary refresh to throw an exception
+      when(() =>
+          mockTaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist(
+            checklistId: checklistId,
+            callingDomain: 'ChecklistRepository',
+          )).thenThrow(Exception('Task summary refresh failed'));
+
+      when(
+        () => mockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      // Act
+      final result = await repository.createChecklistItem(
+        checklistId: checklistId,
+        title: title,
+        isChecked: isChecked,
+        categoryId: categoryId,
+      );
+
+      // Assert
+      expect(result, isNotNull);
+      expect(result!.meta.id, equals(metadata.id));
+      expect(result.data.title, equals(title));
+      expect(result.data.isChecked, equals(isChecked));
+      expect(result.data.linkedChecklists, contains(checklistId));
+
+      // Verify that the error was logged but the operation succeeded
+      verify(
+        () => mockLoggingService.captureException(
+          any(that: isA<Exception>()),
+          domain: 'ChecklistRepository',
+          subDomain: '_triggerTaskSummaryRefresh',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      verify(() => mockPersistenceLogic.createMetadata()).called(1);
+      verify(() => mockPersistenceLogic.createDbEntity(any())).called(1);
+    });
+
     test('handles exceptions gracefully', () async {
       // Arrange
       const checklistId = 'checklist-id';
@@ -641,6 +729,88 @@ void main() {
       ).called(1);
     });
 
+    test('handles task summary refresh errors during update', () async {
+      // Arrange
+      const checklistItemId = 'checklist-item-id';
+      const oldChecklistId = 'old-checklist-id';
+      const newChecklistId = 'new-checklist-id';
+      const data = ChecklistItemData(
+        title: 'Updated Item',
+        isChecked: true,
+        linkedChecklists: [newChecklistId],
+      );
+
+      final checklistItem = ChecklistItem(
+        meta: Metadata(
+          id: checklistItemId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: const ChecklistItemData(
+          title: 'Original Item',
+          isChecked: false,
+          linkedChecklists: [oldChecklistId],
+        ),
+      );
+
+      when(() => mockJournalDb.journalEntityById(checklistItemId))
+          .thenAnswer((_) async => checklistItem);
+      when(() => mockPersistenceLogic.updateMetadata(any()))
+          .thenAnswer((_) async => checklistItem.meta);
+      when(
+        () => mockPersistenceLogic.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      // Configure the task summary refresh to throw an exception
+      when(() =>
+          mockTaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist(
+            checklistId: any(named: 'checklistId'),
+            callingDomain: 'ChecklistRepository',
+          )).thenThrow(Exception('Task summary refresh failed'));
+
+      when(
+        () => mockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      // Act
+      final result = await repository.updateChecklistItem(
+        checklistItemId: checklistItemId,
+        data: data,
+        taskId: 'task-id',
+      );
+
+      // Assert
+      expect(result, isTrue);
+
+      // Verify that the update succeeded despite the task summary refresh failure
+      verify(() => mockJournalDb.journalEntityById(checklistItemId)).called(1);
+      verify(() => mockPersistenceLogic.updateMetadata(checklistItem.meta))
+          .called(1);
+      verify(
+        () => mockPersistenceLogic.updateDbEntity(any(), linkedId: 'task-id'),
+      ).called(1);
+
+      // Verify that errors were logged for both checklists
+      verify(
+        () => mockLoggingService.captureException(
+          any(that: isA<Exception>()),
+          domain: 'ChecklistRepository',
+          subDomain: '_triggerTaskSummaryRefresh',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(2); // Called for both old and new checklist IDs
+    });
+
     test('handles non-checklist-item entity', () async {
       // Arrange
       final entryId = testTextEntry.id;
@@ -807,6 +977,111 @@ void main() {
         capturedChecklist.data.linkedChecklistItems,
         equals(['existing-item-1', 'existing-item-2', 'new-item-id']),
       );
+    });
+
+    test('handles task summary refresh errors in addItemToChecklist', () async {
+      // Arrange
+      const checklistId = 'checklist-id';
+      const title = 'New Item';
+      const isChecked = false;
+      const categoryId = 'category-id';
+
+      final checklist = Checklist(
+        meta: Metadata(
+          id: checklistId,
+          categoryId: categoryId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          starred: false,
+          private: false,
+          utcOffset: 0,
+          vectorClock: const VectorClock({}),
+        ),
+        data: const ChecklistData(
+          title: 'Test Checklist',
+          linkedChecklistItems: [],
+          linkedTasks: ['task-1'],
+        ),
+      );
+
+      final newItem = ChecklistItem(
+        meta: Metadata(
+          id: 'new-item-id',
+          categoryId: categoryId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          starred: false,
+          private: false,
+          utcOffset: 0,
+          vectorClock: const VectorClock({}),
+        ),
+        data: const ChecklistItemData(
+          title: title,
+          isChecked: isChecked,
+          linkedChecklists: [checklistId],
+        ),
+      );
+
+      when(() => mockPersistenceLogic.createMetadata())
+          .thenAnswer((_) async => newItem.meta);
+      when(() => mockPersistenceLogic.createDbEntity(any()))
+          .thenAnswer((_) async => true);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => checklist);
+      when(() => mockPersistenceLogic.updateMetadata(any()))
+          .thenAnswer((_) async => checklist.meta.copyWith(
+                updatedAt: DateTime.now(),
+              ));
+      when(() => mockPersistenceLogic.updateDbEntity(any()))
+          .thenAnswer((_) async => true);
+
+      // Configure the task summary refresh to throw an exception
+      when(() =>
+          mockTaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist(
+            checklistId: checklistId,
+            callingDomain: 'ChecklistRepository',
+          )).thenThrow(Exception('Task summary refresh failed'));
+
+      when(
+        () => mockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      // Act
+      final result = await repository.addItemToChecklist(
+        checklistId: checklistId,
+        title: title,
+        isChecked: isChecked,
+        categoryId: categoryId,
+      );
+
+      // Assert
+      expect(result, isNotNull);
+      expect(result!.data.title, equals(title));
+      expect(result.data.isChecked, equals(isChecked));
+
+      // Verify that the error was logged but the operation succeeded
+      verify(
+        () => mockLoggingService.captureException(
+          any(that: isA<Exception>()),
+          domain: 'ChecklistRepository',
+          subDomain: '_triggerTaskSummaryRefresh',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(
+          2); // Called twice: once in createChecklistItem and once in addItemToChecklist
+
+      // Verify that all persistence operations succeeded
+      verify(() => mockPersistenceLogic.createDbEntity(any())).called(1);
+      verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
     });
 
     test('returns null when checklist not found', () async {

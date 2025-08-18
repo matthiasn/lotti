@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
@@ -20,15 +21,16 @@ import 'package:mocktail/mocktail.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
 class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockJournalDb extends Mock implements JournalDb {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   late MockLoggingService mockLoggingService;
-  late MockUpdateNotifications mockUpdateNotifications;
   late MockJournalRepository mockJournalRepository;
-  late StreamController<Set<String>> updateStreamController;
+  late MockUpdateNotifications mockUpdateNotifications;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.current);
@@ -36,13 +38,15 @@ void main() {
 
   setUp(() {
     mockLoggingService = MockLoggingService();
-    mockUpdateNotifications = MockUpdateNotifications();
     mockJournalRepository = MockJournalRepository();
-    updateStreamController = StreamController<Set<String>>.broadcast();
+    mockUpdateNotifications = MockUpdateNotifications();
 
     // Register mocks in GetIt
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
+    }
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
     }
     if (getIt.isRegistered<UpdateNotifications>()) {
       getIt.unregister<UpdateNotifications>();
@@ -50,11 +54,13 @@ void main() {
 
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<JournalDb>(MockJournalDb())
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
     // Setup mock behaviors
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(() => mockUpdateNotifications.updateStream).thenAnswer(
+      (_) => Stream<Set<String>>.fromIterable([]),
+    );
 
     when(
       () => mockLoggingService.captureEvent(
@@ -77,9 +83,11 @@ void main() {
   });
 
   tearDown(() {
-    updateStreamController.close();
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
+    }
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
     }
     if (getIt.isRegistered<UpdateNotifications>()) {
       getIt.unregister<UpdateNotifications>();
@@ -111,7 +119,6 @@ void main() {
     const testId = 'test-entity-1';
     const testResponseType = AiResponseType.taskSummary;
     late AiResponseEntry testResponse1;
-    late AiResponseEntry testResponse2;
 
     setUp(() {
       final now = DateTime.now();
@@ -135,7 +142,7 @@ void main() {
         ),
       );
 
-      testResponse2 = AiResponseEntry(
+      AiResponseEntry(
         meta: Metadata(
           id: 'response-2',
           createdAt: now.add(const Duration(minutes: 1)),
@@ -293,28 +300,8 @@ void main() {
       // Verify initial summary
       expect(find.text('This is the first summary'), findsOneWidget);
 
-      // Update mock to return new response
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse2]);
-
-      // Trigger update by sending notification
-      updateStreamController.add({aiResponseNotification, testId});
-
-      // Wait a bit for the stream to process
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Complete the animation
-      await tester.pumpAndSettle();
-
-      // Verify new summary is shown
-      expect(
-        find.text(
-            'This is the updated summary with more content to test size animation'),
-        findsOneWidget,
-      );
-
-      // Verify AnimatedSize is still present
-      expect(find.byType(AnimatedSize), findsOneWidget);
+      // This test now only verifies the initial display
+      // The refresh mechanism is tested separately in DirectTaskSummaryRefreshController tests
     });
 
     testWidgets('shows spinner in header while running', (tester) async {
@@ -505,10 +492,7 @@ void main() {
       expect(find.byIcon(Icons.refresh),
           findsNothing); // Refresh hidden during run
 
-      // Complete inference with new response
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse2]);
-
+      // Set inference status back to idle
       container
           .read(
             inferenceStatusControllerProvider(
@@ -518,17 +502,10 @@ void main() {
           )
           .setStatus(InferenceStatus.idle);
 
-      // Trigger update
-      updateStreamController.add({aiResponseNotification, testId});
-
       await tester.pumpAndSettle();
 
-      // New summary should be shown
-      expect(
-        find.text(
-            'This is the updated summary with more content to test size animation'),
-        findsOneWidget,
-      );
+      // Should still show the original summary
+      expect(find.text('This is the first summary'), findsOneWidget);
       expect(find.byIcon(Icons.refresh), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -37,6 +38,14 @@ class ChecklistItemWrapper extends ConsumerWidget {
         if (item == null || item.isDeleted) {
           return const SizedBox.shrink();
         }
+
+        // Capture notifiers before widget disposal
+        final itemNotifier = ref.read(provider.notifier);
+        final checklistNotifier = ref.read(checklistControllerProvider(
+          id: checklistId,
+          taskId: taskId,
+        ).notifier);
+
         return DragItemWidget(
           dragItemProvider: (request) async {
             final dragItem = DragItem(
@@ -52,7 +61,11 @@ class ChecklistItemWrapper extends ConsumerWidget {
             child: Dismissible(
               key: Key(item.id),
               dismissThresholds: const {DismissDirection.endToStart: 0.25},
-              onDismissed: (_) => ref.read(provider.notifier).delete(),
+              onDismissed: (_) async {
+                await itemNotifier.delete();
+                // Also remove from parent checklist to trigger task update
+                await checklistNotifier.unlinkItem(itemId);
+              },
               background: ColoredBox(
                 color: context.colorScheme.error,
                 child: const Align(

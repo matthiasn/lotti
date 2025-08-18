@@ -3,6 +3,7 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -12,13 +13,38 @@ part 'checklist_repository.g.dart';
 
 @Riverpod(keepAlive: true)
 ChecklistRepository checklistRepository(Ref ref) {
-  return ChecklistRepository();
+  return ChecklistRepository(ref);
 }
 
 class ChecklistRepository {
+  ChecklistRepository(this._ref);
+
+  final Ref _ref;
   final JournalDb _journalDb = getIt<JournalDb>();
   final LoggingService _loggingService = getIt<LoggingService>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+
+  static const String _callingDomain = 'ChecklistRepository';
+
+  /// Triggers a task summary refresh for all tasks linked to the given checklist
+  Future<void> _triggerTaskSummaryRefresh(String checklistId) async {
+    try {
+      await _ref
+          .read(taskSummaryRefreshServiceProvider)
+          .triggerTaskSummaryRefreshForChecklist(
+            checklistId: checklistId,
+            callingDomain: _callingDomain,
+          );
+    } catch (exception, stackTrace) {
+      _loggingService.captureException(
+        exception,
+        domain: _callingDomain,
+        subDomain: '_triggerTaskSummaryRefresh',
+        stackTrace: stackTrace,
+      );
+      // Swallow the error to prevent persistence flow failures
+    }
+  }
 
   Future<JournalEntity?> createChecklist({
     required String? taskId,
@@ -115,6 +141,9 @@ class ChecklistRepository {
 
       await _persistenceLogic.createDbEntity(newChecklistItem);
 
+      // Trigger task summary refresh for linked tasks
+      await _triggerTaskSummaryRefresh(checklistId);
+
       return newChecklistItem;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
@@ -189,6 +218,18 @@ class ChecklistRepository {
             updatedChecklist,
             linkedId: taskId,
           );
+
+          // Trigger task summary refresh for linked tasks
+          // Compute union of old and new linkedChecklists to handle both removals and additions
+          final allChecklistIds = {
+            ...checklistItem.data.linkedChecklists, // old linked checklists
+            ...data.linkedChecklists, // new linked checklists
+          };
+
+          // Trigger refreshes concurrently for all affected checklists
+          await Future.wait(
+            allChecklistIds.map(_triggerTaskSummaryRefresh),
+          );
         },
         orElse: () async => _loggingService.captureException(
           'not a checklist item',
@@ -248,6 +289,9 @@ class ChecklistRepository {
           ],
         ),
       );
+
+      // Trigger task summary refresh for linked tasks
+      await _triggerTaskSummaryRefresh(checklistId);
 
       return newItem;
     } catch (exception, stackTrace) {
