@@ -20,6 +20,10 @@ finish-args:
   - --filesystem=xdg-pictures:ro               # Read-only access to pictures for import
   - --filesystem=xdg-download/Lotti:create     # Only create Lotti folder in downloads
   # App data is automatically available in ~/.var/app/com.matthiasnehlsen.lotti/
+  # Portal access for sandboxed functionality
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --talk-name=org.freedesktop.portal.Screenshot
+  - --talk-name=org.freedesktop.portal.Device
   
 modules:
   - name: libsecret

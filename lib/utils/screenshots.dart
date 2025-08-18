@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/portals/portal_service.dart';
+import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshot_consts.dart';
 import 'package:window_manager/window_manager.dart';
@@ -72,8 +74,38 @@ Future<ImageData> takeScreenshot() async {
     final relativePath = '$screenshotDirectoryPath$day/';
     final directory = await createAssetDirectory(relativePath);
 
-    await windowManager.minimize();
+    // Check if we should use portal (Flatpak environment)
+    if (Platform.isLinux && PortalService.shouldUsePortal) {
+      final portalService = ScreenshotPortalService();
+      
+      // Check if portal is available
+      if (await ScreenshotPortalService.isAvailable()) {
+        final screenshotPath = await portalService.takeScreenshot(
+          directory: directory,
+          filename: filename,
+          interactive: true,
+        );
+        
+        if (screenshotPath != null) {
+          final imageData = ImageData(
+            imageId: id,
+            imageFile: filename,
+            imageDirectory: relativePath,
+            capturedAt: created,
+          );
+          return imageData;
+        }
+      }
+      
+      // If portal fails, fall through to traditional methods
+      getIt<LoggingService>().captureException(
+        Exception('Screenshot portal failed, falling back to traditional methods'),
+        domain: screenshotDomain,
+        subDomain: 'portal_fallback',
+      );
+    }
 
+    await windowManager.minimize();
     await Future<void>.delayed(const Duration(seconds: screenshotDelaySeconds));
 
     if (Platform.isMacOS) {
