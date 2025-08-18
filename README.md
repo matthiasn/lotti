@@ -132,7 +132,7 @@ flatpak install flathub org.freedesktop.Sdk//24.08 org.freedesktop.Platform//24.
 flutter build linux --release
 
 # Create flutter-bundle directory with all necessary files
-mkdir -p flatpak/flutter-bundle && cp -r build/linux/x64/release/bundle/* flatpak/flutter-bundle/
+mkdir -p flatpak/flutter-bundle && cp -r build/linux/x64/release/bundle/. flatpak/flutter-bundle/
 
 # Build Flatpak using the local manifest
 flatpak-builder --repo=repo --force-clean build-dir flatpak/com.matthiasnehlsen.lotti.local.yml

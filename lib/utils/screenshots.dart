@@ -152,8 +152,6 @@ Future<ImageData> takeScreenshot() async {
       capturedAt: created,
     );
 
-    await windowManager.show();
-
     return imageData;
   } catch (exception, stackTrace) {
     getIt<LoggingService>().captureException(
@@ -162,5 +160,17 @@ Future<ImageData> takeScreenshot() async {
       stackTrace: stackTrace,
     );
     rethrow;
+  } finally {
+    // Always restore the window, regardless of success or failure
+    try {
+      await windowManager.show();
+    } catch (e) {
+      // Log but don't rethrow window restoration errors
+      getIt<LoggingService>().captureException(
+        e,
+        domain: screenshotDomain,
+        subDomain: 'window_restoration',
+      );
+    }
   }
 }
