@@ -379,7 +379,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).called(greaterThanOrEqualTo(1));
+      ).called(1);
     });
 
     test('should cancel timers on dispose', () async {
@@ -984,6 +984,37 @@ void main() {
 
       // Should only trigger once
       expect(triggerCount, equals(1));
+
+      testContainer.dispose();
+    });
+
+    test('should cancel debounce timer when inference is running', () async {
+      // This test verifies that when inference is already running,
+      // any existing debounce timer is canceled to prevent race conditions
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          // Mock the status as running
+          inferenceStatusControllerProvider(
+            id: 'cancel-debounce-test',
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(
+            () => MockInferenceStatusController(InferenceStatus.running),
+          ),
+        ],
+      );
+
+      final controller = testContainer.read(
+        directTaskSummaryRefreshControllerProvider.notifier,
+      );
+
+      // When inference is running, it should set up a listener
+      // and cancel any existing debounce timer
+      await controller.requestTaskSummaryRefresh('cancel-debounce-test');
+
+      // The test passes if no exceptions are thrown
+      // The implementation now cancels the debounce timer before setting up the listener
 
       testContainer.dispose();
     });

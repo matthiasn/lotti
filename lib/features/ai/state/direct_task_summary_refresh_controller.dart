@@ -59,6 +59,12 @@ class DirectTaskSummaryRefreshController
         name: 'DirectTaskSummaryRefresh',
         error: {'taskId': taskId},
       );
+
+      // Cancel any existing debounce timer to prevent it from firing
+      // while inference is active
+      _debounceTimers[taskId]?.cancel();
+      _debounceTimers.remove(taskId);
+
       _statusListener.setupListener(
         taskId: taskId,
         onInferenceComplete: requestTaskSummaryRefresh,
