@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/state/task_summary_refresh_status_listener.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -18,11 +18,12 @@ part 'direct_task_summary_refresh_controller.g.dart';
 class DirectTaskSummaryRefreshController
     extends _$DirectTaskSummaryRefreshController {
   final Map<String, Timer> _debounceTimers = {};
-  final Map<String, ProviderSubscription<InferenceStatus>>
-      _statusListenerCleanups = {};
+  late final TaskSummaryRefreshStatusListener _statusListener;
 
   @override
   void build() {
+    _statusListener = TaskSummaryRefreshStatusListener(ref);
+
     ref.onDispose(() {
       // Cancel all timers
       for (final timer in _debounceTimers.values) {
@@ -31,10 +32,7 @@ class DirectTaskSummaryRefreshController
       _debounceTimers.clear();
 
       // Clean up all status listeners
-      for (final subscription in _statusListenerCleanups.values) {
-        subscription.close();
-      }
-      _statusListenerCleanups.clear();
+      _statusListener.dispose();
     });
   }
 
@@ -61,7 +59,10 @@ class DirectTaskSummaryRefreshController
         name: 'DirectTaskSummaryRefresh',
         error: {'taskId': taskId},
       );
-      _setupStatusListener(taskId);
+      _statusListener.setupListener(
+        taskId: taskId,
+        onInferenceComplete: requestTaskSummaryRefresh,
+      );
       return;
     }
 
@@ -80,50 +81,6 @@ class DirectTaskSummaryRefreshController
       const Duration(milliseconds: 500),
       () => _triggerTaskSummaryRefresh(taskId),
     );
-  }
-
-  /// Sets up a listener for when inference status changes from running to idle/error
-  void _setupStatusListener(String taskId) {
-    // Clean up any existing listener for this task
-    _statusListenerCleanups[taskId]?.close();
-
-    // Create a new listener
-    final cleanup = ref.listen(
-      inferenceStatusControllerProvider(
-        id: taskId,
-        aiResponseType: AiResponseType.taskSummary,
-      ),
-      (previous, next) {
-        developer.log(
-          'Inference status changed',
-          name: 'DirectTaskSummaryRefresh',
-          error: {
-            'taskId': taskId,
-            'previous': previous?.toString(),
-            'next': next.toString(),
-          },
-        );
-
-        // If status changed from running to idle or error, trigger refresh
-        if (previous == InferenceStatus.running &&
-            (next == InferenceStatus.idle || next == InferenceStatus.error)) {
-          developer.log(
-            'Inference completed, triggering pending refresh',
-            name: 'DirectTaskSummaryRefresh',
-            error: {'taskId': taskId},
-          );
-
-          // Clean up the listener
-          _statusListenerCleanups.remove(taskId)?.close();
-
-          // Trigger the refresh
-          requestTaskSummaryRefresh(taskId);
-        }
-      },
-      fireImmediately: false,
-    );
-
-    _statusListenerCleanups[taskId] = cleanup;
   }
 
   Future<void> _triggerTaskSummaryRefresh(String taskId) async {

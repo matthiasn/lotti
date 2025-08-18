@@ -24,14 +24,26 @@ class ChecklistRepository {
   final LoggingService _loggingService = getIt<LoggingService>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
+  static const String _callingDomain = 'ChecklistRepository';
+
   /// Triggers a task summary refresh for all tasks linked to the given checklist
   Future<void> _triggerTaskSummaryRefresh(String checklistId) async {
-    await _ref
-        .read(taskSummaryRefreshServiceProvider)
-        .triggerTaskSummaryRefreshForChecklist(
-          checklistId: checklistId,
-          callingDomain: 'ChecklistRepository',
-        );
+    try {
+      await _ref
+          .read(taskSummaryRefreshServiceProvider)
+          .triggerTaskSummaryRefreshForChecklist(
+            checklistId: checklistId,
+            callingDomain: _callingDomain,
+          );
+    } catch (exception, stackTrace) {
+      _loggingService.captureException(
+        exception,
+        domain: _callingDomain,
+        subDomain: '_triggerTaskSummaryRefresh',
+        stackTrace: stackTrace,
+      );
+      // Swallow the error to prevent persistence flow failures
+    }
   }
 
   Future<JournalEntity?> createChecklist({
