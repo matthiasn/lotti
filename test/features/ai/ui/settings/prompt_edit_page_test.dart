@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/preconfigured_prompt_button.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -446,6 +447,256 @@ void main() {
 
       final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
+    });
+
+    group('Tracking functionality', () {
+      testWidgets('shows tracking toggle when preconfigured prompt ID exists',
+          (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Create prompt with tracking enabled
+        final trackedPrompt = AiConfig.prompt(
+          id: 'tracked-prompt-id',
+          name: 'Tracked Prompt',
+          systemMessage: 'System message',
+          userMessage: 'User message',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          trackPreconfigured: true,
+          preconfiguredPromptId: 'task_summary',
+        );
+
+        when(() => mockRepository.getConfigById('tracked-prompt-id'))
+            .thenAnswer((_) async => trackedPrompt);
+
+        await tester.pumpWidget(buildTestWidget(configId: 'tracked-prompt-id'));
+        await tester.pumpAndSettle();
+
+        // Should show tracking toggle
+        expect(find.text('Track Preconfigured Prompt'), findsOneWidget);
+        expect(
+            find.text(
+                'Keep this prompt synchronized with updates to the template'),
+            findsOneWidget);
+
+        // Find the switch that's specifically for tracking (not the reasoning mode switch)
+        final trackingSwitch = find.descendant(
+          of: find.byWidgetPredicate((widget) =>
+              widget is Container &&
+              widget.child is Row &&
+              (widget.child as Row?)!.children.any((child) =>
+                  child is Expanded &&
+                  child.child is Column &&
+                  (child.child as Column).children.any((c) =>
+                      c is Text && c.data == 'Track Preconfigured Prompt'))),
+          matching: find.byType(Switch),
+        );
+        expect(trackingSwitch, findsOneWidget);
+      });
+
+      testWidgets('does not show tracking toggle for new prompts initially',
+          (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        // Should not show tracking toggle
+        expect(find.text('Track Preconfigured Prompt'), findsNothing);
+        expect(
+            find.text(
+                'Keep this prompt synchronized with updates to the template'),
+            findsNothing);
+      });
+
+      testWidgets('text fields are read-only when tracking is enabled',
+          (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Create prompt with tracking enabled
+        final trackedPrompt = AiConfig.prompt(
+          id: 'tracked-prompt-id',
+          name: 'Tracked Prompt',
+          systemMessage: 'System message',
+          userMessage: 'User message',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          trackPreconfigured: true,
+          preconfiguredPromptId: 'task_summary',
+        );
+
+        when(() => mockRepository.getConfigById('tracked-prompt-id'))
+            .thenAnswer((_) async => trackedPrompt);
+
+        await tester.pumpWidget(buildTestWidget(configId: 'tracked-prompt-id'));
+        await tester.pumpAndSettle();
+
+        // Try to edit the fields - they should be read-only
+        final systemPromptField =
+            find.widgetWithText(TextFormField, 'System message');
+        expect(systemPromptField, findsOneWidget);
+
+        // Try to enter text - it shouldn't change because it's read-only
+        await tester.enterText(systemPromptField, 'New system message');
+        await tester.pumpAndSettle();
+
+        // The text should remain unchanged
+        expect(find.text('System message'), findsOneWidget);
+        expect(find.text('New system message'), findsNothing);
+      });
+
+      testWidgets('can toggle tracking on and off',
+          (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Create prompt with tracking enabled
+        final trackedPrompt = AiConfig.prompt(
+          id: 'tracked-prompt-id',
+          name: 'Tracked Prompt',
+          systemMessage: 'System message',
+          userMessage: 'User message',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          trackPreconfigured: true,
+          preconfiguredPromptId: 'task_summary',
+        );
+
+        when(() => mockRepository.getConfigById('tracked-prompt-id'))
+            .thenAnswer((_) async => trackedPrompt);
+
+        await tester.pumpWidget(buildTestWidget(configId: 'tracked-prompt-id'));
+        await tester.pumpAndSettle();
+
+        // Find the tracking toggle specifically
+        final trackingSwitch = find.descendant(
+          of: find.byWidgetPredicate((widget) =>
+              widget is Container &&
+              widget.child is Row &&
+              (widget.child as Row?)!.children.any((child) =>
+                  child is Expanded &&
+                  child.child is Column &&
+                  (child.child as Column).children.any((c) =>
+                      c is Text && c.data == 'Track Preconfigured Prompt'))),
+          matching: find.byType(Switch),
+        );
+        expect(trackingSwitch, findsOneWidget);
+        final switchWidget = tester.widget<Switch>(trackingSwitch);
+        expect(switchWidget.value, isTrue);
+
+        // Toggle off
+        await tester.tap(trackingSwitch);
+        await tester.pumpAndSettle();
+
+        // After toggling, text fields should become editable
+        final systemPromptField =
+            find.widgetWithText(TextFormField, 'System message');
+
+        // Try to enter text - it should work now because tracking is off
+        await tester.enterText(systemPromptField, 'New system message');
+        await tester.pumpAndSettle();
+
+        // The text should have changed
+        expect(find.text('New system message'), findsOneWidget);
+        expect(find.text('System message'), findsNothing);
+      });
+
+      testWidgets('saves tracking state when updating prompt',
+          (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Create prompt with tracking enabled
+        final trackedPrompt = AiConfig.prompt(
+          id: 'tracked-prompt-id',
+          name: 'Tracked Prompt',
+          systemMessage: 'System message',
+          userMessage: 'User message',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          trackPreconfigured: true,
+          preconfiguredPromptId: 'task_summary',
+          description: 'Test description',
+        );
+
+        when(() => mockRepository.getConfigById('tracked-prompt-id'))
+            .thenAnswer((_) async => trackedPrompt);
+
+        await tester.pumpWidget(buildTestWidget(configId: 'tracked-prompt-id'));
+        await tester.pumpAndSettle();
+
+        // Modify the name field (which is still editable even with tracking)
+        final nameField = find.widgetWithText(TextFormField, 'Tracked Prompt');
+        await tester.enterText(nameField, 'Updated Tracked Prompt');
+        await tester.pumpAndSettle();
+
+        // Save
+        final saveButton = find.text('Save');
+        await tester.ensureVisible(saveButton);
+        await tester.pumpAndSettle();
+        await tester.tap(saveButton);
+        await tester.pumpAndSettle();
+
+        // Verify save was called and check the saved config
+        final captured = verify(() => mockRepository.saveConfig(captureAny()))
+            .captured
+            .single as AiConfig;
+
+        expect(captured, isA<AiConfigPrompt>());
+        final savedPrompt = captured as AiConfigPrompt;
+        expect(savedPrompt.trackPreconfigured, isTrue);
+        expect(savedPrompt.preconfiguredPromptId, equals('task_summary'));
+        expect(savedPrompt.name, equals('Updated Tracked Prompt'));
+      });
+
+      testWidgets(
+          'shows Quick Start section with preconfigured prompt button for new prompts',
+          (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        // Should show Quick Start section
+        expect(find.text('Quick Start'), findsOneWidget);
+        // Check for PreconfiguredPromptButton widget
+        expect(find.byType(PreconfiguredPromptButton), findsOneWidget);
+      });
+
+      testWidgets(
+          'does not show Quick Start section when editing existing prompt',
+          (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(buildTestWidget(configId: 'test-prompt-id'));
+        await tester.pumpAndSettle();
+
+        // Should not show Quick Start section
+        expect(find.text('Quick Start'), findsNothing);
+        expect(find.text('Start with a pre-built template'), findsNothing);
+        expect(find.text('Use Template'), findsNothing);
+      });
     });
   });
 }

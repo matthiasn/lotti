@@ -308,6 +308,9 @@ class PromptFormController extends _$PromptFormController {
           userMessage: preconfiguredPrompt.userMessage,
           trackPreconfigured: true,
         );
+      } else {
+        // Preconfigured prompt not found, but still enable tracking
+        _setAllFields(trackPreconfigured: true);
       }
     } else {
       // Just toggle the tracking flag, but keep the preconfiguredPromptId

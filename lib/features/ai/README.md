@@ -282,6 +282,7 @@ To integrate a new handler:
 - **`preconfigured_prompts.dart`**: Built-in prompt templates
   - Six main prompt types (Task Summary, Checklist Updates, etc.)
   - Consistent formatting and instructions
+  - Each template has a unique ID for tracking purposes
 
 #### Constants & Configuration
 - **`constants/provider_config.dart`**: Configuration constants for AI providers
@@ -586,6 +587,7 @@ Prompts can be:
 - **Preconfigured**: Built-in templates for common tasks
 - **Custom**: User-created prompts with variables
 - **Context-aware**: Automatically adapt based on entity relationships
+- **Tracked**: Optionally track updates from preconfigured templates
 
 ### Model Configuration
 
@@ -595,6 +597,37 @@ Models define:
 - Function calling support
 - Token limits
 - Supported modalities
+
+### Prompt Template Tracking
+
+The system supports tracking updates from preconfigured prompt templates, ensuring prompts stay up-to-date with improvements:
+
+#### How It Works
+
+1. **Creating from Template**: When creating a prompt from a preconfigured template, tracking is enabled by default
+2. **Tracking Toggle**: A visual toggle appears for prompts created from templates
+3. **Automatic Updates**: When tracking is enabled:
+   - System and user messages are dynamically loaded from the template
+   - Prompt fields become read-only in the UI
+   - Any template improvements automatically apply
+4. **Manual Customization**: When tracking is disabled:
+   - Fields become editable
+   - Custom changes are preserved
+   - Template ID is retained for future re-enabling
+
+#### Implementation Details
+
+- **Fields Added**: `trackPreconfigured` (boolean) and `preconfiguredPromptId` (string) in `AiConfigPrompt`
+- **Dynamic Loading**: `UnifiedAiInferenceRepository` checks tracking status and loads messages from templates
+- **UI Indication**: Visual toggle with sync icon shows tracking status
+- **Persistence**: Tracking settings survive saves and edits
+
+#### Benefits
+
+- **Stay Updated**: Automatically benefit from prompt template improvements
+- **No Manual Updates**: Eliminates need to manually update prompts when templates change
+- **Flexibility**: Toggle between tracked and custom versions as needed
+- **Transparency**: Clear visual indication of tracking status
 
 ## UI Components
 
