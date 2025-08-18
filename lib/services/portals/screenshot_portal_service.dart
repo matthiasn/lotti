@@ -67,18 +67,70 @@ class ScreenshotPortalService extends PortalService {
         throw Exception('Screenshot portal returned no response');
       }
 
-      // For simplicity, we'll use a basic approach without signal listening
-      // In a real portal implementation, you would listen for the Response signal
-      // For now, we'll return null to indicate portal screenshot is not fully implemented
-      getIt<LoggingService>().captureException(
-        Exception(
-          'Portal screenshot implementation is incomplete - signal listening not implemented',
-        ),
-        domain: 'ScreenshotPortalService',
-        subDomain: 'takeScreenshot',
+      // Extract the request handle from the response
+      final requestHandle = result.returnValues.first as DBusObjectPath;
+      
+      // Create a completer to wait for the response signal
+      final completer = Completer<String?>();
+      
+      // Set up signal subscription for the Response signal
+      final signalStream = DBusSignalStream(
+        client,
+        interface: 'org.freedesktop.portal.Request',
+        name: 'Response',
+        path: requestHandle,
+        signature: DBusSignature('ua{sv}'),
       );
       
-      return null;
+      final signalSubscription = signalStream.listen((DBusSignal signal) {
+        try {
+          // Parse the response signal
+          if (signal.values.length >= 2) {
+            final code = signal.values[0].asUint32();
+            final results = signal.values[1].asDict();
+            
+            if (code == 0) {
+              // Success - extract the URI from results
+              final uriValue = results[const DBusString('uri')];
+              if (uriValue is DBusString) {
+                final uri = uriValue.asString();
+                
+                // Convert file:// URI to local file system path
+                if (uri.startsWith('file://')) {
+                  final path = Uri.parse(uri).toFilePath();
+                  completer.complete(path);
+                } else {
+                  completer.complete(null);
+                }
+              } else {
+                completer.complete(null);
+              }
+            } else {
+              // Non-zero code indicates failure
+              completer.complete(null);
+            }
+          } else {
+            completer.complete(null);
+          }
+        } catch (e) {
+          completer.completeError(e);
+        }
+      });
+      
+      try {
+        // Wait for the response with timeout
+        final screenshotPath = await completer.future.timeout(
+          PortalConstants.responseTimeout,
+          onTimeout: () {
+            throw Exception('Screenshot portal request timed out');
+          },
+        );
+        
+        return screenshotPath;
+      } finally {
+        // Clean up signal subscription
+        await signalSubscription.cancel();
+      }
     } catch (e, stackTrace) {
       getIt<LoggingService>().captureException(
         e,
