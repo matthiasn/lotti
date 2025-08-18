@@ -55,7 +55,7 @@ void main() {
         await showModal(tester);
 
         // All preconfigured prompts should be visible
-        for (final prompt in preconfiguredPrompts) {
+        for (final prompt in preconfiguredPrompts.values) {
           expect(find.text(prompt.name), findsWidgets);
           // Descriptions might be duplicated, so check for at least one
           expect(find.text(prompt.description), findsWidgets);
@@ -95,7 +95,7 @@ void main() {
         await showModal(tester);
 
         // Find and tap a prompt card (using the first one)
-        final firstPrompt = preconfiguredPrompts.first;
+        final firstPrompt = preconfiguredPrompts.values.first;
         // Find the InkWell that contains the prompt name
         final firstCard = find
             .ancestor(
@@ -127,7 +127,7 @@ void main() {
         await showModal(tester);
 
         // Tap the same card multiple times rapidly
-        final firstPrompt = preconfiguredPrompts.first;
+        final firstPrompt = preconfiguredPrompts.values.first;
         final firstCard = find
             .ancestor(
               of: find.text(firstPrompt.name).first,
@@ -187,7 +187,7 @@ void main() {
         await showModal(tester);
 
         // All prompt cards should be tappable
-        for (final prompt in preconfiguredPrompts) {
+        for (final prompt in preconfiguredPrompts.values) {
           final card = find.ancestor(
             of: find.text(prompt.name).first,
             matching: find.byType(InkWell),
@@ -203,7 +203,7 @@ void main() {
         expect(find.byType(Text), findsWidgets);
 
         // Verify icons have proper context
-        for (final prompt in preconfiguredPrompts) {
+        for (final prompt in preconfiguredPrompts.values) {
           expect(find.text(prompt.name), findsWidgets);
           // Descriptions might be duplicated, so check for at least one
           expect(find.text(prompt.description), findsWidgets);
@@ -217,7 +217,7 @@ void main() {
         await showModal(tester);
 
         // Verify each prompt shows its required input types
-        for (final prompt in preconfiguredPrompts) {
+        for (final prompt in preconfiguredPrompts.values) {
           if (prompt.requiredInputData.isNotEmpty) {
             // The input data type names should be visible
             expect(find.byType(Text), findsWidgets);
@@ -231,7 +231,7 @@ void main() {
 
         // Count how many prompts have each response type
         final responseTypeCounts = <AiResponseType, int>{};
-        for (final prompt in preconfiguredPrompts) {
+        for (final prompt in preconfiguredPrompts.values) {
           responseTypeCounts[prompt.aiResponseType] =
               (responseTypeCounts[prompt.aiResponseType] ?? 0) + 1;
         }

@@ -27,6 +27,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -247,8 +248,18 @@ class UnifiedAiInferenceRepository {
       // Run the inference
       final buffer = StringBuffer();
 
-      // Modify system message if task has language preference
+      // Get system message - use preconfigured if tracking is enabled
       var systemMessage = promptConfig.systemMessage;
+      if (promptConfig.trackPreconfigured &&
+          promptConfig.preconfiguredPromptId != null) {
+        final preconfiguredPrompt =
+            preconfiguredPrompts[promptConfig.preconfiguredPromptId!];
+        if (preconfiguredPrompt != null) {
+          systemMessage = preconfiguredPrompt.systemMessage;
+        }
+      }
+
+      // Modify system message if task has language preference
       if (entity is Task &&
           entity.data.languageCode != null &&
           promptConfig.aiResponseType == AiResponseType.taskSummary) {
@@ -544,7 +555,19 @@ class UnifiedAiInferenceRepository {
     required JournalEntity entity,
   }) async {
     final aiInputRepo = ref.read(aiInputRepositoryProvider);
-    var prompt = promptConfig.userMessage;
+
+    // Get user message - use preconfigured if tracking is enabled
+    var userMessage = promptConfig.userMessage;
+    if (promptConfig.trackPreconfigured &&
+        promptConfig.preconfiguredPromptId != null) {
+      final preconfiguredPrompt =
+          preconfiguredPrompts[promptConfig.preconfiguredPromptId!];
+      if (preconfiguredPrompt != null) {
+        userMessage = preconfiguredPrompt.userMessage;
+      }
+    }
+
+    var prompt = userMessage;
 
     // Check if prompt contains {{task}} placeholder
     if (prompt.contains('{{task}}')) {
@@ -583,7 +606,7 @@ class UnifiedAiInferenceRepository {
       // For prompts that require task data but don't use {{task}} placeholder
       // (legacy support for summaries, action items)
       final jsonString = await aiInputRepo.buildTaskDetailsJson(id: entity.id);
-      prompt = '${promptConfig.userMessage} \n $jsonString';
+      prompt = '$userMessage \n $jsonString';
     }
 
     return prompt;

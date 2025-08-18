@@ -74,6 +74,8 @@ class AiConfig with _$AiConfig {
     Map<String, String>? defaultVariables,
     String? category,
     @Default(false) bool archived,
+    @Default(false) bool trackPreconfigured,
+    String? preconfiguredPromptId,
   }) = AiConfigPrompt;
 
   factory AiConfig.fromJson(Map<String, dynamic> json) =>
