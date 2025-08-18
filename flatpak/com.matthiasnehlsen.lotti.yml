@@ -39,18 +39,26 @@ modules:
         url: https://gitlab.gnome.org/GNOME/libsecret/-/archive/0.20.5/libsecret-0.20.5.tar.gz
         sha256: b33b9542222ea8866f6ff2d31c0ad373877c2277db546ca00cc7fdda9cbab1c3
 
-  # Desktop drop plugin - pre-compiled binary
+  # Desktop drop plugin - built from source
   # This is a Flutter plugin that enables drag-and-drop functionality on Linux desktop
-  # The binary is built separately and included here as it requires specific compilation
-  # flags and dependencies that are difficult to replicate in the Flatpak build environment
+  # Built from source for better security and reproducibility
+  # Dependencies: GTK (via PkgConfig::GTK) and Flutter (available in build environment)
   - name: desktop-drop-plugin
-    buildsystem: simple
+    buildsystem: cmake
+    build-options:
+      strip: true
+      no-debuginfo: true
     build-commands:
+      - mkdir -p build
+      - cd build
+      - cmake .. -DCMAKE_BUILD_TYPE=Release
+      - make -j$(nproc)
       - mkdir -p /app/lib
       - install -D libdesktop_drop_plugin.so /app/lib/
     sources:
-      - type: file
-        path: libdesktop_drop_plugin.so
+      - type: archive
+        url: https://pub.dev/packages/desktop_drop/versions/0.6.1.tar.gz
+        sha256: 927511f590ce01ee90d0d80f79bc71b9c919d8522d01e495e89a00c6f4a4fb5b
 
   - name: lotti
     buildsystem: simple
