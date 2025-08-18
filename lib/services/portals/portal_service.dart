@@ -18,6 +18,12 @@ abstract class PortalService {
   Future<void> initialize() async {
     if (_initialized) return;
 
+    // Only initialize D-Bus client if we should use portals
+    if (!shouldUsePortal) {
+      _initialized = true;
+      return;
+    }
+
     try {
       _client = DBusClient.session();
       _initialized = true;
@@ -33,7 +39,10 @@ abstract class PortalService {
 
   Future<void> dispose() async {
     if (_initialized) {
-      await _client.close();
+      // Only close D-Bus client if it was actually created
+      if (shouldUsePortal) {
+        await _client.close();
+      }
       _initialized = false;
     }
   }
@@ -41,6 +50,9 @@ abstract class PortalService {
   DBusClient get client {
     if (!_initialized) {
       throw StateError('Portal service not initialized');
+    }
+    if (!shouldUsePortal) {
+      throw StateError('D-Bus client not available outside Flatpak environment');
     }
     return _client;
   }
