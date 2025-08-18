@@ -717,13 +717,16 @@ void main() {
           thoughts: '',
           response: 'Test response',
           type: AiResponseType.taskSummary,
-          // No prompt ID
+          // No prompt ID - this should prevent inference from being triggered
         ),
       );
 
       when(() => mockJournalRepository.getLinkedEntities(
             linkedTo: 'no-prompt-task',
           )).thenAnswer((_) async => [testResponse]);
+
+      // Track if any inference trigger was attempted
+      var inferenceAttempted = false;
 
       // Create test container with overrides
       final testContainer = ProviderContainer(
@@ -735,6 +738,14 @@ void main() {
             aiResponseType: AiResponseType.taskSummary,
           ).overrideWith(
               () => MockInferenceStatusController(InferenceStatus.idle)),
+          // Override a dummy trigger provider to track if it's accessed
+          // This would only be created if there was a promptId
+          triggerNewInferenceProvider(
+            entityId: 'no-prompt-task',
+            promptId: 'any-prompt-id',
+          ).overrideWith((ref) async {
+            inferenceAttempted = true;
+          }),
         ],
       );
 
@@ -742,18 +753,14 @@ void main() {
         directTaskSummaryRefreshControllerProvider.notifier,
       );
 
-      // We can't check if trigger was called because no promptId means no trigger provider is created
-      // Instead, we verify the behavior completes without errors
-      await expectLater(
-        controller.requestTaskSummaryRefresh('no-prompt-task'),
-        completes,
-      );
+      await controller.requestTaskSummaryRefresh('no-prompt-task');
 
       // Wait for debounce
       await Future<void>.delayed(const Duration(milliseconds: 700));
 
-      // The test passes if no exceptions were thrown
-      // In the actual implementation, it logs "No prompt ID found, cannot trigger refresh"
+      // Verify that no inference was attempted since there's no promptId
+      expect(inferenceAttempted, isFalse,
+          reason: 'No inference should be triggered when promptId is null');
 
       testContainer.dispose();
     });
@@ -763,6 +770,9 @@ void main() {
       when(() => mockJournalRepository.getLinkedEntities(
             linkedTo: 'no-response-task',
           )).thenAnswer((_) async => []);
+
+      // Track if any inference trigger was attempted
+      var inferenceAttempted = false;
 
       // Create test container with overrides
       final testContainer = ProviderContainer(
@@ -774,6 +784,13 @@ void main() {
             aiResponseType: AiResponseType.taskSummary,
           ).overrideWith(
               () => MockInferenceStatusController(InferenceStatus.idle)),
+          // Override a dummy trigger provider to track if it's accessed
+          triggerNewInferenceProvider(
+            entityId: 'no-response-task',
+            promptId: 'any-prompt-id',
+          ).overrideWith((ref) async {
+            inferenceAttempted = true;
+          }),
         ],
       );
 
@@ -781,18 +798,15 @@ void main() {
         directTaskSummaryRefreshControllerProvider.notifier,
       );
 
-      // We can't check if trigger was called because no response means no promptId
-      // Instead, we verify the behavior completes without errors
-      await expectLater(
-        controller.requestTaskSummaryRefresh('no-response-task'),
-        completes,
-      );
+      await controller.requestTaskSummaryRefresh('no-response-task');
 
       // Wait for debounce
       await Future<void>.delayed(const Duration(milliseconds: 700));
 
-      // The test passes if no exceptions were thrown
-      // In the actual implementation, it would not trigger because there's no promptId
+      // Verify that no inference was attempted since there's no AI response
+      expect(inferenceAttempted, isFalse,
+          reason:
+              'No inference should be triggered when no AI response exists');
 
       testContainer.dispose();
     });
