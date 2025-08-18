@@ -62,6 +62,7 @@ void main() {
           any<dynamic>(),
           domain: 'audio_recorder_repository',
           subDomain: 'hasPermission',
+          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });
