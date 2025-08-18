@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +7,8 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/portals/audio_portal_service.dart';
+import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -48,15 +51,42 @@ class AudioRecorderRepository {
       );
 
   /// Checks if the app has microphone permission.
+  /// In Flatpak environments, also requests portal access.
   /// Returns false if permission check fails.
   Future<bool> hasPermission() async {
     try {
+      // First check if we're in Flatpak and need portal access
+      if (Platform.isLinux && PortalService.shouldUsePortal) {
+        final portalService = AudioPortalService();
+        final portalAvailable = await AudioPortalService.isAvailable();
+        
+        if (portalAvailable) {
+          final hasPortalAccess = await portalService.requestMicrophoneAccess();
+          if (!hasPortalAccess) {
+            _loggingService.captureException(
+              Exception('Audio portal access denied'),
+              domain: 'audio_recorder_repository',
+              subDomain: 'portalAccess',
+            );
+            return false;
+          }
+        } else {
+          _loggingService.captureException(
+            Exception('Audio portal not available in Flatpak environment'),
+            domain: 'audio_recorder_repository',
+            subDomain: 'portalUnavailable',
+          );
+        }
+      }
+
+      // Check the standard recorder permission
       return await _audioRecorder.hasPermission();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
         domain: 'audio_recorder_repository',
         subDomain: 'hasPermission',
+        stackTrace: stackTrace,
       );
       return false;
     }
