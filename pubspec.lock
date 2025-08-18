@@ -919,11 +919,10 @@ packages:
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
-      path: "."
-      ref: f23536e
-      resolved-ref: f23536ec17ac211c06de78fd059a5e0404dadfb4
-      url: "https://github.com/devmil/flutter_launcher_icons"
-    source: git
+      name: flutter_launcher_icons
+      sha256: "10f13781741a2e3972126fae08393d3c4e01fa4cd7473326b94b72cf594195e7"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.14.4"
   flutter_linkify:
     dependency: "direct main"
@@ -2359,14 +2358,13 @@ packages:
     source: hosted
     version: "1.1.0"
   record_linux:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: record_linux
-      ref: "066780f"
-      resolved-ref: "066780f157e6933f75ecb2827d93bbd183333f5b"
-      url: "https://github.com/matthiasn/record"
-    source: git
-    version: "1.1.1"
+      name: record_linux
+      sha256: "785e8e8d6db109aa606d0669d95aaae416458aaa39782bb0abe0bee74eee17d7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   record_macos:
     dependency: transitive
     description:
