@@ -2359,14 +2359,13 @@ packages:
     source: hosted
     version: "1.1.0"
   record_linux:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: record_linux
-      ref: "066780f"
-      resolved-ref: "066780f157e6933f75ecb2827d93bbd183333f5b"
-      url: "https://github.com/matthiasn/record"
-    source: git
-    version: "1.1.1"
+      name: record_linux
+      sha256: "235b1f1fb84e810f8149cc0c2c731d7d697f8d1c333b32cb820c449bf7bb72d8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.1"
   record_macos:
     dependency: transitive
     description:
@@ -2737,10 +2736,10 @@ packages:
     dependency: transitive
     description:
       name: sqflite_android
-      sha256: "2b3070c5fa881839f8b402ee4a39c1b4d561704d4ebbbcfb808a119bc2a1701b"
+      sha256: ecd684501ebc2ae9a83536e8b15731642b9570dc8623e0073d227d0ee2bfea88
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1"
+    version: "2.4.2+2"
   sqflite_common:
     dependency: transitive
     description:

@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.654+3238
+version: 0.9.655+32389
 
 msix_config:
   display_name: LottiApp
@@ -143,15 +143,6 @@ dependency_overrides:
   analyzer_plugin: ^0.13.1
   get_it: ^8.0.2
   intl: ^0.20.2
-
-  # TODO: Remove this override when `record_linux` with VU meter support is on pub.dev.
-  # This commit (066780f) enables amplitude stream on Linux.
-  record_linux:
-    git:
-      url: https://github.com/matthiasn/record
-      ref: 066780f
-      path: record_linux
-
   rxdart: ^0.28.0
 
 dev_dependencies:
