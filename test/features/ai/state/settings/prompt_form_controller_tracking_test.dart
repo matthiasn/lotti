@@ -276,8 +276,8 @@ void main() {
             )
             .valueOrNull;
 
-        // Tracking should still be enabled even if template not found
-        expect(state!.trackPreconfigured, isTrue);
+        // Tracking should NOT be enabled since template not found
+        expect(state!.trackPreconfigured, isFalse);
         // Messages should remain unchanged since template not found
         expect(state.systemMessage.value, equals('System'));
         expect(state.userMessage.value, equals('User'));
@@ -322,9 +322,9 @@ void main() {
             )
             .valueOrNull;
 
-        // Tracking flag should be updated
-        expect(state!.trackPreconfigured, isTrue);
-        // But messages should remain unchanged
+        // Tracking flag should NOT be updated since preconfiguredPromptId is null
+        expect(state!.trackPreconfigured, isFalse);
+        // Messages should remain unchanged
         expect(state.systemMessage.value, equals('Custom system'));
         expect(state.userMessage.value, equals('Custom user'));
       });

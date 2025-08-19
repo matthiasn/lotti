@@ -80,7 +80,9 @@ class PromptBuilderHelper {
       // For images and audio, check if they are linked to a task
       final linkedTask = await _findLinkedTask(entity);
       if (linkedTask != null) {
-        return aiInputRepository.buildTaskDetailsJson(id: linkedTask.id);
+        final json =
+            await aiInputRepository.buildTaskDetailsJson(id: linkedTask.id);
+        return json;
       }
     }
     return null;

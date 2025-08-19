@@ -247,10 +247,14 @@ class PromptFormController extends _$PromptFormController {
       );
     }
 
+    // Safely handle createdAt based on config type
+    final createdAt = _config?.createdAt ??
+        (configToSave is AiConfigPrompt ? configToSave.createdAt : null) ??
+        DateTime.now();
+
     final finalConfig = configToSave.copyWith(
       id: _config?.id ?? configToSave.id,
-      createdAt:
-          _config?.createdAt ?? (configToSave as AiConfigPrompt).createdAt,
+      createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
 
@@ -295,27 +299,34 @@ class PromptFormController extends _$PromptFormController {
     final currentState = state.valueOrNull;
     if (currentState == null) return;
 
-    if (track && currentState.preconfiguredPromptId != null) {
-      // When enabling tracking, update system and user messages from preconfigured prompt
+    if (track) {
+      // Guard against enabling tracking when preconfiguredPromptId is missing
+      if (currentState.preconfiguredPromptId == null) {
+        _setAllFields(trackPreconfigured: false);
+        return;
+      }
+
+      // Guard against enabling tracking when lookup returns null
       final preconfiguredPrompt =
           preconfiguredPrompts[currentState.preconfiguredPromptId!];
-      if (preconfiguredPrompt != null) {
-        systemMessageController.text = preconfiguredPrompt.systemMessage;
-        userMessageController.text = preconfiguredPrompt.userMessage;
-
-        _setAllFields(
-          systemMessage: preconfiguredPrompt.systemMessage,
-          userMessage: preconfiguredPrompt.userMessage,
-          trackPreconfigured: true,
-        );
-      } else {
-        // Preconfigured prompt not found, but still enable tracking
-        _setAllFields(trackPreconfigured: true);
+      if (preconfiguredPrompt == null) {
+        _setAllFields(trackPreconfigured: false);
+        return;
       }
+
+      // Only enable tracking after successful prompt lookup
+      systemMessageController.text = preconfiguredPrompt.systemMessage;
+      userMessageController.text = preconfiguredPrompt.userMessage;
+
+      _setAllFields(
+        systemMessage: preconfiguredPrompt.systemMessage,
+        userMessage: preconfiguredPrompt.userMessage,
+        trackPreconfigured: true,
+      );
     } else {
-      // Just toggle the tracking flag, but keep the preconfiguredPromptId
+      // Just toggle the tracking flag off, but keep the preconfiguredPromptId
       // so the toggle remains visible
-      _setAllFields(trackPreconfigured: track);
+      _setAllFields(trackPreconfigured: false);
     }
   }
 }
