@@ -8,10 +8,12 @@ add-extensions:
     version: '24.08'
     add-ld-path: .
     
-env:
-  LD_LIBRARY_PATH: /app/lib:/app/lib/ffmpeg
+build-options:
+  env:
+    LD_LIBRARY_PATH: /app/lib:/app/lib64:/app/lib/ffmpeg
 command: /app/lotti
 finish-args:
+  - --env=LD_LIBRARY_PATH=/app/lib:/app/lib64:/app/lib/ffmpeg
   - --share=network
   - --share=ipc
   - --socket=fallback-x11
