@@ -11,7 +11,7 @@ void main() {
 
     test('should contain all expected prompt types', () {
       final promptTypes =
-          preconfiguredPrompts.map((p) => p.aiResponseType).toSet();
+          preconfiguredPrompts.values.map((p) => p.aiResponseType).toSet();
       expect(
         promptTypes,
         containsAll([
@@ -72,7 +72,7 @@ void main() {
         expect(checklistUpdatesPrompt.name, equals('Checklist Updates'));
         expect(checklistUpdatesPrompt.requiredInputData,
             equals([InputDataType.task]));
-        expect(checklistUpdatesPrompt.useReasoning, isFalse);
+        expect(checklistUpdatesPrompt.useReasoning, isTrue);
       });
 
       test('should have non-empty messages', () {
@@ -233,6 +233,7 @@ void main() {
     group('PreconfiguredPrompt Class', () {
       test('should create instance with all required fields', () {
         const testPrompt = PreconfiguredPrompt(
+          id: 'test_prompt',
           name: 'Test Prompt',
           systemMessage: 'System message',
           userMessage: 'User message',
@@ -254,6 +255,7 @@ void main() {
 
       test('should create instance with optional defaultVariables', () {
         const testPrompt = PreconfiguredPrompt(
+          id: 'test_prompt',
           name: 'Test Prompt',
           systemMessage: 'System message',
           userMessage: 'User message',
@@ -271,7 +273,7 @@ void main() {
     group('Prompt Content Validation', () {
       test('prompts can have duplicate types for different contexts', () {
         final types =
-            preconfiguredPrompts.map((p) => p.aiResponseType).toList();
+            preconfiguredPrompts.values.map((p) => p.aiResponseType).toList();
         // We now have multiple prompts with same type but different contexts
         expect(types.where((t) => t == AiResponseType.imageAnalysis).length,
             equals(2));
@@ -286,12 +288,12 @@ void main() {
       });
 
       test('all prompts should have unique names', () {
-        final names = preconfiguredPrompts.map((p) => p.name).toList();
+        final names = preconfiguredPrompts.values.map((p) => p.name).toList();
         expect(names.length, equals(names.toSet().length));
       });
 
       test('all prompts should have descriptive system messages', () {
-        for (final prompt in preconfiguredPrompts) {
+        for (final prompt in preconfiguredPrompts.values) {
           expect(prompt.systemMessage.length, greaterThan(50));
           // Different prompts have different styles
           if (prompt.aiResponseType != AiResponseType.checklistUpdates) {

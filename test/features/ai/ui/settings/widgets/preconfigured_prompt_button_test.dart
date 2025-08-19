@@ -147,7 +147,7 @@ void main() {
 
         // Verify the modal has action buttons for each preconfigured prompt
         // Note: Some prompts may appear multiple times (e.g., in descriptions)
-        for (final prompt in preconfiguredPrompts) {
+        for (final prompt in preconfiguredPrompts.values) {
           expect(find.text(prompt.name), findsWidgets);
         }
 

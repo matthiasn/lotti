@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
+import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -46,9 +47,15 @@ const kMinExistingTitleLengthForAiSuggestion = 5;
 /// This replaces the specialized controllers and provides a generic way
 /// to run any configured AI prompt
 class UnifiedAiInferenceRepository {
-  UnifiedAiInferenceRepository(this.ref);
+  UnifiedAiInferenceRepository(this.ref) {
+    promptBuilderHelper = PromptBuilderHelper(
+      aiInputRepository: ref.read(aiInputRepositoryProvider),
+      journalRepository: ref.read(journalRepositoryProvider),
+    );
+  }
 
   final Ref ref;
+  late final PromptBuilderHelper promptBuilderHelper;
   AutoChecklistService? _autoChecklistService;
 
   AutoChecklistService get autoChecklistService {
@@ -231,7 +238,7 @@ class UnifiedAiInferenceRepository {
       }
 
       // Build the prompt with the entity data
-      final prompt = await _buildPromptWithData(
+      final prompt = await promptBuilderHelper.buildPromptWithData(
         promptConfig: promptConfig,
         entity: entity,
       );
@@ -247,8 +254,13 @@ class UnifiedAiInferenceRepository {
       // Run the inference
       final buffer = StringBuffer();
 
+      // Get system message - use preconfigured if tracking is enabled
+      var systemMessage = promptBuilderHelper.getEffectiveMessage(
+        promptConfig: promptConfig,
+        isSystemMessage: true,
+      );
+
       // Modify system message if task has language preference
-      var systemMessage = promptConfig.systemMessage;
       if (entity is Task &&
           entity.data.languageCode != null &&
           promptConfig.aiResponseType == AiResponseType.taskSummary) {
@@ -536,57 +548,6 @@ class UnifiedAiInferenceRepository {
 
       rethrow;
     }
-  }
-
-  /// Build prompt with entity data
-  Future<String?> _buildPromptWithData({
-    required AiConfigPrompt promptConfig,
-    required JournalEntity entity,
-  }) async {
-    final aiInputRepo = ref.read(aiInputRepositoryProvider);
-    var prompt = promptConfig.userMessage;
-
-    // Check if prompt contains {{task}} placeholder
-    if (prompt.contains('{{task}}')) {
-      // Handle different entity types that might need task context
-      if (entity is JournalImage || entity is JournalAudio) {
-        // For images and audio, check if they are linked to a task
-        final journalRepo = ref.read(journalRepositoryProvider);
-        final linkedFromEntities = await journalRepo.getLinkedToEntities(
-          linkedTo: entity.id,
-        );
-
-        // Find if any linked entity is a task
-        final linkedTask = linkedFromEntities.firstWhereOrNull(
-          (entity) => entity is Task,
-        ) as Task?;
-
-        if (linkedTask != null) {
-          // Get task context and replace {{task}} placeholder
-          final taskJson =
-              await aiInputRepo.buildTaskDetailsJson(id: linkedTask.id);
-          if (taskJson != null) {
-            prompt = prompt.replaceAll('{{task}}', taskJson);
-          }
-        }
-        // If no linked task, leave the prompt as is (with {{task}} placeholder)
-        // The AI will handle it gracefully
-      } else if (entity is Task) {
-        // For task entities, directly replace the placeholder
-        final taskJson = await aiInputRepo.buildTaskDetailsJson(id: entity.id);
-        if (taskJson != null) {
-          prompt = prompt.replaceAll('{{task}}', taskJson);
-        }
-      }
-    } else if (promptConfig.requiredInputData.contains(InputDataType.task) &&
-        entity is Task) {
-      // For prompts that require task data but don't use {{task}} placeholder
-      // (legacy support for summaries, action items)
-      final jsonString = await aiInputRepo.buildTaskDetailsJson(id: entity.id);
-      prompt = '${promptConfig.userMessage} \n $jsonString';
-    }
-
-    return prompt;
   }
 
   /// Prepare images if required

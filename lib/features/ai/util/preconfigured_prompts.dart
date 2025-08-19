@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 /// to quickly create common prompt types.
 class PreconfiguredPrompt {
   const PreconfiguredPrompt({
+    required this.id,
     required this.name,
     required this.systemMessage,
     required this.userMessage,
@@ -29,6 +30,7 @@ class PreconfiguredPrompt {
     this.defaultVariables,
   });
 
+  final String id;
   final String name;
   final String systemMessage;
   final String userMessage;
@@ -39,18 +41,19 @@ class PreconfiguredPrompt {
   final Map<String, String>? defaultVariables;
 }
 
-/// All available preconfigured prompts
-const List<PreconfiguredPrompt> preconfiguredPrompts = [
-  taskSummaryPrompt,
-  checklistUpdatesPrompt,
-  imageAnalysisPrompt,
-  imageAnalysisInTaskContextPrompt,
-  audioTranscriptionPrompt,
-  audioTranscriptionWithTaskContextPrompt,
-];
+/// Lookup map for finding preconfigured prompts by ID
+const Map<String, PreconfiguredPrompt> preconfiguredPrompts = {
+  'task_summary': taskSummaryPrompt,
+  'checklist_updates': checklistUpdatesPrompt,
+  'image_analysis': imageAnalysisPrompt,
+  'image_analysis_task_context': imageAnalysisInTaskContextPrompt,
+  'audio_transcription': audioTranscriptionPrompt,
+  'audio_transcription_task_context': audioTranscriptionWithTaskContextPrompt,
+};
 
 /// Task Summary prompt template
 const taskSummaryPrompt = PreconfiguredPrompt(
+  id: 'task_summary',
   name: 'Task Summary',
   systemMessage: '''
 You are a helpful AI assistant that creates clear, concise task summaries. 
@@ -130,6 +133,7 @@ Annoyances:
 
 /// Checklist Updates prompt template
 const checklistUpdatesPrompt = PreconfiguredPrompt(
+  id: 'checklist_updates',
   name: 'Checklist Updates',
   systemMessage: '''
 You are a task management assistant that ONLY processes task updates through function calls.
@@ -201,13 +205,14 @@ REMEMBER:
 - Only use the functions listed in the system message''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.checklistUpdates,
-  useReasoning: false,
+  useReasoning: true,
   description:
       'Process task updates through function calls only (language detection, checklist completions, new items)',
 );
 
 /// Image Analysis prompt template
 const imageAnalysisPrompt = PreconfiguredPrompt(
+  id: 'image_analysis',
   name: 'Image Analysis',
   systemMessage:
       'You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects.',
@@ -222,6 +227,7 @@ Analyze the provided image(s) in detail, focusing on both the content and style 
 
 /// Image Analysis in Task Context prompt template
 const imageAnalysisInTaskContextPrompt = PreconfiguredPrompt(
+  id: 'image_analysis_task_context',
   name: 'Image Analysis in Task Context',
   systemMessage: '''
 You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects. 
@@ -260,6 +266,7 @@ If the image IS relevant:
 
 /// Audio Transcription prompt template
 const audioTranscriptionPrompt = PreconfiguredPrompt(
+  id: 'audio_transcription',
   name: 'Audio Transcription',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content. 
@@ -278,6 +285,7 @@ Note any significant non-speech audio events [in brackets]. Remove filler words.
 
 /// Audio Transcription with Task Context prompt template
 const audioTranscriptionWithTaskContextPrompt = PreconfiguredPrompt(
+  id: 'audio_transcription_task_context',
   name: 'Audio Transcription with Task Context',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content. 

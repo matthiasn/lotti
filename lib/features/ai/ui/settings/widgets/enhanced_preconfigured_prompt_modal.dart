@@ -67,7 +67,7 @@ class _EnhancedPreconfiguredPromptModalState
         const SizedBox(height: 16),
 
         // Prompt template cards
-        ...preconfiguredPrompts.map((prompt) => Padding(
+        ...preconfiguredPrompts.values.map((prompt) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _PromptTemplateCard(
                 prompt: prompt,

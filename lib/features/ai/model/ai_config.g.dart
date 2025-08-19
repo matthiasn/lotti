@@ -125,6 +125,8 @@ _$AiConfigPromptImpl _$$AiConfigPromptImplFromJson(Map<String, dynamic> json) =>
       ),
       category: json['category'] as String?,
       archived: json['archived'] as bool? ?? false,
+      trackPreconfigured: json['trackPreconfigured'] as bool? ?? false,
+      preconfiguredPromptId: json['preconfiguredPromptId'] as String?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -149,6 +151,8 @@ Map<String, dynamic> _$$AiConfigPromptImplToJson(
       'defaultVariables': instance.defaultVariables,
       'category': instance.category,
       'archived': instance.archived,
+      'trackPreconfigured': instance.trackPreconfigured,
+      'preconfiguredPromptId': instance.preconfiguredPromptId,
       'runtimeType': instance.$type,
     };
 

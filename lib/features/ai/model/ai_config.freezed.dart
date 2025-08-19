@@ -78,7 +78,9 @@ mixin _$AiConfig {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)
         prompt,
   }) =>
       throw _privateConstructorUsedError;
@@ -124,7 +126,9 @@ mixin _$AiConfig {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)?
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)?
         prompt,
   }) =>
       throw _privateConstructorUsedError;
@@ -170,7 +174,9 @@ mixin _$AiConfig {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)?
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)?
         prompt,
     required TResult orElse(),
   }) =>
@@ -467,7 +473,9 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)
         prompt,
   }) {
     return inferenceProvider(id, baseUrl, apiKey, name, createdAt,
@@ -517,7 +525,9 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)?
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)?
         prompt,
   }) {
     return inferenceProvider?.call(id, baseUrl, apiKey, name, createdAt,
@@ -567,7 +577,9 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)?
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)?
         prompt,
     required TResult orElse(),
   }) {
@@ -928,7 +940,9 @@ class _$AiConfigModelImpl implements AiConfigModel {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)
         prompt,
   }) {
     return model(
@@ -989,7 +1003,9 @@ class _$AiConfigModelImpl implements AiConfigModel {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)?
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)?
         prompt,
   }) {
     return model?.call(
@@ -1050,7 +1066,9 @@ class _$AiConfigModelImpl implements AiConfigModel {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)?
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)?
         prompt,
     required TResult orElse(),
   }) {
@@ -1183,7 +1201,9 @@ abstract class _$$AiConfigPromptImplCopyWith<$Res>
       String? description,
       Map<String, String>? defaultVariables,
       String? category,
-      bool archived});
+      bool archived,
+      bool trackPreconfigured,
+      String? preconfiguredPromptId});
 }
 
 /// @nodoc
@@ -1215,6 +1235,8 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
     Object? defaultVariables = freezed,
     Object? category = freezed,
     Object? archived = null,
+    Object? trackPreconfigured = null,
+    Object? preconfiguredPromptId = freezed,
   }) {
     return _then(_$AiConfigPromptImpl(
       id: null == id
@@ -1281,6 +1303,14 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
           ? _value.archived
           : archived // ignore: cast_nullable_to_non_nullable
               as bool,
+      trackPreconfigured: null == trackPreconfigured
+          ? _value.trackPreconfigured
+          : trackPreconfigured // ignore: cast_nullable_to_non_nullable
+              as bool,
+      preconfiguredPromptId: freezed == preconfiguredPromptId
+          ? _value.preconfiguredPromptId
+          : preconfiguredPromptId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -1305,6 +1335,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       final Map<String, String>? defaultVariables,
       this.category,
       this.archived = false,
+      this.trackPreconfigured = false,
+      this.preconfiguredPromptId,
       final String? $type})
       : _modelIds = modelIds,
         _requiredInputData = requiredInputData,
@@ -1368,13 +1400,18 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
   @override
   @JsonKey()
   final bool archived;
+  @override
+  @JsonKey()
+  final bool trackPreconfigured;
+  @override
+  final String? preconfiguredPromptId;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
   @override
   String toString() {
-    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, aiResponseType: $aiResponseType, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category, archived: $archived)';
+    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, aiResponseType: $aiResponseType, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category, archived: $archived, trackPreconfigured: $trackPreconfigured, preconfiguredPromptId: $preconfiguredPromptId)';
   }
 
   @override
@@ -1409,7 +1446,11 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             (identical(other.category, category) ||
                 other.category == category) &&
             (identical(other.archived, archived) ||
-                other.archived == archived));
+                other.archived == archived) &&
+            (identical(other.trackPreconfigured, trackPreconfigured) ||
+                other.trackPreconfigured == trackPreconfigured) &&
+            (identical(other.preconfiguredPromptId, preconfiguredPromptId) ||
+                other.preconfiguredPromptId == preconfiguredPromptId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1431,7 +1472,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       description,
       const DeepCollectionEquality().hash(_defaultVariables),
       category,
-      archived);
+      archived,
+      trackPreconfigured,
+      preconfiguredPromptId);
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -1485,7 +1528,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)
         prompt,
   }) {
     return prompt(
@@ -1504,7 +1549,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
         description,
         defaultVariables,
         category,
-        archived);
+        archived,
+        trackPreconfigured,
+        preconfiguredPromptId);
   }
 
   @override
@@ -1550,7 +1597,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)?
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)?
         prompt,
   }) {
     return prompt?.call(
@@ -1569,7 +1618,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
         description,
         defaultVariables,
         category,
-        archived);
+        archived,
+        trackPreconfigured,
+        preconfiguredPromptId);
   }
 
   @override
@@ -1615,7 +1666,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             String? description,
             Map<String, String>? defaultVariables,
             String? category,
-            bool archived)?
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)?
         prompt,
     required TResult orElse(),
   }) {
@@ -1636,7 +1689,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
           description,
           defaultVariables,
           category,
-          archived);
+          archived,
+          trackPreconfigured,
+          preconfiguredPromptId);
     }
     return orElse();
   }
@@ -1701,7 +1756,9 @@ abstract class AiConfigPrompt implements AiConfig {
       final String? description,
       final Map<String, String>? defaultVariables,
       final String? category,
-      final bool archived}) = _$AiConfigPromptImpl;
+      final bool archived,
+      final bool trackPreconfigured,
+      final String? preconfiguredPromptId}) = _$AiConfigPromptImpl;
 
   factory AiConfigPrompt.fromJson(Map<String, dynamic> json) =
       _$AiConfigPromptImpl.fromJson;
@@ -1727,6 +1784,8 @@ abstract class AiConfigPrompt implements AiConfig {
   Map<String, String>? get defaultVariables;
   String? get category;
   bool get archived;
+  bool get trackPreconfigured;
+  String? get preconfiguredPromptId;
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.

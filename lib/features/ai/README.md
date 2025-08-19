@@ -282,6 +282,7 @@ To integrate a new handler:
 - **`preconfigured_prompts.dart`**: Built-in prompt templates
   - Six main prompt types (Task Summary, Checklist Updates, etc.)
   - Consistent formatting and instructions
+  - Unique IDs enable [prompt template tracking](#prompt-template-tracking)
 
 #### Constants & Configuration
 - **`constants/provider_config.dart`**: Configuration constants for AI providers
@@ -586,6 +587,7 @@ Prompts can be:
 - **Preconfigured**: Built-in templates for common tasks
 - **Custom**: User-created prompts with variables
 - **Context-aware**: Automatically adapt based on entity relationships
+- **Tracked**: Optionally track updates from preconfigured templates
 
 ### Model Configuration
 
@@ -595,6 +597,37 @@ Models define:
 - Function calling support
 - Token limits
 - Supported modalities
+
+### Prompt Template Tracking
+
+The system supports tracking updates from preconfigured prompt templates, ensuring prompts stay synchronized with template improvements.
+
+#### How It Works
+
+1. **Template Creation**: Tracking is enabled by default when creating from a preconfigured template
+2. **Visual Toggle**: A sync icon toggle controls tracking status
+3. **Tracked Mode**: 
+   - System and user messages load dynamically from the template
+   - Prompt fields become read-only
+   - Template improvements apply automatically
+4. **Custom Mode**: 
+   - Fields become editable
+   - Custom changes are preserved
+   - Template ID is retained for re-enabling
+
+#### Implementation
+
+- **Data Model**: Added `trackPreconfigured` (boolean) and `preconfiguredPromptId` (string) to `AiConfigPrompt`
+- **Dynamic Loading**: `PromptBuilderHelper` loads messages from templates when tracking is enabled
+- **UI State**: Visual toggle with sync icon indicates tracking status
+- **Persistence**: Tracking settings persist through saves and edits
+
+#### Benefits
+
+- Automatic updates from template improvements
+- No manual prompt maintenance required
+- Toggle between tracked and custom modes
+- Clear visual tracking status
 
 ## UI Components
 

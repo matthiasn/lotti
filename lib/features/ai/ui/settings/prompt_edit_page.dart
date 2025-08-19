@@ -232,14 +232,70 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
             icon: Icons.edit_note_rounded,
             description: context.messages.promptContentDescription,
             children: [
+              // Track Preconfigured Prompt toggle (only show if a preconfigured prompt was selected)
+              if (formState.preconfiguredPromptId != null &&
+                  formState.preconfiguredPromptId!.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.primaryContainer
+                        .withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: context.colorScheme.primaryContainer
+                          .withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.sync_rounded,
+                        color: context.colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Track Preconfigured Prompt',
+                              style: context.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Keep this prompt synchronized with updates to the template',
+                              style: context.textTheme.bodySmall?.copyWith(
+                                color: context.colorScheme.onSurface
+                                    .withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      UnifiedToggle(
+                        value: formState.trackPreconfigured,
+                        onChanged: formController.toggleTrackPreconfigured,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
               // System Prompt
               AiTextField(
                 label: context.messages.promptSystemPromptLabel,
                 hint: context.messages.promptSystemPromptHint,
                 controller: formController.systemMessageController,
-                onChanged: formController.systemMessageChanged,
+                onChanged: formState.trackPreconfigured
+                    ? null
+                    : formController.systemMessageChanged,
                 validator: (_) => formState.systemMessage.error?.displayMessage,
                 minLines: 3,
+                readOnly: formState.trackPreconfigured,
               ),
               const SizedBox(height: 20),
 
@@ -248,9 +304,12 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                 label: context.messages.promptUserPromptLabel,
                 hint: context.messages.promptUserPromptHint,
                 controller: formController.userMessageController,
-                onChanged: formController.userMessageChanged,
+                onChanged: formState.trackPreconfigured
+                    ? null
+                    : formController.userMessageChanged,
                 validator: (_) => formState.userMessage.error?.displayMessage,
                 minLines: 3,
+                readOnly: formState.trackPreconfigured,
               ),
             ],
           ),

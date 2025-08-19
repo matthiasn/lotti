@@ -74,6 +74,8 @@ class PromptFormController extends _$PromptFormController {
         category: PromptCategory.pure(_config!.category ?? ''),
         defaultVariables: _config!.defaultVariables ?? {},
         aiResponseType: PromptAiResponseType.pure(_config!.aiResponseType),
+        trackPreconfigured: _config!.trackPreconfigured,
+        preconfiguredPromptId: _config!.preconfiguredPromptId,
       );
     }
 
@@ -93,6 +95,8 @@ class PromptFormController extends _$PromptFormController {
     String? category,
     Map<String, String>? defaultVariables,
     AiResponseType? aiResponseType,
+    bool? trackPreconfigured,
+    String? preconfiguredPromptId,
   }) {
     final prev = state.valueOrNull;
     if (prev == null) return;
@@ -132,6 +136,9 @@ class PromptFormController extends _$PromptFormController {
         aiResponseType: aiResponseType != null
             ? PromptAiResponseType.dirty(aiResponseType)
             : prev.aiResponseType,
+        trackPreconfigured: trackPreconfigured ?? prev.trackPreconfigured,
+        preconfiguredPromptId:
+            preconfiguredPromptId ?? prev.preconfiguredPromptId,
       ),
     );
   }
@@ -240,14 +247,18 @@ class PromptFormController extends _$PromptFormController {
       );
     }
 
-    await repository.saveConfig(
-      configToSave.copyWith(
-        id: _config?.id ?? configToSave.id,
-        createdAt:
-            _config?.createdAt ?? (configToSave as AiConfigPrompt).createdAt,
-        updatedAt: DateTime.now(),
-      ),
+    // Safely handle createdAt based on config type
+    final createdAt = _config?.createdAt ??
+        (configToSave is AiConfigPrompt ? configToSave.createdAt : null) ??
+        DateTime.now();
+
+    final finalConfig = configToSave.copyWith(
+      id: _config?.id ?? configToSave.id,
+      createdAt: createdAt,
+      updatedAt: DateTime.now(),
     );
+
+    await repository.saveConfig(finalConfig);
   }
 
   /// Populate the form with a preconfigured prompt template.
@@ -269,6 +280,8 @@ class PromptFormController extends _$PromptFormController {
       description: template.description,
       defaultVariables: template.defaultVariables,
       aiResponseType: template.aiResponseType,
+      trackPreconfigured: true,
+      preconfiguredPromptId: template.id,
     );
   }
 
@@ -278,5 +291,42 @@ class PromptFormController extends _$PromptFormController {
     userMessageController.clear();
     descriptionController.clear();
     state = AsyncData(PromptFormState());
+  }
+
+  /// Toggle tracking of preconfigured prompt
+  // ignore: avoid_positional_boolean_parameters
+  void toggleTrackPreconfigured(bool track) {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    if (track) {
+      // Guard against enabling tracking when preconfiguredPromptId is missing
+      if (currentState.preconfiguredPromptId == null) {
+        _setAllFields(trackPreconfigured: false);
+        return;
+      }
+
+      // Guard against enabling tracking when lookup returns null
+      final preconfiguredPrompt =
+          preconfiguredPrompts[currentState.preconfiguredPromptId!];
+      if (preconfiguredPrompt == null) {
+        _setAllFields(trackPreconfigured: false);
+        return;
+      }
+
+      // Only enable tracking after successful prompt lookup
+      systemMessageController.text = preconfiguredPrompt.systemMessage;
+      userMessageController.text = preconfiguredPrompt.userMessage;
+
+      _setAllFields(
+        systemMessage: preconfiguredPrompt.systemMessage,
+        userMessage: preconfiguredPrompt.userMessage,
+        trackPreconfigured: true,
+      );
+    } else {
+      // Just toggle the tracking flag off, but keep the preconfiguredPromptId
+      // so the toggle remains visible
+      _setAllFields(trackPreconfigured: false);
+    }
   }
 }

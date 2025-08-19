@@ -97,6 +97,8 @@ class PromptFormState with FormzMixin {
     this.category = const PromptCategory.pure(),
     this.defaultVariables = const {},
     this.aiResponseType = const PromptAiResponseType.pure(),
+    this.trackPreconfigured = false,
+    this.preconfiguredPromptId,
   });
 
   final String? id; // null for new prompts
@@ -112,6 +114,8 @@ class PromptFormState with FormzMixin {
   final PromptCategory category;
   final Map<String, String> defaultVariables;
   final PromptAiResponseType aiResponseType;
+  final bool trackPreconfigured;
+  final String? preconfiguredPromptId;
 
   PromptFormState copyWith({
     String? id,
@@ -129,6 +133,8 @@ class PromptFormState with FormzMixin {
     bool? isSubmitting,
     bool? submitFailed,
     PromptAiResponseType? aiResponseType,
+    bool? trackPreconfigured,
+    String? preconfiguredPromptId,
   }) {
     return PromptFormState(
       id: id ?? this.id,
@@ -144,6 +150,9 @@ class PromptFormState with FormzMixin {
       category: category ?? this.category,
       defaultVariables: defaultVariables ?? this.defaultVariables,
       aiResponseType: aiResponseType ?? this.aiResponseType,
+      trackPreconfigured: trackPreconfigured ?? this.trackPreconfigured,
+      preconfiguredPromptId:
+          preconfiguredPromptId ?? this.preconfiguredPromptId,
     );
   }
 
@@ -179,6 +188,8 @@ class PromptFormState with FormzMixin {
       description: description.value.isEmpty ? null : description.value,
       category: category.value.isEmpty ? null : category.value,
       defaultVariables: defaultVariables.isEmpty ? null : defaultVariables,
+      trackPreconfigured: trackPreconfigured,
+      preconfiguredPromptId: preconfiguredPromptId,
     );
   }
 }
