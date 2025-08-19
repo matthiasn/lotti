@@ -63,6 +63,9 @@ modules:
       # Copy entire Flutter bundle to /app (Flutter expects this structure)
       - cp -r . /app/
       
+      # Remove 1024x1024 icons to comply with Flatpak's maximum icon size limit of 512x512
+      - find /app -name "*1024*" -type f -delete
+      
       # Ensure executable permissions
       - chmod +x /app/lotti
       
