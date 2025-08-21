@@ -256,31 +256,53 @@ void main() {
           return;
         }
 
-        // This test verifies that portal permission is integrated with standard permission
-        // The actual implementation calls both portal and standard permission checks
-        expect(repository.hasPermission(), isA<Future<bool>>());
+        // Mock standard permission to return true
+        when(() => mockAudioRecorder.hasPermission()).thenAnswer((_) async => true);
+        
+        // The repository should check portal first, then standard permission
+        final hasPermission = await repository.hasPermission();
+        
+        // Verify that standard permission check was called after portal check
+        verify(() => mockAudioRecorder.hasPermission()).called(1);
+        expect(hasPermission, isTrue);
       });
 
-      test('should return false when portal access is denied', () async {
+      test('should handle portal unavailability gracefully', () async {
         if (!PortalService.shouldUsePortal) {
           // Skip test in non-Flatpak environment
           return;
         }
 
-        // This test verifies that false is returned when portal access is denied
-        // The actual implementation returns false and logs an exception
-        expect(repository.hasPermission(), isA<Future<bool>>());
+        // Mock standard permission to return false
+        when(() => mockAudioRecorder.hasPermission()).thenAnswer((_) async => false);
+        
+        // Mock the logging service to capture portal unavailability exception
+        when(() => mockLoggingService.captureException(any(), 
+          domain: any(named: 'domain'), 
+          subDomain: any(named: 'subDomain'))).thenReturn(null);
+        
+        final hasPermission = await repository.hasPermission();
+        
+        // Verify that standard permission check was called (fallback behavior)
+        verify(() => mockAudioRecorder.hasPermission()).called(1);
+        expect(hasPermission, isFalse);
       });
 
-      test('should continue to standard check when portal succeeds', () async {
+      test('should continue to standard check when portal is not available', () async {
         if (!PortalService.shouldUsePortal) {
           // Skip test in non-Flatpak environment
           return;
         }
 
-        // This test verifies that standard permission check continues when portal succeeds
-        // The actual implementation calls mockAudioRecorder.hasPermission()
-        expect(repository.hasPermission(), isA<Future<bool>>());
+        // Mock standard permission to return true
+        when(() => mockAudioRecorder.hasPermission()).thenAnswer((_) async => true);
+        
+        // The repository should fall back to standard permission check
+        final hasPermission = await repository.hasPermission();
+        
+        // Verify that standard permission check was called
+        verify(() => mockAudioRecorder.hasPermission()).called(1);
+        expect(hasPermission, isTrue);
       });
     });
 
