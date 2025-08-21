@@ -155,20 +155,63 @@ void main() {
     });
 
     group('Portal Service Lifecycle', () {
-      test('should initialize portal service correctly', () async {
+      test('should initialize portal service correctly with state transitions', () async {
         final portalService = AudioPortalService();
+        
+        // Initial state should be uninitialized
         expect(portalService.isInitialized, isFalse);
         
+        // After initialization, state should be true
         await portalService.initialize();
         expect(portalService.isInitialized, isTrue);
         
+        // After disposal, state should be false
         await portalService.dispose();
         expect(portalService.isInitialized, isFalse);
       });
 
-      test('should handle portal service disposal', () async {
+      test('should handle portal service disposal with proper state management', () async {
         final portalService = AudioPortalService();
+        
+        // Start uninitialized
+        expect(portalService.isInitialized, isFalse);
+        
+        // Initialize and verify state
         await portalService.initialize();
+        expect(portalService.isInitialized, isTrue);
+        
+        // Dispose and verify state
+        await portalService.dispose();
+        expect(portalService.isInitialized, isFalse);
+      });
+
+      test('should handle idempotent initialize calls safely', () async {
+        final portalService = AudioPortalService();
+        
+        // Initial state
+        expect(portalService.isInitialized, isFalse);
+        
+        // First initialize
+        await portalService.initialize();
+        expect(portalService.isInitialized, isTrue);
+        
+        // Second initialize should not change state (idempotent)
+        await portalService.initialize();
+        expect(portalService.isInitialized, isTrue);
+      });
+
+      test('should handle idempotent dispose calls safely', () async {
+        final portalService = AudioPortalService();
+        
+        // Initialize first
+        await portalService.initialize();
+        expect(portalService.isInitialized, isTrue);
+        
+        // First dispose
+        await portalService.dispose();
+        expect(portalService.isInitialized, isFalse);
+        
+        // Second dispose should not change state (idempotent)
         await portalService.dispose();
         expect(portalService.isInitialized, isFalse);
       });
