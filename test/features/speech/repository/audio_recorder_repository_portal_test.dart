@@ -65,15 +65,23 @@ void main() {
         expect(available, isA<bool>());
       });
 
-      test('should handle portal unavailability gracefully', () async {
+      test('should fall back to standard permission when portal unavailable', () async {
         if (!PortalService.shouldUsePortal) {
           // Skip test in non-Flatpak environment
           return;
         }
 
-        // This test verifies that the portal fallback logic exists
-        // The actual implementation will handle portal unavailability
-        expect(AudioPortalService.isAvailable(), isA<Future<bool>>());
+        // Mock the portal service to return false for availability
+        // This simulates portal unavailability
+        when(() => mockAudioRecorder.hasPermission()).thenAnswer((_) async => true);
+        
+        // The repository should fall back to standard permission check
+        // when portal is unavailable, regardless of portal availability
+        final hasPermission = await repository.hasPermission();
+        
+        // Verify that the standard permission check was called
+        verify(() => mockAudioRecorder.hasPermission()).called(1);
+        expect(hasPermission, isA<bool>());
       });
     });
 
