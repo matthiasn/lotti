@@ -123,7 +123,7 @@ void main() {
         }
 
         // Mock the logging service to capture exceptions
-        when(() => mockLoggingService.captureException(any(), 
+        when(() => mockLoggingService.captureException(any<dynamic>(), 
           domain: any(named: 'domain'), 
           subDomain: any(named: 'subDomain'))).thenReturn(null);
 
@@ -135,7 +135,7 @@ void main() {
           expect(e, isA<Exception>());
           
           // Verify that logging was called for portal fallback
-          verify(() => mockLoggingService.captureException(any(), 
+          verify(() => mockLoggingService.captureException(any<dynamic>(), 
             domain: screenshotDomain, 
             subDomain: 'portal_fallback')).called(1);
         }
