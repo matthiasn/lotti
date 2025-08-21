@@ -25,13 +25,8 @@ finish-args:
   - --filesystem=xdg-download/Lotti:create
   # DBus access for system services
   - --system-talk-name=org.freedesktop.NetworkManager
-  - --socket=system-bus
-  - --socket=session-bus
   # Secret service access for keyring
   - --talk-name=org.freedesktop.secrets
-  - --talk-name=org.gnome.keyring
-  - --talk-name=org.kde.kwalletd5
-  - --talk-name=org.kde.kwalletd
   
 modules:
   - name: libsecret

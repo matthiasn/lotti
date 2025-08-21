@@ -277,7 +277,7 @@ void main() {
         when(() => mockAudioRecorder.hasPermission()).thenAnswer((_) async => false);
         
         // Mock the logging service to capture portal unavailability exception
-        when(() => mockLoggingService.captureException(any(), 
+        when(() => mockLoggingService.captureException(any<dynamic>(), 
           domain: any(named: 'domain'), 
           subDomain: any(named: 'subDomain'))).thenReturn(null);
         
