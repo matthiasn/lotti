@@ -279,35 +279,8 @@ void main() {
       });
     });
 
-    group('URI Parsing', () {
-      test('should handle file:// URI conversion', () async {
-        if (!PortalService.shouldUsePortal) {
-          return;
-        }
-
-        try {
-          await service.initialize();
-
-          expect(() => service.takeScreenshot(), throwsA(anything));
-        } catch (e) {
-          // Expected in test environment
-        }
-      });
-
-      test('should handle non-file:// URI gracefully', () async {
-        if (!PortalService.shouldUsePortal) {
-          return;
-        }
-
-        try {
-          await service.initialize();
-
-          expect(() => service.takeScreenshot(), throwsA(anything));
-        } catch (e) {
-          // Expected in test environment
-        }
-      });
-    });
+    // Removed redundant URI parsing tests - URI parsing logic is internal to takeScreenshot method
+    // and cannot be easily tested without exposing private implementation details
 
     group('Resource Cleanup', () {
       test('should clean up signal subscriptions on success', () async {
