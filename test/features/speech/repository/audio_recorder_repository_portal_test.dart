@@ -341,34 +341,22 @@ void main() {
       });
     });
 
-    group('Portal Integration Testing', () {
-      test('should handle portal integration in hasPermission method', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        // This test verifies that portal integration is handled in hasPermission method
-        // The actual implementation includes portal access request
-        expect(repository.hasPermission(), isA<Future<bool>>());
-      });
-
-      test('should maintain backward compatibility', () async {
-        // This test verifies that the repository maintains backward compatibility
-        // The actual implementation still works in non-Flatpak environments
-        expect(repository.hasPermission(), isA<Future<bool>>());
-      });
-
-      test('should handle portal integration gracefully', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        // This test verifies that portal integration is handled gracefully
-        // The actual implementation handles all portal scenarios
-        expect(repository.hasPermission(), isA<Future<bool>>());
-      });
+    test('should maintain backward compatibility in non-Flatpak environments', () async {
+      if (PortalService.shouldUsePortal) {
+        // Skip test in Flatpak environment
+        return;
+      }
+      
+      // Mock standard permission check
+      when(() => mockAudioRecorder.hasPermission())
+          .thenAnswer((_) async => true);
+      
+      // Verify that the repository works without portal
+      final result = await repository.hasPermission();
+      expect(result, isTrue);
+      
+      // Verify that only the standard permission check was called
+      verify(() => mockAudioRecorder.hasPermission()).called(1);
     });
   });
 }
