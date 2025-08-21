@@ -78,7 +78,7 @@ void main() {
 
         // This test verifies that the portal fallback logic exists
         // The actual implementation will handle portal unavailability
-                 expect(ScreenshotPortalService.isAvailable(), isA<Future<bool>>());
+        expect(ScreenshotPortalService.isAvailable(), isA<Future<bool>>());
       });
     });
 
@@ -91,7 +91,7 @@ void main() {
 
         // This test verifies that the fallback logic exists in the code
         // The actual implementation will log an exception and fall back
-                 expect(takeScreenshot, throwsA(anything));
+        expect(takeScreenshot, throwsA(anything));
       });
 
       test('should log portal fallback exception', () async {
