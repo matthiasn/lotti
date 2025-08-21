@@ -115,135 +115,63 @@ void main() {
       });
     });
 
-    group('Portal Parameters', () {
-      test('should pass correct parameters to portal service', () async {
+    group('Portal Integration Tests', () {
+      test('should handle portal integration in Flatpak environment', () async {
         if (!PortalService.shouldUsePortal) {
           // Skip test in non-Flatpak environment
           return;
         }
 
+        // Mock the logging service to capture exceptions
+        when(() => mockLoggingService.captureException(any(), 
+          domain: any(named: 'domain'), 
+          subDomain: any(named: 'subDomain'))).thenReturn(null);
+
         try {
           await takeScreenshot();
         } catch (e) {
-          // This test verifies that the portal integration code exists
-          // The actual parameters are passed in the implementation
+          // Verify that portal integration was attempted
+          // The actual implementation will try portal first, then fall back
           expect(e, isA<Exception>());
+          
+          // Verify that logging was called for portal fallback
+          verify(() => mockLoggingService.captureException(any(), 
+            domain: screenshotDomain, 
+            subDomain: 'portal_fallback')).called(1);
         }
       });
 
-      test('should handle interactive parameter in portal call', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
+      test('should maintain traditional screenshot flow in non-Flatpak environment', () async {
+        if (PortalService.shouldUsePortal) {
+          // Skip test in Flatpak environment
           return;
         }
 
         try {
           await takeScreenshot();
         } catch (e) {
-          // This test verifies that the interactive parameter is used
-          // The actual implementation passes interactive: true
-          expect(e, isA<Exception>());
-        }
-      });
-    });
-
-    group('Portal Response Handling', () {
-      test('should handle successful portal screenshot', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // This test verifies that successful portal responses are handled
-          // The actual implementation creates ImageData from portal response
-          expect(e, isA<Exception>());
+          // Verify that traditional screenshot flow was attempted
+          // The error could be Exception or StateError depending on the environment
+          expect(e, anyOf(isA<Exception>(), isA<StateError>()));
         }
       });
 
-      test('should handle null portal response', () async {
+      test('should handle portal service lifecycle correctly', () async {
         if (!PortalService.shouldUsePortal) {
           // Skip test in non-Flatpak environment
           return;
         }
 
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // This test verifies that null portal responses are handled
-          // The actual implementation falls back to traditional methods
-          expect(e, isA<Exception>());
-        }
-      });
-    });
-
-    group('Portal Error Handling', () {
-      test('should handle portal timeout errors', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // This test verifies that portal timeout errors are handled
-          // The actual implementation falls back to traditional methods
-          expect(e, isA<Exception>());
-        }
-      });
-
-      test('should handle portal communication errors', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // This test verifies that portal communication errors are handled
-          // The actual implementation falls back to traditional methods
-          expect(e, isA<Exception>());
-        }
-      });
-    });
-
-    group('Portal Integration Flow', () {
-      test('should follow correct portal integration flow', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        // This test verifies the portal integration flow:
-        // 1. Check if portal should be used
-        // 2. Create portal service
-        // 3. Check portal availability
-        // 4. Call portal with parameters
-        // 5. Handle response or fallback
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          expect(e, isA<Exception>());
-        }
-      });
-
-      test('should maintain traditional flow when portal not available', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // This test verifies that traditional screenshot flow is maintained
-          // when portal is not available
-          expect(e, isA<Exception>());
-        }
+        final portalService = ScreenshotPortalService();
+        
+        // Test initialization
+        expect(portalService.isInitialized, isFalse);
+        await portalService.initialize();
+        expect(portalService.isInitialized, isTrue);
+        
+        // Test disposal
+        await portalService.dispose();
+        expect(portalService.isInitialized, isFalse);
       });
     });
 
@@ -279,48 +207,7 @@ void main() {
       });
     });
 
-    group('Portal Integration Edge Cases', () {
-      test('should handle portal service creation failure', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // This test verifies that portal service creation failures are handled
-          expect(e, isA<Exception>());
-        }
-      });
-
-      test('should handle portal availability check failure', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // This test verifies that portal availability check failures are handled
-          expect(e, isA<Exception>());
-        }
-      });
-
-      test('should handle portal method call failure', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // This test verifies that portal method call failures are handled
-          expect(e, isA<Exception>());
-        }
-      });
-    });
+    // Removed redundant Portal Integration Edge Cases - edge case handling is covered
+    // by the main integration tests and portal service lifecycle tests
   });
 }
