@@ -86,74 +86,32 @@ void main() {
     });
 
     group('Portal Permission Request', () {
-      test('should request portal access when in Flatpak', () async {
+      test('should handle different portal access scenarios', () async {
         if (!PortalService.shouldUsePortal) {
           // Skip test in non-Flatpak environment
           return;
         }
 
-        // This test verifies that portal access is requested
-        // The actual implementation calls portalService.requestMicrophoneAccess()
-        expect(AudioPortalService().requestMicrophoneAccess(), isA<Future<bool>>());
-      });
+        final portalService = AudioPortalService();
 
-      test('should handle portal access granted', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
+        // Method should exist and return a Future<bool>
+        final futureResult = portalService.requestMicrophoneAccess();
+        expect(futureResult, isA<Future<bool>>());
+
+        // Actual result is environment-dependent; ensure it is a boolean
+        final actualResult = await futureResult;
+        expect(actualResult, isA<bool>());
+
+        // Assert we handle both outcomes without crashing
+        if (actualResult) {
+          expect(actualResult, isTrue);
+        } else {
+          expect(actualResult, isFalse);
         }
-
-        // This test verifies that portal access granted is handled
-        // The actual implementation continues to standard permission check
-        expect(AudioPortalService().requestMicrophoneAccess(), isA<Future<bool>>());
-      });
-
-      test('should handle portal access denied', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        // This test verifies that portal access denied is handled
-        // The actual implementation logs an exception and returns false
-        expect(AudioPortalService().requestMicrophoneAccess(), isA<Future<bool>>());
       });
     });
 
-    group('Portal Error Handling', () {
-      test('should handle portal unavailability exception', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        // This test verifies that portal unavailability exceptions are handled
-        // The actual implementation logs an exception and continues
-        expect(AudioPortalService().requestMicrophoneAccess(), isA<Future<bool>>());
-      });
-
-      test('should log portal access denied exception', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        // This test verifies that portal access denied exceptions are logged
-        // The actual implementation logs with domain and subdomain
-        expect(AudioPortalService().requestMicrophoneAccess(), isA<Future<bool>>());
-      });
-
-      test('should log portal unavailability exception', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        // This test verifies that portal unavailability exceptions are logged
-        // The actual implementation logs with domain and subdomain
-        expect(AudioPortalService().requestMicrophoneAccess(), isA<Future<bool>>());
-      });
-    });
+    // Removed redundant Portal Error Handling type-check tests
 
     group('Portal Integration Flow', () {
       test('should follow correct portal integration flow', () async {
