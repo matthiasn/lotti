@@ -282,48 +282,7 @@ void main() {
     // Removed redundant URI parsing tests - URI parsing logic is internal to takeScreenshot method
     // and cannot be easily tested without exposing private implementation details
 
-    group('Resource Cleanup', () {
-      test('should clean up signal subscriptions on success', () async {
-        if (!PortalService.shouldUsePortal) {
-          return;
-        }
-
-        try {
-          await service.initialize();
-
-          expect(() => service.takeScreenshot(), throwsA(anything));
-        } catch (e) {
-          // Expected in test environment
-        }
-      });
-
-      test('should clean up signal subscriptions on error', () async {
-        if (!PortalService.shouldUsePortal) {
-          return;
-        }
-
-        try {
-          await service.initialize();
-
-          expect(() => service.takeScreenshot(), throwsA(anything));
-        } catch (e) {
-          // Expected in test environment
-        }
-      });
-
-      test('should clean up signal subscriptions on timeout', () async {
-        if (!PortalService.shouldUsePortal) {
-          return;
-        }
-
-        try {
-          await service.initialize();
-
-          expect(() => service.takeScreenshot(), throwsA(anything));
-        } catch (e) {
-          // Expected in test environment
-        }
-      });
-    });
+    // Removed redundant resource cleanup tests - cleanup is handled in the finally block
+    // of takeScreenshot method and basic lifecycle testing is covered by the initialization/disposal test
   });
 }
