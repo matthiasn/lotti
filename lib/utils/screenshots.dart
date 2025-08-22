@@ -77,7 +77,7 @@ Future<ImageData> takeScreenshot() async {
     // Check if we should use portal (Flatpak environment)
     if (Platform.isLinux && PortalService.shouldUsePortal) {
       final portalService = ScreenshotPortalService();
-      
+
       // Check if portal is available
       if (await ScreenshotPortalService.isAvailable()) {
         final screenshotPath = await portalService.takeScreenshot(
@@ -85,7 +85,7 @@ Future<ImageData> takeScreenshot() async {
           filename: filename,
           interactive: true,
         );
-        
+
         if (screenshotPath != null) {
           final imageData = ImageData(
             imageId: id,
@@ -96,10 +96,11 @@ Future<ImageData> takeScreenshot() async {
           return imageData;
         }
       }
-      
+
       // If portal fails, fall through to traditional methods
       getIt<LoggingService>().captureException(
-        Exception('Screenshot portal failed, falling back to traditional methods'),
+        Exception(
+            'Screenshot portal failed, falling back to traditional methods'),
         domain: screenshotDomain,
         subDomain: 'portal_fallback',
       );

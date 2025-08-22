@@ -59,7 +59,7 @@ class AudioRecorderRepository {
       if (Platform.isLinux && PortalService.shouldUsePortal) {
         final portalService = AudioPortalService();
         final portalAvailable = await AudioPortalService.isAvailable();
-        
+
         if (portalAvailable) {
           final hasPortalAccess = await portalService.requestMicrophoneAccess();
           if (!hasPortalAccess) {

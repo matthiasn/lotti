@@ -11,7 +11,7 @@ import 'package:timezone/timezone.dart';
 
 class NotificationConstants {
   const NotificationConstants._();
-  
+
   static const int badgeNotificationId = 1;
   static const int taskThreshold = 5;
   static const String defaultActionName = 'Open notification';
@@ -95,7 +95,8 @@ class NotificationService {
       badgeCount = count;
     }
 
-    await flutterLocalNotificationsPlugin.cancel(NotificationConstants.badgeNotificationId);
+    await flutterLocalNotificationsPlugin
+        .cancel(NotificationConstants.badgeNotificationId);
 
     if (badgeCount == 0) {
       await flutterLocalNotificationsPlugin.show(
@@ -118,8 +119,11 @@ class NotificationService {
 
       return;
     } else {
-      final title = '$badgeCount ${badgeCount == 1 ? NotificationConstants.taskSingular : NotificationConstants.taskPlural}${NotificationConstants.inProgressSuffix}';
-      final body = badgeCount < NotificationConstants.taskThreshold ? NotificationConstants.encouragementLow : NotificationConstants.encouragementHigh;
+      final title =
+          '$badgeCount ${badgeCount == 1 ? NotificationConstants.taskSingular : NotificationConstants.taskPlural}${NotificationConstants.inProgressSuffix}';
+      final body = badgeCount < NotificationConstants.taskThreshold
+          ? NotificationConstants.encouragementLow
+          : NotificationConstants.encouragementHigh;
 
       await flutterLocalNotificationsPlugin.show(
         NotificationConstants.badgeNotificationId,

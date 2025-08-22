@@ -5,7 +5,7 @@ import 'package:lotti/services/logging_service.dart';
 
 class PortalConstants {
   const PortalConstants._();
-  
+
   static const String portalBusName = 'org.freedesktop.portal.Desktop';
   static const String portalPath = '/org/freedesktop/portal/desktop';
   static const Duration responseTimeout = Duration(seconds: 30);
@@ -52,7 +52,8 @@ abstract class PortalService {
       throw StateError('Portal service not initialized');
     }
     if (!shouldUsePortal) {
-      throw StateError('D-Bus client not available outside Flatpak environment');
+      throw StateError(
+          'D-Bus client not available outside Flatpak environment');
     }
     return _client;
   }
@@ -61,8 +62,8 @@ abstract class PortalService {
 
   /// Checks if we're running in a Flatpak environment
   static bool get isRunningInFlatpak {
-    return Platform.isLinux && 
-           (Platform.environment['FLATPAK_ID'] != null && 
+    return Platform.isLinux &&
+        (Platform.environment['FLATPAK_ID'] != null &&
             Platform.environment['FLATPAK_ID']!.isNotEmpty);
   }
 

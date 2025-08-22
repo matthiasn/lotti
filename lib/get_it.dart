@@ -44,10 +44,12 @@ void _registerLazyServiceSafely<T extends Object>(
     getIt.registerLazySingleton<T>(() {
       try {
         final instance = factory();
-        _safeLog('Successfully created lazy instance of $serviceName', isError: false);
+        _safeLog('Successfully created lazy instance of $serviceName',
+            isError: false);
         return instance;
       } catch (e) {
-        _safeLog('Failed to create lazy instance of $serviceName: $e', isError: true);
+        _safeLog('Failed to create lazy instance of $serviceName: $e',
+            isError: true);
         rethrow; // Let GetIt handle the failure appropriately
       }
     });

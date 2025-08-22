@@ -32,7 +32,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class AppScreenConstants {
   const AppScreenConstants._();
-  
+
   static const double navigationElevation = 8;
   static const double navigationIconSize = 30;
   static const double navigationTextHeight = 2;
@@ -43,8 +43,8 @@ class AppScreenConstants {
 
 /// Check if the app is running inside Flatpak sandbox
 bool _isRunningInFlatpak() {
-  return Platform.isLinux && 
-         (Platform.environment['FLATPAK_ID'] != null && 
+  return Platform.isLinux &&
+      (Platform.environment['FLATPAK_ID'] != null &&
           Platform.environment['FLATPAK_ID']!.isNotEmpty);
 }
 
