@@ -2,7 +2,33 @@
 
 This directory contains the Flatpak manifest and related files for building Lotti as a Flatpak application.
 
-## Prerequisites
+## Quick Start with Build Script
+
+The easiest way to build and run Lotti as a Flatpak is using the provided build script:
+
+```bash
+cd flatpak
+./flatpak_lotti_build.sh        # Build and run (default)
+./flatpak_lotti_build.sh build   # Build only
+./flatpak_lotti_build.sh run     # Run already built app
+./flatpak_lotti_build.sh clean   # Clean build artifacts
+./flatpak_lotti_build.sh install # Install to system
+./flatpak_lotti_build.sh help    # Show all options
+```
+
+The script automatically:
+- Checks and installs prerequisites
+- Builds the Flutter app
+- Prepares the bundle correctly
+- Builds the Flatpak package
+- Handles common issues (like stuck mounts)
+- Runs the app
+
+## Manual Build Process
+
+If you prefer to build manually:
+
+### Prerequisites
 
 Before building the Flatpak, you need to prepare the Flutter bundle:
 
@@ -22,7 +48,7 @@ Before building the Flatpak, you need to prepare the Flutter bundle:
    cp fonts/MaterialIcons-Regular.otf flatpak/flutter-bundle/data/flutter_assets/fonts/
    ```
 
-## Building the Flatpak
+### Building the Flatpak
 
 1. Install flatpak-builder:
    ```bash

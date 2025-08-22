@@ -121,7 +121,15 @@ $ sudo apt install pulseaudio-utils
 
 Lotti now includes complete Flatpak support for easy distribution and installation. The Flatpak configuration is located in the `flatpak/` directory.
 
-**Quick Start:**
+**Quick Start with Build Script:**
+```bash
+cd flatpak
+./flatpak_lotti_build.sh        # Automatically builds and runs Lotti
+```
+
+The script handles everything: prerequisites, Flutter build, bundle preparation, Flatpak build, and running the app.
+
+**Manual Build:**
 ```bash
 # Install prerequisites
 sudo apt install flatpak flatpak-builder
