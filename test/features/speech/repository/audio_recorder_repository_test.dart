@@ -68,8 +68,7 @@ void main() {
     });
 
     test('isPaused returns true when recording is paused', () async {
-      when(() => mockAudioRecorder.isPaused())
-          .thenAnswer((_) async => true);
+      when(() => mockAudioRecorder.isPaused()).thenAnswer((_) async => true);
 
       final result = await repository.isPaused();
 
@@ -78,8 +77,7 @@ void main() {
     });
 
     test('isPaused returns false when not paused', () async {
-      when(() => mockAudioRecorder.isPaused())
-          .thenAnswer((_) async => false);
+      when(() => mockAudioRecorder.isPaused()).thenAnswer((_) async => false);
 
       final result = await repository.isPaused();
 
@@ -88,8 +86,7 @@ void main() {
     });
 
     test('isRecording returns true when recording is active', () async {
-      when(() => mockAudioRecorder.isRecording())
-          .thenAnswer((_) async => true);
+      when(() => mockAudioRecorder.isRecording()).thenAnswer((_) async => true);
 
       final result = await repository.isRecording();
 
@@ -107,7 +104,9 @@ void main() {
       verify(() => mockAudioRecorder.isRecording()).called(1);
     });
 
-    test('startRecording returns null due to directory creation in test environment', () async {
+    test(
+        'startRecording returns null due to directory creation in test environment',
+        () async {
       // In test environment, directory creation will fail, so we expect null
       final result = await repository.startRecording();
 
@@ -124,8 +123,8 @@ void main() {
     });
 
     test('startRecording returns null and logs exception on error', () async {
-      when(() => mockAudioRecorder.start(any<RecordConfig>(), path: any(named: 'path')))
-          .thenThrow(Exception('Recording error'));
+      when(() => mockAudioRecorder.start(any<RecordConfig>(),
+          path: any(named: 'path'))).thenThrow(Exception('Recording error'));
 
       final result = await repository.startRecording();
 
@@ -141,7 +140,8 @@ void main() {
     });
 
     test('stopRecording completes successfully', () async {
-      when(() => mockAudioRecorder.stop()).thenAnswer((_) async => '/test/path.m4a');
+      when(() => mockAudioRecorder.stop())
+          .thenAnswer((_) async => '/test/path.m4a');
 
       await expectLater(repository.stopRecording(), completes);
       verify(() => mockAudioRecorder.stop()).called(1);
@@ -174,7 +174,8 @@ void main() {
     });
 
     test('resumeRecording completes without throwing on error', () async {
-      when(() => mockAudioRecorder.resume()).thenThrow(Exception('Resume error'));
+      when(() => mockAudioRecorder.resume())
+          .thenThrow(Exception('Resume error'));
 
       await expectLater(repository.resumeRecording(), completes);
     });
@@ -187,7 +188,8 @@ void main() {
     });
 
     test('dispose completes without throwing on error', () async {
-      when(() => mockAudioRecorder.dispose()).thenThrow(Exception('Dispose error'));
+      when(() => mockAudioRecorder.dispose())
+          .thenThrow(Exception('Dispose error'));
 
       await expectLater(repository.dispose(), completes);
     });
@@ -199,7 +201,8 @@ void main() {
 
       final stream = repository.amplitudeStream;
       expect(stream, isA<Stream<Amplitude>>());
-      verify(() => mockAudioRecorder.onAmplitudeChanged(any<Duration>())).called(1);
+      verify(() => mockAudioRecorder.onAmplitudeChanged(any<Duration>()))
+          .called(1);
     });
   });
 }

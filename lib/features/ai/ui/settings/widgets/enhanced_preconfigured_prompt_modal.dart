@@ -186,7 +186,8 @@ class _PromptTemplateCardState extends State<_PromptTemplateCard> {
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         transform: Matrix4.identity()
-                          ..translateByVector3(Vector3(_isHovered ? 4 : 0, 0, 0)),
+                          ..translateByVector3(
+                              Vector3(_isHovered ? 4 : 0, 0, 0)),
                         child: Icon(
                           Icons.arrow_forward_rounded,
                           color: context.colorScheme.onSurface.withValues(

@@ -10,7 +10,7 @@ import 'package:lotti/themes/theme.dart';
 
 class AudioRecordingIndicatorConstants {
   const AudioRecordingIndicatorConstants._();
-  
+
   static const double indicatorWidth = 100;
   static const double indicatorHeight = 25;
   static const double iconSize = 20;
@@ -31,11 +31,11 @@ class AudioRecordingIndicator extends ConsumerWidget {
       final state = ref.watch(audioRecorderControllerProvider);
       final shouldShow =
           state.status == AudioRecorderStatus.recording && !state.modalVisible;
-      
+
       if (!shouldShow) {
         return const SizedBox.shrink();
       }
-      
+
       final linkedId = state.linkedId;
 
       final linkedEntry = linkedId != null
@@ -58,8 +58,10 @@ class AudioRecordingIndicator extends ConsumerWidget {
           onTap: onTap,
           child: ClipRRect(
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(AudioRecordingIndicatorConstants.borderRadius),
-              topRight: Radius.circular(AudioRecordingIndicatorConstants.borderRadius),
+              topLeft: Radius.circular(
+                  AudioRecordingIndicatorConstants.borderRadius),
+              topRight: Radius.circular(
+                  AudioRecordingIndicatorConstants.borderRadius),
             ),
             child: Container(
               width: AudioRecordingIndicatorConstants.indicatorWidth,

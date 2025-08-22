@@ -7,7 +7,7 @@ import 'package:lotti/services/portals/portal_service.dart';
 
 class ScreenshotPortalConstants {
   const ScreenshotPortalConstants._();
-  
+
   static const String interfaceName = 'org.freedesktop.portal.Screenshot';
   static const String screenshotMethod = 'Screenshot';
   static const String pickColorMethod = 'PickColor';
@@ -17,7 +17,7 @@ class ScreenshotPortalConstants {
 /// This allows screenshots to work in sandboxed environments like Flatpak
 class ScreenshotPortalService extends PortalService {
   factory ScreenshotPortalService() => _instance;
-  
+
   ScreenshotPortalService._();
 
   static final ScreenshotPortalService _instance = ScreenshotPortalService._();
@@ -52,16 +52,14 @@ class ScreenshotPortalService extends PortalService {
       }
 
       // Call the screenshot method
-      final result = await object
-          .callMethod(
-            ScreenshotPortalConstants.interfaceName,
-            ScreenshotPortalConstants.screenshotMethod,
-            [
-              const DBusString(''), // parent_window (empty for root)
-              DBusDict.stringVariant(options),
-            ],
-          )
-          .timeout(PortalConstants.responseTimeout);
+      final result = await object.callMethod(
+        ScreenshotPortalConstants.interfaceName,
+        ScreenshotPortalConstants.screenshotMethod,
+        [
+          const DBusString(''), // parent_window (empty for root)
+          DBusDict.stringVariant(options),
+        ],
+      ).timeout(PortalConstants.responseTimeout);
 
       if (result.returnValues.isEmpty) {
         throw Exception('Screenshot portal returned no response');
@@ -69,10 +67,10 @@ class ScreenshotPortalService extends PortalService {
 
       // Extract the request handle from the response
       final requestHandle = result.returnValues.first as DBusObjectPath;
-      
+
       // Create a completer to wait for the response signal
       final completer = Completer<String?>();
-      
+
       // Set up signal subscription for the Response signal
       final signalStream = DBusSignalStream(
         client,
@@ -81,20 +79,20 @@ class ScreenshotPortalService extends PortalService {
         path: requestHandle,
         signature: DBusSignature('ua{sv}'),
       );
-      
+
       final signalSubscription = signalStream.listen((DBusSignal signal) {
         try {
           // Parse the response signal
           if (signal.values.length >= 2) {
             final code = signal.values[0].asUint32();
             final results = signal.values[1].asDict();
-            
+
             if (code == 0) {
               // Success - extract the URI from results
               final uriValue = results[const DBusString('uri')];
               if (uriValue is DBusString) {
                 final uri = uriValue.asString();
-                
+
                 // Convert file:// URI to local file system path
                 if (uri.startsWith('file://')) {
                   final path = Uri.parse(uri).toFilePath();
@@ -116,7 +114,7 @@ class ScreenshotPortalService extends PortalService {
           completer.completeError(e);
         }
       });
-      
+
       try {
         // Wait for the response with timeout
         final screenshotPath = await completer.future.timeout(
@@ -125,7 +123,7 @@ class ScreenshotPortalService extends PortalService {
             throw Exception('Screenshot portal request timed out');
           },
         );
-        
+
         return screenshotPath;
       } finally {
         // Clean up signal subscription

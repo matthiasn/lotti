@@ -12,7 +12,7 @@ import 'package:lotti/utils/platform.dart';
 
 class LocationConstants {
   const LocationConstants._();
-  
+
   static const Duration locationTimeout = Duration(seconds: 10);
   static const String appDesktopId = 'com.matthiasnehlsen.lotti';
 }

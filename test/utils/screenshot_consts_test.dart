@@ -30,7 +30,8 @@ void main() {
 
       test('should have reasonable timeout values', () {
         expect(screenshotDelaySeconds, greaterThan(0));
-        expect(screenshotProcessTimeoutSeconds, greaterThan(screenshotDelaySeconds));
+        expect(screenshotProcessTimeoutSeconds,
+            greaterThan(screenshotDelaySeconds));
       });
     });
 
@@ -88,8 +89,8 @@ void main() {
 
     group('Error Messages', () {
       test('should have helpful no tool available message', () {
-        expect(noScreenshotToolAvailableMessage, 
-               contains('No screenshot tool available'));
+        expect(noScreenshotToolAvailableMessage,
+            contains('No screenshot tool available'));
       });
 
       test('should have install instructions message', () {
@@ -113,11 +114,13 @@ void main() {
       });
 
       test('should have screencapture failed message', () {
-        expect(screencaptureFailedMessage, contains('macOS screencapture failed'));
+        expect(
+            screencaptureFailedMessage, contains('macOS screencapture failed'));
       });
 
       test('should have unsupported platform message', () {
-        expect(unsupportedPlatformMessage, contains('Screenshot functionality is not supported'));
+        expect(unsupportedPlatformMessage,
+            contains('Screenshot functionality is not supported'));
       });
     });
 
@@ -135,7 +138,8 @@ void main() {
       test('should have configuration for all Linux tools', () {
         for (final tool in linuxScreenshotTools) {
           final config = screenshotToolConfigs[tool];
-          expect(config, isNotNull, reason: 'Tool $tool should have configuration');
+          expect(config, isNotNull,
+              reason: 'Tool $tool should have configuration');
         }
       });
 
@@ -154,7 +158,8 @@ void main() {
         expect(config!.name, equals('GNOME Screenshot'));
         expect(config.arguments, equals(gnomeScreenshotArguments));
         expect(config.description, equals('GNOME screenshot tool'));
-        expect(config.installCommand, equals('sudo apt install gnome-screenshot'));
+        expect(
+            config.installCommand, equals('sudo apt install gnome-screenshot'));
       });
 
       test('should have complete configuration for scrot', () {
@@ -228,7 +233,8 @@ void main() {
         }
       });
 
-      test('all tool configurations should have non-empty install commands', () {
+      test('all tool configurations should have non-empty install commands',
+          () {
         for (final config in screenshotToolConfigs.values) {
           expect(config.installCommand, isNotEmpty);
         }
@@ -244,7 +250,7 @@ void main() {
         for (final tool in linuxScreenshotTools) {
           final config = screenshotToolConfigs[tool];
           expect(config, isNotNull);
-          
+
           // Verify the tool name in config matches the constant
           switch (tool) {
             case 'spectacle':
@@ -262,25 +268,31 @@ void main() {
 
     group('Constants Consistency', () {
       test('Linux tools list should match tool configurations', () {
-        expect(linuxScreenshotTools.length, equals(screenshotToolConfigs.length));
-        
+        expect(
+            linuxScreenshotTools.length, equals(screenshotToolConfigs.length));
+
         for (final tool in linuxScreenshotTools) {
           expect(screenshotToolConfigs.containsKey(tool), isTrue);
         }
       });
 
       test('tool arguments should match configuration arguments', () {
-        expect(screenshotToolConfigs[spectacleTool]!.arguments, equals(spectacleArguments));
-        expect(screenshotToolConfigs[gnomeScreenshotTool]!.arguments, equals(gnomeScreenshotArguments));
-        expect(screenshotToolConfigs[scrotTool]!.arguments, equals(scrotArguments));
-        expect(screenshotToolConfigs[importTool]!.arguments, equals(importArguments));
+        expect(screenshotToolConfigs[spectacleTool]!.arguments,
+            equals(spectacleArguments));
+        expect(screenshotToolConfigs[gnomeScreenshotTool]!.arguments,
+            equals(gnomeScreenshotArguments));
+        expect(screenshotToolConfigs[scrotTool]!.arguments,
+            equals(scrotArguments));
+        expect(screenshotToolConfigs[importTool]!.arguments,
+            equals(importArguments));
       });
 
       test('error messages should be properly formatted', () {
         expect(noScreenshotToolAvailableMessage, endsWith(': '));
         expect(unsupportedToolMessage, endsWith(': '));
         expect(toolFailedMessage, endsWith(' '));
-        expect(failedWithExitCodeMessage, startsWith(' failed with exit code '));
+        expect(
+            failedWithExitCodeMessage, startsWith(' failed with exit code '));
       });
     });
   });

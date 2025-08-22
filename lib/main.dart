@@ -20,7 +20,7 @@ import 'package:window_manager/window_manager.dart';
 
 class AppConstants {
   const AppConstants._();
-  
+
   static const Size defaultWindowSize = Size(1280, 720);
   static const Size minimumWindowSize = Size(360, 640);
 }

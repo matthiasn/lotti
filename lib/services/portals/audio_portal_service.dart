@@ -7,7 +7,7 @@ import 'package:lotti/services/portals/portal_service.dart';
 
 class AudioPortalConstants {
   const AudioPortalConstants._();
-  
+
   static const String interfaceName = 'org.freedesktop.portal.Device';
   static const String accessDeviceMethod = 'AccessDevice';
   static const int microphoneDevice = 1; // Microphone device type
@@ -17,11 +17,11 @@ class AudioPortalConstants {
 /// This allows audio recording to work in sandboxed environments like Flatpak
 class AudioPortalService extends PortalService {
   factory AudioPortalService() => _instance;
-  
+
   AudioPortalService._();
 
   static final AudioPortalService _instance = AudioPortalService._();
-  
+
   bool _hasAudioAccess = false;
 
   /// Requests access to microphone for recording
@@ -46,17 +46,15 @@ class AudioPortalService extends PortalService {
       };
 
       // Call the access device method for microphone
-      final result = await object
-          .callMethod(
-            AudioPortalConstants.interfaceName,
-            AudioPortalConstants.accessDeviceMethod,
-            [
-              const DBusString(''), // parent_window (empty for root)
-              DBusArray.uint32([AudioPortalConstants.microphoneDevice]),
-              DBusDict.stringVariant(options),
-            ],
-          )
-          .timeout(PortalConstants.responseTimeout);
+      final result = await object.callMethod(
+        AudioPortalConstants.interfaceName,
+        AudioPortalConstants.accessDeviceMethod,
+        [
+          const DBusString(''), // parent_window (empty for root)
+          DBusArray.uint32([AudioPortalConstants.microphoneDevice]),
+          DBusDict.stringVariant(options),
+        ],
+      ).timeout(PortalConstants.responseTimeout);
 
       if (result.returnValues.isEmpty) {
         throw Exception('Audio portal returned no response');

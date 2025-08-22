@@ -38,31 +38,31 @@ void main() {
       final shouldUse = PortalService.shouldUsePortal;
       final isLinux = Platform.isLinux;
       final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null;
-      
+
       expect(shouldUse, equals(isLinux && hasFlatpakId));
     });
 
     test('should initialize and dispose properly', () async {
       expect(service.isInitialized, isFalse);
-      
+
       await service.initialize();
       expect(service.isInitialized, isTrue);
-      
+
       await service.dispose();
       expect(service.isInitialized, isFalse);
     });
 
     test('should manage microphone access status', () {
       expect(service.hasMicrophoneAccess, isFalse);
-      
+
       service.resetAccess();
       expect(service.hasMicrophoneAccess, isFalse);
     });
 
     group('Constants', () {
       test('should have correct audio portal constants', () {
-        expect(AudioPortalConstants.interfaceName, 
-               equals('org.freedesktop.portal.Device'));
+        expect(AudioPortalConstants.interfaceName,
+            equals('org.freedesktop.portal.Device'));
         expect(AudioPortalConstants.accessDeviceMethod, equals('AccessDevice'));
         expect(AudioPortalConstants.microphoneDevice, equals(1));
       });
@@ -93,7 +93,7 @@ void main() {
 
         try {
           await service.initialize();
-          
+
           expect(() => service.requestMicrophoneAccess(), throwsA(anything));
         } catch (e) {
           // Expected in test environment
@@ -104,11 +104,11 @@ void main() {
         if (!PortalService.shouldUsePortal) {
           // Set access to true
           service.resetAccess();
-          
+
           final result = await service.requestMicrophoneAccess();
           expect(result, isTrue);
           expect(service.hasMicrophoneAccess, isTrue);
-          
+
           // Second call should return cached result
           final result2 = await service.requestMicrophoneAccess();
           expect(result2, isTrue);
@@ -122,7 +122,7 @@ void main() {
 
         try {
           await service.initialize();
-          
+
           expect(() => service.requestMicrophoneAccess(), throwsA(anything));
         } catch (e) {
           // Verify that exception was logged
@@ -144,7 +144,7 @@ void main() {
 
         try {
           await service.initialize();
-          
+
           expect(() => service.requestMicrophoneAccess(), throwsA(anything));
         } catch (e) {
           // Should handle timeout gracefully
@@ -154,14 +154,15 @@ void main() {
     });
 
     group('Handle Token Generation', () {
-      test('should generate unique handle tokens for microphone access', () async {
+      test('should generate unique handle tokens for microphone access',
+          () async {
         final token1 = PortalService.createHandleToken('microphone');
-        
+
         // Add a small delay to ensure different timestamps
         await Future<void>.delayed(const Duration(milliseconds: 1));
-        
+
         final token2 = PortalService.createHandleToken('microphone');
-        
+
         expect(token1, isNotEmpty);
         expect(token2, isNotEmpty);
         expect(token1, isNot(equals(token2)));
@@ -172,8 +173,8 @@ void main() {
 
     group('Portal Integration', () {
       test('should use correct portal interface and method', () {
-        expect(AudioPortalConstants.interfaceName, 
-               equals('org.freedesktop.portal.Device'));
+        expect(AudioPortalConstants.interfaceName,
+            equals('org.freedesktop.portal.Device'));
         expect(AudioPortalConstants.accessDeviceMethod, equals('AccessDevice'));
       });
 
@@ -184,7 +185,7 @@ void main() {
 
         try {
           await service.initialize();
-          
+
           expect(() => service.requestMicrophoneAccess(), throwsA(anything));
         } catch (e) {
           // Expected in test environment
@@ -196,7 +197,7 @@ void main() {
       test('should reset access status correctly', () async {
         // Initially false
         expect(service.hasMicrophoneAccess, isFalse);
-        
+
         // Reset should keep it false
         service.resetAccess();
         expect(service.hasMicrophoneAccess, isFalse);
@@ -206,12 +207,12 @@ void main() {
         if (!PortalService.shouldUsePortal) {
           // Reset to ensure clean state
           service.resetAccess();
-          
+
           // First call should set access to true
           final result1 = await service.requestMicrophoneAccess();
           expect(result1, isTrue);
           expect(service.hasMicrophoneAccess, isTrue);
-          
+
           // Second call should return cached result
           final result2 = await service.requestMicrophoneAccess();
           expect(result2, isTrue);
@@ -223,16 +224,16 @@ void main() {
         if (!PortalService.shouldUsePortal) {
           // Reset to ensure clean state
           service.resetAccess();
-          
+
           // Get access
           final result1 = await service.requestMicrophoneAccess();
           expect(result1, isTrue);
           expect(service.hasMicrophoneAccess, isTrue);
-          
+
           // Reset access
           service.resetAccess();
           expect(service.hasMicrophoneAccess, isFalse);
-          
+
           // Request access again
           final result2 = await service.requestMicrophoneAccess();
           expect(result2, isTrue);
@@ -249,7 +250,7 @@ void main() {
 
         try {
           await service.initialize();
-          
+
           expect(() => service.requestMicrophoneAccess(), throwsA(anything));
         } catch (e) {
           // Should handle access denied gracefully
@@ -264,7 +265,7 @@ void main() {
 
         try {
           await service.initialize();
-          
+
           expect(() => service.requestMicrophoneAccess(), throwsA(anything));
         } catch (e) {
           // Should handle communication errors gracefully
@@ -279,7 +280,7 @@ void main() {
 
         try {
           await service.initialize();
-          
+
           expect(() => service.requestMicrophoneAccess(), throwsA(anything));
         } catch (e) {
           verify(
@@ -309,7 +310,7 @@ void main() {
     group('Portal Availability', () {
       test('should check portal availability correctly', () async {
         final available = await AudioPortalService.isAvailable();
-        
+
         if (PortalService.shouldUsePortal) {
           // In Flatpak environment, availability depends on actual portal
           expect(available, isA<bool>());
@@ -326,7 +327,7 @@ void main() {
 
         try {
           await service.initialize();
-          
+
           final available = await AudioPortalService.isAvailable();
           expect(available, isA<bool>());
         } catch (e) {
