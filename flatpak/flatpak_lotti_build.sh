@@ -156,7 +156,19 @@ run_app() {
     print_status "Running Lotti app..."
     
     # Check if there are stuck mounts
-    if mountpoint -q .flatpak-builder/rofiles/rofiles-* 2>/dev/null; then
+    # Iterate over rofiles directories since mountpoint doesn't expand globs
+    local has_mounts=false
+    for rofile_path in .flatpak-builder/rofiles/rofiles-*; do
+        # Check if the glob actually matched something (not the literal pattern)
+        if [ -e "$rofile_path" ]; then
+            if mountpoint -q "$rofile_path" 2>/dev/null; then
+                has_mounts=true
+                break
+            fi
+        fi
+    done
+    
+    if [ "$has_mounts" = true ]; then
         print_warning "Detected stuck mounts, cleaning up..."
         cleanup_mounts
         sleep 1
