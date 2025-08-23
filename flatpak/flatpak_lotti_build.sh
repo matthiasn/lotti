@@ -112,9 +112,11 @@ prepare_bundle() {
     # Copy Flutter build output
     cp -r ../build/linux/x64/release/bundle/. flutter-bundle/
     
-    # Remove any 1024x1024 icons (Flatpak limit is 512x512)
-    find flutter-bundle -name "*1024*" -type f -delete 2>/dev/null || true
-    find flutter-bundle -path "*/icons/hicolor/1024x1024" -type d -exec rm -rf {} + 2>/dev/null || true
+    # Remove 1024x1024 icons from hicolor directory (Flatpak limit is 512x512)
+    # Only target the specific hicolor/1024x1024 path to avoid accidentally removing other assets
+    if [ -d "flutter-bundle/data/icons/hicolor/1024x1024" ]; then
+        rm -rf "flutter-bundle/data/icons/hicolor/1024x1024"
+    fi
     
     # Ensure MaterialIcons font is present
     if [ ! -f "flutter-bundle/data/flutter_assets/fonts/MaterialIcons-Regular.otf" ]; then
