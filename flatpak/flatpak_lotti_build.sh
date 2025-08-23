@@ -3,7 +3,7 @@
 # Lotti Flatpak Build and Run Script
 # This script automates the entire process of building and running Lotti as a Flatpak
 
-set -e  # Exit on error
+set -euo pipefail  # Exit on error, undefined vars, and pipe failures
 
 # Determine script directory and repository root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -98,16 +98,15 @@ build_flutter() {
     pushd "$REPO_ROOT" > /dev/null
     
     # Build Flutter app
-    flutter build linux --release
-    local build_result=$?
-    
-    # Return to original directory
-    popd > /dev/null
-    
-    if [ $build_result -ne 0 ]; then
+    if ! flutter build linux --release; then
+        # Return to original directory on failure
+        popd > /dev/null
         print_error "Flutter build failed!"
         exit 1
     fi
+    
+    # Return to original directory
+    popd > /dev/null
     
     print_status "Flutter build complete!"
 }
@@ -147,17 +146,13 @@ build_flatpak() {
     cleanup_mounts
     
     # Build using local manifest
-    flatpak-builder --repo=repo --force-clean build-dir com.matthiasnehlsen.lotti.local.yml
-    
-    if [ $? -ne 0 ]; then
+    if ! flatpak-builder --repo=repo --force-clean build-dir com.matthiasnehlsen.lotti.local.yml; then
         print_error "Flatpak build failed!"
         # Try to clean up and retry once
         print_warning "Attempting to clean up and retry..."
         cleanup_mounts
         sleep 2
-        flatpak-builder --repo=repo --force-clean build-dir com.matthiasnehlsen.lotti.local.yml
-        
-        if [ $? -ne 0 ]; then
+        if ! flatpak-builder --repo=repo --force-clean build-dir com.matthiasnehlsen.lotti.local.yml; then
             print_error "Flatpak build failed after retry!"
             popd > /dev/null
             exit 1
@@ -196,9 +191,7 @@ run_app() {
     fi
     
     # Run the app from build directory
-    flatpak-builder --run build-dir com.matthiasnehlsen.lotti.local.yml /app/lotti
-    
-    if [ $? -ne 0 ]; then
+    if ! flatpak-builder --run build-dir com.matthiasnehlsen.lotti.local.yml /app/lotti; then
         print_warning "App failed to start. Trying cleanup and retry..."
         cleanup_mounts
         sleep 2
