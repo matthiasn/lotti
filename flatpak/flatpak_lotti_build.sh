@@ -5,6 +5,10 @@
 
 set -e  # Exit on error
 
+# Determine script directory and repository root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -28,15 +32,15 @@ print_warning() {
 cleanup_mounts() {
     print_warning "Cleaning up any stuck mounts..."
     # Try to unmount any stuck rofiles
-    if [ -d ".flatpak-builder/rofiles" ]; then
-        for mount in .flatpak-builder/rofiles/rofiles-*; do
+    if [ -d "$SCRIPT_DIR/.flatpak-builder/rofiles" ]; then
+        for mount in "$SCRIPT_DIR"/.flatpak-builder/rofiles/rofiles-*; do
             if [ -d "$mount" ]; then
                 fusermount3 -u "$mount" 2>/dev/null || true
             fi
         done
     fi
     # Remove rofiles directory if it exists
-    rm -rf .flatpak-builder/rofiles 2>/dev/null || true
+    rm -rf "$SCRIPT_DIR/.flatpak-builder/rofiles" 2>/dev/null || true
 }
 
 # Function to check prerequisites
@@ -69,6 +73,9 @@ check_prerequisites() {
 clean_build() {
     print_status "Cleaning previous build artifacts..."
     
+    # Work from script directory
+    pushd "$SCRIPT_DIR" > /dev/null
+    
     # Clean up any stuck mounts first
     cleanup_mounts
     
@@ -78,6 +85,8 @@ clean_build() {
     rm -rf repo
     rm -rf .flatpak-builder
     
+    popd > /dev/null
+    
     print_status "Clean complete!"
 }
 
@@ -86,18 +95,19 @@ build_flutter() {
     print_status "Building Flutter Linux release..."
     
     # Navigate to project root
-    cd ..
+    pushd "$REPO_ROOT" > /dev/null
     
     # Build Flutter app
     flutter build linux --release
+    local build_result=$?
     
-    if [ $? -ne 0 ]; then
+    # Return to original directory
+    popd > /dev/null
+    
+    if [ $build_result -ne 0 ]; then
         print_error "Flutter build failed!"
         exit 1
     fi
-    
-    # Return to flatpak directory
-    cd flatpak
     
     print_status "Flutter build complete!"
 }
@@ -107,19 +117,19 @@ prepare_bundle() {
     print_status "Preparing Flutter bundle..."
     
     # Create flutter-bundle directory
-    mkdir -p flutter-bundle
+    mkdir -p "$SCRIPT_DIR/flutter-bundle"
     
     # Copy Flutter build output
-    cp -r ../build/linux/x64/release/bundle/. flutter-bundle/
+    cp -r "$REPO_ROOT/build/linux/x64/release/bundle/." "$SCRIPT_DIR/flutter-bundle/"
     
     # Remove 1024x1024 icons from hicolor directory (Flatpak limit is 512x512)
     # Only target the specific hicolor/1024x1024 path to avoid accidentally removing other assets
-    if [ -d "flutter-bundle/data/icons/hicolor/1024x1024" ]; then
-        rm -rf "flutter-bundle/data/icons/hicolor/1024x1024"
+    if [ -d "$SCRIPT_DIR/flutter-bundle/data/icons/hicolor/1024x1024" ]; then
+        rm -rf "$SCRIPT_DIR/flutter-bundle/data/icons/hicolor/1024x1024"
     fi
     
     # Ensure MaterialIcons font is present
-    if [ ! -f "flutter-bundle/data/flutter_assets/fonts/MaterialIcons-Regular.otf" ]; then
+    if [ ! -f "$SCRIPT_DIR/flutter-bundle/data/flutter_assets/fonts/MaterialIcons-Regular.otf" ]; then
         print_warning "MaterialIcons font not found in bundle, app might have display issues"
     fi
     
@@ -129,6 +139,9 @@ prepare_bundle() {
 # Function to build Flatpak
 build_flatpak() {
     print_status "Building Flatpak package..."
+    
+    # Work from script directory
+    pushd "$SCRIPT_DIR" > /dev/null
     
     # Clean up any stuck mounts before building
     cleanup_mounts
@@ -146,9 +159,12 @@ build_flatpak() {
         
         if [ $? -ne 0 ]; then
             print_error "Flatpak build failed after retry!"
+            popd > /dev/null
             exit 1
         fi
     fi
+    
+    popd > /dev/null
     
     print_status "Flatpak build complete!"
 }
@@ -156,6 +172,9 @@ build_flatpak() {
 # Function to run the app
 run_app() {
     print_status "Running Lotti app..."
+    
+    # Work from script directory
+    pushd "$SCRIPT_DIR" > /dev/null
     
     # Check if there are stuck mounts
     # Iterate over rofiles directories since mountpoint doesn't expand globs
@@ -185,15 +204,22 @@ run_app() {
         sleep 2
         flatpak-builder --run build-dir com.matthiasnehlsen.lotti.local.yml /app/lotti
     fi
+    
+    popd > /dev/null
 }
 
 # Function to install to system (optional)
 install_flatpak() {
     print_status "Installing Flatpak to system..."
     
+    # Work from script directory
+    pushd "$SCRIPT_DIR" > /dev/null
+    
     # Install from repo
     flatpak --user remote-add --no-gpg-verify lotti-repo repo
     flatpak --user install -y lotti-repo com.matthiasnehlsen.lotti
+    
+    popd > /dev/null
     
     print_status "Installation complete! You can now run: flatpak run com.matthiasnehlsen.lotti"
 }
