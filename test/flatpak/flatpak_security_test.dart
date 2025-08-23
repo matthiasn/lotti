@@ -423,7 +423,7 @@ void main() {
       });
 
       test('response timeout is a Duration and within sane bounds', () {
-        final timeout = PortalConstants.responseTimeout;
+        const timeout = PortalConstants.responseTimeout;
         expect(timeout, isA<Duration>());
         expect(timeout.inSeconds, greaterThanOrEqualTo(1));
         expect(timeout.inSeconds, lessThanOrEqualTo(60));
@@ -455,5 +455,4 @@ void main() {
       });
     });
   });
-
 }
