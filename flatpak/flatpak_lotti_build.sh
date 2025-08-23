@@ -235,7 +235,7 @@ main() {
             build_flutter
             prepare_bundle
             build_flatpak
-            print_status "Build complete! Run './build_and_run.sh run' to test the app"
+            print_status "Build complete! Run '$0 run' to test the app"
             ;;
         run)
             run_app

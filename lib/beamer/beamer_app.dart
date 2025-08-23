@@ -290,6 +290,7 @@ class _MyBeamerAppState extends State<MyBeamerApp> {
                     .updateActivity;
 
             return Listener(
+              behavior: HitTestBehavior.translucent,
               onPointerDown: (event) => updateActivity(),
               onPointerMove: (event) => updateActivity(),
               onPointerPanZoomStart: (event) => updateActivity(),
