@@ -69,7 +69,7 @@ void main() {
       test('takeScreenshot should throw UnsupportedError', () async {
         if (!PortalService.shouldUsePortal) {
           await expectLater(
-            () => service.takeScreenshot(),
+            service.takeScreenshot(),
             throwsA(isA<UnsupportedError>()),
           );
         }
@@ -94,7 +94,7 @@ void main() {
           await service.initialize();
 
           // Test default parameters
-          expect(() => service.takeScreenshot(), throwsA(anything));
+          await expectLater(service.takeScreenshot(), throwsA(anything));
         } catch (e) {
           // Expected in test environment
         }
@@ -108,8 +108,8 @@ void main() {
         try {
           await service.initialize();
 
-          expect(() => service.takeScreenshot(interactive: true),
-              throwsA(anything));
+          await expectLater(
+              service.takeScreenshot(interactive: true), throwsA(anything));
         } catch (e) {
           // Expected in test environment
         }
@@ -123,11 +123,11 @@ void main() {
         try {
           await service.initialize();
 
-          expect(
-              () => service.takeScreenshot(
-                    directory: '/test/dir',
-                    filename: 'test.jpg',
-                  ),
+          await expectLater(
+              service.takeScreenshot(
+                directory: '/test/dir',
+                filename: 'test.jpg',
+              ),
               throwsA(anything));
         } catch (e) {
           // Expected in test environment
@@ -142,12 +142,12 @@ void main() {
         try {
           await service.initialize();
 
-          expect(
-              () => service.takeScreenshot(
-                    interactive: true,
-                    directory: '/test/dir',
-                    filename: 'test.jpg',
-                  ),
+          await expectLater(
+              service.takeScreenshot(
+                interactive: true,
+                directory: '/test/dir',
+                filename: 'test.jpg',
+              ),
               throwsA(anything));
         } catch (e) {
           // Expected in test environment
@@ -164,7 +164,7 @@ void main() {
         try {
           await service.initialize();
 
-          expect(() => service.takeScreenshot(), throwsA(anything));
+          await expectLater(service.takeScreenshot(), throwsA(anything));
         } catch (e) {
           // Verify that exception was logged
           verify(
@@ -186,7 +186,7 @@ void main() {
         try {
           await service.initialize();
 
-          expect(() => service.takeScreenshot(), throwsA(anything));
+          await expectLater(service.takeScreenshot(), throwsA(anything));
         } catch (e) {
           // Should handle timeout gracefully
           expect(e, isA<Exception>());
@@ -227,7 +227,7 @@ void main() {
         try {
           await service.initialize();
 
-          expect(() => service.takeScreenshot(), throwsA(anything));
+          await expectLater(service.takeScreenshot(), throwsA(anything));
         } catch (e) {
           // Expected in test environment
         }
@@ -243,7 +243,7 @@ void main() {
         try {
           await service.initialize();
 
-          expect(() => service.takeScreenshot(), throwsA(anything));
+          await expectLater(service.takeScreenshot(), throwsA(anything));
         } catch (e) {
           // Expected in test environment
         }
@@ -257,7 +257,7 @@ void main() {
         try {
           await service.initialize();
 
-          expect(() => service.takeScreenshot(), throwsA(anything));
+          await expectLater(service.takeScreenshot(), throwsA(anything));
         } catch (e) {
           // Expected in test environment
         }
@@ -271,7 +271,7 @@ void main() {
         try {
           await service.initialize();
 
-          expect(() => service.takeScreenshot(), throwsA(anything));
+          await expectLater(service.takeScreenshot(), throwsA(anything));
         } catch (e) {
           // Should handle timeout gracefully
           expect(e, isA<Exception>());
