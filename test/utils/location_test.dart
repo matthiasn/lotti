@@ -1,3 +1,5 @@
+// ignore_for_file: non_abstract_class_inherits_abstract_member, invalid_override
+
 // Note: Testing library/framework: package:test (Dart) with mocktail-style manual fakes if mocktail is not available.
 // If the project uses flutter_test or mocktail/mockito, adapt the imports accordingly.
 
@@ -37,13 +39,16 @@ class FakeJournalDb implements JournalDb {
 }
 
 class FakeLoggingService implements LoggingService {
-  final List<Object> captured = [];
+  final List<dynamic> captured = [];
+
   @override
   void captureException(
-    Object exception, {
-    String? domain,
+    dynamic exception, {
+    required String domain,
+    InsightLevel level,
+    dynamic stackTrace,
     String? subDomain,
-    Map<String, dynamic>? extra,
+    InsightType type,
   }) {
     captured.add(exception);
   }
@@ -51,8 +56,7 @@ class FakeLoggingService implements LoggingService {
   // Add no-op implementations for other members if required by the interface.
 }
 
-// A controllable fake for the 'location' plugin.
-class FakeLocation implements loc.Location {
+class FakeLocation extends loc.Location {
   bool serviceEnabledValue = true;
   loc.PermissionStatus permissionStatus = loc.PermissionStatus.granted;
   loc.LocationData Function()? _onGetLocation;
@@ -96,7 +100,7 @@ class FakeLocation implements loc.Location {
 
 // Fakes for GeoClue on Linux path
 class FakeGeoClueClient implements geoclue.GeoClueClient {
-  final _controller = StreamController<geoclue.GeoLocation>.broadcast();
+  final _controller = StreamController<geoclue.GeoClueLocation>.broadcast();
 
   @override
   Future<void> setDesktopId(String desktopId) async {}
@@ -120,7 +124,7 @@ class FakeGeoClueClient implements geoclue.GeoClueClient {
   }
 
   @override
-  Stream<geoclue.GeoLocation> get locationUpdated => _controller.stream;
+  Stream<geoclue.GeoClueLocation> get locationUpdated => _controller.stream;
 
   @override
   Future<void> stop() async {
@@ -141,27 +145,22 @@ class FakeGeoClueManager implements geoclue.GeoClueManager {
   Future<void> close() async {}
 }
 
-class _FakeGeoLocation implements geoclue.GeoLocation {
+class _FakeGeoLocation extends geoclue.GeoClueLocation {
   _FakeGeoLocation({
-    required this.latitude,
-    required this.longitude,
-    required this.altitude,
-    required this.speed,
-    required this.accuracy,
-    required this.heading,
-  });
-  @override
-  final double latitude;
-  @override
-  final double longitude;
-  @override
-  final double altitude;
-  @override
-  final double speed;
-  @override
-  final double accuracy;
-  @override
-  final double heading;
+    required double latitude,
+    required double longitude,
+    required double altitude,
+    required double speed,
+    required double accuracy,
+    required double heading,
+  }) : super(
+          latitude: latitude,
+          longitude: longitude,
+          altitude: altitude,
+          speed: speed,
+          accuracy: accuracy,
+          heading: heading,
+        );
 }
 
 // A testable subclass to inject our fakes and bypass init() side-effects.
@@ -335,7 +334,7 @@ void main() {
       final deviceLoc = TestableDeviceLocation(fakeLocation: throwingLocation);
 
       // Explicitly call init() which is overridden to no-op; we want to call the real one:
-      await sut.DeviceLocation().init(); // Construct a fresh SUT that will call real init()
+      await sut.DeviceLocation().init();
 
       // We cannot intercept its internal Location instance; so alternatively verify no crash here.
       // We still verify our logger collected at least one exception from our controlled path
