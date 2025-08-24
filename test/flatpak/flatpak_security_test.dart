@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+// Testing library: flutter_test (built on package:test). Additional unit tests appended below.
 import 'package:lotti/services/portals/audio_portal_service.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
@@ -358,6 +359,99 @@ void main() {
         // Timeouts should be reasonable to prevent DoS
         expect(
             PortalConstants.responseTimeout.inSeconds, lessThanOrEqualTo(60));
+      });
+    });
+  });
+
+  // ------------------------------------------------------------
+  // Additional Flatpak security/unit tests (focus on diff areas)
+  // Testing library: flutter_test (built on package:test)
+  // ------------------------------------------------------------
+  group('Additional Flatpak Security Invariants', () {
+    group('Handle token generation', () {
+      test('includes prefix and a numeric timestamp suffix', () async {
+        final token = PortalService.createHandleToken('prefix');
+        expect(token, startsWith('prefix_'));
+        final parts = token.split('_');
+        expect(parts.length, greaterThanOrEqualTo(2));
+        final ts = int.tryParse(parts.last);
+        expect(ts, isNotNull);
+        expect(ts! > 0, isTrue);
+      });
+
+      test('monotonic timestamps across sequential generations', () async {
+        final t1 = PortalService.createHandleToken('mono');
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+        final t2 = PortalService.createHandleToken('mono');
+        final ts1 = int.parse(t1.split('_').last);
+        final ts2 = int.parse(t2.split('_').last);
+        expect(ts2, greaterThan(ts1));
+      });
+
+      test('handles uncommon but valid prefixes', () async {
+        const prefix = 'lotti.security-TEST 123';
+        final token = PortalService.createHandleToken(prefix);
+        // Avoid over-constraining potential sanitization rules; assert robust invariants.
+        expect(token, contains('lotti'));
+        expect(token, contains('_'));
+        final ts = int.tryParse(token.split('_').last);
+        expect(ts, isNotNull);
+      });
+
+      test('shouldUsePortal value is stable across reads', () {
+        final a = PortalService.shouldUsePortal;
+        final b = PortalService.shouldUsePortal;
+        expect(a, equals(b));
+        // Remains consistent with isRunningInFlatpak
+        expect(a, equals(PortalService.isRunningInFlatpak));
+      });
+    });
+
+    group('Portal constants sanity', () {
+      test('bus and path constants are non-empty and normalized', () {
+        expect(PortalConstants.portalBusName, isNotEmpty);
+        expect(PortalConstants.portalPath, isNotEmpty);
+        expect(PortalConstants.portalBusName, isNot(contains(' ')));
+        expect(PortalConstants.portalPath, startsWith('/org/freedesktop/portal'));
+      });
+
+      test('interface names follow freedesktop.org conventions', () {
+        expect(ScreenshotPortalConstants.interfaceName, startsWith('org.freedesktop.portal.'));
+        expect(ScreenshotPortalConstants.interfaceName, endsWith('Screenshot'));
+        expect(AudioPortalConstants.interfaceName, startsWith('org.freedesktop.portal.'));
+        expect(AudioPortalConstants.interfaceName, endsWith('Device'));
+      });
+
+      test('response timeout is a Duration and within sane bounds', () {
+        const timeout = PortalConstants.responseTimeout;
+        expect(timeout, isA<Duration>());
+        expect(timeout.inSeconds, greaterThanOrEqualTo(1));
+        expect(timeout.inSeconds, lessThanOrEqualTo(60));
+      });
+    });
+
+    group('Screenshot portal lifecycle robustness', () {
+      test('initialize may be called multiple times and completes', () async {
+        final service = ScreenshotPortalService();
+        await service.initialize();
+        expect(service.isInitialized, isTrue);
+        // Subsequent initialize should complete without throwing
+        expect(service.initialize(), completes);
+        await service.dispose();
+      });
+
+      test('dispose may be called without prior initialize', () async {
+        final service = ScreenshotPortalService();
+        expect(service.isInitialized, isFalse);
+        await service.dispose();
+        expect(service.isInitialized, isFalse);
+      });
+
+      test('type relationships remain sound', () {
+        final screenshotPortal = ScreenshotPortalService();
+        final audioPortal = AudioPortalService();
+        expect(screenshotPortal, isA<PortalService>());
+        expect(audioPortal, isA<PortalService>());
       });
     });
   });
