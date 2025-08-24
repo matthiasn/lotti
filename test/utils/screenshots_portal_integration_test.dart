@@ -82,91 +82,91 @@ void main() {
     });
 
     group('Portal Fallback Logic', () {
-      test('should fall back to traditional methods when portal fails',
-          () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
+      test('should not attempt portal when not in Flatpak', () async {
+        // When not in Flatpak, takeScreenshot should not use portal
+        // This test verifies the non-Flatpak path
+        expect(PortalService.shouldUsePortal, isFalse,
+            reason: 'This test verifies non-Flatpak behavior');
 
-        // This test verifies that the fallback logic exists in the code
-        // The actual implementation will log an exception and fall back
-        await expectLater(takeScreenshot(), throwsA(anything));
-      });
-
-      test('should log portal fallback exception', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // Verify that exception was logged
-          verify(
-            () => mockLoggingService.captureException(
+        // Mock logging to ensure no portal fallback is logged
+        when(() => mockLoggingService.captureException(
               any<dynamic>(),
               domain: screenshotDomain,
               subDomain: 'portal_fallback',
-            ),
-          ).called(1);
+            )).thenReturn(null);
+
+        // The screenshot will fail because we don't have the actual tools
+        // but it should NOT log portal_fallback
+        try {
+          await takeScreenshot();
+        } catch (e) {
+          // Expected to fail
         }
+
+        // Verify portal fallback was NOT logged (because we're not in Flatpak)
+        verifyNever(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: screenshotDomain,
+            subDomain: 'portal_fallback',
+          ),
+        );
+      });
+
+      test('portal service should throw when used outside Flatpak', () async {
+        // This test verifies that ScreenshotPortalService properly guards against
+        // being used outside of Flatpak
+        expect(PortalService.shouldUsePortal, isFalse,
+            reason: 'This test requires non-Flatpak environment');
+
+        final portalService = ScreenshotPortalService();
+
+        // Should throw UnsupportedError when not in Flatpak
+        await expectLater(
+          portalService.takeScreenshot(
+            directory: '/tmp',
+            filename: 'test.png',
+          ),
+          throwsA(isA<UnsupportedError>()),
+        );
       });
     });
 
     group('Portal Integration Tests', () {
-      test('should handle portal integration in Flatpak environment', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
+      test('should use traditional flow when not in Flatpak', () async {
+        // Verify we're not in Flatpak
+        expect(PortalService.shouldUsePortal, isFalse,
+            reason: 'This test verifies non-Flatpak behavior');
 
-        // Mock the logging service to capture exceptions
-        when(() => mockLoggingService.captureException(any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'))).thenReturn(null);
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // Verify that portal integration was attempted
-          // The actual implementation will try portal first, then fall back
-          expect(e, isA<Exception>());
-
-          // Verify that logging was called for portal fallback
-          verify(() => mockLoggingService.captureException(any<dynamic>(),
+        // Mock logging to capture any exceptions
+        when(() => mockLoggingService.captureException(
+              any<dynamic>(),
               domain: screenshotDomain,
-              subDomain: 'portal_fallback')).called(1);
-        }
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).thenReturn(null);
+
+        // The screenshot will fail because we don't have the actual screenshot tools
+        await expectLater(
+          takeScreenshot(),
+          throwsA(anyOf(isA<Exception>(), isA<StateError>())),
+        );
+
+        // Verify that the exception was logged (but NOT as portal_fallback)
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: screenshotDomain,
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).called(1);
       });
 
-      test(
-          'should maintain traditional screenshot flow in non-Flatpak environment',
-          () async {
-        if (PortalService.shouldUsePortal) {
-          // Skip test in Flatpak environment
-          return;
-        }
-
-        try {
-          await takeScreenshot();
-        } catch (e) {
-          // Verify that traditional screenshot flow was attempted
-          // The error could be Exception or StateError depending on the environment
-          expect(e, anyOf(isA<Exception>(), isA<StateError>()));
-        }
-      });
-
-      test('should handle portal service lifecycle correctly', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
+      test('portal service lifecycle in non-Flatpak environment', () async {
+        // Even when not in Flatpak, the portal service should handle
+        // initialization and disposal gracefully
+        expect(PortalService.shouldUsePortal, isFalse);
 
         final portalService = ScreenshotPortalService();
 
-        // Test initialization
+        // Test initialization - should succeed even outside Flatpak
         expect(portalService.isInitialized, isFalse);
         await portalService.initialize();
         expect(portalService.isInitialized, isTrue);
@@ -174,6 +174,22 @@ void main() {
         // Test disposal
         await portalService.dispose();
         expect(portalService.isInitialized, isFalse);
+      });
+
+      test('portal service client access should fail outside Flatpak', () {
+        expect(PortalService.shouldUsePortal, isFalse);
+
+        final portalService = ScreenshotPortalService();
+
+        // Accessing client without initialization should throw
+        expect(
+          () => portalService.client,
+          throwsA(isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('not initialized'),
+          )),
+        );
       });
     });
 

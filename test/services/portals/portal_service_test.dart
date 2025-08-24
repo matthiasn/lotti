@@ -226,19 +226,30 @@ void main() {
 
     group('Portal Object Creation', () {
       test(
-          'should create portal object with correct parameters when in Flatpak',
-          () async {
-        // This test will only work in actual Flatpak environment
-        // In test environment, it will throw, which is expected
-        try {
+        'should create portal object with correct parameters when in Flatpak',
+        () async {
           await service.initialize();
           final object = service.createPortalObject();
           expect(object, isA<DBusRemoteObject>());
-        } catch (e) {
-          // Expected in non-Flatpak test environment
-          expect(e, isA<StateError>());
-        }
-      });
+        },
+        skip: !PortalService.shouldUsePortal
+            ? 'Test requires Flatpak environment'
+            : null,
+      );
+
+      test(
+        'should throw StateError when creating portal object outside Flatpak',
+        () async {
+          await service.initialize();
+          expect(
+            () => service.createPortalObject(),
+            throwsA(isA<StateError>()),
+          );
+        },
+        skip: PortalService.shouldUsePortal
+            ? 'Test requires non-Flatpak environment'
+            : null,
+      );
     });
 
     group('Handle Token Generation', () {

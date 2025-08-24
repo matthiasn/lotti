@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dbus/dbus.dart';
 import 'package:lotti/get_it.dart';
@@ -47,15 +48,15 @@ class AudioPortalService extends PortalService {
         ),
       };
 
-      // Get calling app PID (0 means current process)
-      const pid = DBusUint32(0);
+      // Get calling app PID
+      final pidValue = DBusUint32(pid);
 
       // Call the access device method for microphone
       final result = await object.callMethod(
         AudioPortalConstants.interfaceName,
         AudioPortalConstants.accessDeviceMethod,
         [
-          pid, // PID of the calling process
+          pidValue, // PID of the calling process
           DBusArray.string(
               [AudioPortalConstants.microphoneDevice]), // Device identifiers
           DBusDict.stringVariant(options),
@@ -129,6 +130,11 @@ class AudioPortalService extends PortalService {
 
   /// Checks if the audio portal is available
   static Future<bool> isAvailable() async {
+    // Short-circuit when not in Flatpak - assume audio is available
+    if (!PortalService.shouldUsePortal) {
+      return true;
+    }
+
     return PortalService.isInterfaceAvailable(
       AudioPortalConstants.interfaceName,
       AudioPortalService(),

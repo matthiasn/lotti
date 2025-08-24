@@ -24,9 +24,9 @@ void main() {
     test('should handle coordinates at the equator', () {
       const lat = 0.0;
       const lon = 0.0;
-      
+
       final geohash = getGeoHash(latitude: lat, longitude: lon);
-      
+
       expect(geohash, isNotEmpty);
       expect(geohash, isA<String>());
     });
@@ -34,9 +34,9 @@ void main() {
     test('should handle extreme coordinates', () {
       const lat = 90.0;
       const lon = 180.0;
-      
+
       final geohash = getGeoHash(latitude: lat, longitude: lon);
-      
+
       expect(geohash, isNotEmpty);
       expect(geohash, isA<String>());
     });

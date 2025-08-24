@@ -68,8 +68,8 @@ modules:
         export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH
 
         # Set GDK_BACKEND conditionally: prefer Wayland, fallback to X11 when needed
-        if [ -z "$WAYLAND_DISPLAY" ] || [ "$XDG_SESSION_TYPE" != "wayland" ]; then
-          # Fallback to X11 when Wayland is not available
+        if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_SESSION_TYPE" != "wayland" ]; then
+          # Fallback to X11 only when neither Wayland display nor session type indicate Wayland
           export GDK_BACKEND=x11
         fi
         # If Wayland is available, leave GDK_BACKEND unset to use Wayland by default
