@@ -322,37 +322,55 @@ void main() {
     });
 
     group('Portal Error Logging', () {
-      test('should log portal access denied with correct domain', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
+      // Note: Testing portal-specific error paths would require either:
+      // 1. Running tests in an actual Flatpak environment, or
+      // 2. Injecting a Portal facade to mock portal failures
+      // 
+      // Since we can't reliably test portal failures in CI/CD,
+      // we test the non-portal paths and standard error handling instead.
+      test('should work correctly in non-portal environments', () async {
+        if (PortalService.shouldUsePortal) {
+          // Skip test in Flatpak environment
           return;
         }
 
-        // This test verifies that portal access denied is logged with correct domain
-        // The actual implementation logs with domain: 'audio_recorder_repository'
-        expect(repository.hasPermission(), isA<Future<bool>>());
+        // Mock the AudioRecorder hasPermission to return true
+        when(() => mockAudioRecorder.hasPermission())
+            .thenAnswer((_) async => true);
+
+        final result = await repository.hasPermission();
+        
+        expect(result, isTrue);
+        
+        // Verify no portal-related exceptions were logged
+        verifyNever(
+          () => mockLoggingService.captureException(
+            any(),
+            domain: 'audio_recorder_repository',
+            subDomain: any(named: 'subDomain'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        );
       });
 
-      test('should log portal unavailability with correct subdomain', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
+      test('should handle standard permission check errors', () async {
+        // Mock the AudioRecorder to throw an exception
+        when(() => mockAudioRecorder.hasPermission())
+            .thenThrow(Exception('Permission check failed'));
 
-        // This test verifies that portal unavailability is logged with correct subdomain
-        // The actual implementation logs with subDomain: 'portalUnavailable'
-        expect(repository.hasPermission(), isA<Future<bool>>());
-      });
-
-      test('should log portal access denied with correct subdomain', () async {
-        if (!PortalService.shouldUsePortal) {
-          // Skip test in non-Flatpak environment
-          return;
-        }
-
-        // This test verifies that portal access denied is logged with correct subdomain
-        // The actual implementation logs with subDomain: 'portalAccess'
-        expect(repository.hasPermission(), isA<Future<bool>>());
+        final result = await repository.hasPermission();
+        
+        expect(result, isFalse);
+        
+        // Verify exception was logged with correct domain and subdomain
+        verify(
+          () => mockLoggingService.captureException(
+            any(),
+            domain: 'audio_recorder_repository',
+            subDomain: 'hasPermission',
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
     });
 

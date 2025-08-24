@@ -91,13 +91,12 @@ void main() {
           return;
         }
 
-        try {
-          await service.initialize();
+        await service.initialize();
 
-          expect(() => service.requestMicrophoneAccess(), throwsA(anything));
-        } catch (e) {
-          // Expected in test environment
-        }
+        // In portal environment, the method should return false on error
+        final result = await service.requestMicrophoneAccess();
+        expect(result, isFalse);
+        expect(service.hasMicrophoneAccess, isFalse);
       });
 
       test('should return cached access status when already granted', () async {
@@ -120,21 +119,22 @@ void main() {
           return;
         }
 
-        try {
-          await service.initialize();
+        await service.initialize();
 
-          expect(() => service.requestMicrophoneAccess(), throwsA(anything));
-        } catch (e) {
-          // Verify that exception was logged
-          verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'AudioPortalService',
-              subDomain: 'requestMicrophoneAccess',
-              stackTrace: any<dynamic>(named: 'stackTrace'),
-            ),
-          ).called(1);
-        }
+        // In portal environment, the method should return false and log the error
+        final result = await service.requestMicrophoneAccess();
+        expect(result, isFalse);
+        expect(service.hasMicrophoneAccess, isFalse);
+
+        // Verify that exception was logged
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'AudioPortalService',
+            subDomain: 'requestMicrophoneAccess',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
 
       test('should handle timeout errors', () async {
@@ -142,14 +142,12 @@ void main() {
           return;
         }
 
-        try {
-          await service.initialize();
+        await service.initialize();
 
-          expect(() => service.requestMicrophoneAccess(), throwsA(anything));
-        } catch (e) {
-          // Should handle timeout gracefully
-          expect(e, isA<Exception>());
-        }
+        // Should handle timeout gracefully by returning false
+        final result = await service.requestMicrophoneAccess();
+        expect(result, isFalse);
+        expect(service.hasMicrophoneAccess, isFalse);
       });
     });
 
@@ -183,13 +181,12 @@ void main() {
           return;
         }
 
-        try {
-          await service.initialize();
+        await service.initialize();
 
-          expect(() => service.requestMicrophoneAccess(), throwsA(anything));
-        } catch (e) {
-          // Expected in test environment
-        }
+        // In portal environment, the method should return false on error
+        final result = await service.requestMicrophoneAccess();
+        expect(result, isFalse);
+        expect(service.hasMicrophoneAccess, isFalse);
       });
     });
 
@@ -248,14 +245,12 @@ void main() {
           return;
         }
 
-        try {
-          await service.initialize();
+        await service.initialize();
 
-          expect(() => service.requestMicrophoneAccess(), throwsA(anything));
-        } catch (e) {
-          // Should handle access denied gracefully
-          expect(e, isA<Exception>());
-        }
+        // Should handle access denied gracefully by returning false
+        final result = await service.requestMicrophoneAccess();
+        expect(result, isFalse);
+        expect(service.hasMicrophoneAccess, isFalse);
       });
 
       test('should handle portal communication errors', () async {
@@ -263,14 +258,12 @@ void main() {
           return;
         }
 
-        try {
-          await service.initialize();
+        await service.initialize();
 
-          expect(() => service.requestMicrophoneAccess(), throwsA(anything));
-        } catch (e) {
-          // Should handle communication errors gracefully
-          expect(e, isA<Exception>());
-        }
+        // Should handle communication errors gracefully by returning false
+        final result = await service.requestMicrophoneAccess();
+        expect(result, isFalse);
+        expect(service.hasMicrophoneAccess, isFalse);
       });
 
       test('should log exceptions with correct domain and subdomain', () async {
@@ -278,20 +271,21 @@ void main() {
           return;
         }
 
-        try {
-          await service.initialize();
+        await service.initialize();
 
-          expect(() => service.requestMicrophoneAccess(), throwsA(anything));
-        } catch (e) {
-          verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'AudioPortalService',
-              subDomain: 'requestMicrophoneAccess',
-              stackTrace: any<dynamic>(named: 'stackTrace'),
-            ),
-          ).called(1);
-        }
+        // Should return false and log the exception
+        final result = await service.requestMicrophoneAccess();
+        expect(result, isFalse);
+        expect(service.hasMicrophoneAccess, isFalse);
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'AudioPortalService',
+            subDomain: 'requestMicrophoneAccess',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
     });
 
