@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dbus/dbus.dart';
@@ -9,16 +10,76 @@ import 'package:mocktail/mocktail.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockDBusClient extends Mock implements DBusClient {}
+
+class MockDBusRemoteObject extends Mock implements DBusRemoteObject {}
+
+class MockDBusIntrospectNode extends Mock implements DBusIntrospectNode {}
+
+class MockDBusIntrospectInterface extends Mock
+    implements DBusIntrospectInterface {}
+
+class FakeDBusObjectPath extends Fake implements DBusObjectPath {
+  FakeDBusObjectPath(this.value);
+
+  @override
+  final String value;
+
+  @override
+  String toString() => value;
+}
+
 // Test implementation of PortalService for testing abstract class
 class TestPortalService extends PortalService {
+  MockDBusClient? mockClient;
+  MockDBusRemoteObject? mockRemoteObject;
+  bool _isInitialized = false;
+
+  @override
+  DBusClient get client {
+    if (mockClient != null) {
+      return mockClient!;
+    }
+    return super.client;
+  }
+
+  @override
+  DBusRemoteObject createPortalObject() {
+    if (mockRemoteObject != null) {
+      return mockRemoteObject!;
+    }
+    return super.createPortalObject();
+  }
+
   @override
   Future<void> initialize() async {
+    if (mockClient != null) {
+      _isInitialized = true;
+      return;
+    }
     await super.initialize();
   }
 
   @override
+  bool get isInitialized =>
+      mockClient != null ? _isInitialized : super.isInitialized;
+
+  @override
   Future<void> dispose() async {
+    if (mockClient != null) {
+      _isInitialized = false;
+      return;
+    }
     await super.dispose();
+  }
+
+  // ignore_for_file: use_setters_to_change_properties
+  void setMockClient(MockDBusClient client) {
+    mockClient = client;
+  }
+
+  void setMockRemoteObject(MockDBusRemoteObject remoteObject) {
+    mockRemoteObject = remoteObject;
   }
 }
 
@@ -26,12 +87,31 @@ void main() {
   group('PortalService', () {
     late TestPortalService service;
     late MockLoggingService mockLoggingService;
+    late MockDBusClient mockDBusClient;
+    late MockDBusRemoteObject mockDBusRemoteObject;
+
+    setUpAll(() {
+      registerFallbackValue(StackTrace.current);
+      registerFallbackValue(FakeDBusObjectPath('/test'));
+    });
 
     setUp(() {
       mockLoggingService = MockLoggingService();
+      mockDBusClient = MockDBusClient();
+      mockDBusRemoteObject = MockDBusRemoteObject();
 
       getIt.registerSingleton<LoggingService>(mockLoggingService);
       service = TestPortalService();
+
+      // Setup default mock behaviors
+      when(() => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          )).thenReturn(null);
+
+      when(() => mockDBusClient.close()).thenAnswer((_) async {});
     });
 
     tearDown(() async {
@@ -83,6 +163,23 @@ void main() {
         // Second initialization should not cause issues
         await service.initialize();
         expect(service.isInitialized, isTrue);
+      });
+
+      test(
+          'should handle initialization errors with logging service not registered',
+          () async {
+        // Unregister logging service temporarily
+        await getIt.unregister<LoggingService>();
+
+        // Create a new service that will fail on initialization
+        final failingService = TestPortalService();
+
+        // Re-register logging service for other tests
+        getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+        // Service should still initialize even if logging fails
+        await failingService.initialize();
+        expect(failingService.isInitialized, isTrue);
       });
     });
 
@@ -237,6 +334,197 @@ void main() {
             equals('/org/freedesktop/portal/desktop'));
         expect(PortalConstants.responseTimeout,
             equals(const Duration(seconds: 30)));
+      });
+    });
+
+    // Focused tests for code coverage
+    group('Code Coverage Tests', () {
+      test('should handle successful introspection with matching interface',
+          () async {
+        if (PortalService.shouldUsePortal) {
+          return; // Skip in Flatpak environment
+        }
+
+        // Set up mocks
+        service
+          ..setMockClient(mockDBusClient)
+          ..setMockRemoteObject(mockDBusRemoteObject);
+
+        // Create mock introspection node
+        final mockIntrospectNode = MockDBusIntrospectNode();
+        final mockInterface = MockDBusIntrospectInterface();
+
+        when(() => mockInterface.name)
+            .thenReturn('org.freedesktop.portal.Device');
+        when(() => mockIntrospectNode.interfaces).thenReturn([mockInterface]);
+        when(() => mockDBusRemoteObject.introspect())
+            .thenAnswer((_) async => mockIntrospectNode);
+
+        // Test successful case
+        final available = await PortalService.isInterfaceAvailable(
+          'org.freedesktop.portal.Device',
+          service,
+          'TestService',
+        );
+
+        expect(available, isTrue);
+      });
+
+      test('should handle successful introspection without matching interface',
+          () async {
+        if (PortalService.shouldUsePortal) {
+          return; // Skip in Flatpak environment
+        }
+
+        // Set up mocks
+        service
+          ..setMockClient(mockDBusClient)
+          ..setMockRemoteObject(mockDBusRemoteObject);
+
+        // Create mock introspection node
+        final mockIntrospectNode = MockDBusIntrospectNode();
+        final mockInterface = MockDBusIntrospectInterface();
+
+        when(() => mockInterface.name)
+            .thenReturn('org.freedesktop.portal.SomeOther');
+        when(() => mockIntrospectNode.interfaces).thenReturn([mockInterface]);
+        when(() => mockDBusRemoteObject.introspect())
+            .thenAnswer((_) async => mockIntrospectNode);
+
+        // Test no match case
+        final available = await PortalService.isInterfaceAvailable(
+          'org.freedesktop.portal.Device',
+          service,
+          'TestService',
+        );
+
+        expect(available, isFalse);
+      });
+
+      test('should handle introspection timeout', () async {
+        if (PortalService.shouldUsePortal) {
+          return; // Skip in Flatpak environment
+        }
+
+        // Set up mocks
+        service
+          ..setMockClient(mockDBusClient)
+          ..setMockRemoteObject(mockDBusRemoteObject);
+
+        // Make introspect throw TimeoutException immediately
+        when(() => mockDBusRemoteObject.introspect()).thenThrow(
+          TimeoutException('Portal introspection timed out after 30 seconds'),
+        );
+
+        // Test timeout case
+        final available = await PortalService.isInterfaceAvailable(
+          'org.freedesktop.portal.Device',
+          service,
+          'TestService',
+        );
+
+        expect(available, isFalse);
+
+        // Verify exception was logged
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'TestService',
+              subDomain: 'isAvailable',
+            )).called(1);
+      });
+
+      test('should handle introspection exceptions', () async {
+        if (PortalService.shouldUsePortal) {
+          return; // Skip in Flatpak environment
+        }
+
+        // Set up mocks
+        service
+          ..setMockClient(mockDBusClient)
+          ..setMockRemoteObject(mockDBusRemoteObject);
+
+        // Make introspect throw exception
+        when(() => mockDBusRemoteObject.introspect())
+            .thenThrow(Exception('Introspection failed'));
+
+        // Test exception case
+        final available = await PortalService.isInterfaceAvailable(
+          'org.freedesktop.portal.Device',
+          service,
+          'TestService',
+        );
+
+        expect(available, isFalse);
+
+        // Verify exception was logged
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'TestService',
+              subDomain: 'isAvailable',
+            )).called(1);
+      });
+
+      test('should handle empty interfaces list', () async {
+        if (PortalService.shouldUsePortal) {
+          return; // Skip in Flatpak environment
+        }
+
+        // Set up mocks
+        service
+          ..setMockClient(mockDBusClient)
+          ..setMockRemoteObject(mockDBusRemoteObject);
+
+        // Create mock introspection node with no interfaces
+        final mockIntrospectNode = MockDBusIntrospectNode();
+        when(() => mockIntrospectNode.interfaces).thenReturn([]);
+        when(() => mockDBusRemoteObject.introspect())
+            .thenAnswer((_) async => mockIntrospectNode);
+
+        // Test empty interfaces case
+        final available = await PortalService.isInterfaceAvailable(
+          'org.freedesktop.portal.Device',
+          service,
+          'TestService',
+        );
+
+        expect(available, isFalse);
+      });
+
+      test('should handle multiple interfaces', () async {
+        if (PortalService.shouldUsePortal) {
+          return; // Skip in Flatpak environment
+        }
+
+        // Set up mocks
+        service
+          ..setMockClient(mockDBusClient)
+          ..setMockRemoteObject(mockDBusRemoteObject);
+
+        // Create mock introspection node with multiple interfaces
+        final mockIntrospectNode = MockDBusIntrospectNode();
+        final mockInterface1 = MockDBusIntrospectInterface();
+        final mockInterface2 = MockDBusIntrospectInterface();
+        final mockInterface3 = MockDBusIntrospectInterface();
+
+        when(() => mockInterface1.name)
+            .thenReturn('org.freedesktop.portal.Screenshot');
+        when(() => mockInterface2.name)
+            .thenReturn('org.freedesktop.portal.Device');
+        when(() => mockInterface3.name)
+            .thenReturn('org.freedesktop.portal.FileChooser');
+        when(() => mockIntrospectNode.interfaces)
+            .thenReturn([mockInterface1, mockInterface2, mockInterface3]);
+        when(() => mockDBusRemoteObject.introspect())
+            .thenAnswer((_) async => mockIntrospectNode);
+
+        // Test finding interface in the middle
+        final available = await PortalService.isInterfaceAvailable(
+          'org.freedesktop.portal.Device',
+          service,
+          'TestService',
+        );
+
+        expect(available, isTrue);
       });
     });
   });

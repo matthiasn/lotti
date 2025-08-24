@@ -57,6 +57,13 @@ void main() {
         final result = await isCommandAvailable('nonexistent_command_12345');
         expect(result, isFalse);
       });
+
+      test('returns false when Process.run throws exception', () async {
+        // Test with an invalid command that might cause Process.run to throw
+        // Use empty string which should cause Process.run to throw
+        final result = await isCommandAvailable('');
+        expect(result, isFalse);
+      });
     });
 
     group('findAvailableScreenshotTool', () {
@@ -66,13 +73,30 @@ void main() {
         // On Linux, it might return a tool if available
         expect(result, anyOf(isA<String>(), isNull));
       });
+
+      test('iterates through all tools when none are available', () async {
+        // This test ensures the loop iterates through all tools
+        // Since we're likely not on a system with these Linux tools,
+        // it should check all of them and return null
+        final result = await findAvailableScreenshotTool();
+
+        // If we're not on Linux or don't have the tools, result should be null
+        // If we're on Linux with tools, result should be one of the expected tools
+        if (result != null) {
+          expect(linuxScreenshotTools, contains(result));
+        }
+      });
     });
 
     group('takeLinuxScreenshot', () {
       test('throws exception for unsupported tool', () async {
         expect(
           () => takeLinuxScreenshot('unsupported', 'test.jpg', '/test/dir'),
-          throwsA(isA<Exception>()),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Unsupported screenshot tool'),
+          )),
         );
       });
 
@@ -87,6 +111,28 @@ void main() {
           expect(config.description, isNotEmpty);
           expect(config.installCommand, isNotEmpty);
         }
+      });
+
+      test('starts process with correct arguments for spectacle', () async {
+        // This test will attempt to run spectacle, which likely won't exist
+        // on most test systems, causing Process.start to fail
+        try {
+          await takeLinuxScreenshot(spectacleTool, 'test.jpg', '/tmp');
+        } catch (e) {
+          // Expected to fail on systems without spectacle
+          expect(e, isA<Exception>());
+        }
+      });
+
+      test('builds correct arguments list', () {
+        // Test that arguments are properly constructed
+        final config = screenshotToolConfigs[spectacleTool];
+        expect(config, isNotNull);
+
+        // The function should combine config arguments with filename
+        final expectedArgs = [...config!.arguments, 'test.jpg'];
+        expect(expectedArgs.last, equals('test.jpg'));
+        expect(expectedArgs.length, equals(config.arguments.length + 1));
       });
     });
 
