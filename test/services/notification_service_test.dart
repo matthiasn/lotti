@@ -7,34 +7,32 @@
 //
 // Conventions: uses TestWidgetsFlutterBinding to enable channel mocking safely.
 
-import 'dart:async';
-import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart' as mocktail show Mock, when, verify, any, registerFallbackValue;
+
+import 'package:mocktail/mocktail.dart' as mocktail show any, Mock, verify, when;
+
+import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/utils/consts.dart';
-
 // Import the SUT
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/utils/consts.dart';
 
 class _MockLoggingService extends mocktail.Mock implements LoggingService {}
 class _MockJournalDb extends mocktail.Mock implements JournalDb {}
 
 /// A simple recorder for MethodChannel invocations to the flutter_local_notifications plugin.
-///
 /// We avoid depending on specific plugin versions by only capturing the method
 /// names called and their arguments. If the service's early-return logic works,
 /// no calls should be recorded.
 class _MethodChannelRecorder {
-  final List<MethodCall> calls = [];
-  late final MethodChannel channel;
-
   _MethodChannelRecorder(String channelName) {
     channel = MethodChannel(channelName);
   }
+
+  final List<MethodCall> calls = [];
+  late final MethodChannel channel;
 
   Future<void> install() async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -75,9 +73,9 @@ void main() {
   // - 'dexterous.com/flutter/local_notifications'
   // - 'dexterous.com/flutter/local_notifications_zoned_schedule' (older)
   // If either changes, the recorder still provides safety (we only assert "no calls" under Linux).
-  final _MethodChannelRecorder mainRecorder =
+  final mainRecorder =
       _MethodChannelRecorder('dexterous.com/flutter/local_notifications');
-  final _MethodChannelRecorder zonedRecorder =
+  final zonedRecorder =
       _MethodChannelRecorder('dexterous.com/flutter/local_notifications_zoned_schedule');
 
   setUpAll(() async {
@@ -91,13 +89,14 @@ void main() {
   });
 
   setUp(() {
-    getIt.reset();
     logging = _MockLoggingService();
     db = _MockJournalDb();
 
     // Register core dependencies used by NotificationService
-    getIt.registerSingleton<LoggingService>(logging);
-    getIt.registerSingleton<JournalDb>(db);
+    getIt
+      ..reset()
+      ..registerSingleton<LoggingService>(logging)
+      ..registerSingleton<JournalDb>(db);
 
     // Default stubs
     // enableNotificationsFlag might be consulted in several methods
@@ -114,7 +113,7 @@ void main() {
   group('NotificationService initialization', () {
     test('gracefully captures exceptions during plugin.initialize', () async {
       // Arrange: Make the channel throw on initialize to simulate Flatpak/macOS edge cases.
-      final MethodChannel initChannel = MethodChannel('dexterous.com/flutter/local_notifications');
+      final initChannel = const MethodChannel('dexterous.com/flutter/local_notifications');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         initChannel,
         (call) async {
@@ -151,9 +150,7 @@ void main() {
   group('Platform gating on Linux/Windows (no-op behavior)', () {
     test('updateBadge returns early and makes no plugin calls on Linux', () async {
       // Arrange
-      final service = NotificationService();
-      // Simulate badgeCount change to ensure if not gated, it would proceed.
-      service.badgeCount = 99;
+      final service = NotificationService()..badgeCount = 99;
       mocktail.when(() => db.getWipCount()).thenAnswer((_) async => 1);
 
       // Act
@@ -254,30 +251,3 @@ void main() {
 /// Optional spy implementation to capture scheduleNotification arguments if needed.
 ///
 /// Not used in current tests due to HabitDefinition type availability uncertainty.
-class _TestNotificationService extends NotificationService {
-  _TestNotificationService({required this.onSchedule});
-  final void Function(Map<String, Object?> args) onSchedule;
-
-  @override
-  Future<void> scheduleNotification({
-    required String title,
-    required String body,
-    required DateTime notifyAt,
-    required int notificationId,
-    required bool showOnMobile,
-    required bool showOnDesktop,
-    bool repeat = false,
-    String? deepLink,
-  }) async {
-    onSchedule({
-      'title': title,
-      'body': body,
-      'notifyAt': notifyAt,
-      'notificationId': notificationId,
-      'showOnMobile': showOnMobile,
-      'showOnDesktop': showOnDesktop,
-      'repeat': repeat,
-      'deepLink': deepLink,
-    });
-  }
-}
