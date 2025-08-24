@@ -373,17 +373,17 @@ void main() {
         }
       });
 
-      test('ensures portal is used for privileged operations', () {
+      test('ensures portal is used for privileged operations', () async {
         // In Flatpak, screenshots must use portal instead of direct access
         if (PortalService.isRunningInFlatpak) {
           expect(PortalService.shouldUsePortal, isTrue);
 
           // Should not attempt to use traditional screenshot tools directly
-          expect(() async {
+          await expectLater(
             // Direct screenshot tools should fail in sandboxed environment
-            await takeLinuxScreenshot(
-                'spectacle', 'test.png', testTempDir.path);
-          }, throwsA(isA<Exception>()));
+            takeLinuxScreenshot('spectacle', 'test.png', testTempDir.path),
+            throwsA(isA<Exception>()),
+          );
         }
       });
 

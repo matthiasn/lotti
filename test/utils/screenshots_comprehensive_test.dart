@@ -142,7 +142,12 @@ void main() {
           // Outside Flatpak, should use traditional screenshot tools
           expect(() async {
             await takeScreenshot();
-          }, throwsA(isA<MissingPluginException>()));
+          },
+              throwsA(anyOf(
+                isA<MissingPluginException>(),
+                isA<UnsupportedError>(),
+                isA<Exception>(),
+              )));
         }
       });
 

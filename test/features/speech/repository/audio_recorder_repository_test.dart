@@ -107,6 +107,10 @@ void main() {
     test(
         'startRecording returns null due to directory creation in test environment',
         () async {
+      // Stub the mock start method to complete successfully
+      when(() => mockAudioRecorder.start(any<RecordConfig>(),
+          path: any(named: 'path'))).thenAnswer((_) async {});
+
       // In test environment, directory creation will fail, so we expect null
       final result = await repository.startRecording();
 

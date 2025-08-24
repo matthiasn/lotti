@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:dbus/dbus.dart';
 import 'package:lotti/get_it.dart';
@@ -28,11 +29,14 @@ abstract class PortalService {
       _client = DBusClient.session();
       _initialized = true;
     } catch (e) {
-      getIt<LoggingService>().captureException(
-        e,
-        domain: 'PortalService',
-        subDomain: 'initialization',
-      );
+      // Guard against LoggingService not being registered
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'PortalService',
+          subDomain: 'initialization',
+        );
+      }
       rethrow;
     }
   }
@@ -100,7 +104,14 @@ abstract class PortalService {
     try {
       await service.initialize();
       final object = service.createPortalObject();
-      final introspection = await object.introspect();
+      final introspection = await object.introspect().timeout(
+        PortalConstants.responseTimeout,
+        onTimeout: () {
+          throw TimeoutException(
+            'Portal introspection timed out after ${PortalConstants.responseTimeout.inSeconds} seconds',
+          );
+        },
+      );
       return introspection.interfaces.any(
         (interface) => interface.name == interfaceName,
       );

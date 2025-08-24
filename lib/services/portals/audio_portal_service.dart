@@ -64,12 +64,15 @@ class AudioPortalService extends PortalService {
       // In a real implementation, you would listen for the Response signal
       return _hasAudioAccess = true;
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
-        e,
-        domain: 'AudioPortalService',
-        subDomain: 'requestMicrophoneAccess',
-        stackTrace: stackTrace,
-      );
+      // Guard against LoggingService not being registered
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'AudioPortalService',
+          subDomain: 'requestMicrophoneAccess',
+          stackTrace: stackTrace,
+        );
+      }
       return false;
     }
   }

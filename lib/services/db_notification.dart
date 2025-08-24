@@ -33,6 +33,12 @@ class UpdateNotifications {
       });
     }
   }
+
+  Future<void> dispose() async {
+    _timer?.cancel();
+    _fromSyncTimer?.cancel();
+    await _controller.close();
+  }
 }
 
 const habitCompletionNotification = 'HABIT_COMPLETION';

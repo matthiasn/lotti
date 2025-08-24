@@ -55,8 +55,11 @@ check_prerequisites() {
     
     # Check for flatpak-builder
     if ! command -v flatpak-builder &> /dev/null; then
-        print_error "flatpak-builder is not installed. Installing..."
-        sudo apt install -y flatpak-builder
+        print_error "flatpak-builder is not installed. Please install it manually."
+        echo "Example (Debian/Ubuntu): sudo apt install -y flatpak-builder"
+        echo "For other distributions, consult your package manager or:"
+        echo "https://docs.flatpak.org/en/latest/flatpak-builder.html"
+        exit 1
     fi
     
     # Check for required Flatpak runtime
@@ -118,8 +121,26 @@ prepare_bundle() {
     # Create flutter-bundle directory
     mkdir -p "$SCRIPT_DIR/flutter-bundle"
     
-    # Copy Flutter build output
-    cp -r "$REPO_ROOT/build/linux/x64/release/bundle/." "$SCRIPT_DIR/flutter-bundle/"
+    # Detect architecture and copy Flutter build output
+    ARCH=$(uname -m)
+    BUNDLE_PATH=""
+    
+    # Check for x64 bundle first (default)
+    if [ -d "$REPO_ROOT/build/linux/x64/release/bundle" ]; then
+        BUNDLE_PATH="$REPO_ROOT/build/linux/x64/release/bundle"
+    # Check for arm64 bundle
+    elif [ -d "$REPO_ROOT/build/linux/arm64/release/bundle" ]; then
+        BUNDLE_PATH="$REPO_ROOT/build/linux/arm64/release/bundle"
+    else
+        print_error "No Flutter bundle found. Expected bundle at:"
+        echo "  $REPO_ROOT/build/linux/x64/release/bundle or"
+        echo "  $REPO_ROOT/build/linux/arm64/release/bundle"
+        echo "Please run 'flutter build linux --release' first."
+        exit 1
+    fi
+    
+    print_status "Using Flutter bundle from: $BUNDLE_PATH"
+    cp -r "$BUNDLE_PATH/." "$SCRIPT_DIR/flutter-bundle/"
     
     # Remove 1024x1024 icons from hicolor directory (Flatpak limit is 512x512)
     # Only target the specific hicolor/1024x1024 path to avoid accidentally removing other assets

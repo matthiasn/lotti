@@ -91,7 +91,7 @@ void main() {
 
         // This test verifies that the fallback logic exists in the code
         // The actual implementation will log an exception and fall back
-        expect(takeScreenshot, throwsA(anything));
+        await expectLater(takeScreenshot(), throwsA(anything));
       });
 
       test('should log portal fallback exception', () async {

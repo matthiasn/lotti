@@ -70,7 +70,7 @@ void main() {
         await service.initialize();
 
         expect(service.isInitialized, isTrue);
-        // Should not throw when accessing client in non-Flatpak mode
+        // Should throw StateError when accessing client in non-Flatpak mode
         expect(() => service.client, throwsStateError);
       });
 

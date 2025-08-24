@@ -91,6 +91,10 @@ void main() {
       updateNotifications = UpdateNotifications();
     });
 
+    tearDown(() async {
+      await updateNotifications.dispose();
+    });
+
     group('Initial State', () {
       test('should initialize with empty state', () {
         expect(updateNotifications, isNotNull);

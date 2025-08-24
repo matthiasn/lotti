@@ -161,21 +161,19 @@ void main() {
           return;
         }
 
-        try {
-          await service.initialize();
+        await service.initialize();
 
-          await expectLater(service.takeScreenshot(), throwsA(anything));
-        } catch (e) {
-          // Verify that exception was logged
-          verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'ScreenshotPortalService',
-              subDomain: 'takeScreenshot',
-              stackTrace: any<dynamic>(named: 'stackTrace'),
-            ),
-          ).called(1);
-        }
+        await expectLater(service.takeScreenshot(), throwsA(anything));
+
+        // Verify that exception was logged
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'ScreenshotPortalService',
+            subDomain: 'takeScreenshot',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
 
       test('should handle timeout errors', () async {
