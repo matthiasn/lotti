@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glass_kit/glass_kit.dart';
+import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -16,18 +18,30 @@ import '../../../../test_helper.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class MockAiConfigDb extends Mock implements AiConfigDb {}
+
 void main() {
   late MockLoggingService mockLoggingService;
+  late MockAiConfigRepository mockAiConfigRepository;
+  late MockAiConfigDb mockAiConfigDb;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.current);
+    registerFallbackValue(AiConfigType.prompt);
   });
 
   setUp(() {
     mockLoggingService = MockLoggingService();
+    mockAiConfigRepository = MockAiConfigRepository();
+    mockAiConfigDb = MockAiConfigDb();
 
     // Register mocks in GetIt
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt
+      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<AiConfigRepository>(mockAiConfigRepository)
+      ..registerSingleton<AiConfigDb>(mockAiConfigDb);
 
     // Setup mock behaviors
     when(
@@ -37,6 +51,13 @@ void main() {
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
+
+    // Setup AI config repository mock behavior
+    when(() => mockAiConfigRepository.getConfigById(any<String>()))
+        .thenAnswer((_) async => null);
+
+    when(() => mockAiConfigRepository.watchConfigsByType(any<AiConfigType>()))
+        .thenAnswer((_) => const Stream.empty());
   });
 
   tearDown(getIt.reset);

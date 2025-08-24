@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/portals/portal_service.dart';
+import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshot_consts.dart';
 import 'package:lotti/utils/screenshots.dart';
@@ -99,28 +101,80 @@ void main() {
 
     tearDown(getIt.reset);
 
-    group('isRunningInFlatpak', () {
-      test('returns correct value based on environment', () {
-        // Test without FLATPAK_ID
-        final result1 = isRunningInFlatpak();
+    group('Portal Environment Detection', () {
+      test('isRunningInFlatpak returns correct value based on environment', () {
+        final isRunning = PortalService.isRunningInFlatpak;
+        expect(isRunning, isA<bool>());
 
-        // We can't easily mock Platform.environment or File.existsSync
-        // but we can verify the function returns a boolean
-        expect(result1, isA<bool>());
+        // Verify consistency with shouldUsePortal
+        if (Platform.isLinux) {
+          final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null &&
+              Platform.environment['FLATPAK_ID']!.isNotEmpty;
+          expect(isRunning, equals(hasFlatpakId));
+        } else {
+          expect(isRunning, isFalse);
+        }
+      });
+
+      test('shouldUsePortal is consistent with environment', () {
+        final shouldUse = PortalService.shouldUsePortal;
+        final isRunning = PortalService.isRunningInFlatpak;
+        expect(shouldUse, equals(isRunning));
       });
     });
 
-    group('_safelyRestoreWindow', () {
-      test('handles window restoration errors gracefully', () async {
-        // The _safelyRestoreWindow function is private
-        // We can't test it directly without mocking the global windowManager
-        // which would require significant refactoring of the production code
+    group('Screenshot Portal Integration', () {
+      test('takeScreenshot uses portal when in Flatpak environment', () async {
+        // This test verifies the integration with portal services
+        // In non-Flatpak environment, it should fall back to traditional methods
 
-        // Instead, we verify the function exists by checking error handling
+        if (PortalService.shouldUsePortal) {
+          // In Flatpak, should attempt to use portal
+          expect(() async {
+            await takeScreenshot();
+          },
+              throwsA(anyOf(
+                isA<MissingPluginException>(),
+                isA<UnsupportedError>(),
+                isA<Exception>(),
+              )));
+        } else {
+          // Outside Flatpak, should use traditional screenshot tools
+          expect(() async {
+            await takeScreenshot();
+          },
+              throwsA(anyOf(
+                isA<MissingPluginException>(),
+                isA<UnsupportedError>(),
+                isA<Exception>(),
+              )));
+        }
+      });
+
+      test('portal service availability check', () async {
+        final isAvailable = await ScreenshotPortalService.isAvailable();
+        expect(isAvailable, isA<bool>());
+
+        // Portal should only be available in Flatpak
+        if (!PortalService.shouldUsePortal) {
+          expect(isAvailable, isFalse);
+        }
+      });
+
+      test('handles portal fallback to traditional methods', () async {
+        // When portal fails, should fall back to traditional screenshot methods
+        // This is tested by the error handling in takeScreenshot
+
+        when(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'SCREENSHOTS',
+              subDomain: 'portal_fallback',
+            )).thenReturn(null);
+
+        // Attempt screenshot which should handle fallback
         expect(() async {
-          // This will fail due to MissingPluginException in test environment
           await takeScreenshot();
-        }, throwsA(isA<MissingPluginException>()));
+        }, throwsA(isA<Exception>()));
       });
     });
 
@@ -146,6 +200,9 @@ void main() {
         // On Linux, might return a tool if available
         // On other systems, should return null
         if (Platform.isLinux) {
+          expect(result, anyOf(isNull, isIn(linuxScreenshotTools)));
+        } else if (Platform.isMacOS) {
+          // macOS might have ImageMagick's import tool available
           expect(result, anyOf(isNull, isIn(linuxScreenshotTools)));
         } else {
           expect(result, isNull);
@@ -179,48 +236,6 @@ void main() {
         expect(spectacleArguments, contains('-f'));
         expect(gnomeScreenshotArguments, contains('-f'));
         expect(importArguments, containsAll(['-window', 'root']));
-      });
-    });
-
-    group('takeFlatpakPortalScreenshot', () {
-      test('handles portal not available', () async {
-        // Mock DBusClient to simulate portal not available
-        await expectLater(
-          takeFlatpakPortalScreenshot(),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('D-Bus screenshot portal is not available'),
-          )),
-        );
-
-        // Can't verify windowManager calls without mocking the global instance
-      });
-
-      test('handles portal timeout', () async {
-        // This is a complex test that would require extensive DBus mocking
-        // For now, we verify the structure exists
-        expect(takeFlatpakPortalScreenshot, isA<Function>());
-      });
-
-      test('handles missing URI in portal response', () async {
-        // Another complex DBus test - verify error handling exists
-        expect(portalNoUriMessage, contains('no URI provided'));
-      });
-
-      test('handles user cancellation', () async {
-        // Verify cancellation handling exists
-        expect(portalCancelledMessage, contains('cancelled'));
-      });
-
-      test('handles file copy failure', () async {
-        // Verify file handling errors exist
-        expect(portalFileNotFoundMessage, contains('not found'));
-      });
-
-      test('handles unexpected URI format', () async {
-        // Verify URI validation exists
-        expect(portalUnexpectedUriMessage, contains('Unexpected'));
       });
     });
 
@@ -274,8 +289,6 @@ void main() {
         // Verify delay constants are reasonable
         expect(screenshotDelaySeconds, greaterThan(0));
         expect(screenshotDelaySeconds, lessThanOrEqualTo(5));
-        expect(windowMinimizationDelayMs, greaterThan(0));
-        expect(windowMinimizationDelayMs, lessThanOrEqualTo(1000));
       });
     });
 

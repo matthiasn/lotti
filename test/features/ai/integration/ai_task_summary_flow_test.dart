@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/database/ai_config_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
@@ -24,26 +27,37 @@ class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
 
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class MockAiConfigDb extends Mock implements AiConfigDb {}
+
 void main() {
   late MockLoggingService mockLoggingService;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockJournalRepository mockJournalRepository;
+  late MockAiConfigRepository mockAiConfigRepository;
+  late MockAiConfigDb mockAiConfigDb;
   late StreamController<Set<String>> updateStreamController;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.current);
+    registerFallbackValue(AiConfigType.prompt);
   });
 
   setUp(() {
     mockLoggingService = MockLoggingService();
     mockUpdateNotifications = MockUpdateNotifications();
     mockJournalRepository = MockJournalRepository();
+    mockAiConfigRepository = MockAiConfigRepository();
+    mockAiConfigDb = MockAiConfigDb();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     // Register mocks in GetIt
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<AiConfigRepository>(mockAiConfigRepository)
+      ..registerSingleton<AiConfigDb>(mockAiConfigDb);
 
     // Setup mock behaviors
     when(() => mockUpdateNotifications.updateStream)
@@ -67,6 +81,13 @@ void main() {
     ).thenAnswer((_) {
       // Suppress stack trace logging in tests
     });
+
+    // Setup AI config repository mock behavior
+    when(() => mockAiConfigRepository.getConfigById(any<String>()))
+        .thenAnswer((_) async => null);
+
+    when(() => mockAiConfigRepository.watchConfigsByType(any<AiConfigType>()))
+        .thenAnswer((_) => const Stream.empty());
   });
 
   tearDown(() {

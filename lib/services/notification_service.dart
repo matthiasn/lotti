@@ -9,6 +9,19 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:timezone/timezone.dart';
 
+class NotificationConstants {
+  const NotificationConstants._();
+
+  static const int badgeNotificationId = 1;
+  static const int taskThreshold = 5;
+  static const String defaultActionName = 'Open notification';
+  static const String taskSingular = 'task';
+  static const String taskPlural = 'tasks';
+  static const String inProgressSuffix = ' in progress';
+  static const String encouragementLow = 'Nice';
+  static const String encouragementHigh = "Let's get that number down";
+}
+
 final JournalDb _db = getIt<JournalDb>();
 
 class NotificationService {
@@ -17,7 +30,7 @@ class NotificationService {
       flutterLocalNotificationsPlugin.initialize(
         const InitializationSettings(
           linux: LinuxInitializationSettings(
-            defaultActionName: 'Lotti notification',
+            defaultActionName: NotificationConstants.defaultActionName,
           ),
           macOS: DarwinInitializationSettings(
             requestSoundPermission: false,
@@ -82,11 +95,12 @@ class NotificationService {
       badgeCount = count;
     }
 
-    await flutterLocalNotificationsPlugin.cancel(1);
+    await flutterLocalNotificationsPlugin
+        .cancel(NotificationConstants.badgeNotificationId);
 
     if (badgeCount == 0) {
       await flutterLocalNotificationsPlugin.show(
-        1,
+        NotificationConstants.badgeNotificationId,
         '',
         '',
         NotificationDetails(
@@ -105,11 +119,14 @@ class NotificationService {
 
       return;
     } else {
-      final title = '$badgeCount task${badgeCount == 1 ? '' : 's'} in progress';
-      final body = badgeCount < 5 ? 'Nice' : "Let's get that number down";
+      final title =
+          '$badgeCount ${badgeCount == 1 ? NotificationConstants.taskSingular : NotificationConstants.taskPlural}${NotificationConstants.inProgressSuffix}';
+      final body = badgeCount < NotificationConstants.taskThreshold
+          ? NotificationConstants.encouragementLow
+          : NotificationConstants.encouragementHigh;
 
       await flutterLocalNotificationsPlugin.show(
-        1,
+        NotificationConstants.badgeNotificationId,
         title,
         body,
         NotificationDetails(

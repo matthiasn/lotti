@@ -10,6 +10,13 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 
+class LocationConstants {
+  const LocationConstants._();
+
+  static const Duration locationTimeout = Duration(seconds: 10);
+  static const String appDesktopId = 'com.matthiasnehlsen.lotti';
+}
+
 class DeviceLocation {
   DeviceLocation() {
     location = Location();
@@ -73,43 +80,6 @@ class DeviceLocation {
       return null;
     }
 
-    if (Platform.isLinux) {
-      final manager = GeoClueManager();
-      await manager.connect();
-      final client = await manager.getClient();
-      await client.setDesktopId('<desktop-id>');
-      await client.setRequestedAccuracyLevel(GeoClueAccuracyLevel.exact);
-      await client.start();
-
-      final locationData = await client.locationUpdated
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: (_) => manager.close(),
-          )
-          .first;
-
-      await client.stop();
-
-      final longitude = locationData.longitude;
-      final latitude = locationData.latitude;
-
-      return Geolocation(
-        createdAt: now,
-        timezone: now.timeZoneName,
-        utcOffset: now.timeZoneOffset.inMinutes,
-        latitude: latitude,
-        longitude: longitude,
-        altitude: locationData.altitude,
-        speed: locationData.speed,
-        accuracy: locationData.accuracy,
-        heading: locationData.heading,
-        geohashString: getGeoHash(
-          latitude: latitude,
-          longitude: longitude,
-        ),
-      );
-    }
-
     final locationData = await location.getLocation();
     final longitude = locationData.longitude;
     final latitude = locationData.latitude;
@@ -142,13 +112,13 @@ class DeviceLocation {
       final manager = GeoClueManager();
       await manager.connect();
       final client = await manager.getClient();
-      await client.setDesktopId('<desktop-id>');
+      await client.setDesktopId(LocationConstants.appDesktopId);
       await client.setRequestedAccuracyLevel(GeoClueAccuracyLevel.exact);
       await client.start();
 
       final locationData = await client.locationUpdated
           .timeout(
-            const Duration(seconds: 10),
+            LocationConstants.locationTimeout,
             onTimeout: (_) => manager.close(),
           )
           .first;

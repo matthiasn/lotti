@@ -8,10 +8,13 @@ class UpdateNotifications {
   final _affectedIdsFromSync = <String>{};
   Timer? _timer;
   Timer? _fromSyncTimer;
+  bool _isDisposed = false;
 
   Stream<Set<String>> get updateStream => _controller.stream;
 
   void notify(Set<String> affectedIds, {bool fromSync = false}) {
+    if (_isDisposed) return;
+
     if (fromSync) {
       _affectedIdsFromSync.addAll(affectedIds);
       _fromSyncTimer ??= Timer(const Duration(seconds: 1), () {
@@ -32,6 +35,18 @@ class UpdateNotifications {
         _timer = null;
       });
     }
+  }
+
+  Future<void> dispose() async {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    _timer?.cancel();
+    _timer = null;
+    _fromSyncTimer?.cancel();
+    _fromSyncTimer = null;
+    _affectedIds.clear();
+    _affectedIdsFromSync.clear();
+    await _controller.close();
   }
 }
 

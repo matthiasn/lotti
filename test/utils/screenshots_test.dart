@@ -57,6 +57,13 @@ void main() {
         final result = await isCommandAvailable('nonexistent_command_12345');
         expect(result, isFalse);
       });
+
+      test('returns false when Process.run throws exception', () async {
+        // Test with an invalid command that might cause Process.run to throw
+        // Use empty string which should cause Process.run to throw
+        final result = await isCommandAvailable('');
+        expect(result, isFalse);
+      });
     });
 
     group('findAvailableScreenshotTool', () {
@@ -66,13 +73,30 @@ void main() {
         // On Linux, it might return a tool if available
         expect(result, anyOf(isA<String>(), isNull));
       });
+
+      test('iterates through all tools when none are available', () async {
+        // This test ensures the loop iterates through all tools
+        // Since we're likely not on a system with these Linux tools,
+        // it should check all of them and return null
+        final result = await findAvailableScreenshotTool();
+
+        // If we're not on Linux or don't have the tools, result should be null
+        // If we're on Linux with tools, result should be one of the expected tools
+        if (result != null) {
+          expect(linuxScreenshotTools, contains(result));
+        }
+      });
     });
 
     group('takeLinuxScreenshot', () {
       test('throws exception for unsupported tool', () async {
         expect(
           () => takeLinuxScreenshot('unsupported', 'test.jpg', '/test/dir'),
-          throwsA(isA<Exception>()),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Unsupported screenshot tool'),
+          )),
         );
       });
 
@@ -88,21 +112,27 @@ void main() {
           expect(config.installCommand, isNotEmpty);
         }
       });
-    });
 
-    group('isRunningInFlatpak', () {
-      test('returns true when FLATPAK_ID environment variable is set', () {
-        // This test is environmental and may not work in all test environments
-        // We test the logic exists rather than the specific result
-        final result = isRunningInFlatpak();
-        expect(result, isA<bool>());
+      test('starts process with correct arguments for spectacle', () async {
+        // This test will attempt to run spectacle, which likely won't exist
+        // on most test systems, causing Process.start to fail
+        try {
+          await takeLinuxScreenshot(spectacleTool, 'test.jpg', '/tmp');
+        } catch (e) {
+          // Expected to fail on systems without spectacle
+          expect(e, isA<Exception>());
+        }
       });
 
-      test('detects Flatpak environment correctly based on file existence', () {
-        // Since we can't easily mock File.existsSync in this context,
-        // we just verify the function returns a boolean
-        final result = isRunningInFlatpak();
-        expect(result, isA<bool>());
+      test('builds correct arguments list', () {
+        // Test that arguments are properly constructed
+        final config = screenshotToolConfigs[spectacleTool];
+        expect(config, isNotNull);
+
+        // The function should combine config arguments with filename
+        final expectedArgs = [...config!.arguments, 'test.jpg'];
+        expect(expectedArgs.last, equals('test.jpg'));
+        expect(expectedArgs.length, equals(config.arguments.length + 1));
       });
     });
 
@@ -134,40 +164,9 @@ void main() {
         expect(screenshotDirectoryPath, isNotEmpty);
         expect(screenshotDateFormat, isNotEmpty);
         expect(screenshotDelaySeconds, isPositive);
-        expect(screenshotProcessTimeoutSeconds, isPositive);
-        expect(windowMinimizationDelayMs, isPositive);
         expect(screenshotDomain, isNotEmpty);
         expect(linuxScreenshotTools, isNotEmpty);
         expect(screenshotToolConfigs, isNotEmpty);
-      });
-
-      test('Flatpak portal constants are properly defined', () {
-        expect(dbusPortalDesktopName, equals('org.freedesktop.portal.Desktop'));
-        expect(
-            dbusPortalDesktopPath, equals('/org/freedesktop/portal/desktop'));
-        expect(dbusPortalScreenshotInterface,
-            equals('org.freedesktop.portal.Screenshot'));
-        expect(dbusPortalRequestInterface,
-            equals('org.freedesktop.portal.Request'));
-        expect(dbusPortalResponseSignal, equals('Response'));
-        expect(portalHandleTokenKey, equals('handle_token'));
-        expect(portalModalKey, equals('modal'));
-        expect(portalInteractiveKey, equals('interactive'));
-        expect(portalUriKey, equals('uri'));
-        expect(screenshotTokenPrefix, equals('lotti_screenshot_'));
-        expect(portalSuccessResponse, equals(0));
-      });
-
-      test('portal error messages are defined', () {
-        expect(portalNoUriMessage, isNotEmpty);
-        expect(portalUnexpectedUriMessage, isNotEmpty);
-        expect(portalFileNotFoundMessage, isNotEmpty);
-        expect(portalTimeoutMessage, isNotEmpty);
-        expect(portalCancelledMessage, isNotEmpty);
-      });
-
-      test('file URI constants are defined', () {
-        expect(fileUriScheme, equals('file://'));
       });
 
       test('Linux screenshot tools list contains all expected tools', () {

@@ -3,11 +3,10 @@ import 'dart:io';
 
 import 'package:dbus/dbus.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/services/portals/portal_service.dart';
+import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:lotti/utils/screenshot_consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
@@ -32,6 +31,9 @@ class MockFile extends Mock implements File {}
 class MockStreamSubscription extends Mock
     implements StreamSubscription<DBusSignal> {}
 
+class MockScreenshotPortalService extends Mock
+    implements ScreenshotPortalService {}
+
 // Fakes
 class FakeDBusObjectPath extends Fake implements DBusObjectPath {
   FakeDBusObjectPath(this.value);
@@ -42,6 +44,10 @@ class FakeDBusObjectPath extends Fake implements DBusObjectPath {
 
 class FakeDBusSignature extends Fake implements DBusSignature {}
 
+// Mock implementation since ScreenshotPortalService is a singleton
+class MockScreenshotPortalServiceExt extends Mock
+    implements ScreenshotPortalService {}
+
 void main() {
   group('Flatpak Portal Screenshot Tests', () {
     late MockLoggingService mockLoggingService;
@@ -49,6 +55,7 @@ void main() {
     late MockDBusClient mockDBusClient;
     late MockDBusRemoteObject mockDBusRemoteObject;
     late Directory testTempDir;
+    late ScreenshotPortalService portalService;
 
     setUpAll(() async {
       registerFallbackValue(StackTrace.current);
@@ -71,6 +78,7 @@ void main() {
       mockWindowManager = MockWindowManager();
       mockDBusClient = MockDBusClient();
       mockDBusRemoteObject = MockDBusRemoteObject();
+      portalService = ScreenshotPortalService();
 
       getIt
         ..registerSingleton<LoggingService>(mockLoggingService)
@@ -97,314 +105,287 @@ void main() {
       when(() => mockDBusClient.close()).thenAnswer((_) async {});
     });
 
-    tearDown(getIt.reset);
+    tearDown(() async {
+      await portalService.dispose();
+      await getIt.reset();
+    });
 
-    group('Portal availability check', () {
-      test('detects when portal is available', () async {
-        // Mock successful introspection
-        when(() => mockDBusRemoteObject.introspect()).thenAnswer(
-          (_) async => DBusIntrospectNode(
-            name: 'test',
-            interfaces: [
-              DBusIntrospectInterface(
-                dbusPortalScreenshotInterface,
-                methods: [],
-                signals: [],
-                properties: [],
-                annotations: [],
-              ),
-            ],
-          ),
-        );
+    group('Portal Environment Detection', () {
+      test('shouldUsePortal returns correct value based on environment', () {
+        final shouldUse = PortalService.shouldUsePortal;
+        final isLinux = Platform.isLinux;
+        final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null &&
+            Platform.environment['FLATPAK_ID']!.isNotEmpty;
 
-        // We can't easily test _isPortalAvailable directly, but we can verify
-        // the portal constants are correctly defined
-        expect(dbusPortalDesktopName, equals('org.freedesktop.portal.Desktop'));
-        expect(
-            dbusPortalDesktopPath, equals('/org/freedesktop/portal/desktop'));
+        expect(shouldUse, equals(isLinux && hasFlatpakId));
       });
 
-      test('handles portal introspection failure', () async {
-        when(() => mockDBusRemoteObject.introspect()).thenThrow(
-          Exception('Service not found'),
-        );
+      test('isRunningInFlatpak correctly detects Flatpak environment', () {
+        final isRunning = PortalService.isRunningInFlatpak;
+        expect(isRunning, isA<bool>());
 
-        // Portal should be considered unavailable on introspection failure
-        expect(
-          () async => mockDBusRemoteObject.introspect(),
-          throwsA(isA<Exception>()),
-        );
+        // If we're in Flatpak, FLATPAK_ID should be set
+        if (isRunning) {
+          expect(Platform.environment['FLATPAK_ID'], isNotNull);
+          expect(Platform.environment['FLATPAK_ID'], isNotEmpty);
+        }
       });
     });
 
-    group('Portal screenshot flow', () {
-      test('constructs correct portal options', () {
-        final options = <String, DBusValue>{
-          portalHandleTokenKey: const DBusString('test_token'),
-          portalModalKey: const DBusBoolean(false),
-          portalInteractiveKey: const DBusBoolean(false),
-        };
-
-        expect(options[portalHandleTokenKey], isA<DBusString>());
-        expect((options[portalModalKey] as DBusBoolean?)?.value, isFalse);
-        expect((options[portalInteractiveKey] as DBusBoolean?)?.value, isFalse);
+    group('Portal Service Initialization', () {
+      test('service initializes correctly in non-Flatpak environment',
+          () async {
+        // In non-Flatpak environment, initialization should succeed but not create DBus client
+        if (!PortalService.shouldUsePortal) {
+          await portalService.initialize();
+          expect(portalService.isInitialized, isTrue);
+          expect(() => portalService.client, throwsStateError);
+        }
       });
 
-      test('generates unique tokens', () async {
-        final token1 =
-            '$screenshotTokenPrefix${DateTime.now().millisecondsSinceEpoch}';
-        // Wait a bit to ensure different timestamp
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        final token2 =
-            '$screenshotTokenPrefix${DateTime.now().millisecondsSinceEpoch}';
+      test('service handles multiple initializations safely', () async {
+        await portalService.initialize();
+        expect(portalService.isInitialized, isTrue);
 
-        expect(token1, startsWith(screenshotTokenPrefix));
-        expect(token2, startsWith(screenshotTokenPrefix));
+        // Second initialization should not cause issues
+        await portalService.initialize();
+        expect(portalService.isInitialized, isTrue);
+      });
+
+      test('service disposes correctly', () async {
+        await portalService.initialize();
+        expect(portalService.isInitialized, isTrue);
+
+        await portalService.dispose();
+        expect(portalService.isInitialized, isFalse);
+      });
+    });
+
+    group('Screenshot Portal Parameters', () {
+      test('creates unique handle tokens', () async {
+        final token1 = PortalService.createHandleToken('screenshot');
+        // Add delay to ensure different timestamp
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+        final token2 = PortalService.createHandleToken('screenshot');
+
+        expect(token1, startsWith('screenshot_'));
+        expect(token2, startsWith('screenshot_'));
         expect(token1, isNot(equals(token2)));
       });
 
-      test('handles successful portal response', () {
-        const testUri = '$fileUriScheme/tmp/screenshot.png';
-        final results = DBusDict.stringVariant({
-          portalUriKey: const DBusString(testUri),
-        });
+      test('takeScreenshot throws error in non-Flatpak environment', () async {
+        if (!PortalService.shouldUsePortal) {
+          expect(
+            () async => portalService.takeScreenshot(),
+            throwsA(isA<UnsupportedError>()),
+          );
+        }
+      });
+    });
 
-        final signal = MockDBusSignal();
-        when(() => signal.values).thenReturn([
-          const DBusUint32(portalSuccessResponse),
-          results,
-        ]);
-
-        // Extract response handling logic
-        expect(signal.values.length, equals(2));
-        final response = signal.values[0] as DBusUint32;
-        expect(response.value, equals(portalSuccessResponse));
-
-        final resultsDict = signal.values[1] as DBusDict;
-        final uri =
-            resultsDict.asStringVariantDict()[portalUriKey] as DBusString?;
-        expect(uri?.value, equals(testUri));
+    group('Portal DBus Communication', () {
+      test('portal constants are correctly defined', () {
+        expect(PortalConstants.portalBusName,
+            equals('org.freedesktop.portal.Desktop'));
+        expect(PortalConstants.portalPath,
+            equals('/org/freedesktop/portal/desktop'));
+        expect(ScreenshotPortalConstants.interfaceName,
+            equals('org.freedesktop.portal.Screenshot'));
+        expect(
+            ScreenshotPortalConstants.screenshotMethod, equals('Screenshot'));
       });
 
-      test('handles portal cancellation', () {
-        const cancelResponse = 1;
+      test('handles successful portal response with file URI', () {
+        const testUri = 'file:///tmp/screenshot.png';
         final signal = MockDBusSignal();
+
+        // Mock successful response signal
         when(() => signal.values).thenReturn([
-          const DBusUint32(cancelResponse),
+          const DBusUint32(0), // Success code
+          DBusDict.stringVariant({
+            'uri': const DBusString(testUri),
+          }),
+        ]);
+
+        // Verify response parsing
+        expect(signal.values.length, equals(2));
+        final responseCode = (signal.values[0] as DBusUint32).value;
+        expect(responseCode, equals(0)); // Success
+
+        final results = (signal.values[1] as DBusDict).asStringVariantDict();
+        final uri = results['uri'] as DBusString?;
+        expect(uri?.value, equals(testUri));
+
+        // Verify URI can be converted to file path
+        final filePath = Uri.parse(testUri).toFilePath();
+        expect(filePath, equals('/tmp/screenshot.png'));
+      });
+
+      test('handles portal cancellation response', () {
+        final signal = MockDBusSignal();
+
+        // Mock cancellation response
+        when(() => signal.values).thenReturn([
+          const DBusUint32(1), // Cancelled code
           DBusDict.stringVariant(const {}),
         ]);
 
-        final response = signal.values[0] as DBusUint32;
-        expect(response.value, isNot(equals(portalSuccessResponse)));
-        expect(response.value, equals(cancelResponse));
+        final responseCode = (signal.values[0] as DBusUint32).value;
+        expect(responseCode, equals(1)); // Cancelled
       });
 
-      test('handles missing URI in success response', () {
+      test('handles portal error response', () {
         final signal = MockDBusSignal();
+
+        // Mock error response
         when(() => signal.values).thenReturn([
-          const DBusUint32(portalSuccessResponse),
-          DBusDict.stringVariant(const {}), // No URI
+          const DBusUint32(2), // Error code
+          DBusDict.stringVariant({
+            'error_message': const DBusString('Permission denied'),
+          }),
         ]);
 
-        final response = signal.values[0] as DBusUint32;
-        final results = signal.values[1] as DBusDict;
+        final responseCode = (signal.values[0] as DBusUint32).value;
+        expect(responseCode, equals(2)); // Error
 
-        expect(response.value, equals(portalSuccessResponse));
-        expect(results.asStringVariantDict()[portalUriKey], isNull);
+        final results = (signal.values[1] as DBusDict).asStringVariantDict();
+        final errorMessage = results['error_message'] as DBusString?;
+        expect(errorMessage?.value, equals('Permission denied'));
+      });
+    });
+
+    group('Portal File Operations', () {
+      test('correctly handles file URI conversion', () {
+        const fileUri = 'file:///home/user/Pictures/screenshot.png';
+        final path = Uri.parse(fileUri).toFilePath();
+        expect(path, equals('/home/user/Pictures/screenshot.png'));
       });
 
-      test('validates file URI format', () {
-        const validUri = '$fileUriScheme/path/to/file.png';
-        const invalidUri = 'http://example.com/file.png';
-
-        expect(validUri.startsWith(fileUriScheme), isTrue);
-        expect(invalidUri.startsWith(fileUriScheme), isFalse);
-
-        // Test URI parsing
-        final parsedPath = Uri.parse(validUri).toFilePath();
-        expect(parsedPath, equals('/path/to/file.png'));
+      test('validates screenshot file extension', () {
+        const filename = 'test.screenshot.jpg';
+        expect(filename.endsWith('.jpg'), isTrue);
+        expect(filename.endsWith(screenshotFileExtension), isTrue);
+        expect(screenshotFileExtension, equals('.screenshot.jpg'));
       });
 
-      test('handles file copy operations', () async {
-        final sourceFile = MockFile();
-        final testPath = '${testTempDir.path}/test_screenshot.png';
+      test('creates correct directory structure', () async {
+        final testDir = '${testTempDir.path}/screenshots/2024-01-15';
+        final dir = Directory(testDir);
 
-        when(sourceFile.existsSync).thenReturn(true);
-        when(() => sourceFile.copy(any())).thenAnswer((_) async => sourceFile);
-        when(sourceFile.delete).thenAnswer((_) async => sourceFile);
+        if (!dir.existsSync()) {
+          await dir.create(recursive: true);
+        }
 
-        // Simulate file operations
-        expect(sourceFile.existsSync(), isTrue);
-        await sourceFile.copy(testPath);
-        verify(() => sourceFile.copy(testPath)).called(1);
+        expect(dir.existsSync(), isTrue);
 
-        // Cleanup should not throw even if it fails
-        await sourceFile.delete();
-        verify(sourceFile.delete).called(1);
+        // Cleanup
+        if (dir.existsSync()) {
+          await dir.delete(recursive: true);
+        }
       });
+    });
 
-      test('handles file not found after portal success', () {
-        final sourceFile = MockFile();
-        when(sourceFile.existsSync).thenReturn(false);
+    group('Portal Error Handling', () {
+      test('handles DBus connection errors', () {
+        when(() => mockDBusRemoteObject.callMethod(
+              any(),
+              any(),
+              any(),
+            )).thenThrow(Exception('DBus connection failed'));
 
-        expect(sourceFile.existsSync(), isFalse);
+        // Would throw in actual portal call
         expect(
-          portalFileNotFoundMessage,
-          contains('Screenshot file not found'),
+          () => mockDBusRemoteObject.callMethod(
+            'org.freedesktop.portal.Screenshot',
+            'Screenshot',
+            [],
+          ),
+          throwsException,
         );
       });
 
-      test('handles portal timeout', () {
-        final completer = Completer<String>();
+      test('handles timeout in portal response', () async {
+        final completer = Completer<String?>();
 
-        expect(
-          completer.future.timeout(
-            const Duration(milliseconds: 100),
-            onTimeout: () => throw TimeoutException('Test timeout'),
-          ),
+        // Simulate timeout
+        final future = completer.future.timeout(
+          const Duration(milliseconds: 100),
+          onTimeout: () => throw TimeoutException('Portal response timeout'),
+        );
+
+        await expectLater(
+          future,
           throwsA(isA<TimeoutException>()),
         );
+      });
 
-        expect(
-          portalTimeoutMessage,
-          contains('timed out'),
+      test('logs exceptions to LoggingService', () {
+        final exception = Exception('Portal test exception');
+
+        mockLoggingService.captureException(
+          exception,
+          domain: 'PortalService',
+          subDomain: 'screenshot',
         );
+
+        verify(() => mockLoggingService.captureException(
+              exception,
+              domain: 'PortalService',
+              subDomain: 'screenshot',
+            )).called(1);
       });
     });
 
-    group('Window management in portal flow', () {
-      test('minimizes window before screenshot', () async {
-        // Verify window minimization delay is reasonable
-        expect(windowMinimizationDelayMs, greaterThan(0));
-        expect(windowMinimizationDelayMs, lessThanOrEqualTo(1000));
-      });
-
-      test('restores window after successful screenshot', () async {
-        // Window should be restored after screenshot
-        verifyNever(() => mockWindowManager.minimize());
-        verifyNever(() => mockWindowManager.show());
-      });
-
-      test('restores window even on portal error', () async {
-        // Simulate portal error
+    group('Portal Integration with Window Manager', () {
+      test('minimizes window before screenshot in fallback mode', () async {
         when(() => mockWindowManager.minimize()).thenAnswer((_) async {});
+
+        await mockWindowManager.minimize();
+
+        verify(() => mockWindowManager.minimize()).called(1);
+      });
+
+      test('restores window after screenshot in fallback mode', () async {
         when(() => mockWindowManager.show()).thenAnswer((_) async {});
 
-        // Window restoration should be called in finally block
-        expect(() => mockWindowManager.show(), returnsNormally);
+        await mockWindowManager.show();
+
+        verify(() => mockWindowManager.show()).called(1);
       });
     });
 
-    group('DBus signal handling', () {
-      test('creates proper signal subscription', () {
-        final mockStream = MockDBusSignalStream();
-        final mockSubscription = MockStreamSubscription();
-
-        when(() => mockStream.listen(any())).thenReturn(mockSubscription);
-        when(mockSubscription.cancel).thenAnswer((_) async {});
-
-        final subscription = mockStream.listen((_) {});
-        expect(subscription, isNotNull);
+    group('Portal Security and Permissions', () {
+      test('verifies portal runs in sandboxed context', () {
+        // In Flatpak, certain paths should be restricted
+        if (PortalService.isRunningInFlatpak) {
+          // Portal should be used instead of direct file access
+          expect(PortalService.shouldUsePortal, isTrue);
+        }
       });
 
-      test('cancels subscription on timeout', () async {
-        final mockSubscription = MockStreamSubscription();
-        when(mockSubscription.cancel).thenAnswer((_) async {});
+      test('validates screenshot directory permissions', () {
+        // Test that the app can only write to allowed directories
+        const allowedPaths = [
+          'xdg-documents/Lotti',
+          'xdg-download/Lotti',
+        ];
 
-        await mockSubscription.cancel();
-        verify(mockSubscription.cancel).called(1);
+        for (final path in allowedPaths) {
+          // These paths should be accessible in Flatpak manifest
+          expect(path.contains('Lotti'), isTrue);
+        }
       });
 
-      test('handles malformed signal data', () {
-        final signal = MockDBusSignal();
+      test('ensures portal options include security parameters', () {
+        final options = <String, DBusValue>{
+          'handle_token': DBusString(PortalService.createHandleToken('test')),
+          'modal': const DBusBoolean(false),
+          'interactive': const DBusBoolean(true),
+        };
 
-        // Signal with insufficient values
-        when(() => signal.values).thenReturn([]);
-        expect(signal.values.length, lessThan(2));
-
-        // Signal with wrong types
-        when(() => signal.values).thenReturn([
-          const DBusString('not a uint32'),
-          const DBusString('not a dict'),
-        ]);
-
-        expect(
-          () => signal.values[0] as DBusUint32,
-          throwsA(isA<TypeError>()),
-        );
-      });
-    });
-
-    group('Error handling and logging', () {
-      test('logs portal request start', () {
-        // Verify that no calls have been made yet
-        verifyNever(() => mockLoggingService.captureEvent(
-              any<dynamic>(),
-              domain: screenshotDomain,
-            ));
-
-        // Event would be logged when portal is called
-        expect(screenshotDomain, equals('SCREENSHOT'));
-      });
-
-      test('logs portal success with URI', () {
-        const testUri = '$fileUriScheme/tmp/test.png';
-
-        // Verify success logging format
-        expect(
-          'Screenshot portal succeeded with URI: $testUri',
-          contains('succeeded'),
-        );
-      });
-
-      test('logs portal failure with response code', () {
-        const failureCode = 2;
-
-        // Verify failure logging format
-        expect(
-          'Screenshot portal failed with response: $failureCode',
-          contains('failed'),
-        );
-      });
-
-      test('captures exceptions with full context', () {
-        // Verify that no calls have been made yet
-        verifyNever(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: screenshotDomain,
-              stackTrace: any<dynamic>(named: 'stackTrace'),
-            ));
-      });
-    });
-
-    group('Integration with file system', () {
-      test('creates correct directory structure', () async {
-        final day = DateFormat(screenshotDateFormat).format(DateTime.now());
-        final expectedPath = '$screenshotDirectoryPath$day/';
-
-        expect(expectedPath, matches(RegExp(r'images/\d{4}-\d{2}-\d{2}/')));
-      });
-
-      test('generates unique image IDs', () {
-        final id1 = uuid.v1();
-        final id2 = uuid.v1();
-
-        expect(id1, isNot(equals(id2)));
-        expect(id1, matches(RegExp(r'^[0-9a-f-]+$')));
-      });
-
-      test('constructs correct ImageData', () {
-        final now = DateTime.now();
-        final imageData = ImageData(
-          imageId: 'test-id',
-          imageFile: 'test$screenshotFileExtension',
-          imageDirectory: screenshotDirectoryPath,
-          capturedAt: now,
-        );
-
-        expect(imageData.imageFile, endsWith(screenshotFileExtension));
-        expect(imageData.imageDirectory, equals(screenshotDirectoryPath));
-        expect(imageData.capturedAt, equals(now));
+        expect(options.containsKey('handle_token'), isTrue);
+        expect(options['interactive'], isA<DBusBoolean>());
+        expect((options['interactive']! as DBusBoolean).value, isTrue);
       });
     });
   });

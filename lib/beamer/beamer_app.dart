@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,6 +29,24 @@ import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
 import 'package:lotti/widgets/sync/matrix/incoming_verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
+class AppScreenConstants {
+  const AppScreenConstants._();
+
+  static const double navigationElevation = 8;
+  static const double navigationIconSize = 30;
+  static const double navigationTextHeight = 2;
+  static const double navigationPadding = 10;
+  static const double navigationTimeIndicatorBottom = 0;
+  static const double navigationAudioIndicatorRight = 100;
+}
+
+/// Check if the app is running inside Flatpak sandbox
+bool _isRunningInFlatpak() {
+  return Platform.isLinux &&
+      (Platform.environment['FLATPAK_ID'] != null &&
+          Platform.environment['FLATPAK_ID']!.isNotEmpty);
+}
 
 class AppScreen extends StatefulWidget {
   const AppScreen({
@@ -91,15 +111,18 @@ class _AppScreenState extends State<AppScreen> {
                 ],
               ),
               const Positioned(
-                left: 10,
-                bottom: 0,
+                left: AppScreenConstants.navigationPadding,
+                bottom: AppScreenConstants.navigationTimeIndicatorBottom,
                 child: TimeRecordingIndicator(),
               ),
-              const Positioned(
-                right: 100,
-                bottom: 0,
-                child: AudioRecordingIndicator(),
-              ),
+              // Only show AudioRecordingIndicator when not running in Flatpak
+              // Flatpak builds have MediaKit compatibility issues
+              if (!_isRunningInFlatpak())
+                const Positioned(
+                  right: AppScreenConstants.navigationAudioIndicatorRight,
+                  bottom: AppScreenConstants.navigationTimeIndicatorBottom,
+                  child: AudioRecordingIndicator(),
+                ),
             ],
           ),
           bottomNavigationBar: SpotifyStyleBottomNavigationBar(
@@ -107,15 +130,15 @@ class _AppScreenState extends State<AppScreen> {
             unselectedItemColor: context.colorScheme.primary.withAlpha(127),
             enableFeedback: true,
             backgroundColor: context.colorScheme.surface,
-            elevation: 8,
-            iconSize: 30,
+            elevation: AppScreenConstants.navigationElevation,
+            iconSize: AppScreenConstants.navigationIconSize,
             selectedLabelStyle: const TextStyle(
-              height: 2,
+              height: AppScreenConstants.navigationTextHeight,
               fontWeight: FontWeight.normal,
               fontSize: fontSizeSmall,
             ),
             unselectedLabelStyle: const TextStyle(
-              height: 2,
+              height: AppScreenConstants.navigationTextHeight,
               fontWeight: FontWeight.w300,
               fontSize: fontSizeSmall,
             ),

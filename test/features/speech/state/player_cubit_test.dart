@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -48,6 +49,12 @@ void main() {
   });
 
   tearDown(getIt.reset);
+
+  group('PlayerConstants', () {
+    test('has correct constant values', () {
+      expect(PlayerConstants.completionDelayMs, 50);
+    });
+  });
 
   group('AudioPlayerCubit', () {
     test('initial state is correct', () {

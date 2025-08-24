@@ -308,6 +308,95 @@ void main() {
       expect(indicatorSize.height, 25);
     });
 
+    testWidgets('indicator has onTap callback configured', (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        dBFS: -160,
+        vu: -20,
+        progress: const Duration(seconds: 10),
+        showIndicator: true,
+        modalVisible: false,
+        language: 'en',
+        linkedId: 'test-id',
+      );
+
+      // Mock entry for linked ID
+      final testDate = DateTime(2024);
+      final mockEntry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'test-id',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: 'test-category',
+        ),
+      );
+
+      await tester
+          .pumpWidget(makeTestableWidget(state, linkedEntry: mockEntry));
+      await tester.pumpAndSettle();
+
+      // Verify indicator exists
+      expect(
+          find.byKey(const Key('audio_recording_indicator')), findsOneWidget);
+
+      // Verify it has a GestureDetector with an onTap handler
+      final gestureDetector = tester.widget<GestureDetector>(
+        find.byKey(const Key('audio_recording_indicator')),
+      );
+      expect(gestureDetector.onTap, isNotNull);
+    });
+
+    testWidgets('indicator has onTap callback configured without linked entry',
+        (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        dBFS: -160,
+        vu: -20,
+        progress: const Duration(seconds: 10),
+        showIndicator: true,
+        modalVisible: false,
+        language: 'en',
+      );
+
+      await tester.pumpWidget(makeTestableWidget(state));
+      await tester.pumpAndSettle();
+
+      // Verify indicator exists
+      expect(
+          find.byKey(const Key('audio_recording_indicator')), findsOneWidget);
+
+      // Verify it has a GestureDetector with an onTap handler
+      final gestureDetector = tester.widget<GestureDetector>(
+        find.byKey(const Key('audio_recording_indicator')),
+      );
+      expect(gestureDetector.onTap, isNotNull);
+    });
+
+    testWidgets('handles exceptions gracefully', (tester) async {
+      // Create a controller that throws an exception
+      final badController = audioRecorderControllerProvider.overrideWith(() {
+        throw Exception('Test exception');
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const AudioRecordingIndicator(),
+          overrides: [
+            audioRecorderRepositoryProvider
+                .overrideWithValue(mockRecorderRepository),
+            badController,
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show empty widget when exception occurs
+      expect(find.byKey(const Key('audio_recording_indicator')), findsNothing);
+      expect(find.byType(SizedBox), findsOneWidget);
+    });
+
     testWidgets('indicator has correct border radius', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
