@@ -150,7 +150,7 @@ void main() {
         expect(AudioPortalConstants.interfaceName,
             equals('org.freedesktop.portal.Device'));
         expect(AudioPortalConstants.accessDeviceMethod, equals('AccessDevice'));
-        expect(AudioPortalConstants.microphoneDevice, equals(1));
+        expect(AudioPortalConstants.microphoneDevice, equals('microphone'));
       });
 
       test('should use correct portal timeout', () {
@@ -325,7 +325,7 @@ void main() {
       // Note: Testing portal-specific error paths would require either:
       // 1. Running tests in an actual Flatpak environment, or
       // 2. Injecting a Portal facade to mock portal failures
-      // 
+      //
       // Since we can't reliably test portal failures in CI/CD,
       // we test the non-portal paths and standard error handling instead.
       test('should work correctly in non-portal environments', () async {
@@ -339,16 +339,16 @@ void main() {
             .thenAnswer((_) async => true);
 
         final result = await repository.hasPermission();
-        
+
         expect(result, isTrue);
-        
+
         // Verify no portal-related exceptions were logged
         verifyNever(
           () => mockLoggingService.captureException(
-            any(),
+            any<dynamic>(),
             domain: 'audio_recorder_repository',
-            subDomain: any(named: 'subDomain'),
-            stackTrace: any(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         );
       });
@@ -359,16 +359,16 @@ void main() {
             .thenThrow(Exception('Permission check failed'));
 
         final result = await repository.hasPermission();
-        
+
         expect(result, isFalse);
-        
+
         // Verify exception was logged with correct domain and subdomain
         verify(
           () => mockLoggingService.captureException(
-            any(),
+            any<dynamic>(),
             domain: 'audio_recorder_repository',
             subDomain: 'hasPermission',
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
       });

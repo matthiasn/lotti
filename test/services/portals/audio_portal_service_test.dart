@@ -64,7 +64,7 @@ void main() {
         expect(AudioPortalConstants.interfaceName,
             equals('org.freedesktop.portal.Device'));
         expect(AudioPortalConstants.accessDeviceMethod, equals('AccessDevice'));
-        expect(AudioPortalConstants.microphoneDevice, equals(1));
+        expect(AudioPortalConstants.microphoneDevice, equals('microphone'));
       });
     });
 
@@ -291,13 +291,13 @@ void main() {
 
     group('Device Type Constants', () {
       test('should have correct microphone device type', () {
-        expect(AudioPortalConstants.microphoneDevice, equals(1));
+        expect(AudioPortalConstants.microphoneDevice, equals('microphone'));
       });
 
       test('should use correct device type in portal calls', () {
         // This test verifies the constant is used correctly
-        expect(AudioPortalConstants.microphoneDevice, isA<int>());
-        expect(AudioPortalConstants.microphoneDevice, isPositive);
+        expect(AudioPortalConstants.microphoneDevice, isA<String>());
+        expect(AudioPortalConstants.microphoneDevice, isNotEmpty);
       });
     });
 

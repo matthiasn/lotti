@@ -92,6 +92,7 @@ void main() {
     });
 
     tearDown(() async {
+      // Always safe to call dispose - it's idempotent
       await updateNotifications.dispose();
     });
 
@@ -519,6 +520,80 @@ void main() {
         expect(emittedIds.first.length, equals(100));
 
         await subscription.cancel();
+      });
+    });
+
+    group('Disposal Safety', () {
+      test('dispose should be idempotent', () async {
+        // First disposal
+        await updateNotifications.dispose();
+
+        // Second disposal should not throw
+        await expectLater(
+          updateNotifications.dispose(),
+          completes,
+        );
+      });
+
+      test('notify after dispose should be no-op', () async {
+        final emittedIds = <Set<String>>[];
+
+        final subscription = _TestHelpers.createTestSubscription(
+            updateNotifications, emittedIds);
+
+        // Dispose the notifications
+        await updateNotifications.dispose();
+
+        // Try to notify after disposal
+        updateNotifications.notify({_TestConstants.testId1});
+
+        // Wait to ensure no emissions
+        await _TestHelpers.waitForRegularTimer();
+
+        // Should not emit anything
+        expect(emittedIds.length, equals(0));
+
+        // Clean up subscription
+        await subscription.cancel();
+      });
+
+      test('notify with sync flag after dispose should be no-op', () async {
+        final emittedIds = <Set<String>>[];
+
+        final subscription = _TestHelpers.createTestSubscription(
+            updateNotifications, emittedIds);
+
+        // Dispose the notifications
+        await updateNotifications.dispose();
+
+        // Try to notify with sync flag after disposal
+        updateNotifications.notify({_TestConstants.syncId1}, fromSync: true);
+
+        // Wait to ensure no emissions
+        await _TestHelpers.waitForSyncTimer();
+
+        // Should not emit anything
+        expect(emittedIds.length, equals(0));
+
+        // Clean up subscription
+        await subscription.cancel();
+      });
+
+      test('timers should be cleaned up on dispose', () async {
+        // Trigger both timers
+        updateNotifications
+          ..notify({_TestConstants.testId1})
+          ..notify({_TestConstants.syncId1}, fromSync: true);
+
+        // Dispose before timers fire
+        await updateNotifications.dispose();
+
+        // Wait for both timer durations
+        await _TestHelpers.waitForRegularTimer();
+        await _TestHelpers.waitForSyncTimer();
+
+        // No exceptions should occur even though timers would have fired
+        // This test passes if no exceptions are thrown
       });
     });
   });

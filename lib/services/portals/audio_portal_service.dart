@@ -10,7 +10,9 @@ class AudioPortalConstants {
 
   static const String interfaceName = 'org.freedesktop.portal.Device';
   static const String accessDeviceMethod = 'AccessDevice';
-  static const int microphoneDevice = 1; // Microphone device type
+  static const String microphoneDevice = 'microphone';
+  static const String cameraDevice = 'camera';
+  static const String speakersDevice = 'speakers';
 }
 
 /// Service for accessing audio recording devices using the XDG Desktop Portal
@@ -45,13 +47,17 @@ class AudioPortalService extends PortalService {
         ),
       };
 
+      // Get calling app PID (0 means current process)
+      const pid = DBusUint32(0);
+
       // Call the access device method for microphone
       final result = await object.callMethod(
         AudioPortalConstants.interfaceName,
         AudioPortalConstants.accessDeviceMethod,
         [
-          const DBusString(''), // parent_window (empty for root)
-          DBusArray.uint32([AudioPortalConstants.microphoneDevice]),
+          pid, // PID of the calling process
+          DBusArray.string(
+              [AudioPortalConstants.microphoneDevice]), // Device identifiers
           DBusDict.stringVariant(options),
         ],
       ).timeout(PortalConstants.responseTimeout);
@@ -60,9 +66,53 @@ class AudioPortalService extends PortalService {
         throw Exception('Audio portal returned no response');
       }
 
-      // For simplicity, assume access granted if call succeeds
-      // In a real implementation, you would listen for the Response signal
-      return _hasAudioAccess = true;
+      // Extract the request handle from the response
+      final requestHandle = result.returnValues.first as DBusObjectPath;
+
+      // Create a completer to wait for the response signal
+      final completer = Completer<bool>();
+
+      // Set up signal subscription for the Response signal
+      final signalStream = DBusSignalStream(
+        client,
+        interface: 'org.freedesktop.portal.Request',
+        name: 'Response',
+        path: requestHandle,
+        signature: DBusSignature('ua{sv}'),
+      );
+
+      final signalSubscription = signalStream.listen((DBusSignal signal) {
+        try {
+          // Parse the response signal
+          if (signal.values.isNotEmpty) {
+            final code = signal.values[0].asUint32();
+            // Response code 0 means success
+            if (code == 0) {
+              _hasAudioAccess = true;
+              completer.complete(true);
+            } else {
+              completer.complete(false);
+            }
+          } else {
+            completer.complete(false);
+          }
+        } catch (e) {
+          completer.completeError(e);
+        }
+      });
+
+      // Wait for the response with timeout
+      try {
+        return await completer.future.timeout(
+          PortalConstants.responseTimeout,
+          onTimeout: () {
+            throw TimeoutException('Audio portal response timed out');
+          },
+        );
+      } finally {
+        // Clean up the signal subscription
+        await signalSubscription.cancel();
+      }
     } catch (e, stackTrace) {
       // Guard against LoggingService not being registered
       if (getIt.isRegistered<LoggingService>()) {

@@ -14,6 +14,7 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --socket=pulseaudio
+  - --socket=pipewire
   - --device=dri
   # Secure filesystem permissions following principle of least privilege
   - --filesystem=xdg-documents/Lotti:create # Only create Lotti folder in documents
