@@ -128,10 +128,17 @@ Future<void> registerSingletons() async {
     'NotificationService',
   );
 
-  _registerLazyServiceSafely<AudioPlayerCubit>(
-    AudioPlayerCubit.new,
-    'AudioPlayerCubit',
-  );
+  // Register AudioPlayerCubit with MediaKit error handling - just skip if it fails
+  try {
+    getIt.registerLazySingleton<AudioPlayerCubit>(() {
+      final instance = AudioPlayerCubit();
+      _safeLog('Successfully created AudioPlayerCubit', isError: false);
+      return instance;
+    });
+  } catch (e) {
+    _safeLog('Failed to register AudioPlayerCubit: $e', isError: true);
+    // Don't register anything if MediaKit fails - we'll check for registration later
+  }
 
   unawaited(getIt<MatrixService>().init());
   getIt<LoggingService>().listenToConfigFlag();

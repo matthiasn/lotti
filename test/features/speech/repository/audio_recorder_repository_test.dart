@@ -1,19 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/services/portals/audio_portal_service.dart';
-import 'package:lotti/services/portals/portal_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
 class MockAudioRecorder extends Mock implements AudioRecorder {}
-
-class MockAudioPortalService extends Mock implements AudioPortalService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -287,50 +281,6 @@ void main() {
       expect(stream, isA<Stream<Amplitude>>());
       verify(() => mockAudioRecorder.onAmplitudeChanged(any<Duration>()))
           .called(1);
-    });
-  });
-
-  // Tests for Flatpak portal integration
-  group('Portal Integration Tests', () {
-    test('hasPermission checks portal access in Flatpak environment', () async {
-      // Test portal access denied case
-      if (Platform.isLinux && PortalService.shouldUsePortal) {
-        // This test would need to mock AudioPortalService which is a singleton
-        // Since we can't easily mock it, we just test the basic permission flow
-        when(() => mockAudioRecorder.hasPermission())
-            .thenAnswer((_) async => true);
-
-        final result = await repository.hasPermission();
-
-        // In a real Flatpak environment, this would check portal access first
-        expect(result, isTrue);
-      }
-    });
-
-    test('hasPermission logs when portal is unavailable in Flatpak', () async {
-      // Test portal unavailable case
-      if (Platform.isLinux && PortalService.shouldUsePortal) {
-        when(() => mockAudioRecorder.hasPermission())
-            .thenAnswer((_) async => true);
-
-        final result = await repository.hasPermission();
-
-        // Would log portal unavailability in real Flatpak environment
-        expect(result, isTrue);
-      }
-    });
-
-    test('hasPermission logs when portal access is denied', () async {
-      // Test portal access denied logging
-      if (Platform.isLinux && PortalService.shouldUsePortal) {
-        when(() => mockAudioRecorder.hasPermission())
-            .thenAnswer((_) async => true);
-
-        final result = await repository.hasPermission();
-
-        // Would log access denial in real Flatpak environment
-        expect(result, isTrue);
-      }
     });
   });
 }

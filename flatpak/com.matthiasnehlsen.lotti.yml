@@ -23,7 +23,7 @@ finish-args:
   # Portal access for sandboxed functionality
   - --talk-name=org.freedesktop.portal.Desktop
   - --talk-name=org.freedesktop.portal.Screenshot
-  - --talk-name=org.freedesktop.portal.Device
+  # Note: No microphone portal exists yet - audio access via --socket=pulseaudio above
 modules:
   - name: libsecret
     buildsystem: meson

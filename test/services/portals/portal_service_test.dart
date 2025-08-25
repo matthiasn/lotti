@@ -300,17 +300,6 @@ void main() {
         expect(available, isFalse);
       });
 
-      test('should return true for AudioPortalService when not in Flatpak',
-          () async {
-        final available = await PortalService.isInterfaceAvailable(
-          'org.freedesktop.portal.Device',
-          service,
-          'AudioPortalService',
-        );
-
-        expect(available, isTrue);
-      });
-
       test('should handle interface availability check errors gracefully',
           () async {
         // This will fail in test environment, but we can test error handling
