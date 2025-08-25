@@ -18,7 +18,6 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --socket=pulseaudio
-  - --socket=pipewire
   - --device=dri
   - --filesystem=xdg-documents/Lotti:create
   - --filesystem=xdg-pictures:ro
