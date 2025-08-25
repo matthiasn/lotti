@@ -142,11 +142,19 @@ prepare_bundle() {
     print_status "Using Flutter bundle from: $BUNDLE_PATH"
     cp -r "$BUNDLE_PATH/." "$SCRIPT_DIR/flutter-bundle/"
     
-    # Remove 1024x1024 icons from hicolor directory (Flatpak limit is 512x512)
-    # Only target the specific hicolor/1024x1024 path to avoid accidentally removing other assets
+    # Remove 1024x1024 icons (Flatpak limit is 512x512)
+    # Remove from data/icons/hicolor directory if it exists
     if [ -d "$SCRIPT_DIR/flutter-bundle/data/icons/hicolor/1024x1024" ]; then
         rm -rf "$SCRIPT_DIR/flutter-bundle/data/icons/hicolor/1024x1024"
     fi
+    
+    # Remove from share/icons/hicolor directory if it exists
+    if [ -d "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024" ]; then
+        rm -rf "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024"
+    fi
+    
+    # Also remove any other 1024x1024 icons from flutter assets
+    find "$SCRIPT_DIR/flutter-bundle" -name "*1024*" -type f -delete 2>/dev/null || true
     
     # Ensure MaterialIcons font is present
     if [ ! -f "$SCRIPT_DIR/flutter-bundle/data/flutter_assets/fonts/MaterialIcons-Regular.otf" ]; then
@@ -211,7 +219,7 @@ run_app() {
         sleep 1
     fi
     
-    # Run the app from build directory
+    # Run lotti app from build directory
     if ! flatpak-builder --run build-dir com.matthiasnehlsen.lotti.local.yml /app/lotti; then
         print_warning "App failed to start. Trying cleanup and retry..."
         cleanup_mounts
