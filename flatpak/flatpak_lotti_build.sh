@@ -154,6 +154,12 @@ prepare_bundle() {
     if [ -d "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024" ]; then
         rm -rf "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024"
     fi
+
+    for icon_path in "$SCRIPT_DIR/flutter-bundle/data/icons/hicolor/1024x1024" "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024"; do
+        if [ -d "$icon_path" ]; then
+            rm -rf "$icon_path"
+        fi
+    done
     
     # Also remove any other 1024x1024 icons from flutter assets
     find "$SCRIPT_DIR/flutter-bundle" -name "*1024*" -type f -delete 2>/dev/null || true
