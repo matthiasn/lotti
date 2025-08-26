@@ -46,6 +46,7 @@ class AudioRecorderController extends _$AudioRecorderController {
   String? _categoryId;
   String? _language;
   AudioNote? _audioNote;
+  bool _disposed = false;
 
   /// Circular buffer for storing dBFS samples for RMS calculation
   final Queue<double> _dbfsBuffer = Queue<double>();
@@ -82,15 +83,19 @@ class AudioRecorderController extends _$AudioRecorderController {
     });
 
     ref.onDispose(() async {
+      _disposed = true;
       await _amplitudeSub?.cancel();
     });
 
     // Initialize asynchronously to check permissions and transition to ready state
-    _initialize();
+    // Schedule initialization for the next microtask to avoid state access during build
+    Future.microtask(_initialize);
 
+    // Start in stopped state - initialization is just for logging permissions
     return AudioRecorderState(
-      status: AudioRecorderStatus.initializing,
-      vu: -20, // Start at -20 VU (quiet)
+      status: AudioRecorderStatus.stopped,
+      vu: -20,
+      // Start at -20 VU (quiet)
       dBFS: -160,
       progress: Duration.zero,
       showIndicator: false,
@@ -99,11 +104,17 @@ class AudioRecorderController extends _$AudioRecorderController {
     );
   }
 
-  /// Initialize the recorder and check permissions
+  /// Initialize the recorder and check permissions (for logging only)
   Future<void> _initialize() async {
+    // Check if disposed before doing anything
+    if (_disposed) return;
+
     try {
-      // Check if we have permissions and initialize
+      // Check if we have permissions and log the result
       final hasPermissions = await _recorderRepository.hasPermission();
+
+      // Check if disposed before logging
+      if (_disposed) return;
 
       _loggingService.captureEvent(
         'Audio recorder initialization: hasPermissions=$hasPermissions',
@@ -111,20 +122,17 @@ class AudioRecorderController extends _$AudioRecorderController {
         subDomain: 'initialize',
       );
     } catch (e, stackTrace) {
+      // Check if disposed before logging
+      if (_disposed) return;
+
       _loggingService.captureException(
         e,
         domain: 'recorder_controller',
         subDomain: 'initialize',
         stackTrace: stackTrace,
       );
-    } finally {
-      // Always transition to stopped (ready) state to show UI
-      // Even if permissions are not available, user should see the UI
-      // and get feedback when they try to record
-      if (state.status == AudioRecorderStatus.initializing) {
-        state = state.copyWith(status: AudioRecorderStatus.stopped);
-      }
     }
+    // No state updates needed - we start in stopped state
   }
 
   /// Calculates VU value from dBFS using RMS over a sliding window
