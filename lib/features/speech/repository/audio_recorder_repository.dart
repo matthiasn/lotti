@@ -115,8 +115,8 @@ class AudioRecorderRepository {
     } catch (e) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'isPaused',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.isPausedSubdomain,
       );
       return false;
     }
@@ -130,8 +130,8 @@ class AudioRecorderRepository {
     } catch (e) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'isRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.isRecordingSubdomain,
       );
       return false;
     }
@@ -159,8 +159,8 @@ class AudioRecorderRepository {
 
       _loggingService.captureEvent(
         'Starting audio recording: path=$filePath, sampleRate=$sampleRate, autoGain=$autoGain, isLinux=${Platform.isLinux}, isFlatpak=${PortalService.shouldUsePortal}',
-        domain: 'audio_recorder_repository',
-        subDomain: 'startRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.startRecordingSubdomain,
       );
 
       await _audioRecorder.start(
@@ -173,18 +173,26 @@ class AudioRecorderRepository {
 
       _loggingService.captureEvent(
         'Audio recording started successfully',
-        domain: 'audio_recorder_repository',
-        subDomain: 'startRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.startRecordingSubdomain,
       );
 
       return audioNote;
     } catch (e, stackTrace) {
-      _loggingService.captureException(
-        'Recording error: $e, isLinux=${Platform.isLinux}, isFlatpak=${PortalService.shouldUsePortal}',
-        domain: 'audio_recorder_repository',
-        subDomain: 'startRecording',
-        stackTrace: stackTrace,
-      );
+      // Log context information separately
+      _loggingService
+        ..captureEvent(
+          'Recording error context: isLinux=${Platform.isLinux}, isFlatpak=${PortalService.shouldUsePortal}',
+          domain: AudioRecorderConstants.domainName,
+          subDomain: AudioRecorderConstants.startRecordingSubdomain,
+        )
+        // Pass the original exception object
+        ..captureException(
+          e,
+          domain: AudioRecorderConstants.domainName,
+          subDomain: AudioRecorderConstants.startRecordingSubdomain,
+          stackTrace: stackTrace,
+        );
       return null;
     }
   }
@@ -195,8 +203,8 @@ class AudioRecorderRepository {
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'stopRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.stopRecordingSubdomain,
         stackTrace: stackTrace,
       );
     }
@@ -208,8 +216,8 @@ class AudioRecorderRepository {
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'pauseRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.pauseRecordingSubdomain,
         stackTrace: stackTrace,
       );
     }
@@ -223,8 +231,8 @@ class AudioRecorderRepository {
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'resumeRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.resumeRecordingSubdomain,
         stackTrace: stackTrace,
       );
     }
@@ -238,8 +246,8 @@ class AudioRecorderRepository {
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'dispose',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.disposeSubdomain,
         stackTrace: stackTrace,
       );
     }
