@@ -143,15 +143,9 @@ prepare_bundle() {
     cp -r "$BUNDLE_PATH/." "$SCRIPT_DIR/flutter-bundle/"
     
     # Remove 1024x1024 icons (Flatpak limit is 512x512)
-    # Remove from data/icons/hicolor directory if it exists
-    if [ -d "$SCRIPT_DIR/flutter-bundle/data/icons/hicolor/1024x1024" ]; then
-        rm -rf "$SCRIPT_DIR/flutter-bundle/data/icons/hicolor/1024x1024"
-    fi
-    
-    # Remove from share/icons/hicolor directory if it exists
-    if [ -d "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024" ]; then
-        rm -rf "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024"
-    fi
+    # These are removed from both data/icons/hicolor and share/icons/hicolor
+    rm -rf "$SCRIPT_DIR/flutter-bundle/data/icons/hicolor/1024x1024"
+    rm -rf "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024"
     
     # Also remove any other 1024x1024 icons from flutter assets
     find "$SCRIPT_DIR/flutter-bundle" -name "*1024*" -type f -delete 2>/dev/null || true
