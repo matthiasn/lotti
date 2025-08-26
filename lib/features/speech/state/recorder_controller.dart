@@ -110,13 +110,6 @@ class AudioRecorderController extends _$AudioRecorderController {
         domain: 'recorder_controller',
         subDomain: 'initialize',
       );
-
-      // Always transition to stopped (ready) state to show UI
-      // Even if permissions are not available, user should see the UI
-      // and get feedback when they try to record
-      if (state.status == AudioRecorderStatus.initializing) {
-        state = state.copyWith(status: AudioRecorderStatus.stopped);
-      }
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
@@ -124,8 +117,10 @@ class AudioRecorderController extends _$AudioRecorderController {
         subDomain: 'initialize',
         stackTrace: stackTrace,
       );
-      // Always set to stopped state so UI can be used
-      // User will get appropriate error feedback when trying to record
+    } finally {
+      // Always transition to stopped (ready) state to show UI
+      // Even if permissions are not available, user should see the UI
+      // and get feedback when they try to record
       if (state.status == AudioRecorderStatus.initializing) {
         state = state.copyWith(status: AudioRecorderStatus.stopped);
       }
