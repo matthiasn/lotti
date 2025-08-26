@@ -7,7 +7,6 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/services/portals/audio_portal_service.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart';
@@ -24,6 +23,32 @@ AudioRecorderRepository audioRecorderRepository(Ref ref) {
     await repository.dispose();
   });
   return repository;
+}
+
+/// Constants for audio recording configuration
+class AudioRecorderConstants {
+  const AudioRecorderConstants._();
+
+  // Recording configuration
+  static const int sampleRate = 48000;
+  static const bool autoGain = true;
+  static const String audioFileExtension = '.m4a';
+  static const String audioDirectoryPrefix = '/audio/';
+
+  // Date formats
+  static const String fileNameDateFormat = 'yyyy-MM-dd_HH-mm-ss-S';
+  static const String directoryDateFormat = 'yyyy-MM-dd';
+
+  // Domain names for logging
+  static const String domainName = 'audio_recorder_repository';
+  static const String hasPermissionSubdomain = 'hasPermission';
+  static const String isPausedSubdomain = 'isPaused';
+  static const String isRecordingSubdomain = 'isRecording';
+  static const String startRecordingSubdomain = 'startRecording';
+  static const String stopRecordingSubdomain = 'stopRecording';
+  static const String pauseRecordingSubdomain = 'pauseRecording';
+  static const String resumeRecordingSubdomain = 'resumeRecording';
+  static const String disposeSubdomain = 'dispose';
 }
 
 /// Repository that encapsulates all audio recording operations.
@@ -51,41 +76,31 @@ class AudioRecorderRepository {
       );
 
   /// Checks if the app has microphone permission.
-  /// In Flatpak environments, also requests portal access.
+  /// In Flatpak environments, relies on PulseAudio socket permissions.
   /// Returns false if permission check fails.
   Future<bool> hasPermission() async {
     try {
-      // First check if we're in Flatpak and need portal access
-      if (Platform.isLinux && PortalService.shouldUsePortal) {
-        final portalService = AudioPortalService();
-        final portalAvailable = await AudioPortalService.isAvailable();
+      // In Flatpak, audio access is handled via PulseAudio socket permissions
+      // set in the manifest with --socket=pulseaudio
+      // No need for XDG Desktop Portal as there's no microphone portal yet
 
-        if (portalAvailable) {
-          final hasPortalAccess = await portalService.requestMicrophoneAccess();
-          if (!hasPortalAccess) {
-            _loggingService.captureException(
-              Exception('Audio portal access denied'),
-              domain: 'audio_recorder_repository',
-              subDomain: 'portalAccess',
-            );
-            return false;
-          }
-        } else {
-          _loggingService.captureException(
-            Exception('Audio portal not available in Flatpak environment'),
-            domain: 'audio_recorder_repository',
-            subDomain: 'portalUnavailable',
-          );
-        }
+      if (Platform.isLinux && PortalService.isRunningInFlatpak) {
+        _loggingService.captureEvent(
+          'Running in Flatpak - audio access via PulseAudio socket permissions',
+          domain: AudioRecorderConstants.domainName,
+          subDomain: AudioRecorderConstants.hasPermissionSubdomain,
+        );
+        // In Flatpak, assume permission is available if PulseAudio socket is granted
+        // The manifest should include --socket=pulseaudio
       }
 
-      // Check the standard recorder permission
+      // Check the standard recorder permission (works for both Flatpak and native)
       return await _audioRecorder.hasPermission();
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'hasPermission',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.hasPermissionSubdomain,
         stackTrace: stackTrace,
       );
       return false;
@@ -100,8 +115,8 @@ class AudioRecorderRepository {
     } catch (e) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'isPaused',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.isPausedSubdomain,
       );
       return false;
     }
@@ -115,8 +130,8 @@ class AudioRecorderRepository {
     } catch (e) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'isRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.isRecordingSubdomain,
       );
       return false;
     }
@@ -142,6 +157,12 @@ class AudioRecorderRepository {
       const sampleRate = 48000;
       const autoGain = true;
 
+      _loggingService.captureEvent(
+        'Starting audio recording: path=$filePath, sampleRate=$sampleRate, autoGain=$autoGain, isLinux=${Platform.isLinux}, isFlatpak=${PortalService.shouldUsePortal}',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.startRecordingSubdomain,
+      );
+
       await _audioRecorder.start(
         const RecordConfig(
           sampleRate: sampleRate,
@@ -150,14 +171,28 @@ class AudioRecorderRepository {
         path: filePath,
       );
 
+      _loggingService.captureEvent(
+        'Audio recording started successfully',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.startRecordingSubdomain,
+      );
+
       return audioNote;
     } catch (e, stackTrace) {
-      _loggingService.captureException(
-        e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'startRecording',
-        stackTrace: stackTrace,
-      );
+      // Log context information separately
+      _loggingService
+        ..captureEvent(
+          'Recording error context: isLinux=${Platform.isLinux}, isFlatpak=${PortalService.shouldUsePortal}',
+          domain: AudioRecorderConstants.domainName,
+          subDomain: AudioRecorderConstants.startRecordingSubdomain,
+        )
+        // Pass the original exception object
+        ..captureException(
+          e,
+          domain: AudioRecorderConstants.domainName,
+          subDomain: AudioRecorderConstants.startRecordingSubdomain,
+          stackTrace: stackTrace,
+        );
       return null;
     }
   }
@@ -168,8 +203,8 @@ class AudioRecorderRepository {
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'stopRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.stopRecordingSubdomain,
         stackTrace: stackTrace,
       );
     }
@@ -181,8 +216,8 @@ class AudioRecorderRepository {
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'pauseRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.pauseRecordingSubdomain,
         stackTrace: stackTrace,
       );
     }
@@ -196,8 +231,8 @@ class AudioRecorderRepository {
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'resumeRecording',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.resumeRecordingSubdomain,
         stackTrace: stackTrace,
       );
     }
@@ -211,8 +246,8 @@ class AudioRecorderRepository {
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
-        domain: 'audio_recorder_repository',
-        subDomain: 'dispose',
+        domain: AudioRecorderConstants.domainName,
+        subDomain: AudioRecorderConstants.disposeSubdomain,
         stackTrace: stackTrace,
       );
     }

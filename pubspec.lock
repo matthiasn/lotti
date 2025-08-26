@@ -945,10 +945,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_local_notifications
-      sha256: "20ca0a9c82ce0c855ac62a2e580ab867f3fbea82680a90647f7953832d0850ae"
+      sha256: a9966c850de5e445331b854fa42df96a8020066d67f125a5964cbc6556643f68
       url: "https://pub.dev"
     source: hosted
-    version: "19.4.0"
+    version: "19.4.1"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
@@ -1142,10 +1142,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_svg
-      sha256: de82e6bf958cec7190fbc1c5298282c851228e35ae2b14e2b103e7f777818c64
+      sha256: cd57f7969b4679317c17af6fd16ee233c1e60a82ed209d8a475c54fd6fd6f845
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.13"
+    version: "2.2.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1301,10 +1301,10 @@ packages:
     dependency: "direct main"
     description:
       name: health
-      sha256: d9c0d226350e74f59356bea19889168819912bfd0de27bf91c748af190b8201a
+      sha256: "996664904194b8e0a09dfe761e168fdbf9ef43c51e7de39cd075de71c7258ada"
       url: "https://pub.dev"
     source: hosted
-    version: "13.1.1"
+    version: "13.1.3"
   hotkey_manager:
     dependency: "direct main"
     description:
@@ -1930,10 +1930,10 @@ packages:
     dependency: "direct main"
     description:
       name: openai_dart
-      sha256: fcfedc6e01b9d99f58ca11bb0d4245890f488427b930bd4e7472a78afa344011
+      sha256: "947b4b1cd1f0eb8fe8d706d22becd0fcf1647f96a0a4062c70b30bb5e10dce2b"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.4"
+    version: "0.5.4+1"
   package_config:
     dependency: transitive
     description:
@@ -3112,18 +3112,18 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics_codec
-      sha256: c86987475f162fadff579e7320c7ddda04cd2fdeffbe1129227a85d9ac9e03da
+      sha256: "99fd9fbd34d9f9a32efd7b6a6aae14125d8237b10403b422a6a6dfeac2806146"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.11+1"
+    version: "1.1.13"
   vector_graphics_compiler:
     dependency: transitive
     description:
       name: vector_graphics_compiler
-      sha256: "12faff3f73b1741a36ca7e31b292ddeb629af819ca9efe9953b70bd63fc8cd81"
+      sha256: d354a7ec6931e6047785f4db12a1f61ec3d43b207fc0790f863818543f8ff0dc
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.11+1"
+    version: "1.1.19"
   vector_math:
     dependency: "direct main"
     description:
@@ -3208,10 +3208,10 @@ packages:
     dependency: transitive
     description:
       name: watcher
-      sha256: "0b7fd4a0bbc4b92641dbf20adfd7e3fd1398fe17102d94b674234563e110088a"
+      sha256: "5bf046f41320ac97a469d506261797f35254fa61c641741ef32dacda98b7d39c"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.2"
+    version: "1.1.3"
   web:
     dependency: transitive
     description:

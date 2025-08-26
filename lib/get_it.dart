@@ -128,6 +128,7 @@ Future<void> registerSingletons() async {
     'NotificationService',
   );
 
+  // Register AudioPlayerCubit with MediaKit error handling
   _registerLazyServiceSafely<AudioPlayerCubit>(
     AudioPlayerCubit.new,
     'AudioPlayerCubit',

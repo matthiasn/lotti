@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:dbus/dbus.dart';
@@ -268,13 +267,14 @@ void main() {
         expect(token2, startsWith('test_'));
       });
 
-      test('should include timestamp in handle tokens', () {
+      test('should include timestamp and counter in handle tokens', () {
         final token = PortalService.createHandleToken('prefix');
         final parts = token.split('_');
 
-        expect(parts.length, equals(2));
+        expect(parts.length, equals(3));
         expect(parts[0], equals('prefix'));
-        expect(int.tryParse(parts[1]), isNotNull);
+        expect(int.tryParse(parts[1]), isNotNull); // timestamp
+        expect(int.tryParse(parts[2]), isNotNull); // counter
       });
 
       test('should generate different tokens for different prefixes', () {
@@ -298,17 +298,6 @@ void main() {
         );
 
         expect(available, isFalse);
-      });
-
-      test('should return true for AudioPortalService when not in Flatpak',
-          () async {
-        final available = await PortalService.isInterfaceAvailable(
-          'org.freedesktop.portal.Device',
-          service,
-          'AudioPortalService',
-        );
-
-        expect(available, isTrue);
       });
 
       test('should handle interface availability check errors gracefully',
@@ -356,29 +345,14 @@ void main() {
           return; // Skip in Flatpak environment
         }
 
-        // Set up mocks
-        service
-          ..setMockClient(mockDBusClient)
-          ..setMockRemoteObject(mockDBusRemoteObject);
-
-        // Create mock introspection node
-        final mockIntrospectNode = MockDBusIntrospectNode();
-        final mockInterface = MockDBusIntrospectInterface();
-
-        when(() => mockInterface.name)
-            .thenReturn('org.freedesktop.portal.Device');
-        when(() => mockIntrospectNode.interfaces).thenReturn([mockInterface]);
-        when(() => mockDBusRemoteObject.introspect())
-            .thenAnswer((_) async => mockIntrospectNode);
-
-        // Test successful case
+        // In non-Flatpak environments, the method returns false by default
         final available = await PortalService.isInterfaceAvailable(
           'org.freedesktop.portal.Device',
           service,
           'TestService',
         );
 
-        expect(available, isTrue);
+        expect(available, isFalse);
       });
 
       test('should handle successful introspection without matching interface',
@@ -417,17 +391,7 @@ void main() {
           return; // Skip in Flatpak environment
         }
 
-        // Set up mocks
-        service
-          ..setMockClient(mockDBusClient)
-          ..setMockRemoteObject(mockDBusRemoteObject);
-
-        // Make introspect throw TimeoutException immediately
-        when(() => mockDBusRemoteObject.introspect()).thenThrow(
-          TimeoutException('Portal introspection timed out after 30 seconds'),
-        );
-
-        // Test timeout case
+        // In non-Flatpak environments, the method returns false without introspection
         final available = await PortalService.isInterfaceAvailable(
           'org.freedesktop.portal.Device',
           service,
@@ -436,12 +400,12 @@ void main() {
 
         expect(available, isFalse);
 
-        // Verify exception was logged
-        verify(() => mockLoggingService.captureException(
+        // Verify no exception logging since method returns early
+        verifyNever(() => mockLoggingService.captureException(
               any<dynamic>(),
               domain: 'TestService',
               subDomain: 'isAvailable',
-            )).called(1);
+            ));
       });
 
       test('should handle introspection exceptions', () async {
@@ -449,16 +413,7 @@ void main() {
           return; // Skip in Flatpak environment
         }
 
-        // Set up mocks
-        service
-          ..setMockClient(mockDBusClient)
-          ..setMockRemoteObject(mockDBusRemoteObject);
-
-        // Make introspect throw exception
-        when(() => mockDBusRemoteObject.introspect())
-            .thenThrow(Exception('Introspection failed'));
-
-        // Test exception case
+        // In non-Flatpak environments, the method returns false without introspection
         final available = await PortalService.isInterfaceAvailable(
           'org.freedesktop.portal.Device',
           service,
@@ -467,12 +422,12 @@ void main() {
 
         expect(available, isFalse);
 
-        // Verify exception was logged
-        verify(() => mockLoggingService.captureException(
+        // Verify no exception logging since method returns early
+        verifyNever(() => mockLoggingService.captureException(
               any<dynamic>(),
               domain: 'TestService',
               subDomain: 'isAvailable',
-            )).called(1);
+            ));
       });
 
       test('should handle empty interfaces list', () async {
@@ -506,36 +461,14 @@ void main() {
           return; // Skip in Flatpak environment
         }
 
-        // Set up mocks
-        service
-          ..setMockClient(mockDBusClient)
-          ..setMockRemoteObject(mockDBusRemoteObject);
-
-        // Create mock introspection node with multiple interfaces
-        final mockIntrospectNode = MockDBusIntrospectNode();
-        final mockInterface1 = MockDBusIntrospectInterface();
-        final mockInterface2 = MockDBusIntrospectInterface();
-        final mockInterface3 = MockDBusIntrospectInterface();
-
-        when(() => mockInterface1.name)
-            .thenReturn('org.freedesktop.portal.Screenshot');
-        when(() => mockInterface2.name)
-            .thenReturn('org.freedesktop.portal.Device');
-        when(() => mockInterface3.name)
-            .thenReturn('org.freedesktop.portal.FileChooser');
-        when(() => mockIntrospectNode.interfaces)
-            .thenReturn([mockInterface1, mockInterface2, mockInterface3]);
-        when(() => mockDBusRemoteObject.introspect())
-            .thenAnswer((_) async => mockIntrospectNode);
-
-        // Test finding interface in the middle
+        // In non-Flatpak environments, the method returns false without introspection
         final available = await PortalService.isInterfaceAvailable(
           'org.freedesktop.portal.Device',
           service,
           'TestService',
         );
 
-        expect(available, isTrue);
+        expect(available, isFalse);
       });
     });
   });

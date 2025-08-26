@@ -11,6 +11,7 @@ import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/portals/portal_service.dart';
 import 'package:record/record.dart' show Amplitude;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -40,11 +41,12 @@ class AudioRecorderController extends _$AudioRecorderController {
   late final AudioRecorderRepository _recorderRepository;
   StreamSubscription<Amplitude>? _amplitudeSub;
   late final LoggingService _loggingService;
-  late final AudioPlayerCubit _audioPlayerCubit;
+  AudioPlayerCubit? _audioPlayerCubit;
   String? _linkedId;
   String? _categoryId;
   String? _language;
   AudioNote? _audioNote;
+  bool _disposed = false;
 
   /// Circular buffer for storing dBFS samples for RMS calculation
   final Queue<double> _dbfsBuffer = Queue<double>();
@@ -63,7 +65,9 @@ class AudioRecorderController extends _$AudioRecorderController {
   AudioRecorderState build() {
     _recorderRepository = ref.watch(audioRecorderRepositoryProvider);
     _loggingService = getIt<LoggingService>();
-    _audioPlayerCubit = getIt<AudioPlayerCubit>();
+
+    // Don't initialize AudioPlayerCubit here - it depends on MediaKit which might fail
+    // We'll get it lazily when needed
 
     _amplitudeSub = _recorderRepository.amplitudeStream.listen((Amplitude amp) {
       final dBFS = amp.current;
@@ -79,18 +83,56 @@ class AudioRecorderController extends _$AudioRecorderController {
     });
 
     ref.onDispose(() async {
+      _disposed = true;
       await _amplitudeSub?.cancel();
     });
 
+    // Initialize asynchronously to check permissions and transition to ready state
+    // Schedule initialization for the next microtask to avoid state access during build
+    Future.microtask(_initialize);
+
+    // Start in stopped state - initialization is just for logging permissions
     return AudioRecorderState(
-      status: AudioRecorderStatus.initializing,
-      vu: -20, // Start at -20 VU (quiet)
+      status: AudioRecorderStatus.stopped,
+      vu: -20,
+      // Start at -20 VU (quiet)
       dBFS: -160,
       progress: Duration.zero,
       showIndicator: false,
       modalVisible: false,
       language: '',
     );
+  }
+
+  /// Initialize the recorder and check permissions (for logging only)
+  Future<void> _initialize() async {
+    // Check if disposed before doing anything
+    if (_disposed) return;
+
+    try {
+      // Check if we have permissions and log the result
+      final hasPermissions = await _recorderRepository.hasPermission();
+
+      // Check if disposed before logging
+      if (_disposed) return;
+
+      _loggingService.captureEvent(
+        'Audio recorder initialization: hasPermissions=$hasPermissions',
+        domain: 'recorder_controller',
+        subDomain: 'initialize',
+      );
+    } catch (e, stackTrace) {
+      // Check if disposed before logging
+      if (_disposed) return;
+
+      _loggingService.captureException(
+        e,
+        domain: 'recorder_controller',
+        subDomain: 'initialize',
+        stackTrace: stackTrace,
+      );
+    }
+    // No state updates needed - we start in stopped state
   }
 
   /// Calculates VU value from dBFS using RMS over a sliding window
@@ -145,9 +187,30 @@ class AudioRecorderController extends _$AudioRecorderController {
     _linkedId = linkedId;
 
     try {
-      // Pause any playing audio first
-      if (_audioPlayerCubit.state.status == AudioPlayerStatus.playing) {
-        await _audioPlayerCubit.pause();
+      // Pause any playing audio first - but safely handle if MediaKit isn't available
+      if (_audioPlayerCubit == null && getIt.isRegistered<AudioPlayerCubit>()) {
+        try {
+          _audioPlayerCubit = getIt<AudioPlayerCubit>();
+        } catch (e) {
+          // Audio player not available, continue without it
+          _loggingService.captureEvent(
+            'Audio player not available, continuing without audio pause: $e',
+            domain: 'recorder_controller',
+            subDomain: 'record',
+          );
+        }
+      }
+
+      if (_audioPlayerCubit?.state.status == AudioPlayerStatus.playing) {
+        try {
+          await _audioPlayerCubit!.pause();
+        } catch (e) {
+          _loggingService.captureEvent(
+            'Failed to pause audio player: $e',
+            domain: 'recorder_controller',
+            subDomain: 'record',
+          );
+        }
       }
 
       if (await _recorderRepository.hasPermission()) {
@@ -171,9 +234,12 @@ class AudioRecorderController extends _$AudioRecorderController {
         }
       } else {
         _loggingService.captureEvent(
-          'no audio recording permission',
+          'No audio recording permission available. Flatpak=${PortalService.isRunningInFlatpak}',
           domain: 'recorder_controller',
+          subDomain: 'record_permission_denied',
         );
+        // User will see no recording starts - this is the expected behavior
+        // The UI remains available for user interaction
       }
     } catch (exception, stackTrace) {
       _loggingService.captureException(

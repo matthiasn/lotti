@@ -150,6 +150,20 @@ prepare_bundle() {
     # Also remove any other 1024x1024 icons from flutter assets
     find "$SCRIPT_DIR/flutter-bundle" -name "*1024*" -type f -delete 2>/dev/null || true
     
+    # Remove from share/icons/hicolor directory if it exists
+    if [ -d "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024" ]; then
+        rm -rf "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024"
+    fi
+
+    for icon_path in "$SCRIPT_DIR/flutter-bundle/data/icons/hicolor/1024x1024" "$SCRIPT_DIR/flutter-bundle/share/icons/hicolor/1024x1024"; do
+        if [ -d "$icon_path" ]; then
+            rm -rf "$icon_path"
+        fi
+    done
+    
+    # Also remove any other 1024x1024 icons from flutter assets (only in icon directories)
+    find "$SCRIPT_DIR/flutter-bundle/data/icons" "$SCRIPT_DIR/flutter-bundle/share/icons" -name "*1024*" -type f -delete 2>/dev/null || true
+    
     # Ensure MaterialIcons font is present
     if [ ! -f "$SCRIPT_DIR/flutter-bundle/data/flutter_assets/fonts/MaterialIcons-Regular.otf" ]; then
         print_warning "MaterialIcons font not found in bundle, app might have display issues"

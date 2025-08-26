@@ -263,8 +263,9 @@ void main() {
         // Assert - Verify no permission event was logged
         verify(
           () => mockLoggingService.captureEvent(
-            'no audio recording permission',
+            any<String>(that: startsWith('No audio recording permission')),
             domain: 'recorder_controller',
+            subDomain: 'record_permission_denied',
           ),
         ).called(1);
       });
@@ -465,7 +466,7 @@ void main() {
       final state = container.read(audioRecorderControllerProvider);
 
       // Assert
-      expect(state.status, equals(AudioRecorderStatus.initializing));
+      expect(state.status, equals(AudioRecorderStatus.stopped));
       expect(state.vu, equals(-20.0));
       expect(state.dBFS, equals(-160.0));
       expect(state.progress, equals(Duration.zero));
@@ -490,7 +491,7 @@ void main() {
 
       // Assert - Provider should be initialized
       expect(container.read(audioRecorderControllerProvider).status,
-          equals(AudioRecorderStatus.initializing));
+          equals(AudioRecorderStatus.stopped));
 
       // Clean up
       container.dispose();
@@ -595,9 +596,9 @@ void main() {
 
         // Assert
         verify(() => mockAudioRecorderRepository.startRecording()).called(1);
-        // State should not change if audioNote is null
+        // State should remain stopped if audioNote is null
         expect(container.read(audioRecorderControllerProvider).status,
-            equals(AudioRecorderStatus.initializing));
+            equals(AudioRecorderStatus.stopped));
       });
 
       test('should handle startRecording() returning valid AudioNote',
@@ -891,8 +892,9 @@ void main() {
       // Verify that the no permission event was logged
       verify(
         () => mockLoggingService.captureEvent(
-          'no audio recording permission',
+          any<String>(that: startsWith('No audio recording permission')),
           domain: 'recorder_controller',
+          subDomain: 'record_permission_denied',
         ),
       ).called(1);
     });
@@ -901,7 +903,8 @@ void main() {
       // Arrange
       when(() => mockAudioPlayerCubit.state).thenReturn(
         AudioPlayerState(
-          status: AudioPlayerStatus.playing, // Audio is playing
+          status: AudioPlayerStatus.playing,
+          // Audio is playing
           totalDuration: Duration.zero,
           progress: Duration.zero,
           pausedAt: Duration.zero,
@@ -985,7 +988,7 @@ void main() {
       expect(state.showIndicator,
           isFalse); // showIndicator stays false unless recording
       expect(state.modalVisible, isTrue);
-      expect(state.status, equals(AudioRecorderStatus.initializing));
+      expect(state.status, equals(AudioRecorderStatus.stopped));
       expect(state.progress, equals(Duration.zero));
       expect(state.vu, equals(-20.0));
       expect(state.dBFS, equals(-160.0));

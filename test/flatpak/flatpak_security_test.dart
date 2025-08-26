@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/services/portals/audio_portal_service.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 
@@ -120,15 +119,6 @@ void main() {
         }
       });
 
-      test('audio portal enforces sandbox boundaries', () {
-        final audioPortal = AudioPortalService();
-
-        // Audio portal should only work through D-Bus in Flatpak
-        if (PortalService.shouldUsePortal) {
-          expect(audioPortal, isA<PortalService>());
-        }
-      });
-
       test('portal services use correct D-Bus names', () {
         // These are standardized by freedesktop.org and should never change
         expect(PortalConstants.portalBusName,
@@ -139,8 +129,6 @@ void main() {
         // Verify individual portal interfaces
         expect(ScreenshotPortalConstants.interfaceName,
             equals('org.freedesktop.portal.Screenshot'));
-        expect(AudioPortalConstants.interfaceName,
-            equals('org.freedesktop.portal.Device'));
       });
 
       test('portal handle tokens are unique and secure', () async {
