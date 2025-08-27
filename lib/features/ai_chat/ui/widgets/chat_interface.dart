@@ -231,11 +231,20 @@ class _MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
-            CircleAvatar(
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(
-                Icons.psychology,
-                color: theme.colorScheme.onPrimaryContainer,
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: theme.colorScheme.secondary.withValues(alpha: 0.4),
+                  width: 2,
+                ),
+              ),
+              child: CircleAvatar(
+                backgroundColor: theme.colorScheme.surface,
+                child: Icon(
+                  Icons.psychology,
+                  color: theme.colorScheme.secondary,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -245,8 +254,14 @@ class _MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isUser
-                    ? theme.colorScheme.primaryContainer
-                    : theme.colorScheme.secondaryContainer,
+                    ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                    : theme.colorScheme.secondary.withValues(alpha: 0.05),
+                border: Border.all(
+                  color: isUser
+                      ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                      : theme.colorScheme.secondary.withValues(alpha: 0.4),
+                  width: 2,
+                ),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -264,8 +279,7 @@ class _MessageBubble extends StatelessWidget {
                                 ? Text(
                                     message.content,
                                     style: TextStyle(
-                                      color:
-                                          theme.colorScheme.onPrimaryContainer,
+                                      color: theme.colorScheme.onSurface,
                                     ),
                                   )
                                 : GptMarkdown(message.content),
@@ -276,7 +290,8 @@ class _MessageBubble extends StatelessWidget {
                             height: 12,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: theme.colorScheme.onSecondaryContainer,
+                              color: theme.colorScheme.primary
+                                  .withValues(alpha: 0.6),
                             ),
                           ),
                       ],
@@ -285,7 +300,7 @@ class _MessageBubble extends StatelessWidget {
                       ? SelectableText(
                           message.content,
                           style: TextStyle(
-                            color: theme.colorScheme.onPrimaryContainer,
+                            color: theme.colorScheme.onSurface,
                           ),
                         )
                       : SelectionArea(
@@ -295,11 +310,20 @@ class _MessageBubble extends StatelessWidget {
           ),
           if (isUser) ...[
             const SizedBox(width: 8),
-            CircleAvatar(
-              backgroundColor: theme.colorScheme.tertiaryContainer,
-              child: Icon(
-                Icons.person,
-                color: theme.colorScheme.onTertiaryContainer,
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                  width: 2,
+                ),
+              ),
+              child: CircleAvatar(
+                backgroundColor: theme.colorScheme.surface,
+                child: Icon(
+                  Icons.person,
+                  color: theme.colorScheme.primary,
+                ),
               ),
             ),
           ],
