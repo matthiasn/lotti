@@ -102,7 +102,7 @@ modules:
       - |
         cat > /app/lotti-wrapper << 'EOF'
         #!/bin/bash
-        export LD_LIBRARY_PATH=/app/lib:/app/lib/ffmpeg:$LD_LIBRARY_PATH
+        export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH
 
         # Set GDK_BACKEND conditionally: prefer Wayland, fallback to X11 when needed
         if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_SESSION_TYPE" != "wayland" ]; then
