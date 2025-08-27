@@ -66,10 +66,6 @@ modules:
       - type: archive
         url: https://github.com/mpv-player/mpv/archive/v0.38.0.tar.gz
         sha256: 86d9ef40b6058732f67b46d0bbda24a074fae860b3eaae05bab3145041303066
-    post-install:
-      - echo "Verifying libmpv installation:"
-      - find /app -name "*mpv*" -type f
-      - ls -la /app/lib/lib*mpv*
   - name: libsecret
     buildsystem: meson
     config-opts:
