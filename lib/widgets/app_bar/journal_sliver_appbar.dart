@@ -166,18 +166,48 @@ class AiChatIcon extends StatelessWidget {
       padding: const EdgeInsets.only(right: 5),
       child: IconButton(
         onPressed: () {
-          ModalUtils.showSinglePageModal<void>(
+          // Capture the cubit before showing the modal
+          final journalPageCubit = context.read<JournalPageCubit>();
+
+          showModalBottomSheet<void>(
             context: context,
-            title: 'AI Assistant',
-            modalDecorator: (child) {
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (BuildContext modalContext) {
               return MultiBlocProvider(
                 providers: [
-                  BlocProvider.value(value: context.read<JournalPageCubit>()),
+                  BlocProvider.value(
+                    value: journalPageCubit,
+                  ),
                 ],
-                child: child,
+                child: Container(
+                  height: MediaQuery.of(modalContext).size.height * 0.9,
+                  decoration: BoxDecoration(
+                    color: Theme.of(modalContext).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 10),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Theme.of(modalContext).dividerColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const Expanded(
+                        child: ChatModalPage(),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
-            builder: (_) => const ChatModalPage(),
           );
         },
         icon: const Icon(
