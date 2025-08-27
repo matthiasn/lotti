@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/features/ai_chat/ui/pages/chat_modal_page.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -40,9 +41,10 @@ class JournalSliverAppBar extends StatelessWidget {
                       onChanged: cubit.setSearchString,
                     ),
                   ),
-                  if (showTasks)
-                    const TaskFilterIcon()
-                  else
+                  if (showTasks) ...[
+                    const AiChatIcon(),
+                    const TaskFilterIcon(),
+                  ] else
                     const JournalFilterIcon(),
                 ],
               ),
@@ -150,6 +152,39 @@ class JournalFilterIcon extends StatelessWidget {
           );
         },
         icon: Icon(MdiIcons.filterVariant),
+      ),
+    );
+  }
+}
+
+class AiChatIcon extends StatelessWidget {
+  const AiChatIcon({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 5),
+      child: IconButton(
+        onPressed: () {
+          ModalUtils.showSinglePageModal<void>(
+            context: context,
+            title: 'AI Assistant',
+            modalDecorator: (child) {
+              return MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(value: context.read<JournalPageCubit>()),
+                ],
+                child: child,
+              );
+            },
+            builder: (_) => const ChatModalPage(),
+          );
+        },
+        icon: const Icon(
+          Icons.psychology_outlined,
+          semanticLabel: 'AI Chat Assistant',
+        ),
+        tooltip: 'AI Chat Assistant',
       ),
     );
   }
