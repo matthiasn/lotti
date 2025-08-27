@@ -25,6 +25,47 @@ finish-args:
   - --talk-name=org.freedesktop.portal.Screenshot
   # Note: No microphone portal exists yet - audio access via --socket=pulseaudio above
 modules:
+  - name: libplacebo
+    buildsystem: meson
+    config-opts:
+      - -Dglslang=disabled
+      - -Dshaderc=disabled
+      - -Dvulkan=disabled
+      - -Dopengl=disabled
+      - -Dd3d11=disabled
+      - -Ddemos=false
+    sources:
+      - type: archive
+        url: https://github.com/haasn/libplacebo/archive/refs/tags/v6.338.2.tar.gz
+        sha256: 34973841e406e236b53347f10250b90b28a8a4a4b43333324c13b28c2a5d428c
+  - name: libass
+    buildsystem: autotools
+    config-opts:
+      - --disable-static
+    sources:
+      - type: archive
+        url: https://github.com/libass/libass/releases/download/0.17.1/libass-0.17.1.tar.xz
+        sha256: f0da0bbfba476c16ae3e1cfd862256d30915911f7abaa1b16ce62ee653192784
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+  - name: mpv
+    buildsystem: meson
+    config-opts:
+      - -Dlibmpv=true
+      - -Dcplayer=false
+      - -Dlua=disabled  
+      - -Djavascript=disabled
+      - -Dalsa=disabled
+      - -Dmanpage-build=disabled
+      - -Dcdda=disabled
+      - -Ddvbin=disabled
+      - -Ddvdnav=disabled
+      - -Dlibarchive=disabled
+    sources:
+      - type: archive
+        url: https://github.com/mpv-player/mpv/archive/v0.38.0.tar.gz
+        sha256: 86d9ef40b6058732f67b46d0bbda24a074fae860b3eaae05bab3145041303066
   - name: libsecret
     buildsystem: meson
     config-opts:
@@ -57,9 +98,6 @@ modules:
       - chmod +x /app/lotti
       - echo "Creating lib directory for additional libraries..."
       - mkdir -p /app/lib/ffmpeg
-      # Note: libmpv is not included in this Flatpak build
-      # The app should detect missing libmpv and degrade gracefully or show clear errors
-      # This prevents shipping fake libraries that could cause hard-to-diagnose runtime issues
       - echo "Creating wrapper script to set library search path..."
       - |
         cat > /app/lotti-wrapper << 'EOF'
