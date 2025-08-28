@@ -208,7 +208,6 @@ class AiChatRepository {
     try {
       final args =
           jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
-      // Tool args received
 
       final request = TaskSummaryRequest(
         startDate: DateTime.parse(args['start_date'] as String),
@@ -221,14 +220,17 @@ class AiChatRepository {
         request: request,
       );
 
-      // Found task summaries
-
       if (summaries.isEmpty) {
         return jsonEncode({
           'message': 'No tasks found in the specified date range.',
           'date_range': {
             'start': args['start_date'],
             'end': args['end_date'],
+          },
+          'debug': {
+            'categoryId': categoryId,
+            'requestedStart': request.startDate.toIso8601String(),
+            'requestedEnd': request.endDate.toIso8601String(),
           },
         });
       }
@@ -269,13 +271,21 @@ When users ask about their tasks, use the get_task_summaries tool to fetch relev
 Today's date is ${DateTime.now().toIso8601String().split('T')[0]}.
 
 When interpreting time-based queries, use these guidelines:
-- "today" = today only
-- "yesterday" = yesterday only
+- "today" = from start of today to end of today
+- "yesterday" = from start of yesterday to end of yesterday
 - "this week" = last 7 days including today
 - "recently" or "lately" = last 14 days
 - "this month" = last 30 days
 - "last week" = the previous 7-day period (8-14 days ago)
 - "last month" = the previous 30-day period (31-60 days ago)
+
+For date ranges, always use full ISO 8601 timestamps:
+- start_date: beginning of the day, e.g., "2025-08-26T00:00:00.000"
+- end_date: end of the day, e.g., "2025-08-26T23:59:59.999"
+
+Example: For "yesterday" on 2025-08-27, use:
+- start_date: "2025-08-26T00:00:00.000"
+- end_date: "2025-08-26T23:59:59.999"
 
 Be concise but helpful in your responses. When showing task summaries, organize them by date and status for clarity.''';
   }
