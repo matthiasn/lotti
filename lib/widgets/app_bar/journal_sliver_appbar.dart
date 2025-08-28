@@ -183,7 +183,7 @@ class AiChatIcon extends StatelessWidget {
                 child: Container(
                   height: MediaQuery.of(modalContext).size.height * 0.9,
                   decoration: BoxDecoration(
-                    color: Theme.of(modalContext).scaffoldBackgroundColor,
+                    color: Theme.of(modalContext).colorScheme.surface,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
