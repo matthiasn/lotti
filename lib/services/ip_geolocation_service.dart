@@ -69,7 +69,13 @@ class IpGeolocationService {
         final minutes = int.parse(cleanOffset.substring(2, 4));
         return sign * (hours * 60 + minutes);
       }
-    } catch (_) {}
+    } catch (e) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'IP_GEOLOCATION',
+        subDomain: '_parseUtcOffset',
+      );
+    }
 
     return DateTime.now().timeZoneOffset.inMinutes;
   }
