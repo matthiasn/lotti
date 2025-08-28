@@ -69,13 +69,12 @@ class DeviceLocation {
       return null;
     }
 
+    // Try native geolocation first
+    Geolocation? nativeLocation;
+
     if (Platform.isLinux) {
-      // Try native Linux geolocation first, fallback to IP if it fails
       try {
-        final location = await getCurrentGeoLocationLinux();
-        if (location != null) {
-          return location;
-        }
+        nativeLocation = await getCurrentGeoLocationLinux();
       } catch (e) {
         getIt<LoggingService>().captureException(
           e,
@@ -83,57 +82,48 @@ class DeviceLocation {
           subDomain: 'linux_native_fallback',
         );
       }
-      
-      // Fallback to IP-based geolocation for Linux (including Flatpak)
-      return IpGeolocationService.getLocationFromIp();
-    }
+    } else {
+      final permissionStatus = await _requestPermission();
 
-    final now = DateTime.now();
+      if (permissionStatus != PermissionStatus.denied &&
+          permissionStatus != PermissionStatus.deniedForever) {
+        try {
+          final now = DateTime.now();
+          final locationData = await location.getLocation();
+          final longitude = locationData.longitude;
+          final latitude = locationData.latitude;
 
-    final permissionStatus = await _requestPermission();
-
-    if (permissionStatus == PermissionStatus.denied ||
-        permissionStatus == PermissionStatus.deniedForever) {
-      // Try IP-based geolocation as fallback when permissions denied
-      return IpGeolocationService.getLocationFromIp();
-    }
-
-    try {
-      final locationData = await location.getLocation();
-      final longitude = locationData.longitude;
-      final latitude = locationData.latitude;
-      if (longitude != null && latitude != null) {
-        return Geolocation(
-          createdAt: now,
-          timezone: now.timeZoneName,
-          utcOffset: now.timeZoneOffset.inMinutes,
-          latitude: latitude,
-          longitude: longitude,
-          altitude: locationData.altitude,
-          speed: locationData.speed,
-          accuracy: locationData.accuracy,
-          heading: locationData.heading,
-          headingAccuracy: locationData.headingAccuracy,
-          speedAccuracy: locationData.speedAccuracy,
-          geohashString: getGeoHash(
-            latitude: latitude,
-            longitude: longitude,
-          ),
-        );
+          if (longitude != null && latitude != null) {
+            nativeLocation = Geolocation(
+              createdAt: now,
+              timezone: now.timeZoneName,
+              utcOffset: now.timeZoneOffset.inMinutes,
+              latitude: latitude,
+              longitude: longitude,
+              altitude: locationData.altitude,
+              speed: locationData.speed,
+              accuracy: locationData.accuracy,
+              heading: locationData.heading,
+              headingAccuracy: locationData.headingAccuracy,
+              speedAccuracy: locationData.speedAccuracy,
+              geohashString: getGeoHash(
+                latitude: latitude,
+                longitude: longitude,
+              ),
+            );
+          }
+        } catch (e) {
+          getIt<LoggingService>().captureException(
+            e,
+            domain: 'LOCATION_SERVICE',
+            subDomain: 'native_location_fallback',
+          );
+        }
       }
-    } catch (e) {
-      getIt<LoggingService>().captureException(
-        e,
-        domain: 'LOCATION_SERVICE',
-        subDomain: 'native_location_fallback',
-      );
-      
-      // Fallback to IP-based geolocation on any error
-      return IpGeolocationService.getLocationFromIp();
     }
-    
-    // Final fallback to IP-based geolocation if native returns null
-    return IpGeolocationService.getLocationFromIp();
+
+    // Return native location if successful, otherwise fallback to IP geolocation
+    return nativeLocation ?? await IpGeolocationService.getLocationFromIp();
   }
 
   Future<Geolocation?> getCurrentGeoLocationLinux() async {
@@ -181,7 +171,7 @@ class DeviceLocation {
           domain: 'LOCATION_SERVICE',
           subDomain: 'getCurrentGeoLocationLinux',
         );
-        
+
         // Rethrow to let the caller handle fallback
         rethrow;
       }
