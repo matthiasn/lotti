@@ -10,8 +10,9 @@ class IpGeolocationService {
   static const String _ipApiUrl = 'https://ipapi.co/json/';
   static const String _ipApiFallbackUrl = 'https://ip-api.com/json';
   static const Duration _timeout = Duration(seconds: 5);
-  static const double _ipLocationAccuracy = 50000; // ~50km accuracy for IP geolocation
-  
+  static const double _ipLocationAccuracy =
+      50000; // ~50km accuracy for IP geolocation
+
   static Future<Geolocation?> getLocationFromIp() async {
     try {
       final response = await http.get(
@@ -21,13 +22,13 @@ class IpGeolocationService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        
+
         final latitude = data['latitude'] as double?;
         final longitude = data['longitude'] as double?;
-        
+
         if (latitude != null && longitude != null) {
           final now = DateTime.now();
-          
+
           return Geolocation(
             createdAt: now,
             latitude: latitude,
@@ -37,9 +38,9 @@ class IpGeolocationService {
               longitude: longitude,
             ),
             timezone: data['timezone'] as String? ?? now.timeZoneName,
-            utcOffset: data['utc_offset'] != null 
-              ? _parseUtcOffset(data['utc_offset'] as String)
-              : now.timeZoneOffset.inMinutes,
+            utcOffset: data['utc_offset'] != null
+                ? _parseUtcOffset(data['utc_offset'] as String)
+                : now.timeZoneOffset.inMinutes,
             accuracy: _ipLocationAccuracy,
           );
         }
@@ -51,30 +52,30 @@ class IpGeolocationService {
         subDomain: 'getLocationFromIp',
       );
     }
-    
-    return null;
+
+    return _getLocationFromIpApiFallback();
   }
-  
+
   static int _parseUtcOffset(String offset) {
     // Parse offset format like "+0200" or "-0430"
     try {
       if (offset.isEmpty) return 0;
-      
+
       final sign = offset.startsWith('-') ? -1 : 1;
       final cleanOffset = offset.replaceAll(RegExp('[+-]'), '');
-      
+
       if (cleanOffset.length >= 4) {
         final hours = int.parse(cleanOffset.substring(0, 2));
         final minutes = int.parse(cleanOffset.substring(2, 4));
         return sign * (hours * 60 + minutes);
       }
     } catch (_) {}
-    
+
     return DateTime.now().timeZoneOffset.inMinutes;
   }
-  
+
   // Alternative fallback using ip-api.com
-  static Future<Geolocation?> getLocationFromIpApiFallback() async {
+  static Future<Geolocation?> _getLocationFromIpApiFallback() async {
     try {
       final response = await http.get(
         Uri.parse(_ipApiFallbackUrl),
@@ -83,14 +84,14 @@ class IpGeolocationService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        
+
         if (data['status'] == 'success') {
           final latitude = (data['lat'] as num?)?.toDouble();
           final longitude = (data['lon'] as num?)?.toDouble();
-          
+
           if (latitude != null && longitude != null) {
             final now = DateTime.now();
-            
+
             return Geolocation(
               createdAt: now,
               latitude: latitude,
@@ -110,10 +111,10 @@ class IpGeolocationService {
       getIt<LoggingService>().captureException(
         e,
         domain: 'IP_GEOLOCATION',
-        subDomain: 'getLocationFromIpApiFallback',
+        subDomain: '_getLocationFromIpApiFallback',
       );
     }
-    
+
     return null;
   }
 }
