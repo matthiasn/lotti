@@ -8,7 +8,7 @@ import 'package:lotti/utils/location.dart';
 
 class IpGeolocationService {
   static const String _ipApiUrl = 'https://ipapi.co/json/';
-  static const String _ipApiFallbackUrl = 'http://ip-api.com/json';
+  static const String _ipApiFallbackUrl = 'https://ip-api.com/json';
   static const Duration _timeout = Duration(seconds: 5);
   static const double _ipLocationAccuracy = 50000; // ~50km accuracy for IP geolocation
   
@@ -73,7 +73,7 @@ class IpGeolocationService {
     return DateTime.now().timeZoneOffset.inMinutes;
   }
   
-  // Alternative fallback using ip-api.com (HTTP only)
+  // Alternative fallback using ip-api.com
   static Future<Geolocation?> getLocationFromIpApiFallback() async {
     try {
       final response = await http.get(
