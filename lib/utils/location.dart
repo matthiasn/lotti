@@ -19,8 +19,8 @@ class LocationConstants {
 }
 
 class DeviceLocation {
-  DeviceLocation() {
-    location = Location();
+  DeviceLocation({Location? locationService}) {
+    location = locationService ?? Location();
     init();
   }
 

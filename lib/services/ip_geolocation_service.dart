@@ -13,9 +13,11 @@ class IpGeolocationService {
   static const double _ipLocationAccuracy =
       50000; // ~50km accuracy for IP geolocation
 
-  static Future<Geolocation?> getLocationFromIp() async {
+  static Future<Geolocation?> getLocationFromIp(
+      {http.Client? httpClient}) async {
+    final client = httpClient ?? http.Client();
     try {
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse(_ipApiUrl),
         headers: {'Accept': 'application/json'},
       ).timeout(_timeout);
@@ -53,7 +55,7 @@ class IpGeolocationService {
       );
     }
 
-    return _getLocationFromIpApiFallback();
+    return _getLocationFromIpApiFallback(httpClient: client);
   }
 
   static int _parseUtcOffset(String offset) {
@@ -81,9 +83,10 @@ class IpGeolocationService {
   }
 
   // Alternative fallback using ip-api.com
-  static Future<Geolocation?> _getLocationFromIpApiFallback() async {
+  static Future<Geolocation?> _getLocationFromIpApiFallback(
+      {required http.Client httpClient}) async {
     try {
-      final response = await http.get(
+      final response = await httpClient.get(
         Uri.parse(_ipApiFallbackUrl),
         headers: {'Accept': 'application/json'},
       ).timeout(_timeout);
