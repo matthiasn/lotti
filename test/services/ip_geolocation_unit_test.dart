@@ -6,8 +6,14 @@ import 'package:mocktail/mocktail.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class FakeException extends Fake implements Exception {}
+
 void main() {
   late MockLoggingService mockLoggingService;
+
+  setUpAll(() {
+    registerFallbackValue(FakeException());
+  });
 
   setUp(() {
     mockLoggingService = MockLoggingService();
@@ -16,11 +22,16 @@ void main() {
       getIt.unregister<LoggingService>();
     }
     getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+    // Stub captureException to prevent errors in tests
+    when(() => mockLoggingService.captureException(
+          any<Exception>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        )).thenReturn(null);
   });
 
-  tearDown(() {
-    getIt.reset();
-  });
+  tearDown(getIt.reset);
 
   group('IpGeolocationService Unit Tests', () {
     group('Geolocation Object Validation', () {
@@ -55,9 +66,6 @@ void main() {
           timezone: 'UTC',
           utcOffset: 0,
           accuracy: 50000,
-          altitude: null,
-          speed: null,
-          heading: null,
         );
 
         expect(geo.altitude, isNull);
@@ -95,9 +103,9 @@ void main() {
 
         // When errors occur, they should be logged with proper domain
         when(() => mockLoggingService.captureException(
-              any(),
-              domain: any(named: 'domain'),
-              subDomain: any(named: 'subDomain'),
+              any<Exception>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
             )).thenReturn(null);
       });
     });

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -14,12 +13,15 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class FakeUri extends Fake implements Uri {}
 
+class FakeException extends Fake implements Exception {}
+
 void main() {
   late MockLoggingService mockLoggingService;
   late MockHttpClient mockHttpClient;
 
   setUpAll(() {
     registerFallbackValue(FakeUri());
+    registerFallbackValue(FakeException());
   });
 
   setUp(() {
@@ -33,15 +35,13 @@ void main() {
 
     // Stub captureException to prevent errors in tests
     when(() => mockLoggingService.captureException(
-          any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
+          any<Exception>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
         )).thenReturn(null);
   });
 
-  tearDown(() {
-    getIt.reset();
-  });
+  tearDown(getIt.reset);
 
   group('IpGeolocationService', () {
     group('getLocationFromIp', () {
@@ -118,7 +118,7 @@ void main() {
               any(),
               headers: any(named: 'headers'),
             )).thenAnswer((_) async {
-          await Future.delayed(const Duration(seconds: 10));
+          await Future<void>.delayed(const Duration(seconds: 10));
           return http.Response('Timeout', 200);
         });
 
@@ -145,9 +145,9 @@ void main() {
         expect(result, isNull);
 
         verify(() => mockLoggingService.captureException(
-              any(),
+              any<Exception>(),
               domain: 'IP_GEOLOCATION',
-              subDomain: any(named: 'subDomain'),
+              subDomain: any<String>(named: 'subDomain'),
             )).called(greaterThan(0));
       });
 
@@ -214,7 +214,6 @@ void main() {
 
       test('handles invalid UTC offset formats gracefully', () async {
         final invalidOffsets = ['invalid', '12', '+12', '-12'];
-        final now = DateTime.now();
 
         for (final offset in invalidOffsets) {
           when(() => mockHttpClient.get(
@@ -233,7 +232,7 @@ void main() {
               httpClient: mockHttpClient);
 
           expect(result, isNotNull);
-          expect(result!.utcOffset, now.timeZoneOffset.inMinutes,
+          expect(result!.utcOffset, DateTime.now().timeZoneOffset.inMinutes,
               reason: 'Failed for invalid offset: $offset');
         }
 
@@ -283,7 +282,6 @@ void main() {
 
     group('_parseUtcOffset', () {
       test('parses positive offsets correctly', () async {
-        final now = DateTime.now();
 
         when(() => mockHttpClient.get(
               Uri.parse('https://ipapi.co/json/'),
@@ -356,7 +354,7 @@ void main() {
         expect(result?.utcOffset, DateTime.now().timeZoneOffset.inMinutes);
 
         verify(() => mockLoggingService.captureException(
-              any(),
+              any<Exception>(),
               domain: 'IP_GEOLOCATION',
               subDomain: '_parseUtcOffset',
             )).called(1);

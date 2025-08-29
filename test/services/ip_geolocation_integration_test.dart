@@ -19,9 +19,7 @@ void main() {
     getIt.registerSingleton<LoggingService>(mockLoggingService);
   });
 
-  tearDown(() {
-    getIt.reset();
-  });
+  tearDown(getIt.reset);
 
   group('IpGeolocationService Integration Tests', () {
     // These tests make real network calls and should be skipped in CI
