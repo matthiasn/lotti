@@ -193,8 +193,6 @@ class EntryController extends _$EntryController {
     }
     if (entry is Task) {
       final task = entry;
-      final hasEstimateChanged =
-          estimate != null && estimate != task.data.estimate;
 
       await _persistenceLogic.updateTask(
         entryText: entryTextFromController(controller),
@@ -205,12 +203,12 @@ class EntryController extends _$EntryController {
         ),
       );
 
-      // Trigger task summary update if estimate changed
-      if (hasEstimateChanged) {
-        await ref
+      // Always trigger task summary update on save
+      unawaited(
+        ref
             .read(directTaskSummaryRefreshControllerProvider.notifier)
-            .requestTaskSummaryRefresh(id);
-      }
+            .requestTaskSummaryRefresh(id),
+      );
     }
     if (entry is JournalEvent) {
       final event = entry;

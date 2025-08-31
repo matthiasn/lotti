@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
-import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_language_widget.dart';
@@ -37,11 +36,6 @@ class TaskLanguageWrapper extends ConsumerWidget {
         await ref
             .read(journalRepositoryProvider)
             .updateJournalEntity(updatedTask);
-
-        // Trigger task summary update
-        await ref
-            .read(directTaskSummaryRefreshControllerProvider.notifier)
-            .requestTaskSummaryRefresh(taskId);
       },
     );
   }
