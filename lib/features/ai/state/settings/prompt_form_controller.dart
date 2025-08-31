@@ -29,22 +29,21 @@ class PromptFormController extends _$PromptFormController {
     descriptionController.text = _config?.description ?? '';
 
     // If tracking a preconfigured prompt, use those values; otherwise use saved values
+    var userMessage = _config?.userMessage ?? '';
+    var systemMessage = _config?.systemMessage ?? '';
+
     if ((_config?.trackPreconfigured ?? false) &&
         _config?.preconfiguredPromptId != null) {
       final preconfiguredPrompt =
           preconfiguredPrompts[_config!.preconfiguredPromptId!];
       if (preconfiguredPrompt != null) {
-        userMessageController.text = preconfiguredPrompt.userMessage;
-        systemMessageController.text = preconfiguredPrompt.systemMessage;
-      } else {
-        // Fallback to saved values if preconfigured prompt not found
-        userMessageController.text = _config?.userMessage ?? '';
-        systemMessageController.text = _config?.systemMessage ?? '';
+        userMessage = preconfiguredPrompt.userMessage;
+        systemMessage = preconfiguredPrompt.systemMessage;
       }
-    } else {
-      userMessageController.text = _config?.userMessage ?? '';
-      systemMessageController.text = _config?.systemMessage ?? '';
     }
+
+    userMessageController.text = userMessage;
+    systemMessageController.text = systemMessage;
 
     ref.onDispose(() {
       nameController.dispose();
