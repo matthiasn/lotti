@@ -18,6 +18,11 @@ void main() {
         imageAnalysisInTaskContextPrompt.systemMessage,
         contains('If no languageCode is set, default to English'),
       );
+      // Should include guidelines about not mentioning missing items
+      expect(
+        imageAnalysisInTaskContextPrompt.systemMessage,
+        contains('Never mention what is NOT present or missing'),
+      );
     });
 
     test('image analysis in task context includes language in user message',
@@ -34,6 +39,11 @@ void main() {
       expect(
         imageAnalysisInTaskContextPrompt.userMessage,
         contains('If no languageCode is set, default to English'),
+      );
+      // Should include guidelines about not mentioning missing items
+      expect(
+        imageAnalysisInTaskContextPrompt.userMessage,
+        contains('Do NOT mention what is absent or missing'),
       );
     });
 

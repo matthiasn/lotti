@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,7 +7,9 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/form_components/ai_text_field.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/preconfigured_prompt_button.dart';
+import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -542,18 +545,37 @@ void main() {
         await tester.pumpWidget(buildTestWidget(configId: 'tracked-prompt-id'));
         await tester.pumpAndSettle();
 
-        // Try to edit the fields - they should be read-only
-        final systemPromptField =
-            find.widgetWithText(TextFormField, 'System message');
+        // Find the system prompt AiTextField
+        final systemPromptFields = find.byWidgetPredicate((widget) {
+          return widget is AiTextField && widget.label == 'System Prompt';
+        });
+
+        expect(systemPromptFields, findsOneWidget);
+
+        // Verify it's read-only
+        final aiTextField = tester.widget<AiTextField>(systemPromptFields);
+        expect(aiTextField.readOnly, isTrue);
+
+        // Get the TextFormField inside the AiTextField
+        final systemPromptField = find.descendant(
+          of: systemPromptFields,
+          matching: find.byType(TextFormField),
+        );
         expect(systemPromptField, findsOneWidget);
 
-        // Try to enter text - it shouldn't change because it's read-only
+        // Get initial text (should be the preconfigured prompt's system message)
+        final preconfiguredPrompt = preconfiguredPrompts['task_summary']!;
+        final textField = tester.widget<TextFormField>(systemPromptField);
+        expect(textField.controller?.text,
+            equals(preconfiguredPrompt.systemMessage));
+
+        // Try to enter text
         await tester.enterText(systemPromptField, 'New system message');
         await tester.pumpAndSettle();
 
-        // The text should remain unchanged
-        expect(find.text('System message'), findsOneWidget);
-        expect(find.text('New system message'), findsNothing);
+        // The text should remain unchanged because readOnly is true
+        expect(textField.controller?.text,
+            equals(preconfiguredPrompt.systemMessage));
       });
 
       testWidgets('can toggle tracking on and off',
@@ -604,16 +626,36 @@ void main() {
         await tester.pumpAndSettle();
 
         // After toggling, text fields should become editable
-        final systemPromptField =
-            find.widgetWithText(TextFormField, 'System message');
+        final systemPromptFields = find.byWidgetPredicate((widget) {
+          return widget is AiTextField && widget.label == 'System Prompt';
+        });
 
-        // Try to enter text - it should work now because tracking is off
+        // Verify it's no longer read-only
+        final aiTextField = tester.widget<AiTextField>(systemPromptFields);
+        expect(aiTextField.readOnly, isFalse);
+
+        final systemPromptField = find.descendant(
+          of: systemPromptFields,
+          matching: find.byType(TextFormField),
+        );
+
+        // Clear the field first
+        await tester.tap(systemPromptField);
+        await tester.pumpAndSettle();
+
+        // Select all text
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+        await tester.pumpAndSettle();
+
+        // Type new text
         await tester.enterText(systemPromptField, 'New system message');
         await tester.pumpAndSettle();
 
         // The text should have changed
-        expect(find.text('New system message'), findsOneWidget);
-        expect(find.text('System message'), findsNothing);
+        final textField = tester.widget<TextFormField>(systemPromptField);
+        expect(textField.controller?.text, equals('New system message'));
       });
 
       testWidgets('saves tracking state when updating prompt',

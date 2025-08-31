@@ -237,6 +237,11 @@ When analyzing images in the context of a task, pay attention to:
 1. Any evidence that existing checklist items have been completed (e.g., screenshots showing completed features, test results, or deployment confirmations)
 2. Any new tasks or action items that should be tracked based on what's shown in the image
 
+Important guidelines:
+- Focus exclusively on what is visible in the image
+- Never mention what is NOT present or missing
+- Be concise and direct in your observations
+
 Include these observations in your analysis so the user can update their task accordingly.
 
 Generate the analysis in the language specified by the task's languageCode field.
@@ -263,7 +268,9 @@ If the image IS relevant:
 - Extract key information that helps with the task
 - Be direct and concise
 - Focus on actionable insights or important details
-- If a browser window is visible in the image, extract and include the full URL from its address bar''',
+- Only mention what you actually see in the image
+- Do NOT mention what is absent or missing from the image
+- If a browser window is visible, include the URL from its address bar''',
   requiredInputData: [InputDataType.images, InputDataType.task],
   aiResponseType: AiResponseType.imageAnalysis,
   useReasoning: false,

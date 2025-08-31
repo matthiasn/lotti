@@ -26,10 +26,25 @@ class PromptFormController extends _$PromptFormController {
         : null;
 
     nameController.text = _config?.name ?? '';
-
-    userMessageController.text = _config?.userMessage ?? '';
-    systemMessageController.text = _config?.systemMessage ?? '';
     descriptionController.text = _config?.description ?? '';
+
+    // If tracking a preconfigured prompt, use those values; otherwise use saved values
+    if ((_config?.trackPreconfigured ?? false) &&
+        _config?.preconfiguredPromptId != null) {
+      final preconfiguredPrompt =
+          preconfiguredPrompts[_config!.preconfiguredPromptId!];
+      if (preconfiguredPrompt != null) {
+        userMessageController.text = preconfiguredPrompt.userMessage;
+        systemMessageController.text = preconfiguredPrompt.systemMessage;
+      } else {
+        // Fallback to saved values if preconfigured prompt not found
+        userMessageController.text = _config?.userMessage ?? '';
+        systemMessageController.text = _config?.systemMessage ?? '';
+      }
+    } else {
+      userMessageController.text = _config?.userMessage ?? '';
+      systemMessageController.text = _config?.systemMessage ?? '';
+    }
 
     ref.onDispose(() {
       nameController.dispose();
@@ -324,8 +339,27 @@ class PromptFormController extends _$PromptFormController {
         trackPreconfigured: true,
       );
     } else {
-      // Just toggle the tracking flag off, but keep the preconfiguredPromptId
-      // so the toggle remains visible
+      // When switching off tracking, copy the current preconfigured prompt values
+      // to allow user editing while preserving the content
+      if (currentState.preconfiguredPromptId != null) {
+        final preconfiguredPrompt =
+            preconfiguredPrompts[currentState.preconfiguredPromptId!];
+        if (preconfiguredPrompt != null) {
+          // Update the controllers with the current preconfigured values
+          systemMessageController.text = preconfiguredPrompt.systemMessage;
+          userMessageController.text = preconfiguredPrompt.userMessage;
+
+          // Update the form state with the preconfigured values as editable content
+          _setAllFields(
+            systemMessage: preconfiguredPrompt.systemMessage,
+            userMessage: preconfiguredPrompt.userMessage,
+            trackPreconfigured: false,
+          );
+          return;
+        }
+      }
+
+      // Fallback: Just toggle the tracking flag off
       _setAllFields(trackPreconfigured: false);
     }
   }
