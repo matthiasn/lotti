@@ -204,11 +204,9 @@ class EntryController extends _$EntryController {
       );
 
       // Always trigger task summary update on save
-      unawaited(
-        ref
-            .read(directTaskSummaryRefreshControllerProvider.notifier)
-            .requestTaskSummaryRefresh(id),
-      );
+      await ref
+          .read(directTaskSummaryRefreshControllerProvider.notifier)
+          .requestTaskSummaryRefresh(id);
     }
     if (entry is JournalEvent) {
       final event = entry;
