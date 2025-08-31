@@ -11,6 +11,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
@@ -192,6 +193,9 @@ class EntryController extends _$EntryController {
     }
     if (entry is Task) {
       final task = entry;
+      final hasEstimateChanged =
+          estimate != null && estimate != task.data.estimate;
+
       await _persistenceLogic.updateTask(
         entryText: entryTextFromController(controller),
         journalEntityId: id,
@@ -200,6 +204,13 @@ class EntryController extends _$EntryController {
           estimate: estimate ?? task.data.estimate,
         ),
       );
+
+      // Trigger task summary update if estimate changed
+      if (hasEstimateChanged) {
+        await ref
+            .read(directTaskSummaryRefreshControllerProvider.notifier)
+            .requestTaskSummaryRefresh(id);
+      }
     }
     if (entry is JournalEvent) {
       final event = entry;
@@ -262,6 +273,11 @@ class EntryController extends _$EntryController {
       );
 
       await HapticFeedback.heavyImpact();
+
+      // Trigger task summary update
+      await ref
+          .read(directTaskSummaryRefreshControllerProvider.notifier)
+          .requestTaskSummaryRefresh(id);
     }
   }
 
