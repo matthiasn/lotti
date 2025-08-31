@@ -227,7 +227,7 @@ class ChatSessionController extends _$ChatSessionController {
 
   /// Clear any current error
   void clearError() {
-    state = state.copyWith();
+    state = state.copyWith(error: null);
   }
 
   /// Retry the last failed message

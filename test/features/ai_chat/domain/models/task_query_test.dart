@@ -59,15 +59,15 @@ void main() {
       test('lastMonth creates query for previous month', () {
         final now = DateTime.now();
         final query = TaskQuery.lastMonth();
-        
+
         // Handle year rollover for January
         final expectedYear = now.month == 1 ? now.year - 1 : now.year;
         final expectedMonth = now.month == 1 ? 12 : now.month - 1;
-        
+
         expect(query.startDate.year, equals(expectedYear));
         expect(query.startDate.month, equals(expectedMonth));
         expect(query.startDate.day, equals(1));
-        
+
         // Day 0 of current month = last day of previous month
         final expectedEndDay = DateTime(now.year, now.month, 0).day;
         expect(query.endDate.day, equals(expectedEndDay));

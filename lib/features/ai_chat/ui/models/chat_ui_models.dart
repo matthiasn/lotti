@@ -57,8 +57,8 @@ class ChatSessionUiModel {
     List<ChatMessage>? messages,
     bool? isLoading,
     bool? isStreaming,
-    String? error,
-    String? streamingMessageId,
+    Object? error = const Object(),
+    Object? streamingMessageId = const Object(),
   }) {
     return ChatSessionUiModel(
       id: id ?? this.id,
@@ -66,8 +66,10 @@ class ChatSessionUiModel {
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
       isStreaming: isStreaming ?? this.isStreaming,
-      error: error ?? this.error,
-      streamingMessageId: streamingMessageId ?? this.streamingMessageId,
+      error: error == const Object() ? this.error : error as String?,
+      streamingMessageId: streamingMessageId == const Object()
+          ? this.streamingMessageId
+          : streamingMessageId as String?,
     );
   }
 
@@ -122,17 +124,17 @@ class ChatStateUiModel {
   ChatStateUiModel copyWith({
     ChatSessionUiModel? currentSession,
     List<ChatSessionUiModel>? recentSessions,
-    String? error,
+    Object? error = const Object(),
   }) {
     return ChatStateUiModel(
       currentSession: currentSession ?? this.currentSession,
       recentSessions: recentSessions ?? this.recentSessions,
-      error: error ?? this.error,
+      error: error == const Object() ? this.error : error as String?,
     );
   }
 
   /// Clear current error
-  ChatStateUiModel clearError() => copyWith();
+  ChatStateUiModel clearError() => copyWith(error: null);
 
   /// Check if any session is loading
   bool get isAnySessionLoading =>
