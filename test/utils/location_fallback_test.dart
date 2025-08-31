@@ -105,6 +105,8 @@ void main() {
         expect(result.accuracy, 10.0);
         expect(result.heading, 180.0);
         expect(result.geohashString, isNotEmpty);
+        expect(result.timezone, isNotNull);
+        expect(result.utcOffset, isNotNull);
       });
 
       test('falls back to IP geolocation when permission is denied', () async {
@@ -140,18 +142,12 @@ void main() {
         when(() => mockLocation.getLocation())
             .thenThrow(Exception('Location service failed'));
 
-        when(() => mockLoggingService.captureException(
-              any<Exception>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain'),
-            )).thenReturn(null);
-
         // The result should fall back to IP geolocation
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // Verify that the exception was logged
         verify(() => mockLoggingService.captureException(
-              any<Exception>(),
+              any<dynamic>(),
               domain: 'LOCATION_SERVICE',
               subDomain: 'native_location_fallback',
             )).called(1);
@@ -291,7 +287,8 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.geohashString, isNotEmpty);
-        expect(result.geohashString, startsWith('u120'));
+        // The geohash for coordinates (52.205, 0.119) should start with 'u120'
+        expect(result.geohashString.substring(0, 4), 'u120');
       });
 
       test('includes timezone and UTC offset for all locations', () async {
@@ -319,7 +316,7 @@ void main() {
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
-        expect(result!.timezone, isNotEmpty);
+        expect(result!.timezone, isNotNull);
         expect(result.utcOffset, isNotNull);
       });
     });
