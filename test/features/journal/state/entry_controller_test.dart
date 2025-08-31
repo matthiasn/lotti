@@ -59,12 +59,24 @@ class FakeTaskData extends Fake implements TaskData {}
 class FakeEventData extends Fake implements EventData {}
 
 // Mock for DirectTaskSummaryRefreshController
-class MockDirectTaskSummaryRefreshController extends Notifier<void> 
-    with Mock
+class MockDirectTaskSummaryRefreshController extends Mock
+    implements DirectTaskSummaryRefreshController {}
+
+// Adapter to wrap the mock in a Notifier
+class DirectTaskSummaryRefreshControllerAdapter extends Notifier<void>
     implements DirectTaskSummaryRefreshController {
+  DirectTaskSummaryRefreshControllerAdapter(this._mock);
+
+  final MockDirectTaskSummaryRefreshController _mock;
+
   @override
   void build() {
     // Empty implementation for the notifier
+  }
+
+  @override
+  Future<void> requestTaskSummaryRefresh(String taskId) {
+    return _mock.requestTaskSummaryRefresh(taskId);
   }
 }
 
@@ -1850,15 +1862,15 @@ void main() {
 
   group('Task Summary Refresh Triggers', () {
     late MockDirectTaskSummaryRefreshController mockSummaryController;
-    
+
     setUp(() {
       reset(mockPersistenceLogic);
       mockSummaryController = MockDirectTaskSummaryRefreshController();
-      
+
       // Ensure task is available
       when(() => mockJournalDb.journalEntityById(testTask.meta.id))
           .thenAnswer((_) async => testTask);
-          
+
       // Mock successful task updates
       when(
         () => mockPersistenceLogic.updateTask(
@@ -1867,7 +1879,7 @@ void main() {
           taskData: any(named: 'taskData'),
         ),
       ).thenAnswer((_) async => true);
-      
+
       // Default stub for updateJournalEntityText
       when(
         () => mockPersistenceLogic.updateJournalEntityText(
@@ -1876,7 +1888,7 @@ void main() {
           any(),
         ),
       ).thenAnswer((_) async => true);
-      
+
       when(() => mockSummaryController.requestTaskSummaryRefresh(any()))
           .thenAnswer((_) async {});
     });
@@ -1885,12 +1897,14 @@ void main() {
       final container = makeProviderContainer(
         overrides: [
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
       final entryId = testTask.meta.id;
-      final notifier = container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
 
       await container.read(entryControllerProvider(id: entryId).future);
 
@@ -1902,22 +1916,25 @@ void main() {
           taskData: any(named: 'taskData'),
         ),
       ).called(1);
-      
+
       verify(
         () => mockSummaryController.requestTaskSummaryRefresh(entryId),
       ).called(1);
     });
 
-    test('does not trigger task summary refresh when status is unchanged', () async {
+    test('does not trigger task summary refresh when status is unchanged',
+        () async {
       final container = makeProviderContainer(
         overrides: [
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
       final entryId = testTask.meta.id;
-      final notifier = container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
 
       await container.read(entryControllerProvider(id: entryId).future);
 
@@ -1933,12 +1950,14 @@ void main() {
       final container = makeProviderContainer(
         overrides: [
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
       final entryId = testTask.meta.id;
-      final notifier = container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
 
       await container.read(entryControllerProvider(id: entryId).future);
 
@@ -1960,29 +1979,32 @@ void main() {
           taskData: any(named: 'taskData'),
         ),
       ).called(1);
-      
+
       verify(
         () => mockSummaryController.requestTaskSummaryRefresh(entryId),
       ).called(1);
     });
 
-    test('triggers task summary refresh even when estimate is unchanged', () async {
+    test('triggers task summary refresh even when estimate is unchanged',
+        () async {
       final taskWithEstimate = testTask.copyWith(
         data: testTask.data.copyWith(estimate: const Duration(hours: 2)),
       );
-      
+
       when(() => mockJournalDb.journalEntityById(taskWithEstimate.meta.id))
           .thenAnswer((_) async => taskWithEstimate);
-      
+
       final container = makeProviderContainer(
         overrides: [
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
       final entryId = taskWithEstimate.meta.id;
-      final notifier = container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
 
       await container.read(entryControllerProvider(id: entryId).future);
 
@@ -2004,7 +2026,7 @@ void main() {
           taskData: any(named: 'taskData'),
         ),
       ).called(1);
-      
+
       // Now it should still trigger summary refresh
       verify(
         () => mockSummaryController.requestTaskSummaryRefresh(entryId),
@@ -2015,12 +2037,14 @@ void main() {
       final container = makeProviderContainer(
         overrides: [
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
       final entryId = testTask.meta.id;
-      final notifier = container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
 
       await container.read(entryControllerProvider(id: entryId).future);
 
@@ -2042,22 +2066,25 @@ void main() {
           taskData: any(named: 'taskData'),
         ),
       ).called(1);
-      
+
       verify(
         () => mockSummaryController.requestTaskSummaryRefresh(entryId),
       ).called(1);
     });
 
-    test('triggers task summary refresh even when title is unchanged', () async {
+    test('triggers task summary refresh even when title is unchanged',
+        () async {
       final container = makeProviderContainer(
         overrides: [
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
       final entryId = testTask.meta.id;
-      final notifier = container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
 
       await container.read(entryControllerProvider(id: entryId).future);
 
@@ -2079,23 +2106,26 @@ void main() {
           taskData: any(named: 'taskData'),
         ),
       ).called(1);
-      
+
       // Now it should still trigger summary refresh
       verify(
         () => mockSummaryController.requestTaskSummaryRefresh(entryId),
       ).called(1);
     });
 
-    test('triggers task summary refresh when both title and estimate change', () async {
+    test('triggers task summary refresh when both title and estimate change',
+        () async {
       final container = makeProviderContainer(
         overrides: [
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
       final entryId = testTask.meta.id;
-      final notifier = container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
 
       await container.read(entryControllerProvider(id: entryId).future);
 
@@ -2118,23 +2148,26 @@ void main() {
           taskData: any(named: 'taskData'),
         ),
       ).called(1);
-      
+
       // Should still only call refresh once
       verify(
         () => mockSummaryController.requestTaskSummaryRefresh(entryId),
       ).called(1);
     });
 
-    test('triggers task summary refresh on regular save without changes', () async {
+    test('triggers task summary refresh on regular save without changes',
+        () async {
       final container = makeProviderContainer(
         overrides: [
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
       final entryId = testTask.meta.id;
-      final notifier = container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
 
       await container.read(entryControllerProvider(id: entryId).future);
 
@@ -2156,23 +2189,26 @@ void main() {
           taskData: any(named: 'taskData'),
         ),
       ).called(1);
-      
+
       // Should still trigger summary refresh
       verify(
         () => mockSummaryController.requestTaskSummaryRefresh(entryId),
       ).called(1);
     });
 
-    test('does not trigger task summary refresh for non-task entries', () async {
+    test('does not trigger task summary refresh for non-task entries',
+        () async {
       final container = makeProviderContainer(
         overrides: [
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
       final entryId = testTextEntry.meta.id;
-      final notifier = container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
 
       await container.read(entryControllerProvider(id: entryId).future);
 
@@ -2183,7 +2219,7 @@ void main() {
           any(),
         ),
       ).thenAnswer((_) async => true);
-      
+
       when(
         () => mockEditorStateService.entryWasSaved(
           id: entryId,

@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -15,20 +14,35 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../test_data/test_data.dart';
 import '../../../mocks/mocks.dart' as mocks;
+import '../../../test_data/test_data.dart';
 
 class MockJournalRepository extends Mock implements JournalRepository {}
 
-class MockDirectTaskSummaryRefreshController extends Notifier<void> with Mock
+class MockDirectTaskSummaryRefreshController extends Mock
+    implements DirectTaskSummaryRefreshController {}
+
+// Adapter to wrap the mock in a Notifier
+class DirectTaskSummaryRefreshControllerAdapter extends Notifier<void>
     implements DirectTaskSummaryRefreshController {
+  DirectTaskSummaryRefreshControllerAdapter(this._mock);
+
+  final MockDirectTaskSummaryRefreshController _mock;
+
   @override
-  void build() {}
+  void build() {
+    // Empty implementation for the notifier
+  }
+
+  @override
+  Future<void> requestTaskSummaryRefresh(String taskId) {
+    return _mock.requestTaskSummaryRefresh(taskId);
+  }
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  
+
   ProviderContainer makeProviderContainer({
     List<Override> overrides = const [],
   }) {
@@ -110,9 +124,7 @@ void main() {
     ).thenAnswer((_) async => true);
   });
 
-  tearDown(() {
-    getIt.reset();
-  });
+  tearDown(getIt.reset);
 
   tearDownAll(getIt.reset);
 
@@ -122,11 +134,12 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
-      
+
       final entryId = testTaskData.meta.id;
       final notifier = container.read(
         entryControllerProvider(id: entryId).notifier,
@@ -147,8 +160,10 @@ void main() {
       verify(() => mockPersistenceLogic.updateTask(
             entryText: any(named: 'entryText'),
             journalEntityId: entryId,
-            taskData: any(named: 'taskData', that: isA<TaskData>()
-                .having((t) => t.title, 'title', 'New Task Title')),
+            taskData: any(
+                named: 'taskData',
+                that: isA<TaskData>()
+                    .having((t) => t.title, 'title', 'New Task Title')),
           )).called(1);
     });
 
@@ -157,11 +172,12 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
-      
+
       final entryId = testTaskData.meta.id;
       final notifier = container.read(
         entryControllerProvider(id: entryId).notifier,
@@ -182,8 +198,10 @@ void main() {
       verify(() => mockPersistenceLogic.updateTask(
             entryText: any(named: 'entryText'),
             journalEntityId: entryId,
-            taskData: any(named: 'taskData', that: isA<TaskData>()
-                .having((t) => t.estimate?.inSeconds, 'estimate', 2700)),
+            taskData: any(
+                named: 'taskData',
+                that: isA<TaskData>()
+                    .having((t) => t.estimate?.inSeconds, 'estimate', 2700)),
           )).called(1);
     });
 
@@ -192,11 +210,12 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
-      
+
       final entryId = testTaskData.meta.id;
       final notifier = container.read(
         entryControllerProvider(id: entryId).notifier,
@@ -204,18 +223,20 @@ void main() {
 
       // Wait for the controller to load
       await container.read(entryControllerProvider(id: entryId).future);
-      
+
       // When language changes, the UI calls updateJournalEntity directly
       final updatedTask = testTaskData.copyWith(
         data: testTaskData.data.copyWith(languageCode: 'es'),
       );
 
-      await container.read(journalRepositoryProvider).updateJournalEntity(updatedTask);
+      await container
+          .read(journalRepositoryProvider)
+          .updateJournalEntity(updatedTask);
 
       // The updateJournalEntity will trigger update notifications,
       // which EntryController listens to and calls save()
       // For this test, we'll directly verify the behavior through the controller
-      
+
       // Trigger save (which happens via update notifications in real flow)
       await notifier.save();
 
@@ -230,11 +251,12 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
-      
+
       final entryId = testTaskData.meta.id;
       final notifier = container.read(
         entryControllerProvider(id: entryId).notifier,
@@ -252,16 +274,18 @@ void main() {
       ).called(1);
     });
 
-    test('5. Regular save without changes also triggers AI inference', () async {
+    test('5. Regular save without changes also triggers AI inference',
+        () async {
       final container = makeProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
-      
+
       final entryId = testTaskData.meta.id;
       final notifier = container.read(
         entryControllerProvider(id: entryId).notifier,
@@ -284,11 +308,12 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           directTaskSummaryRefreshControllerProvider.overrideWith(
-            () => mockSummaryController,
+            () => DirectTaskSummaryRefreshControllerAdapter(
+                mockSummaryController),
           ),
         ],
       );
-      
+
       final entryId = testTaskData.meta.id;
       final notifier = container.read(
         entryControllerProvider(id: entryId).notifier,
@@ -299,7 +324,8 @@ void main() {
 
       // Update title
       await notifier.save(title: 'First Title');
-      verify(() => mockSummaryController.requestTaskSummaryRefresh(entryId)).called(1);
+      verify(() => mockSummaryController.requestTaskSummaryRefresh(entryId))
+          .called(1);
 
       // Reset the mock count
       reset(mockSummaryController);
@@ -308,7 +334,8 @@ void main() {
 
       // Update estimate
       await notifier.save(estimate: const Duration(hours: 1));
-      verify(() => mockSummaryController.requestTaskSummaryRefresh(entryId)).called(1);
+      verify(() => mockSummaryController.requestTaskSummaryRefresh(entryId))
+          .called(1);
 
       // Reset the mock count
       reset(mockSummaryController);
@@ -317,7 +344,8 @@ void main() {
 
       // Update status
       await notifier.updateTaskStatus('IN PROGRESS');
-      verify(() => mockSummaryController.requestTaskSummaryRefresh(entryId)).called(1);
+      verify(() => mockSummaryController.requestTaskSummaryRefresh(entryId))
+          .called(1);
     });
   });
 }
