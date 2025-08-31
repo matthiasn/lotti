@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/refactored_chat_interface.dart';
 
 class ChatModalPage extends ConsumerWidget {
   const ChatModalPage({super.key});
@@ -51,7 +51,7 @@ class ChatModalPage extends ConsumerWidget {
         // Wrap in a SizedBox to provide bounded constraints
         return SizedBox(
           height: MediaQuery.of(context).size.height * 0.8,
-          child: ChatInterface(categoryId: categoryId),
+          child: RefactoredChatInterface(categoryId: categoryId),
         );
       },
     );

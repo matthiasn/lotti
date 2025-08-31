@@ -41,77 +41,45 @@ class TaskSummaryRepository {
 
     // Filter entries by date range and minimum duration
     final workEntries = <JournalEntity>[];
-    
-    // Debug: Check first few entries to see their dates
-    if (entries.isNotEmpty) {
-      print('Sample entry dates and types:');
-      for (var i = 0; i < 5 && i < entries.length; i++) {
-        final entry = entries[i];
-        final entryType = entry.runtimeType.toString();
-        var duration = 'N/A';
-        if (entry is JournalEntry) {
-          final dur = entry.meta.dateTo.difference(entry.meta.dateFrom);
-          duration = '${dur.inSeconds}s';
-        }
-        print('  Entry ${i+1}: ${entry.meta.dateFrom} - Type: $entryType, Duration: $duration');
-      }
-      print('Searching for range: ${request.startDate} to ${request.endDate}');
-    }
-    
-    int matchingDateCount = 0;
+
     for (final entry in entries) {
       // Check if entry falls within the date range (inclusive)
       final entryDate = entry.meta.dateFrom;
       if (!entryDate.isBefore(request.startDate) &&
           !entryDate.isAfter(request.endDate)) {
-        matchingDateCount++;
         // Check duration for text entries
         if (entry is JournalEntry) {
           final entryDuration =
               entry.meta.dateTo.difference(entry.meta.dateFrom);
           if (entryDuration.inSeconds >= 15) {
             workEntries.add(entry);
-            print('Added JournalEntry with ${entryDuration.inSeconds}s duration');
-          } else {
-            print('Skipped JournalEntry with only ${entryDuration.inSeconds}s duration (< 15s)');
-          }
+          } else {}
         }
         // Include all audio entries (they typically represent work)
         else if (entry is JournalAudio) {
           workEntries.add(entry);
-          print('Added JournalAudio entry');
-        } else {
-          print('Skipped entry of type: ${entry.runtimeType}');
-        }
+        } else {}
       }
     }
-    print('Total entries matching date range: $matchingDateCount');
 
     if (workEntries.isEmpty) {
-      print('No work entries found');
       return [];
     }
-    print('Found ${workEntries.length} work entries');
 
     // Step 2: Collect all entry IDs
     final entryIds = workEntries.map((e) => e.meta.id).toSet();
-    print('Collected ${entryIds.length} unique entry IDs');
 
     // Step 3: Get all links TO these entries (where work entries are the target)
     // We need to find tasks that link TO our work entries
     final allLinks = await journalDb.linksForEntryIds(entryIds);
-    print('Found ${allLinks.length} links where work entries are the target');
 
     // Collect all unique task IDs (the from_id when work entry is to_id)
     final linkedTaskIds = <String>{};
     for (final link in allLinks) {
-      linkedTaskIds.add(link.fromId);  // The task is the source of the link
-      print('Link: ${link.fromId} (potential task) -> ${link.toId} (work entry)');
+      linkedTaskIds.add(link.fromId); // The task is the source of the link
     }
-    print('Found ${linkedTaskIds.length} unique source entity IDs (potential tasks)');
 
     if (linkedTaskIds.isEmpty) {
-      print('No linked entities found from work entries');
       return [];
     }
 

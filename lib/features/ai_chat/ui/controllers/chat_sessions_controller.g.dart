@@ -1,12 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'chat_controller.dart';
+part of 'chat_sessions_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$chatControllerHash() => r'17141851b0bb3cc501ca69a633bbebd5ad55f10a';
+String _$chatSessionsControllerHash() =>
+    r'fc9c83b41c8b5ceae9b5b85b3a8ab4a82aeeeb7d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,36 +30,36 @@ class _SystemHash {
   }
 }
 
-abstract class _$ChatController
-    extends BuildlessAutoDisposeNotifier<ChatState> {
+abstract class _$ChatSessionsController
+    extends BuildlessAutoDisposeNotifier<ChatStateUiModel> {
   late final String categoryId;
 
-  ChatState build(
+  ChatStateUiModel build(
     String categoryId,
   );
 }
 
-/// See also [ChatController].
-@ProviderFor(ChatController)
-const chatControllerProvider = ChatControllerFamily();
+/// See also [ChatSessionsController].
+@ProviderFor(ChatSessionsController)
+const chatSessionsControllerProvider = ChatSessionsControllerFamily();
 
-/// See also [ChatController].
-class ChatControllerFamily extends Family<ChatState> {
-  /// See also [ChatController].
-  const ChatControllerFamily();
+/// See also [ChatSessionsController].
+class ChatSessionsControllerFamily extends Family<ChatStateUiModel> {
+  /// See also [ChatSessionsController].
+  const ChatSessionsControllerFamily();
 
-  /// See also [ChatController].
-  ChatControllerProvider call(
+  /// See also [ChatSessionsController].
+  ChatSessionsControllerProvider call(
     String categoryId,
   ) {
-    return ChatControllerProvider(
+    return ChatSessionsControllerProvider(
       categoryId,
     );
   }
 
   @override
-  ChatControllerProvider getProviderOverride(
-    covariant ChatControllerProvider provider,
+  ChatSessionsControllerProvider getProviderOverride(
+    covariant ChatSessionsControllerProvider provider,
   ) {
     return call(
       provider.categoryId,
@@ -77,30 +78,30 @@ class ChatControllerFamily extends Family<ChatState> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'chatControllerProvider';
+  String? get name => r'chatSessionsControllerProvider';
 }
 
-/// See also [ChatController].
-class ChatControllerProvider
-    extends AutoDisposeNotifierProviderImpl<ChatController, ChatState> {
-  /// See also [ChatController].
-  ChatControllerProvider(
+/// See also [ChatSessionsController].
+class ChatSessionsControllerProvider extends AutoDisposeNotifierProviderImpl<
+    ChatSessionsController, ChatStateUiModel> {
+  /// See also [ChatSessionsController].
+  ChatSessionsControllerProvider(
     String categoryId,
   ) : this._internal(
-          () => ChatController()..categoryId = categoryId,
-          from: chatControllerProvider,
-          name: r'chatControllerProvider',
+          () => ChatSessionsController()..categoryId = categoryId,
+          from: chatSessionsControllerProvider,
+          name: r'chatSessionsControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$chatControllerHash,
-          dependencies: ChatControllerFamily._dependencies,
+                  : _$chatSessionsControllerHash,
+          dependencies: ChatSessionsControllerFamily._dependencies,
           allTransitiveDependencies:
-              ChatControllerFamily._allTransitiveDependencies,
+              ChatSessionsControllerFamily._allTransitiveDependencies,
           categoryId: categoryId,
         );
 
-  ChatControllerProvider._internal(
+  ChatSessionsControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -113,8 +114,8 @@ class ChatControllerProvider
   final String categoryId;
 
   @override
-  ChatState runNotifierBuild(
-    covariant ChatController notifier,
+  ChatStateUiModel runNotifierBuild(
+    covariant ChatSessionsController notifier,
   ) {
     return notifier.build(
       categoryId,
@@ -122,10 +123,10 @@ class ChatControllerProvider
   }
 
   @override
-  Override overrideWith(ChatController Function() create) {
+  Override overrideWith(ChatSessionsController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: ChatControllerProvider._internal(
+      override: ChatSessionsControllerProvider._internal(
         () => create()..categoryId = categoryId,
         from: from,
         name: null,
@@ -138,14 +139,15 @@ class ChatControllerProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<ChatController, ChatState>
+  AutoDisposeNotifierProviderElement<ChatSessionsController, ChatStateUiModel>
       createElement() {
-    return _ChatControllerProviderElement(this);
+    return _ChatSessionsControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ChatControllerProvider && other.categoryId == categoryId;
+    return other is ChatSessionsControllerProvider &&
+        other.categoryId == categoryId;
   }
 
   @override
@@ -159,18 +161,20 @@ class ChatControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin ChatControllerRef on AutoDisposeNotifierProviderRef<ChatState> {
+mixin ChatSessionsControllerRef
+    on AutoDisposeNotifierProviderRef<ChatStateUiModel> {
   /// The parameter `categoryId` of this provider.
   String get categoryId;
 }
 
-class _ChatControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<ChatController, ChatState>
-    with ChatControllerRef {
-  _ChatControllerProviderElement(super.provider);
+class _ChatSessionsControllerProviderElement
+    extends AutoDisposeNotifierProviderElement<ChatSessionsController,
+        ChatStateUiModel> with ChatSessionsControllerRef {
+  _ChatSessionsControllerProviderElement(super.provider);
 
   @override
-  String get categoryId => (origin as ChatControllerProvider).categoryId;
+  String get categoryId =>
+      (origin as ChatSessionsControllerProvider).categoryId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
