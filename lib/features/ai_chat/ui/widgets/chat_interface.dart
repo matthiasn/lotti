@@ -5,8 +5,8 @@ import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_session_controller.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_sessions_controller.dart';
 
-class RefactoredChatInterface extends ConsumerStatefulWidget {
-  const RefactoredChatInterface({
+class ChatInterface extends ConsumerStatefulWidget {
+  const ChatInterface({
     required this.categoryId,
     this.sessionId,
     super.key,
@@ -16,12 +16,10 @@ class RefactoredChatInterface extends ConsumerStatefulWidget {
   final String? sessionId;
 
   @override
-  ConsumerState<RefactoredChatInterface> createState() =>
-      _RefactoredChatInterfaceState();
+  ConsumerState<ChatInterface> createState() => _ChatInterfaceState();
 }
 
-class _RefactoredChatInterfaceState
-    extends ConsumerState<RefactoredChatInterface> {
+class _ChatInterfaceState extends ConsumerState<ChatInterface> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 

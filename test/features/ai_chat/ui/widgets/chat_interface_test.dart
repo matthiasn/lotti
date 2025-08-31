@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lotti/features/ai_chat/data/repositories/chat_repository_impl.dart';
 import 'package:lotti/features/ai_chat/domain/models/chat_session.dart';
-import 'package:lotti/features/ai_chat/domain/repositories/chat_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
-import 'package:lotti/features/ai_chat/ui/widgets/refactored_chat_interface.dart';
+import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -31,7 +30,7 @@ void main() {
     await tester.pumpWidget(child);
   }
 
-  group('RefactoredChatInterface', () {
+  group('ChatInterface', () {
     late MockChatRepository mockChatRepository;
     late MockLoggingService mockLoggingService;
 
@@ -67,7 +66,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -102,7 +101,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -134,7 +133,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -171,7 +170,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -209,7 +208,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -239,7 +238,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -269,7 +268,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -296,7 +295,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -346,7 +345,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -404,7 +403,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -445,7 +444,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -497,7 +496,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(categoryId: 'test-category'),
+              body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
         ),
@@ -542,7 +541,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: RefactoredChatInterface(
+              body: ChatInterface(
                 categoryId: 'test-category',
                 sessionId: 'existing-session-id',
               ),

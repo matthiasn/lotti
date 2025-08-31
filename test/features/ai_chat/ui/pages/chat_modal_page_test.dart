@@ -7,11 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/features/ai_chat/data/repositories/chat_repository_impl.dart';
 import 'package:lotti/features/ai_chat/domain/models/chat_session.dart';
-import 'package:lotti/features/ai_chat/domain/repositories/chat_repository.dart';
+import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/pages/chat_modal_page.dart';
-import 'package:lotti/features/ai_chat/ui/widgets/refactored_chat_interface.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -199,7 +198,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check RefactoredChatInterface is displayed
-      expect(find.byType(RefactoredChatInterface), findsOneWidget);
+      expect(find.byType(ChatInterface), findsOneWidget);
 
       // Verify no category selection prompt
       expect(find.byIcon(Icons.category_outlined), findsNothing);
@@ -256,8 +255,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the RefactoredChatInterface widget
-      final chatInterfaceWidget = tester.widget<RefactoredChatInterface>(
-        find.byType(RefactoredChatInterface),
+      final chatInterfaceWidget = tester.widget<ChatInterface>(
+        find.byType(ChatInterface),
       );
 
       // Verify categoryId is passed correctly
@@ -367,7 +366,7 @@ void main() {
 
       // Should show category selection prompt
       expect(find.text('Please select a single category'), findsOneWidget);
-      expect(find.byType(RefactoredChatInterface), findsNothing);
+      expect(find.byType(ChatInterface), findsNothing);
     });
 
     testWidgets('shows chat interface with single category selected',
@@ -421,7 +420,7 @@ void main() {
 
       // Should show chat interface
       expect(find.text('Please select a single category'), findsNothing);
-      expect(find.byType(RefactoredChatInterface), findsOneWidget);
+      expect(find.byType(ChatInterface), findsOneWidget);
     });
   });
 }

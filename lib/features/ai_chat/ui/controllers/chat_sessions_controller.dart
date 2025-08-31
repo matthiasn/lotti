@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai_chat/data/repositories/chat_repository_impl.dart';
+import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
