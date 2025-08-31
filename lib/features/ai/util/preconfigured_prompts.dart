@@ -237,7 +237,10 @@ When analyzing images in the context of a task, pay attention to:
 1. Any evidence that existing checklist items have been completed (e.g., screenshots showing completed features, test results, or deployment confirmations)
 2. Any new tasks or action items that should be tracked based on what's shown in the image
 
-Include these observations in your analysis so the user can update their task accordingly.''',
+Include these observations in your analysis so the user can update their task accordingly.
+
+Generate the analysis in the language specified by the task's languageCode field.
+If no languageCode is set, default to English.''',
   userMessage: '''
 Analyze the provided image(s) in the context of this task:
 
@@ -245,6 +248,9 @@ Analyze the provided image(s) in the context of this task:
 ```json
 {{task}}
 ```
+
+Generate the analysis in the language specified by the task's languageCode field.
+If no languageCode is set, default to English.
 
 Extract ONLY information from the image that is relevant to this task. Be concise and focus on task-related content.
 
