@@ -237,7 +237,15 @@ When analyzing images in the context of a task, pay attention to:
 1. Any evidence that existing checklist items have been completed (e.g., screenshots showing completed features, test results, or deployment confirmations)
 2. Any new tasks or action items that should be tracked based on what's shown in the image
 
-Include these observations in your analysis so the user can update their task accordingly.''',
+Important guidelines:
+- Focus exclusively on what is visible in the image
+- Never mention what is NOT present or missing
+- Be concise and direct in your observations
+
+Include these observations in your analysis so the user can update their task accordingly.
+
+Generate the analysis in the language specified by the task's languageCode field.
+If no languageCode is set, default to English.''',
   userMessage: '''
 Analyze the provided image(s) in the context of this task:
 
@@ -245,6 +253,9 @@ Analyze the provided image(s) in the context of this task:
 ```json
 {{task}}
 ```
+
+Generate the analysis in the language specified by the task's languageCode field.
+If no languageCode is set, default to English.
 
 Extract ONLY information from the image that is relevant to this task. Be concise and focus on task-related content.
 
@@ -257,7 +268,9 @@ If the image IS relevant:
 - Extract key information that helps with the task
 - Be direct and concise
 - Focus on actionable insights or important details
-- If a browser window is visible in the image, extract and include the full URL from its address bar''',
+- Only mention what you actually see in the image
+- Do NOT mention what is absent or missing from the image
+- If a browser window is visible, include the URL from its address bar''',
   requiredInputData: [InputDataType.images, InputDataType.task],
   aiResponseType: AiResponseType.imageAnalysis,
   useReasoning: false,
@@ -275,7 +288,7 @@ Your goal is to provide accurate, well-formatted transcriptions of audio recordi
 Please transcribe the provided audio file(s). 
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
 If there are multiple speakers, try to indicate speaker changes. 
-Note any significant non-speech audio events [in brackets]. Remove filler words.
+Remove filler words.
 ''',
   requiredInputData: [InputDataType.audioFiles],
   aiResponseType: AiResponseType.audioTranscription,
@@ -300,7 +313,7 @@ Include these observations in your transcription so the user can update their ta
 Please transcribe the provided audio. 
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
 If there are multiple speakers, try to indicate speaker changes. 
-Note any significant non-speech audio events [in brackets]. Remove filler words.
+Remove filler words.
 
 Take into account the following task context:
 

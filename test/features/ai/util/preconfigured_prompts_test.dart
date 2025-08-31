@@ -157,7 +157,6 @@ void main() {
             contains('proper punctuation'));
         expect(
             audioTranscriptionPrompt.userMessage, contains('speaker changes'));
-        expect(audioTranscriptionPrompt.userMessage, contains('[in brackets]'));
       });
     });
 
