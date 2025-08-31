@@ -288,7 +288,7 @@ Your goal is to provide accurate, well-formatted transcriptions of audio recordi
 Please transcribe the provided audio file(s). 
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
 If there are multiple speakers, try to indicate speaker changes. 
-Note any significant non-speech audio events [in brackets]. Remove filler words.
+Remove filler words.
 ''',
   requiredInputData: [InputDataType.audioFiles],
   aiResponseType: AiResponseType.audioTranscription,
@@ -313,7 +313,7 @@ Include these observations in your transcription so the user can update their ta
 Please transcribe the provided audio. 
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
 If there are multiple speakers, try to indicate speaker changes. 
-Note any significant non-speech audio events [in brackets]. Remove filler words.
+Remove filler words.
 
 Take into account the following task context:
 
