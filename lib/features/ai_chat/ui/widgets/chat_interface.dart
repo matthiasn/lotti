@@ -203,8 +203,7 @@ class _EmptyState extends StatelessWidget {
             Icon(
               Icons.psychology_outlined,
               size: 64,
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
@@ -220,34 +219,9 @@ class _EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            _SuggestionChips(),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SuggestionChips extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final suggestions = [
-      'What did I work on this week?',
-      'Show me my productivity patterns',
-      'Summarize completed tasks',
-    ];
-
-    return Wrap(
-      spacing: 8,
-      children: suggestions
-          .map((suggestion) => ActionChip(
-                label: Text(suggestion),
-                onPressed: () {
-                  // This would need to be connected to the input controller
-                  // For now it's just a visual element
-                },
-              ))
-          .toList(),
     );
   }
 }

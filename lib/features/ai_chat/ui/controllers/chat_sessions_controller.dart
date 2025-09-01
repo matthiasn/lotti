@@ -99,7 +99,8 @@ class ChatSessionsController extends _$ChatSessionsController {
       await chatRepository.deleteSession(sessionId);
 
       // If this was the current session, create a new one
-      if (state.currentSession.id == sessionId) {
+      final currentSession = state.currentSession;
+      if (currentSession != null && currentSession.id == sessionId) {
         await createNewSession();
       }
 

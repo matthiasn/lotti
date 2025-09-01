@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/features/ai_chat/domain/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
@@ -115,7 +116,8 @@ class ChatSessionController extends _$ChatSessionController {
 
     final updatedMessages = state.messages.map((msg) {
       if (msg.id == _currentStreamingMessageId) {
-        return msg.copyWith(content: content);
+        final newContent = msg.content + content;
+        return msg.copyWith(content: newContent);
       }
       return msg;
     }).toList();
@@ -236,7 +238,7 @@ class ChatSessionController extends _$ChatSessionController {
 
     final lastUserMessage = messages.reversed
         .where((m) => m.role == ChatMessageRole.user)
-        .firstOrNull;
+        .firstWhereOrNull((_) => true);
 
     if (lastUserMessage != null) {
       // Remove the last AI message if it exists and retry

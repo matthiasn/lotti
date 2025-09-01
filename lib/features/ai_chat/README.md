@@ -243,7 +243,7 @@ Response: "Looking at your work patterns, I notice [insights]..."
 - **Freezed**: Immutable data models with JSON serialization
 - **Riverpod**: State management and dependency injection
 - **GPT Markdown**: Rich text rendering for AI responses
-- **MockTail**: Comprehensive testing framework
+- **mocktail**: Comprehensive testing framework
 
 ### Architecture Principles
 - **Clean Architecture**: Clear separation between domain, data, and presentation layers

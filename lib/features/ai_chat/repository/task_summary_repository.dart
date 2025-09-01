@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -26,6 +28,20 @@ class TaskSummaryRepository {
     required String categoryId,
     required TaskSummaryRequest request,
   }) async {
+    // Validate request parameters
+    if (request.endDate.isBefore(request.startDate)) {
+      // Swap dates if they're in wrong order
+      final correctedRequest = TaskSummaryRequest(
+        startDate: request.endDate,
+        endDate: request.startDate,
+        limit: request.limit,
+      );
+      return getTaskSummaries(
+          categoryId: categoryId, request: correctedRequest);
+    }
+
+    // Clamp limit to reasonable bounds
+    final clampedLimit = math.max(1, math.min(request.limit, 100));
     // Step 1: Get text and audio entries with logged time within date range
     final journalTypes = ['JournalEntry', 'JournalAudio'];
 
@@ -93,17 +109,18 @@ class TaskSummaryRepository {
     final results = <TaskSummaryResult>[];
 
     // For each task, find its latest AI summary
-    for (final task in actualTasks.take(request.limit)) {
+    for (final task in actualTasks.take(clampedLimit)) {
       // Get entities linked to this task (including AI responses)
-      final linkedEntities = await journalDb.getLinkedEntities(task.meta.id);
+      final linkedEntitiesForTask =
+          await journalDb.getLinkedEntities(task.meta.id);
 
       // Filter for AI response entries that are task summaries
       final aiResponses = <JournalEntity>[];
-      for (final entity in linkedEntities) {
-        if (entity is AiResponseEntry) {
-          final aiData = entity.data;
+      for (final linkedEntity in linkedEntitiesForTask) {
+        if (linkedEntity is AiResponseEntry) {
+          final aiData = linkedEntity.data;
           if (aiData.type == AiResponseType.taskSummary) {
-            aiResponses.add(entity);
+            aiResponses.add(linkedEntity);
           }
         }
       }

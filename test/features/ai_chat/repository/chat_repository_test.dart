@@ -3,10 +3,12 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
+import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 // Mock implementations
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
@@ -22,6 +24,18 @@ void main() {
   setUpAll(() {
     registerFallbackValue(AiConfigType.inferenceProvider);
     registerFallbackValue(Exception('test'));
+    registerFallbackValue(TaskSummaryRequest(
+      startDate: DateTime(2024),
+      endDate: DateTime(2024),
+    ));
+    registerFallbackValue(AiConfigInferenceProvider(
+      id: 'test',
+      name: 'test',
+      baseUrl: 'https://test.com',
+      apiKey: 'test',
+      createdAt: DateTime(2024),
+      inferenceProviderType: InferenceProviderType.gemini,
+    ));
   });
 
   group('ChatRepository Integration Tests', () {
@@ -50,7 +64,7 @@ void main() {
 
     group('sendMessage integration', () {
       test('throws ArgumentError when categoryId is null', () async {
-        expect(
+        await expectLater(
           repository.sendMessage(
             message: testMessage,
             conversationHistory: [],
@@ -69,7 +83,7 @@ void main() {
         when(() => mockAiConfigRepository.getConfigsByType(any()))
             .thenThrow(Exception('Config error'));
 
-        expect(
+        await expectLater(
           repository
               .sendMessage(
                 message: testMessage,
@@ -94,7 +108,7 @@ void main() {
         when(() => mockAiConfigRepository.getConfigsByType(any()))
             .thenThrow(Exception('Test error'));
 
-        expect(
+        await expectLater(
           repository
               .sendMessage(
                 message: testMessage,
@@ -285,7 +299,7 @@ void main() {
         when(() => mockAiConfigRepository.getConfigsByType(any()))
             .thenThrow(Exception('Expected for this test'));
 
-        expect(
+        await expectLater(
           repository
               .sendMessage(
                 message: testMessage,
@@ -307,7 +321,7 @@ void main() {
         when(() => mockAiConfigRepository.getConfigsByType(any()))
             .thenThrow(Exception('Expected for this test'));
 
-        expect(
+        await expectLater(
           repository
               .sendMessage(
                 message: testMessage,
@@ -365,6 +379,446 @@ void main() {
               domain: 'ChatRepository',
               subDomain: 'sendMessage',
             )).called(1);
+      });
+    });
+
+    group('sendMessage successful flows', () {
+      late AiConfigInferenceProvider testProvider;
+      late AiConfigModel testModel;
+
+      setUp(() {
+        testProvider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          name: 'Gemini Provider',
+          baseUrl: 'https://api.gemini.com',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        testModel = AiConfigModel(
+          id: 'model-1',
+          name: 'Gemini Flash',
+          providerModelId: 'gemini-flash-1.5',
+          inferenceProviderId: testProvider.id,
+          createdAt: DateTime(2024),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        );
+      });
+
+      test('successfully sends message with content only (no tool calls)',
+          () async {
+        // Setup AI configuration
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Setup streaming response
+        final responseStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Hello, I can help you with your tasks!',
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            )).thenAnswer((_) => responseStream);
+
+        // Send message and collect results
+        final results = await repository
+            .sendMessage(
+              message: testMessage,
+              conversationHistory: [],
+              categoryId: testCategoryId,
+            )
+            .toList();
+
+        // Verify results
+        expect(results.length, 1);
+        expect(results[0], 'Hello, I can help you with your tasks!');
+
+        // Verify interactions
+        verify(() => mockLoggingService.captureEvent(
+              'Starting chat message processing',
+              domain: 'ChatRepository',
+              subDomain: 'sendMessage',
+            )).called(1);
+      });
+
+      test('successfully sends message with tool calls', () async {
+        // Setup AI configuration
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Setup streaming response with tool calls
+        final initialStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Let me check your tasks...',
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool_1',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'get_task_summaries',
+                        arguments:
+                            '{"start_date": "2024-01-01T00:00:00.000", "end_date": "2024-01-01T23:59:59.999", "limit": 10}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        final finalStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-2',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'You completed 5 tasks today!',
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        var callCount = 0;
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            )).thenAnswer((_) {
+          callCount++;
+          return callCount == 1 ? initialStream : finalStream;
+        });
+
+        // Setup task summary response
+        final taskSummaries = [
+          TaskSummaryResult(
+            taskId: 'task-1',
+            taskTitle: 'Test Task',
+            summary: 'Completed task',
+            taskDate: DateTime(2024),
+            status: 'completed',
+          ),
+        ];
+
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any<TaskSummaryRequest>(named: 'request'),
+            )).thenAnswer((_) async => taskSummaries);
+
+        // Send message and collect results
+        final results = await repository
+            .sendMessage(
+              message: 'Show me my tasks for today',
+              conversationHistory: [],
+              categoryId: testCategoryId,
+            )
+            .toList();
+
+        // Verify results
+        expect(results.length, 3);
+        expect(results[0], 'Let me check your tasks...');
+        expect(results[1], 'Generating response...');
+        expect(results[2], 'You completed 5 tasks today!');
+
+        // Verify task summary was called
+        verify(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any<TaskSummaryRequest>(named: 'request'),
+            )).called(1);
+      });
+
+      test('handles chunked content in streaming response', () async {
+        // Setup AI configuration
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Setup streaming response with multiple chunks
+        final responseStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Here is ',
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'your response ',
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'in chunks.',
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            )).thenAnswer((_) => responseStream);
+
+        // Send message and collect results
+        final results = await repository
+            .sendMessage(
+              message: 'Test chunked response',
+              conversationHistory: [],
+              categoryId: testCategoryId,
+            )
+            .toList();
+
+        // Verify results - should be concatenated
+        expect(results.length, 1);
+        expect(results[0], 'Here is your response in chunks.');
+      });
+
+      test('handles empty tool call results', () async {
+        // Setup AI configuration
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Setup streaming response with tool calls
+        final initialStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool_1',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'get_task_summaries',
+                        arguments:
+                            '{"start_date": "2024-01-01T00:00:00.000", "end_date": "2024-01-01T23:59:59.999", "limit": 10}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        final finalStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-2',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'No tasks found for the specified period.',
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        var callCount = 0;
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            )).thenAnswer((_) {
+          callCount++;
+          return callCount == 1 ? initialStream : finalStream;
+        });
+
+        // Setup empty task summary response
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any<TaskSummaryRequest>(named: 'request'),
+            )).thenAnswer((_) async => []);
+
+        // Send message and collect results
+        final results = await repository
+            .sendMessage(
+              message: 'Show me my tasks',
+              conversationHistory: [],
+              categoryId: testCategoryId,
+            )
+            .toList();
+
+        // Verify results
+        expect(results.contains('Generating response...'), true);
+        expect(results.last, 'No tasks found for the specified period.');
+      });
+
+      test('handles conversation history correctly', () async {
+        // Setup AI configuration
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Create conversation history
+        final history = [
+          ChatMessage.user('What is the weather?'),
+          ChatMessage.assistant('I can only help with task-related queries.'),
+          ChatMessage.user('Show me my tasks then'),
+        ];
+
+        // Setup streaming response
+        final responseStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Based on our conversation, here are your tasks...',
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            )).thenAnswer((_) => responseStream);
+
+        // Send message and collect results
+        final results = await repository
+            .sendMessage(
+              message: 'Please show them now',
+              conversationHistory: history,
+              categoryId: testCategoryId,
+            )
+            .toList();
+
+        // Verify results
+        expect(results.length, 1);
+        expect(results[0], 'Based on our conversation, here are your tasks...');
+
+        // Verify the prompt included conversation history
+        final capturedPrompt =
+            verify(() => mockCloudInferenceRepository.generate(
+                  captureAny<String>(),
+                  model: any<String>(named: 'model'),
+                  temperature: any<double>(named: 'temperature'),
+                  baseUrl: any<String>(named: 'baseUrl'),
+                  apiKey: any<String>(named: 'apiKey'),
+                  systemMessage: any<String>(named: 'systemMessage'),
+                  provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+                  tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+                )).captured.first as String;
+
+        expect(capturedPrompt, contains('What is the weather?'));
+        expect(capturedPrompt,
+            contains('I can only help with task-related queries.'));
+        expect(capturedPrompt, contains('Show me my tasks then'));
+        expect(capturedPrompt, contains('Please show them now'));
       });
     });
   });
