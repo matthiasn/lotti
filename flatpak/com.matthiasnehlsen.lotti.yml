@@ -31,7 +31,6 @@ modules:
       - -Dglslang=disabled
       - -Dshaderc=disabled
       - -Dvulkan=disabled
-      - -Dopengl=disabled
       - -Dd3d11=disabled
       - -Ddemos=false
     sources:
