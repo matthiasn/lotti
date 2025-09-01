@@ -104,7 +104,6 @@ class DeviceLocation {
               speed: locationData.speed,
               accuracy: locationData.accuracy,
               heading: locationData.heading,
-              headingAccuracy: locationData.headingAccuracy,
               speedAccuracy: locationData.speedAccuracy,
               geohashString: getGeoHash(
                 latitude: latitude,
