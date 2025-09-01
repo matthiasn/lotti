@@ -83,7 +83,7 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('displays suggestion chips in empty state', (tester) async {
+    testWidgets('displays empty state with helper text', (tester) async {
       when(() => mockChatRepository.createSession(categoryId: 'test-category'))
           .thenAnswer((_) async => ChatSession(
                 id: 'test-session',
@@ -109,10 +109,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Check suggestion chips
-      expect(find.text('What did I work on this week?'), findsOneWidget);
-      expect(find.text('Show me my productivity patterns'), findsOneWidget);
-      expect(find.text('Summarize completed tasks'), findsOneWidget);
+      // Check empty state text
+      expect(find.text('Ask me about your tasks'), findsOneWidget);
+      expect(find.textContaining('I can help analyze your productivity patterns'), findsOneWidget);
     });
 
     testWidgets('displays header with session title', (tester) async {

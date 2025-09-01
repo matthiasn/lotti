@@ -251,7 +251,7 @@ void main() {
       test('initial creates model with default values', () {
         final model = ChatStateUiModel.initial();
 
-        expect(model.currentSession.id, isEmpty);
+        expect(model.currentSession?.id ?? '', isEmpty);
         expect(model.recentSessions, isEmpty);
         expect(model.error, isNull);
       });

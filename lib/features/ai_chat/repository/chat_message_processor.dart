@@ -50,27 +50,31 @@ class ChatMessageProcessor {
   Future<AiInferenceConfig> getAiConfiguration() async {
     final providers = await aiConfigRepository
         .getConfigsByType(AiConfigType.inferenceProvider);
-    final geminiProvider = providers
+    final geminiProviders = providers
         .whereType<AiConfigInferenceProvider>()
         .where((p) => p.inferenceProviderType == InferenceProviderType.gemini)
-        .firstOrNull;
+        .toList();
 
-    if (geminiProvider == null) {
+    if (geminiProviders.isEmpty) {
       throw StateError('Gemini provider not configured');
     }
 
+    final geminiProvider = geminiProviders.first;
+
     final models =
         await aiConfigRepository.getConfigsByType(AiConfigType.model);
-    final geminiModel = models
+    final geminiModels = models
         .whereType<AiConfigModel>()
         .where((m) =>
             m.inferenceProviderId == geminiProvider.id &&
-            m.providerModelId.contains('flash'))
-        .firstOrNull;
+            m.providerModelId.toLowerCase().contains('flash'))
+        .toList();
 
-    if (geminiModel == null) {
+    if (geminiModels.isEmpty) {
       throw StateError('Gemini Flash model not found');
     }
+
+    final geminiModel = geminiModels.first;
 
     return AiInferenceConfig(
       provider: geminiProvider,
@@ -137,6 +141,8 @@ class ChatMessageProcessor {
   ) async {
     final contentBuffer = StringBuffer();
     final toolCalls = <ChatCompletionMessageToolCall>[];
+    // Buffer for accumulating tool call arguments by ID
+    final toolCallArgumentBuffers = <String, StringBuffer>{};
 
     await for (final chunk in stream) {
       if (chunk.choices?.isNotEmpty ?? false) {
@@ -149,7 +155,8 @@ class ChatMessageProcessor {
 
         // Collect tool calls
         if (delta?.toolCalls != null) {
-          accumulateToolCalls(toolCalls, delta!.toolCalls!);
+          accumulateToolCalls(
+              toolCalls, delta!.toolCalls!, toolCallArgumentBuffers);
         }
       }
     }
@@ -164,34 +171,42 @@ class ChatMessageProcessor {
   void accumulateToolCalls(
     List<ChatCompletionMessageToolCall> toolCalls,
     List<ChatCompletionStreamMessageToolCallChunk> toolCallDeltas,
+    Map<String, StringBuffer> argumentBuffers,
   ) {
     for (final toolCallDelta in toolCallDeltas) {
       if (toolCallDelta.function != null) {
+        final toolId = toolCallDelta.id ?? 'tool_${toolCalls.length}';
+
+        // Initialize buffer for this tool call if needed
+        argumentBuffers.putIfAbsent(toolId, StringBuffer.new);
+
+        // Append arguments to buffer
+        if (toolCallDelta.function?.arguments != null) {
+          argumentBuffers[toolId]!.write(toolCallDelta.function!.arguments);
+        }
+
         // Find or create tool call
-        final existingIndex = toolCallDelta.id != null
-            ? toolCalls.indexWhere((tc) => tc.id == toolCallDelta.id)
-            : -1;
+        final existingIndex = toolCalls.indexWhere((tc) => tc.id == toolId);
 
         if (existingIndex >= 0) {
-          // Update existing tool call
+          // Update existing tool call with accumulated arguments
           final existing = toolCalls[existingIndex];
           toolCalls[existingIndex] = ChatCompletionMessageToolCall(
             id: existing.id,
             type: existing.type,
             function: ChatCompletionMessageFunctionCall(
-              name: existing.function.name,
-              arguments: existing.function.arguments +
-                  (toolCallDelta.function?.arguments ?? ''),
+              name: toolCallDelta.function?.name ?? existing.function.name,
+              arguments: argumentBuffers[toolId]!.toString(),
             ),
           );
         } else {
           // Add new tool call
           toolCalls.add(ChatCompletionMessageToolCall(
-            id: toolCallDelta.id ?? 'tool_${toolCalls.length}',
+            id: toolId,
             type: ChatCompletionMessageToolCallType.function,
             function: ChatCompletionMessageFunctionCall(
               name: toolCallDelta.function?.name ?? '',
-              arguments: toolCallDelta.function?.arguments ?? '',
+              arguments: argumentBuffers[toolId]!.toString(),
             ),
           ));
         }

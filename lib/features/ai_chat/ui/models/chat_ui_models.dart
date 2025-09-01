@@ -106,8 +106,8 @@ class ChatSessionUiModel {
 /// UI model for chat state aggregated from multiple sessions
 class ChatStateUiModel {
   const ChatStateUiModel({
-    required this.currentSession,
     required this.recentSessions,
+    this.currentSession,
     this.error,
   });
   factory ChatStateUiModel.initial() {
@@ -117,7 +117,7 @@ class ChatStateUiModel {
     );
   }
 
-  final ChatSessionUiModel currentSession;
+  final ChatSessionUiModel? currentSession;
   final List<ChatSessionUiModel> recentSessions;
   final String? error;
 
@@ -138,5 +138,5 @@ class ChatStateUiModel {
 
   /// Check if any session is loading
   bool get isAnySessionLoading =>
-      currentSession.isLoading || recentSessions.any((s) => s.isLoading);
+      (currentSession?.isLoading ?? false) || recentSessions.any((s) => s.isLoading);
 }
