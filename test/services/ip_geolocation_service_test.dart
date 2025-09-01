@@ -282,7 +282,6 @@ void main() {
 
     group('_parseUtcOffset', () {
       test('parses positive offsets correctly', () async {
-
         when(() => mockHttpClient.get(
               Uri.parse('https://ipapi.co/json/'),
               headers: any(named: 'headers'),

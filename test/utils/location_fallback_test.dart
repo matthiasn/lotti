@@ -74,6 +74,11 @@ void main() {
       });
 
       test('returns native location when permission is granted', () async {
+        // Skip this test on Linux as it uses GeoClue instead of Location service
+        if (Platform.isLinux) {
+          return;
+        }
+
         when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
             .thenAnswer((_) async => true);
 
@@ -131,6 +136,11 @@ void main() {
       });
 
       test('falls back to IP geolocation when native location fails', () async {
+        // Skip this test on Linux as it uses GeoClue instead of Location service
+        if (Platform.isLinux) {
+          return;
+        }
+
         when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
             .thenAnswer((_) async => true);
 
@@ -262,6 +272,11 @@ void main() {
 
     group('Geolocation data validation', () {
       test('includes geohash for all successful locations', () async {
+        // Skip this test on Linux as it uses GeoClue instead of Location service
+        if (Platform.isLinux) {
+          return;
+        }
+
         when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
             .thenAnswer((_) async => true);
 
@@ -292,6 +307,11 @@ void main() {
       });
 
       test('includes timezone and UTC offset for all locations', () async {
+        // Skip this test on Linux as it uses GeoClue instead of Location service
+        if (Platform.isLinux) {
+          return;
+        }
+
         when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
             .thenAnswer((_) async => true);
 
