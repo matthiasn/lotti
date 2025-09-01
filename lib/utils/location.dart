@@ -130,22 +130,18 @@ class DeviceLocation {
     final now = DateTime.now();
 
     if (Platform.isLinux) {
+      final manager = GeoClueManager();
+      GeoClueClient? client;
       try {
-        final manager = GeoClueManager();
         await manager.connect();
-        final client = await manager.getClient();
+        client = await manager.getClient();
         await client.setDesktopId(LocationConstants.appDesktopId);
         await client.setRequestedAccuracyLevel(GeoClueAccuracyLevel.exact);
         await client.start();
 
-        final locationData = await client.locationUpdated
-            .timeout(
-              LocationConstants.locationTimeout,
-              onTimeout: (_) => manager.close(),
-            )
-            .first;
-
-        await client.stop();
+        final locationData = await client.locationUpdated.first.timeout(
+          LocationConstants.locationTimeout,
+        );
 
         final longitude = locationData.longitude;
         final latitude = locationData.latitude;
@@ -174,6 +170,11 @@ class DeviceLocation {
 
         // Rethrow to let the caller handle fallback
         rethrow;
+      } finally {
+        if (client != null) {
+          await client.stop();
+        }
+        await manager.close();
       }
     }
 
