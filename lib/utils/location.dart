@@ -19,12 +19,17 @@ class LocationConstants {
 }
 
 class DeviceLocation {
-  DeviceLocation({Location? locationService}) {
+  DeviceLocation({
+    Location? locationService,
+    IpGeolocationProvider? ipGeolocationProvider,
+  }) {
     location = locationService ?? Location();
+    _ipGeolocationProvider = ipGeolocationProvider ?? defaultIpGeolocationProvider;
     init();
   }
 
   late Location location;
+  late IpGeolocationProvider _ipGeolocationProvider;
 
   Future<void> init() async {
     bool serviceEnabled;
@@ -122,7 +127,7 @@ class DeviceLocation {
     }
 
     // Return native location if successful, otherwise fallback to IP geolocation
-    return nativeLocation ?? await IpGeolocationService.getLocationFromIp();
+    return nativeLocation ?? await _ipGeolocationProvider();
   }
 
   Future<Geolocation?> getCurrentGeoLocationLinux() async {

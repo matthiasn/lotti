@@ -6,6 +6,11 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/location.dart';
 
+typedef IpGeolocationProvider = Future<Geolocation?> Function({http.Client? httpClient});
+
+IpGeolocationProvider get defaultIpGeolocationProvider =>
+    IpGeolocationService.getLocationFromIp;
+
 class IpGeolocationService {
   static const String _ipApiUrl = 'https://ipapi.co/json/';
   static const String _ipApiFallbackUrl = 'https://ip-api.com/json';

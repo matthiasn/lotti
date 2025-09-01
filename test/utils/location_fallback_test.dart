@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
@@ -17,6 +18,18 @@ class MockJournalDb extends Mock implements JournalDb {}
 class MockLoggingService extends Mock implements LoggingService {}
 
 class MockLocationData extends Mock implements LocationData {}
+
+Future<Geolocation?> fakeIpGeolocationProvider({http.Client? httpClient}) async {
+  return Geolocation(
+    createdAt: DateTime.now(),
+    latitude: 40.7128,
+    longitude: -74.0060,
+    geohashString: 'dr5regw3pb1h',
+    timezone: 'America/New_York',
+    utcOffset: -300,
+    accuracy: 50000,
+  );
+}
 
 class FakeException extends Fake implements Exception {}
 
@@ -125,14 +138,20 @@ void main() {
         when(() => mockLocation.requestPermission())
             .thenAnswer((_) async => PermissionStatus.denied);
 
-        // Mock IP geolocation fallback
-        // This would need to be mocked at the HTTP level in a real test
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
-        // The actual result depends on the IP geolocation service
-        // In a real test, we'd mock the HTTP client
-        expect(result, anyOf(isNull, isA<Geolocation>()));
+        expect(result, isNotNull);
+        expect(result!.latitude, 40.7128);
+        expect(result.longitude, -74.0060);
+        expect(result.timezone, 'America/New_York');
+        expect(result.utcOffset, -300);
+        expect(result.accuracy, 50000);
+        
+        verifyNever(() => mockLocation.getLocation());
       });
 
       test('falls back to IP geolocation when native location fails', () async {
@@ -153,7 +172,10 @@ void main() {
             .thenThrow(Exception('Location service failed'));
 
         // The result should fall back to IP geolocation
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // Verify that the exception was logged
@@ -163,8 +185,12 @@ void main() {
               subDomain: 'native_location_fallback',
             )).called(1);
 
-        // The actual result depends on the IP geolocation service
-        expect(result, anyOf(isNull, isA<Geolocation>()));
+        expect(result, isNotNull);
+        expect(result!.latitude, 40.7128);
+        expect(result.longitude, -74.0060);
+        expect(result.timezone, 'America/New_York');
+        expect(result.utcOffset, -300);
+        expect(result.accuracy, 50000);
       });
 
       test('falls back to IP when location data has null coordinates',
@@ -208,11 +234,20 @@ void main() {
             .thenAnswer((_) async => PermissionStatus.denied);
 
         // Should fall back to IP geolocation
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
-        // The actual result depends on the IP geolocation service
-        expect(result, anyOf(isNull, isA<Geolocation>()));
+        expect(result, isNotNull);
+        expect(result!.latitude, 40.7128);
+        expect(result.longitude, -74.0060);
+        expect(result.timezone, 'America/New_York');
+        expect(result.utcOffset, -300);
+        expect(result.accuracy, 50000);
+        
+        verifyNever(() => mockLocation.getLocation());
       });
 
       test('handles permission permanently denied by falling back to IP',
@@ -226,11 +261,20 @@ void main() {
             .thenAnswer((_) async => PermissionStatus.deniedForever);
 
         // Should fall back to IP geolocation
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
-        // The actual result depends on the IP geolocation service
-        expect(result, anyOf(isNull, isA<Geolocation>()));
+        expect(result, isNotNull);
+        expect(result!.latitude, 40.7128);
+        expect(result.longitude, -74.0060);
+        expect(result.timezone, 'America/New_York');
+        expect(result.utcOffset, -300);
+        expect(result.accuracy, 50000);
+        
+        verifyNever(() => mockLocation.getLocation());
       });
     });
 
@@ -244,11 +288,19 @@ void main() {
         when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
             .thenAnswer((_) async => true);
 
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // On Linux, it should try GeoClue first, then fall back to IP
-        expect(result, anyOf(isNull, isA<Geolocation>()));
+        expect(result, isNotNull);
+        expect(result!.latitude, 40.7128);
+        expect(result.longitude, -74.0060);
+        expect(result.timezone, 'America/New_York');
+        expect(result.utcOffset, -300);
+        expect(result.accuracy, 50000);
       });
 
       test('falls back to IP when GeoClue fails on Linux', () async {
@@ -267,11 +319,19 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
             )).thenReturn(null);
 
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // Should fall back to IP geolocation
-        expect(result, anyOf(isNull, isA<Geolocation>()));
+        expect(result, isNotNull);
+        expect(result!.latitude, 40.7128);
+        expect(result.longitude, -74.0060);
+        expect(result.timezone, 'America/New_York');
+        expect(result.utcOffset, -300);
+        expect(result.accuracy, 50000);
       });
     });
 
