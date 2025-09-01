@@ -19,7 +19,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockLocationData extends Mock implements LocationData {}
 
-Future<Geolocation?> fakeIpGeolocationProvider({http.Client? httpClient}) async {
+Future<Geolocation?> fakeIpGeolocationProvider(
+    {http.Client? httpClient}) async {
   return Geolocation(
     createdAt: DateTime.now(),
     latitude: 40.7128,
@@ -156,7 +157,7 @@ void main() {
         expect(result.timezone, 'America/New_York');
         expect(result.utcOffset, -300);
         expect(result.accuracy, 50000);
-        
+
         verifyNever(() => mockLocation.getLocation());
       });
 
@@ -252,7 +253,7 @@ void main() {
         expect(result.timezone, 'America/New_York');
         expect(result.utcOffset, -300);
         expect(result.accuracy, 50000);
-        
+
         verifyNever(() => mockLocation.getLocation());
       });
 
@@ -279,7 +280,7 @@ void main() {
         expect(result.timezone, 'America/New_York');
         expect(result.utcOffset, -300);
         expect(result.accuracy, 50000);
-        
+
         verifyNever(() => mockLocation.getLocation());
       });
     });

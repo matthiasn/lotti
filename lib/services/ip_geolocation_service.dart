@@ -4,9 +4,10 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/location.dart';
+import 'package:lotti/utils/geohash.dart';
 
-typedef IpGeolocationProvider = Future<Geolocation?> Function({http.Client? httpClient});
+typedef IpGeolocationProvider = Future<Geolocation?> Function(
+    {http.Client? httpClient});
 
 IpGeolocationProvider get defaultIpGeolocationProvider =>
     IpGeolocationService.getLocationFromIp;

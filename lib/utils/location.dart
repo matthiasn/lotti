@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoclue/geoclue.dart';
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/platform.dart';
 
 class LocationConstants {
@@ -24,7 +24,8 @@ class DeviceLocation {
     IpGeolocationProvider? ipGeolocationProvider,
   }) {
     location = locationService ?? Location();
-    _ipGeolocationProvider = ipGeolocationProvider ?? defaultIpGeolocationProvider;
+    _ipGeolocationProvider =
+        ipGeolocationProvider ?? defaultIpGeolocationProvider;
     init();
   }
 
@@ -175,14 +176,4 @@ class DeviceLocation {
 
     return null;
   }
-}
-
-String getGeoHash({
-  required double latitude,
-  required double longitude,
-}) {
-  return GeoHasher().encode(
-    longitude,
-    latitude,
-  );
 }
