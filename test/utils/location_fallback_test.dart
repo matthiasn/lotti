@@ -77,7 +77,10 @@ void main() {
         when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
             .thenAnswer((_) async => false);
 
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNull);
@@ -111,7 +114,10 @@ void main() {
         when(() => mockLocation.getLocation())
             .thenAnswer((_) async => mockLocationData);
 
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
@@ -362,7 +368,10 @@ void main() {
         when(() => mockLocation.getLocation())
             .thenAnswer((_) async => mockLocationData);
 
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
@@ -397,7 +406,10 @@ void main() {
         when(() => mockLocation.getLocation())
             .thenAnswer((_) async => mockLocationData);
 
-        deviceLocation = DeviceLocation(locationService: mockLocation);
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: fakeIpGeolocationProvider,
+        );
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
