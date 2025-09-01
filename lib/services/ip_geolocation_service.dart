@@ -110,7 +110,9 @@ class IpGeolocationService {
                 longitude: longitude,
               ),
               timezone: data['timezone'] as String? ?? now.timeZoneName,
-              utcOffset: now.timeZoneOffset.inMinutes,
+              utcOffset: data['offset'] != null
+                  ? (data['offset'] as num).toInt() ~/ 60
+                  : now.timeZoneOffset.inMinutes,
               accuracy: _ipLocationAccuracy,
             );
           }
