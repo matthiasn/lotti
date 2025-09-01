@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai_chat/domain/services/thinking_mode_service.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
@@ -21,8 +20,6 @@ class MockCloudInferenceRepository extends Mock
 
 class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
 
-class MockThinkingModeService extends Mock implements ThinkingModeService {}
-
 class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
@@ -37,7 +34,6 @@ void main() {
     late MockAiConfigRepository mockAiConfigRepository;
     late MockCloudInferenceRepository mockCloudInferenceRepository;
     late MockTaskSummaryRepository mockTaskSummaryRepository;
-    late MockThinkingModeService mockThinkingModeService;
     late MockLoggingService mockLoggingService;
 
     final testDate = DateTime(2024);
@@ -47,14 +43,12 @@ void main() {
       mockAiConfigRepository = MockAiConfigRepository();
       mockCloudInferenceRepository = MockCloudInferenceRepository();
       mockTaskSummaryRepository = MockTaskSummaryRepository();
-      mockThinkingModeService = MockThinkingModeService();
       mockLoggingService = MockLoggingService();
 
       processor = ChatMessageProcessor(
         aiConfigRepository: mockAiConfigRepository,
         cloudInferenceRepository: mockCloudInferenceRepository,
         taskSummaryRepository: mockTaskSummaryRepository,
-        thinkingModeService: mockThinkingModeService,
         loggingService: mockLoggingService,
       );
     });
