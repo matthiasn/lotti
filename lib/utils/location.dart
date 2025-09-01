@@ -161,15 +161,6 @@ class DeviceLocation {
             longitude: longitude,
           ),
         );
-      } catch (e) {
-        getIt<LoggingService>().captureException(
-          e,
-          domain: 'LOCATION_SERVICE',
-          subDomain: 'getCurrentGeoLocationLinux',
-        );
-
-        // Rethrow to let the caller handle fallback
-        rethrow;
       } finally {
         if (client != null) {
           await client.stop();
