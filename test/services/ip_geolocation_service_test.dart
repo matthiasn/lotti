@@ -148,7 +148,7 @@ void main() {
               any<Exception>(),
               domain: 'IP_GEOLOCATION',
               subDomain: any<String>(named: 'subDomain'),
-            )).called(greaterThan(0));
+            )).called(2);
       });
 
       test('handles missing location data in response', () async {
