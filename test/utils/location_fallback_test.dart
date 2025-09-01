@@ -54,8 +54,6 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         )).thenReturn(null);
-
-    deviceLocation = DeviceLocation(locationService: mockLocation);
   });
 
   tearDown(getIt.reset);
@@ -66,6 +64,7 @@ void main() {
         when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
             .thenAnswer((_) async => false);
 
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNull);
@@ -94,12 +93,12 @@ void main() {
         when(() => mockLocationData.speed).thenReturn(5);
         when(() => mockLocationData.accuracy).thenReturn(10);
         when(() => mockLocationData.heading).thenReturn(180);
-        when(() => mockLocationData.headingAccuracy).thenReturn(5);
         when(() => mockLocationData.speedAccuracy).thenReturn(1);
 
         when(() => mockLocation.getLocation())
             .thenAnswer((_) async => mockLocationData);
 
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
@@ -128,6 +127,7 @@ void main() {
 
         // Mock IP geolocation fallback
         // This would need to be mocked at the HTTP level in a real test
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // The actual result depends on the IP geolocation service
@@ -153,6 +153,7 @@ void main() {
             .thenThrow(Exception('Location service failed'));
 
         // The result should fall back to IP geolocation
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // Verify that the exception was logged
@@ -207,6 +208,7 @@ void main() {
             .thenAnswer((_) async => PermissionStatus.denied);
 
         // Should fall back to IP geolocation
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // The actual result depends on the IP geolocation service
@@ -224,6 +226,7 @@ void main() {
             .thenAnswer((_) async => PermissionStatus.deniedForever);
 
         // Should fall back to IP geolocation
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // The actual result depends on the IP geolocation service
@@ -241,6 +244,7 @@ void main() {
         when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
             .thenAnswer((_) async => true);
 
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // On Linux, it should try GeoClue first, then fall back to IP
@@ -263,6 +267,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
             )).thenReturn(null);
 
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // Should fall back to IP geolocation
@@ -292,12 +297,12 @@ void main() {
         when(() => mockLocationData.speed).thenReturn(null);
         when(() => mockLocationData.accuracy).thenReturn(15);
         when(() => mockLocationData.heading).thenReturn(null);
-        when(() => mockLocationData.headingAccuracy).thenReturn(null);
         when(() => mockLocationData.speedAccuracy).thenReturn(null);
 
         when(() => mockLocation.getLocation())
             .thenAnswer((_) async => mockLocationData);
 
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
@@ -327,12 +332,12 @@ void main() {
         when(() => mockLocationData.speed).thenReturn(null);
         when(() => mockLocationData.accuracy).thenReturn(100);
         when(() => mockLocationData.heading).thenReturn(null);
-        when(() => mockLocationData.headingAccuracy).thenReturn(null);
         when(() => mockLocationData.speedAccuracy).thenReturn(null);
 
         when(() => mockLocation.getLocation())
             .thenAnswer((_) async => mockLocationData);
 
+        deviceLocation = DeviceLocation(locationService: mockLocation);
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
