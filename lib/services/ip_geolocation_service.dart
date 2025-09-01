@@ -25,8 +25,8 @@ class IpGeolocationService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
 
-        final latitude = data['latitude'] as double?;
-        final longitude = data['longitude'] as double?;
+        final latitude = (data['latitude'] as num?)?.toDouble();
+        final longitude = (data['longitude'] as num?)?.toDouble();
 
         if (latitude != null && longitude != null) {
           final now = DateTime.now();
