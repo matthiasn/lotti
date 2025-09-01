@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/domain/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/domain/services/thinking_mode_service.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
+import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -31,13 +30,20 @@ class ChatRepository {
     required this.aiConfigRepository,
     required this.thinkingModeService,
     required this.loggingService,
-  });
+  }) : _messageProcessor = ChatMessageProcessor(
+          aiConfigRepository: aiConfigRepository,
+          cloudInferenceRepository: cloudInferenceRepository,
+          taskSummaryRepository: taskSummaryRepository,
+          thinkingModeService: thinkingModeService,
+          loggingService: loggingService,
+        );
 
   final CloudInferenceRepository cloudInferenceRepository;
   final TaskSummaryRepository taskSummaryRepository;
   final AiConfigRepository aiConfigRepository;
   final ThinkingModeService thinkingModeService;
   final LoggingService loggingService;
+  final ChatMessageProcessor _messageProcessor;
 
   // In-memory storage for sessions (could be replaced with database storage)
   final Map<String, ChatSession> _sessions = {};
@@ -53,40 +59,6 @@ class ChatRepository {
       throw ArgumentError('categoryId is required for sending messages');
     }
 
-    final completer = Completer<void>();
-    final streamController = StreamController<String>();
-
-    // Get AI configuration
-    final providers = await aiConfigRepository
-        .getConfigsByType(AiConfigType.inferenceProvider);
-    final geminiProvider = providers
-        .whereType<AiConfigInferenceProvider>()
-        .where((p) => p.inferenceProviderType == InferenceProviderType.gemini)
-        .firstOrNull;
-
-    if (geminiProvider == null) {
-      throw StateError('Gemini provider not configured');
-    }
-
-    final models =
-        await aiConfigRepository.getConfigsByType(AiConfigType.model);
-    final geminiModel = models
-        .whereType<AiConfigModel>()
-        .where((m) =>
-            m.inferenceProviderId == geminiProvider.id &&
-            m.providerModelId.contains('flash'))
-        .firstOrNull;
-
-    if (geminiModel == null) {
-      throw StateError('Gemini Flash model not found');
-    }
-
-    // Convert chat messages to OpenAI format
-    final previousMessages = conversationHistory
-        .where((msg) => msg.role != ChatMessageRole.system)
-        .map(_convertToOpenAIMessage)
-        .toList();
-
     try {
       loggingService.captureEvent(
         'Starting chat message processing',
@@ -94,206 +66,71 @@ class ChatRepository {
         subDomain: 'sendMessage',
       );
 
-      // Build messages list with system prompt and history
-      final messages = <ChatCompletionMessage>[
-        ChatCompletionMessage.system(
-          content: _getSystemMessage(enableThinking),
-        ),
-        ...previousMessages,
-        ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string(message),
-        ),
-      ];
+      // Get AI configuration
+      final config = await _messageProcessor.getAiConfiguration();
+      final systemMessage = _getSystemMessage(enableThinking);
 
-      // Define tools
-      final tools = [TaskSummaryTool.toolDefinition];
+      // Convert conversation history and build messages
+      final previousMessages =
+          _messageProcessor.convertConversationHistory(conversationHistory);
+      final messages = _messageProcessor.buildMessagesList(
+          previousMessages, message, systemMessage);
 
       // Build conversation context for the prompt
-      final promptParts = <String>[];
+      final fullPrompt =
+          _messageProcessor.buildPromptFromMessages(previousMessages, message);
+      final tools = [TaskSummaryTool.toolDefinition];
 
-      // Add previous messages to maintain context
-      for (final msg in previousMessages) {
-        if (msg.role == ChatCompletionMessageRole.user) {
-          promptParts.add('User: ${msg.content}');
-        } else if (msg.role == ChatCompletionMessageRole.assistant) {
-          promptParts.add('Assistant: ${msg.content}');
-        }
-      }
-
-      // Add current message
-      promptParts.add('User: $message');
-
-      final fullPrompt = promptParts.join('\n\n');
-
-      // Call AI with tools and full conversation context
+      // Get initial response stream
       final stream = cloudInferenceRepository.generate(
         fullPrompt,
-        model: geminiModel.providerModelId,
+        model: config.model.providerModelId,
         temperature: 0.7,
-        baseUrl: geminiProvider.baseUrl,
-        apiKey: geminiProvider.apiKey,
-        systemMessage: _getSystemMessage(enableThinking),
-        provider: geminiProvider,
+        baseUrl: config.provider.baseUrl,
+        apiKey: config.provider.apiKey,
+        systemMessage: systemMessage,
+        provider: config.provider,
         tools: tools,
       );
 
-      final contentBuffer = StringBuffer();
-      final toolCalls = <ChatCompletionMessageToolCall>[];
+      // Process the initial stream
+      final streamResult = await _messageProcessor.processStreamResponse(
+        stream,
+        enableThinking: enableThinking,
+      );
 
-      // Process the streaming response
-      await for (final chunk in stream) {
-        if (chunk.choices?.isNotEmpty ?? false) {
-          final delta = chunk.choices!.first.delta;
-
-          // Handle content streaming
-          if (delta?.content != null) {
-            contentBuffer.write(delta!.content);
-            var processedContent = contentBuffer.toString();
-
-            // Process thinking mode if enabled
-            if (enableThinking &&
-                thinkingModeService.containsThinkingTags(processedContent)) {
-              processedContent =
-                  thinkingModeService.removeThinkingTags(processedContent);
-            }
-
-            if (!streamController.isClosed) {
-              streamController.add(processedContent);
-            }
-          }
-
-          // Collect tool calls
-          if (delta?.toolCalls != null) {
-            for (final toolCallDelta in delta!.toolCalls!) {
-              if (toolCallDelta.function != null) {
-                // Find or create tool call
-                final existingIndex = toolCallDelta.id != null
-                    ? toolCalls.indexWhere((tc) => tc.id == toolCallDelta.id)
-                    : -1;
-
-                if (existingIndex >= 0) {
-                  // Update existing tool call
-                  final existing = toolCalls[existingIndex];
-                  toolCalls[existingIndex] = ChatCompletionMessageToolCall(
-                    id: existing.id,
-                    type: existing.type,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: existing.function.name,
-                      arguments: existing.function.arguments +
-                          (toolCallDelta.function!.arguments ?? ''),
-                    ),
-                  );
-                } else {
-                  // Add new tool call
-                  toolCalls.add(ChatCompletionMessageToolCall(
-                    id: toolCallDelta.id ?? 'tool_${toolCalls.length}',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: toolCallDelta.function!.name ?? '',
-                      arguments: toolCallDelta.function!.arguments ?? '',
-                    ),
-                  ));
-                }
-              }
-            }
-          }
-        }
+      // Yield content from initial response
+      if (streamResult.content.isNotEmpty) {
+        yield streamResult.content;
       }
 
-      // If we have tool calls, process them and get the final response
-      if (toolCalls.isNotEmpty) {
-        loggingService.captureEvent(
-          'Processing ${toolCalls.length} tool calls',
-          domain: 'ChatRepository',
-          subDomain: 'sendMessage',
-        );
-
+      // If we have tool calls, process them and get final response
+      if (streamResult.toolCalls.isNotEmpty) {
         // Add assistant message with tool calls to history
         messages.add(ChatCompletionMessage.assistant(
-          toolCalls: toolCalls,
+          toolCalls: streamResult.toolCalls,
         ));
 
-        // Process each tool call
-        for (final toolCall in toolCalls) {
-          if (toolCall.function.name == TaskSummaryTool.name) {
-            final toolResponse = await _processTaskSummaryTool(
-              toolCall: toolCall,
-              categoryId: categoryId,
-            );
+        // Process tool calls
+        final toolResults = await _messageProcessor.processToolCalls(
+          streamResult.toolCalls,
+          categoryId,
+        );
+        messages.addAll(toolResults);
 
-            // Add tool response to messages
-            messages.add(ChatCompletionMessage.tool(
-              toolCallId: toolCall.id,
-              content: toolResponse,
-            ));
-          }
-        }
+        // Generate final response
+        yield 'Generating response...';
 
-        // Get final response after tool calls
-        if (!streamController.isClosed) {
-          streamController.add('Generating response...');
-        }
-
-        // Convert full conversation including tool results to prompt
-        final finalPromptParts = <String>[];
-
-        // Include all messages for context
-        for (final msg in messages) {
-          if (msg.role == ChatCompletionMessageRole.user) {
-            finalPromptParts.add('User: ${msg.content}');
-          } else if (msg.role == ChatCompletionMessageRole.assistant &&
-              msg.content != null) {
-            finalPromptParts.add('Assistant: ${msg.content}');
-          } else if (msg.role == ChatCompletionMessageRole.tool) {
-            finalPromptParts.add('Tool response: ${msg.content}');
-          }
-        }
-
-        finalPromptParts.add(
-            'Based on the conversation and tool results above, provide a helpful response to the user.');
-
-        final finalStream = cloudInferenceRepository.generate(
-          finalPromptParts.join('\n\n'),
-          model: geminiModel.providerModelId,
-          temperature: 0.7,
-          baseUrl: geminiProvider.baseUrl,
-          apiKey: geminiProvider.apiKey,
-          systemMessage: _getSystemMessage(enableThinking),
-          provider: geminiProvider,
+        final finalResponse = await _messageProcessor.generateFinalResponse(
+          messages: messages,
+          config: config,
+          systemMessage: systemMessage,
+          enableThinking: enableThinking,
         );
 
-        final finalBuffer = StringBuffer();
-        await for (final chunk in finalStream) {
-          if (chunk.choices?.isNotEmpty ?? false) {
-            final delta = chunk.choices!.first.delta;
-            if (delta?.content != null) {
-              finalBuffer.write(delta!.content);
-              var processedContent = finalBuffer.toString();
-
-              // Process thinking mode if enabled
-              if (enableThinking &&
-                  thinkingModeService.containsThinkingTags(processedContent)) {
-                processedContent =
-                    thinkingModeService.removeThinkingTags(processedContent);
-              }
-
-              if (!streamController.isClosed) {
-                streamController.add(processedContent);
-              }
-            }
-          }
+        if (finalResponse.isNotEmpty) {
+          yield finalResponse;
         }
-
-        if (!streamController.isClosed) {
-          await streamController.close();
-        }
-        completer.complete();
-      } else {
-        // No tool calls, just close the stream
-        if (!streamController.isClosed) {
-          await streamController.close();
-        }
-        completer.complete();
       }
     } catch (e, stackTrace) {
       loggingService.captureException(
@@ -302,15 +139,8 @@ class ChatRepository {
         subDomain: 'sendMessage',
         stackTrace: stackTrace,
       );
-
-      if (!streamController.isClosed) {
-        streamController.addError(Exception('Chat error: $e'));
-      }
-      completer.completeError(Exception('Chat error: $e'));
+      throw Exception('Chat error: $e');
     }
-
-    yield* streamController.stream;
-    await completer.future;
   }
 
   Future<ChatSession> createSession({
@@ -380,96 +210,6 @@ class ChatRepository {
 
   Future<void> deleteMessage(String messageId) async {
     _messages.remove(messageId);
-  }
-
-  ChatCompletionMessage _convertToOpenAIMessage(ChatMessage message) {
-    switch (message.role) {
-      case ChatMessageRole.user:
-        return ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string(message.content),
-        );
-      case ChatMessageRole.assistant:
-        return ChatCompletionMessage.assistant(
-          content: message.content,
-        );
-      case ChatMessageRole.system:
-        return ChatCompletionMessage.system(
-          content: message.content,
-        );
-    }
-  }
-
-  Future<String> _processTaskSummaryTool({
-    required ChatCompletionMessageToolCall toolCall,
-    required String categoryId,
-  }) async {
-    try {
-      final args =
-          jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
-
-      final request = TaskSummaryRequest(
-        startDate: DateTime.parse(args['start_date'] as String),
-        endDate: DateTime.parse(args['end_date'] as String),
-        limit: (args['limit'] as int?) ?? 100,
-      );
-
-      loggingService.captureEvent(
-        'Processing task summary tool call',
-        domain: 'ChatRepository',
-        subDomain: '_processTaskSummaryTool',
-      );
-
-      final summaries = await taskSummaryRepository.getTaskSummaries(
-        categoryId: categoryId,
-        request: request,
-      );
-
-      if (summaries.isEmpty) {
-        return jsonEncode({
-          'message': 'No tasks found in the specified date range.',
-          'date_range': {
-            'start': args['start_date'],
-            'end': args['end_date'],
-          },
-          'debug': {
-            'categoryId': categoryId,
-            'requestedStart': request.startDate.toIso8601String(),
-            'requestedEnd': request.endDate.toIso8601String(),
-          },
-        });
-      }
-
-      final response = summaries
-          .map((s) => {
-                'task_id': s.taskId,
-                'title': s.taskTitle,
-                'summary': s.summary,
-                'date': s.taskDate.toIso8601String(),
-                'status': s.status,
-                'metadata': s.metadata,
-              })
-          .toList();
-
-      return jsonEncode({
-        'tasks': response,
-        'count': summaries.length,
-        'date_range': {
-          'start': args['start_date'],
-          'end': args['end_date'],
-        },
-      });
-    } catch (e, stackTrace) {
-      loggingService.captureException(
-        e,
-        domain: 'ChatRepository',
-        subDomain: '_processTaskSummaryTool',
-        stackTrace: stackTrace,
-      );
-
-      return jsonEncode({
-        'error': 'Failed to retrieve task summaries: $e',
-      });
-    }
   }
 
   String _getSystemMessage(bool enableThinking) {
