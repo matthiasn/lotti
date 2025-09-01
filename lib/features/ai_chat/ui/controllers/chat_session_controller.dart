@@ -82,7 +82,6 @@ class ChatSessionController extends _$ChatSessionController {
         message: content,
         conversationHistory: conversationHistory,
         categoryId: categoryId,
-        enableThinking: true, // Enable thinking mode for better responses
       )) {
         _updateStreamingMessage(chunk);
       }

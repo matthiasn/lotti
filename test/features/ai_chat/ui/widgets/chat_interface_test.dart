@@ -323,7 +323,6 @@ void main() {
             message: any(named: 'message'),
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: any(named: 'categoryId'),
-            enableThinking: any(named: 'enableThinking'),
           )).thenAnswer((_) async* {
         yield 'Hello there!';
       });
@@ -363,7 +362,6 @@ void main() {
             message: 'Hello, AI!',
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: 'test-category',
-            enableThinking: true,
           )).called(1);
     });
 
@@ -381,7 +379,6 @@ void main() {
             message: any(named: 'message'),
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: any(named: 'categoryId'),
-            enableThinking: any(named: 'enableThinking'),
           )).thenAnswer((_) async* {
         yield 'Response via Enter key!';
       });
@@ -421,7 +418,6 @@ void main() {
             message: 'Hello via Enter!',
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: 'test-category',
-            enableThinking: true,
           )).called(1);
     });
 
@@ -476,7 +472,6 @@ void main() {
             message: any(named: 'message'),
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: any(named: 'categoryId'),
-            enableThinking: any(named: 'enableThinking'),
           )).thenAnswer((_) => streamController.stream);
 
       when(() => mockChatRepository.saveSession(any()))

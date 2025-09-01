@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai_chat/domain/services/thinking_mode_service.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
@@ -39,14 +38,12 @@ class ChatMessageProcessor {
     required this.aiConfigRepository,
     required this.cloudInferenceRepository,
     required this.taskSummaryRepository,
-    required this.thinkingModeService,
     required this.loggingService,
   });
 
   final AiConfigRepository aiConfigRepository;
   final CloudInferenceRepository cloudInferenceRepository;
   final TaskSummaryRepository taskSummaryRepository;
-  final ThinkingModeService thinkingModeService;
   final LoggingService loggingService;
 
   /// Get AI configuration (provider and model)
@@ -136,9 +133,8 @@ class ChatMessageProcessor {
 
   /// Process stream response and extract content and tool calls
   Future<StreamProcessingResult> processStreamResponse(
-    Stream<CreateChatCompletionStreamResponse> stream, {
-    required bool enableThinking,
-  }) async {
+    Stream<CreateChatCompletionStreamResponse> stream,
+  ) async {
     final contentBuffer = StringBuffer();
     final toolCalls = <ChatCompletionMessageToolCall>[];
 
@@ -158,17 +154,8 @@ class ChatMessageProcessor {
       }
     }
 
-    var processedContent = contentBuffer.toString();
-
-    // Process thinking mode if enabled
-    if (enableThinking &&
-        thinkingModeService.containsThinkingTags(processedContent)) {
-      processedContent =
-          thinkingModeService.removeThinkingTags(processedContent);
-    }
-
     return StreamProcessingResult(
-      content: processedContent,
+      content: contentBuffer.toString(),
       toolCalls: toolCalls,
     );
   }
@@ -349,7 +336,6 @@ class ChatMessageProcessor {
     required List<ChatCompletionMessage> messages,
     required AiInferenceConfig config,
     required String systemMessage,
-    required bool enableThinking,
   }) async {
     final finalPrompt = buildFinalPromptFromMessages(messages);
 
@@ -363,10 +349,7 @@ class ChatMessageProcessor {
       provider: config.provider,
     );
 
-    final finalResult = await processStreamResponse(
-      finalStream,
-      enableThinking: enableThinking,
-    );
+    final finalResult = await processStreamResponse(finalStream);
 
     return finalResult.content;
   }

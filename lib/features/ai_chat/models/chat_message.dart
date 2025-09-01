@@ -4,6 +4,9 @@ import 'package:uuid/uuid.dart';
 part 'chat_message.freezed.dart';
 part 'chat_message.g.dart';
 
+// Reuse single UUID instance for efficiency
+const _uuid = Uuid();
+
 @freezed
 class ChatMessage with _$ChatMessage {
   const factory ChatMessage({
@@ -19,7 +22,7 @@ class ChatMessage with _$ChatMessage {
       _$ChatMessageFromJson(json);
 
   factory ChatMessage.user(String content) => ChatMessage(
-        id: const Uuid().v4(),
+        id: _uuid.v4(),
         content: content,
         role: ChatMessageRole.user,
         timestamp: DateTime.now(),
@@ -27,7 +30,7 @@ class ChatMessage with _$ChatMessage {
 
   factory ChatMessage.assistant(String content, {bool isStreaming = false}) =>
       ChatMessage(
-        id: const Uuid().v4(),
+        id: _uuid.v4(),
         content: content,
         role: ChatMessageRole.assistant,
         timestamp: DateTime.now(),
@@ -35,7 +38,7 @@ class ChatMessage with _$ChatMessage {
       );
 
   factory ChatMessage.system(String content) => ChatMessage(
-        id: const Uuid().v4(),
+        id: _uuid.v4(),
         content: content,
         role: ChatMessageRole.system,
         timestamp: DateTime.now(),

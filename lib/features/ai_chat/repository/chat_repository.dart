@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/domain/models/chat_session.dart';
-import 'package:lotti/features/ai_chat/domain/services/thinking_mode_service.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
@@ -18,7 +17,6 @@ final Provider<ChatRepository> chatRepositoryProvider = Provider((ref) {
     cloudInferenceRepository: ref.read(cloudInferenceRepositoryProvider),
     taskSummaryRepository: ref.read(taskSummaryRepositoryProvider),
     aiConfigRepository: ref.read(aiConfigRepositoryProvider),
-    thinkingModeService: ThinkingModeServiceImpl(),
     loggingService: getIt<LoggingService>(),
   );
 });
@@ -28,20 +26,17 @@ class ChatRepository {
     required this.cloudInferenceRepository,
     required this.taskSummaryRepository,
     required this.aiConfigRepository,
-    required this.thinkingModeService,
     required this.loggingService,
   }) : _messageProcessor = ChatMessageProcessor(
           aiConfigRepository: aiConfigRepository,
           cloudInferenceRepository: cloudInferenceRepository,
           taskSummaryRepository: taskSummaryRepository,
-          thinkingModeService: thinkingModeService,
           loggingService: loggingService,
         );
 
   final CloudInferenceRepository cloudInferenceRepository;
   final TaskSummaryRepository taskSummaryRepository;
   final AiConfigRepository aiConfigRepository;
-  final ThinkingModeService thinkingModeService;
   final LoggingService loggingService;
   final ChatMessageProcessor _messageProcessor;
 
@@ -53,7 +48,6 @@ class ChatRepository {
     required String message,
     required List<ChatMessage> conversationHistory,
     String? categoryId,
-    bool enableThinking = false,
   }) async* {
     if (categoryId == null) {
       throw ArgumentError('categoryId is required for sending messages');
@@ -68,7 +62,7 @@ class ChatRepository {
 
       // Get AI configuration
       final config = await _messageProcessor.getAiConfiguration();
-      final systemMessage = _getSystemMessage(enableThinking);
+      final systemMessage = _getSystemMessage();
 
       // Convert conversation history and build messages
       final previousMessages =
@@ -94,10 +88,8 @@ class ChatRepository {
       );
 
       // Process the initial stream
-      final streamResult = await _messageProcessor.processStreamResponse(
-        stream,
-        enableThinking: enableThinking,
-      );
+      final streamResult =
+          await _messageProcessor.processStreamResponse(stream);
 
       // Yield content from initial response
       if (streamResult.content.isNotEmpty) {
@@ -125,7 +117,6 @@ class ChatRepository {
           messages: messages,
           config: config,
           systemMessage: systemMessage,
-          enableThinking: enableThinking,
         );
 
         if (finalResponse.isNotEmpty) {
@@ -212,7 +203,7 @@ class ChatRepository {
     _messages.remove(messageId);
   }
 
-  String _getSystemMessage(bool enableThinking) {
+  String _getSystemMessage() {
     final baseMessage = '''
 You are an AI assistant helping users explore and understand their tasks.
 You have access to a tool that can retrieve task summaries for specified date ranges.
@@ -239,11 +230,6 @@ Example: For "yesterday" on 2025-08-27, use:
 
 Be concise but helpful in your responses. When showing task summaries, organize them by date and status for clarity.''';
 
-    if (!enableThinking) {
-      return baseMessage;
-    }
-
-    return thinkingModeService.enhanceSystemPrompt(baseMessage,
-        useThinking: enableThinking);
+    return baseMessage;
   }
 }

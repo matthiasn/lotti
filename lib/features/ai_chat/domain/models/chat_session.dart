@@ -5,6 +5,9 @@ import 'package:uuid/uuid.dart';
 part 'chat_session.freezed.dart';
 part 'chat_session.g.dart';
 
+// Reuse single UUID instance for efficiency
+const _uuid = Uuid();
+
 @freezed
 class ChatSession with _$ChatSession {
   const factory ChatSession({
@@ -25,7 +28,7 @@ class ChatSession with _$ChatSession {
     String? title,
   }) =>
       ChatSession(
-        id: const Uuid().v4(),
+        id: _uuid.v4(),
         title: title ?? 'New Chat',
         createdAt: DateTime.now(),
         lastMessageAt: DateTime.now(),

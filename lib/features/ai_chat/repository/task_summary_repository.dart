@@ -53,12 +53,12 @@ class TaskSummaryRepository {
               entry.meta.dateTo.difference(entry.meta.dateFrom);
           if (entryDuration.inSeconds >= 15) {
             workEntries.add(entry);
-          } else {}
+          }
         }
         // Include all audio entries (they typically represent work)
         else if (entry is JournalAudio) {
           workEntries.add(entry);
-        } else {}
+        }
       }
     }
 

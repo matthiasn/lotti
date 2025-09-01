@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai_chat/domain/services/thinking_mode_service.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
@@ -17,8 +16,6 @@ class MockCloudInferenceRepository extends Mock
 
 class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
 
-class MockThinkingModeService extends Mock implements ThinkingModeService {}
-
 class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
@@ -32,7 +29,6 @@ void main() {
     late MockAiConfigRepository mockAiConfigRepository;
     late MockCloudInferenceRepository mockCloudInferenceRepository;
     late MockTaskSummaryRepository mockTaskSummaryRepository;
-    late MockThinkingModeService mockThinkingModeService;
     late MockLoggingService mockLoggingService;
 
     const testCategoryId = 'test-category-123';
@@ -42,14 +38,12 @@ void main() {
       mockAiConfigRepository = MockAiConfigRepository();
       mockCloudInferenceRepository = MockCloudInferenceRepository();
       mockTaskSummaryRepository = MockTaskSummaryRepository();
-      mockThinkingModeService = MockThinkingModeService();
       mockLoggingService = MockLoggingService();
 
       repository = ChatRepository(
         cloudInferenceRepository: mockCloudInferenceRepository,
         taskSummaryRepository: mockTaskSummaryRepository,
         aiConfigRepository: mockAiConfigRepository,
-        thinkingModeService: mockThinkingModeService,
         loggingService: mockLoggingService,
       );
     });
@@ -286,32 +280,6 @@ void main() {
       });
     });
 
-    group('system message generation', () {
-      test('generates system message without thinking mode', () {
-        final systemMessage = repository._getSystemMessage(false);
-
-        expect(systemMessage, contains('You are an AI assistant'));
-        expect(systemMessage, contains('get_task_summaries'));
-        expect(systemMessage, isNot(contains('<thinking>')));
-      });
-
-      test('enhances system message with thinking mode when enabled', () {
-        const enhancedMessage = 'Enhanced message with thinking';
-        when(() => mockThinkingModeService.enhanceSystemPrompt(
-              any<String>(),
-              useThinking: true,
-            )).thenReturn(enhancedMessage);
-
-        final systemMessage = repository._getSystemMessage(true);
-
-        expect(systemMessage, enhancedMessage);
-        verify(() => mockThinkingModeService.enhanceSystemPrompt(
-              any<String>(),
-              useThinking: true,
-            )).called(1);
-      });
-    });
-
     group('edge cases and error conditions', () {
       test('handles empty conversation history', () async {
         when(() => mockAiConfigRepository.getConfigsByType(any()))
@@ -400,44 +368,4 @@ void main() {
       });
     });
   });
-}
-
-// Extension to access private method for testing
-extension ChatRepositoryTestExtension on ChatRepository {
-  String _getSystemMessage(bool enableThinking) {
-    // This is a test helper to access the private method
-    // In a real implementation, you might make this method protected or create a test-specific interface
-    final baseMessage = '''
-You are an AI assistant helping users explore and understand their tasks.
-You have access to a tool that can retrieve task summaries for specified date ranges.
-When users ask about their tasks, use the get_task_summaries tool to fetch relevant information.
-
-Today's date is ${DateTime.now().toIso8601String().split('T')[0]}.
-
-When interpreting time-based queries, use these guidelines:
-- "today" = from start of today to end of today
-- "yesterday" = from start of yesterday to end of yesterday
-- "this week" = last 7 days including today
-- "recently" or "lately" = last 14 days
-- "this month" = last 30 days
-- "last week" = the previous 7-day period (8-14 days ago)
-- "last month" = the previous 30-day period (31-60 days ago)
-
-For date ranges, always use full ISO 8601 timestamps:
-- start_date: beginning of the day, e.g., "2025-08-26T00:00:00.000"
-- end_date: end of the day, e.g., "2025-08-26T23:59:59.999"
-
-Example: For "yesterday" on 2025-08-27, use:
-- start_date: "2025-08-26T00:00:00.000"
-- end_date: "2025-08-26T23:59:59.999"
-
-Be concise but helpful in your responses. When showing task summaries, organize them by date and status for clarity.''';
-
-    if (!enableThinking) {
-      return baseMessage;
-    }
-
-    return thinkingModeService.enhanceSystemPrompt(baseMessage,
-        useThinking: enableThinking);
-  }
 }

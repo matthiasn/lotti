@@ -184,7 +184,6 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
-              enableThinking: any(named: 'enableThinking'),
             ));
       });
 
@@ -206,7 +205,6 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
-              enableThinking: any(named: 'enableThinking'),
             ));
       });
 
@@ -215,7 +213,6 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
-              enableThinking: any(named: 'enableThinking'),
             )).thenAnswer((_) async* {
           yield 'Hello there!';
         });
@@ -387,7 +384,6 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
-              enableThinking: any(named: 'enableThinking'),
             ));
       });
 
@@ -403,7 +399,6 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
-              enableThinking: any(named: 'enableThinking'),
             )).thenAnswer((_) async* {
           yield 'Retry response';
         });
@@ -435,7 +430,6 @@ void main() {
               message: 'Second message',
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: 'test-category',
-              enableThinking: true,
             )).called(1);
       });
     });
