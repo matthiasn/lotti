@@ -22,6 +22,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
 
       case InferenceProviderType.whisper:
         return context.messages.aiProviderWhisperName;
+      case InferenceProviderType.gemma:
+        return 'Gemma (local)';
     }
   }
 
@@ -43,6 +45,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderOllamaDescription;
       case InferenceProviderType.whisper:
         return context.messages.aiProviderWhisperDescription;
+      case InferenceProviderType.gemma:
+        return 'Local Gemma models for audio transcription and text generation';
     }
   }
 
@@ -64,6 +68,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return Icons.assistant;
       case InferenceProviderType.whisper:
         return Icons.mic;
+      case InferenceProviderType.gemma:
+        return Icons.auto_awesome;
     }
   }
 }

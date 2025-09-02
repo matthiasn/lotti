@@ -44,4 +44,18 @@ abstract class InferenceRepositoryInterface {
       tools: tools,
     );
   }
+
+  /// Optional: Transcribe audio (for providers that support it)
+  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+    required String audioBase64,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    String? contextPrompt,
+    String? language,
+    int? maxCompletionTokens,
+  }) {
+    // Default implementation throws an error for providers that don't support audio
+    throw UnsupportedError('Audio transcription not supported by this provider');
+  }
 }

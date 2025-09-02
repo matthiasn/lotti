@@ -66,6 +66,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.anthropic: anthropicModels,
   InferenceProviderType.openRouter: openRouterModels,
   InferenceProviderType.whisper: whisperModels,
+  InferenceProviderType.gemma: gemmaModels,
 };
 
 /// Gemini models - Google's multimodal AI models
@@ -373,6 +374,42 @@ const List<KnownModel> whisperModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description: 'Most accurate local Whisper model',
+  ),
+];
+
+/// Gemma models (running locally with multimodal support)
+const List<KnownModel> gemmaModels = [
+  KnownModel(
+    providerModelId: 'gemma-2-2b-it',
+    name: 'Gemma 2B (Instruction Tuned)',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Fast local Gemma model, good for audio transcription',
+  ),
+  KnownModel(
+    providerModelId: 'gemma-2-9b-it',
+    name: 'Gemma 9B (Instruction Tuned)',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Higher quality Gemma model with better audio understanding',
+  ),
+  KnownModel(
+    providerModelId: 'gemma-3n-E2B-it',
+    name: 'Gemma 3n E2B (Multimodal)',
+    inputModalities: [Modality.text, Modality.audio, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Multimodal Gemma model with 2B effective parameters, supports audio and images',
+  ),
+  KnownModel(
+    providerModelId: 'gemma-3n-E4B-it',
+    name: 'Gemma 3n E4B (Multimodal)',
+    inputModalities: [Modality.text, Modality.audio, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Premium multimodal Gemma model with 4B effective parameters, best quality for audio and images',
   ),
 ];
 

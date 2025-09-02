@@ -270,6 +270,8 @@ class AiConfigCard extends ConsumerWidget {
           return Icons.rocket_launch;
         case InferenceProviderType.whisper:
           return Icons.mic;
+        case InferenceProviderType.gemma:
+          return Icons.auto_awesome;
       }
     } else if (config is AiConfigModel) {
       final model = config as AiConfigModel;

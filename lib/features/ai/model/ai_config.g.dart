@@ -47,6 +47,7 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.openRouter: 'openRouter',
   InferenceProviderType.ollama: 'ollama',
   InferenceProviderType.whisper: 'whisper',
+  InferenceProviderType.gemma: 'gemma',
 };
 
 _$AiConfigModelImpl _$$AiConfigModelImplFromJson(Map<String, dynamic> json) =>
