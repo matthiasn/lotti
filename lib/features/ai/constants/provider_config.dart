@@ -23,6 +23,7 @@ class ProviderConfig {
     InferenceProviderType.anthropic: 'https://api.anthropic.com/v1',
     InferenceProviderType.openRouter: 'https://openrouter.ai/api/v1',
     InferenceProviderType.whisper: 'http://localhost:8084',
+    InferenceProviderType.gemma: 'http://localhost:8000',
   };
 
   /// Default names for each provider type
@@ -36,6 +37,7 @@ class ProviderConfig {
     InferenceProviderType.anthropic: 'Anthropic',
     InferenceProviderType.openRouter: 'OpenRouter',
     InferenceProviderType.whisper: 'Whisper (local)',
+    InferenceProviderType.gemma: 'Gemma (local)',
   };
 
   /// Provider types that don't require an API key
@@ -45,6 +47,7 @@ class ProviderConfig {
   static const Set<InferenceProviderType> noApiKeyRequired = {
     InferenceProviderType.ollama,
     InferenceProviderType.whisper,
+    InferenceProviderType.gemma,
   };
 
   /// Get the default base URL for a provider type

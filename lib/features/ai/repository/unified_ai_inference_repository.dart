@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/repository/gemma_inference_repository.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
@@ -605,6 +606,19 @@ class UnifiedAiInferenceRepository {
         'Processing audio transcription without function calling tools',
         name: 'UnifiedAiInferenceRepository',
       );
+
+      // For Gemma, use the dedicated repository through the interface
+      if (provider.inferenceProviderType == InferenceProviderType.gemma) {
+        final gemmaRepo = ref.read(gemmaInferenceRepositoryProvider);
+        return gemmaRepo.transcribeAudio(
+          audioBase64: audioBase64,
+          model: model.providerModelId,
+          temperature: temperature,
+          provider: provider,
+          contextPrompt: prompt,
+          maxCompletionTokens: model.maxCompletionTokens,
+        );
+      }
 
       return cloudRepo.generateWithAudio(
         prompt,
@@ -1488,6 +1502,12 @@ class UnifiedAiInferenceRepository {
           name: 'UnifiedAiInferenceRepository',
         );
         inferenceRepo = ref.read(ollamaInferenceRepositoryProvider);
+      } else if (provider.inferenceProviderType == InferenceProviderType.gemma) {
+        developer.log(
+          'Using GemmaInferenceRepository for conversation approach',
+          name: 'UnifiedAiInferenceRepository',
+        );
+        inferenceRepo = ref.read(gemmaInferenceRepositoryProvider);
       } else {
         developer.log(
           'Using CloudInferenceWrapper for ${provider.inferenceProviderType} provider',
@@ -1556,4 +1576,9 @@ class UnifiedAiInferenceRepository {
 @riverpod
 UnifiedAiInferenceRepository unifiedAiInferenceRepository(Ref ref) {
   return UnifiedAiInferenceRepository(ref);
+}
+
+@riverpod
+GemmaInferenceRepository gemmaInferenceRepository(Ref ref) {
+  return GemmaInferenceRepository();
 }

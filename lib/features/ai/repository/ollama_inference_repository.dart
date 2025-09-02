@@ -720,6 +720,20 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       // Don't throw, just log warning
     }
   }
+
+  /// Override transcribeAudio to throw UnsupportedError since Ollama doesn't support audio transcription
+  @override
+  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+    required String audioBase64,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    String? contextPrompt,
+    String? language,
+    int? maxCompletionTokens,
+  }) {
+    throw UnsupportedError('Audio transcription not supported by Ollama. Please use Whisper or Gemma provider for audio transcription.');
+  }
 }
 
 /// Exception thrown when a model is not installed

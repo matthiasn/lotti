@@ -179,6 +179,28 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
     }
   }
 
+  @override
+  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+    required String audioBase64,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    String? contextPrompt,
+    String? language,
+    int? maxCompletionTokens,
+  }) {
+    // Delegate to the cloud repository's generateWithAudio method
+    return cloudRepository.generateWithAudio(
+      contextPrompt ?? 'Transcribe this audio:',
+      model: model,
+      audioBase64: audioBase64,
+      baseUrl: provider.baseUrl,
+      apiKey: provider.apiKey,
+      provider: provider,
+      maxCompletionTokens: maxCompletionTokens,
+    );
+  }
+
   String? _extractContent(dynamic content) {
     if (content == null) return null;
 
