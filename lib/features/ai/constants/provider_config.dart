@@ -23,7 +23,7 @@ class ProviderConfig {
     InferenceProviderType.anthropic: 'https://api.anthropic.com/v1',
     InferenceProviderType.openRouter: 'https://openrouter.ai/api/v1',
     InferenceProviderType.whisper: 'http://localhost:8084',
-    InferenceProviderType.gemma: 'http://localhost:8000',
+    InferenceProviderType.gemma: 'http://localhost:11343',
   };
 
   /// Default names for each provider type

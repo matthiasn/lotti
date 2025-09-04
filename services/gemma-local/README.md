@@ -12,6 +12,20 @@ A local Python service that runs Google's Gemma models with multimodal support, 
 - 📦 **Model Management**: Automatic model download and caching
 - 🐳 **Docker Support**: Easy deployment with Docker containers
 
+## Prerequisites
+
+Before running the Gemma service, you need to authenticate with Hugging Face to access the gated Gemma models:
+
+1. **Create a Hugging Face account** at https://huggingface.co/join
+2. **Accept the Gemma model agreement** at https://huggingface.co/google/gemma-3n-E4B-it
+3. **Create an access token** with "Read access to contents of all public gated repos" enabled
+4. **Login via CLI:**
+   ```bash
+   pip install huggingface_hub
+   huggingface-cli login
+   # Enter your token when prompted
+   ```
+
 ## Quick Start
 
 ### Using Docker (Recommended)
@@ -22,11 +36,11 @@ A local Python service that runs Google's Gemma models with multimodal support, 
    docker-compose up --build
    ```
 
-2. **The service will be available at:** `http://localhost:8000`
+2. **The service will be available at:** `http://localhost:11343`
 
 3. **Check health status:**
    ```bash
-   curl http://localhost:8000/health
+   curl http://localhost:11343/health
    ```
 
 ### Local Development
@@ -37,14 +51,20 @@ A local Python service that runs Google's Gemma models with multimodal support, 
    pip install -r requirements.txt
    ```
 
-2. **Run the service:**
+2. **Download the model (first time only):**
+   ```bash
+   source venv/bin/activate
+   python -c "from huggingface_hub import snapshot_download; print('Starting model download...'); snapshot_download('google/gemma-3n-E4B-it', cache_dir='.cache/models'); print('Download complete!')"
+   ```
+
+3. **Run the service:**
    ```bash
    python main.py
    ```
 
-3. **For development with auto-reload:**
+4. **For development with auto-reload:**
    ```bash
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   uvicorn main:app --reload --host 0.0.0.0 --port 11343
    ```
 
 ## API Endpoints
@@ -79,7 +99,7 @@ with open("audio.wav", "rb") as f:
     audio_base64 = base64.b64encode(f.read()).decode()
 
 response = requests.post(
-    "http://localhost:8000/v1/audio/transcriptions",
+    "http://localhost:11343/v1/audio/transcriptions",
     data={
         "audio": audio_base64,
         "prompt": "This is a meeting about the Q4 budget",
@@ -142,9 +162,9 @@ DELETE /v1/models/{model_name}
 The service integrates seamlessly with Lotti's AI system through the `GemmaInferenceRepository`:
 
 1. **Add Gemma as an inference provider in Lotti settings:**
-   - Base URL: `http://localhost:8000`
-   - Provider Type: Gemma
-   - Model: gemma-2b (or your chosen model)
+   - Base URL: `http://localhost:11343`
+   - Provider Type: Gemma (local)
+   - Model: gemma-3n-E4B-it (or your chosen model)
 
 2. **Use for audio transcription:**
    ```dart

@@ -13,6 +13,9 @@ from transformers import (
     AutoProcessor,
     BitsAndBytesConfig,
 )
+from torch.quantization import quantize_dynamic, QConfig, default_qconfig
+from torch.quantization.qconfig import get_default_qconfig
+import torch.nn as nn
 from huggingface_hub import snapshot_download, HfFileSystem
 from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 
@@ -170,17 +173,24 @@ class GemmaModelManager:
                 
                 model_path = ServiceConfig.get_model_path()
                 
-                # Configure quantization for memory efficiency (optional)
+                # Configure quantization for memory efficiency
                 quantization_config = None
+                use_cpu_quantization = self.device == "cpu"
+                
                 if self.device != "cpu" and ServiceConfig.DEFAULT_DEVICE in ["cuda", "mps"]:
-                    # Only quantize on GPU/MPS
+                    # GPU quantization with BitsAndBytesConfig
                     try:
                         quantization_config = BitsAndBytesConfig(
                             load_in_8bit=True,
                             bnb_8bit_compute_dtype=ServiceConfig.TORCH_DTYPE,
                         )
+                        logger.info("8-bit GPU quantization enabled")
                     except Exception as e:
-                        logger.warning(f"Quantization not available: {e}")
+                        logger.warning(f"GPU quantization not available: {e}")
+                        quantization_config = None
+                elif self.device == "cpu":
+                    logger.info("CPU quantization will be applied after model loading")
+                    use_cpu_quantization = True
                 
                 # Load in thread to avoid blocking
                 loop = asyncio.get_event_loop()
@@ -205,19 +215,68 @@ class GemmaModelManager:
                         logger.info(f"No processor found (text-only model): {e}")
                         self.processor = None
                     
-                    # Load model
-                    self.model = AutoModelForCausalLM.from_pretrained(
-                        model_path,
-                        local_files_only=True,
-                        torch_dtype=ServiceConfig.TORCH_DTYPE,
-                        device_map="auto" if self.device != "cpu" else None,
-                        quantization_config=quantization_config,
-                        trust_remote_code=True,
-                        low_cpu_mem_usage=True,
-                    )
+                    # Load model with fallback for quantization issues
+                    try:
+                        self.model = AutoModelForCausalLM.from_pretrained(
+                            model_path,
+                            local_files_only=True,
+                            dtype=ServiceConfig.TORCH_DTYPE,
+                            device_map="auto" if self.device != "cpu" else None,
+                            quantization_config=quantization_config,
+                            trust_remote_code=True,
+                            low_cpu_mem_usage=True,
+                        )
+                    except Exception as quantization_error:
+                        if quantization_config is not None:
+                            logger.warning(f"Failed with quantization, retrying without: {quantization_error}")
+                            self.model = AutoModelForCausalLM.from_pretrained(
+                                model_path,
+                                local_files_only=True,
+                                dtype=ServiceConfig.TORCH_DTYPE,
+                                device_map="auto" if self.device != "cpu" else None,
+                                quantization_config=None,
+                                trust_remote_code=True,
+                                low_cpu_mem_usage=True,
+                            )
+                        else:
+                            raise
                     
                     if self.device == "cpu":
                         self.model = self.model.to(self.device)
+                        
+                        # Apply CPU-specific optimizations
+                        if use_cpu_quantization and ServiceConfig.ENABLE_CPU_QUANTIZATION:
+                            logger.info("Applying CPU quantization optimizations...")
+                            try:
+                                # Skip quantization for Gemma 3n models due to altup correction issues
+                                if "gemma-3n" in self.model_id.lower():
+                                    logger.warning("Skipping CPU quantization for Gemma 3n due to altup correction compatibility issues")
+                                else:
+                                    # Apply dynamic quantization for CPU inference
+                                    self.model = torch.quantization.quantize_dynamic(
+                                        self.model, 
+                                        {nn.Linear, nn.MultiheadAttention, nn.LSTM, nn.GRU}, 
+                                        dtype=torch.qint8
+                                    )
+                                    logger.info("CPU int8 quantization applied successfully")
+                            except Exception as e:
+                                logger.warning(f"CPU quantization failed, continuing without: {e}")
+                        
+                        # Enable CPU-specific optimizations
+                        torch.set_num_threads(min(8, torch.get_num_threads()))
+                        logger.info(f"Set torch threads to {torch.get_num_threads()}")
+                        
+                        # Try to compile model for faster inference
+                        if hasattr(torch, 'compile') and ServiceConfig.ENABLE_TORCH_COMPILE:
+                            try:
+                                # Skip torch.compile for Gemma 3n models due to altup correction issues
+                                if "gemma-3n" in self.model_id.lower():
+                                    logger.warning("Skipping torch.compile for Gemma 3n due to altup correction compatibility issues")
+                                else:
+                                    self.model = torch.compile(self.model, mode="reduce-overhead")
+                                    logger.info("Model compiled with torch.compile for CPU optimization")
+                            except Exception as e:
+                                logger.warning(f"Failed to compile model: {e}")
                     
                     # Set to evaluation mode
                     self.model.eval()
@@ -272,14 +331,25 @@ class GemmaModelManager:
                 raise Exception("Failed to load model for warm-up")
         
         try:
-            # Simple warm-up prompt
+            # Simple warm-up prompt optimized for CPU
             inputs = self.tokenizer("Hello", return_tensors="pt").to(self.device)
             with torch.no_grad():
-                _ = self.model.generate(
-                    **inputs,
-                    max_new_tokens=5,
-                    do_sample=False,
-                )
+                if self.device == "cpu":
+                    # Use inference mode for better CPU performance
+                    with torch.inference_mode():
+                        _ = self.model.generate(
+                            **inputs,
+                            max_new_tokens=3,  # Minimal tokens for warm-up
+                            do_sample=False,
+                            use_cache=True,
+                            pad_token_id=self.tokenizer.eos_token_id,
+                        )
+                else:
+                    _ = self.model.generate(
+                        **inputs,
+                        max_new_tokens=5,
+                        do_sample=False,
+                    )
             logger.info("Model warmed up successfully")
         except Exception as e:
             logger.error(f"Warm-up failed: {e}")
@@ -294,6 +364,10 @@ class GemmaModelManager:
             "is_loaded": self.is_model_loaded(),
             "cache_dir": str(self.cache_dir),
             "supports_multimodal": self.processor is not None,
+            "torch_threads": torch.get_num_threads() if self.device == "cpu" else None,
+            "quantized": hasattr(self.model, "_modules") and any(
+                "quantized" in str(type(m)).lower() for m in self.model.modules()
+            ) if self.is_model_loaded() else False,
         }
         
         if self.is_model_available():

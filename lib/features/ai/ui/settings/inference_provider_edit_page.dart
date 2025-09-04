@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
@@ -228,9 +229,8 @@ class _InferenceProviderEditPageState
           const SizedBox(height: 32),
 
           // Authentication Section - Only show for providers that require API key
-          if (formState.inferenceProviderType != InferenceProviderType.ollama &&
-              formState.inferenceProviderType !=
-                  InferenceProviderType.whisper) ...[
+          if (ProviderConfig.requiresApiKey(
+              formState.inferenceProviderType)) ...[
             AiFormSection(
               title: 'Authentication',
               icon: Icons.security_rounded,

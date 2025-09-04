@@ -1,5 +1,6 @@
 """Streaming response generation for Gemma Local Service."""
 
+import asyncio
 import json
 import time
 import uuid
@@ -35,76 +36,56 @@ class StreamGenerator:
         Yields SSE-formatted chunks for audio transcription.
         """
         try:
-            # Prepare inputs
-            if audio_array is not None:
-                # For audio transcription
-                audio_inputs = self.audio_processor.prepare_for_model(
-                    audio_array,
-                    self.model_manager.processor
-                )
+            logger.info("=== STREAMING GENERATOR START ===")
             
-            # Tokenize text prompt
-            text_inputs = self.model_manager.tokenizer(
-                prompt,
-                return_tensors="pt",
-                truncation=True,
-                max_length=2048
-            ).to(self.model_manager.device)
+            # Use the working non-streaming generation and convert to streaming format
+            from main import generate_transcription_optimized
+            import numpy as np
             
-            # Set up streamer
-            streamer = TextIteratorStreamer(
-                self.model_manager.tokenizer,
-                skip_prompt=True,
-                skip_special_tokens=True
+            # Handle list of audio chunks (use first chunk for streaming)
+            if isinstance(audio_array, list):
+                logger.info(f"Streaming: Using first of {len(audio_array)} chunks")
+                audio_array = audio_array[0]
+            
+            # Generate transcription using the working method
+            transcription = await generate_transcription_optimized(
+                prompt=prompt,
+                audio_array=audio_array,
+                temperature=temperature,
+                task_type="cpu_optimized"
             )
             
-            # Generation kwargs
-            generation_kwargs = {
-                "input_ids": text_inputs.input_ids,
-                "attention_mask": text_inputs.attention_mask,
-                "max_new_tokens": max_tokens,
-                "temperature": temperature,
-                "do_sample": temperature > 0,
-                "top_p": top_p,
-                "pad_token_id": self.model_manager.tokenizer.pad_token_id,
-                "eos_token_id": self.model_manager.tokenizer.eos_token_id,
-                "streamer": streamer,
-            }
+            logger.info(f"Streaming: Generated transcription length: {len(transcription)}")
             
-            # Start generation in a thread
-            thread = Thread(
-                target=self.model_manager.model.generate,
-                kwargs=generation_kwargs
-            )
-            thread.start()
+            # Split the transcription into smaller chunks for streaming
+            # This ensures large transcriptions aren't truncated and provides real-time updates
+            chunk_size = 50  # Characters per chunk for smoother streaming
             
-            # Stream tokens
-            accumulated_text = ""
-            for new_text in streamer:
-                if new_text:
-                    accumulated_text += new_text
-                    
-                    # Format as SSE
-                    chunk = {
-                        "text": new_text,
-                        "accumulated": accumulated_text,
-                        "done": False
-                    }
-                    yield f"data: {json.dumps(chunk)}\n\n"
+            response_id = f"gemma-{uuid.uuid4().hex[:8]}"
+            created = int(time.time())
             
-            # Send final chunk
-            final_chunk = {
-                "text": "",
-                "accumulated": accumulated_text,
-                "done": True
-            }
-            yield f"data: {json.dumps(final_chunk)}\n\n"
+            for i in range(0, len(transcription), chunk_size):
+                chunk_text = transcription[i:i + chunk_size]
+                
+                # Send in the format the Dart client expects
+                chunk = {
+                    "text": chunk_text,
+                    "id": response_id,
+                    "created": created,
+                    "index": i // chunk_size
+                }
+                yield f"data: {json.dumps(chunk)}\n\n"
+                
+                # Small delay for smoother streaming experience
+                await asyncio.sleep(0.01)
             
-            # Ensure thread completes
-            thread.join()
+            # Send [DONE] marker
+            yield f"data: [DONE]\n\n"
+            logger.info(f"Streaming completed: sent {len(transcription)} chars in {(len(transcription) + chunk_size - 1) // chunk_size} chunks")
             
         except Exception as e:
             logger.error(f"Streaming generation error: {e}")
+            logger.error(f"Full traceback:", exc_info=True)
             error_chunk = {
                 "error": str(e),
                 "done": True

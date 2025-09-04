@@ -87,8 +87,8 @@ def main():
         
         print("\n✓ Setup complete!")
         print(f"Starting server on {ServiceConfig.DEFAULT_HOST}:{ServiceConfig.DEFAULT_PORT}")
-        print("\nAPI Documentation: http://localhost:8000/docs")
-        print("Health Check: http://localhost:8000/health")
+        print("\nAPI Documentation: http://localhost:11343/docs")
+        print("Health Check: http://localhost:11343/health")
         print("\nPress Ctrl+C to stop the server")
         
     except Exception as e:
