@@ -11,14 +11,14 @@ from pathlib import Path
 async def test_health():
     """Test health endpoint."""
     async with httpx.AsyncClient() as client:
-        response = await client.get("http://localhost:8000/health")
+        response = await client.get("http://localhost:11343/health")
         print("Health Check:", response.json())
 
 
 async def test_model_list():
     """Test listing models."""
     async with httpx.AsyncClient() as client:
-        response = await client.get("http://localhost:8000/v1/models")
+        response = await client.get("http://localhost:11343/v1/models")
         print("Available Models:", json.dumps(response.json(), indent=2))
 
 
@@ -34,7 +34,7 @@ async def test_model_download():
         
         async with client.stream(
             "POST",
-            "http://localhost:8000/v1/models/pull",
+            "http://localhost:11343/v1/models/pull",
             json=request_data
         ) as response:
             async for chunk in response.aiter_lines():
@@ -75,7 +75,7 @@ async def test_transcription():
     
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
-            "http://localhost:8000/v1/audio/transcriptions",
+            "http://localhost:11343/v1/audio/transcriptions",
             data={
                 "audio": audio_base64,
                 "model": "gemma-2b",
@@ -98,7 +98,7 @@ async def test_chat():
     """Test chat completion."""
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            "http://localhost:8000/v1/chat/completions",
+            "http://localhost:11343/v1/chat/completions",
             json={
                 "model": "gemma-2b",
                 "messages": [
@@ -135,7 +135,7 @@ async def test_streaming_chat():
         
         async with client.stream(
             "POST",
-            "http://localhost:8000/v1/chat/completions",
+            "http://localhost:11343/v1/chat/completions",
             json=request_data
         ) as response:
             async for chunk in response.aiter_lines():
@@ -188,7 +188,7 @@ async def main():
         await test_transcription()
         
     except httpx.ConnectError:
-        print("❌ Could not connect to Gemma service. Make sure it's running on localhost:8000")
+        print("❌ Could not connect to Gemma service. Make sure it's running on localhost:11343")
     except Exception as e:
         print(f"❌ Test failed: {e}")
 

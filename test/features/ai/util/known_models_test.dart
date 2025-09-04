@@ -76,6 +76,15 @@ void main() {
                 'Whisper model ${model.name} should not have maxCompletionTokens defined',
           );
         }
+
+        for (final model in gemmaModels) {
+          expect(
+            model.maxCompletionTokens,
+            isNull,
+            reason:
+                'Gemma model ${model.name} should not have maxCompletionTokens defined',
+          );
+        }
       });
 
       test(
@@ -178,6 +187,7 @@ void main() {
             InferenceProviderType.anthropic,
             InferenceProviderType.openRouter,
             InferenceProviderType.whisper,
+            InferenceProviderType.gemma,
           ]),
         );
       });
@@ -213,6 +223,103 @@ void main() {
                       'Model ${model.name} should have positive maxCompletionTokens if defined');
             }
           }
+        }
+      });
+    });
+
+    group('Gemma Models', () {
+      test('should have correct audio transcription capabilities', () {
+        expect(gemmaModels, isNotEmpty,
+            reason: 'Gemma models should be defined');
+
+        for (final model in gemmaModels) {
+          // All Gemma models should support audio input for transcription
+          expect(
+            model.inputModalities,
+            contains(Modality.audio),
+            reason: 'Gemma model ${model.name} should support audio input',
+          );
+
+          // Should also support text input
+          expect(
+            model.inputModalities,
+            contains(Modality.text),
+            reason: 'Gemma model ${model.name} should support text input',
+          );
+
+          // Output should be text only
+          expect(
+            model.outputModalities,
+            equals([Modality.text]),
+            reason: 'Gemma model ${model.name} should output text only',
+          );
+
+          // Should not be reasoning models
+          expect(
+            model.isReasoningModel,
+            isFalse,
+            reason: 'Gemma model ${model.name} should not be a reasoning model',
+          );
+        }
+      });
+
+      test('should have correct provider model IDs', () {
+        final expectedModels = {
+          'google/gemma-2b-it': 'Gemma 2B (Instruction Tuned)',
+          'gemma-2-9b-it': 'Gemma 9B (Instruction Tuned)',
+          'gemma-3n-E2B-it': 'Gemma 3n E2B (Multimodal)',
+          'gemma-3n-E4B-it': 'Gemma 3n E4B (Multimodal)',
+        };
+
+        for (final model in gemmaModels) {
+          expect(
+            expectedModels.keys,
+            contains(model.providerModelId),
+            reason:
+                'Gemma model ${model.providerModelId} should be in expected models',
+          );
+
+          expect(
+            expectedModels[model.providerModelId],
+            equals(model.name),
+            reason: 'Gemma model name should match expected name',
+          );
+        }
+
+        expect(
+          gemmaModels.length,
+          equals(expectedModels.length),
+          reason: 'All expected Gemma models should be defined',
+        );
+      });
+
+      test('should have descriptive descriptions mentioning audio', () {
+        for (final model in gemmaModels) {
+          expect(
+            model.description.toLowerCase(),
+            anyOf([
+              contains('audio'),
+              contains('transcription'),
+              contains('multimodal'),
+            ]),
+            reason:
+                'Gemma model ${model.name} description should mention audio capabilities',
+          );
+        }
+      });
+
+      test('should generate valid model IDs', () {
+        const providerId = 'test-gemma-provider';
+
+        for (final model in gemmaModels) {
+          final generatedId =
+              generateModelId(providerId, model.providerModelId);
+
+          expect(generatedId, isNotEmpty);
+          expect(generatedId, contains(providerId.replaceAll('-', '_')));
+          expect(generatedId, matches(RegExp(r'^[a-z0-9_]+$')),
+              reason:
+                  'Generated ID should contain only lowercase letters, numbers, and underscores');
         }
       });
     });

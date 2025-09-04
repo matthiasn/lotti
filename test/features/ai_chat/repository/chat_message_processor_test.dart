@@ -213,10 +213,11 @@ void main() {
 
         // Cause repository to fail like real validation would
         when(() => mockTaskSummaryRepository.getTaskSummaries(
-              categoryId: testCategoryId,
-              request: any(named: 'request'),
-            )).thenAnswer((_) => Future.error(
-                const FormatException('Invalid calendar date')));
+                  categoryId: testCategoryId,
+                  request: any(named: 'request'),
+                ))
+            .thenAnswer((_) =>
+                Future.error(const FormatException('Invalid calendar date')));
 
         // Act
         final result = await processor.processTaskSummaryTool(
@@ -252,10 +253,11 @@ void main() {
 
         // Cause repository to fail like real validation would
         when(() => mockTaskSummaryRepository.getTaskSummaries(
-              categoryId: testCategoryId,
-              request: any(named: 'request'),
-            )).thenAnswer((_) => Future.error(
-                const FormatException('Invalid calendar date')));
+                  categoryId: testCategoryId,
+                  request: any(named: 'request'),
+                ))
+            .thenAnswer((_) =>
+                Future.error(const FormatException('Invalid calendar date')));
 
         // Act
         final result = await processor.processTaskSummaryTool(
@@ -292,10 +294,11 @@ void main() {
 
         // Simulate repository validation failure
         when(() => mockTaskSummaryRepository.getTaskSummaries(
-              categoryId: testCategoryId,
-              request: any(named: 'request'),
-            )).thenAnswer((_) => Future.error(
-                const FormatException('Invalid calendar date')));
+                  categoryId: testCategoryId,
+                  request: any(named: 'request'),
+                ))
+            .thenAnswer((_) =>
+                Future.error(const FormatException('Invalid calendar date')));
 
         // Act
         final result = await processor.processTaskSummaryTool(

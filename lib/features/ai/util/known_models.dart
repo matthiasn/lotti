@@ -380,7 +380,7 @@ const List<KnownModel> whisperModels = [
 /// Gemma models (running locally with multimodal support)
 const List<KnownModel> gemmaModels = [
   KnownModel(
-    providerModelId: 'gemma-2-2b-it',
+    providerModelId: 'google/gemma-2b-it',
     name: 'Gemma 2B (Instruction Tuned)',
     inputModalities: [Modality.text, Modality.audio],
     outputModalities: [Modality.text],
@@ -401,7 +401,8 @@ const List<KnownModel> gemmaModels = [
     inputModalities: [Modality.text, Modality.audio, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Multimodal Gemma model with 2B effective parameters, supports audio and images',
+    description:
+        'Multimodal Gemma model with 2B effective parameters, supports audio and images',
   ),
   KnownModel(
     providerModelId: 'gemma-3n-E4B-it',
@@ -409,7 +410,8 @@ const List<KnownModel> gemmaModels = [
     inputModalities: [Modality.text, Modality.audio, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Premium multimodal Gemma model with 4B effective parameters, best quality for audio and images',
+    description:
+        'Premium multimodal Gemma model with 4B effective parameters, best quality for audio and images',
   ),
 ];
 

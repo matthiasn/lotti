@@ -1502,7 +1502,8 @@ class UnifiedAiInferenceRepository {
           name: 'UnifiedAiInferenceRepository',
         );
         inferenceRepo = ref.read(ollamaInferenceRepositoryProvider);
-      } else if (provider.inferenceProviderType == InferenceProviderType.gemma) {
+      } else if (provider.inferenceProviderType ==
+          InferenceProviderType.gemma) {
         developer.log(
           'Using GemmaInferenceRepository for conversation approach',
           name: 'UnifiedAiInferenceRepository',

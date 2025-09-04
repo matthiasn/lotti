@@ -5,7 +5,7 @@ services:
     build: .
     container_name: gemma-local-service
     ports:
-      - "8000:8000"
+      - "11343:11343"
     volumes:
       # Mount model cache to persist downloads
       - gemma-models:/root/.cache/gemma-local/models

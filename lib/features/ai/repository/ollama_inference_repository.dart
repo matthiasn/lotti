@@ -732,7 +732,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     String? language,
     int? maxCompletionTokens,
   }) {
-    throw UnsupportedError('Audio transcription not supported by Ollama. Please use Whisper or Gemma provider for audio transcription.');
+    throw UnsupportedError(
+        'Audio transcription not supported by Ollama. Please use Whisper or Gemma provider for audio transcription.');
   }
 }
 

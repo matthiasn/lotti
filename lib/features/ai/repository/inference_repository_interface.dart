@@ -56,6 +56,7 @@ abstract class InferenceRepositoryInterface {
     int? maxCompletionTokens,
   }) {
     // Default implementation throws an error for providers that don't support audio
-    throw UnsupportedError('Audio transcription not supported by this provider');
+    throw UnsupportedError(
+        'Audio transcription not supported by this provider');
   }
 }

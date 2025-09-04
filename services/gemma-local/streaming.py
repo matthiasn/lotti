@@ -35,76 +35,37 @@ class StreamGenerator:
         Yields SSE-formatted chunks for audio transcription.
         """
         try:
-            # Prepare inputs
-            if audio_array is not None:
-                # For audio transcription
-                audio_inputs = self.audio_processor.prepare_for_model(
-                    audio_array,
-                    self.model_manager.processor
-                )
             
-            # Tokenize text prompt
-            text_inputs = self.model_manager.tokenizer(
-                prompt,
-                return_tensors="pt",
-                truncation=True,
-                max_length=2048
-            ).to(self.model_manager.device)
+            # Use the working non-streaming generation and convert to streaming format
+            from main import generate_transcription_optimized
+            import numpy as np
             
-            # Set up streamer
-            streamer = TextIteratorStreamer(
-                self.model_manager.tokenizer,
-                skip_prompt=True,
-                skip_special_tokens=True
+            # Handle list of audio chunks (use first chunk for streaming)
+            if isinstance(audio_array, list):
+                audio_array = audio_array[0]
+            
+            # Generate transcription using the working method
+            transcription = await generate_transcription_optimized(
+                prompt=prompt,
+                audio_array=audio_array,
+                temperature=temperature,
+                task_type="cpu_optimized"
             )
             
-            # Generation kwargs
-            generation_kwargs = {
-                "input_ids": text_inputs.input_ids,
-                "attention_mask": text_inputs.attention_mask,
-                "max_new_tokens": max_tokens,
-                "temperature": temperature,
-                "do_sample": temperature > 0,
-                "top_p": top_p,
-                "pad_token_id": self.model_manager.tokenizer.pad_token_id,
-                "eos_token_id": self.model_manager.tokenizer.eos_token_id,
-                "streamer": streamer,
+            
+            # Return the result in streaming format that the client expects
+            # Send the complete transcription as a single chunk
+            chunk = {
+                "text": transcription
             }
+            yield f"data: {json.dumps(chunk)}\n\n"
             
-            # Start generation in a thread
-            thread = Thread(
-                target=self.model_manager.model.generate,
-                kwargs=generation_kwargs
-            )
-            thread.start()
-            
-            # Stream tokens
-            accumulated_text = ""
-            for new_text in streamer:
-                if new_text:
-                    accumulated_text += new_text
-                    
-                    # Format as SSE
-                    chunk = {
-                        "text": new_text,
-                        "accumulated": accumulated_text,
-                        "done": False
-                    }
-                    yield f"data: {json.dumps(chunk)}\n\n"
-            
-            # Send final chunk
-            final_chunk = {
-                "text": "",
-                "accumulated": accumulated_text,
-                "done": True
-            }
-            yield f"data: {json.dumps(final_chunk)}\n\n"
-            
-            # Ensure thread completes
-            thread.join()
+            # Send [DONE] marker
+            yield f"data: [DONE]\n\n"
             
         except Exception as e:
             logger.error(f"Streaming generation error: {e}")
+            logger.error(f"Full traceback:", exc_info=True)
             error_chunk = {
                 "error": str(e),
                 "done": True

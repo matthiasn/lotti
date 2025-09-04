@@ -6,15 +6,23 @@ import json
 import logging
 import time
 import uuid
-from typing import Optional, List, Dict, Any, AsyncGenerator
+from typing import Optional, List, Dict, Any, AsyncGenerator, Union
 from datetime import datetime
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import torch
 import numpy as np
+
+# Load environment variables from .env file if it exists
+from dotenv import load_dotenv
+env_path = Path(__file__).parent / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
+    logging.info(f"Loaded environment from {env_path}")
 
 from config import ServiceConfig
 from model_manager import model_manager
@@ -120,8 +128,21 @@ async def health_check():
 
 
 # OpenAI-compatible endpoints
+def normalize_model_name(model_name: str) -> str:
+    """Normalize model names to handle legacy naming conventions."""
+    # Handle legacy model names
+    model_mapping = {
+        "gemma-2-2b-it": "google/gemma-2b-it",
+        "gemma-2-9b-it": "google/gemma-2b-it",  # Map to available model
+        "gemma-3n-E2B-it": "google/gemma-3n-E2B-it",
+        "gemma-3n-E4B-it": "google/gemma-3n-E4B-it",
+    }
+    return model_mapping.get(model_name, model_name)
+
+
 @app.post("/v1/audio/transcriptions")
 async def transcribe_audio(
+    request: Request,
     file: Optional[UploadFile] = File(None),
     audio: Optional[str] = Form(None),
     model: str = Form("gemma-2b"),
@@ -138,6 +159,30 @@ async def transcribe_audio(
     - file: Audio file upload
     - audio: Base64-encoded audio data
     """
+    
+    # Check if this is a JSON request (from the Dart client)
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("application/json"):
+        try:
+            json_body = await request.json()
+            
+            # Extract parameters from JSON body
+            audio = json_body.get("audio")
+            model = normalize_model_name(json_body.get("model", "gemma-2b"))
+            prompt = json_body.get("prompt")
+            response_format = json_body.get("response_format", "json")
+            temperature = json_body.get("temperature", 0.7)
+            language = json_body.get("language")
+            stream = json_body.get("stream", False)
+            
+        except Exception as e:
+            logger.error(f"Failed to parse JSON body: {e}")
+            raise HTTPException(status_code=400, detail="Invalid JSON body")
+    else:
+        # Normalize model name for form requests too
+        model = normalize_model_name(model)
+    
+    
     try:
         # Ensure model is loaded
         if not model_manager.is_model_loaded():
@@ -168,11 +213,27 @@ async def transcribe_audio(
                 detail="Either 'file' or 'audio' must be provided"
             )
         
-        # Process audio with context
-        audio_array, combined_prompt = await audio_processor.process_audio_base64(
-            audio_base64,
-            prompt
-        )
+        # Process audio with context (now supports chunking)
+        
+        try:
+            result = await audio_processor.process_audio_base64(
+                audio_base64,
+                prompt,
+                use_chunking=True
+            )
+        except Exception as e:
+            logger.error(f"Audio processing failed: {type(e).__name__}: {e}")
+            logger.error(f"Full traceback:", exc_info=True)
+            raise
+        
+        # Handle both single audio and chunked audio
+        if isinstance(result[0], list):
+            # Multiple chunks
+            audio_chunks, combined_prompt = result
+        else:
+            # Single audio array
+            audio_array, combined_prompt = result
+            audio_chunks = [audio_array]
         
         # Add language hint if provided
         if language:
@@ -189,7 +250,7 @@ async def transcribe_audio(
             return StreamingResponse(
                 generator.generate_stream(
                     prompt=combined_prompt,
-                    audio_array=audio_array,
+                    audio_array=audio_chunks[0] if len(audio_chunks) == 1 else audio_chunks,
                     temperature=temperature,
                     max_tokens=ServiceConfig.DEFAULT_MAX_TOKENS
                 ),
@@ -197,23 +258,38 @@ async def transcribe_audio(
             )
         else:
             # Non-streaming response
-            transcription = await generate_transcription(
-                prompt=combined_prompt,
-                audio_array=audio_array,
-                temperature=temperature
-            )
+            if len(audio_chunks) == 1:
+                # Single chunk processing
+                transcription = await generate_transcription_optimized(
+                    prompt=combined_prompt,
+                    audio_array=audio_chunks[0],
+                    temperature=temperature
+                )
+            else:
+                # Multi-chunk processing
+                transcription = await process_audio_chunks(
+                    chunks=audio_chunks,
+                    prompt=combined_prompt,
+                    temperature=temperature
+                )
+            
+            # Calculate total duration for response
+            total_duration = sum(len(chunk) for chunk in audio_chunks) / audio_processor.sample_rate
             
             # Format response based on response_format
+            
             if response_format == "text":
                 return transcription
             elif response_format == "verbose_json":
-                return TranscriptionResponse(
+                response = TranscriptionResponse(
                     text=transcription,
                     language=language,
-                    duration=len(audio_array) / audio_processor.sample_rate
+                    duration=total_duration
                 )
+                return response
             else:  # json
-                return {"text": transcription}
+                response = {"text": transcription}
+                return response
     
     except HTTPException:
         raise
@@ -400,6 +476,16 @@ async def load_model(background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Legacy function for backwards compatibility
+async def generate_transcription(
+    prompt: str,
+    audio_array: np.ndarray,
+    temperature: float
+) -> str:
+    """Legacy generate_transcription function - use generate_transcription_optimized instead."""
+    return await generate_transcription_optimized(prompt, audio_array, temperature)
+
+
 # Helper functions
 def build_chat_prompt(messages: List[Dict[str, Any]]) -> str:
     """Build a prompt from chat messages."""
@@ -422,50 +508,104 @@ def build_chat_prompt(messages: List[Dict[str, Any]]) -> str:
     return "\n\n".join(prompt_parts)
 
 
-async def generate_transcription(
+async def generate_transcription_optimized(
     prompt: str,
     audio_array: np.ndarray,
-    temperature: float
+    temperature: float,
+    task_type: str = "cpu_optimized"
 ) -> str:
     """Generate transcription from audio."""
+    
     try:
-        # Prepare inputs
-        inputs = audio_processor.prepare_for_model(
-            audio_array,
-            model_manager.processor
+        # Use the processor to handle both audio and text together
+        
+        # Reshape audio to add batch dimension if needed
+        if audio_array.ndim == 1:
+            audio_array = audio_array.reshape(1, -1)
+        
+        # Process audio and text through the unified processor
+        inputs = model_manager.processor(
+            audio=audio_array,
+            text=prompt,
+            sampling_rate=ServiceConfig.AUDIO_SAMPLE_RATE,
+            return_tensors="pt"
         )
         
-        # Add text prompt
-        text_inputs = model_manager.tokenizer(
-            prompt,
-            return_tensors="pt",
-            truncation=True,
-            max_length=2048
-        ).to(model_manager.device)
+        # Move inputs to device
+        inputs = {k: v.to(model_manager.device) if hasattr(v, 'to') else v for k, v in inputs.items()}
         
-        # Generate
-        with torch.no_grad():
-            outputs = model_manager.model.generate(
-                **text_inputs,
-                max_new_tokens=ServiceConfig.DEFAULT_MAX_TOKENS,
-                temperature=temperature,
-                do_sample=temperature > 0,
-                top_p=0.95,
-                pad_token_id=model_manager.tokenizer.pad_token_id,
-                eos_token_id=model_manager.tokenizer.eos_token_id,
-            )
+        # Get optimized generation config for the task
+        gen_config = ServiceConfig.get_generation_config(task_type)
+        gen_config.update({
+            'pad_token_id': model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id,
+            'eos_token_id': model_manager.tokenizer.eos_token_id,
+            'temperature': temperature if temperature > 0 else 0.1,
+        })
+        
+        
+        # Use inference mode for better CPU performance
+        if model_manager.device == "cpu":
+            with torch.inference_mode():
+                outputs = model_manager.model.generate(**inputs, **gen_config)
+        else:
+            with torch.no_grad():
+                outputs = model_manager.model.generate(**inputs, **gen_config)
+        
+        # Check if generation succeeded
+        if outputs is None or len(outputs) == 0:
+            logger.error("Model generation failed - no outputs produced")
+            raise ValueError("Model generation failed - no outputs produced")
         
         # Decode
+        # Decode the output, skipping the input tokens
+        input_length = inputs['input_ids'].shape[1] if 'input_ids' in inputs else 0
         response = model_manager.tokenizer.decode(
-            outputs[0][text_inputs.input_ids.shape[1]:],
+            outputs[0][input_length:],
             skip_special_tokens=True
         )
         
         return response.strip()
     
     except Exception as e:
-        logger.error(f"Generation error: {e}")
+        logger.error(f"=== GENERATION ERROR ===")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Error message: {e}")
+        logger.error(f"Full traceback:", exc_info=True)
         raise
+
+
+async def process_audio_chunks(
+    chunks: List[np.ndarray],
+    prompt: str,
+    temperature: float
+) -> str:
+    """Process multiple audio chunks and combine transcriptions."""
+    
+    transcriptions = []
+    for i, chunk in enumerate(chunks):
+        
+        try:
+            # Use shorter prompt for chunks after the first
+            chunk_prompt = prompt if i == 0 else "Transcribe the following audio chunk:"
+            
+            transcription = await generate_transcription_optimized(
+                prompt=chunk_prompt,
+                audio_array=chunk,
+                temperature=temperature,
+                task_type="cpu_optimized"
+            )
+            
+            if transcription.strip():
+                transcriptions.append(transcription.strip())
+            
+        except Exception as e:
+            logger.warning(f"Failed to process chunk {i+1}: {e}")
+            # Continue with other chunks
+    
+    # Combine transcriptions with proper spacing
+    final_transcription = " ".join(transcriptions)
+    
+    return final_transcription
 
 
 async def generate_text(

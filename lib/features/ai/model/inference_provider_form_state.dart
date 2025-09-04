@@ -1,4 +1,5 @@
 import 'package:formz/formz.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -28,9 +29,8 @@ class ApiKeyValue extends FormzInput<String, ProviderFormError> {
 
   @override
   ProviderFormError? validator(String value) {
-    // API key is not required for local providers (Ollama, FastWhisper, and Whisper)
-    if (providerType == InferenceProviderType.ollama ||
-        providerType == InferenceProviderType.whisper) {
+    // API key is not required for local providers (Ollama, Whisper, Gemma, etc.)
+    if (providerType != null && !ProviderConfig.requiresApiKey(providerType!)) {
       return null;
     }
     return value.isEmpty ? ProviderFormError.empty : null;
