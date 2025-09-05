@@ -9,8 +9,8 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/utils/location.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 Future<void> importImageAssets(

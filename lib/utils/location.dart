@@ -1,13 +1,14 @@
 import 'dart:io';
 
-import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoclue/geoclue.dart';
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/platform.dart';
 
 class LocationConstants {
@@ -18,12 +19,18 @@ class LocationConstants {
 }
 
 class DeviceLocation {
-  DeviceLocation() {
-    location = Location();
+  DeviceLocation({
+    Location? locationService,
+    IpGeolocationProvider? ipGeolocationProvider,
+  }) {
+    location = locationService ?? Location();
+    _ipGeolocationProvider =
+        ipGeolocationProvider ?? defaultIpGeolocationProvider;
     init();
   }
 
   late Location location;
+  late IpGeolocationProvider _ipGeolocationProvider;
 
   Future<void> init() async {
     bool serviceEnabled;
@@ -35,7 +42,8 @@ class DeviceLocation {
     try {
       serviceEnabled = await location.serviceEnabled();
     } catch (e) {
-      // Location services not available in flatpak environment
+      // Location services not available (e.g., in flatpak environment)
+      // This is expected, we'll use IP-based fallback
       getIt<LoggingService>().captureException(
         e,
         domain: 'LOCATION_SERVICE',
@@ -60,12 +68,6 @@ class DeviceLocation {
   }
 
   Future<Geolocation?> getCurrentGeoLocation() async {
-    if (Platform.isLinux) {
-      return getCurrentGeoLocationLinux();
-    }
-
-    final now = DateTime.now();
-
     final recordLocation =
         await getIt<JournalDb>().getConfigFlag(recordLocationFlag);
 
@@ -73,36 +75,60 @@ class DeviceLocation {
       return null;
     }
 
-    final permissionStatus = await _requestPermission();
+    // Try native geolocation first
+    Geolocation? nativeLocation;
 
-    if (permissionStatus == PermissionStatus.denied ||
-        permissionStatus == PermissionStatus.deniedForever) {
-      return null;
+    if (Platform.isLinux) {
+      try {
+        nativeLocation = await getCurrentGeoLocationLinux();
+      } catch (e) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'LOCATION_SERVICE',
+          subDomain: 'linux_native_fallback',
+        );
+      }
+    } else {
+      final permissionStatus = await _requestPermission();
+
+      if (permissionStatus != PermissionStatus.denied &&
+          permissionStatus != PermissionStatus.deniedForever) {
+        try {
+          final now = DateTime.now();
+          final locationData = await location.getLocation();
+          final longitude = locationData.longitude;
+          final latitude = locationData.latitude;
+
+          if (longitude != null && latitude != null) {
+            nativeLocation = Geolocation(
+              createdAt: now,
+              timezone: now.timeZoneName,
+              utcOffset: now.timeZoneOffset.inMinutes,
+              latitude: latitude,
+              longitude: longitude,
+              altitude: locationData.altitude,
+              speed: locationData.speed,
+              accuracy: locationData.accuracy,
+              heading: locationData.heading,
+              speedAccuracy: locationData.speedAccuracy,
+              geohashString: getGeoHash(
+                latitude: latitude,
+                longitude: longitude,
+              ),
+            );
+          }
+        } catch (e) {
+          getIt<LoggingService>().captureException(
+            e,
+            domain: 'LOCATION_SERVICE',
+            subDomain: 'native_location_fallback',
+          );
+        }
+      }
     }
 
-    final locationData = await location.getLocation();
-    final longitude = locationData.longitude;
-    final latitude = locationData.latitude;
-    if (longitude != null && latitude != null) {
-      return Geolocation(
-        createdAt: now,
-        timezone: now.timeZoneName,
-        utcOffset: now.timeZoneOffset.inMinutes,
-        latitude: latitude,
-        longitude: longitude,
-        altitude: locationData.altitude,
-        speed: locationData.speed,
-        accuracy: locationData.accuracy,
-        heading: locationData.heading,
-        headingAccuracy: locationData.headingAccuracy,
-        speedAccuracy: locationData.speedAccuracy,
-        geohashString: getGeoHash(
-          latitude: latitude,
-          longitude: longitude,
-        ),
-      );
-    }
-    return null;
+    // Return native location if successful, otherwise fallback to IP geolocation
+    return nativeLocation ?? await _ipGeolocationProvider();
   }
 
   Future<Geolocation?> getCurrentGeoLocationLinux() async {
@@ -110,51 +136,44 @@ class DeviceLocation {
 
     if (Platform.isLinux) {
       final manager = GeoClueManager();
-      await manager.connect();
-      final client = await manager.getClient();
-      await client.setDesktopId(LocationConstants.appDesktopId);
-      await client.setRequestedAccuracyLevel(GeoClueAccuracyLevel.exact);
-      await client.start();
+      GeoClueClient? client;
+      try {
+        await manager.connect();
+        client = await manager.getClient();
+        await client.setDesktopId(LocationConstants.appDesktopId);
+        await client.setRequestedAccuracyLevel(GeoClueAccuracyLevel.exact);
+        await client.start();
 
-      final locationData = await client.locationUpdated
-          .timeout(
-            LocationConstants.locationTimeout,
-            onTimeout: (_) => manager.close(),
-          )
-          .first;
+        final locationData = await client.locationUpdated.first.timeout(
+          LocationConstants.locationTimeout,
+        );
 
-      await client.stop();
+        final longitude = locationData.longitude;
+        final latitude = locationData.latitude;
 
-      final longitude = locationData.longitude;
-      final latitude = locationData.latitude;
-
-      return Geolocation(
-        createdAt: now,
-        timezone: now.timeZoneName,
-        utcOffset: now.timeZoneOffset.inMinutes,
-        latitude: latitude,
-        longitude: longitude,
-        altitude: locationData.altitude,
-        speed: locationData.speed,
-        accuracy: locationData.accuracy,
-        heading: locationData.heading,
-        geohashString: getGeoHash(
+        return Geolocation(
+          createdAt: now,
+          timezone: now.timeZoneName,
+          utcOffset: now.timeZoneOffset.inMinutes,
           latitude: latitude,
           longitude: longitude,
-        ),
-      );
+          altitude: locationData.altitude,
+          speed: locationData.speed,
+          accuracy: locationData.accuracy,
+          heading: locationData.heading,
+          geohashString: getGeoHash(
+            latitude: latitude,
+            longitude: longitude,
+          ),
+        );
+      } finally {
+        if (client != null) {
+          await client.stop();
+        }
+        await manager.close();
+      }
     }
 
     return null;
   }
-}
-
-String getGeoHash({
-  required double latitude,
-  required double longitude,
-}) {
-  return GeoHasher().encode(
-    longitude,
-    latitude,
-  );
 }
