@@ -138,5 +138,6 @@ class ChatStateUiModel {
 
   /// Check if any session is loading
   bool get isAnySessionLoading =>
-      (currentSession?.isLoading ?? false) || recentSessions.any((s) => s.isLoading);
+      (currentSession?.isLoading ?? false) ||
+      recentSessions.any((s) => s.isLoading);
 }
