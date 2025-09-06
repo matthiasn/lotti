@@ -22,7 +22,6 @@ void main() {
   tearDown(getIt.reset);
 
   group('IpGeolocationService Integration Tests', () {
-    // These tests make real network calls and should be skipped in CI
     group('Live API Tests', () {
       test(
         'getLocationFromIp returns valid geolocation from real API',
@@ -37,7 +36,6 @@ void main() {
           expect(result.timezone, isNotEmpty);
           expect(result.utcOffset, isNotNull);
         },
-        skip: 'Requires network access - run manually',
       );
 
       test(
@@ -57,7 +55,6 @@ void main() {
             );
           }
         },
-        skip: 'Requires network access - run manually',
       );
 
       test(
@@ -77,7 +74,6 @@ void main() {
             }
           }
         },
-        skip: 'Requires network access - run manually',
       );
     });
 
@@ -98,28 +94,30 @@ void main() {
           // Result should be either null or a valid Geolocation
           expect(result, anyOf(isNull, isA<Geolocation>()));
         },
-        skip: 'Requires network access - run manually',
       );
     });
   });
 
   group('UTC Offset Parsing Tests', () {
     // These tests validate the parsing logic indirectly through the API response
-    test('handles various timezone offsets correctly', () async {
-      // Test data for known timezone offsets - not used in actual test
-      // but kept for reference
+    test(
+      'handles various timezone offsets correctly',
+      () async {
+        // Test data for known timezone offsets - not used in actual test
+        // but kept for reference
 
-      // Note: We can't directly test _parseUtcOffset since it's private
-      // But we can verify the service handles different formats correctly
-      // by checking the result includes a valid UTC offset
+        // Note: We can't directly test _parseUtcOffset since it's private
+        // But we can verify the service handles different formats correctly
+        // by checking the result includes a valid UTC offset
 
-      final result = await IpGeolocationService.getLocationFromIp();
+        final result = await IpGeolocationService.getLocationFromIp();
 
-      if (result != null) {
-        // The offset should be valid regardless of the user's location
-        expect(result.utcOffset, isNotNull);
-        expect(result.utcOffset, isA<int>());
-      }
-    }, skip: 'flaky: live network call, skip for CI stability');
+        if (result != null) {
+          // The offset should be valid regardless of the user's location
+          expect(result.utcOffset, isNotNull);
+          expect(result.utcOffset, isA<int>());
+        }
+      },
+    );
   });
 }
