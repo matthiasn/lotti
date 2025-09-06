@@ -5478,7 +5478,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> linkedJournalEntities(String fromId) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT to_id FROM linked_entries WHERE from_id = ?1) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+        'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT to_id FROM linked_entries WHERE from_id = ?1 AND hidden = FALSE) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
         variables: [
           Variable<String>(fromId)
         ],
@@ -5523,7 +5523,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedfromIds = $expandVar($arrayStartIndex, fromIds.length);
     $arrayStartIndex += fromIds.length;
     return customSelect(
-        'SELECT * FROM linked_entries WHERE from_id IN ($expandedfromIds)',
+        'SELECT * FROM linked_entries WHERE from_id IN ($expandedfromIds) AND hidden = FALSE',
         variables: [
           for (var $ in fromIds) Variable<String>($)
         ],

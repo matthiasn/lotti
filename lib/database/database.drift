@@ -548,7 +548,7 @@ SELECT COUNT(*) FROM tagged;
 linkedJournalEntities:
 SELECT * FROM journal
   WHERE deleted = false
-  AND id IN (SELECT to_id FROM linked_entries WHERE from_id = :from_id)
+  AND id IN (SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden = false)
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
@@ -565,7 +565,8 @@ SELECT * FROM linked_entries
 
 linksFromIds:
 SELECT * FROM linked_entries
-  WHERE from_id IN :from_ids;
+  WHERE from_id IN :from_ids
+  AND hidden = false;
 
 entriesForIds:
 SELECT * FROM journal

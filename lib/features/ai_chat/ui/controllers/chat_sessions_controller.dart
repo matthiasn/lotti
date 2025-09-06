@@ -1,3 +1,4 @@
+import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/get_it.dart';
@@ -64,7 +65,7 @@ class ChatSessionsController extends _$ChatSessionsController {
       );
 
       state = state.copyWith(error: 'Failed to create new session: $e');
-      throw Exception('Failed to create new session: $e');
+      throw ChatRepositoryException('Failed to create new session: $e', e);
     }
   }
 
@@ -75,7 +76,7 @@ class ChatSessionsController extends _$ChatSessionsController {
       final session = await chatRepository.getSession(sessionId);
 
       if (session == null) {
-        throw Exception('Session not found');
+        throw const ChatRepositoryException('Session not found');
       }
 
       final uiModel = ChatSessionUiModel.fromDomain(session);

@@ -16,10 +16,9 @@ The feature follows a clean, modular architecture with clear separation of conce
 
 ```
 lib/features/ai_chat/
-├── domain/
-│   ├── models/chat_session.dart        # Domain model for chat sessions
 ├── models/
 │   ├── chat_message.dart               # Core message model
+│   ├── chat_session.dart               # Domain model for chat sessions
 │   └── task_summary_tool.dart          # OpenAI function calling schema
 ├── repository/
 │   ├── chat_repository.dart            # Core business logic orchestrator

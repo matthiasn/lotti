@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
@@ -130,7 +131,7 @@ class ChatRepository {
         subDomain: 'sendMessage',
         stackTrace: stackTrace,
       );
-      throw Exception('Chat error: $e');
+      throw ChatRepositoryException('Failed to send message: $e', e);
     }
   }
 

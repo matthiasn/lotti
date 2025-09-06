@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
@@ -116,8 +117,11 @@ void main() {
                 categoryId: testCategoryId,
               )
               .first,
-          throwsA(predicate((e) =>
-              e.toString().contains('Chat error: Exception: Test error'))),
+          throwsA(isA<ChatRepositoryException>().having(
+            (e) => e.message,
+            'message',
+            contains('Failed to send message: Exception: Test error'),
+          )),
         );
 
         // Give the async operations time to complete
@@ -367,7 +371,7 @@ void main() {
               .first;
         } catch (e) {
           exceptionCaught = true;
-          expect(e.toString(), contains('Chat error'));
+          expect(e.toString(), contains('Failed to send message'));
           expect(e.toString(), contains('Processor integration test'));
         }
 
