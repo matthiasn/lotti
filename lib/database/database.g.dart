@@ -5612,6 +5612,28 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
   }
 
+  Selectable<JournalDbEntity> workEntriesInDateRange(List<String> types,
+      List<String> categoryIds, DateTime startDate, DateTime endDate) {
+    var $arrayStartIndex = 3;
+    final expandedtypes = $expandVar($arrayStartIndex, types.length);
+    $arrayStartIndex += types.length;
+    final expandedcategoryIds =
+        $expandVar($arrayStartIndex, categoryIds.length);
+    $arrayStartIndex += categoryIds.length;
+    return customSelect(
+        'SELECT * FROM journal WHERE deleted = FALSE AND type IN ($expandedtypes) AND category IN ($expandedcategoryIds) AND date_from >= ?1 AND date_from <= ?2 AND(type = \'JournalAudio\' OR(type = \'JournalEntry\' AND(julianday(date_to) - julianday(date_from))* 24 * 3600 >= 15))AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+        variables: [
+          Variable<DateTime>(startDate),
+          Variable<DateTime>(endDate),
+          for (var $ in types) Variable<String>($),
+          for (var $ in categoryIds) Variable<String>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+        }).asyncMap(journal.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

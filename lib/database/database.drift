@@ -598,3 +598,20 @@ deleteLink:
 DELETE FROM linked_entries
   WHERE from_id = :from_id
   AND to_id = :to_id;
+
+workEntriesInDateRange:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND type IN :types
+  AND category IN :categoryIds  
+  AND date_from >= :startDate
+  AND date_from <= :endDate
+  AND (
+    -- For JournalAudio, include all entries
+    type = 'JournalAudio'
+    OR 
+    -- For JournalEntry, only include entries with duration >= 15 seconds
+    (type = 'JournalEntry' AND (julianday(date_to) - julianday(date_from)) * 24 * 3600 >= 15)
+  )
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;
