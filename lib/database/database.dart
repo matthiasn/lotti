@@ -382,6 +382,41 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
+  /// Get linked entities for multiple parent IDs in bulk to avoid N+1 queries
+  Future<Map<String, List<JournalEntity>>> getBulkLinkedEntities(
+    Set<String> fromIds,
+  ) async {
+    // Get all links for the parent IDs
+    final links = await linksForEntryIds(fromIds);
+
+    // Collect all target IDs
+    final targetIds = links.map((link) => link.toId).toSet();
+
+    // Fetch all linked entities in one query
+    final entities = await getJournalEntitiesForIds(targetIds);
+
+    // Group by parent ID
+    final result = <String, List<JournalEntity>>{};
+    for (final fromId in fromIds) {
+      result[fromId] = [];
+    }
+
+    // Map entities to their parent IDs
+    for (final link in links) {
+      try {
+        final entity = entities.firstWhere(
+          (e) => e.meta.id == link.toId,
+        );
+        result[link.fromId]?.add(entity);
+      } catch (e) {
+        // Entity not found - skip this link
+        continue;
+      }
+    }
+
+    return result;
+  }
+
   Future<List<JournalEntity>> sortedCalendarEntries({
     required DateTime rangeStart,
     required DateTime rangeEnd,

@@ -1277,10 +1277,10 @@ packages:
     dependency: "direct main"
     description:
       name: gpt_markdown
-      sha256: a0c6f8a89b405d0ea781734e090cce41df2a1240a7ee9f185556fce22a9f7919
+      sha256: "8174983f2ed7d8576d25810913e3afe3f8ffdaa3172c0c823b7cfc289b67f380"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.3"
+    version: "1.1.4"
   graphic:
     dependency: "direct main"
     description:
@@ -2792,10 +2792,10 @@ packages:
     dependency: transitive
     description:
       name: sqlparser
-      sha256: "7c859c803cf7e9a84d6db918bac824545045692bbe94a6386bd3a45132235d09"
+      sha256: "57090342af1ce32bb499aa641f4ecdd2d6231b9403cea537ac059e803cc20d67"
       url: "https://pub.dev"
     source: hosted
-    version: "0.41.1"
+    version: "0.41.2"
   stack_trace:
     dependency: transitive
     description:
