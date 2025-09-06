@@ -391,8 +391,9 @@ class JournalDb extends _$JournalDb {
       return <String, List<JournalEntity>>{};
     }
 
-    // Get all links for the parent IDs
-    final links = await linksForEntryIds(fromIds);
+    // Get all links FROM the parent IDs (matching getLinkedEntities behavior)
+    final linkEntries = await linksFromIds(fromIds.toList()).get();
+    final links = linkEntries.map(entryLinkFromLinkedDbEntry).toList();
 
     // Collect all target IDs
     final targetIds = links.map((link) => link.toId).toSet();
