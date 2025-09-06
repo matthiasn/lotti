@@ -279,11 +279,7 @@ class ChatMessageProcessor {
       final args =
           jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
 
-      final request = TaskSummaryRequest(
-        startDate: DateTime.parse(args['start_date'] as String),
-        endDate: DateTime.parse(args['end_date'] as String),
-        limit: (args['limit'] as int?) ?? 100,
-      );
+      final request = TaskSummaryRequest.fromJson(args);
 
       loggingService.captureEvent(
         'Processing task summary tool call',

@@ -20,7 +20,9 @@ TaskSummaryRequest _$TaskSummaryRequestFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$TaskSummaryRequest {
+  @JsonKey(name: 'start_date')
   DateTime get startDate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'end_date')
   DateTime get endDate => throw _privateConstructorUsedError;
   int get limit => throw _privateConstructorUsedError;
 
@@ -40,7 +42,10 @@ abstract class $TaskSummaryRequestCopyWith<$Res> {
           TaskSummaryRequest value, $Res Function(TaskSummaryRequest) then) =
       _$TaskSummaryRequestCopyWithImpl<$Res, TaskSummaryRequest>;
   @useResult
-  $Res call({DateTime startDate, DateTime endDate, int limit});
+  $Res call(
+      {@JsonKey(name: 'start_date') DateTime startDate,
+      @JsonKey(name: 'end_date') DateTime endDate,
+      int limit});
 }
 
 /// @nodoc
@@ -87,7 +92,10 @@ abstract class _$$TaskSummaryRequestImplCopyWith<$Res>
       __$$TaskSummaryRequestImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({DateTime startDate, DateTime endDate, int limit});
+  $Res call(
+      {@JsonKey(name: 'start_date') DateTime startDate,
+      @JsonKey(name: 'end_date') DateTime endDate,
+      int limit});
 }
 
 /// @nodoc
@@ -128,14 +136,18 @@ class __$$TaskSummaryRequestImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$TaskSummaryRequestImpl implements _TaskSummaryRequest {
   const _$TaskSummaryRequestImpl(
-      {required this.startDate, required this.endDate, this.limit = 100});
+      {@JsonKey(name: 'start_date') required this.startDate,
+      @JsonKey(name: 'end_date') required this.endDate,
+      this.limit = 100});
 
   factory _$TaskSummaryRequestImpl.fromJson(Map<String, dynamic> json) =>
       _$$TaskSummaryRequestImplFromJson(json);
 
   @override
+  @JsonKey(name: 'start_date')
   final DateTime startDate;
   @override
+  @JsonKey(name: 'end_date')
   final DateTime endDate;
   @override
   @JsonKey()
@@ -180,16 +192,18 @@ class _$TaskSummaryRequestImpl implements _TaskSummaryRequest {
 
 abstract class _TaskSummaryRequest implements TaskSummaryRequest {
   const factory _TaskSummaryRequest(
-      {required final DateTime startDate,
-      required final DateTime endDate,
+      {@JsonKey(name: 'start_date') required final DateTime startDate,
+      @JsonKey(name: 'end_date') required final DateTime endDate,
       final int limit}) = _$TaskSummaryRequestImpl;
 
   factory _TaskSummaryRequest.fromJson(Map<String, dynamic> json) =
       _$TaskSummaryRequestImpl.fromJson;
 
   @override
+  @JsonKey(name: 'start_date')
   DateTime get startDate;
   @override
+  @JsonKey(name: 'end_date')
   DateTime get endDate;
   @override
   int get limit;

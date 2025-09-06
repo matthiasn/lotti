@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
@@ -121,16 +122,7 @@ class TaskSummaryRepository {
           final aiData = latestSummary.data;
 
           // Get task status name
-          final status = task.data.status;
-          final statusName = status.map(
-            open: (_) => 'OPEN',
-            inProgress: (_) => 'IN PROGRESS',
-            groomed: (_) => 'GROOMED',
-            blocked: (_) => 'BLOCKED',
-            onHold: (_) => 'ON HOLD',
-            done: (_) => 'DONE',
-            rejected: (_) => 'REJECTED',
-          );
+          final statusName = task.data.status.toDbString;
 
           results.add(TaskSummaryResult(
             taskId: task.meta.id,
@@ -147,16 +139,7 @@ class TaskSummaryRepository {
         }
       } else {
         // No AI summary available, create a basic summary
-        final status = task.data.status;
-        final statusName = status.map(
-          open: (_) => 'OPEN',
-          inProgress: (_) => 'IN PROGRESS',
-          groomed: (_) => 'GROOMED',
-          blocked: (_) => 'BLOCKED',
-          onHold: (_) => 'ON HOLD',
-          done: (_) => 'DONE',
-          rejected: (_) => 'REJECTED',
-        );
+        final statusName = task.data.status.toDbString;
 
         results.add(TaskSummaryResult(
           taskId: task.meta.id,

@@ -39,8 +39,8 @@ class TaskSummaryTool {
 @freezed
 class TaskSummaryRequest with _$TaskSummaryRequest {
   const factory TaskSummaryRequest({
-    required DateTime startDate,
-    required DateTime endDate,
+    @JsonKey(name: 'start_date') required DateTime startDate,
+    @JsonKey(name: 'end_date') required DateTime endDate,
     @Default(100) int limit,
   }) = _TaskSummaryRequest;
 

@@ -402,12 +402,12 @@ class JournalDb extends _$JournalDb {
     final entities = await getJournalEntitiesForIds(targetIds);
 
     // Group by parent ID with deduplication tracking
-    final result = <String, List<JournalEntity>>{};
-    final seenEntities = <String, Set<String>>{};
-    for (final fromId in fromIds) {
-      result[fromId] = [];
-      seenEntities[fromId] = <String>{};
-    }
+    final result = <String, List<JournalEntity>>{
+      for (final id in fromIds) id: []
+    };
+    final seenEntities = <String, Set<String>>{
+      for (final id in fromIds) id: {}
+    };
 
     // Create entity lookup map for O(1) access
     final entityMap = <String, JournalEntity>{};
