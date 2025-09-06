@@ -270,7 +270,7 @@ class JournalDb extends _$JournalDb {
   Future<List<JournalEntity>> getJournalEntitiesForIds(
     Set<String> ids,
   ) async {
-    final res = await entriesForIds(ids.toList()).get();
+    final res = await journalEntitiesByIds(ids.toList()).get();
     return res.map(fromDbEntity).toList();
   }
 
@@ -380,6 +380,58 @@ class JournalDb extends _$JournalDb {
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
     final dbEntities = await linkedJournalEntities(linkedFrom).get();
     return dbEntities.map(fromDbEntity).toList();
+  }
+
+  /// Get linked entities for multiple parent IDs in bulk to avoid N+1 queries
+  Future<Map<String, List<JournalEntity>>> getBulkLinkedEntities(
+    Set<String> fromIds,
+  ) async {
+    // Early return for empty set
+    if (fromIds.isEmpty) {
+      return <String, List<JournalEntity>>{};
+    }
+
+    // Get all links FROM the parent IDs (matching getLinkedEntities behavior)
+    final linkEntries = await linksFromIds(fromIds.toList()).get();
+    final links = linkEntries.map(entryLinkFromLinkedDbEntry).toList();
+
+    // Collect all target IDs
+    final targetIds = links.map((link) => link.toId).toSet();
+
+    // Fetch all linked entities in one query
+    final entities = await getJournalEntitiesForIds(targetIds);
+
+    // Group by parent ID with deduplication tracking
+    final result = <String, List<JournalEntity>>{
+      for (final id in fromIds) id: []
+    };
+    final seenEntities = <String, Set<String>>{
+      for (final id in fromIds) id: {}
+    };
+
+    // Create entity lookup map for O(1) access
+    final entityMap = <String, JournalEntity>{};
+    for (final entity in entities) {
+      entityMap[entity.meta.id] = entity;
+    }
+
+    // Map entities to their parent IDs using O(1) lookup with deduplication
+    for (final link in links) {
+      final entity = entityMap[link.toId];
+      if (entity != null) {
+        // Only add if not already seen for this parent
+        if (seenEntities[link.fromId]!.add(entity.meta.id)) {
+          result[link.fromId]?.add(entity);
+        }
+      }
+    }
+
+    // Sort each result list by dateFrom descending to match single-parent semantics
+    for (final entry in result.entries) {
+      entry.value.sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+    }
+
+    return result;
   }
 
   Future<List<JournalEntity>> sortedCalendarEntries({

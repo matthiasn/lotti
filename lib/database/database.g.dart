@@ -5478,7 +5478,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> linkedJournalEntities(String fromId) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT to_id FROM linked_entries WHERE from_id = ?1) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+        'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT to_id FROM linked_entries WHERE from_id = ?1 AND hidden = FALSE) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
         variables: [
           Variable<String>(fromId)
         ],
@@ -5512,6 +5512,20 @@ abstract class _$JournalDb extends GeneratedDatabase {
         'SELECT * FROM linked_entries WHERE to_id IN ($expandedtoIds)',
         variables: [
           for (var $ in toIds) Variable<String>($)
+        ],
+        readsFrom: {
+          linkedEntries,
+        }).asyncMap(linkedEntries.mapFromRow);
+  }
+
+  Selectable<LinkedDbEntry> linksFromIds(List<String> fromIds) {
+    var $arrayStartIndex = 1;
+    final expandedfromIds = $expandVar($arrayStartIndex, fromIds.length);
+    $arrayStartIndex += fromIds.length;
+    return customSelect(
+        'SELECT * FROM linked_entries WHERE from_id IN ($expandedfromIds) AND hidden = FALSE',
+        variables: [
+          for (var $ in fromIds) Variable<String>($)
         ],
         readsFrom: {
           linkedEntries,
@@ -5596,6 +5610,28 @@ abstract class _$JournalDb extends GeneratedDatabase {
       updates: {linkedEntries},
       updateKind: UpdateKind.delete,
     );
+  }
+
+  Selectable<JournalDbEntity> workEntriesInDateRange(List<String> types,
+      List<String> categoryIds, DateTime startDate, DateTime endDate) {
+    var $arrayStartIndex = 3;
+    final expandedtypes = $expandVar($arrayStartIndex, types.length);
+    $arrayStartIndex += types.length;
+    final expandedcategoryIds =
+        $expandVar($arrayStartIndex, categoryIds.length);
+    $arrayStartIndex += categoryIds.length;
+    return customSelect(
+        'SELECT * FROM journal WHERE deleted = FALSE AND type IN ($expandedtypes) AND category IN ($expandedcategoryIds) AND date_from >= ?1 AND date_from <= ?2 AND(type = \'JournalAudio\' OR(type = \'JournalEntry\' AND(julianday(date_to) - julianday(date_from))* 24 * 3600 >= 15))AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+        variables: [
+          Variable<DateTime>(startDate),
+          Variable<DateTime>(endDate),
+          for (var $ in types) Variable<String>($),
+          for (var $ in categoryIds) Variable<String>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+        }).asyncMap(journal.mapFromRow);
   }
 
   @override

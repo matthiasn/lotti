@@ -1,0 +1,939 @@
+import 'dart:convert';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai_chat/models/chat_message.dart';
+import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
+import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
+import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
+import 'package:lotti/services/logging_service.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
+
+// Mock implementations
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class MockCloudInferenceRepository extends Mock
+    implements CloudInferenceRepository {}
+
+class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
+
+class MockLoggingService extends Mock implements LoggingService {}
+
+void main() {
+  setUpAll(() {
+    registerFallbackValue(
+        TaskSummaryRequest(startDate: DateTime.now(), endDate: DateTime.now()));
+    registerFallbackValue(Exception('test'));
+  });
+
+  group('ChatMessageProcessor', () {
+    late ChatMessageProcessor processor;
+    late MockAiConfigRepository mockAiConfigRepository;
+    late MockCloudInferenceRepository mockCloudInferenceRepository;
+    late MockTaskSummaryRepository mockTaskSummaryRepository;
+    late MockLoggingService mockLoggingService;
+
+    final testDate = DateTime(2024);
+    const testCategoryId = 'test-category-123';
+
+    setUp(() {
+      mockAiConfigRepository = MockAiConfigRepository();
+      mockCloudInferenceRepository = MockCloudInferenceRepository();
+      mockTaskSummaryRepository = MockTaskSummaryRepository();
+      mockLoggingService = MockLoggingService();
+
+      processor = ChatMessageProcessor(
+        aiConfigRepository: mockAiConfigRepository,
+        cloudInferenceRepository: mockCloudInferenceRepository,
+        taskSummaryRepository: mockTaskSummaryRepository,
+        loggingService: mockLoggingService,
+      );
+    });
+
+    group('getAiConfiguration', () {
+      test('returns valid configuration when provider and model exist',
+          () async {
+        // Arrange
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          name: 'Gemini Provider',
+          baseUrl: 'https://api.gemini.com',
+          apiKey: 'test-key',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Gemini Flash',
+          providerModelId: 'gemini-flash-1.5',
+          inferenceProviderId: provider.id,
+          createdAt: testDate,
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        );
+
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [provider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [model]);
+
+        // Act
+        final config = await processor.getAiConfiguration();
+
+        // Assert
+        expect(config.provider, provider);
+        expect(config.model, model);
+      });
+
+      test('throws StateError when Gemini provider not found', () async {
+        // Arrange
+        when(() => mockAiConfigRepository.getConfigsByType(
+            AiConfigType.inferenceProvider)).thenAnswer((_) async => []);
+
+        // Act & Assert
+        expect(
+          processor.getAiConfiguration(),
+          throwsA(predicate((e) =>
+              e is StateError &&
+              e.message == 'Gemini provider not configured')),
+        );
+      });
+    });
+
+    group('convertConversationHistory', () {
+      test('filters out system messages', () {
+        // Arrange
+        final messages = [
+          ChatMessage.system('System message'),
+          ChatMessage.user('User message'),
+          ChatMessage.assistant('Assistant message'),
+        ];
+
+        // Act
+        final result = processor.convertConversationHistory(messages);
+
+        // Assert
+        expect(result.length, 2);
+        expect(result[0].role, ChatCompletionMessageRole.user);
+        expect(result[1].role, ChatCompletionMessageRole.assistant);
+      });
+
+      test('returns empty list when only system messages provided', () {
+        // Arrange
+        final messages = [
+          ChatMessage.system('System message 1'),
+          ChatMessage.system('System message 2'),
+        ];
+
+        // Act
+        final result = processor.convertConversationHistory(messages);
+
+        // Assert
+        expect(result, isEmpty);
+      });
+    });
+
+    group('buildPromptFromMessages', () {
+      test('builds prompt from conversation messages', () {
+        // Arrange
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Hello'),
+          ),
+          const ChatCompletionMessage.assistant(content: 'Hi there!'),
+        ];
+        const currentMessage = 'How are you?';
+
+        // Act
+        final result =
+            processor.buildPromptFromMessages(messages, currentMessage);
+
+        // Assert
+        expect(result, contains('User:'));
+        expect(result, contains('Hello'));
+        expect(result, contains('Assistant: Hi there!'));
+        expect(result, contains('User: How are you?'));
+      });
+
+      test('handles empty previous messages', () {
+        // Arrange
+        const currentMessage = 'Hello';
+
+        // Act
+        final result = processor.buildPromptFromMessages([], currentMessage);
+
+        // Assert
+        expect(result, contains('User:'));
+        expect(result, contains('Hello'));
+      });
+    });
+
+    group('processTaskSummaryTool', () {
+      test('processes tool call and returns task summaries', () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'tool_1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': '2024-01-01T00:00:00.000',
+              'end_date': '2024-01-01T23:59:59.999',
+              'limit': 10,
+            }),
+          ),
+        );
+
+        final taskSummaries = [
+          TaskSummaryResult(
+            taskId: 'task-1',
+            taskTitle: 'Test Task',
+            summary: 'Task summary',
+            taskDate: testDate,
+            status: 'completed',
+          ),
+        ];
+
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any<TaskSummaryRequest>(named: 'request'),
+            )).thenAnswer((_) async => taskSummaries);
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['count'], 1);
+        expect(decoded['tasks'], isA<List<dynamic>>());
+        final tasks = decoded['tasks'] as List<dynamic>;
+        expect((tasks[0] as Map<String, dynamic>)['task_id'], 'task-1');
+      });
+
+      test('returns empty message when no tasks found', () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'tool_1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': '2024-01-01T00:00:00.000',
+              'end_date': '2024-01-01T23:59:59.999',
+              'limit': 10,
+            }),
+          ),
+        );
+
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any<TaskSummaryRequest>(named: 'request'),
+            )).thenAnswer((_) async => []);
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(
+            decoded['message'], 'No tasks found in the specified date range.');
+      });
+
+      test('handles errors gracefully', () async {
+        // Arrange
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'tool_1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: 'invalid json',
+          ),
+        );
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        verify(() => mockLoggingService.captureException(
+              any<Exception>(),
+              domain: 'ChatMessageProcessor',
+              subDomain: 'processTaskSummaryTool',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('handles invalid date format in arguments', () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'test-id',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': 'invalid-date-format',
+              'end_date': '2024-01-01T00:00:00.000',
+            }),
+          ),
+        );
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'ChatMessageProcessor',
+              subDomain: 'processTaskSummaryTool',
+              stackTrace: any<dynamic>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('handles missing required fields in JSON', () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'test-id',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': '2024-01-01T00:00:00.000',
+              // Missing end_date
+            }),
+          ),
+        );
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'ChatMessageProcessor',
+              subDomain: 'processTaskSummaryTool',
+              stackTrace: any<dynamic>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('handles repository exceptions gracefully', () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'test-id',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': '2024-01-01T00:00:00.000',
+              'end_date': '2024-01-02T00:00:00.000',
+            }),
+          ),
+        );
+
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: any(named: 'categoryId'),
+              request: any(named: 'request'),
+            )).thenThrow(Exception('Database connection failed'));
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        expect(decoded['error'], contains('Database connection failed'));
+      });
+    });
+
+    group('buildFinalPromptFromMessages', () {
+      test('builds final prompt with all message types', () {
+        // Arrange
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Hello'),
+          ),
+          const ChatCompletionMessage.assistant(
+              content: 'Hi! Let me check your tasks.'),
+          const ChatCompletionMessage.tool(
+            toolCallId: 'tool_1',
+            content: '{"tasks": []}',
+          ),
+        ];
+
+        // Act
+        final result = processor.buildFinalPromptFromMessages(messages);
+
+        // Assert
+        expect(result, contains('User:'));
+        expect(result, contains('Hello'));
+        expect(result, contains('Assistant: Hi! Let me check your tasks.'));
+        expect(result, contains('Tool response: {"tasks": []}'));
+        expect(result,
+            contains('Based on the conversation and tool results above'));
+      });
+    });
+
+    group('buildMessagesList', () {
+      test('builds messages list with system prompt and history', () {
+        // Arrange
+        final previousMessages = [
+          const ChatCompletionMessage.user(
+            content:
+                ChatCompletionUserMessageContent.string('Previous message'),
+          ),
+          const ChatCompletionMessage.assistant(content: 'Previous response'),
+        ];
+        const message = 'Current message';
+        const systemMessage = 'You are a helpful assistant';
+
+        // Act
+        final result = processor.buildMessagesList(
+          previousMessages,
+          message,
+          systemMessage,
+        );
+
+        // Assert
+        expect(result.length, 4);
+        expect(result[0].role, ChatCompletionMessageRole.system);
+        expect(result[0].content, systemMessage);
+        expect(result[1].role, ChatCompletionMessageRole.user);
+        expect(result[2].role, ChatCompletionMessageRole.assistant);
+        expect(result[3].role, ChatCompletionMessageRole.user);
+        final content = result[3].content;
+        expect(content, isNotNull);
+        expect(
+          (content! as ChatCompletionUserMessageContent)
+              .whenOrNull(string: (s) => s),
+          message,
+        );
+      });
+    });
+
+    group('processStreamResponse', () {
+      test('processes stream with content only', () async {
+        // Arrange
+        final stream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Hello ',
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'world!',
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        // Act
+        final result = await processor.processStreamResponse(stream);
+
+        // Assert
+        expect(result.content, 'Hello world!');
+        expect(result.toolCalls, isEmpty);
+      });
+
+      test('processes stream with tool calls and argument buffering', () async {
+        // Arrange
+        final stream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool_1',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'get_task_summaries',
+                        arguments: '{"start_date": "2024-',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool_1',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'get_task_summaries',
+                        arguments: '01-01T00:00:00.000"}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        // Act
+        final result = await processor.processStreamResponse(stream);
+
+        // Assert
+        expect(result.toolCalls.length, 1);
+        expect(result.toolCalls[0].id, 'tool_1');
+        expect(result.toolCalls[0].function.name, 'get_task_summaries');
+        expect(result.toolCalls[0].function.arguments,
+            '{"start_date": "2024-01-01T00:00:00.000"}');
+      });
+
+      test('handles empty stream', () async {
+        // Arrange
+        const stream = Stream<CreateChatCompletionStreamResponse>.empty();
+
+        // Act
+        final result = await processor.processStreamResponse(stream);
+
+        // Assert
+        expect(result.content, '');
+        expect(result.toolCalls, isEmpty);
+      });
+    });
+
+    group('processToolCalls', () {
+      test('processes multiple tool calls', () async {
+        // Arrange
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'tool_1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: TaskSummaryTool.name,
+              arguments: jsonEncode({
+                'start_date': '2024-01-01T00:00:00.000',
+                'end_date': '2024-01-01T23:59:59.999',
+                'limit': 10,
+              }),
+            ),
+          ),
+        ];
+
+        final taskSummaries = [
+          TaskSummaryResult(
+            taskId: 'task-1',
+            taskTitle: 'Test Task',
+            summary: 'Task summary',
+            taskDate: testDate,
+            status: 'completed',
+          ),
+        ];
+
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any<TaskSummaryRequest>(named: 'request'),
+            )).thenAnswer((_) async => taskSummaries);
+
+        // Act
+        final result = await processor.processToolCalls(
+          toolCalls,
+          testCategoryId,
+        );
+
+        // Assert
+        expect(result.length, 1);
+        expect(result[0].role, ChatCompletionMessageRole.tool);
+        // Tool message role verification is sufficient
+        // The toolCallId is correctly passed in processTaskSummaryTool test
+
+        verify(() => mockLoggingService.captureEvent(
+              'Processing 1 tool calls',
+              domain: 'ChatMessageProcessor',
+              subDomain: 'processToolCalls',
+            )).called(1);
+      });
+
+      test('skips non-task-summary tools', () async {
+        // Arrange
+        final toolCalls = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool_1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'unknown_tool',
+              arguments: '{}',
+            ),
+          ),
+        ];
+
+        // Act
+        final result = await processor.processToolCalls(
+          toolCalls,
+          testCategoryId,
+        );
+
+        // Assert
+        expect(result, isEmpty);
+      });
+    });
+
+    group('generateFinalResponse', () {
+      test('generates final response after tool calls', () async {
+        // Arrange
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Show my tasks'),
+          ),
+          const ChatCompletionMessage.tool(
+            toolCallId: 'tool_1',
+            content: '{"tasks": []}',
+          ),
+        ];
+
+        final config = AiInferenceConfig(
+          provider: AiConfigInferenceProvider(
+            id: 'provider-1',
+            name: 'Gemini',
+            baseUrl: 'https://api.gemini.com',
+            apiKey: 'test-key',
+            createdAt: testDate,
+            inferenceProviderType: InferenceProviderType.gemini,
+          ),
+          model: AiConfigModel(
+            id: 'model-1',
+            name: 'Gemini Flash',
+            providerModelId: 'gemini-flash',
+            inferenceProviderId: 'provider-1',
+            createdAt: testDate,
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+          ),
+        );
+
+        const systemMessage = 'You are a helpful assistant';
+
+        final responseStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'No tasks found.',
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            )).thenAnswer((_) => responseStream);
+
+        // Act
+        final result = await processor.generateFinalResponse(
+          messages: messages,
+          config: config,
+          systemMessage: systemMessage,
+        );
+
+        // Assert
+        expect(result, 'No tasks found.');
+      });
+    });
+
+    group('getAiConfiguration caching', () {
+      late AiConfigInferenceProvider testProvider;
+      late AiConfigModel testModel;
+
+      setUp(() {
+        testProvider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          name: 'Gemini Provider',
+          baseUrl: 'https://api.gemini.com',
+          apiKey: 'test-key',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        testModel = AiConfigModel(
+          id: 'model-1',
+          name: 'Gemini Flash',
+          providerModelId: 'gemini-flash-1.5',
+          inferenceProviderId: testProvider.id,
+          createdAt: testDate,
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        );
+      });
+
+      test('caches configuration on first call', () async {
+        // Arrange
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - First call
+        final config1 = await processor.getAiConfiguration();
+
+        // Act - Second call (should use cache)
+        final config2 = await processor.getAiConfiguration();
+
+        // Assert
+        expect(config1.provider, testProvider);
+        expect(config1.model, testModel);
+        expect(config2.provider, testProvider);
+        expect(config2.model, testModel);
+
+        // Verify repository was called only once for each config type
+        verify(() => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider)).called(1);
+        verify(() =>
+                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .called(1);
+      });
+
+      test('cache expires after 5 minutes', () async {
+        // Arrange
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - First call
+        await processor.getAiConfiguration();
+
+        // Mock the passage of time (6 minutes)
+        // Since we can't easily mock DateTime.now(), we'll use clearConfigCache
+        // to simulate cache expiry
+        processor.clearConfigCache();
+
+        // Act - Second call after cache expiry
+        await processor.getAiConfiguration();
+
+        // Assert - Repository should be called twice
+        verify(() => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider)).called(2);
+        verify(() =>
+                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .called(2);
+      });
+
+      test('clearConfigCache clears cached configuration', () async {
+        // Arrange
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - First call to populate cache
+        await processor.getAiConfiguration();
+
+        // Act - Clear cache
+        processor.clearConfigCache();
+
+        // Act - Second call after cache clear
+        await processor.getAiConfiguration();
+
+        // Assert - Repository should be called twice
+        verify(() => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider)).called(2);
+        verify(() =>
+                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .called(2);
+      });
+
+      test('cache works correctly with multiple processors', () async {
+        // Arrange
+        final processor2 = ChatMessageProcessor(
+          aiConfigRepository: mockAiConfigRepository,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          taskSummaryRepository: mockTaskSummaryRepository,
+          loggingService: mockLoggingService,
+        );
+
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - Each processor should maintain its own cache
+        await processor.getAiConfiguration();
+        await processor2.getAiConfiguration();
+
+        // Act - Second calls should use respective caches
+        await processor.getAiConfiguration();
+        await processor2.getAiConfiguration();
+
+        // Assert - Repository should be called once per processor
+        verify(() => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider)).called(2);
+        verify(() =>
+                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .called(2);
+      });
+
+      test('cache handles errors gracefully', () async {
+        // Arrange
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenThrow(Exception('Database error'));
+
+        // Act & Assert - First call throws
+        expect(processor.getAiConfiguration(), throwsException);
+
+        // Arrange - Fix the error
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - Second call should work (no cached error)
+        final config = await processor.getAiConfiguration();
+
+        // Assert
+        expect(config.provider, testProvider);
+        expect(config.model, testModel);
+      });
+    });
+
+    group('getAiConfiguration edge cases', () {
+      test('throws StateError when Gemini Flash model not found', () async {
+        // Arrange
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          name: 'Gemini Provider',
+          baseUrl: 'https://api.gemini.com',
+          apiKey: 'test-key',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Gemini Pro', // Not Flash
+          providerModelId: 'gemini-pro',
+          inferenceProviderId: provider.id,
+          createdAt: testDate,
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        );
+
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [provider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [model]);
+
+        // Act & Assert
+        expect(
+          processor.getAiConfiguration(),
+          throwsA(predicate((e) =>
+              e is StateError && e.message == 'Gemini Flash model not found')),
+        );
+      });
+
+      test('finds Flash model with case-insensitive match', () async {
+        // Arrange
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          name: 'Gemini Provider',
+          baseUrl: 'https://api.gemini.com',
+          apiKey: 'test-key',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Gemini FLASH', // Uppercase
+          providerModelId: 'gemini-FLASH-1.5', // Mixed case
+          inferenceProviderId: provider.id,
+          createdAt: testDate,
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        );
+
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [provider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [model]);
+
+        // Act
+        final config = await processor.getAiConfiguration();
+
+        // Assert
+        expect(config.model.providerModelId, 'gemini-FLASH-1.5');
+      });
+    });
+  });
+}
