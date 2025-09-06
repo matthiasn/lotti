@@ -36,29 +36,3 @@ class ChatSession with _$ChatSession {
         categoryId: categoryId,
       );
 }
-
-extension ChatSessionX on ChatSession {
-  ChatSession addMessage(ChatMessage message) => copyWith(
-        messages: [...messages, message],
-        lastMessageAt: DateTime.now(),
-      );
-
-  ChatSession updateMessage(String messageId, ChatMessage updatedMessage) =>
-      copyWith(
-        messages: messages
-            .map((msg) => msg.id == messageId ? updatedMessage : msg)
-            .toList(),
-        lastMessageAt: DateTime.now(),
-      );
-
-  ChatMessage? get lastMessage => messages.isEmpty ? null : messages.last;
-
-  List<ChatMessage> get conversationHistory =>
-      messages.where((msg) => msg.role != ChatMessageRole.system).toList();
-
-  int get messageCount => messages.length;
-
-  bool get isEmpty => messages.isEmpty;
-
-  bool get hasCategory => categoryId != null;
-}
