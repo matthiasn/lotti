@@ -180,30 +180,34 @@ class AiChatIcon extends StatelessWidget {
                     value: journalPageCubit,
                   ),
                 ],
-                child: Container(
-                  height: MediaQuery.of(modalContext).size.height * 0.9,
-                  decoration: BoxDecoration(
-                    color: Theme.of(modalContext).colorScheme.surface,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(top: 10),
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Theme.of(modalContext).dividerColor,
-                          borderRadius: BorderRadius.circular(2),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: MediaQuery.of(modalContext).viewInsets,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                      child: Material(
+                        color: Theme.of(modalContext).colorScheme.surface,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 10),
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Theme.of(modalContext).dividerColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const ChatModalPage(),
+                          ],
                         ),
                       ),
-                      const Expanded(
-                        child: ChatModalPage(),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               );

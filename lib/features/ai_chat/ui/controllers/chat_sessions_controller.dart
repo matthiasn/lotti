@@ -102,10 +102,10 @@ class ChatSessionsController extends _$ChatSessionsController {
       final currentSession = state.currentSession;
       if (currentSession != null && currentSession.id == sessionId) {
         await createNewSession();
+      } else {
+        // Refresh recent sessions (createNewSession already does this)
+        await _loadRecentSessions();
       }
-
-      // Refresh recent sessions
-      await _loadRecentSessions();
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,

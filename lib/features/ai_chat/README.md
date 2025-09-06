@@ -189,7 +189,7 @@ Response: "Looking at your work patterns, I notice [insights]..."
 #### **Performance Optimization Required**
 - **Task Query Performance**: Current implementation loads up to 10,000 entries at once
   - **Current Limitation**: `TaskSummaryRepository` uses `limit: 10000` which can cause high memory usage and performance issues on resource-limited devices
-  - **Location**: `lib/features/ai_chat/repository/task_summary_repository.dart:39`
+  - **Location**: `lib/features/ai_chat/repository/task_summary_repository.dart:55`
   - **Implementation Needed**:
     - Replace large batch loading with paginated entry processing
     - Move more filtering logic to database queries instead of in-memory processing
@@ -199,7 +199,7 @@ Response: "Looking at your work patterns, I notice [insights]..."
 
 - **AI Configuration Caching**: Optimize repeated configuration fetching
   - **Current Limitation**: AI provider and model configurations are fetched from the repository on every `sendMessage` call
-  - **Location**: `lib/features/ai_chat/repository/chat_repository.dart:60-82` (moved to ChatMessageProcessor)
+  - **Location**: `lib/features/ai_chat/repository/chat_message_processor.dart:49-82`
   - **Implementation Needed**:
     - Cache configuration on repository initialization
     - Provide configuration through dependency injection
@@ -237,10 +237,10 @@ Response: "Looking at your work patterns, I notice [insights]..."
 ## 🛠️ Development
 
 ### Key Dependencies
-- **OpenAI Dart**: Function calling and chat completion support
-- **Freezed**: Immutable data models with JSON serialization
-- **Riverpod**: State management and dependency injection
-- **GPT Markdown**: Rich text rendering for AI responses
+- **openai_dart**: Function calling and chat completion support
+- **freezed_annotation**: Immutable data models with JSON serialization
+- **flutter_riverpod**: State management and dependency injection
+- **gpt_markdown**: Rich text rendering for AI responses
 - **mocktail**: Comprehensive testing framework
 
 ### Architecture Principles
