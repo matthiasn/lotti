@@ -386,6 +386,11 @@ class JournalDb extends _$JournalDb {
   Future<Map<String, List<JournalEntity>>> getBulkLinkedEntities(
     Set<String> fromIds,
   ) async {
+    // Early return for empty set
+    if (fromIds.isEmpty) {
+      return <String, List<JournalEntity>>{};
+    }
+
     // Get all links for the parent IDs
     final links = await linksForEntryIds(fromIds);
 
@@ -401,16 +406,17 @@ class JournalDb extends _$JournalDb {
       result[fromId] = [];
     }
 
-    // Map entities to their parent IDs
+    // Create entity lookup map for O(1) access
+    final entityMap = <String, JournalEntity>{};
+    for (final entity in entities) {
+      entityMap[entity.meta.id] = entity;
+    }
+
+    // Map entities to their parent IDs using O(1) lookup
     for (final link in links) {
-      try {
-        final entity = entities.firstWhere(
-          (e) => e.meta.id == link.toId,
-        );
+      final entity = entityMap[link.toId];
+      if (entity != null) {
         result[link.fromId]?.add(entity);
-      } catch (e) {
-        // Entity not found - skip this link
-        continue;
       }
     }
 

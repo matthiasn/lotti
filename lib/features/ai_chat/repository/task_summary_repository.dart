@@ -110,6 +110,12 @@ class TaskSummaryRepository {
 
     // Get task IDs for bulk linked entity fetching
     final tasksToProcess = actualTasks.take(clampedLimit).toList();
+
+    // Early return if no tasks to process
+    if (tasksToProcess.isEmpty) {
+      return <TaskSummaryResult>[];
+    }
+
     final taskIds = tasksToProcess.map((t) => t.meta.id).toSet();
 
     // Bulk fetch linked entities for all tasks to avoid N+1 queries
