@@ -278,6 +278,99 @@ void main() {
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             )).called(1);
       });
+
+      test('handles invalid date format in arguments', () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'test-id',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': 'invalid-date-format',
+              'end_date': '2024-01-01T00:00:00.000',
+            }),
+          ),
+        );
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'ChatMessageProcessor',
+              subDomain: 'processTaskSummaryTool',
+              stackTrace: any<dynamic>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('handles missing required fields in JSON', () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'test-id',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': '2024-01-01T00:00:00.000',
+              // Missing end_date
+            }),
+          ),
+        );
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'ChatMessageProcessor',
+              subDomain: 'processTaskSummaryTool',
+              stackTrace: any<dynamic>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('handles repository exceptions gracefully', () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'test-id',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': '2024-01-01T00:00:00.000',
+              'end_date': '2024-01-02T00:00:00.000',
+            }),
+          ),
+        );
+
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: any(named: 'categoryId'),
+              request: any(named: 'request'),
+            )).thenThrow(Exception('Database connection failed'));
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        expect(decoded['error'], contains('Database connection failed'));
+      });
     });
 
     group('buildFinalPromptFromMessages', () {

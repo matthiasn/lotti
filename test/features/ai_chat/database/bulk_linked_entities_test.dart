@@ -470,7 +470,7 @@ void main() {
         final taskIds = <String>{};
         final expectedLinkedCount = <String, int>{};
 
-        for (int i = 0; i < 50; i++) {
+        for (var i = 0; i < 50; i++) {
           final taskId = 'task-$i';
           taskIds.add(taskId);
 
@@ -503,7 +503,7 @@ void main() {
           final linkedCount = (i % 3) + 1;
           expectedLinkedCount[taskId] = linkedCount;
 
-          for (int j = 0; j < linkedCount; j++) {
+          for (var j = 0; j < linkedCount; j++) {
             final responseId = 'ai-response-$i-$j';
             final aiResponse = JournalEntity.aiResponse(
               meta: Metadata(
@@ -562,7 +562,7 @@ void main() {
         // Arrange - create 10 tasks with linked entities
         final taskIds = <String>{};
 
-        for (int i = 0; i < 10; i++) {
+        for (var i = 0; i < 10; i++) {
           final taskId = 'task-$i';
           taskIds.add(taskId);
 
@@ -648,9 +648,6 @@ void main() {
         // but bulk should never be significantly slower
         final bulkTime = bulkStopwatch.elapsedMilliseconds;
         final individualTime = individualStopwatch.elapsedMilliseconds;
-
-        print('Bulk method: ${bulkTime}ms');
-        print('Individual calls: ${individualTime}ms');
 
         // Bulk should be at most 150% of individual time (allowing for overhead)
         expect(bulkTime, lessThan(individualTime * 1.5 + 50)); // +50ms buffer

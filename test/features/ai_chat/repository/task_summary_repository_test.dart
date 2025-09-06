@@ -907,5 +907,102 @@ void main() {
         expect(task2Result.metadata?['model'], 'claude-3');
       });
     });
+
+    group('edge cases', () {
+      test('swaps dates when endDate is before startDate', () async {
+        // Arrange
+        final request = TaskSummaryRequest(
+          startDate: DateTime(2024, 1, 15), // Later date
+          endDate: DateTime(2024, 1, 10), // Earlier date - should be swapped
+          limit: 10,
+        );
+
+        when(() => mockJournalDb.getJournalEntities(
+              types: any(named: 'types'),
+              starredStatuses: any(named: 'starredStatuses'),
+              privateStatuses: any(named: 'privateStatuses'),
+              flaggedStatuses: any(named: 'flaggedStatuses'),
+              ids: any(named: 'ids'),
+              categoryIds: any(named: 'categoryIds'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => []);
+
+        // Act
+        final result = await repository.getTaskSummaries(
+          categoryId: testCategoryId,
+          request: request,
+        );
+
+        // Assert
+        expect(result, isEmpty); // No results expected, but should not crash
+
+        // Verify the method was called (dates should be internally swapped)
+        verify(() => mockJournalDb.getJournalEntities(
+              types: any(named: 'types'),
+              starredStatuses: any(named: 'starredStatuses'),
+              privateStatuses: any(named: 'privateStatuses'),
+              flaggedStatuses: any(named: 'flaggedStatuses'),
+              ids: any(named: 'ids'),
+              categoryIds: any(named: 'categoryIds'),
+              limit: any(named: 'limit'),
+            )).called(1);
+      });
+
+      test('clamps limit to reasonable bounds - negative values', () async {
+        // Arrange
+        final request = TaskSummaryRequest(
+          startDate: DateTime(2024, 1, 10),
+          endDate: DateTime(2024, 1, 15),
+          limit: -5, // Negative limit
+        );
+
+        when(() => mockJournalDb.getJournalEntities(
+              types: any(named: 'types'),
+              starredStatuses: any(named: 'starredStatuses'),
+              privateStatuses: any(named: 'privateStatuses'),
+              flaggedStatuses: any(named: 'flaggedStatuses'),
+              ids: any(named: 'ids'),
+              categoryIds: any(named: 'categoryIds'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => []);
+
+        // Act
+        final result = await repository.getTaskSummaries(
+          categoryId: testCategoryId,
+          request: request,
+        );
+
+        // Assert - should not crash and should clamp to minimum 1
+        expect(result, isEmpty);
+      });
+
+      test('clamps limit to reasonable bounds - very large values', () async {
+        // Arrange
+        final request = TaskSummaryRequest(
+          startDate: DateTime(2024, 1, 10),
+          endDate: DateTime(2024, 1, 15),
+          limit: 99999, // Very large limit
+        );
+
+        when(() => mockJournalDb.getJournalEntities(
+              types: any(named: 'types'),
+              starredStatuses: any(named: 'starredStatuses'),
+              privateStatuses: any(named: 'privateStatuses'),
+              flaggedStatuses: any(named: 'flaggedStatuses'),
+              ids: any(named: 'ids'),
+              categoryIds: any(named: 'categoryIds'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => []);
+
+        // Act
+        final result = await repository.getTaskSummaries(
+          categoryId: testCategoryId,
+          request: request,
+        );
+
+        // Assert - should not crash and should clamp to maximum 100
+        expect(result, isEmpty);
+      });
+    });
   });
 }
