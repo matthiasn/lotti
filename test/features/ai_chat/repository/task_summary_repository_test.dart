@@ -199,8 +199,11 @@ void main() {
         when(() => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}))
             .thenAnswer((_) async => [testTask]);
 
-        when(() => mockJournalDb.getLinkedEntities(testTask.meta.id))
-            .thenAnswer((_) async => [testAiResponse]);
+        // Mock the bulk linked entities method
+        when(() => mockJournalDb.getBulkLinkedEntities({testTask.meta.id}))
+            .thenAnswer((_) async => {
+                  testTask.meta.id: [testAiResponse]
+                });
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -304,8 +307,11 @@ void main() {
         when(() => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}))
             .thenAnswer((_) async => [testTask]);
 
-        when(() => mockJournalDb.getLinkedEntities(testTask.meta.id))
-            .thenAnswer((_) async => [testAiResponse]);
+        // Mock the bulk linked entities method
+        when(() => mockJournalDb.getBulkLinkedEntities({testTask.meta.id}))
+            .thenAnswer((_) async => {
+                  testTask.meta.id: [testAiResponse]
+                });
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -462,8 +468,11 @@ void main() {
         when(() => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}))
             .thenAnswer((_) async => [testTask, nonTaskEntity]);
 
-        when(() => mockJournalDb.getLinkedEntities(testTask.meta.id))
-            .thenAnswer((_) async => [testAiResponse]);
+        // Mock the bulk linked entities method
+        when(() => mockJournalDb.getBulkLinkedEntities({testTask.meta.id}))
+            .thenAnswer((_) async => {
+                  testTask.meta.id: [testAiResponse]
+                });
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -500,8 +509,9 @@ void main() {
         when(() => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}))
             .thenAnswer((_) async => [testTask]);
 
-        when(() => mockJournalDb.getLinkedEntities(testTask.meta.id))
-            .thenAnswer((_) async => []);
+        // Mock the bulk linked entities method
+        when(() => mockJournalDb.getBulkLinkedEntities({testTask.meta.id}))
+            .thenAnswer((_) async => {testTask.meta.id: <JournalEntity>[]});
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -539,8 +549,11 @@ void main() {
         when(() => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}))
             .thenAnswer((_) async => [testTask]);
 
-        when(() => mockJournalDb.getLinkedEntities(testTask.meta.id))
-            .thenAnswer((_) async => [testAiResponse, testOlderAiResponse]);
+        // Mock the bulk linked entities method
+        when(() => mockJournalDb.getBulkLinkedEntities({testTask.meta.id}))
+            .thenAnswer((_) async => {
+                  testTask.meta.id: [testAiResponse, testOlderAiResponse]
+                });
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -589,8 +602,11 @@ void main() {
                 {testTask.meta.id, testTaskDone.meta.id}))
             .thenAnswer((_) async => [testTask, testTaskDone]);
 
-        when(() => mockJournalDb.getLinkedEntities(testTask.meta.id))
-            .thenAnswer((_) async => [testAiResponse]);
+        // Mock the bulk linked entities method
+        when(() => mockJournalDb.getBulkLinkedEntities({testTask.meta.id}))
+            .thenAnswer((_) async => {
+                  testTask.meta.id: [testAiResponse]
+                });
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -698,8 +714,11 @@ void main() {
                   .getJournalEntitiesForIds({taskWithStatus.meta.id}))
               .thenAnswer((_) async => [taskWithStatus]);
 
-          when(() => mockJournalDb.getLinkedEntities(taskWithStatus.meta.id))
-              .thenAnswer((_) async => []);
+          // Mock the bulk linked entities method
+          when(() =>
+                  mockJournalDb.getBulkLinkedEntities({taskWithStatus.meta.id}))
+              .thenAnswer(
+                  (_) async => {taskWithStatus.meta.id: <JournalEntity>[]});
 
           // Act
           final result = await repository.getTaskSummaries(
@@ -754,8 +773,11 @@ void main() {
         when(() => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}))
             .thenAnswer((_) async => [testTask]);
 
-        when(() => mockJournalDb.getLinkedEntities(testTask.meta.id))
-            .thenAnswer((_) async => [nonTaskSummaryAiResponse]);
+        // Mock the bulk linked entities method
+        when(() => mockJournalDb.getBulkLinkedEntities({testTask.meta.id}))
+            .thenAnswer((_) async => {
+                  testTask.meta.id: [nonTaskSummaryAiResponse]
+                });
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -852,11 +874,14 @@ void main() {
                 {testTask.meta.id, testTaskDone.meta.id}))
             .thenAnswer((_) async => [testTask, testTaskDone]);
 
-        when(() => mockJournalDb.getLinkedEntities(testTask.meta.id))
-            .thenAnswer((_) async => [testAiResponse]);
-
-        when(() => mockJournalDb.getLinkedEntities(testTaskDone.meta.id))
-            .thenAnswer((_) async => [task2AiResponse]);
+        // Mock the bulk linked entities method for both tasks
+        when(() => mockJournalDb
+                .getBulkLinkedEntities(
+                    {testTask.meta.id, testTaskDone.meta.id}))
+            .thenAnswer((_) async => {
+                  testTask.meta.id: [testAiResponse],
+                  testTaskDone.meta.id: [task2AiResponse],
+                });
 
         // Act
         final result = await repository.getTaskSummaries(

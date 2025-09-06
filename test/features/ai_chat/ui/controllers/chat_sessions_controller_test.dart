@@ -394,10 +394,18 @@ void main() {
           ),
         ];
 
-        when(() => mockChatRepository.getSessions(
+        // Mock the expected filtered results for 'flutter' search
+        final expectedSessions = sessions
+            .where((session) =>
+                session.title.toLowerCase().contains('flutter') ||
+                session.messages.any(
+                    (msg) => msg.content.toLowerCase().contains('flutter')))
+            .toList();
+
+        when(() => mockChatRepository.searchSessions(
+              query: 'flutter',
               categoryId: 'test-category',
-              limit: 50,
-            )).thenAnswer((_) async => sessions);
+            )).thenAnswer((_) async => expectedSessions);
 
         final controller = container.read(
           chatSessionsControllerProvider('test-category').notifier,
@@ -409,9 +417,9 @@ void main() {
         expect(result[0].id, equals('session-1')); // Title match
         expect(result[1].id, equals('session-2')); // Content match
 
-        verify(() => mockChatRepository.getSessions(
+        verify(() => mockChatRepository.searchSessions(
+              query: 'flutter',
               categoryId: 'test-category',
-              limit: 50,
             )).called(1);
       });
 

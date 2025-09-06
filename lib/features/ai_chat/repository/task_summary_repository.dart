@@ -108,11 +108,16 @@ class TaskSummaryRepository {
 
     final results = <TaskSummaryResult>[];
 
-    // For each task, find its latest AI summary
-    for (final task in actualTasks.take(clampedLimit)) {
-      // Get entities linked to this task (including AI responses)
-      final linkedEntitiesForTask =
-          await journalDb.getLinkedEntities(task.meta.id);
+    // Get task IDs for bulk linked entity fetching
+    final tasksToProcess = actualTasks.take(clampedLimit).toList();
+    final taskIds = tasksToProcess.map((t) => t.meta.id).toSet();
+
+    // Bulk fetch linked entities for all tasks to avoid N+1 queries
+    final bulkLinkedEntities = await journalDb.getBulkLinkedEntities(taskIds);
+
+    // Process each task with its pre-fetched linked entities
+    for (final task in tasksToProcess) {
+      final linkedEntitiesForTask = bulkLinkedEntities[task.meta.id] ?? [];
 
       // Filter for AI response entries that are task summaries
       final aiResponses = <JournalEntity>[];

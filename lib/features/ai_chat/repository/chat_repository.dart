@@ -182,6 +182,45 @@ class ChatRepository {
     return sessions;
   }
 
+  /// Search sessions by title or message content with optimized filtering
+  Future<List<ChatSession>> searchSessions({
+    required String query,
+    String? categoryId,
+    int limit = 50,
+  }) async {
+    if (query.trim().isEmpty) {
+      return getSessions(categoryId: categoryId, limit: limit);
+    }
+
+    final lowercaseQuery = query.toLowerCase();
+    var sessions = _sessions.values.toList();
+
+    // Filter by category first
+    if (categoryId != null) {
+      sessions = sessions.where((s) => s.categoryId == categoryId).toList();
+    }
+
+    // Filter by search query (title or message content)
+    final matchingSessions = sessions.where((session) {
+      // Check title match
+      if (session.title.toLowerCase().contains(lowercaseQuery)) {
+        return true;
+      }
+
+      // Check message content match
+      return session.messages.any(
+          (message) => message.content.toLowerCase().contains(lowercaseQuery));
+    }).toList()
+
+      // Sort by last message time, most recent first
+      ..sort((a, b) => b.lastMessageAt.compareTo(a.lastMessageAt));
+
+    // Apply limit
+    return matchingSessions.length > limit
+        ? matchingSessions.take(limit).toList()
+        : matchingSessions;
+  }
+
   Future<void> deleteSession(String sessionId) async {
     final session = _sessions[sessionId];
     if (session != null) {

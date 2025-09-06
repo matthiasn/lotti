@@ -133,26 +133,18 @@ class ChatSessionsController extends _$ChatSessionsController {
     await _loadRecentSessions();
   }
 
-  /// Search sessions by content or title
+  /// Search sessions by content or title using optimized repository method
   Future<List<ChatSessionUiModel>> searchSessions(String query) async {
     if (query.trim().isEmpty) return state.recentSessions;
 
     try {
       final chatRepository = ref.read(chatRepositoryProvider);
-      final sessions = await chatRepository.getSessions(
+      final sessions = await chatRepository.searchSessions(
+        query: query,
         categoryId: categoryId,
-        limit: 50, // Get more sessions for search
       );
 
-      final lowercaseQuery = query.toLowerCase();
-      final filteredSessions = sessions.where((session) {
-        final titleMatch = session.title.toLowerCase().contains(lowercaseQuery);
-        final messageMatch = session.messages.any((message) =>
-            message.content.toLowerCase().contains(lowercaseQuery));
-        return titleMatch || messageMatch;
-      }).toList();
-
-      return filteredSessions.map(ChatSessionUiModel.fromDomain).toList();
+      return sessions.map(ChatSessionUiModel.fromDomain).toList();
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
