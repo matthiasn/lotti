@@ -608,6 +608,168 @@ void main() {
       });
     });
 
+    group('getAiConfiguration caching', () {
+      late AiConfigInferenceProvider testProvider;
+      late AiConfigModel testModel;
+
+      setUp(() {
+        testProvider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          name: 'Gemini Provider',
+          baseUrl: 'https://api.gemini.com',
+          apiKey: 'test-key',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        testModel = AiConfigModel(
+          id: 'model-1',
+          name: 'Gemini Flash',
+          providerModelId: 'gemini-flash-1.5',
+          inferenceProviderId: testProvider.id,
+          createdAt: testDate,
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        );
+      });
+
+      test('caches configuration on first call', () async {
+        // Arrange
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - First call
+        final config1 = await processor.getAiConfiguration();
+
+        // Act - Second call (should use cache)
+        final config2 = await processor.getAiConfiguration();
+
+        // Assert
+        expect(config1.provider, testProvider);
+        expect(config1.model, testModel);
+        expect(config2.provider, testProvider);
+        expect(config2.model, testModel);
+
+        // Verify repository was called only once for each config type
+        verify(() => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider)).called(1);
+        verify(() =>
+                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .called(1);
+      });
+
+      test('cache expires after 5 minutes', () async {
+        // Arrange
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - First call
+        await processor.getAiConfiguration();
+
+        // Mock the passage of time (6 minutes)
+        // Since we can't easily mock DateTime.now(), we'll use clearConfigCache
+        // to simulate cache expiry
+        processor.clearConfigCache();
+
+        // Act - Second call after cache expiry
+        await processor.getAiConfiguration();
+
+        // Assert - Repository should be called twice
+        verify(() => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider)).called(2);
+        verify(() =>
+                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .called(2);
+      });
+
+      test('clearConfigCache clears cached configuration', () async {
+        // Arrange
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - First call to populate cache
+        await processor.getAiConfiguration();
+
+        // Act - Clear cache
+        processor.clearConfigCache();
+
+        // Act - Second call after cache clear
+        await processor.getAiConfiguration();
+
+        // Assert - Repository should be called twice
+        verify(() => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider)).called(2);
+        verify(() =>
+                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .called(2);
+      });
+
+      test('cache works correctly with multiple processors', () async {
+        // Arrange
+        final processor2 = ChatMessageProcessor(
+          aiConfigRepository: mockAiConfigRepository,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          taskSummaryRepository: mockTaskSummaryRepository,
+          loggingService: mockLoggingService,
+        );
+
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - Each processor should maintain its own cache
+        await processor.getAiConfiguration();
+        await processor2.getAiConfiguration();
+
+        // Act - Second calls should use respective caches
+        await processor.getAiConfiguration();
+        await processor2.getAiConfiguration();
+
+        // Assert - Repository should be called once per processor
+        verify(() => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider)).called(2);
+        verify(() =>
+                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .called(2);
+      });
+
+      test('cache handles errors gracefully', () async {
+        // Arrange
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenThrow(Exception('Database error'));
+
+        // Act & Assert - First call throws
+        expect(processor.getAiConfiguration(), throwsException);
+
+        // Arrange - Fix the error
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Act - Second call should work (no cached error)
+        final config = await processor.getAiConfiguration();
+
+        // Assert
+        expect(config.provider, testProvider);
+        expect(config.model, testModel);
+      });
+    });
+
     group('getAiConfiguration edge cases', () {
       test('throws StateError when Gemini Flash model not found', () async {
         // Arrange

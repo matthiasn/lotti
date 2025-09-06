@@ -46,8 +46,22 @@ class ChatMessageProcessor {
   final TaskSummaryRepository taskSummaryRepository;
   final LoggingService loggingService;
 
-  /// Get AI configuration (provider and model)
+  // Cache for AI configuration
+  AiInferenceConfig? _cachedConfig;
+  DateTime? _configCacheTime;
+
+  /// Get AI configuration (provider and model) with caching
   Future<AiInferenceConfig> getAiConfiguration() async {
+    const cacheDuration = Duration(minutes: 5); // Cache for 5 minutes
+
+    // Check if we have a valid cached config
+    if (_cachedConfig != null &&
+        _configCacheTime != null &&
+        DateTime.now().difference(_configCacheTime!) < cacheDuration) {
+      return _cachedConfig!;
+    }
+
+    // Fetch fresh configuration
     final providers = await aiConfigRepository
         .getConfigsByType(AiConfigType.inferenceProvider);
     final geminiProviders = providers
@@ -76,10 +90,22 @@ class ChatMessageProcessor {
 
     final geminiModel = geminiModels.first;
 
-    return AiInferenceConfig(
+    final config = AiInferenceConfig(
       provider: geminiProvider,
       model: geminiModel,
     );
+
+    // Cache the configuration
+    _cachedConfig = config;
+    _configCacheTime = DateTime.now();
+
+    return config;
+  }
+
+  /// Clear the cached configuration (useful for testing or config changes)
+  void clearConfigCache() {
+    _cachedConfig = null;
+    _configCacheTime = null;
   }
 
   /// Convert conversation history to OpenAI messages, filtering out system messages

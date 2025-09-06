@@ -66,7 +66,7 @@ Central orchestrator handling:
 - AI service integration through CloudInferenceRepository
 - Tool calling orchestration for task summaries
 
-### ChatMessageProcessor  
+### ChatMessageProcessor
 Extracted testable logic for:
 - AI configuration management (Gemini Flash setup)
 - Message format conversion (internal ↔ OpenAI formats)
@@ -206,6 +206,24 @@ Response: "Looking at your work patterns, I notice [insights]..."
     - Implement configuration change listeners if dynamic updates needed
     - Consider using a provider pattern for configuration state
   - **Benefits**: Reduced database queries, improved response time, better resource utilization
+
+- **N+1 Query Problem**: Task processing makes individual database calls for each task
+  - **Current Limitation**: Loop in `TaskSummaryRepository` calls `journalDb.getLinkedEntities(task.meta.id)` for each task individually
+  - **Location**: `lib/features/ai_chat/repository/task_summary_repository.dart:112-182`
+  - **Implementation Needed**:
+    - Batch fetch all required linked entities for all tasks in a single query
+    - Refactor loop to use pre-fetched data instead of individual database calls
+    - Optimize relationship traversal with proper JOIN operations
+  - **Benefits**: Dramatically improved performance with many tasks, reduced database load, better scalability
+
+- **Session Search Performance**: In-memory search filtering can become inefficient
+  - **Current Limitation**: `searchSessions` fetches 50 sessions and filters in-memory for search queries
+  - **Location**: `lib/features/ai_chat/ui/controllers/chat_sessions_controller.dart:137-166`
+  - **Implementation Needed**:
+    - Move search logic to database level with proper text indexing
+    - Implement database-based filtering instead of in-memory processing
+    - Add pagination for large result sets
+  - **Benefits**: Better performance as session count grows, reduced memory usage, more responsive search
 
 #### **Feature Enhancements**
 - **External Library Integration**: Consider migrating to `flutter_gen_ai_chat_ui` library
