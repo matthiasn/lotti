@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
-import 'package:lotti/features/ai_chat/domain/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
+import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/get_it.dart';

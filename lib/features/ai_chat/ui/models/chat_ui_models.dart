@@ -1,5 +1,5 @@
-import 'package:lotti/features/ai_chat/domain/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
+import 'package:lotti/features/ai_chat/models/chat_session.dart';
 
 /// UI model for chat session with presentation-specific properties
 class ChatSessionUiModel {
