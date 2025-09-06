@@ -653,5 +653,223 @@ void main() {
         expect(bulkTime, lessThan(individualTime * 1.5 + 50)); // +50ms buffer
       });
     });
+
+    group('deduplication and sorting', () {
+      test('deduplicates entities when multiple links point to same target',
+          () async {
+        // Arrange - Create two tasks and one shared journal entry
+        // This tests that when fetching bulk linked entities for multiple parents,
+        // if they both link to the same entity, it's not duplicated in individual results
+        final task1 = JournalEntity.task(
+          meta: Metadata(
+            id: 'task-dedup-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+          data: TaskData(
+            title: 'Test Task 1',
+            status: TaskStatus.open(
+                id: 'status-1', createdAt: testDate, utcOffset: 0),
+            dateFrom: testDate,
+            dateTo: testDate,
+            statusHistory: [],
+          ),
+        );
+
+        final task2 = JournalEntity.task(
+          meta: Metadata(
+            id: 'task-dedup-2',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+          data: TaskData(
+            title: 'Test Task 2',
+            status: TaskStatus.done(
+                id: 'status-2', createdAt: testDate, utcOffset: 0),
+            dateFrom: testDate,
+            dateTo: testDate,
+            statusHistory: [],
+          ),
+        );
+
+        final sharedEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'shared-entry',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
+          ),
+          entryText: const EntryText(plainText: 'Shared journal entry'),
+        );
+
+        // Both tasks link to the same entry
+        final link1 = EntryLink.basic(
+          id: 'link-dedup-1',
+          fromId: task1.meta.id,
+          toId: sharedEntry.meta.id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        final link2 = EntryLink.basic(
+          id: 'link-dedup-2',
+          fromId: task2.meta.id,
+          toId: sharedEntry.meta.id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        // Save entities and links
+        await journalDb.upsertJournalDbEntity(toDbEntity(task1));
+        await journalDb.upsertJournalDbEntity(toDbEntity(task2));
+        await journalDb.upsertJournalDbEntity(toDbEntity(sharedEntry));
+        await journalDb.upsertEntryLink(link1);
+        await journalDb.upsertEntryLink(link2);
+
+        // Act
+        final result = await journalDb
+            .getBulkLinkedEntities({task1.meta.id, task2.meta.id});
+
+        // Assert - Each task should have the shared entry once (not duplicated per task)
+        expect(result, hasLength(2));
+        expect(result[task1.meta.id], hasLength(1));
+        expect(result[task2.meta.id], hasLength(1));
+        expect(result[task1.meta.id]!.first.meta.id, sharedEntry.meta.id);
+        expect(result[task2.meta.id]!.first.meta.id, sharedEntry.meta.id);
+
+        // Verify they're the same entity instance (testing deduplication works)
+        final entity1 = result[task1.meta.id]!.first;
+        final entity2 = result[task2.meta.id]!.first;
+        expect(entity1.meta.id, equals(entity2.meta.id));
+      });
+
+      test('sorts linked entities by dateFrom in descending order', () async {
+        // Arrange - Create task and three journal entries with different dates
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: 'task-sort-test',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+          data: TaskData(
+            title: 'Test Task',
+            status: TaskStatus.open(
+                id: 'status-1', createdAt: testDate, utcOffset: 0),
+            dateFrom: testDate,
+            dateTo: testDate,
+            statusHistory: [],
+          ),
+        );
+
+        // Create entries with different dates (newest to oldest creation order)
+        final newestEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'newest-entry',
+            createdAt: testDate.add(const Duration(days: 3)),
+            updatedAt: testDate.add(const Duration(days: 3)),
+            dateFrom: testDate.add(const Duration(days: 3)), // Newest
+            dateTo: testDate.add(const Duration(days: 3, hours: 1)),
+          ),
+          entryText: const EntryText(plainText: 'Newest entry'),
+        );
+
+        final middleEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'middle-entry',
+            createdAt: testDate.add(const Duration(days: 2)),
+            updatedAt: testDate.add(const Duration(days: 2)),
+            dateFrom: testDate.add(const Duration(days: 2)), // Middle
+            dateTo: testDate.add(const Duration(days: 2, hours: 1)),
+          ),
+          entryText: const EntryText(plainText: 'Middle entry'),
+        );
+
+        final oldestEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'oldest-entry',
+            createdAt: testDate.add(const Duration(days: 1)),
+            updatedAt: testDate.add(const Duration(days: 1)),
+            dateFrom: testDate.add(const Duration(days: 1)), // Oldest
+            dateTo: testDate.add(const Duration(days: 1, hours: 1)),
+          ),
+          entryText: const EntryText(plainText: 'Oldest entry'),
+        );
+
+        // Create links in non-chronological order to test sorting
+        final linkToOldest = EntryLink.basic(
+          id: 'link-to-oldest',
+          fromId: task.meta.id,
+          toId: oldestEntry.meta.id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        final linkToNewest = EntryLink.basic(
+          id: 'link-to-newest',
+          fromId: task.meta.id,
+          toId: newestEntry.meta.id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        final linkToMiddle = EntryLink.basic(
+          id: 'link-to-middle',
+          fromId: task.meta.id,
+          toId: middleEntry.meta.id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        // Save entities and links
+        await journalDb.upsertJournalDbEntity(toDbEntity(task));
+        await journalDb.upsertJournalDbEntity(toDbEntity(newestEntry));
+        await journalDb.upsertJournalDbEntity(toDbEntity(middleEntry));
+        await journalDb.upsertJournalDbEntity(toDbEntity(oldestEntry));
+        await journalDb.upsertEntryLink(linkToOldest);
+        await journalDb.upsertEntryLink(linkToNewest);
+        await journalDb.upsertEntryLink(linkToMiddle);
+
+        // Act
+        final result = await journalDb.getBulkLinkedEntities({task.meta.id});
+
+        // Assert - Should be sorted by dateFrom descending (newest first)
+        expect(result, hasLength(1));
+        expect(result[task.meta.id], hasLength(3));
+
+        final linkedEntries = result[task.meta.id]!;
+        expect(linkedEntries[0].meta.id, newestEntry.meta.id); // First = newest
+        expect(
+            linkedEntries[1].meta.id, middleEntry.meta.id); // Second = middle
+        expect(linkedEntries[2].meta.id, oldestEntry.meta.id); // Third = oldest
+
+        // Double-check dates are actually in descending order
+        expect(
+          linkedEntries[0]
+              .meta
+              .dateFrom
+              .isAfter(linkedEntries[1].meta.dateFrom),
+          isTrue,
+        );
+        expect(
+          linkedEntries[1]
+              .meta
+              .dateFrom
+              .isAfter(linkedEntries[2].meta.dateFrom),
+          isTrue,
+        );
+      });
+    });
   });
 }

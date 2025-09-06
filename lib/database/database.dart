@@ -270,7 +270,7 @@ class JournalDb extends _$JournalDb {
   Future<List<JournalEntity>> getJournalEntitiesForIds(
     Set<String> ids,
   ) async {
-    final res = await entriesForIds(ids.toList()).get();
+    final res = await journalEntitiesByIds(ids.toList()).get();
     return res.map(fromDbEntity).toList();
   }
 
@@ -401,10 +401,12 @@ class JournalDb extends _$JournalDb {
     // Fetch all linked entities in one query
     final entities = await getJournalEntitiesForIds(targetIds);
 
-    // Group by parent ID
+    // Group by parent ID with deduplication tracking
     final result = <String, List<JournalEntity>>{};
+    final seenEntities = <String, Set<String>>{};
     for (final fromId in fromIds) {
       result[fromId] = [];
+      seenEntities[fromId] = <String>{};
     }
 
     // Create entity lookup map for O(1) access
@@ -413,12 +415,20 @@ class JournalDb extends _$JournalDb {
       entityMap[entity.meta.id] = entity;
     }
 
-    // Map entities to their parent IDs using O(1) lookup
+    // Map entities to their parent IDs using O(1) lookup with deduplication
     for (final link in links) {
       final entity = entityMap[link.toId];
-      if (entity != null) {
-        result[link.fromId]?.add(entity);
+      if (entity != null && seenEntities[link.fromId] != null) {
+        // Only add if not already seen for this parent
+        if (seenEntities[link.fromId]!.add(entity.meta.id)) {
+          result[link.fromId]?.add(entity);
+        }
       }
+    }
+
+    // Sort each result list by dateFrom descending to match single-parent semantics
+    for (final entry in result.entries) {
+      entry.value.sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
     }
 
     return result;
