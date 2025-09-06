@@ -203,7 +203,8 @@ class _EmptyState extends StatelessWidget {
             Icon(
               Icons.psychology_outlined,
               size: 64,
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
@@ -627,21 +628,25 @@ class _InputAreaState extends State<_InputArea> {
                   hintText: 'Ask about your tasks and productivity...',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
+                    borderSide:
+                        BorderSide(color: Theme.of(context).dividerColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide:
+                        BorderSide(color: Theme.of(context).dividerColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 2,
+                    ),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 12,
                   ),
-                  suffixIcon: widget.isLoading
-                      ? const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : null,
                 ),
                 maxLines: null,
                 textInputAction: TextInputAction.send,

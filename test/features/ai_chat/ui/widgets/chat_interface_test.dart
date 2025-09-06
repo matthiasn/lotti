@@ -111,7 +111,9 @@ void main() {
 
       // Check empty state text
       expect(find.text('Ask me about your tasks'), findsOneWidget);
-      expect(find.textContaining('I can help analyze your productivity patterns'), findsOneWidget);
+      expect(
+          find.textContaining('I can help analyze your productivity patterns'),
+          findsOneWidget);
     });
 
     testWidgets('displays header with session title', (tester) async {

@@ -828,14 +828,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "10.2.0"
-  flutter_gen_ai_chat_ui:
-    dependency: "direct main"
-    description:
-      name: flutter_gen_ai_chat_ui
-      sha256: "06c43afa96669c3cb92a5d5677072e2a480d7f31e9b800c6bdcb7ee011f1faa3"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.6"
   flutter_image_compress:
     dependency: "direct main"
     description:
@@ -994,14 +986,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.2.1"
-  flutter_markdown_plus:
-    dependency: transitive
-    description:
-      name: flutter_markdown_plus
-      sha256: fe74214c5ac2f850d93efda290dcde3f18006e90a87caa9e3e6c13222a5db4de
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.3"
   flutter_math_fork:
     dependency: transitive
     description:
@@ -1154,14 +1138,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.0"
-  flutter_streaming_text_markdown:
-    dependency: transitive
-    description:
-      name: flutter_streaming_text_markdown
-      sha256: "96cfe7f8822d76c4ba4a4c723f1f7b763854c4238d3a706e11279b5dbc639cb9"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.3.1"
   flutter_svg:
     dependency: transitive
     description:
@@ -1301,10 +1277,10 @@ packages:
     dependency: "direct main"
     description:
       name: gpt_markdown
-      sha256: a0c6f8a89b405d0ea781734e090cce41df2a1240a7ee9f185556fce22a9f7919
+      sha256: "8174983f2ed7d8576d25810913e3afe3f8ffdaa3172c0c823b7cfc289b67f380"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.3"
+    version: "1.1.4"
   graphic:
     dependency: "direct main"
     description:
@@ -2663,14 +2639,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  shimmer:
-    dependency: transitive
-    description:
-      name: shimmer
-      sha256: "5f88c883a22e9f9f299e5ba0e4f7e6054857224976a5d9f839d4ebdc94a14ac9"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.0"
   signature:
     dependency: transitive
     description:
@@ -2824,10 +2792,10 @@ packages:
     dependency: transitive
     description:
       name: sqlparser
-      sha256: "7c859c803cf7e9a84d6db918bac824545045692bbe94a6386bd3a45132235d09"
+      sha256: "57090342af1ce32bb499aa641f4ecdd2d6231b9403cea537ac059e803cc20d67"
       url: "https://pub.dev"
     source: hosted
-    version: "0.41.1"
+    version: "0.41.2"
   stack_trace:
     dependency: transitive
     description:
