@@ -418,7 +418,7 @@ class JournalDb extends _$JournalDb {
     // Map entities to their parent IDs using O(1) lookup with deduplication
     for (final link in links) {
       final entity = entityMap[link.toId];
-      if (entity != null && seenEntities[link.fromId] != null) {
+      if (entity != null) {
         // Only add if not already seen for this parent
         if (seenEntities[link.fromId]!.add(entity.meta.id)) {
           result[link.fromId]?.add(entity);
