@@ -72,15 +72,15 @@ void main() {
               messages: const [],
             ));
 
-    when(() => mockChatRepository.saveSession(any())).thenAnswer((_) async =>
-        ChatSession(
-          id: 's1',
-          title: 'New Chat',
-          createdAt: DateTime(2024),
-          lastMessageAt: DateTime(2024),
-          messages: const [],
-          metadata: const {'selectedModelId': 'model-1'},
-        ));
+    when(() => mockChatRepository.saveSession(any()))
+        .thenAnswer((_) async => ChatSession(
+              id: 's1',
+              title: 'New Chat',
+              createdAt: DateTime(2024),
+              lastMessageAt: DateTime(2024),
+              messages: const [],
+              metadata: const {'selectedModelId': 'model-1'},
+            ));
 
     await tester.pumpWidget(
       ProviderScope(
@@ -109,11 +109,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // After selection, the input hint should change (canSend becomes true)
-    expect(find.text('Ask about your tasks and productivity...'),
-        findsOneWidget);
+    expect(
+        find.text('Ask about your tasks and productivity...'), findsOneWidget);
 
     // Verify persistence via repository
     verify(() => mockChatRepository.saveSession(any())).called(1);
   });
 }
-

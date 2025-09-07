@@ -74,6 +74,7 @@ void main() {
           createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
+          // ignore: avoid_redundant_argument_values
           isReasoningModel: false,
         );
 
@@ -549,6 +550,88 @@ void main() {
         expect(result.content, '');
         expect(result.toolCalls, isEmpty);
       });
+
+      test('buffers interleaved tool call arguments for multiple tools',
+          () async {
+        // Two tools with interleaved chunks
+        final stream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'r',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'A',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'get_task_summaries', arguments: '{"start_'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'B',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'get_task_summaries', arguments: '{"end_'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'A',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'get_task_summaries',
+                          arguments: 'date":"2024-01-01"}'),
+                    ),
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 1,
+                      id: 'B',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'get_task_summaries',
+                          arguments: 'date":"2024-01-02"}'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        final result = await processor.processStreamResponse(stream);
+        expect(result.toolCalls.length, 2);
+        final a = result.toolCalls.firstWhere((t) => t.id == 'A');
+        final b = result.toolCalls.firstWhere((t) => t.id == 'B');
+        expect(a.function.arguments, '{"start_date":"2024-01-01"}');
+        expect(b.function.arguments, '{"end_date":"2024-01-02"}');
+      });
     });
 
     group('processToolCalls', () {
@@ -698,6 +781,263 @@ void main() {
 
         // Assert
         expect(result, 'No tasks found.');
+      });
+    });
+
+    group('getAiConfigurationForModel', () {
+      test(
+          'returns config for valid function-calling model and caches per model',
+          () async {
+        final provider = AiConfigInferenceProvider(
+          id: 'prov-1',
+          name: 'Provider',
+          baseUrl: 'https://api',
+          apiKey: 'k',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Model',
+          providerModelId: 'm1',
+          inferenceProviderId: provider.id,
+          createdAt: testDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: true,
+        );
+
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepository.getConfigById(provider.id))
+            .thenAnswer((_) async => provider);
+
+        final cfg1 = await processor.getAiConfigurationForModel('model-1');
+        await processor.getAiConfigurationForModel('model-1');
+
+        expect(cfg1.model.id, 'model-1');
+        expect(cfg1.provider.id, provider.id);
+
+        // Repo should be called only once per id due to cache
+        verify(() => mockAiConfigRepository.getConfigById('model-1')).called(1);
+      });
+
+      test('throws when model not found', () async {
+        when(() => mockAiConfigRepository.getConfigById('missing'))
+            .thenAnswer((_) async => null);
+        expect(
+          processor.getAiConfigurationForModel('missing'),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('throws when model does not support function calling', () async {
+        final provider = AiConfigInferenceProvider(
+          id: 'prov-1',
+          name: 'Provider',
+          baseUrl: 'https://api',
+          apiKey: 'k',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Model',
+          providerModelId: 'm1',
+          inferenceProviderId: provider.id,
+          createdAt: testDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          // ignore: avoid_redundant_argument_values
+          isReasoningModel: false,
+          // ignore: avoid_redundant_argument_values
+          supportsFunctionCalling: false,
+        );
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+
+        expect(
+          processor.getAiConfigurationForModel('model-1'),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('throws when provider not found', () async {
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Model',
+          providerModelId: 'm1',
+          inferenceProviderId: 'prov-missing',
+          createdAt: testDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: true,
+        );
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepository.getConfigById('prov-missing'))
+            .thenAnswer((_) async => null);
+
+        expect(
+          processor.getAiConfigurationForModel('model-1'),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
+
+    group('generateFinalResponseStream', () {
+      test('emits non-empty chunks only in order', () async {
+        final config = AiInferenceConfig(
+          provider: AiConfigInferenceProvider(
+            id: 'prov-1',
+            name: 'Provider',
+            baseUrl: 'https://api',
+            apiKey: 'k',
+            createdAt: testDate,
+            inferenceProviderType: InferenceProviderType.openAi,
+          ),
+          model: AiConfigModel(
+            id: 'model-1',
+            name: 'Model',
+            providerModelId: 'm1',
+            inferenceProviderId: 'prov-1',
+            createdAt: testDate,
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+            supportsFunctionCalling: true,
+          ),
+        );
+
+        final stream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: ''),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: ' world'),
+              ),
+            ],
+          ),
+        ]);
+
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            )).thenAnswer((_) => stream);
+
+        final chunks = await processor.generateFinalResponseStream(
+          messages: const [
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string('hi'),
+            )
+          ],
+          config: config,
+          systemMessage: 'sys',
+        ).toList();
+
+        expect(chunks, ['Hello', ' world']);
+      });
+
+      test('ignores frames with null/empty choices and continues', () async {
+        final config = AiInferenceConfig(
+          provider: AiConfigInferenceProvider(
+            id: 'prov-1',
+            name: 'Provider',
+            baseUrl: 'https://api',
+            apiKey: 'k',
+            createdAt: testDate,
+            inferenceProviderType: InferenceProviderType.openAi,
+          ),
+          model: AiConfigModel(
+            id: 'model-1',
+            name: 'Model',
+            providerModelId: 'm1',
+            inferenceProviderId: 'prov-1',
+            createdAt: testDate,
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+            supportsFunctionCalling: true,
+          ),
+        );
+
+        final stream = Stream<CreateChatCompletionStreamResponse>.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'r0',
+            created: 0,
+            model: 'm',
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            created: 0,
+            model: 'm',
+            choices: [],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r2',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+              )
+            ],
+          ),
+        ]);
+
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            )).thenAnswer((_) => stream);
+
+        final out = await processor.generateFinalResponseStream(
+          messages: const [
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string('x'),
+            )
+          ],
+          config: config,
+          systemMessage: 'sys',
+        ).toList();
+        expect(out, ['ok']);
       });
     });
 

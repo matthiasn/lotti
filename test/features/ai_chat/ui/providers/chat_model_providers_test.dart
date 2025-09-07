@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
@@ -74,7 +74,9 @@ void main() {
         createdAt: DateTime(2024),
         inputModalities: const [Modality.text],
         outputModalities: const [Modality.text],
+        // ignore: avoid_redundant_argument_values
         isReasoningModel: false,
+        // ignore: avoid_redundant_argument_values
         supportsFunctionCalling: false,
       );
       final ineligibleNoText = AiConfigModel(
@@ -89,8 +91,9 @@ void main() {
         supportsFunctionCalling: true,
       );
 
-      when(() => mockRepo.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => [eligible2, eligible1, ineligibleNoFunc, ineligibleNoText]);
+      when(() => mockRepo.getConfigsByType(AiConfigType.model)).thenAnswer(
+          (_) async =>
+              [eligible2, eligible1, ineligibleNoFunc, ineligibleNoText]);
       when(() => mockRepo.getConfigsByType(AiConfigType.inferenceProvider))
           .thenAnswer((_) async => [geminiProvider, openaiProvider]);
 
@@ -105,4 +108,3 @@ void main() {
     });
   });
 }
-

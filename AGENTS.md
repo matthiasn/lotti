@@ -53,5 +53,17 @@
 - Follow the planning and preamble conventions:
   - Send a brief preamble before grouped tool calls.
   - Maintain a concise step-by-step plan using `update_plan` for multi-step work.
+- Test-first workflow when adding/fixing tests:
+  - Run `dart-mcp.analyze_files` to catch lints quickly.
+  - Run `dart-mcp.dart_format` to normalize diffs.
+  - Run targeted tests (single file or folder) via `dart-mcp.run_tests` before broad runs.
+  - Iterate until the targeted tests pass, then run the full suite as needed.
 - Do not edit generated files (`*.g.dart`, `*.freezed.dart`); run `dart-mcp.pub` + `make build_runner` (or `dart run build_runner`) via MCP when regeneration is required.
 - Favor `rg` for searches and read files in chunks (≤250 lines) when using shell reads.
+
+## Analyzer Zero‑Warning Policy
+- Before opening a PR, the analyzer must report zero warnings or infos.
+- Always run `dart-mcp.analyze_files` and address every message:
+  - In tests, you may add line ignores for clarity (e.g., `// ignore: avoid_redundant_argument_values`).
+  - In production code, fix the root cause rather than ignoring.
+- Run `dart-mcp.dart_format` to normalize formatting prior to final checks.

@@ -102,14 +102,13 @@ class ChatMessageProcessor {
     }
 
     // Fetch providers and ensure Gemini is configured
-    final providers =
-        await aiConfigRepository.getConfigsByType(AiConfigType.inferenceProvider);
-    final geminiProvider = providers
-        .whereType<AiConfigInferenceProvider>()
-        .firstWhere(
-          (p) => p.inferenceProviderType == InferenceProviderType.gemini,
-          orElse: () => throw StateError('Gemini provider not configured'),
-        );
+    final providers = await aiConfigRepository
+        .getConfigsByType(AiConfigType.inferenceProvider);
+    final geminiProvider =
+        providers.whereType<AiConfigInferenceProvider>().firstWhere(
+              (p) => p.inferenceProviderType == InferenceProviderType.gemini,
+              orElse: () => throw StateError('Gemini provider not configured'),
+            );
 
     // Fetch models and select the Gemini Flash model (case-insensitive match)
     final allModels =
@@ -118,13 +117,13 @@ class ChatMessageProcessor {
         .whereType<AiConfigModel>()
         .where((m) => m.inferenceProviderId == geminiProvider.id)
         .firstWhere(
-          (m) => m.name.toLowerCase().contains('flash') ||
+          (m) =>
+              m.name.toLowerCase().contains('flash') ||
               m.providerModelId.toLowerCase().contains('flash'),
           orElse: () => throw StateError('Gemini Flash model not found'),
         );
 
-    final config =
-        AiInferenceConfig(provider: geminiProvider, model: model);
+    final config = AiInferenceConfig(provider: geminiProvider, model: model);
     _cachedConfig = config;
     _cachedModelId = model.id;
     _configCacheTime = DateTime.now();

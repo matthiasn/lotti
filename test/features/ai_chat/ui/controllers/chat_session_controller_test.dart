@@ -433,6 +433,114 @@ void main() {
             )).called(1);
       });
     });
+
+    group('setModel', () {
+      test('updates selectedModelId and persists', () async {
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                  metadata: const {'selectedModelId': 'model-1'},
+                ));
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+
+        await controller.setModel('model-1');
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        expect(state.selectedModelId, 'model-1');
+        verify(() => mockChatRepository.saveSession(any())).called(1);
+      });
+
+      test('logs error but keeps UI state when save fails', () async {
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+        when(() => mockChatRepository.saveSession(any()))
+            .thenThrow(Exception('save failed'));
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+
+        await controller.setModel('m2');
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        expect(state.selectedModelId, 'm2');
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'ChatSessionController',
+              subDomain: 'setModel',
+              stackTrace: any<dynamic>(named: 'stackTrace'),
+            )).called(1);
+      });
+    });
+
+    group('sendMessage error handling', () {
+      test('removes streaming placeholder and sets error on failure', () async {
+        // Initialize empty session
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) async* {
+          throw Exception('stream failure');
+        });
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+
+        await controller.setModel('model-1');
+        await controller.sendMessage('Hello');
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        // User message should remain; streaming placeholder removed
+        expect(state.messages.length, 1);
+        expect(state.messages.first.role, ChatMessageRole.user);
+        expect(state.error, contains('Failed to send message'));
+        expect(state.isStreaming, isFalse);
+      });
+    });
   });
 }
 
