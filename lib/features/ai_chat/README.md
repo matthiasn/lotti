@@ -28,7 +28,9 @@ lib/features/ai_chat/
     ├── controllers/                    # Riverpod state management
     ├── models/chat_ui_models.dart      # UI-specific models
     ├── pages/chat_modal_page.dart      # Modal integration
-    └── widgets/chat_interface.dart     # Main chat UI
+    └── widgets/
+        ├── chat_interface.dart         # Main chat UI with reasoning disclosure
+        └── thinking_parser.dart        # Streaming-friendly reasoning parser
 ```
 
 ## 💡 Key Features
@@ -41,7 +43,9 @@ lib/features/ai_chat/
 ### ✅ Advanced AI Capabilities
 - **Model Selection**: Users must explicitly select an AI model from configured providers (e.g., Ollama, OpenAI-compatible, Gemini, etc.) per chat session - no automatic fallback
 - **Function Calling**: Uses the `get_task_summaries` tool to retrieve relevant data
-- **Streaming Markdown**: Tokens are streamed from providers and rendered incrementally as Markdown in the UI with a typing indicator
+- **Streaming Markdown**: Tokens stream from providers and render incrementally as Markdown with a typing indicator
+- **Collapsible Reasoning**: Hidden “thinking” blocks are parsed and shown behind a collapsed disclosure. Multiple segments are aggregated with a subtle divider and rendered with the same Markdown widget for consistent typography.
+- **Copy Behavior**: Copying assistant messages strips hidden thinking by default.
 
 ### ✅ Sophisticated Data Processing
 - **Complex Query Engine**: 4-step process to find work entries, resolve task relationships, and retrieve AI summaries
@@ -53,16 +57,17 @@ lib/features/ai_chat/
 - **Material Design 3**: Consistent with app design language
 - **Responsive Chat Interface**: Custom-built Flutter widgets with proper accessibility
 - **Markdown Support**: Rich text rendering for AI responses with code syntax highlighting
-- **Real-time Streaming**: Live token-by-token rendering; spacing tuned for readability (10px gap above typing indicator)
+- **Real-time Streaming**: Live token-by-token rendering; spacing tuned for readability
 - **Session Management**: Create new chats, manage conversation history
 - **Error Resilience**: Graceful error handling with retry and dismiss actions
+- **Accessibility**: Disclosure is keyboard-accessible (Enter/Space) and exposed to screen readers. Avatars removed; user vs. assistant differentiated via asymmetric margins.
 
 ## 🔧 Core Components
 
 ### ChatRepository
 Central orchestrator handling:
 - Session CRUD operations (in-memory storage)
-- Real-time streaming: forwards content deltas from providers directly to the UI
+- Real-time streaming: forwards content deltas to the UI while accumulating tool calls
 - AI service integration through CloudInferenceRepository (provider-agnostic)
 - Tool calling orchestration for task summaries and streaming of final responses
 
@@ -256,7 +261,7 @@ The AI Chat feature has been optimized for production use with several key perfo
 1. Configure at least one AI provider and add eligible models (function calling + text input) in settings.
 2. Open the AI chat via the brain icon (🧠) in the tasks page.
 3. **Required**: Select a model from the header dropdown before sending any messages - there is no automatic fallback.
-4. Ask a question in natural language; responses stream in as Markdown.
+4. Ask a question in natural language; responses stream in as Markdown. If a response contains hidden reasoning, a collapsed “Show reasoning” toggle appears above the message. Clicking it reveals the reasoning rendered as Markdown; multiple segments are separated by a subtle divider.
 
 ## ♿ Accessibility & UX Notes
 

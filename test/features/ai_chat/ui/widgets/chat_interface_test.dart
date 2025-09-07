@@ -286,9 +286,10 @@ void main() {
       expect(
           find.text('I am doing well, thank you for asking!'), findsOneWidget);
 
-      // Check message avatars
-      expect(find.byIcon(Icons.person), findsOneWidget); // User avatar
-      expect(find.byIcon(Icons.psychology), findsOneWidget); // AI avatar
+      // New UX: no avatars on bubbles; copy buttons present
+      expect(find.byIcon(Icons.person), findsNothing);
+      expect(find.byIcon(Icons.psychology), findsNothing);
+      expect(find.byIcon(Icons.copy), findsNWidgets(2));
     });
 
     testWidgets('shows clear chat button when messages exist', (tester) async {
