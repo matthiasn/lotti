@@ -91,8 +91,8 @@ void main() {
         (_) async => ChatSession(
           id: 'session-1',
           title: 'Test Session',
-          createdAt: DateTime(2024),
-          lastMessageAt: DateTime(2024),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          lastMessageAt: DateTime(2024, 3, 15, 10, 30),
           messages: [
             ChatMessage.assistant(
               'Intro <think>First thought</think> middle text '
@@ -146,8 +146,8 @@ void main() {
         (_) async => ChatSession(
           id: 'session-1',
           title: 'Test Session',
-          createdAt: DateTime(2024),
-          lastMessageAt: DateTime(2024),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          lastMessageAt: DateTime(2024, 3, 15, 10, 30),
           messages: [
             ChatMessage.assistant(
               '<think>Internal reasoning</think>This is the visible response',
@@ -185,8 +185,8 @@ void main() {
         (_) async => ChatSession(
           id: 'session-1',
           title: 'Test Session',
-          createdAt: DateTime(2024),
-          lastMessageAt: DateTime(2024),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          lastMessageAt: DateTime(2024, 3, 15, 10, 30),
           messages: const [],
           metadata: const {'selectedModelId': 'test-model'},
         ),
@@ -206,8 +206,8 @@ void main() {
         (_) async => ChatSession(
           id: 'session-1',
           title: 'Test Session',
-          createdAt: DateTime(2024),
-          lastMessageAt: DateTime(2024),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          lastMessageAt: DateTime(2024, 3, 15, 10, 30),
           messages: const [],
           metadata: const {'selectedModelId': 'test-model'},
         ),
@@ -308,8 +308,8 @@ void main() {
         (_) async => ChatSession(
           id: 'session-1',
           title: 'Test Session',
-          createdAt: DateTime(2024),
-          lastMessageAt: DateTime(2024),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          lastMessageAt: DateTime(2024, 3, 15, 10, 30),
           messages: const [],
           metadata: const {'selectedModelId': 'test-model'},
         ),

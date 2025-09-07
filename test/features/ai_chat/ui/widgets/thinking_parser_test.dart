@@ -65,5 +65,45 @@ void main() {
       expect(parsed.thinking!.contains('B'), isTrue);
       expect(parsed.thinking!.contains('C'), isTrue);
     });
+
+    test('handles nested html-style blocks', () {
+      const input = 'pre <think>outer <think>inner</think> end</think> post';
+      final parsed = parseThinking(input);
+      expect(parsed.visible, 'pre  post');
+      expect(parsed.thinking, contains('outer'));
+      expect(parsed.thinking, contains('inner'));
+    });
+
+    test('mixed case tags are supported', () {
+      const input = 'A <Think>Mixed</THINK> B [THINK]Case[/Think] C';
+      final parsed = parseThinking(input);
+      expect(parsed.visible, 'A  B  C');
+      expect(parsed.thinking, contains('Mixed'));
+      expect(parsed.thinking, contains('Case'));
+    });
+
+    test('malformed/unclosed blocks are tolerated', () {
+      const input = 'start <think>no end here';
+      final parsed = parseThinking(input);
+      expect(parsed.visible, 'start');
+      expect(parsed.thinking, contains('no end here'));
+    });
+
+    test('very long thinking is truncated with notice', () {
+      final long = 'x' * (ThinkingUtils.maxThinkingLength + 1000);
+      final parsed = parseThinking('<think>$long</think>');
+      expect(parsed.visible, isEmpty);
+      final thinking = parsed.thinking ?? '';
+      expect(thinking.length,
+          lessThanOrEqualTo(ThinkingUtils.maxThinkingLength + 100));
+      expect(thinking, contains('truncated'));
+    });
+
+    test('ThinkingUtils.stripThinking removes all hidden content', () {
+      const input =
+          'pre <think>a</think> mid ```think\nb\n``` [think]c[/think] end';
+      final visible = ThinkingUtils.stripThinking(input);
+      expect(visible, 'pre  mid   end');
+    });
   });
 }

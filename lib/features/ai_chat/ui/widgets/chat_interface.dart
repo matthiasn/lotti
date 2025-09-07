@@ -378,8 +378,8 @@ class _CopyMessageButton extends StatelessWidget {
         // any hidden thinking blocks.
         var text = message.content;
         if (isAssistant) {
-          // Strip known thinking blocks before copying.
-          text = _stripThinking(text);
+          // Strip thinking via shared utility.
+          text = ThinkingUtils.stripThinking(text);
         }
         await Clipboard.setData(ClipboardData(text: text));
         if (context.mounted) {
@@ -394,24 +394,7 @@ class _CopyMessageButton extends StatelessWidget {
     );
   }
 
-  String _stripThinking(String input) {
-    // Reuse same patterns as parser but drop them entirely.
-    final htmlThink = RegExp(r'<think>[\s\S]*?</think>');
-    final fenceThink = RegExp(r'```\s*think\s*\n([\s\S]*?)\n```');
-    final bracketThink = RegExp(r'\[think\][\s\S]*?\[/think\]');
-    // Open-ended forms for streaming (no closing yet)
-    final htmlOpen = RegExp(r'<think>[\s\S]*\Z');
-    final fenceOpen = RegExp(r'```\s*think[\s\S]*\Z');
-    final bracketOpen = RegExp(r'\[think\][\s\S]*\Z');
-    return input
-        .replaceAll(htmlThink, '')
-        .replaceAll(fenceThink, '')
-        .replaceAll(bracketThink, '')
-        .replaceAll(htmlOpen, '')
-        .replaceAll(fenceOpen, '')
-        .replaceAll(bracketOpen, '')
-        .trim();
-  }
+  // Thinking stripping handled by ThinkingUtils
 }
 
 class _MessageContent extends StatelessWidget {
@@ -549,39 +532,58 @@ class _ThinkingDisclosureState extends State<_ThinkingDisclosure> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          onTap: () => setState(() => _expanded = !_expanded),
-          borderRadius: BorderRadius.circular(8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _expanded ? Icons.expand_less : Icons.expand_more,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant,
+        Semantics(
+          label: 'Reasoning section, ${_expanded ? "expanded" : "collapsed"}',
+          button: true,
+          child: CallbackShortcuts(
+            bindings: {
+              const SingleActivator(LogicalKeyboardKey.enter): () =>
+                  setState(() => _expanded = !_expanded),
+              const SingleActivator(LogicalKeyboardKey.space): () =>
+                  setState(() => _expanded = !_expanded),
+            },
+            child: Focus(
+              child: InkWell(
+                onTap: () => setState(() => _expanded = !_expanded),
+                borderRadius: BorderRadius.circular(8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(_expanded ? 'Hide reasoning' : 'Show reasoning',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        )),
+                    const SizedBox(width: 8),
+                    Semantics(
+                      label: 'Copy reasoning',
+                      child: IconButton(
+                        tooltip: 'Copy reasoning',
+                        icon: const Icon(Icons.copy, size: 16),
+                        onPressed: () async {
+                          await Clipboard.setData(
+                              ClipboardData(text: widget.thinking));
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Reasoning copied')),
+                            );
+                          }
+                        },
+                        constraints:
+                            const BoxConstraints(minWidth: 32, minHeight: 32),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 4),
-              Text(_expanded ? 'Hide reasoning' : 'Show reasoning',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  )),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Copy reasoning',
-                icon: const Icon(Icons.copy, size: 16),
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: widget.thinking));
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Reasoning copied')),
-                    );
-                  }
-                },
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
+            ),
           ),
         ),
         if (_expanded) ...[

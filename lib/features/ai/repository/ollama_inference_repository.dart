@@ -23,6 +23,10 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
   final http.Client _httpClient;
 
+  // Toggle for verbose streaming logs useful during debugging. Disabled by
+  // default to avoid console noise in production.
+  static const bool kVerboseStreamLogging = false;
+
   /// Generate text using Ollama's API
   ///
   /// This method handles the specific requirements for Ollama text generation:
@@ -352,6 +356,12 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
           // Cast message once to avoid dynamic calls
           final message = json['message'] as Map<String, dynamic>?;
+          if (kVerboseStreamLogging) {
+            developer.log(
+              'Ollama response: ${chunk.substring(0, chunk.length > 500 ? 500 : chunk.length)}',
+              name: 'OllamaInferenceRepository',
+            );
+          }
 
           // Check if this is a tool call response
           if (message != null) {
