@@ -128,11 +128,7 @@ void main() {
     unawaited(controller.start());
     await controller.start();
     final state = container.read(chatRecorderControllerProvider);
-    expect(
-      state.errorType == null ||
-          state.errorType == ChatRecorderErrorType.concurrentOperation,
-      isTrue,
-    );
+    expect(state.errorType, ChatRecorderErrorType.concurrentOperation);
     gate.complete();
     // Wait for first start to finish
     await Future<void>.delayed(const Duration(milliseconds: 10));
