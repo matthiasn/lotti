@@ -14,6 +14,7 @@ void main() {
         expect(model.messages, isEmpty);
         expect(model.isLoading, isFalse);
         expect(model.isStreaming, isFalse);
+        expect(model.selectedModelId, isNull);
         expect(model.error, isNull);
         expect(model.streamingMessageId, isNull);
       });
@@ -39,6 +40,22 @@ void main() {
         expect(model.isStreaming, isFalse);
         expect(model.error, isNull);
         expect(model.streamingMessageId, isNull);
+        expect(model.selectedModelId, isNull);
+      });
+
+      test('fromDomain preserves selectedModelId from metadata', () {
+        final domainSession = ChatSession(
+          id: 'test-id',
+          title: 'Test Chat',
+          createdAt: DateTime(2024),
+          lastMessageAt: DateTime(2024),
+          messages: [],
+          metadata: {'selectedModelId': 'gpt-4'},
+        );
+
+        final model = ChatSessionUiModel.fromDomain(domainSession);
+
+        expect(model.selectedModelId, equals('gpt-4'));
       });
 
       test('fromDomain accepts optional presentation parameters', () {
@@ -104,6 +121,22 @@ void main() {
         expect(updated.isLoading, isTrue);
         expect(updated.error, equals('New error'));
       });
+
+      test('handles selectedModelId updates correctly', () {
+        final original = ChatSessionUiModel.empty();
+
+        // Can set selectedModelId
+        final withModel = original.copyWith(selectedModelId: 'gpt-4');
+        expect(withModel.selectedModelId, equals('gpt-4'));
+
+        // Can clear selectedModelId
+        final cleared = withModel.copyWith(selectedModelId: null);
+        expect(cleared.selectedModelId, isNull);
+
+        // Not specifying keeps original value
+        final unchanged = withModel.copyWith(title: 'New Title');
+        expect(unchanged.selectedModelId, equals('gpt-4'));
+      });
     });
 
     group('toDomain', () {
@@ -128,6 +161,23 @@ void main() {
         expect(domainSession.messages, equals(messages));
         expect(domainSession.createdAt, equals(messages.first.timestamp));
         expect(domainSession.lastMessageAt, equals(messages.last.timestamp));
+        expect(domainSession.metadata, equals({}));
+      });
+
+      test('includes selectedModelId in metadata when present', () {
+        const uiModel = ChatSessionUiModel(
+          id: 'test-id',
+          title: 'Test Chat',
+          messages: [],
+          isLoading: false,
+          isStreaming: false,
+          selectedModelId: 'gpt-4',
+        );
+
+        final domainSession = uiModel.toDomain();
+
+        expect(domainSession.metadata, isNotNull);
+        expect(domainSession.metadata!['selectedModelId'], equals('gpt-4'));
       });
 
       test('handles empty messages list', () {
@@ -217,15 +267,32 @@ void main() {
       });
 
       test('canSendMessage returns correct boolean', () {
-        final readyModel = ChatSessionUiModel.empty();
+        // Model without selectedModelId cannot send messages
+        final noModelSelected = ChatSessionUiModel.empty();
+        expect(noModelSelected.canSendMessage, isFalse);
+
+        // Model with selectedModelId can send messages
+        const readyModel = ChatSessionUiModel(
+          id: 'test-id',
+          title: 'Test',
+          messages: [],
+          isLoading: false,
+          isStreaming: false,
+          selectedModelId: 'test-model',
+        );
+        expect(readyModel.canSendMessage, isTrue);
+
+        // Model with selectedModelId but loading cannot send messages
         final loadingModel = readyModel.copyWith(isLoading: true);
+        expect(loadingModel.canSendMessage, isFalse);
+
+        // Model with selectedModelId but streaming cannot send messages
         final streamingModel = readyModel.copyWith(isStreaming: true);
+        expect(streamingModel.canSendMessage, isFalse);
+
+        // Model with selectedModelId but both loading and streaming cannot send messages
         final busyModel =
             readyModel.copyWith(isLoading: true, isStreaming: true);
-
-        expect(readyModel.canSendMessage, isTrue);
-        expect(loadingModel.canSendMessage, isFalse);
-        expect(streamingModel.canSendMessage, isFalse);
         expect(busyModel.canSendMessage, isFalse);
       });
 

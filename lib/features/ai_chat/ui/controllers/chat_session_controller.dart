@@ -49,7 +49,11 @@ class ChatSessionController extends _$ChatSessionController {
 
   /// Send a new message in the current session
   Future<void> sendMessage(String content) async {
-    if (content.trim().isEmpty || !state.canSendMessage) return;
+    // Allow sending as long as we're not busy; ChatRepository will
+    // select a default model if none is chosen.
+    if (content.trim().isEmpty || state.isLoading || state.isStreaming) {
+      return;
+    }
 
     // Add user message to state
     final userMessage = ChatMessage.user(content);
@@ -78,18 +82,10 @@ class ChatSessionController extends _$ChatSessionController {
       // Get conversation history (excluding the streaming message)
       final conversationHistory = state.completedMessages;
 
-      // Stream the AI response
-      final selectedModelId = state.selectedModelId;
-      if (selectedModelId == null) {
-        state = state.copyWith(
-            error: 'Please select a model before sending messages.');
-        return;
-      }
-
       await for (final chunk in chatRepository.sendMessage(
         message: content,
         conversationHistory: conversationHistory,
-        modelId: selectedModelId,
+        modelId: state.selectedModelId,
         categoryId: categoryId,
       )) {
         _updateStreamingMessage(chunk);

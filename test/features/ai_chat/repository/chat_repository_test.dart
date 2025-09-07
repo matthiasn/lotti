@@ -575,10 +575,10 @@ void main() {
             .toList();
 
         // Verify results
-        expect(results.length, 3);
+        // Initial stream content followed by streamed final response
+        expect(results.length, 2);
         expect(results[0], 'Let me check your tasks...');
-        expect(results[1], 'Generating response...');
-        expect(results[2], 'You completed 5 tasks today!');
+        expect(results[1], 'You completed 5 tasks today!');
 
         // Verify task summary was called
         verify(() => mockTaskSummaryRepository.getTaskSummaries(
@@ -658,9 +658,11 @@ void main() {
             )
             .toList();
 
-        // Verify results - should be concatenated
-        expect(results.length, 1);
-        expect(results[0], 'Here is your response in chunks.');
+        // Verify results - should stream chunks in order
+        expect(results.length, 3);
+        expect(results[0], 'Here is ');
+        expect(results[1], 'your response ');
+        expect(results[2], 'in chunks.');
       });
 
       test('handles empty tool call results', () async {
@@ -744,9 +746,119 @@ void main() {
             )
             .toList();
 
-        // Verify results
-        expect(results.contains('Generating response...'), true);
-        expect(results.last, 'No tasks found for the specified period.');
+        // Verify results: since the initial stream only contained tool calls (no content),
+        // we only get the final streamed response content
+        expect(results.length, 1);
+        expect(results[0], 'No tasks found for the specified period.');
+      });
+
+      test('streams final response chunks after tool calls', () async {
+        // Setup AI configuration
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [testProvider]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [testModel]);
+
+        // Initial stream: tool call only (no content)
+        final initialStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool_1',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'get_task_summaries',
+                        arguments:
+                            '{"start_date": "2024-01-01T00:00:00.000", "end_date": "2024-01-01T23:59:59.999", "limit": 5}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        // Final stream: multiple chunks
+        final finalStream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-2',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'First '),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'response-2',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'second '),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'response-2',
+            created: 0,
+            model: 'model',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'third.'),
+              ),
+            ],
+          ),
+        ]);
+
+        var call = 0;
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            )).thenAnswer((_) => (++call == 1) ? initialStream : finalStream);
+
+        // Tool call data
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any<TaskSummaryRequest>(named: 'request'),
+            )).thenAnswer((_) async => [
+              TaskSummaryResult(
+                taskId: 't1',
+                taskTitle: 'Task 1',
+                summary: 'S1',
+                taskDate: DateTime(2024),
+                status: 'completed',
+              )
+            ]);
+
+        final results = await repository
+            .sendMessage(
+              message: 'Stream final chunks',
+              conversationHistory: [],
+              categoryId: testCategoryId,
+            )
+            .toList();
+
+        expect(results, ['First ', 'second ', 'third.']);
       });
 
       test('handles conversation history correctly', () async {

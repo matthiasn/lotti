@@ -259,6 +259,7 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: [],
+                metadata: {'selectedModelId': 'test-model'},
               ));
 
       await setupTestWidget(
@@ -318,12 +319,14 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: [],
+                metadata: {'selectedModelId': 'test-model'},
               ));
 
       when(() => mockChatRepository.sendMessage(
             message: any(named: 'message'),
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: any(named: 'categoryId'),
+            modelId: any(named: 'modelId'),
           )).thenAnswer((_) async* {
         yield 'Hello there!';
       });
@@ -335,6 +338,7 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: [],
+                metadata: {'selectedModelId': 'test-model'},
               ));
 
       await setupTestWidget(
@@ -363,6 +367,7 @@ void main() {
             message: 'Hello, AI!',
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: 'test-category',
+            modelId: 'test-model',
           )).called(1);
     });
 
@@ -374,12 +379,14 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: [],
+                metadata: {'selectedModelId': 'test-model'},
               ));
 
       when(() => mockChatRepository.sendMessage(
             message: any(named: 'message'),
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: any(named: 'categoryId'),
+            modelId: any(named: 'modelId'),
           )).thenAnswer((_) async* {
         yield 'Response via Enter key!';
       });
@@ -391,6 +398,7 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: [],
+                metadata: {'selectedModelId': 'test-model'},
               ));
 
       await setupTestWidget(
@@ -419,6 +427,7 @@ void main() {
             message: 'Hello via Enter!',
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: 'test-category',
+            modelId: 'test-model',
           )).called(1);
     });
 
@@ -465,6 +474,7 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: [],
+                metadata: {'selectedModelId': 'test-model'},
               ));
 
       // Set up streaming response
@@ -473,6 +483,7 @@ void main() {
             message: any(named: 'message'),
             conversationHistory: any(named: 'conversationHistory'),
             categoryId: any(named: 'categoryId'),
+            modelId: any(named: 'modelId'),
           )).thenAnswer((_) => streamController.stream);
 
       when(() => mockChatRepository.saveSession(any()))
@@ -482,6 +493,7 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: [],
+                metadata: {'selectedModelId': 'test-model'},
               ));
 
       await setupTestWidget(
@@ -505,17 +517,26 @@ void main() {
       await tester.tap(find.byIcon(Icons.send));
       await tester.pump(); // Trigger the send
 
-      // Add some streaming content
-      streamController.add('Thinking...');
+      // Wait for the streaming state to initialize
       await tester.pump();
 
-      // Check streaming indicator elements
+      // First check that we have an empty streaming message with "Thinking..."
       expect(find.text('Thinking...'), findsOneWidget);
 
+      // Add some streaming content
+      streamController.add('Hello');
+      await tester.pump();
+
+      // Now the content should show instead of just "Thinking..."
+      expect(find.text('Hello'), findsOneWidget);
+
       // Properly close the stream and clean up timers
-      streamController.add('Complete response');
+      streamController.add(' world!');
       await streamController.close();
       await tester.pumpAndSettle();
+
+      // Final message should be displayed
+      expect(find.text('Hello world!'), findsOneWidget);
     });
 
     testWidgets('accepts sessionId parameter', (tester) async {

@@ -72,14 +72,17 @@ class ChatRepository {
       final previousMessages =
           _messageProcessor.convertConversationHistory(conversationHistory);
       final messages = _messageProcessor.buildMessagesList(
-          previousMessages, message, systemMessage);
+        previousMessages,
+        message,
+        systemMessage,
+      );
 
-      // Build conversation context for the prompt
+      // Build conversation context for the prompt (string with history)
       final fullPrompt =
           _messageProcessor.buildPromptFromMessages(previousMessages, message);
       final tools = [TaskSummaryTool.toolDefinition];
 
-      // Get initial response stream
+      // Initial response stream
       final stream = cloudInferenceRepository.generate(
         fullPrompt,
         model: config.model.providerModelId,
@@ -91,40 +94,53 @@ class ChatRepository {
         tools: tools,
       );
 
-      // Process the initial stream
-      final streamResult =
-          await _messageProcessor.processStreamResponse(stream);
+      // Accumulate tool calls while streaming content to UI
+      final toolCalls = <ChatCompletionMessageToolCall>[];
+      final toolCallArgBuffers = <String, StringBuffer>{};
 
-      // Yield content from initial response
-      if (streamResult.content.isNotEmpty) {
-        yield streamResult.content;
+      await for (final chunk in stream) {
+        if (chunk.choices?.isNotEmpty ?? false) {
+          final delta = chunk.choices!.first.delta;
+
+          // Stream content deltas directly to UI
+          final content = delta?.content;
+          if (content != null && content.isNotEmpty) {
+            yield content;
+          }
+
+          // Accumulate tool call deltas
+          if (delta?.toolCalls != null) {
+            _messageProcessor.accumulateToolCalls(
+              toolCalls,
+              delta!.toolCalls!,
+              toolCallArgBuffers,
+            );
+          }
+        }
       }
 
-      // If we have tool calls, process them and get final response
-      if (streamResult.toolCalls.isNotEmpty) {
+      // If we have tool calls, process them and then stream the final response
+      if (toolCalls.isNotEmpty) {
         // Add assistant message with tool calls to history
-        messages.add(ChatCompletionMessage.assistant(
-          toolCalls: streamResult.toolCalls,
-        ));
+        messages.add(
+          ChatCompletionMessage.assistant(toolCalls: toolCalls),
+        );
 
-        // Process tool calls
+        // Process tool calls (fetch data, etc.)
         final toolResults = await _messageProcessor.processToolCalls(
-          streamResult.toolCalls,
+          toolCalls,
           categoryId,
         );
         messages.addAll(toolResults);
 
-        // Generate final response
-        yield 'Generating response...';
-
-        final finalResponse = await _messageProcessor.generateFinalResponse(
+        // Stream the final response generated from tool results
+        await for (final finalDelta
+            in _messageProcessor.generateFinalResponseStream(
           messages: messages,
           config: config,
           systemMessage: systemMessage,
-        );
-
-        if (finalResponse.isNotEmpty) {
-          yield finalResponse;
+        )) {
+          yield finalDelta;
         }
       }
     } catch (e, stackTrace) {

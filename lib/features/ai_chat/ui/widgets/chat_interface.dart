@@ -480,7 +480,7 @@ class _StreamingContent extends StatelessWidget {
           )
         else
           GptMarkdown(content),
-        const SizedBox(height: 4),
+        const SizedBox(height: 20),
         _TypingIndicator(isUser: isUser),
       ],
     );

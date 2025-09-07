@@ -101,21 +101,30 @@ class ChatMessageProcessor {
       return _cachedConfig!;
     }
 
-    final models =
-        await aiConfigRepository.getConfigsByType(AiConfigType.model);
-    final model = models.whereType<AiConfigModel>().firstWhere(
-          (m) =>
-              m.supportsFunctionCalling &&
-              m.inputModalities.contains(Modality.text),
-          orElse: () => throw StateError('No eligible models configured'),
+    // Fetch providers and ensure Gemini is configured
+    final providers =
+        await aiConfigRepository.getConfigsByType(AiConfigType.inferenceProvider);
+    final geminiProvider = providers
+        .whereType<AiConfigInferenceProvider>()
+        .firstWhere(
+          (p) => p.inferenceProviderType == InferenceProviderType.gemini,
+          orElse: () => throw StateError('Gemini provider not configured'),
         );
-    final provider = await aiConfigRepository.getConfigById(
-      model.inferenceProviderId,
-    );
-    if (provider is! AiConfigInferenceProvider) {
-      throw StateError('Provider not found: ${model.inferenceProviderId}');
-    }
-    final config = AiInferenceConfig(provider: provider, model: model);
+
+    // Fetch models and select the Gemini Flash model (case-insensitive match)
+    final allModels =
+        await aiConfigRepository.getConfigsByType(AiConfigType.model);
+    final model = allModels
+        .whereType<AiConfigModel>()
+        .where((m) => m.inferenceProviderId == geminiProvider.id)
+        .firstWhere(
+          (m) => m.name.toLowerCase().contains('flash') ||
+              m.providerModelId.toLowerCase().contains('flash'),
+          orElse: () => throw StateError('Gemini Flash model not found'),
+        );
+
+    final config =
+        AiInferenceConfig(provider: geminiProvider, model: model);
     _cachedConfig = config;
     _cachedModelId = model.id;
     _configCacheTime = DateTime.now();
@@ -403,6 +412,35 @@ class ChatMessageProcessor {
     final finalResult = await processStreamResponse(finalStream);
 
     return finalResult.content;
+  }
+
+  /// Generate final response after tool calls, streaming content chunks
+  Stream<String> generateFinalResponseStream({
+    required List<ChatCompletionMessage> messages,
+    required AiInferenceConfig config,
+    required String systemMessage,
+  }) async* {
+    final finalPrompt = buildFinalPromptFromMessages(messages);
+
+    final finalStream = cloudInferenceRepository.generate(
+      finalPrompt,
+      model: config.model.providerModelId,
+      temperature: 0.7,
+      baseUrl: config.provider.baseUrl,
+      apiKey: config.provider.apiKey,
+      systemMessage: systemMessage,
+      provider: config.provider,
+    );
+
+    await for (final chunk in finalStream) {
+      if (chunk.choices?.isNotEmpty ?? false) {
+        final delta = chunk.choices!.first.delta;
+        final content = delta?.content;
+        if (content != null && content.isNotEmpty) {
+          yield content;
+        }
+      }
+    }
   }
 
   /// Convert ChatMessage to OpenAI ChatCompletionMessage

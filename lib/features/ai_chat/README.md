@@ -1,6 +1,6 @@
 # AI Chat Feature
 
-An intelligent conversational interface for querying and interacting with Lotti tasks and productivity data. Users can ask questions about their task history, analyze patterns, and get AI-powered insights through natural language.
+An intelligent conversational interface for querying and interacting with Lotti tasks and productivity data. Users can ask questions about their task history, analyze patterns, and get AI‑powered insights through natural language.
 
 ## 🎯 Overview
 
@@ -39,9 +39,9 @@ lib/features/ai_chat/
 - **Context Awareness**: Filters results by the selected category from the tasks page
 
 ### ✅ Advanced AI Capabilities
-- **Function Calling**: Seamlessly calls `get_task_summaries` tool to retrieve relevant data
-- **Streaming Responses**: Real-time response generation with typing indicators
-- **Gemini Flash Integration**: Optimized for fast, contextual responses
+- **Model Selection (New)**: Pick an AI model from configured providers (e.g., Ollama, OpenAI-compatible, Gemini, etc.) per chat session
+- **Function Calling**: Uses the `get_task_summaries` tool to retrieve relevant data
+- **Streaming Markdown (Improved)**: Tokens are streamed from providers and rendered incrementally as Markdown in the UI with a typing indicator
 
 ### ✅ Sophisticated Data Processing
 - **Complex Query Engine**: 4-step process to find work entries, resolve task relationships, and retrieve AI summaries
@@ -53,23 +53,24 @@ lib/features/ai_chat/
 - **Material Design 3**: Consistent with app design language
 - **Responsive Chat Interface**: Custom-built Flutter widgets with proper accessibility
 - **Markdown Support**: Rich text rendering for AI responses with code syntax highlighting
+- **Real-time Streaming**: Live token-by-token rendering; spacing tuned for readability (10px gap above typing indicator)
 - **Session Management**: Create new chats, manage conversation history
-- **Error Resilience**: Graceful error handling with retry mechanisms
+- **Error Resilience**: Graceful error handling with retry and dismiss actions
 
 ## 🔧 Core Components
 
 ### ChatRepository
 Central orchestrator handling:
 - Session CRUD operations (in-memory storage)
-- Message streaming with proper error boundaries
-- AI service integration through CloudInferenceRepository
-- Tool calling orchestration for task summaries
+- Real-time streaming: forwards content deltas from providers directly to the UI
+- AI service integration through CloudInferenceRepository (provider-agnostic)
+- Tool calling orchestration for task summaries and streaming of final responses
 
 ### ChatMessageProcessor
 Extracted testable logic for:
-- AI configuration management (Gemini Flash setup)
+- AI configuration management (provider + model resolution with caching)
 - Message format conversion (internal ↔ OpenAI formats)
-- Stream processing with content accumulation
+- Stream processing: accumulate tool calls; expose streaming of final responses after tools
 - Tool call processing and response handling
 - Prompt building from conversation history
 
@@ -86,8 +87,9 @@ Complex data retrieval engine:
 
 ### Main App Integration
 - **Entry Point**: Psychology icon (🧠) in tasks page app bar
-- **Modal Design**: Bottom sheet taking 80% of screen height
+- **Modal Design**: Bottom sheet taking ~80% of screen height
 - **Category Context**: Inherits selected category from tasks page for filtering
+- **Model Selection**: Dropdown in the chat header; sending is gated until a model is selected
 - **State Management**: Reactive integration with Riverpod providers
 
 ### Data Layer Integration
@@ -97,16 +99,16 @@ Complex data retrieval engine:
 - **LoggingService**: Comprehensive error tracking and debugging support
 
 ### AI Infrastructure Integration
-- **Function Calling**: Extends existing tool calling infrastructure
-- **Streaming Events**: Built on existing event-based streaming system
+- **Providers**: Unified interface for multiple providers (Ollama, OpenAI-compatible, Gemini, etc.)
+- **Function Calling**: OpenAI-compatible tool definitions
+- **Streaming**: Provider streams are forwarded as deltas to the UI
 - **Error Handling**: Consistent with existing AI error patterns
-- **Provider Management**: Integrates with unified AI provider system
 
 ## 📊 Technical Specifications
 
 ### Performance Characteristics
-- **Response Initiation**: < 200ms typical response start time
-- **Streaming Updates**: Real-time content delivery as AI generates responses
+- **Response Initiation**: Fast first-token latency where supported by the provider
+- **Streaming Updates**: Real-time content delivery as tokens arrive
 - **Memory Efficiency**: Minimal overhead with proper stream disposal
 - **Database Optimization**: Efficient queries with proper relationship traversal
 
@@ -117,9 +119,10 @@ Complex data retrieval engine:
 4. **AI Summary Extraction**: Latest AI responses with metadata preservation
 
 ### Model Integration
-- **Primary Model**: Gemini Flash (optimized for speed and context)
+- **Model Selection**: Select an eligible model per session (function-calling + text input required)
+- **Providers**: Works with Ollama (local), OpenAI-compatible APIs, Gemini, and more (via unified config)
 - **Function Calling**: OpenAI-compatible tool definitions
-- **Context Management**: Proper conversation history maintenance
+- **Context Management**: Prompt includes prior conversation context
 - **Token Efficiency**: Optimized prompts for cost-effective usage
 
 ## 🧪 Testing
@@ -152,9 +155,10 @@ Comprehensive test suite covering all components:
 ### Chat Flow
 1. **Initiation**: Tap brain icon (🧠) in tasks page app bar
 2. **Context Setup**: Chat automatically inherits selected category context
-3. **Natural Queries**: Ask questions in natural language about tasks
-4. **Real-time Responses**: Watch AI responses stream in real-time
-5. **Session Management**: Continue conversations or start new chats
+3. **Model Selection**: Pick a model in the chat header
+4. **Natural Queries**: Ask questions in natural language about tasks
+5. **Real-time Responses**: Watch AI responses stream as formatted Markdown
+6. **Session Management**: Continue conversations or start new chats
 
 ### Example Interactions
 ```
@@ -189,39 +193,19 @@ Response: "Looking at your work patterns, I notice [insights]..."
 
 The AI Chat feature has been optimized for production use with several key performance improvements:
 
-- **✅ AI Configuration Caching**: Implemented efficient caching of AI provider and model configurations
-  - **Resolution**: Added 5-minute configuration cache in `ChatMessageProcessor` to avoid repeated database queries
-  - **Location**: `lib/features/ai_chat/repository/chat_message_processor.dart:49-109`
-  - **Benefits**: Reduced database queries by ~90%, improved response time, better resource utilization
-  - **Test Coverage**: Comprehensive tests verify cache behavior and expiration
-
-- **✅ N+1 Query Problem Fixed**: Eliminated individual database calls for each task
-  - **Resolution**: Implemented `getBulkLinkedEntities` method for batch processing of task relationships
-  - **Location**: `lib/features/ai_chat/repository/task_summary_repository.dart:119-126`
-  - **Database Enhancement**: Added `linksFromIds` query to `database.drift` for efficient bulk lookups
-  - **Benefits**: Dramatically improved performance with many tasks (10x+ speedup), reduced database load
-  - **Test Coverage**: Comprehensive bulk database lookup tests with performance benchmarking
-
-- **✅ Session Search Performance**: Optimized in-memory search with efficient filtering
-  - **Resolution**: Added null-safe guards and optimized session filtering logic
-  - **Location**: `lib/features/ai_chat/ui/controllers/chat_sessions_controller.dart:137-166`
-  - **Benefits**: Better performance as session count grows, more responsive search
-  - **Test Coverage**: Edge case handling and null safety validation
+- **✅ AI Configuration Caching**: Efficient caching of AI provider and model configurations in `ChatMessageProcessor` (5‑minute cache)
+- **✅ Reduced DB Roundtrips**: Batch relationship lookups and bulk queries in `TaskSummaryRepository`
+- **✅ Session Search Performance**: Optimized in-memory filtering and null‑safe guards in session controllers
 
 #### **Remaining Performance Considerations**
 
 - **Task Query Volume**: Current implementation uses `limit: 10000` for work entry processing
   - **Current Status**: Acceptable for typical usage patterns, no immediate performance issues reported
-  - **Location**: `lib/features/ai_chat/repository/task_summary_repository.dart:55`
   - **Future Enhancement**: Consider pagination if large datasets become problematic
   - **Monitoring**: Performance metrics show acceptable response times under normal load
 
 #### **Feature Enhancements**
-- **External Library Integration**: Consider migrating to `flutter_gen_ai_chat_ui` library
-  - **Benefit**: Reduce maintenance burden and leverage community-maintained chat UI components
-  - **Current State**: Custom implementation provides full control but increases maintenance overhead
-  - **Implementation Consideration**: Evaluate trade-offs between customization flexibility and maintenance burden
-  - **Location**: Custom implementation in `lib/features/ai_chat/ui/widgets/chat_interface.dart`
+- **External Library Integration**: Consider migrating to `flutter_gen_ai_chat_ui` to reduce maintenance while keeping customization options
   
 - **Multi-Category Support**: Enable querying across multiple categories simultaneously  
 - **Export Functionality**: Export chat conversations as markdown or PDF
@@ -246,7 +230,7 @@ The AI Chat feature has been optimized for production use with several key perfo
 ## 🛠️ Development
 
 ### Key Dependencies
-- **openai_dart**: Function calling and chat completion support
+- **openai_dart**: OpenAI-compatible streaming, function calling
 - **freezed_annotation**: Immutable data models with JSON serialization
 - **flutter_riverpod**: State management and dependency injection
 - **gpt_markdown**: Rich text rendering for AI responses
@@ -261,10 +245,21 @@ The AI Chat feature has been optimized for production use with several key perfo
 
 ### Code Quality Standards
 - **Test Coverage**: Comprehensive test suite ensuring robust functionality across all components
-- **Static Analysis**: Zero analyzer issues with strict linting rules
-- **Documentation**: Inline documentation for all public APIs
-- **Formatting**: Consistent code formatting with dart format
+- **Static Analysis**: Strict linting rules
+- **Documentation**: Inline documentation for public APIs
+- **Formatting**: Consistent code formatting with `dart format`
 - **Modularity**: Loosely coupled components with clear interfaces
+
+## 🔧 How To Use
+- Configure at least one AI provider and add eligible models (function calling + text input) in settings.
+- Open the AI chat via the brain icon (🧠) in the tasks page.
+- Select a model from the header dropdown (required before sending).
+- Ask a question in natural language; responses stream in as Markdown.
+
+## ♿ Accessibility & UX Notes
+
+- Dropdown is disabled while the model is streaming to avoid accidental context changes.
+- Error banner includes retry and dismiss actions when something goes wrong.
 
 ---
 
