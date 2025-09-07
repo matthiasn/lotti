@@ -1004,6 +1004,68 @@ void main() {
         );
       });
 
+      test('throws on invalid calendar date in start_date (e.g., 2024-02-31)',
+          () async {
+        final request = TaskSummaryRequest(
+          startDate: '2024-02-31',
+          endDate: '2024-03-01',
+        );
+
+        expect(
+          () => repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('throws on invalid calendar date in end_date (e.g., 2024-02-31)',
+          () async {
+        final request = TaskSummaryRequest(
+          startDate: '2024-03-01',
+          endDate: '2024-02-31',
+        );
+
+        expect(
+          () => repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('throws on invalid date format (regex) in start_date', () async {
+        final request = TaskSummaryRequest(
+          startDate: '2024-2-01', // missing zero padding for month
+          endDate: '2024-02-02',
+        );
+
+        expect(
+          () => repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('throws on invalid date format (regex) in end_date', () async {
+        final request = TaskSummaryRequest(
+          startDate: '2024-02-01',
+          endDate: '2024-02-1', // missing zero padding for day
+        );
+
+        expect(
+          () => repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
       test('clamps limit to reasonable bounds - negative values', () async {
         // Arrange
         final request = TaskSummaryRequest(

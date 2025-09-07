@@ -211,6 +211,13 @@ void main() {
           ),
         );
 
+        // Cause repository to fail like real validation would
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any(named: 'request'),
+            )).thenAnswer((_) => Future.error(
+                const FormatException('Invalid calendar date')));
+
         // Act
         final result = await processor.processTaskSummaryTool(
           toolCall: toolCall,
@@ -228,7 +235,8 @@ void main() {
             )).called(1);
       });
 
-      test('handles invalid date format in arguments', () async {
+      test('handles invalid date format or calendar date in arguments',
+          () async {
         // Arrange
         final toolCall = ChatCompletionMessageToolCall(
           id: 'test-id',
@@ -237,10 +245,17 @@ void main() {
             name: 'get_task_summaries',
             arguments: jsonEncode({
               'start_date': 'invalid-date-format',
-              'end_date': '2024-01-01T00:00:00.000',
+              'end_date': '2024-02-31',
             }),
           ),
         );
+
+        // Cause repository to fail like real validation would
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any(named: 'request'),
+            )).thenAnswer((_) => Future.error(
+                const FormatException('Invalid calendar date')));
 
         // Act
         final result = await processor.processTaskSummaryTool(
@@ -251,6 +266,47 @@ void main() {
         // Assert
         final decoded = jsonDecode(result) as Map<String, dynamic>;
         expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        expect(decoded['error'].toString().toLowerCase(), contains('invalid'));
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'ChatMessageProcessor',
+              subDomain: 'processTaskSummaryTool',
+              stackTrace: any<dynamic>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('handles invalid calendar date in start_date specifically',
+          () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'test-id-2',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': '2024-02-31', // invalid start date
+              'end_date': '2024-03-01',
+            }),
+          ),
+        );
+
+        // Simulate repository validation failure
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any(named: 'request'),
+            )).thenAnswer((_) => Future.error(
+                const FormatException('Invalid calendar date')));
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        expect(decoded['error'].toString().toLowerCase(), contains('invalid'));
         verify(() => mockLoggingService.captureException(
               any<dynamic>(),
               domain: 'ChatMessageProcessor',

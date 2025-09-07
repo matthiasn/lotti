@@ -39,12 +39,28 @@ class TaskSummaryRepository {
         );
       }
       final parts = date.split('-').map(int.parse).toList();
-      return DateTime(parts[0], parts[1], parts[2]);
+      final dt = DateTime(parts[0], parts[1], parts[2]);
+      // Reject impossible calendar dates (e.g., 2024-02-31)
+      if (dt.year != parts[0] || dt.month != parts[1] || dt.day != parts[2]) {
+        throw FormatException('Invalid calendar date: "$date"');
+      }
+      return dt;
     }
 
     DateTime parseLocalEndOfDay(String date) {
+      final strict = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+      if (!strict.hasMatch(date)) {
+        throw FormatException(
+          'Invalid date format for "$date". Please send YYYY-MM-DD only; no time or timezone.',
+        );
+      }
       final parts = date.split('-').map(int.parse).toList();
-      return DateTime(parts[0], parts[1], parts[2], 23, 59, 59, 999);
+      final dt = DateTime(parts[0], parts[1], parts[2], 23, 59, 59, 999);
+      // Verify date did not overflow to another month/day
+      if (dt.year != parts[0] || dt.month != parts[1] || dt.day != parts[2]) {
+        throw FormatException('Invalid calendar date: "$date"');
+      }
+      return dt;
     }
 
     final startLocal = parseLocalStartOfDay(request.startDate);
