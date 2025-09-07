@@ -117,6 +117,7 @@ class ChatSessionUiModel {
   bool get hasMessages => messages.isNotEmpty;
 
   /// Check if chat is in a valid state to send messages
+  /// Requires a model to be selected before messages can be sent
   bool get canSendMessage =>
       !isLoading && !isStreaming && selectedModelId != null;
 
