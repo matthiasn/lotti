@@ -21,6 +21,9 @@ void main() {
     // Ensure a clean DI slate for this test
     await getIt.reset();
 
+    // Capture sent messages without static state
+    final lastSent = ValueNotifier<String?>(null);
+
     final overrides = <Override>[
       // Recorder provider overridden with a fake controller we can observe
       chatRecorderControllerProvider.overrideWith(
@@ -29,7 +32,7 @@ void main() {
 
       // Provide a simple chat session state where sending is allowed
       chatSessionControllerProvider(categoryId).overrideWith(
-        _FakeChatSessionController.new,
+        () => _FakeChatSessionController(sink: lastSent),
       ),
 
       // No eligible models needed in header for this test
@@ -72,13 +75,15 @@ void main() {
     await tester.pumpAndSettle(const Duration(seconds: 1));
 
     // Assert our fake session controller received the sent text
-    expect(_FakeChatSessionController.lastSent, 'Hi there');
+    expect(lastSent.value, 'Hi there');
   });
 
   testWidgets('Cancel discards recording and returns to mic', (tester) async {
     const categoryId = 'cat-1';
     await getIt.reset();
     getIt.registerSingleton<LoggingService>(_FakeLoggingService());
+
+    final lastSent = ValueNotifier<String?>(null);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -87,7 +92,7 @@ void main() {
             _FakeChatRecorderController.new,
           ),
           chatSessionControllerProvider(categoryId).overrideWith(
-            _FakeChatSessionController.new,
+            () => _FakeChatSessionController(sink: lastSent),
           ),
           eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
@@ -108,18 +113,14 @@ void main() {
     await tester.tap(find.byIcon(Icons.close));
     await tester.pump();
     expect(find.byIcon(Icons.mic), findsOneWidget);
-    // Reset the static tracker to isolate tests
-    _FakeChatSessionController.lastSent = null;
-    expect(_FakeChatSessionController.lastSent, isNull);
+    // Ensure no message was sent
+    expect(lastSent.value, isNull);
   });
 
   testWidgets('Esc cancels recording', (tester) async {
     const categoryId = 'cat-1';
     await getIt.reset();
     getIt.registerSingleton<LoggingService>(_FakeLoggingService());
-
-    // Reset tracker
-    _FakeChatSessionController.lastSent = null;
 
     await tester.pumpWidget(
       ProviderScope(
@@ -128,7 +129,8 @@ void main() {
             _FakeChatRecorderController.new,
           ),
           chatSessionControllerProvider(categoryId).overrideWith(
-            _FakeChatSessionController.new,
+            () =>
+                _FakeChatSessionController(sink: ValueNotifier<String?>(null)),
           ),
           eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
@@ -162,8 +164,9 @@ void main() {
           chatRecorderControllerProvider.overrideWith(
             _FakeChatRecorderController.new,
           ),
-          chatSessionControllerProvider(categoryId)
-              .overrideWith(_NonSendableChatSessionController.new),
+          chatSessionControllerProvider(categoryId).overrideWith(
+            _NonSendableChatSessionController.new,
+          ),
           eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
         ],
@@ -185,7 +188,8 @@ void main() {
       find.byKey(const ValueKey('chat_text_field')),
     );
     expect(textField.controller!.text, 'Hi there');
-    expect(_FakeChatSessionController.lastSent, isNull);
+    // No send occurred
+    // Nothing to assert for lastSent here
   });
 
   testWidgets('Processing state shows spinner and disables input',
@@ -201,7 +205,8 @@ void main() {
             _ProcessingChatRecorderController.new,
           ),
           chatSessionControllerProvider(categoryId).overrideWith(
-            _FakeChatSessionController.new,
+            () =>
+                _FakeChatSessionController(sink: ValueNotifier<String?>(null)),
           ),
           eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
@@ -241,7 +246,7 @@ void main() {
             _FakeChatRecorderController.new,
           ),
           chatSessionControllerProvider(categoryId).overrideWith(
-            _FakeChatSessionController.new,
+            _NonSendableChatSessionController.new,
           ),
           eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
@@ -292,7 +297,9 @@ class _FakeChatRecorderController extends ChatRecorderController {
 }
 
 class _FakeChatSessionController extends ChatSessionController {
-  static String? lastSent;
+  _FakeChatSessionController({required this.sink});
+
+  final ValueNotifier<String?> sink;
   @override
   ChatSessionUiModel build(String categoryId) {
     // Selected model set so sending is allowed
@@ -311,7 +318,7 @@ class _FakeChatSessionController extends ChatSessionController {
 
   @override
   Future<void> sendMessage(String content) async {
-    lastSent = content;
+    sink.value = content;
   }
 }
 

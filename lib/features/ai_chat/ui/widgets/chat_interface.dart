@@ -853,47 +853,12 @@ class _InputAreaState extends ConsumerState<_InputArea> {
       ),
       child: SafeArea(
         child: (recState.status == ChatRecorderStatus.recording)
-            ? CallbackShortcuts(
-                bindings: {
-                  const SingleActivator(LogicalKeyboardKey.escape): () => ref
-                      .read(chatRecorderControllerProvider.notifier)
-                      .cancel(),
-                },
-                child: Focus(
-                  autofocus: true,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: WaveformBars(
-                            key: const ValueKey('waveform_bars'),
-                            amplitudesNormalized: ref
-                                .read(chatRecorderControllerProvider.notifier)
-                                .getNormalizedAmplitudeHistory(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Recording action buttons (Cancel / Stop)
-                      IconButton.outlined(
-                        icon: const Icon(Icons.close),
-                        tooltip: 'Cancel recording (Esc)',
-                        onPressed: () => ref
-                            .read(chatRecorderControllerProvider.notifier)
-                            .cancel(),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        icon: const Icon(Icons.stop),
-                        tooltip: 'Stop and transcribe',
-                        onPressed: () => ref
-                            .read(chatRecorderControllerProvider.notifier)
-                            .stopAndTranscribe(),
-                      ),
-                    ],
-                  ),
-                ),
+            ? ChatVoiceControls(
+                onCancel: () =>
+                    ref.read(chatRecorderControllerProvider.notifier).cancel(),
+                onStop: () => ref
+                    .read(chatRecorderControllerProvider.notifier)
+                    .stopAndTranscribe(),
               )
             : Row(
                 children: [
@@ -992,9 +957,60 @@ class _InputAreaState extends ConsumerState<_InputArea> {
       return 'Processing...';
     }
     final hasText = widget.controller.text.trim().isNotEmpty;
-    if (recState.status == ChatRecorderStatus.recording)
+    if (recState.status == ChatRecorderStatus.recording) {
       return 'Stop and transcribe';
+    }
     if (hasText) return widget.canSend ? 'Send message' : 'Please wait...';
     return 'Record voice message';
+  }
+}
+
+class ChatVoiceControls extends ConsumerWidget {
+  const ChatVoiceControls({
+    required this.onCancel,
+    required this.onStop,
+    super.key,
+  });
+
+  final VoidCallback onCancel;
+  final VoidCallback onStop;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): onCancel,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Row(
+          children: [
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: WaveformBars(
+                  key: const ValueKey('waveform_bars'),
+                  amplitudesNormalized: ref
+                      .read(chatRecorderControllerProvider.notifier)
+                      .getNormalizedAmplitudeHistory(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            IconButton.outlined(
+              icon: const Icon(Icons.close),
+              tooltip: 'Cancel recording (Esc)',
+              onPressed: onCancel,
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              icon: const Icon(Icons.stop),
+              tooltip: 'Stop and transcribe',
+              onPressed: onStop,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

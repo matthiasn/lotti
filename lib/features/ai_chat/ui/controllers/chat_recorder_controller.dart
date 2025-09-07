@@ -6,9 +6,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart' as record;
 
 enum ChatRecorderStatus { idle, recording, processing }
+
+enum ChatRecorderErrorType {
+  permissionDenied,
+  startFailed,
+  noAudioFile,
+  transcriptionFailed,
+  cleanupFailed,
+  concurrentOperation,
+  storageFull,
+  fileCorruption,
+}
 
 class ChatRecorderState {
   // Constructors first per lint
@@ -17,19 +31,22 @@ class ChatRecorderState {
     required this.amplitudeHistory,
     this.transcript,
     this.error,
+    this.errorType,
   });
 
   const ChatRecorderState.initial()
       : status = ChatRecorderStatus.idle,
         amplitudeHistory = const <double>[],
         transcript = null,
-        error = null;
+        error = null,
+        errorType = null;
 
   // Fields
   final ChatRecorderStatus status;
   final List<double> amplitudeHistory; // dBFS history
   final String? transcript; // last finished transcript waiting to be consumed
   final String? error;
+  final ChatRecorderErrorType? errorType;
 
   // Methods
   ChatRecorderState copyWith({
@@ -37,71 +54,133 @@ class ChatRecorderState {
     List<double>? amplitudeHistory,
     String? transcript,
     String? error,
+    ChatRecorderErrorType? errorType,
   }) {
     return ChatRecorderState(
       status: status ?? this.status,
       amplitudeHistory: amplitudeHistory ?? this.amplitudeHistory,
       transcript: transcript,
       error: error,
+      errorType: errorType,
     );
   }
 }
 
 class ChatRecorderController extends StateNotifier<ChatRecorderState> {
-  ChatRecorderController(this.ref) : super(const ChatRecorderState.initial());
+  ChatRecorderController(
+    this.ref, {
+    record.AudioRecorder Function()? recorderFactory,
+    int Function()? nowMillisProvider,
+    Future<Directory> Function()? tempDirectoryProvider,
+    ChatRecorderConfig? config,
+  })  : _recorderFactory = recorderFactory ?? record.AudioRecorder.new,
+        _nowMillisProvider =
+            nowMillisProvider ?? (() => DateTime.now().millisecondsSinceEpoch),
+        _tempDirectoryProvider =
+            tempDirectoryProvider ?? (() async => getTemporaryDirectory()),
+        _config = config ?? const ChatRecorderConfig(),
+        super(const ChatRecorderState.initial());
 
   final Ref ref;
+  final record.AudioRecorder Function() _recorderFactory;
+  final int Function() _nowMillisProvider;
+  final Future<Directory> Function() _tempDirectoryProvider;
+  final ChatRecorderConfig _config;
 
   record.AudioRecorder? _recorder;
   StreamSubscription<record.Amplitude>? _ampSub;
   Timer? _maxTimer;
   Directory? _tempDir;
   String? _filePath;
+  bool _isStarting = false;
+  DateTime? _lastAmpUpdate;
 
-  static const int _historyMax = 200; // ~4s at 20ms; UI will sample to fit
-  static const int maxSeconds = 120;
+  static const int _historyMax = 200; // ~10s at 50ms; UI will sample to fit
+  static const int _cleanupTimeoutSeconds = 2;
+  static const int _fileDeleteTimeoutSeconds = 2;
 
   Future<void> start() async {
-    if (state.status == ChatRecorderStatus.recording) return;
-    final recorder = record.AudioRecorder();
-    final hasPerm = await recorder.hasPermission();
-    if (!hasPerm) {
-      state = state.copyWith(error: 'Microphone permission denied');
-      await recorder.dispose();
+    if (_isStarting) {
+      state = state.copyWith(
+        error: 'Another operation is in progress',
+        errorType: ChatRecorderErrorType.concurrentOperation,
+      );
       return;
     }
+    if (state.status != ChatRecorderStatus.idle) return;
 
+    _isStarting = true;
+    final recorder = _recorderFactory();
     try {
-      _tempDir = await Directory.systemTemp.createTemp('lotti_chat_rec_');
-      final fileName = 'chat_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final hasPerm = await recorder.hasPermission();
+      if (!hasPerm) {
+        state = state.copyWith(
+          error: 'Microphone permission denied. Please enable it in Settings.',
+          errorType: ChatRecorderErrorType.permissionDenied,
+        );
+        await recorder.dispose();
+        return;
+      }
+
+      // Use app-scoped temporary directory for better privacy
+      final baseTemp = await _tempDirectoryProvider();
+      _tempDir = await Directory('${baseTemp.path}/lotti_chat_rec')
+          .create(recursive: true);
+      final fileName = 'chat_${_nowMillisProvider()}.m4a';
       _filePath = '${_tempDir!.path}/$fileName';
 
       await recorder.start(
-        const record.RecordConfig(sampleRate: 48000, autoGain: true),
+        record.RecordConfig(
+          sampleRate: _config.sampleRate,
+          autoGain: true,
+        ),
         path: _filePath!,
       );
 
       _recorder = recorder;
 
-      // Amplitude stream
+      // Amplitude stream (throttled)
+      _lastAmpUpdate = DateTime.now();
       _ampSub = recorder
-          .onAmplitudeChanged(const Duration(milliseconds: 20))
+          .onAmplitudeChanged(
+              Duration(milliseconds: _config.amplitudeIntervalMs))
           .listen((event) {
+        final now = DateTime.now();
+        final last = _lastAmpUpdate;
+        if (last != null &&
+            now.difference(last).inMilliseconds < _config.amplitudeIntervalMs) {
+          return;
+        }
+        _lastAmpUpdate = now;
         final dBFS = event.current;
         final history = List<double>.from(state.amplitudeHistory)..add(dBFS);
         if (history.length > _historyMax) history.removeAt(0);
         state = state.copyWith(
-            status: ChatRecorderStatus.recording, amplitudeHistory: history);
+          status: ChatRecorderStatus.recording,
+          amplitudeHistory: history,
+        );
       });
 
-      // Safety stop after maxSeconds
+      // Safety stop after configured max duration
       _maxTimer?.cancel();
-      _maxTimer = Timer(const Duration(seconds: maxSeconds), () {
+      _maxTimer = Timer(Duration(seconds: _config.maxSeconds), () {
         unawaited(stopAndTranscribe());
       });
+
+      // Log start
+      getIt<LoggingService>().captureEvent(
+        'chat_recording_started',
+        domain: 'ChatRecorderController',
+        subDomain: 'start',
+      );
     } catch (e) {
-      state = state.copyWith(error: 'Failed to start recording: $e');
+      state = state.copyWith(
+        error: 'Failed to start recording: $e',
+        errorType: ChatRecorderErrorType.startFailed,
+      );
       await _cleanupInternal();
+    } finally {
+      _isStarting = false;
     }
   }
 
@@ -121,7 +200,10 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
     if (filePath == null) {
       await _cleanupInternal();
       state = state.copyWith(
-          status: ChatRecorderStatus.idle, error: 'No audio file');
+        status: ChatRecorderStatus.idle,
+        error: 'No audio file available',
+        errorType: ChatRecorderErrorType.noAudioFile,
+      );
       return;
     }
 
@@ -131,7 +213,10 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
           status: ChatRecorderStatus.idle, transcript: transcript);
     } catch (e) {
       state = state.copyWith(
-          status: ChatRecorderStatus.idle, error: 'Transcription failed: $e');
+        status: ChatRecorderStatus.idle,
+        error: 'Transcription failed: $e',
+        errorType: ChatRecorderErrorType.transcriptionFailed,
+      );
     } finally {
       await _cleanupInternal();
     }
@@ -178,6 +263,8 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
           : throw Exception('No Gemini audio-capable model configured'),
     );
 
+    // NOTE: For now we must base64 encode the entire file due to API
+    // requirements. Keep duration capped to avoid OOM.
     final bytes = await File(filePath).readAsBytes();
     final audioBase64 = base64Encode(bytes);
 
@@ -197,6 +284,11 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
       final content = chunk.choices?.firstOrNull?.delta?.content ?? '';
       if (content.isNotEmpty) buffer.write(content);
     }
+    getIt<LoggingService>().captureEvent(
+      'chat_transcription_completed',
+      domain: 'ChatRecorderController',
+      subDomain: 'transcribe',
+    );
     return buffer.toString();
   }
 
@@ -225,14 +317,30 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
     try {
       if (_filePath != null) {
         final f = File(_filePath!);
-        if (f.existsSync()) {
-          f.deleteSync();
+        // ignore: avoid_slow_async_io
+        final exists = await f.exists();
+        if (exists) {
+          await f.delete().timeout(
+                const Duration(seconds: _fileDeleteTimeoutSeconds),
+              );
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      // Surface cleanup errors in a non-intrusive way
+      state = state.copyWith(
+        error: 'Cleanup failed: $e',
+        errorType: ChatRecorderErrorType.cleanupFailed,
+      );
+    }
     try {
-      if (_tempDir != null && _tempDir!.existsSync()) {
-        _tempDir!.deleteSync(recursive: true);
+      if (_tempDir != null) {
+        // ignore: avoid_slow_async_io
+        final exists = await _tempDir!.exists();
+        if (exists) {
+          await _tempDir!
+              .delete(recursive: true)
+              .timeout(const Duration(seconds: _cleanupTimeoutSeconds));
+        }
       }
     } catch (_) {}
     _tempDir = null;
@@ -248,6 +356,13 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
       );
     }
   }
+
+  @override
+  void dispose() {
+    // Best-effort async cleanup, don't await in dispose
+    unawaited(_cleanupInternal());
+    super.dispose();
+  }
 }
 
 final AutoDisposeStateNotifierProvider<ChatRecorderController,
@@ -256,3 +371,15 @@ final AutoDisposeStateNotifierProvider<ChatRecorderController,
         ChatRecorderState>((ref) {
   return ChatRecorderController(ref);
 });
+
+class ChatRecorderConfig {
+  const ChatRecorderConfig({
+    this.sampleRate = 48000,
+    this.maxSeconds = 120,
+    this.amplitudeIntervalMs = 100,
+  });
+
+  final int sampleRate;
+  final int maxSeconds;
+  final int amplitudeIntervalMs;
+}
