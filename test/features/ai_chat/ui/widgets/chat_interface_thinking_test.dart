@@ -470,5 +470,37 @@ void main() {
       // We expect at least two instances present in the message bubble.
       expect(find.byType(GptMarkdown), findsAtLeastNWidgets(2));
     });
+
+    testWidgets('tap toggles reasoning visibility', (tester) async {
+      when(() => mockRepo.createSession(categoryId: 'test-category'))
+          .thenAnswer(
+        (_) async => ChatSession(
+          id: 's-kb',
+          title: 'Session',
+          createdAt: DateTime(2024),
+          lastMessageAt: DateTime(2024),
+          messages: [
+            ChatMessage.assistant('<think>Internal reasoning</think>Visible'),
+          ],
+          metadata: const {'selectedModelId': 'test-model'},
+        ),
+      );
+
+      await pumpChatInterface(tester, repository: mockRepo);
+      // Expand by tapping the header text.
+      await tester.tap(find.text('Show reasoning'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('Internal reasoning'), findsOneWidget);
+
+      // Collapse by tapping again.
+      await tester.tap(find.text('Hide reasoning'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('Internal reasoning'), findsNothing);
+
+      // Expand again by tapping.
+      await tester.tap(find.text('Show reasoning'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('Internal reasoning'), findsOneWidget);
+    });
   });
 }

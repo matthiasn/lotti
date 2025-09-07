@@ -125,7 +125,8 @@ void main() {
       expect(a.thinking, equals(b.thinking));
     });
 
-    test('when thinking fills limit, extra segments append truncated notice', () {
+    test('when thinking fills limit, extra segments append truncated notice',
+        () {
       final exact = 'x' * ThinkingUtils.maxThinkingLength;
       final input = '<think>$exact</think> tail [think]more[/think]';
       final parsed = parseThinking(input);

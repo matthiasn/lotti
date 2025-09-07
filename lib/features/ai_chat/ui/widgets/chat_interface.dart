@@ -422,10 +422,13 @@ class _MessageContent extends StatelessWidget {
     }
 
     if (isUser) {
-      return SelectableText(
-        message.content,
-        style: TextStyle(
-          color: theme.colorScheme.onPrimary,
+      // Preserve Markdown formatting for user messages while keeping
+      // text selectable. Ensure contrast on the colored bubble by forcing
+      // the text color to `onPrimary`.
+      return SelectionArea(
+        child: DefaultTextStyle.merge(
+          style: TextStyle(color: theme.colorScheme.onPrimary),
+          child: GptMarkdown(message.content),
         ),
       );
     }
@@ -446,12 +449,8 @@ class _MessageContent extends StatelessWidget {
       );
     }
 
-    return SelectableText(
-      message.content,
-      style: TextStyle(
-        color: theme.colorScheme.onPrimary,
-      ),
-    );
+    // Unreachable for a boolean, but keeps analyzer satisfied.
+    return const SizedBox.shrink();
   }
 }
 
@@ -504,9 +503,11 @@ class _StreamingContent extends StatelessWidget {
         if (!isUser && (parsed.thinking ?? '').isNotEmpty)
           _ThinkingDisclosure(thinking: parsed.thinking!),
         if (isUser)
-          Text(
-            parsed.visible,
-            style: TextStyle(color: theme.colorScheme.onPrimary),
+          SelectionArea(
+            child: DefaultTextStyle.merge(
+              style: TextStyle(color: theme.colorScheme.onPrimary),
+              child: GptMarkdown(parsed.visible),
+            ),
           )
         else if (parsed.visible.isNotEmpty)
           GptMarkdown(parsed.visible),
