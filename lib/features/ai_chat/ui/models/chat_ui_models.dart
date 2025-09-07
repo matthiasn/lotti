@@ -39,9 +39,9 @@ class ChatSessionUiModel {
       messages: session.messages,
       isLoading: isLoading,
       isStreaming: isStreaming,
-      selectedModelId: (session.metadata != null
-          ? session.metadata!['selectedModelId']
-          : null) as String?,
+      selectedModelId: session.metadata?['selectedModelId'] is String
+          ? session.metadata!['selectedModelId'] as String
+          : null,
       error: error,
       streamingMessageId: streamingMessageId,
     );

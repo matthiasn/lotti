@@ -10,6 +10,13 @@ import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+/// A clock function used for time-dependent logic.
+///
+/// Defaults to `DateTime.now`, but can be injected in tests to ensure
+/// deterministic behavior (e.g. for cache-expiry checks) or to simulate
+/// specific points in time without relying on real wall-clock time.
+typedef Now = DateTime Function();
+
 /// Configuration data needed for AI inference
 class AiInferenceConfig {
   const AiInferenceConfig({
@@ -39,7 +46,8 @@ class ChatMessageProcessor {
     required this.cloudInferenceRepository,
     required this.taskSummaryRepository,
     required this.loggingService,
-  });
+    Now? now,
+  }) : _now = now ?? DateTime.now;
 
   final AiConfigRepository aiConfigRepository;
   final CloudInferenceRepository cloudInferenceRepository;
@@ -47,18 +55,18 @@ class ChatMessageProcessor {
   final LoggingService loggingService;
 
   // Cache for AI configuration per model
+  static const Duration configCacheDuration = Duration(minutes: 5);
   AiInferenceConfig? _cachedConfig;
   DateTime? _configCacheTime;
   String? _cachedModelId;
+  final Now _now;
 
   /// Get AI configuration for a specific model (provider + model), cached per model
   Future<AiInferenceConfig> getAiConfigurationForModel(String modelId) async {
-    const cacheDuration = Duration(minutes: 5); // Cache for 5 minutes
-
     if (_cachedConfig != null &&
         _cachedModelId == modelId &&
         _configCacheTime != null &&
-        DateTime.now().difference(_configCacheTime!) < cacheDuration) {
+        _now().difference(_configCacheTime!) < configCacheDuration) {
       return _cachedConfig!;
     }
 
@@ -82,7 +90,7 @@ class ChatMessageProcessor {
         AiInferenceConfig(provider: providerConfig, model: modelConfig);
     _cachedConfig = config;
     _cachedModelId = modelId;
-    _configCacheTime = DateTime.now();
+    _configCacheTime = _now();
     return config;
   }
 
@@ -126,7 +134,7 @@ class ChatMessageProcessor {
     final config = AiInferenceConfig(provider: geminiProvider, model: model);
     _cachedConfig = config;
     _cachedModelId = model.id;
-    _configCacheTime = DateTime.now();
+    _configCacheTime = _now();
     return config;
   }
 
@@ -155,15 +163,11 @@ class ChatMessageProcessor {
     ];
   }
 
-  /// Build conversation context for the prompt
-  String buildPromptFromMessages(
-    List<ChatCompletionMessage> previousMessages,
-    String message,
-  ) {
-    final promptParts = <String>[];
-
-    // Add previous messages to maintain context
-    for (final msg in previousMessages) {
+  List<String> _buildConversationContextLines(
+      List<ChatCompletionMessage> messages) {
+    final parts = <String>[];
+    for (final msg in messages) {
+      String? line;
       if (msg.role == ChatCompletionMessageRole.user) {
         final content = msg.content is ChatCompletionUserMessageContent
             ? (msg.content! as ChatCompletionUserMessageContent).whenOrNull(
@@ -171,15 +175,25 @@ class ChatMessageProcessor {
                 ) ??
                 msg.content.toString()
             : msg.content?.toString() ?? '';
-        promptParts.add('User: $content');
-      } else if (msg.role == ChatCompletionMessageRole.assistant) {
-        promptParts.add('Assistant: ${msg.content}');
+        line = 'User: $content';
+      } else if (msg.role == ChatCompletionMessageRole.assistant &&
+          msg.content != null) {
+        line = 'Assistant: ${msg.content}';
+      } else if (msg.role == ChatCompletionMessageRole.tool) {
+        line = 'Tool response: ${msg.content}';
       }
+      if (line != null) parts.add(line);
     }
+    return parts;
+  }
 
-    // Add current message
-    promptParts.add('User: $message');
-
+  /// Build conversation context for the prompt
+  String buildPromptFromMessages(
+    List<ChatCompletionMessage> previousMessages,
+    String message,
+  ) {
+    final promptParts = _buildConversationContextLines(previousMessages)
+      ..add('User: $message');
     return promptParts.join('\n\n');
   }
 
@@ -197,14 +211,15 @@ class ChatMessageProcessor {
         final delta = chunk.choices!.first.delta;
 
         // Handle content streaming
-        if (delta?.content != null) {
-          contentBuffer.write(delta!.content);
-        }
+        if (delta?.content != null) contentBuffer.write(delta!.content);
 
         // Collect tool calls
         if (delta?.toolCalls != null) {
           accumulateToolCalls(
-              toolCalls, delta!.toolCalls!, toolCallArgumentBuffers);
+            toolCalls,
+            delta!.toolCalls!,
+            toolCallArgumentBuffers,
+          );
         }
       }
     }
@@ -364,30 +379,10 @@ class ChatMessageProcessor {
 
   /// Build final prompt from all messages including tool results
   String buildFinalPromptFromMessages(List<ChatCompletionMessage> messages) {
-    final finalPromptParts = <String>[];
-
-    // Include all messages for context
-    for (final msg in messages) {
-      if (msg.role == ChatCompletionMessageRole.user) {
-        final content = msg.content is ChatCompletionUserMessageContent
-            ? (msg.content! as ChatCompletionUserMessageContent).whenOrNull(
-                  string: (text) => text,
-                ) ??
-                msg.content.toString()
-            : msg.content?.toString() ?? '';
-        finalPromptParts.add('User: $content');
-      } else if (msg.role == ChatCompletionMessageRole.assistant &&
-          msg.content != null) {
-        finalPromptParts.add('Assistant: ${msg.content}');
-      } else if (msg.role == ChatCompletionMessageRole.tool) {
-        finalPromptParts.add('Tool response: ${msg.content}');
-      }
-    }
-
-    finalPromptParts.add(
-        'Based on the conversation and tool results above, provide a helpful response to the user.');
-
-    return finalPromptParts.join('\n\n');
+    final parts = _buildConversationContextLines(messages)
+      ..add(
+          'Based on the conversation and tool results above, provide a helpful response to the user.');
+    return parts.join('\n\n');
   }
 
   /// Generate final response after tool calls

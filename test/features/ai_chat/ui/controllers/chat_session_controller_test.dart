@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -469,7 +471,7 @@ void main() {
         verify(() => mockChatRepository.saveSession(any())).called(1);
       });
 
-      test('logs error but keeps UI state when save fails', () async {
+      test('reverts UI state and logs error when save fails', () async {
         when(() =>
                 mockChatRepository.createSession(categoryId: 'test-category'))
             .thenAnswer((_) async => ChatSession(
@@ -492,7 +494,7 @@ void main() {
         final state = container.read(
           chatSessionControllerProvider('test-category'),
         );
-        expect(state.selectedModelId, 'm2');
+        expect(state.selectedModelId, isNull);
         verify(() => mockLoggingService.captureException(
               any<dynamic>(),
               domain: 'ChatSessionController',
@@ -539,6 +541,125 @@ void main() {
         expect(state.messages.first.role, ChatMessageRole.user);
         expect(state.error, contains('Failed to send message'));
         expect(state.isStreaming, isFalse);
+      });
+
+      test('truncates overly long streaming content to cap with ellipsis',
+          () async {
+        // Initialize empty session
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+
+        final streamController = StreamController<String>();
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                ));
+
+        // Keep provider alive during async streaming by listening to it
+        final sub = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+        await controller.setModel('model-1');
+
+        // Start streaming
+        // ignore: unawaited_futures
+        controller.sendMessage('Hello');
+        await Future<void>.delayed(Duration.zero);
+
+        // Push content exceeding 1,000,000 characters
+        const cap = 1000000;
+        streamController
+          ..add('a' * cap)
+          ..add('b' * 100);
+
+        // Close and settle
+        await streamController.close();
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        final assistant = state.messages.last;
+        expect(assistant.content.length, cap + 1);
+        expect(assistant.content.endsWith('…'), isTrue);
+        // Close the subscription to allow disposal in tearDown
+        sub.close();
+      });
+
+      test('does not send a second message while streaming', () async {
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+
+        final streamController = StreamController<String>();
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                ));
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+        await controller.setModel('model-1');
+
+        // Start first send and stay streaming (we intentionally do not await)
+        // ignore: unawaited_futures
+        controller.sendMessage('First');
+        await Future<void>.delayed(Duration.zero);
+
+        // Attempt second send
+        await controller.sendMessage('Second');
+
+        // Only one sendMessage on repository should be observed
+        verify(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: 'test-category',
+              modelId: any(named: 'modelId'),
+            )).called(1);
+
+        await streamController.close();
       });
     });
   });

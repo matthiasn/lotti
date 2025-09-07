@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
+import 'package:lotti/features/ai_chat/services/system_message_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -59,6 +61,7 @@ void main() {
         cloudInferenceRepository: mockCloudInferenceRepository,
         taskSummaryRepository: mockTaskSummaryRepository,
         aiConfigRepository: mockAiConfigRepository,
+        systemMessageService: SystemMessageService(),
         loggingService: mockLoggingService,
       );
     });
@@ -134,6 +137,60 @@ void main() {
               subDomain: 'sendMessage',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             )).called(1);
+      });
+
+      test('wraps TimeoutException from provider as ChatRepositoryException',
+          () async {
+        // Arrange configuration
+        when(() => mockAiConfigRepository
+                .getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [
+                  AiConfigInferenceProvider(
+                    id: 'p',
+                    name: 'P',
+                    baseUrl: 'https://',
+                    apiKey: 'k',
+                    createdAt: DateTime(2024),
+                    inferenceProviderType: InferenceProviderType.openAi,
+                  )
+                ]);
+        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [
+                  AiConfigModel(
+                    id: 'm',
+                    name: 'M',
+                    providerModelId: 'm',
+                    inferenceProviderId: 'p',
+                    createdAt: DateTime(2024),
+                    inputModalities: const [Modality.text],
+                    outputModalities: const [Modality.text],
+                    isReasoningModel: false,
+                    supportsFunctionCalling: true,
+                  )
+                ]);
+
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            )).thenAnswer((_) => Stream.error(TimeoutException('timeout')));
+
+        // Act/Assert
+        await expectLater(
+          repository
+              .sendMessage(
+                message: 'Hi',
+                conversationHistory: [],
+                categoryId: testCategoryId,
+              )
+              .first,
+          throwsA(isA<ChatRepositoryException>()),
+        );
       });
     });
 

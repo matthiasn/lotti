@@ -13,6 +13,7 @@ part 'chat_session_controller.g.dart';
 @riverpod
 class ChatSessionController extends _$ChatSessionController {
   final LoggingService _loggingService = getIt<LoggingService>();
+  static const int maxStreamingContentSize = 1000000; // 1MB cap
   String? _currentStreamingMessageId;
 
   @override
@@ -120,7 +121,11 @@ class ChatSessionController extends _$ChatSessionController {
 
     final updatedMessages = state.messages.map((msg) {
       if (msg.id == _currentStreamingMessageId) {
-        final newContent = msg.content + content;
+        var newContent = '${msg.content}$content';
+        if (newContent.length > maxStreamingContentSize) {
+          // Truncate to cap and add ellipsis
+          newContent = '${newContent.substring(0, maxStreamingContentSize)}…';
+        }
         return msg.copyWith(content: newContent);
       }
       return msg;
@@ -259,6 +264,7 @@ class ChatSessionController extends _$ChatSessionController {
   /// Set the selected model for this chat session
   Future<void> setModel(String modelId) async {
     // Update UI state immediately
+    final previousModelId = state.selectedModelId;
     final updated = state.copyWith(selectedModelId: modelId, error: null);
     state = updated;
 
@@ -274,7 +280,8 @@ class ChatSessionController extends _$ChatSessionController {
         subDomain: 'setModel',
         stackTrace: stackTrace,
       );
-      // Non-fatal: keep UI updated; user can retry
+      // Revert UI state to maintain consistency
+      state = state.copyWith(selectedModelId: previousModelId);
     }
   }
 }

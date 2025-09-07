@@ -632,6 +632,34 @@ void main() {
         expect(a.function.arguments, '{"start_date":"2024-01-01"}');
         expect(b.function.arguments, '{"end_date":"2024-01-02"}');
       });
+
+      test('ignores tool call deltas with null function without crashing',
+          () async {
+        final stream = Stream<CreateChatCompletionStreamResponse>.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'r',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'x',
+                      // function: null
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        final result = await processor.processStreamResponse(stream);
+        expect(result.toolCalls, isEmpty);
+      });
     });
 
     group('processToolCalls', () {

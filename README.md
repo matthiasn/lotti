@@ -183,6 +183,33 @@ In case the network in the virtual machine is not connecting after resuming: `$ 
 5. Open in your favorite IDE, e.g. [Android Studio](https://developer.android.com/studio) 
 6. Run, either from the IDE or using e.g. `flutter run -d macos`
 
+### AI Chat Architecture (Overview)
+
+The AI chat feature is structured for modularity and testability:
+
+- `ChatSessionController` (UI state):
+  - Manages chat state and streaming updates.
+  - Caps streaming content (`maxStreamingContentSize = 1,000,000`) and adds an ellipsis when truncated.
+  - Persists sessions via the repository and reverts model changes if persistence fails.
+
+- `ChatRepository` (domain + integration):
+  - Orchestrates sending messages, streams model deltas, accumulates tool-call deltas, runs tools, and streams a final response.
+  - Uses `SystemMessageService` to build the system prompt and `ChatMessageProcessor` for testable logic.
+  - In-memory session store (replaceable with durable storage).
+
+- `ChatMessageProcessor` (pure, testable helpers):
+  - Resolves AI configuration (provider + model) with cache (`configCacheDuration = 5 minutes`).
+  - Converts conversation history, builds prompts, processes streaming frames and tool calls, and generates final responses.
+  - Uses an injectable clock (`typedef Now = DateTime Function()`) for deterministic tests.
+
+- `SystemMessageService` (prompt template):
+  - Central place to compose the system prompt (includes today’s date and guidance for time ranges and tool usage).
+  - Easy to extend for localization or per-category prompts.
+
+Testing and Analyzer
+- Tests focus on controllers, repository streaming, services, and processors (including edge cases).
+- Analyzer must report zero warnings/infos before PR; test-only ignores are acceptable when justified.
+
 ## widgetbook
 
 Lotti uses [widgetbook](https://pub.dev/packages/widgetbook) for developing and documenting widgets, for now only 

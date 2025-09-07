@@ -9,6 +9,7 @@ import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
+import 'package:lotti/features/ai_chat/services/system_message_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -18,6 +19,7 @@ final Provider<ChatRepository> chatRepositoryProvider = Provider((ref) {
     cloudInferenceRepository: ref.read(cloudInferenceRepositoryProvider),
     taskSummaryRepository: ref.read(taskSummaryRepositoryProvider),
     aiConfigRepository: ref.read(aiConfigRepositoryProvider),
+    systemMessageService: ref.read(systemMessageServiceProvider),
     loggingService: getIt<LoggingService>(),
   );
 });
@@ -27,6 +29,7 @@ class ChatRepository {
     required this.cloudInferenceRepository,
     required this.taskSummaryRepository,
     required this.aiConfigRepository,
+    required this.systemMessageService,
     required this.loggingService,
   }) : _messageProcessor = ChatMessageProcessor(
           aiConfigRepository: aiConfigRepository,
@@ -38,8 +41,12 @@ class ChatRepository {
   final CloudInferenceRepository cloudInferenceRepository;
   final TaskSummaryRepository taskSummaryRepository;
   final AiConfigRepository aiConfigRepository;
+  final SystemMessageService systemMessageService;
   final LoggingService loggingService;
   final ChatMessageProcessor _messageProcessor;
+
+  static const int defaultSessionLimit = 20;
+  static const int defaultSearchLimit = 50;
 
   // In-memory storage for sessions (could be replaced with database storage)
   final Map<String, ChatSession> _sessions = {};
@@ -66,7 +73,7 @@ class ChatRepository {
       final config = modelId != null
           ? await _messageProcessor.getAiConfigurationForModel(modelId)
           : await _messageProcessor.getAiConfiguration();
-      final systemMessage = _getSystemMessage();
+      final systemMessage = systemMessageService.getSystemMessage();
 
       // Convert conversation history and build messages
       final previousMessages =
@@ -184,7 +191,7 @@ class ChatRepository {
 
   Future<List<ChatSession>> getSessions({
     String? categoryId,
-    int limit = 20,
+    int limit = defaultSessionLimit,
   }) async {
     var sessions = _sessions.values.toList();
 
@@ -206,7 +213,7 @@ class ChatRepository {
   Future<List<ChatSession>> searchSessions({
     required String query,
     String? categoryId,
-    int limit = 50,
+    int limit = defaultSearchLimit,
   }) async {
     if (query.trim().isEmpty) {
       return getSessions(categoryId: categoryId, limit: limit);
@@ -260,35 +267,5 @@ class ChatRepository {
 
   Future<void> deleteMessage(String messageId) async {
     _messages.remove(messageId);
-  }
-
-  String _getSystemMessage() {
-    final baseMessage = '''
-You are an AI assistant helping users explore and understand their tasks.
-You have access to a tool that can retrieve task summaries for specified date ranges.
-When users ask about their tasks, use the get_task_summaries tool to fetch relevant information.
-
-Today's date is ${DateTime.now().toIso8601String().split('T')[0]}.
-
-When interpreting time-based queries, use these guidelines:
-- "today" = from start of today to end of today
-- "yesterday" = from start of yesterday to end of yesterday
-- "this week" = last 7 days including today
-- "recently" or "lately" = last 14 days
-- "this month" = last 30 days
-- "last week" = the previous 7-day period (8-14 days ago)
-- "last month" = the previous 30-day period (31-60 days ago)
-
-For date ranges, always use full ISO 8601 timestamps:
-- start_date: beginning of the day, e.g., "2025-08-26T00:00:00.000"
-- end_date: end of the day, e.g., "2025-08-26T23:59:59.999"
-
-Example: For "yesterday" on 2025-08-27, use:
-- start_date: "2025-08-26T00:00:00.000"
-- end_date: "2025-08-26T23:59:59.999"
-
-Be concise but helpful in your responses. When showing task summaries, organize them by date and status for clarity.''';
-
-    return baseMessage;
   }
 }
