@@ -13,6 +13,7 @@ part 'chat_session_controller.g.dart';
 @riverpod
 class ChatSessionController extends _$ChatSessionController {
   final LoggingService _loggingService = getIt<LoggingService>();
+  static const int maxStreamingContentSize = 1000000; // 1MB cap
   String? _currentStreamingMessageId;
 
   @override
@@ -49,7 +50,20 @@ class ChatSessionController extends _$ChatSessionController {
 
   /// Send a new message in the current session
   Future<void> sendMessage(String content) async {
-    if (content.trim().isEmpty || !state.canSendMessage) return;
+    // Only allow sending non-empty messages when not busy.
+    // Note: The UI requires model selection before this can be called.
+    if (content.trim().isEmpty || state.isLoading || state.isStreaming) {
+      return;
+    }
+
+    // Ensure a model is selected (required, no fallback)
+    final modelId = state.selectedModelId;
+    if (modelId == null) {
+      state = state.copyWith(
+        error: 'Please select a model before sending messages',
+      );
+      return;
+    }
 
     // Add user message to state
     final userMessage = ChatMessage.user(content);
@@ -78,10 +92,10 @@ class ChatSessionController extends _$ChatSessionController {
       // Get conversation history (excluding the streaming message)
       final conversationHistory = state.completedMessages;
 
-      // Stream the AI response
       await for (final chunk in chatRepository.sendMessage(
         message: content,
         conversationHistory: conversationHistory,
+        modelId: modelId,
         categoryId: categoryId,
       )) {
         _updateStreamingMessage(chunk);
@@ -116,7 +130,14 @@ class ChatSessionController extends _$ChatSessionController {
 
     final updatedMessages = state.messages.map((msg) {
       if (msg.id == _currentStreamingMessageId) {
-        final newContent = msg.content + content;
+        // If already truncated, ignore further chunks to avoid extra work
+        if (msg.content.endsWith('…')) return msg;
+
+        var newContent = '${msg.content}$content';
+        if (newContent.length > maxStreamingContentSize) {
+          // Truncate to cap and add ellipsis
+          newContent = '${newContent.substring(0, maxStreamingContentSize)}…';
+        }
         return msg.copyWith(content: newContent);
       }
       return msg;
@@ -249,6 +270,30 @@ class ChatSessionController extends _$ChatSessionController {
 
       state = state.copyWith(messages: messagesWithoutLastAI);
       await sendMessage(lastUserMessage.content);
+    }
+  }
+
+  /// Set the selected model for this chat session
+  Future<void> setModel(String modelId) async {
+    // Update UI state immediately
+    final previousModelId = state.selectedModelId;
+    final updated = state.copyWith(selectedModelId: modelId, error: null);
+    state = updated;
+
+    // Persist to repository (session domain)
+    try {
+      final chatRepository = ref.read(chatRepositoryProvider);
+      final domainSession = updated.toDomain();
+      await chatRepository.saveSession(domainSession);
+    } catch (e, stackTrace) {
+      _loggingService.captureException(
+        e,
+        domain: 'ChatSessionController',
+        subDomain: 'setModel',
+        stackTrace: stackTrace,
+      );
+      // Revert UI state to maintain consistency
+      state = state.copyWith(selectedModelId: previousModelId);
     }
   }
 }

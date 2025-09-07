@@ -29,16 +29,47 @@ class TaskSummaryRepository {
     required String categoryId,
     required TaskSummaryRequest request,
   }) async {
-    // Validate request parameters
-    if (request.endDate.isBefore(request.startDate)) {
-      // Swap dates if they're in wrong order
-      final correctedRequest = TaskSummaryRequest(
-        startDate: request.endDate,
-        endDate: request.startDate,
-        limit: request.limit,
+    // Parse and validate date-only strings (YYYY-MM-DD) as local dates,
+    // then convert to UTC instants for DB querying.
+    DateTime parseLocalStartOfDay(String date) {
+      final strict = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+      if (!strict.hasMatch(date)) {
+        throw FormatException(
+          'Invalid date format for "$date". Please send YYYY-MM-DD only; no time or timezone.',
+        );
+      }
+      final parts = date.split('-').map(int.parse).toList();
+      final dt = DateTime(parts[0], parts[1], parts[2]);
+      // Reject impossible calendar dates (e.g., 2024-02-31)
+      if (dt.year != parts[0] || dt.month != parts[1] || dt.day != parts[2]) {
+        throw FormatException('Invalid calendar date: "$date"');
+      }
+      return dt;
+    }
+
+    DateTime parseLocalEndOfDay(String date) {
+      final strict = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+      if (!strict.hasMatch(date)) {
+        throw FormatException(
+          'Invalid date format for "$date". Please send YYYY-MM-DD only; no time or timezone.',
+        );
+      }
+      final parts = date.split('-').map(int.parse).toList();
+      final dt = DateTime(parts[0], parts[1], parts[2], 23, 59, 59, 999);
+      // Verify date did not overflow to another month/day
+      if (dt.year != parts[0] || dt.month != parts[1] || dt.day != parts[2]) {
+        throw FormatException('Invalid calendar date: "$date"');
+      }
+      return dt;
+    }
+
+    final startLocal = parseLocalStartOfDay(request.startDate);
+    final endLocal = parseLocalEndOfDay(request.endDate);
+
+    if (endLocal.isBefore(startLocal)) {
+      throw const FormatException(
+        'Invalid date range: end_date is before start_date. Please correct and retry.',
       );
-      return getTaskSummaries(
-          categoryId: categoryId, request: correctedRequest);
     }
 
     // Clamp limit to reasonable bounds
@@ -50,8 +81,8 @@ class TaskSummaryRepository {
         .workEntriesInDateRange(
           journalTypes,
           [categoryId],
-          request.startDate,
-          request.endDate,
+          startLocal.toUtc(),
+          endLocal.toUtc(),
         )
         .get();
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -184,6 +186,7 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             ));
       });
 
@@ -205,6 +208,30 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            ));
+      });
+
+      test('shows error when no model selected', () async {
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+
+        // Don't set a model - selectedModelId will be null
+        await controller.sendMessage('Hello');
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+
+        expect(state.error,
+            equals('Please select a model before sending messages'));
+
+        verifyNever(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             ));
       });
 
@@ -213,6 +240,7 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             )).thenAnswer((_) async* {
           yield 'Hello there!';
         });
@@ -229,6 +257,18 @@ void main() {
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,
         );
+
+        // Set a model first
+        await controller.setModel('test-model-id');
+
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 'session-id',
+                  title: 'Test',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
 
         await controller.sendMessage('Hello');
 
@@ -384,6 +424,7 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             ));
       });
 
@@ -399,6 +440,7 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             )).thenAnswer((_) async* {
           yield 'Retry response';
         });
@@ -416,11 +458,14 @@ void main() {
           chatSessionControllerProvider('test-category').notifier,
         );
 
-        // Set state with messages
+        // Set state with messages and model
         container
             .read(chatSessionControllerProvider('test-category').notifier)
             .updateState(
-              (state) => state.copyWith(messages: messages),
+              (state) => state.copyWith(
+                messages: messages,
+                selectedModelId: 'test-model-id',
+              ),
             );
 
         await controller.retryLastMessage();
@@ -430,7 +475,243 @@ void main() {
               message: 'Second message',
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: 'test-category',
+              modelId: any(named: 'modelId'),
             )).called(1);
+      });
+    });
+
+    group('setModel', () {
+      test('updates selectedModelId and persists', () async {
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                  metadata: const {'selectedModelId': 'model-1'},
+                ));
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+
+        await controller.setModel('model-1');
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        expect(state.selectedModelId, 'model-1');
+        verify(() => mockChatRepository.saveSession(any())).called(1);
+      });
+
+      test('reverts UI state and logs error when save fails', () async {
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+        when(() => mockChatRepository.saveSession(any()))
+            .thenThrow(Exception('save failed'));
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+
+        await controller.setModel('m2');
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        expect(state.selectedModelId, isNull);
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'ChatSessionController',
+              subDomain: 'setModel',
+              stackTrace: any<dynamic>(named: 'stackTrace'),
+            )).called(1);
+      });
+    });
+
+    group('sendMessage error handling', () {
+      test('removes streaming placeholder and sets error on failure', () async {
+        // Initialize empty session
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) async* {
+          throw Exception('stream failure');
+        });
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+
+        await controller.setModel('model-1');
+        await controller.sendMessage('Hello');
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        // User message should remain; streaming placeholder removed
+        expect(state.messages.length, 1);
+        expect(state.messages.first.role, ChatMessageRole.user);
+        expect(state.error, contains('Failed to send message'));
+        expect(state.isStreaming, isFalse);
+      });
+
+      test('truncates overly long streaming content to cap with ellipsis',
+          () async {
+        // Initialize empty session
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+
+        final streamController = StreamController<String>();
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                ));
+
+        // Keep provider alive during async streaming by listening to it
+        final sub = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+        await controller.setModel('model-1');
+
+        // Start streaming
+        // ignore: unawaited_futures
+        controller.sendMessage('Hello');
+        await Future<void>.delayed(Duration.zero);
+
+        // Push content exceeding 1,000,000 characters
+        const cap = 1000000;
+        streamController
+          ..add('a' * cap)
+          ..add('b' * 100);
+
+        // Close and settle
+        await streamController.close();
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        final assistant = state.messages.last;
+        expect(assistant.content.length, cap + 1);
+        expect(assistant.content.endsWith('…'), isTrue);
+        // Close the subscription to allow disposal in tearDown
+        sub.close();
+      });
+
+      test('does not send a second message while streaming', () async {
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+
+        final streamController = StreamController<String>();
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                ));
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+        await controller.setModel('model-1');
+
+        // Start first send and stay streaming (we intentionally do not await)
+        // ignore: unawaited_futures
+        controller.sendMessage('First');
+        await Future<void>.delayed(Duration.zero);
+
+        // Attempt second send
+        await controller.sendMessage('Second');
+
+        // Only one sendMessage on repository should be observed
+        verify(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: 'test-category',
+              modelId: any(named: 'modelId'),
+            )).called(1);
+
+        await streamController.close();
       });
     });
   });

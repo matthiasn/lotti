@@ -9,6 +9,8 @@ class ChatSessionUiModel {
     required this.messages,
     required this.isLoading,
     required this.isStreaming,
+    this.metadata,
+    this.selectedModelId,
     this.error,
     this.streamingMessageId,
   });
@@ -38,6 +40,10 @@ class ChatSessionUiModel {
       messages: session.messages,
       isLoading: isLoading,
       isStreaming: isStreaming,
+      metadata: session.metadata,
+      selectedModelId: session.metadata?['selectedModelId'] is String
+          ? session.metadata!['selectedModelId'] as String
+          : null,
       error: error,
       streamingMessageId: streamingMessageId,
     );
@@ -48,6 +54,8 @@ class ChatSessionUiModel {
   final List<ChatMessage> messages;
   final bool isLoading;
   final bool isStreaming;
+  final Map<String, dynamic>? metadata;
+  final String? selectedModelId;
   final String? error;
   final String? streamingMessageId;
 
@@ -57,6 +65,8 @@ class ChatSessionUiModel {
     List<ChatMessage>? messages,
     bool? isLoading,
     bool? isStreaming,
+    Map<String, dynamic>? metadata,
+    Object? selectedModelId = const Object(),
     Object? error = const Object(),
     Object? streamingMessageId = const Object(),
   }) {
@@ -66,6 +76,10 @@ class ChatSessionUiModel {
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
       isStreaming: isStreaming ?? this.isStreaming,
+      metadata: metadata ?? this.metadata,
+      selectedModelId: selectedModelId == const Object()
+          ? this.selectedModelId
+          : selectedModelId as String?,
       error: error == const Object() ? this.error : error as String?,
       streamingMessageId: streamingMessageId == const Object()
           ? this.streamingMessageId
@@ -75,6 +89,11 @@ class ChatSessionUiModel {
 
   /// Convert to domain model
   ChatSession toDomain() {
+    // Merge existing metadata with selectedModelId; do not drop unrelated keys
+    final updatedMetadata = <String, dynamic>{
+      ...?metadata,
+      if (selectedModelId != null) 'selectedModelId': selectedModelId,
+    };
     return ChatSession(
       id: id,
       title: title,
@@ -82,6 +101,7 @@ class ChatSessionUiModel {
       lastMessageAt:
           messages.isEmpty ? DateTime.now() : messages.last.timestamp,
       messages: messages,
+      metadata: updatedMetadata,
     );
   }
 
@@ -97,7 +117,9 @@ class ChatSessionUiModel {
   bool get hasMessages => messages.isNotEmpty;
 
   /// Check if chat is in a valid state to send messages
-  bool get canSendMessage => !isLoading && !isStreaming;
+  /// Requires a model to be selected before messages can be sent
+  bool get canSendMessage =>
+      !isLoading && !isStreaming && selectedModelId != null;
 
   /// Get display title (with fallback)
   String get displayTitle => title.isEmpty ? 'New Chat' : title;

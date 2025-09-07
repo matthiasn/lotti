@@ -10,6 +10,13 @@ import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+/// A clock function used for time-dependent logic.
+///
+/// Defaults to `DateTime.now`, but can be injected in tests to ensure
+/// deterministic behavior (e.g. for cache-expiry checks) or to simulate
+/// specific points in time without relying on real wall-clock time.
+typedef Now = DateTime Function();
+
 /// Configuration data needed for AI inference
 class AiInferenceConfig {
   const AiInferenceConfig({
@@ -39,66 +46,51 @@ class ChatMessageProcessor {
     required this.cloudInferenceRepository,
     required this.taskSummaryRepository,
     required this.loggingService,
-  });
+    Now? now,
+  }) : _now = now ?? DateTime.now;
 
   final AiConfigRepository aiConfigRepository;
   final CloudInferenceRepository cloudInferenceRepository;
   final TaskSummaryRepository taskSummaryRepository;
   final LoggingService loggingService;
 
-  // Cache for AI configuration
+  // Cache for AI configuration per model
+  static const Duration configCacheDuration = Duration(minutes: 5);
   AiInferenceConfig? _cachedConfig;
   DateTime? _configCacheTime;
+  String? _cachedModelId;
+  final Now _now;
 
-  /// Get AI configuration (provider and model) with caching
-  Future<AiInferenceConfig> getAiConfiguration() async {
-    const cacheDuration = Duration(minutes: 5); // Cache for 5 minutes
-
-    // Check if we have a valid cached config
+  /// Get AI configuration for a specific model (provider + model), cached per model
+  Future<AiInferenceConfig> getAiConfigurationForModel(String modelId) async {
     if (_cachedConfig != null &&
+        _cachedModelId == modelId &&
         _configCacheTime != null &&
-        DateTime.now().difference(_configCacheTime!) < cacheDuration) {
+        _now().difference(_configCacheTime!) < configCacheDuration) {
       return _cachedConfig!;
     }
 
-    // Fetch fresh configuration
-    final providers = await aiConfigRepository
-        .getConfigsByType(AiConfigType.inferenceProvider);
-    final geminiProviders = providers
-        .whereType<AiConfigInferenceProvider>()
-        .where((p) => p.inferenceProviderType == InferenceProviderType.gemini)
-        .toList();
-
-    if (geminiProviders.isEmpty) {
-      throw StateError('Gemini provider not configured');
+    final modelConfig = await aiConfigRepository.getConfigById(modelId);
+    if (modelConfig is! AiConfigModel) {
+      throw StateError('Model not found: $modelId');
+    }
+    if (!modelConfig.supportsFunctionCalling) {
+      throw StateError('Selected model does not support function calling');
     }
 
-    final geminiProvider = geminiProviders.first;
-
-    final models =
-        await aiConfigRepository.getConfigsByType(AiConfigType.model);
-    final geminiModels = models
-        .whereType<AiConfigModel>()
-        .where((m) =>
-            m.inferenceProviderId == geminiProvider.id &&
-            m.providerModelId.toLowerCase().contains('flash'))
-        .toList();
-
-    if (geminiModels.isEmpty) {
-      throw StateError('Gemini Flash model not found');
-    }
-
-    final geminiModel = geminiModels.first;
-
-    final config = AiInferenceConfig(
-      provider: geminiProvider,
-      model: geminiModel,
+    final providerConfig = await aiConfigRepository.getConfigById(
+      modelConfig.inferenceProviderId,
     );
+    if (providerConfig is! AiConfigInferenceProvider) {
+      throw StateError(
+          'Provider not found: ${modelConfig.inferenceProviderId}');
+    }
 
-    // Cache the configuration
+    final config =
+        AiInferenceConfig(provider: providerConfig, model: modelConfig);
     _cachedConfig = config;
-    _configCacheTime = DateTime.now();
-
+    _cachedModelId = modelId;
+    _configCacheTime = _now();
     return config;
   }
 
@@ -106,6 +98,7 @@ class ChatMessageProcessor {
   void clearConfigCache() {
     _cachedConfig = null;
     _configCacheTime = null;
+    _cachedModelId = null;
   }
 
   /// Convert conversation history to OpenAI messages, filtering out system messages
@@ -133,31 +126,54 @@ class ChatMessageProcessor {
     ];
   }
 
+  List<String> _buildConversationContextLines(
+      List<ChatCompletionMessage> messages) {
+    final parts = <String>[];
+    for (final msg in messages) {
+      String? line;
+      if (msg.role == ChatCompletionMessageRole.user) {
+        final content = _extractUserText(msg.content);
+        line = 'User: $content';
+      } else if (msg.role == ChatCompletionMessageRole.assistant &&
+          msg.content != null) {
+        final content = _extractAssistantText(msg.content);
+        line = 'Assistant: $content';
+      } else if (msg.role == ChatCompletionMessageRole.tool) {
+        final content = _extractToolText(msg.content);
+        line = 'Tool response: $content';
+      }
+      if (line != null) parts.add(line);
+    }
+    return parts;
+  }
+
+  String _extractUserText(Object? content) {
+    if (content is ChatCompletionUserMessageContent) {
+      return content.when(
+        string: (text) => text,
+        parts: (parts) => parts.map((p) => p.toString()).join(' '),
+      );
+    }
+    return content?.toString() ?? '';
+  }
+
+  String _extractAssistantText(Object? content) {
+    // Assistant content is typically a plain string in our usage
+    return content?.toString() ?? '';
+  }
+
+  String _extractToolText(Object? content) {
+    // Tool content should be stringified JSON; ensure a string fallback
+    return content?.toString() ?? '';
+  }
+
   /// Build conversation context for the prompt
   String buildPromptFromMessages(
     List<ChatCompletionMessage> previousMessages,
     String message,
   ) {
-    final promptParts = <String>[];
-
-    // Add previous messages to maintain context
-    for (final msg in previousMessages) {
-      if (msg.role == ChatCompletionMessageRole.user) {
-        final content = msg.content is ChatCompletionUserMessageContent
-            ? (msg.content! as ChatCompletionUserMessageContent).whenOrNull(
-                  string: (text) => text,
-                ) ??
-                msg.content.toString()
-            : msg.content?.toString() ?? '';
-        promptParts.add('User: $content');
-      } else if (msg.role == ChatCompletionMessageRole.assistant) {
-        promptParts.add('Assistant: ${msg.content}');
-      }
-    }
-
-    // Add current message
-    promptParts.add('User: $message');
-
+    final promptParts = _buildConversationContextLines(previousMessages)
+      ..add('User: $message');
     return promptParts.join('\n\n');
   }
 
@@ -175,14 +191,15 @@ class ChatMessageProcessor {
         final delta = chunk.choices!.first.delta;
 
         // Handle content streaming
-        if (delta?.content != null) {
-          contentBuffer.write(delta!.content);
-        }
+        if (delta?.content != null) contentBuffer.write(delta!.content);
 
         // Collect tool calls
         if (delta?.toolCalls != null) {
           accumulateToolCalls(
-              toolCalls, delta!.toolCalls!, toolCallArgumentBuffers);
+            toolCalls,
+            delta!.toolCalls!,
+            toolCallArgumentBuffers,
+          );
         }
       }
     }
@@ -201,7 +218,20 @@ class ChatMessageProcessor {
   ) {
     for (final toolCallDelta in toolCallDeltas) {
       if (toolCallDelta.function != null) {
-        final toolId = toolCallDelta.id ?? 'tool_${toolCalls.length}';
+        // Use a stable deterministic id for this tool call within the stream.
+        // Prefer provided id; otherwise, use index. If neither is present, skip as malformed.
+        final toolId = toolCallDelta.id ??
+            (toolCallDelta.index != null
+                ? 'tool_${toolCallDelta.index}'
+                : null);
+        if (toolId == null) {
+          loggingService.captureEvent(
+            'Malformed tool call stream: missing id and index. delta: $toolCallDelta',
+            domain: 'ChatMessageProcessor',
+            subDomain: 'accumulateToolCalls',
+          );
+          continue;
+        }
 
         // Initialize buffer for this tool call if needed
         argumentBuffers.putIfAbsent(toolId, StringBuffer.new);
@@ -301,8 +331,8 @@ class ChatMessageProcessor {
           },
           'debug': {
             'categoryId': categoryId,
-            'requestedStart': request.startDate.toIso8601String(),
-            'requestedEnd': request.endDate.toIso8601String(),
+            'requestedStart': request.startDate,
+            'requestedEnd': request.endDate,
           },
         });
       }
@@ -342,30 +372,10 @@ class ChatMessageProcessor {
 
   /// Build final prompt from all messages including tool results
   String buildFinalPromptFromMessages(List<ChatCompletionMessage> messages) {
-    final finalPromptParts = <String>[];
-
-    // Include all messages for context
-    for (final msg in messages) {
-      if (msg.role == ChatCompletionMessageRole.user) {
-        final content = msg.content is ChatCompletionUserMessageContent
-            ? (msg.content! as ChatCompletionUserMessageContent).whenOrNull(
-                  string: (text) => text,
-                ) ??
-                msg.content.toString()
-            : msg.content?.toString() ?? '';
-        finalPromptParts.add('User: $content');
-      } else if (msg.role == ChatCompletionMessageRole.assistant &&
-          msg.content != null) {
-        finalPromptParts.add('Assistant: ${msg.content}');
-      } else if (msg.role == ChatCompletionMessageRole.tool) {
-        finalPromptParts.add('Tool response: ${msg.content}');
-      }
-    }
-
-    finalPromptParts.add(
-        'Based on the conversation and tool results above, provide a helpful response to the user.');
-
-    return finalPromptParts.join('\n\n');
+    final parts = _buildConversationContextLines(messages)
+      ..add(
+          'Based on the conversation and tool results above, provide a helpful response to the user.');
+    return parts.join('\n\n');
   }
 
   /// Generate final response after tool calls
@@ -389,6 +399,35 @@ class ChatMessageProcessor {
     final finalResult = await processStreamResponse(finalStream);
 
     return finalResult.content;
+  }
+
+  /// Generate final response after tool calls, streaming content chunks
+  Stream<String> generateFinalResponseStream({
+    required List<ChatCompletionMessage> messages,
+    required AiInferenceConfig config,
+    required String systemMessage,
+  }) async* {
+    final finalPrompt = buildFinalPromptFromMessages(messages);
+
+    final finalStream = cloudInferenceRepository.generate(
+      finalPrompt,
+      model: config.model.providerModelId,
+      temperature: 0.7,
+      baseUrl: config.provider.baseUrl,
+      apiKey: config.provider.apiKey,
+      systemMessage: systemMessage,
+      provider: config.provider,
+    );
+
+    await for (final chunk in finalStream) {
+      if (chunk.choices?.isNotEmpty ?? false) {
+        final delta = chunk.choices!.first.delta;
+        final content = delta?.content;
+        if (content != null && content.isNotEmpty) {
+          yield content;
+        }
+      }
+    }
   }
 
   /// Convert ChatMessage to OpenAI ChatCompletionMessage

@@ -12,17 +12,22 @@ class TaskSummaryTool {
         type: ChatCompletionToolType.function,
         function: FunctionObject(
           name: name,
-          description: 'Retrieve task summaries for a specified date range',
+          description:
+              'Retrieve task summaries for a specified date range (local dates only)',
           parameters: {
             'type': 'object',
             'properties': {
               'start_date': {
                 'type': 'string',
-                'description': 'Start date in YYYY-MM-DD format',
+                'format': 'date',
+                'description':
+                    'Start date in local time, YYYY-MM-DD (no time or timezone).',
               },
               'end_date': {
                 'type': 'string',
-                'description': 'End date in YYYY-MM-DD format',
+                'format': 'date',
+                'description':
+                    'End date in local time, YYYY-MM-DD (no time or timezone).',
               },
               'limit': {
                 'type': 'integer',
@@ -39,8 +44,8 @@ class TaskSummaryTool {
 @freezed
 class TaskSummaryRequest with _$TaskSummaryRequest {
   const factory TaskSummaryRequest({
-    @JsonKey(name: 'start_date') required DateTime startDate,
-    @JsonKey(name: 'end_date') required DateTime endDate,
+    @JsonKey(name: 'start_date') required String startDate,
+    @JsonKey(name: 'end_date') required String endDate,
     @Default(100) int limit,
   }) = _TaskSummaryRequest;
 

@@ -21,9 +21,9 @@ TaskSummaryRequest _$TaskSummaryRequestFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$TaskSummaryRequest {
   @JsonKey(name: 'start_date')
-  DateTime get startDate => throw _privateConstructorUsedError;
+  String get startDate => throw _privateConstructorUsedError;
   @JsonKey(name: 'end_date')
-  DateTime get endDate => throw _privateConstructorUsedError;
+  String get endDate => throw _privateConstructorUsedError;
   int get limit => throw _privateConstructorUsedError;
 
   /// Serializes this TaskSummaryRequest to a JSON map.
@@ -43,8 +43,8 @@ abstract class $TaskSummaryRequestCopyWith<$Res> {
       _$TaskSummaryRequestCopyWithImpl<$Res, TaskSummaryRequest>;
   @useResult
   $Res call(
-      {@JsonKey(name: 'start_date') DateTime startDate,
-      @JsonKey(name: 'end_date') DateTime endDate,
+      {@JsonKey(name: 'start_date') String startDate,
+      @JsonKey(name: 'end_date') String endDate,
       int limit});
 }
 
@@ -71,11 +71,11 @@ class _$TaskSummaryRequestCopyWithImpl<$Res, $Val extends TaskSummaryRequest>
       startDate: null == startDate
           ? _value.startDate
           : startDate // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as String,
       endDate: null == endDate
           ? _value.endDate
           : endDate // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as String,
       limit: null == limit
           ? _value.limit
           : limit // ignore: cast_nullable_to_non_nullable
@@ -93,8 +93,8 @@ abstract class _$$TaskSummaryRequestImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: 'start_date') DateTime startDate,
-      @JsonKey(name: 'end_date') DateTime endDate,
+      {@JsonKey(name: 'start_date') String startDate,
+      @JsonKey(name: 'end_date') String endDate,
       int limit});
 }
 
@@ -119,11 +119,11 @@ class __$$TaskSummaryRequestImplCopyWithImpl<$Res>
       startDate: null == startDate
           ? _value.startDate
           : startDate // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as String,
       endDate: null == endDate
           ? _value.endDate
           : endDate // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as String,
       limit: null == limit
           ? _value.limit
           : limit // ignore: cast_nullable_to_non_nullable
@@ -145,10 +145,10 @@ class _$TaskSummaryRequestImpl implements _TaskSummaryRequest {
 
   @override
   @JsonKey(name: 'start_date')
-  final DateTime startDate;
+  final String startDate;
   @override
   @JsonKey(name: 'end_date')
-  final DateTime endDate;
+  final String endDate;
   @override
   @JsonKey()
   final int limit;
@@ -192,8 +192,8 @@ class _$TaskSummaryRequestImpl implements _TaskSummaryRequest {
 
 abstract class _TaskSummaryRequest implements TaskSummaryRequest {
   const factory _TaskSummaryRequest(
-      {@JsonKey(name: 'start_date') required final DateTime startDate,
-      @JsonKey(name: 'end_date') required final DateTime endDate,
+      {@JsonKey(name: 'start_date') required final String startDate,
+      @JsonKey(name: 'end_date') required final String endDate,
       final int limit}) = _$TaskSummaryRequestImpl;
 
   factory _TaskSummaryRequest.fromJson(Map<String, dynamic> json) =
@@ -201,10 +201,10 @@ abstract class _TaskSummaryRequest implements TaskSummaryRequest {
 
   @override
   @JsonKey(name: 'start_date')
-  DateTime get startDate;
+  String get startDate;
   @override
   @JsonKey(name: 'end_date')
-  DateTime get endDate;
+  String get endDate;
   @override
   int get limit;
 

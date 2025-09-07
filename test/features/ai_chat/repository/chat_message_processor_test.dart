@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -25,7 +27,7 @@ class MockLoggingService extends Mock implements LoggingService {}
 void main() {
   setUpAll(() {
     registerFallbackValue(
-        TaskSummaryRequest(startDate: DateTime.now(), endDate: DateTime.now()));
+        TaskSummaryRequest(startDate: '2024-01-01', endDate: '2024-01-02'));
     registerFallbackValue(Exception('test'));
   });
 
@@ -51,59 +53,6 @@ void main() {
         taskSummaryRepository: mockTaskSummaryRepository,
         loggingService: mockLoggingService,
       );
-    });
-
-    group('getAiConfiguration', () {
-      test('returns valid configuration when provider and model exist',
-          () async {
-        // Arrange
-        final provider = AiConfigInferenceProvider(
-          id: 'provider-1',
-          name: 'Gemini Provider',
-          baseUrl: 'https://api.gemini.com',
-          apiKey: 'test-key',
-          createdAt: testDate,
-          inferenceProviderType: InferenceProviderType.gemini,
-        );
-
-        final model = AiConfigModel(
-          id: 'model-1',
-          name: 'Gemini Flash',
-          providerModelId: 'gemini-flash-1.5',
-          inferenceProviderId: provider.id,
-          createdAt: testDate,
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-        );
-
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [model]);
-
-        // Act
-        final config = await processor.getAiConfiguration();
-
-        // Assert
-        expect(config.provider, provider);
-        expect(config.model, model);
-      });
-
-      test('throws StateError when Gemini provider not found', () async {
-        // Arrange
-        when(() => mockAiConfigRepository.getConfigsByType(
-            AiConfigType.inferenceProvider)).thenAnswer((_) async => []);
-
-        // Act & Assert
-        expect(
-          processor.getAiConfiguration(),
-          throwsA(predicate((e) =>
-              e is StateError &&
-              e.message == 'Gemini provider not configured')),
-        );
-      });
     });
 
     group('convertConversationHistory', () {
@@ -183,8 +132,8 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'get_task_summaries',
             arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000',
-              'end_date': '2024-01-01T23:59:59.999',
+              'start_date': '2024-01-01',
+              'end_date': '2024-01-01',
               'limit': 10,
             }),
           ),
@@ -227,8 +176,8 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'get_task_summaries',
             arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000',
-              'end_date': '2024-01-01T23:59:59.999',
+              'start_date': '2024-01-01',
+              'end_date': '2024-01-01',
               'limit': 10,
             }),
           ),
@@ -262,6 +211,13 @@ void main() {
           ),
         );
 
+        // Cause repository to fail like real validation would
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any(named: 'request'),
+            )).thenAnswer((_) => Future.error(
+                const FormatException('Invalid calendar date')));
+
         // Act
         final result = await processor.processTaskSummaryTool(
           toolCall: toolCall,
@@ -279,7 +235,8 @@ void main() {
             )).called(1);
       });
 
-      test('handles invalid date format in arguments', () async {
+      test('handles invalid date format or calendar date in arguments',
+          () async {
         // Arrange
         final toolCall = ChatCompletionMessageToolCall(
           id: 'test-id',
@@ -288,10 +245,17 @@ void main() {
             name: 'get_task_summaries',
             arguments: jsonEncode({
               'start_date': 'invalid-date-format',
-              'end_date': '2024-01-01T00:00:00.000',
+              'end_date': '2024-02-31',
             }),
           ),
         );
+
+        // Cause repository to fail like real validation would
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any(named: 'request'),
+            )).thenAnswer((_) => Future.error(
+                const FormatException('Invalid calendar date')));
 
         // Act
         final result = await processor.processTaskSummaryTool(
@@ -302,6 +266,47 @@ void main() {
         // Assert
         final decoded = jsonDecode(result) as Map<String, dynamic>;
         expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        expect(decoded['error'].toString().toLowerCase(), contains('invalid'));
+        verify(() => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'ChatMessageProcessor',
+              subDomain: 'processTaskSummaryTool',
+              stackTrace: any<dynamic>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('handles invalid calendar date in start_date specifically',
+          () async {
+        // Arrange
+        final toolCall = ChatCompletionMessageToolCall(
+          id: 'test-id-2',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': '2024-02-31', // invalid start date
+              'end_date': '2024-03-01',
+            }),
+          ),
+        );
+
+        // Simulate repository validation failure
+        when(() => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any(named: 'request'),
+            )).thenAnswer((_) => Future.error(
+                const FormatException('Invalid calendar date')));
+
+        // Act
+        final result = await processor.processTaskSummaryTool(
+          toolCall: toolCall,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
+        expect(decoded['error'], contains('Failed to retrieve task summaries'));
+        expect(decoded['error'].toString().toLowerCase(), contains('invalid'));
         verify(() => mockLoggingService.captureException(
               any<dynamic>(),
               domain: 'ChatMessageProcessor',
@@ -349,8 +354,8 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'get_task_summaries',
             arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000',
-              'end_date': '2024-01-02T00:00:00.000',
+              'start_date': '2024-01-01T00:00:00.000Z',
+              'end_date': '2024-01-02T00:00:00.000Z',
             }),
           ),
         );
@@ -517,7 +522,7 @@ void main() {
                       id: 'tool_1',
                       function: ChatCompletionStreamMessageFunctionCall(
                         name: 'get_task_summaries',
-                        arguments: '01-01T00:00:00.000"}',
+                        arguments: '01-01T00:00:00.000Z"}',
                       ),
                     ),
                   ],
@@ -535,7 +540,7 @@ void main() {
         expect(result.toolCalls[0].id, 'tool_1');
         expect(result.toolCalls[0].function.name, 'get_task_summaries');
         expect(result.toolCalls[0].function.arguments,
-            '{"start_date": "2024-01-01T00:00:00.000"}');
+            '{"start_date": "2024-01-01T00:00:00.000Z"}');
       });
 
       test('handles empty stream', () async {
@@ -547,6 +552,116 @@ void main() {
 
         // Assert
         expect(result.content, '');
+        expect(result.toolCalls, isEmpty);
+      });
+
+      test('buffers interleaved tool call arguments for multiple tools',
+          () async {
+        // Two tools with interleaved chunks
+        final stream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'r',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'A',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'get_task_summaries', arguments: '{"start_'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'B',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'get_task_summaries', arguments: '{"end_'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'A',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'get_task_summaries',
+                          arguments: 'date":"2024-01-01"}'),
+                    ),
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 1,
+                      id: 'B',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'get_task_summaries',
+                          arguments: 'date":"2024-01-02"}'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        final result = await processor.processStreamResponse(stream);
+        expect(result.toolCalls.length, 2);
+        final a = result.toolCalls.firstWhere((t) => t.id == 'A');
+        final b = result.toolCalls.firstWhere((t) => t.id == 'B');
+        expect(a.function.arguments, '{"start_date":"2024-01-01"}');
+        expect(b.function.arguments, '{"end_date":"2024-01-02"}');
+      });
+
+      test('ignores tool call deltas with null function without crashing',
+          () async {
+        final stream = Stream<CreateChatCompletionStreamResponse>.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'r',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'x',
+                      // function: null
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ]);
+
+        final result = await processor.processStreamResponse(stream);
         expect(result.toolCalls, isEmpty);
       });
     });
@@ -701,7 +816,264 @@ void main() {
       });
     });
 
-    group('getAiConfiguration caching', () {
+    group('getAiConfigurationForModel', () {
+      test(
+          'returns config for valid function-calling model and caches per model',
+          () async {
+        final provider = AiConfigInferenceProvider(
+          id: 'prov-1',
+          name: 'Provider',
+          baseUrl: 'https://api',
+          apiKey: 'k',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Model',
+          providerModelId: 'm1',
+          inferenceProviderId: provider.id,
+          createdAt: testDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: true,
+        );
+
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepository.getConfigById(provider.id))
+            .thenAnswer((_) async => provider);
+
+        final cfg1 = await processor.getAiConfigurationForModel('model-1');
+        await processor.getAiConfigurationForModel('model-1');
+
+        expect(cfg1.model.id, 'model-1');
+        expect(cfg1.provider.id, provider.id);
+
+        // Repo should be called only once per id due to cache
+        verify(() => mockAiConfigRepository.getConfigById('model-1')).called(1);
+      });
+
+      test('throws when model not found', () async {
+        when(() => mockAiConfigRepository.getConfigById('missing'))
+            .thenAnswer((_) async => null);
+        expect(
+          processor.getAiConfigurationForModel('missing'),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('throws when model does not support function calling', () async {
+        final provider = AiConfigInferenceProvider(
+          id: 'prov-1',
+          name: 'Provider',
+          baseUrl: 'https://api',
+          apiKey: 'k',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Model',
+          providerModelId: 'm1',
+          inferenceProviderId: provider.id,
+          createdAt: testDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          // ignore: avoid_redundant_argument_values
+          isReasoningModel: false,
+          // ignore: avoid_redundant_argument_values
+          supportsFunctionCalling: false,
+        );
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+
+        expect(
+          processor.getAiConfigurationForModel('model-1'),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('throws when provider not found', () async {
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Model',
+          providerModelId: 'm1',
+          inferenceProviderId: 'prov-missing',
+          createdAt: testDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: true,
+        );
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepository.getConfigById('prov-missing'))
+            .thenAnswer((_) async => null);
+
+        expect(
+          processor.getAiConfigurationForModel('model-1'),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
+
+    group('generateFinalResponseStream', () {
+      test('emits non-empty chunks only in order', () async {
+        final config = AiInferenceConfig(
+          provider: AiConfigInferenceProvider(
+            id: 'prov-1',
+            name: 'Provider',
+            baseUrl: 'https://api',
+            apiKey: 'k',
+            createdAt: testDate,
+            inferenceProviderType: InferenceProviderType.openAi,
+          ),
+          model: AiConfigModel(
+            id: 'model-1',
+            name: 'Model',
+            providerModelId: 'm1',
+            inferenceProviderId: 'prov-1',
+            createdAt: testDate,
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+            supportsFunctionCalling: true,
+          ),
+        );
+
+        final stream = Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: ''),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: ' world'),
+              ),
+            ],
+          ),
+        ]);
+
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            )).thenAnswer((_) => stream);
+
+        final chunks = await processor.generateFinalResponseStream(
+          messages: const [
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string('hi'),
+            )
+          ],
+          config: config,
+          systemMessage: 'sys',
+        ).toList();
+
+        expect(chunks, ['Hello', ' world']);
+      });
+
+      test('ignores frames with null/empty choices and continues', () async {
+        final config = AiInferenceConfig(
+          provider: AiConfigInferenceProvider(
+            id: 'prov-1',
+            name: 'Provider',
+            baseUrl: 'https://api',
+            apiKey: 'k',
+            createdAt: testDate,
+            inferenceProviderType: InferenceProviderType.openAi,
+          ),
+          model: AiConfigModel(
+            id: 'model-1',
+            name: 'Model',
+            providerModelId: 'm1',
+            inferenceProviderId: 'prov-1',
+            createdAt: testDate,
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+            supportsFunctionCalling: true,
+          ),
+        );
+
+        final stream = Stream<CreateChatCompletionStreamResponse>.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'r0',
+            created: 0,
+            model: 'm',
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            created: 0,
+            model: 'm',
+            choices: [],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'r2',
+            created: 0,
+            model: 'm',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+              )
+            ],
+          ),
+        ]);
+
+        when(() => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            )).thenAnswer((_) => stream);
+
+        final out = await processor.generateFinalResponseStream(
+          messages: const [
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string('x'),
+            )
+          ],
+          config: config,
+          systemMessage: 'sys',
+        ).toList();
+        expect(out, ['ok']);
+      });
+    });
+
+    group('getAiConfigurationForModel caching', () {
       late AiConfigInferenceProvider testProvider;
       late AiConfigModel testModel;
 
@@ -724,22 +1096,22 @@ void main() {
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
+          supportsFunctionCalling: true,
         );
       });
 
       test('caches configuration on first call', () async {
         // Arrange
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => testModel);
+        when(() => mockAiConfigRepository.getConfigById(testProvider.id))
+            .thenAnswer((_) async => testProvider);
 
         // Act - First call
-        final config1 = await processor.getAiConfiguration();
+        final config1 = await processor.getAiConfigurationForModel('model-1');
 
         // Act - Second call (should use cache)
-        final config2 = await processor.getAiConfiguration();
+        final config2 = await processor.getAiConfigurationForModel('model-1');
 
         // Assert
         expect(config1.provider, testProvider);
@@ -747,24 +1119,21 @@ void main() {
         expect(config2.provider, testProvider);
         expect(config2.model, testModel);
 
-        // Verify repository was called only once for each config type
-        verify(() => mockAiConfigRepository
-            .getConfigsByType(AiConfigType.inferenceProvider)).called(1);
-        verify(() =>
-                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+        // Verify repository was called only once for each config
+        verify(() => mockAiConfigRepository.getConfigById('model-1')).called(1);
+        verify(() => mockAiConfigRepository.getConfigById(testProvider.id))
             .called(1);
       });
 
       test('cache expires after 5 minutes', () async {
         // Arrange
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => testModel);
+        when(() => mockAiConfigRepository.getConfigById(testProvider.id))
+            .thenAnswer((_) async => testProvider);
 
         // Act - First call
-        await processor.getAiConfiguration();
+        await processor.getAiConfigurationForModel('model-1');
 
         // Mock the passage of time (6 minutes)
         // Since we can't easily mock DateTime.now(), we'll use clearConfigCache
@@ -772,38 +1141,33 @@ void main() {
         processor.clearConfigCache();
 
         // Act - Second call after cache expiry
-        await processor.getAiConfiguration();
+        await processor.getAiConfigurationForModel('model-1');
 
         // Assert - Repository should be called twice
-        verify(() => mockAiConfigRepository
-            .getConfigsByType(AiConfigType.inferenceProvider)).called(2);
-        verify(() =>
-                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+        verify(() => mockAiConfigRepository.getConfigById('model-1')).called(2);
+        verify(() => mockAiConfigRepository.getConfigById(testProvider.id))
             .called(2);
       });
 
       test('clearConfigCache clears cached configuration', () async {
         // Arrange
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => testModel);
+        when(() => mockAiConfigRepository.getConfigById(testProvider.id))
+            .thenAnswer((_) async => testProvider);
 
         // Act - First call to populate cache
-        await processor.getAiConfiguration();
+        await processor.getAiConfigurationForModel('model-1');
 
         // Act - Clear cache
         processor.clearConfigCache();
 
         // Act - Second call after cache clear
-        await processor.getAiConfiguration();
+        await processor.getAiConfigurationForModel('model-1');
 
         // Assert - Repository should be called twice
-        verify(() => mockAiConfigRepository
-            .getConfigsByType(AiConfigType.inferenceProvider)).called(2);
-        verify(() =>
-                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+        verify(() => mockAiConfigRepository.getConfigById('model-1')).called(2);
+        verify(() => mockAiConfigRepository.getConfigById(testProvider.id))
             .called(2);
       });
 
@@ -816,123 +1180,46 @@ void main() {
           loggingService: mockLoggingService,
         );
 
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => testModel);
+        when(() => mockAiConfigRepository.getConfigById(testProvider.id))
+            .thenAnswer((_) async => testProvider);
 
         // Act - Each processor should maintain its own cache
-        await processor.getAiConfiguration();
-        await processor2.getAiConfiguration();
+        await processor.getAiConfigurationForModel('model-1');
+        await processor2.getAiConfigurationForModel('model-1');
 
         // Act - Second calls should use respective caches
-        await processor.getAiConfiguration();
-        await processor2.getAiConfiguration();
+        await processor.getAiConfigurationForModel('model-1');
+        await processor2.getAiConfigurationForModel('model-1');
 
-        // Assert - Repository should be called once per processor
-        verify(() => mockAiConfigRepository
-            .getConfigsByType(AiConfigType.inferenceProvider)).called(2);
-        verify(() =>
-                mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+        // Assert - Repository should be called twice (once per processor)
+        verify(() => mockAiConfigRepository.getConfigById('model-1')).called(2);
+        verify(() => mockAiConfigRepository.getConfigById(testProvider.id))
             .called(2);
       });
 
       test('cache handles errors gracefully', () async {
         // Arrange
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
             .thenThrow(Exception('Database error'));
 
         // Act & Assert - First call throws
-        expect(processor.getAiConfiguration(), throwsException);
+        expect(
+            processor.getAiConfigurationForModel('model-1'), throwsException);
 
         // Arrange - Fix the error
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        when(() => mockAiConfigRepository.getConfigById('model-1'))
+            .thenAnswer((_) async => testModel);
+        when(() => mockAiConfigRepository.getConfigById(testProvider.id))
+            .thenAnswer((_) async => testProvider);
 
         // Act - Second call should work (no cached error)
-        final config = await processor.getAiConfiguration();
+        final config = await processor.getAiConfigurationForModel('model-1');
 
         // Assert
         expect(config.provider, testProvider);
         expect(config.model, testModel);
-      });
-    });
-
-    group('getAiConfiguration edge cases', () {
-      test('throws StateError when Gemini Flash model not found', () async {
-        // Arrange
-        final provider = AiConfigInferenceProvider(
-          id: 'provider-1',
-          name: 'Gemini Provider',
-          baseUrl: 'https://api.gemini.com',
-          apiKey: 'test-key',
-          createdAt: testDate,
-          inferenceProviderType: InferenceProviderType.gemini,
-        );
-
-        final model = AiConfigModel(
-          id: 'model-1',
-          name: 'Gemini Pro', // Not Flash
-          providerModelId: 'gemini-pro',
-          inferenceProviderId: provider.id,
-          createdAt: testDate,
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-        );
-
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [model]);
-
-        // Act & Assert
-        expect(
-          processor.getAiConfiguration(),
-          throwsA(predicate((e) =>
-              e is StateError && e.message == 'Gemini Flash model not found')),
-        );
-      });
-
-      test('finds Flash model with case-insensitive match', () async {
-        // Arrange
-        final provider = AiConfigInferenceProvider(
-          id: 'provider-1',
-          name: 'Gemini Provider',
-          baseUrl: 'https://api.gemini.com',
-          apiKey: 'test-key',
-          createdAt: testDate,
-          inferenceProviderType: InferenceProviderType.gemini,
-        );
-
-        final model = AiConfigModel(
-          id: 'model-1',
-          name: 'Gemini FLASH', // Uppercase
-          providerModelId: 'gemini-FLASH-1.5', // Mixed case
-          inferenceProviderId: provider.id,
-          createdAt: testDate,
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-        );
-
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [model]);
-
-        // Act
-        final config = await processor.getAiConfiguration();
-
-        // Assert
-        expect(config.model.providerModelId, 'gemini-FLASH-1.5');
       });
     });
   });

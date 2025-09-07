@@ -4,6 +4,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_session_controller.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_sessions_controller.dart';
+import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 
 class ChatInterface extends ConsumerStatefulWidget {
   const ChatInterface({
@@ -62,6 +63,10 @@ class _ChatInterfaceState extends ConsumerState<ChatInterface> {
           canClearChat: sessionState.hasMessages,
           onClearChat: sessionController.clearChat,
           onNewSession: sessionsController.createNewSession,
+          categoryId: widget.categoryId,
+          selectedModelId: sessionState.selectedModelId,
+          isStreaming: sessionState.isStreaming,
+          onSelectModel: sessionController.setModel,
         ),
 
         // Messages area
@@ -87,27 +92,40 @@ class _ChatInterfaceState extends ConsumerState<ChatInterface> {
           isLoading: sessionState.isLoading,
           canSend: sessionState.canSendMessage,
           onSendMessage: sessionController.sendMessage,
+          requiresModelSelection: sessionState.selectedModelId == null,
         ),
       ],
     );
   }
 }
 
-class _ChatHeader extends StatelessWidget {
+class _ChatHeader extends ConsumerWidget {
   const _ChatHeader({
     required this.sessionTitle,
     required this.canClearChat,
     required this.onClearChat,
     required this.onNewSession,
+    required this.categoryId,
+    required this.selectedModelId,
+    required this.isStreaming,
+    required this.onSelectModel,
   });
 
   final String sessionTitle;
   final bool canClearChat;
   final VoidCallback onClearChat;
   final VoidCallback onNewSession;
+  final String categoryId;
+  final String? selectedModelId;
+  final bool isStreaming;
+  final ValueChanged<String> onSelectModel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eligibleAsync = ref.watch(
+      eligibleChatModelsForCategoryProvider(categoryId),
+    );
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -144,6 +162,46 @@ class _ChatHeader extends StatelessWidget {
               ],
             ),
           ),
+          // Model selector
+          eligibleAsync.when(
+            data: (models) {
+              if (models.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.info_outline, size: 16),
+                      SizedBox(width: 6),
+                      Text('No eligible models'),
+                    ],
+                  ),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: DropdownButton<String>(
+                  value: selectedModelId,
+                  hint: const Text('Select model'),
+                  onChanged: isStreaming
+                      ? null
+                      : (v) {
+                          if (v != null) onSelectModel(v);
+                        },
+                  items: [
+                    for (final m in models)
+                      DropdownMenuItem<String>(
+                        value: m.id,
+                        child: Text(m.name, overflow: TextOverflow.ellipsis),
+                      ),
+                  ],
+                ),
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+
           IconButton(
             icon: const Icon(Icons.add_comment_outlined),
             onPressed: onNewSession,
@@ -422,7 +480,7 @@ class _StreamingContent extends StatelessWidget {
           )
         else
           GptMarkdown(content),
-        const SizedBox(height: 4),
+        const SizedBox(height: 20),
         _TypingIndicator(isUser: isUser),
       ],
     );
@@ -574,6 +632,7 @@ class _InputArea extends StatefulWidget {
     required this.isLoading,
     required this.canSend,
     required this.onSendMessage,
+    required this.requiresModelSelection,
   });
 
   final TextEditingController controller;
@@ -581,6 +640,7 @@ class _InputArea extends StatefulWidget {
   final bool isLoading;
   final bool canSend;
   final ValueChanged<String> onSendMessage;
+  final bool requiresModelSelection;
 
   @override
   State<_InputArea> createState() => _InputAreaState();
@@ -625,7 +685,9 @@ class _InputAreaState extends State<_InputArea> {
               child: TextField(
                 controller: widget.controller,
                 decoration: InputDecoration(
-                  hintText: 'Ask about your tasks and productivity...',
+                  hintText: widget.requiresModelSelection
+                      ? 'Select a model to start chatting'
+                      : 'Ask about your tasks and productivity...',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide:

@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock implementations
@@ -222,17 +225,23 @@ void main() {
       test('returns task summaries with AI responses in happy path', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         // Mock the new database-level filtering method
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get)
             .thenAnswer((_) async => [testJournalDbEntry, testJournalDbAudio]);
@@ -270,17 +279,23 @@ void main() {
       test('filters out journal entries with duration < 15 seconds', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         // Mock database query - should only return audio entry since short text entry is filtered out
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get).thenAnswer((_) async =>
             [testJournalDbAudio]); // Only audio, short entry filtered out
@@ -305,8 +320,8 @@ void main() {
       test('includes all audio entries regardless of duration', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         final audioLink = EntryLink.basic(
@@ -320,11 +335,17 @@ void main() {
 
         // Mock database query - should include short audio entry (no duration filter for audio)
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get)
             .thenAnswer((_) async => [testJournalDbAudioShort]);
@@ -355,16 +376,22 @@ void main() {
       test('filters entries by date range correctly', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get).thenAnswer(
             (_) async => [testJournalDbEntry]); // Only entry in range
@@ -389,16 +416,22 @@ void main() {
       test('returns empty list when no work entries found', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get).thenAnswer((_) async => []);
 
@@ -419,16 +452,22 @@ void main() {
       test('returns empty list when no linked tasks found', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get)
             .thenAnswer((_) async => [testJournalDbEntry]);
@@ -452,8 +491,8 @@ void main() {
       test('filters out non-task entities from linked results', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         final nonTaskEntity = JournalEntity.journalEntry(
@@ -468,11 +507,17 @@ void main() {
         );
 
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get)
             .thenAnswer((_) async => [testJournalDbEntry]);
@@ -504,16 +549,22 @@ void main() {
           () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get)
             .thenAnswer((_) async => [testJournalDbEntry]);
@@ -544,16 +595,22 @@ void main() {
       test('returns latest AI response when multiple exist', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get)
             .thenAnswer((_) async => [testJournalDbEntry]);
@@ -586,8 +643,8 @@ void main() {
       test('respects limit parameter', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
           limit: 1,
         );
 
@@ -601,11 +658,17 @@ void main() {
         );
 
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get)
             .thenAnswer((_) async => [testJournalDbEntry]);
@@ -682,8 +745,8 @@ void main() {
         for (final (status, expectedName) in statusTests) {
           // Arrange
           final request = TaskSummaryRequest(
-            startDate: testStartDate,
-            endDate: testEndDate,
+            startDate: testStartDate.ymd,
+            endDate: testEndDate.ymd,
           );
 
           final taskWithStatus = JournalEntity.task(
@@ -704,11 +767,17 @@ void main() {
           );
 
           final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+          final expectedStartUtc = DateTime(
+                  testStartDate.year, testStartDate.month, testStartDate.day)
+              .toUtc();
+          final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                  testEndDate.day, 23, 59, 59, 999)
+              .toUtc();
           when(() => mockJournalDb.workEntriesInDateRange(
                 ['JournalEntry', 'JournalAudio'],
                 [testCategoryId],
-                testStartDate,
-                testEndDate,
+                expectedStartUtc,
+                expectedEndUtc,
               )).thenReturn(mockWorkEntriesSelectable);
           when(mockWorkEntriesSelectable.get)
               .thenAnswer((_) async => [testJournalDbEntry]);
@@ -750,8 +819,8 @@ void main() {
       test('ignores non-task-summary AI responses', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
         );
 
         final nonTaskSummaryAiResponse = JournalEntity.aiResponse(
@@ -773,11 +842,17 @@ void main() {
         );
 
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get)
             .thenAnswer((_) async => [testJournalDbEntry]);
@@ -809,8 +884,8 @@ void main() {
       test('handles complex multi-task scenario correctly', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: testStartDate,
-          endDate: testEndDate,
+          startDate: testStartDate.ymd,
+          endDate: testEndDate.ymd,
           limit: 10,
         );
 
@@ -852,11 +927,17 @@ void main() {
         );
 
         final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+        final expectedStartUtc =
+            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
+                .toUtc();
+        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                testEndDate.day, 23, 59, 59, 999)
+            .toUtc();
         when(() => mockJournalDb.workEntriesInDateRange(
               ['JournalEntry', 'JournalAudio'],
               [testCategoryId],
-              testStartDate,
-              testEndDate,
+              expectedStartUtc,
+              expectedEndUtc,
             )).thenReturn(mockWorkEntriesSelectable);
         when(mockWorkEntriesSelectable.get)
             .thenAnswer((_) async => [testJournalDbEntry, testJournalDbAudio2]);
@@ -905,46 +986,91 @@ void main() {
     });
 
     group('edge cases', () {
-      test('swaps dates when endDate is before startDate', () async {
+      test('throws when endDate is before startDate', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: DateTime(2024, 1, 15), // Later date
-          endDate: DateTime(2024, 1, 10), // Earlier date - should be swapped
+          startDate: '2024-01-15', // Later date
+          endDate: '2024-01-10', // Earlier date - invalid
           limit: 10,
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.workEntriesInDateRange(
-              any(),
-              any(),
-              any(),
-              any(),
-            )).thenReturn(mockWorkEntriesSelectable);
-        when(mockWorkEntriesSelectable.get).thenAnswer((_) async => []);
+        // Act & Assert
+        expect(
+          () => repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
 
-        // Act
-        final result = await repository.getTaskSummaries(
-          categoryId: testCategoryId,
-          request: request,
+      test('throws on invalid calendar date in start_date (e.g., 2024-02-31)',
+          () async {
+        final request = TaskSummaryRequest(
+          startDate: '2024-02-31',
+          endDate: '2024-03-01',
         );
 
-        // Assert
-        expect(result, isEmpty); // No results expected, but should not crash
+        expect(
+          () => repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
 
-        // Verify the method was called (dates should be internally swapped)
-        verify(() => mockJournalDb.workEntriesInDateRange(
-              any(),
-              any(),
-              any(),
-              any(),
-            )).called(1);
+      test('throws on invalid calendar date in end_date (e.g., 2024-02-31)',
+          () async {
+        final request = TaskSummaryRequest(
+          startDate: '2024-03-01',
+          endDate: '2024-02-31',
+        );
+
+        expect(
+          () => repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('throws on invalid date format (regex) in start_date', () async {
+        final request = TaskSummaryRequest(
+          startDate: '2024-2-01', // missing zero padding for month
+          endDate: '2024-02-02',
+        );
+
+        expect(
+          () => repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('throws on invalid date format (regex) in end_date', () async {
+        final request = TaskSummaryRequest(
+          startDate: '2024-02-01',
+          endDate: '2024-02-1', // missing zero padding for day
+        );
+
+        expect(
+          () => repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          ),
+          throwsA(isA<FormatException>()),
+        );
       });
 
       test('clamps limit to reasonable bounds - negative values', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: DateTime(2024, 1, 10),
-          endDate: DateTime(2024, 1, 15),
+          startDate: '2024-01-10',
+          endDate: '2024-01-15',
           limit: -5, // Negative limit
         );
 
@@ -970,8 +1096,8 @@ void main() {
       test('clamps limit to reasonable bounds - very large values', () async {
         // Arrange
         final request = TaskSummaryRequest(
-          startDate: DateTime(2024, 1, 10),
-          endDate: DateTime(2024, 1, 15),
+          startDate: '2024-01-10',
+          endDate: '2024-01-15',
           limit: 99999, // Very large limit
         );
 
