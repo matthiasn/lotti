@@ -48,6 +48,7 @@ class ChatRepository {
   Stream<String> sendMessage({
     required String message,
     required List<ChatMessage> conversationHistory,
+    String? modelId,
     String? categoryId,
   }) async* {
     if (categoryId == null) {
@@ -61,8 +62,10 @@ class ChatRepository {
         subDomain: 'sendMessage',
       );
 
-      // Get AI configuration
-      final config = await _messageProcessor.getAiConfiguration();
+      // Get AI configuration (explicit or fallback)
+      final config = modelId != null
+          ? await _messageProcessor.getAiConfigurationForModel(modelId)
+          : await _messageProcessor.getAiConfiguration();
       final systemMessage = _getSystemMessage();
 
       // Convert conversation history and build messages

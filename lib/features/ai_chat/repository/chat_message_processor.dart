@@ -46,59 +46,43 @@ class ChatMessageProcessor {
   final TaskSummaryRepository taskSummaryRepository;
   final LoggingService loggingService;
 
-  // Cache for AI configuration
+  // Cache for AI configuration per model
   AiInferenceConfig? _cachedConfig;
   DateTime? _configCacheTime;
+  String? _cachedModelId;
 
-  /// Get AI configuration (provider and model) with caching
-  Future<AiInferenceConfig> getAiConfiguration() async {
+  /// Get AI configuration for a specific model (provider + model), cached per model
+  Future<AiInferenceConfig> getAiConfigurationForModel(String modelId) async {
     const cacheDuration = Duration(minutes: 5); // Cache for 5 minutes
 
-    // Check if we have a valid cached config
     if (_cachedConfig != null &&
+        _cachedModelId == modelId &&
         _configCacheTime != null &&
         DateTime.now().difference(_configCacheTime!) < cacheDuration) {
       return _cachedConfig!;
     }
 
-    // Fetch fresh configuration
-    final providers = await aiConfigRepository
-        .getConfigsByType(AiConfigType.inferenceProvider);
-    final geminiProviders = providers
-        .whereType<AiConfigInferenceProvider>()
-        .where((p) => p.inferenceProviderType == InferenceProviderType.gemini)
-        .toList();
-
-    if (geminiProviders.isEmpty) {
-      throw StateError('Gemini provider not configured');
+    final modelConfig = await aiConfigRepository.getConfigById(modelId);
+    if (modelConfig is! AiConfigModel) {
+      throw StateError('Model not found: $modelId');
+    }
+    if (!modelConfig.supportsFunctionCalling) {
+      throw StateError('Selected model does not support function calling');
     }
 
-    final geminiProvider = geminiProviders.first;
-
-    final models =
-        await aiConfigRepository.getConfigsByType(AiConfigType.model);
-    final geminiModels = models
-        .whereType<AiConfigModel>()
-        .where((m) =>
-            m.inferenceProviderId == geminiProvider.id &&
-            m.providerModelId.toLowerCase().contains('flash'))
-        .toList();
-
-    if (geminiModels.isEmpty) {
-      throw StateError('Gemini Flash model not found');
-    }
-
-    final geminiModel = geminiModels.first;
-
-    final config = AiInferenceConfig(
-      provider: geminiProvider,
-      model: geminiModel,
+    final providerConfig = await aiConfigRepository.getConfigById(
+      modelConfig.inferenceProviderId,
     );
+    if (providerConfig is! AiConfigInferenceProvider) {
+      throw StateError(
+          'Provider not found: ${modelConfig.inferenceProviderId}');
+    }
 
-    // Cache the configuration
+    final config =
+        AiInferenceConfig(provider: providerConfig, model: modelConfig);
     _cachedConfig = config;
+    _cachedModelId = modelId;
     _configCacheTime = DateTime.now();
-
     return config;
   }
 
@@ -106,6 +90,36 @@ class ChatMessageProcessor {
   void clearConfigCache() {
     _cachedConfig = null;
     _configCacheTime = null;
+    _cachedModelId = null;
+  }
+
+  /// Backwards-compatible configuration getter used by some tests/utilities.
+  /// Picks the first function-calling text model and resolves its provider.
+  /// Not used by chat UI (which requires explicit model selection).
+  Future<AiInferenceConfig> getAiConfiguration() async {
+    if (_cachedConfig != null && _cachedModelId != null) {
+      return _cachedConfig!;
+    }
+
+    final models =
+        await aiConfigRepository.getConfigsByType(AiConfigType.model);
+    final model = models.whereType<AiConfigModel>().firstWhere(
+          (m) =>
+              m.supportsFunctionCalling &&
+              m.inputModalities.contains(Modality.text),
+          orElse: () => throw StateError('No eligible models configured'),
+        );
+    final provider = await aiConfigRepository.getConfigById(
+      model.inferenceProviderId,
+    );
+    if (provider is! AiConfigInferenceProvider) {
+      throw StateError('Provider not found: ${model.inferenceProviderId}');
+    }
+    final config = AiInferenceConfig(provider: provider, model: model);
+    _cachedConfig = config;
+    _cachedModelId = model.id;
+    _configCacheTime = DateTime.now();
+    return config;
   }
 
   /// Convert conversation history to OpenAI messages, filtering out system messages

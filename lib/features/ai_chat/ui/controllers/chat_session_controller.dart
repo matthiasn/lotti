@@ -79,9 +79,17 @@ class ChatSessionController extends _$ChatSessionController {
       final conversationHistory = state.completedMessages;
 
       // Stream the AI response
+      final selectedModelId = state.selectedModelId;
+      if (selectedModelId == null) {
+        state = state.copyWith(
+            error: 'Please select a model before sending messages.');
+        return;
+      }
+
       await for (final chunk in chatRepository.sendMessage(
         message: content,
         conversationHistory: conversationHistory,
+        modelId: selectedModelId,
         categoryId: categoryId,
       )) {
         _updateStreamingMessage(chunk);
@@ -249,6 +257,28 @@ class ChatSessionController extends _$ChatSessionController {
 
       state = state.copyWith(messages: messagesWithoutLastAI);
       await sendMessage(lastUserMessage.content);
+    }
+  }
+
+  /// Set the selected model for this chat session
+  Future<void> setModel(String modelId) async {
+    // Update UI state immediately
+    final updated = state.copyWith(selectedModelId: modelId, error: null);
+    state = updated;
+
+    // Persist to repository (session domain)
+    try {
+      final chatRepository = ref.read(chatRepositoryProvider);
+      final domainSession = updated.toDomain();
+      await chatRepository.saveSession(domainSession);
+    } catch (e, stackTrace) {
+      _loggingService.captureException(
+        e,
+        domain: 'ChatSessionController',
+        subDomain: 'setModel',
+        stackTrace: stackTrace,
+      );
+      // Non-fatal: keep UI updated; user can retry
     }
   }
 }
