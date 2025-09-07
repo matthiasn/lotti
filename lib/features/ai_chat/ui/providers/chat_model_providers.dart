@@ -5,10 +5,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'chat_model_providers.g.dart';
 
-/// Eligible chat models (category-agnostic)
+/// Eligible chat models (category-agnostic).
+///
 /// Criteria:
 /// - Model supports function calling
 /// - Model supports text input modality
+///
+/// The provider does not inspect "reasoning" capability; it is exposed by
+/// `hasReasoningModelForCategory` below for UX decisions.
 @riverpod
 Future<List<AiConfigModel>> eligibleChatModelsForCategory(
   Ref ref,

@@ -177,7 +177,11 @@ class ChatMessageProcessor {
     return promptParts.join('\n\n');
   }
 
-  /// Process stream response and extract content and tool calls
+  /// Process a provider stream and extract both visible content and
+  /// accumulated tool calls.
+  ///
+  /// The returned `content` is the full concatenation of content deltas.
+  /// Tool call arguments are accumulated across deltas by tool id.
   Future<StreamProcessingResult> processStreamResponse(
     Stream<CreateChatCompletionStreamResponse> stream,
   ) async {
@@ -210,7 +214,11 @@ class ChatMessageProcessor {
     );
   }
 
-  /// Accumulate tool calls from deltas
+  /// Accumulate tool calls from deltas.
+  ///
+  /// For a given tool id, arguments are appended until the tool call is
+  /// complete. The method is idempotent across multiple invocations on the
+  /// same buffers.
   void accumulateToolCalls(
     List<ChatCompletionMessageToolCall> toolCalls,
     List<ChatCompletionStreamMessageToolCallChunk> toolCallDeltas,

@@ -10,6 +10,11 @@ import 'package:uuid/uuid.dart';
 
 part 'chat_session_controller.g.dart';
 
+/// Riverpod controller for a single AI chat session.
+///
+/// Owns UI-facing state (messages, streaming flags, errors) and delegates
+/// sending to `ChatRepository`. Enforces explicit model selection and manages
+/// streaming placeholders for assistant messages.
 @riverpod
 class ChatSessionController extends _$ChatSessionController {
   final LoggingService _loggingService = getIt<LoggingService>();
@@ -21,7 +26,7 @@ class ChatSessionController extends _$ChatSessionController {
     return ChatSessionUiModel.empty();
   }
 
-  /// Initialize or load an existing chat session
+  /// Initialize or load an existing chat session.
   Future<void> initializeSession({String? sessionId}) async {
     try {
       final chatRepository = ref.read(chatRepositoryProvider);
@@ -48,7 +53,11 @@ class ChatSessionController extends _$ChatSessionController {
     }
   }
 
-  /// Send a new message in the current session
+  /// Send a new message in the current session.
+  ///
+  /// Adds the user message and a streaming assistant placeholder, then
+  /// updates the placeholder as deltas arrive. Finalizes the message when the
+  /// stream completes. Errors remove the placeholder and set `state.error`.
   Future<void> sendMessage(String content) async {
     // Only allow sending non-empty messages when not busy.
     // Note: The UI requires model selection before this can be called.
@@ -124,7 +133,7 @@ class ChatSessionController extends _$ChatSessionController {
     }
   }
 
-  /// Update the content of the currently streaming message
+  /// Update the content of the currently streaming assistant message.
   void _updateStreamingMessage(String content) {
     if (_currentStreamingMessageId == null) return;
 
@@ -146,7 +155,7 @@ class ChatSessionController extends _$ChatSessionController {
     state = state.copyWith(messages: updatedMessages);
   }
 
-  /// Finalize the streaming message (mark as completed)
+  /// Finalize the streaming assistant message (mark as completed).
   void _finalizeStreamingMessage() {
     if (_currentStreamingMessageId == null) return;
 
@@ -166,7 +175,7 @@ class ChatSessionController extends _$ChatSessionController {
     _currentStreamingMessageId = null;
   }
 
-  /// Remove the streaming message (used on errors)
+  /// Remove the streaming assistant message (used on errors).
   void _removeStreamingMessage() {
     if (_currentStreamingMessageId == null) return;
 
@@ -183,7 +192,7 @@ class ChatSessionController extends _$ChatSessionController {
     _currentStreamingMessageId = null;
   }
 
-  /// Save the current session state to the repository
+  /// Save the current session state to the repository.
   Future<void> _saveCurrentSession() async {
     try {
       final chatRepository = ref.read(chatRepositoryProvider);
@@ -205,7 +214,7 @@ class ChatSessionController extends _$ChatSessionController {
     }
   }
 
-  /// Clear the current chat session
+  /// Clear the current chat session.
   Future<void> clearChat() async {
     try {
       final chatRepository = ref.read(chatRepositoryProvider);
@@ -225,7 +234,7 @@ class ChatSessionController extends _$ChatSessionController {
     }
   }
 
-  /// Delete the current session
+  /// Delete the current session.
   Future<void> deleteSession() async {
     if (state.id.isEmpty) return;
 
@@ -247,12 +256,12 @@ class ChatSessionController extends _$ChatSessionController {
     }
   }
 
-  /// Clear any current error
+  /// Clear any current error.
   void clearError() {
     state = state.copyWith(error: null);
   }
 
-  /// Retry the last failed message
+  /// Retry the last failed message, re-sending the most recent user message.
   Future<void> retryLastMessage() async {
     final messages = state.completedMessages;
     if (messages.isEmpty) return;
