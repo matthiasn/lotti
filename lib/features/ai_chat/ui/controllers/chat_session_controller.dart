@@ -130,6 +130,9 @@ class ChatSessionController extends _$ChatSessionController {
 
     final updatedMessages = state.messages.map((msg) {
       if (msg.id == _currentStreamingMessageId) {
+        // If already truncated, ignore further chunks to avoid extra work
+        if (msg.content.endsWith('…')) return msg;
+
         var newContent = '${msg.content}$content';
         if (newContent.length > maxStreamingContentSize) {
           // Truncate to cap and add ellipsis

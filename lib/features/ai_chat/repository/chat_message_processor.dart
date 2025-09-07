@@ -218,14 +218,18 @@ class ChatMessageProcessor {
   ) {
     for (final toolCallDelta in toolCallDeltas) {
       if (toolCallDelta.function != null) {
-        // Use a stable deterministic id for this tool call within the stream
-        // Prefer provided id; otherwise use index if available; otherwise a local fallback
-        final fallbackIdByIndex =
-            toolCallDelta.index != null ? 'tool_${toolCallDelta.index}' : null;
+        // Use a stable deterministic id for this tool call within the stream.
+        // Prefer provided id; otherwise, use index. If neither is present, skip as malformed.
         final toolId = toolCallDelta.id ??
-            fallbackIdByIndex ??
-            // Last resort: create a unique id based on current argument buffer count
-            'tool_${argumentBuffers.length}';
+            (toolCallDelta.index != null ? 'tool_${toolCallDelta.index}' : null);
+        if (toolId == null) {
+          loggingService.captureEvent(
+            'Malformed tool call stream: missing id and index. delta: $toolCallDelta',
+            domain: 'ChatMessageProcessor',
+            subDomain: 'accumulateToolCalls',
+          );
+          continue;
+        }
 
         // Initialize buffer for this tool call if needed
         argumentBuffers.putIfAbsent(toolId, StringBuffer.new);
