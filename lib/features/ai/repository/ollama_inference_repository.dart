@@ -353,14 +353,6 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
           // Cast message once to avoid dynamic calls
           final message = json['message'] as Map<String, dynamic>?;
 
-          // Skip logging for thinking chunks to reduce noise
-          if (message != null && message['thinking'] == null) {
-            developer.log(
-              'Ollama response: ${chunk.substring(0, chunk.length > 500 ? 500 : chunk.length)}',
-              name: 'OllamaInferenceRepository',
-            );
-          }
-
           // Check if this is a tool call response
           if (message != null) {
             // Skip thinking content - we only care about actual content or tool calls

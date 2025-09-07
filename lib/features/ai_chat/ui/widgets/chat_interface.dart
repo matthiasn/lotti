@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_session_controller.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_sessions_controller.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
 
 class ChatInterface extends ConsumerStatefulWidget {
   const ChatInterface({
@@ -298,21 +300,18 @@ class _MessageBubble extends StatelessWidget {
     final isUser = message.role == ChatMessageRole.user;
     final theme = Theme.of(context);
 
+    // Add asymmetric horizontal margins to differentiate roles visually.
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(
+        bottom: 16,
+        left: isUser ? 25 : 0,
+        right: isUser ? 0 : 25,
+      ),
       child: Row(
         mainAxisAlignment:
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isUser) ...[
-            _MessageAvatar(
-              icon: Icons.psychology,
-              backgroundColor: theme.colorScheme.secondary,
-              borderColor: theme.colorScheme.secondary.withValues(alpha: 0.3),
-            ),
-            const SizedBox(width: 12),
-          ],
           Flexible(
             child: Column(
               crossAxisAlignment:
@@ -343,53 +342,75 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                _MessageTimestamp(timestamp: message.timestamp, isUser: isUser),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _MessageTimestamp(
+                      timestamp: message.timestamp,
+                      isUser: isUser,
+                    ),
+                    const SizedBox(width: 8),
+                    _CopyMessageButton(message: message),
+                  ],
+                ),
               ],
             ),
           ),
-          if (isUser) ...[
-            const SizedBox(width: 12),
-            _MessageAvatar(
-              icon: Icons.person,
-              backgroundColor: theme.colorScheme.primary,
-              borderColor: theme.colorScheme.primary.withValues(alpha: 0.3),
-            ),
-          ],
         ],
       ),
     );
   }
 }
 
-class _MessageAvatar extends StatelessWidget {
-  const _MessageAvatar({
-    required this.icon,
-    required this.backgroundColor,
-    required this.borderColor,
-  });
+class _CopyMessageButton extends StatelessWidget {
+  const _CopyMessageButton({required this.message});
 
-  final IconData icon;
-  final Color backgroundColor;
-  final Color borderColor;
+  final ChatMessage message;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: borderColor),
-      ),
-      child: CircleAvatar(
-        radius: 16,
-        backgroundColor: backgroundColor.withValues(alpha: 0.1),
-        child: Icon(
-          icon,
-          size: 16,
-          color: backgroundColor,
-        ),
-      ),
+    final isAssistant = message.role == ChatMessageRole.assistant;
+    return IconButton(
+      tooltip: isAssistant ? 'Copy assistant message' : 'Copy message',
+      icon: const Icon(Icons.copy, size: 16),
+      onPressed: () async {
+        // For assistant messages, prefer copying the full raw content without
+        // any hidden thinking blocks.
+        var text = message.content;
+        if (isAssistant) {
+          // Strip known thinking blocks before copying.
+          text = _stripThinking(text);
+        }
+        await Clipboard.setData(ClipboardData(text: text));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Copied to clipboard')),
+          );
+        }
+      },
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
     );
+  }
+
+  String _stripThinking(String input) {
+    // Reuse same patterns as parser but drop them entirely.
+    final htmlThink = RegExp(r'<think>[\s\S]*?</think>');
+    final fenceThink = RegExp(r'```\s*think\s*\n([\s\S]*?)\n```');
+    final bracketThink = RegExp(r'\[think\][\s\S]*?\[/think\]');
+    // Open-ended forms for streaming (no closing yet)
+    final htmlOpen = RegExp(r'<think>[\s\S]*\Z');
+    final fenceOpen = RegExp(r'```\s*think[\s\S]*\Z');
+    final bracketOpen = RegExp(r'\[think\][\s\S]*\Z');
+    return input
+        .replaceAll(htmlThink, '')
+        .replaceAll(fenceThink, '')
+        .replaceAll(bracketThink, '')
+        .replaceAll(htmlOpen, '')
+        .replaceAll(fenceOpen, '')
+        .replaceAll(bracketOpen, '')
+        .trim();
   }
 }
 
@@ -423,8 +444,27 @@ class _MessageContent extends StatelessWidget {
       );
     }
 
-    return SelectionArea(
-      child: GptMarkdown(message.content),
+    if (!isUser) {
+      // Parse assistant content for hidden thinking blocks and render a
+      // collapsible reasoning section similar to popular chat UIs.
+      final parsed = parseThinking(message.content);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if ((parsed.thinking ?? '').isNotEmpty)
+            _ThinkingDisclosure(thinking: parsed.thinking!),
+          SelectionArea(
+            child: GptMarkdown(parsed.visible),
+          ),
+        ],
+      );
+    }
+
+    return SelectableText(
+      message.content,
+      style: TextStyle(
+        color: theme.colorScheme.onPrimary,
+      ),
     );
   }
 }
@@ -470,18 +510,100 @@ class _StreamingContent extends StatelessWidget {
       );
     }
 
+    final parsed = parseThinking(content);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (!isUser && (parsed.thinking ?? '').isNotEmpty)
+          _ThinkingDisclosure(thinking: parsed.thinking!),
         if (isUser)
           Text(
-            content,
+            parsed.visible,
             style: TextStyle(color: theme.colorScheme.onPrimary),
           )
-        else
-          GptMarkdown(content),
+        else if (parsed.visible.isNotEmpty)
+          GptMarkdown(parsed.visible),
         const SizedBox(height: 20),
         _TypingIndicator(isUser: isUser),
+      ],
+    );
+  }
+}
+
+class _ThinkingDisclosure extends StatefulWidget {
+  const _ThinkingDisclosure({required this.thinking});
+
+  final String thinking;
+
+  @override
+  State<_ThinkingDisclosure> createState() => _ThinkingDisclosureState();
+}
+
+class _ThinkingDisclosureState extends State<_ThinkingDisclosure> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _expanded = !_expanded),
+          borderRadius: BorderRadius.circular(8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _expanded ? Icons.expand_less : Icons.expand_more,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(_expanded ? 'Hide reasoning' : 'Show reasoning',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  )),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Copy reasoning',
+                icon: const Icon(Icons.copy, size: 16),
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: widget.thinking));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Reasoning copied')),
+                    );
+                  }
+                },
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+        ),
+        if (_expanded) ...[
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant,
+              ),
+            ),
+            child: SelectionArea(
+              // Render reasoning using the same markdown widget as the
+              // visible response to ensure consistent typography and spacing.
+              child: GptMarkdown(widget.thinking),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
       ],
     );
   }
