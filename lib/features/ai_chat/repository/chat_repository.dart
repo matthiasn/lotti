@@ -24,6 +24,15 @@ final Provider<ChatRepository> chatRepositoryProvider = Provider((ref) {
   );
 });
 
+/// Orchestrates AI chat interactions for a session.
+///
+/// Responsibilities:
+/// - Builds prompts from conversation history and a system message.
+/// - Streams content deltas from the provider to the UI while accumulating
+///   tool calls.
+/// - Executes tool calls and streams the final response after tools, when
+///   required.
+/// - Manages in-memory storage of sessions/messages (pending persistence).
 class ChatRepository {
   ChatRepository({
     required this.cloudInferenceRepository,
@@ -52,6 +61,12 @@ class ChatRepository {
   final Map<String, ChatSession> _sessions = {};
   final Map<String, ChatMessage> _messages = {};
 
+  /// Send a message and return a stream of content deltas.
+  ///
+  /// Notes:
+  /// - Requires explicit `modelId` selection (no fallback).
+  /// - Deltas are raw provider content; UI is responsible for parsing
+  ///   hidden thinking blocks via `parseThinking`.
   Stream<String> sendMessage({
     required String message,
     required List<ChatMessage> conversationHistory,

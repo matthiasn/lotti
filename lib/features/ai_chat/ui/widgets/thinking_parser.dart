@@ -58,6 +58,12 @@ class ThinkingUtils {
 /// Parses assistant output to extract any hidden `thinking` sections and
 /// return visible content separately.
 ///
+/// Behavior:
+/// - Supports HTML, bracket, and fenced-code syntaxes, case-insensitive.
+/// - Aggregates multiple segments in order, separated by a Markdown HR (---).
+/// - Handles open-ended blocks for streaming and nested blocks (HTML/bracket).
+/// - Enforces a maximum combined length for thinking to protect the UI.
+///
 /// Recognized patterns (multiple supported and concatenated):
 /// - `<think> ... </think>` (HTML-like)
 /// - ```think\n ... \n``` (fenced code with language `think`)

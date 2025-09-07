@@ -8,6 +8,9 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_sessions_controller.d
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
 
+/// Top-level chat UI for the AI Assistant. Renders messages, streaming
+/// placeholders, and a collapsible "reasoning" disclosure when hidden
+/// thinking content is present. See `thinking_parser.dart` for extraction.
 class ChatInterface extends ConsumerStatefulWidget {
   const ChatInterface({
     required this.categoryId,
@@ -304,8 +307,8 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(
         bottom: 16,
-        left: isUser ? 25 : 0,
-        right: isUser ? 0 : 25,
+        left: isUser ? 20 : 0,
+        right: isUser ? 0 : 20,
       ),
       child: Row(
         mainAxisAlignment:
