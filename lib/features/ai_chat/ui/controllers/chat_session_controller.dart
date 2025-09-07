@@ -50,9 +50,18 @@ class ChatSessionController extends _$ChatSessionController {
 
   /// Send a new message in the current session
   Future<void> sendMessage(String content) async {
-    // Allow sending as long as we're not busy; ChatRepository will
-    // select a default model if none is chosen.
+    // Only allow sending non-empty messages when not busy.
+    // Note: The UI requires model selection before this can be called.
     if (content.trim().isEmpty || state.isLoading || state.isStreaming) {
+      return;
+    }
+
+    // Ensure a model is selected (required, no fallback)
+    final modelId = state.selectedModelId;
+    if (modelId == null) {
+      state = state.copyWith(
+        error: 'Please select a model before sending messages',
+      );
       return;
     }
 
@@ -86,7 +95,7 @@ class ChatSessionController extends _$ChatSessionController {
       await for (final chunk in chatRepository.sendMessage(
         message: content,
         conversationHistory: conversationHistory,
-        modelId: state.selectedModelId,
+        modelId: modelId,
         categoryId: categoryId,
       )) {
         _updateStreamingMessage(chunk);

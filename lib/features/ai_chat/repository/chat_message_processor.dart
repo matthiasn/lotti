@@ -101,43 +101,6 @@ class ChatMessageProcessor {
     _cachedModelId = null;
   }
 
-  /// Backwards-compatible configuration getter used by some tests/utilities.
-  /// Picks the first function-calling text model and resolves its provider.
-  /// Not used by chat UI (which requires explicit model selection).
-  Future<AiInferenceConfig> getAiConfiguration() async {
-    if (_cachedConfig != null && _cachedModelId != null) {
-      return _cachedConfig!;
-    }
-
-    // Fetch providers and ensure Gemini is configured
-    final providers = await aiConfigRepository
-        .getConfigsByType(AiConfigType.inferenceProvider);
-    final geminiProvider =
-        providers.whereType<AiConfigInferenceProvider>().firstWhere(
-              (p) => p.inferenceProviderType == InferenceProviderType.gemini,
-              orElse: () => throw StateError('Gemini provider not configured'),
-            );
-
-    // Fetch models and select the Gemini Flash model (case-insensitive match)
-    final allModels =
-        await aiConfigRepository.getConfigsByType(AiConfigType.model);
-    final model = allModels
-        .whereType<AiConfigModel>()
-        .where((m) => m.inferenceProviderId == geminiProvider.id)
-        .firstWhere(
-          (m) =>
-              m.name.toLowerCase().contains('flash') ||
-              m.providerModelId.toLowerCase().contains('flash'),
-          orElse: () => throw StateError('Gemini Flash model not found'),
-        );
-
-    final config = AiInferenceConfig(provider: geminiProvider, model: model);
-    _cachedConfig = config;
-    _cachedModelId = model.id;
-    _configCacheTime = _now();
-    return config;
-  }
-
   /// Convert conversation history to OpenAI messages, filtering out system messages
   List<ChatCompletionMessage> convertConversationHistory(
     List<ChatMessage> conversationHistory,

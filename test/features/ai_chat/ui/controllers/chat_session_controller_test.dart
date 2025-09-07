@@ -186,6 +186,7 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             ));
       });
 
@@ -207,6 +208,30 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            ));
+      });
+
+      test('shows error when no model selected', () async {
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+
+        // Don't set a model - selectedModelId will be null
+        await controller.sendMessage('Hello');
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+
+        expect(state.error,
+            equals('Please select a model before sending messages'));
+
+        verifyNever(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             ));
       });
 
@@ -215,6 +240,7 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             )).thenAnswer((_) async* {
           yield 'Hello there!';
         });
@@ -231,6 +257,18 @@ void main() {
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,
         );
+
+        // Set a model first
+        await controller.setModel('test-model-id');
+
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 'session-id',
+                  title: 'Test',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
 
         await controller.sendMessage('Hello');
 
@@ -386,6 +424,7 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             ));
       });
 
@@ -401,6 +440,7 @@ void main() {
               message: any(named: 'message'),
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
             )).thenAnswer((_) async* {
           yield 'Retry response';
         });
@@ -418,11 +458,14 @@ void main() {
           chatSessionControllerProvider('test-category').notifier,
         );
 
-        // Set state with messages
+        // Set state with messages and model
         container
             .read(chatSessionControllerProvider('test-category').notifier)
             .updateState(
-              (state) => state.copyWith(messages: messages),
+              (state) => state.copyWith(
+                messages: messages,
+                selectedModelId: 'test-model-id',
+              ),
             );
 
         await controller.retryLastMessage();
@@ -432,6 +475,7 @@ void main() {
               message: 'Second message',
               conversationHistory: any(named: 'conversationHistory'),
               categoryId: 'test-category',
+              modelId: any(named: 'modelId'),
             )).called(1);
       });
     });
@@ -524,6 +568,14 @@ void main() {
             )).thenAnswer((_) async* {
           throw Exception('stream failure');
         });
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
 
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,

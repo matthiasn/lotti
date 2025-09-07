@@ -50,6 +50,7 @@ void main() {
 
     const testCategoryId = 'test-category-123';
     const testMessage = 'Hello AI assistant';
+    const testModelId = 'test-model-id';
 
     setUp(() {
       mockAiConfigRepository = MockAiConfigRepository();
@@ -69,10 +70,13 @@ void main() {
     group('sendMessage integration', () {
       test('throws ArgumentError when categoryId is null', () async {
         await expectLater(
-          repository.sendMessage(
-            message: testMessage,
-            conversationHistory: [],
-          ).first,
+          repository
+              .sendMessage(
+                message: testMessage,
+                conversationHistory: [],
+                modelId: testModelId,
+              )
+              .first,
           throwsA(isA<ArgumentError>()),
         );
       });
@@ -82,9 +86,9 @@ void main() {
         // the ChatMessageProcessor methods, even though we can't easily
         // test the exact flow due to the complexity of mocking streams
 
-        // The key insight is that if getAiConfiguration fails,
+        // The key insight is that if getAiConfigurationForModel fails,
         // the entire operation should fail early
-        when(() => mockAiConfigRepository.getConfigsByType(any()))
+        when(() => mockAiConfigRepository.getConfigById(testModelId))
             .thenThrow(Exception('Config error'));
 
         await expectLater(
@@ -93,6 +97,7 @@ void main() {
                 message: testMessage,
                 conversationHistory: [],
                 categoryId: testCategoryId,
+                modelId: testModelId,
               )
               .first,
           throwsA(predicate((e) => e.toString().contains('Config error'))),
@@ -109,7 +114,7 @@ void main() {
       });
 
       test('handles errors and logs them properly', () async {
-        when(() => mockAiConfigRepository.getConfigsByType(any()))
+        when(() => mockAiConfigRepository.getConfigById(testModelId))
             .thenThrow(Exception('Test error'));
 
         await expectLater(
@@ -118,6 +123,7 @@ void main() {
                 message: testMessage,
                 conversationHistory: [],
                 categoryId: testCategoryId,
+                modelId: testModelId,
               )
               .first,
           throwsA(isA<ChatRepositoryException>().having(
@@ -142,32 +148,29 @@ void main() {
       test('wraps TimeoutException from provider as ChatRepositoryException',
           () async {
         // Arrange configuration
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [
-                  AiConfigInferenceProvider(
-                    id: 'p',
-                    name: 'P',
-                    baseUrl: 'https://',
-                    apiKey: 'k',
-                    createdAt: DateTime(2024),
-                    inferenceProviderType: InferenceProviderType.openAi,
-                  )
-                ]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [
-                  AiConfigModel(
-                    id: 'm',
-                    name: 'M',
-                    providerModelId: 'm',
-                    inferenceProviderId: 'p',
-                    createdAt: DateTime(2024),
-                    inputModalities: const [Modality.text],
-                    outputModalities: const [Modality.text],
-                    isReasoningModel: false,
-                    supportsFunctionCalling: true,
-                  )
-                ]);
+        final testProvider = AiConfigInferenceProvider(
+          id: 'p',
+          name: 'P',
+          baseUrl: 'https://',
+          apiKey: 'k',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+        final testModel = AiConfigModel(
+          id: testModelId,
+          name: 'M',
+          providerModelId: 'm',
+          inferenceProviderId: 'p',
+          createdAt: DateTime(2024),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: true,
+        );
+        when(() => mockAiConfigRepository.getConfigById(testModelId))
+            .thenAnswer((_) async => testModel);
+        when(() => mockAiConfigRepository.getConfigById('p'))
+            .thenAnswer((_) async => testProvider);
 
         when(() => mockCloudInferenceRepository.generate(
               any<String>(),
@@ -187,6 +190,7 @@ void main() {
                 message: 'Hi',
                 conversationHistory: [],
                 categoryId: testCategoryId,
+                modelId: testModelId,
               )
               .first,
           throwsA(isA<ChatRepositoryException>()),
@@ -394,14 +398,15 @@ void main() {
     group('system message', () {
       test('_getSystemMessage contains today date and guidance', () async {
         // Access via reflection through a sendMessage flow to capture the systemMessage argument
-        when(() => mockAiConfigRepository.getConfigsByType(any()))
+        when(() => mockAiConfigRepository.getConfigById(testModelId))
             .thenThrow(Exception('stop before network'));
         try {
           await repository
               .sendMessage(
                   message: 'x',
                   conversationHistory: [],
-                  categoryId: testCategoryId)
+                  categoryId: testCategoryId,
+                  modelId: testModelId)
               .first;
         } catch (_) {}
 
@@ -446,7 +451,7 @@ void main() {
 
     group('edge cases and error conditions', () {
       test('handles empty conversation history', () async {
-        when(() => mockAiConfigRepository.getConfigsByType(any()))
+        when(() => mockAiConfigRepository.getConfigById(testModelId))
             .thenThrow(Exception('Expected for this test'));
 
         await expectLater(
@@ -455,6 +460,7 @@ void main() {
                 message: testMessage,
                 conversationHistory: [], // Empty history
                 categoryId: testCategoryId,
+                modelId: testModelId,
               )
               .first,
           throwsA(isA<Exception>()),
@@ -468,7 +474,7 @@ void main() {
                 ? ChatMessage.user('User message $i')
                 : ChatMessage.assistant('Assistant message $i'));
 
-        when(() => mockAiConfigRepository.getConfigsByType(any()))
+        when(() => mockAiConfigRepository.getConfigById(testModelId))
             .thenThrow(Exception('Expected for this test'));
 
         await expectLater(
@@ -477,6 +483,7 @@ void main() {
                 message: testMessage,
                 conversationHistory: longHistory,
                 categoryId: testCategoryId,
+                modelId: testModelId,
               )
               .first,
           throwsA(isA<Exception>()),
@@ -503,7 +510,7 @@ void main() {
       test('properly delegates to ChatMessageProcessor methods', () async {
         // We can't easily test the full flow due to stream complexity,
         // but we can verify that the error path works and shows the integration
-        when(() => mockAiConfigRepository.getConfigsByType(any()))
+        when(() => mockAiConfigRepository.getConfigById(testModelId))
             .thenThrow(Exception('Processor integration test'));
 
         var exceptionCaught = false;
@@ -513,6 +520,7 @@ void main() {
                 message: testMessage,
                 conversationHistory: [],
                 categoryId: testCategoryId,
+                modelId: testModelId,
               )
               .first;
         } catch (e) {
@@ -555,17 +563,22 @@ void main() {
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
+          supportsFunctionCalling: true,
         );
       });
+
+      // Helper to setup AI configuration mocks
+      void setupAiConfigMocks() {
+        when(() => mockAiConfigRepository.getConfigById(testModel.id))
+            .thenAnswer((_) async => testModel);
+        when(() => mockAiConfigRepository.getConfigById(testProvider.id))
+            .thenAnswer((_) async => testProvider);
+      }
 
       test('successfully sends message with content only (no tool calls)',
           () async {
         // Setup AI configuration
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        setupAiConfigMocks();
 
         // Setup streaming response
         final responseStream = Stream.fromIterable([
@@ -601,6 +614,7 @@ void main() {
               message: testMessage,
               conversationHistory: [],
               categoryId: testCategoryId,
+              modelId: testModel.id,
             )
             .toList();
 
@@ -618,11 +632,7 @@ void main() {
 
       test('successfully sends message with tool calls', () async {
         // Setup AI configuration
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        setupAiConfigMocks();
 
         // Setup streaming response with tool calls
         final initialStream = Stream.fromIterable([
@@ -717,6 +727,7 @@ void main() {
               message: 'Show me my tasks for today',
               conversationHistory: [],
               categoryId: testCategoryId,
+              modelId: testModel.id,
             )
             .toList();
 
@@ -735,11 +746,7 @@ void main() {
 
       test('handles chunked content in streaming response', () async {
         // Setup AI configuration
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        setupAiConfigMocks();
 
         // Setup streaming response with multiple chunks
         final responseStream = Stream.fromIterable([
@@ -801,6 +808,7 @@ void main() {
               message: 'Test chunked response',
               conversationHistory: [],
               categoryId: testCategoryId,
+              modelId: testModel.id,
             )
             .toList();
 
@@ -813,11 +821,7 @@ void main() {
 
       test('handles empty tool call results', () async {
         // Setup AI configuration
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        setupAiConfigMocks();
 
         // Setup streaming response with tool calls
         final initialStream = Stream.fromIterable([
@@ -889,6 +893,7 @@ void main() {
               message: 'Show me my tasks',
               conversationHistory: [],
               categoryId: testCategoryId,
+              modelId: testModel.id,
             )
             .toList();
 
@@ -900,11 +905,7 @@ void main() {
 
       test('streams final response chunks after tool calls', () async {
         // Setup AI configuration
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        setupAiConfigMocks();
 
         // Initial stream: tool call only (no content)
         final initialStream = Stream.fromIterable([
@@ -1001,6 +1002,7 @@ void main() {
               message: 'Stream final chunks',
               conversationHistory: [],
               categoryId: testCategoryId,
+              modelId: testModel.id,
             )
             .toList();
 
@@ -1009,11 +1011,7 @@ void main() {
 
       test('handles conversation history correctly', () async {
         // Setup AI configuration
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        setupAiConfigMocks();
 
         // Create conversation history
         final history = [
@@ -1056,6 +1054,7 @@ void main() {
               message: 'Please show them now',
               conversationHistory: history,
               categoryId: testCategoryId,
+              modelId: testModel.id,
             )
             .toList();
 
@@ -1085,11 +1084,7 @@ void main() {
 
       test('provides system message with today date and guidance', () async {
         // Setup AI configuration
-        when(() => mockAiConfigRepository
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [testProvider]);
-        when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [testModel]);
+        setupAiConfigMocks();
 
         String? capturedSystemMessage;
         const responseStream =
@@ -1114,6 +1109,7 @@ void main() {
               message: 'Ping',
               conversationHistory: [],
               categoryId: testCategoryId,
+              modelId: testModel.id,
             )
             .toList();
 

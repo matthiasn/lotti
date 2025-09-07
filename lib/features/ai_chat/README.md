@@ -39,9 +39,9 @@ lib/features/ai_chat/
 - **Context Awareness**: Filters results by the selected category from the tasks page
 
 ### ✅ Advanced AI Capabilities
-- **Model Selection (New)**: Pick an AI model from configured providers (e.g., Ollama, OpenAI-compatible, Gemini, etc.) per chat session
+- **Model Selection**: Users must explicitly select an AI model from configured providers (e.g., Ollama, OpenAI-compatible, Gemini, etc.) per chat session - no automatic fallback
 - **Function Calling**: Uses the `get_task_summaries` tool to retrieve relevant data
-- **Streaming Markdown (Improved)**: Tokens are streamed from providers and rendered incrementally as Markdown in the UI with a typing indicator
+- **Streaming Markdown**: Tokens are streamed from providers and rendered incrementally as Markdown in the UI with a typing indicator
 
 ### ✅ Sophisticated Data Processing
 - **Complex Query Engine**: 4-step process to find work entries, resolve task relationships, and retrieve AI summaries
@@ -68,11 +68,12 @@ Central orchestrator handling:
 
 ### ChatMessageProcessor
 Extracted testable logic for:
-- AI configuration management (provider + model resolution with caching)
+- AI configuration management (provider + model resolution with caching for specific models)
 - Message format conversion (internal ↔ OpenAI formats)
 - Stream processing: accumulate tool calls; expose streaming of final responses after tools
 - Tool call processing and response handling
 - Prompt building from conversation history
+- No fallback mechanism - requires explicit model selection
 
 ### TaskSummaryRepository
 Complex data retrieval engine:
@@ -89,7 +90,7 @@ Complex data retrieval engine:
 - **Entry Point**: Psychology icon (🧠) in tasks page app bar
 - **Modal Design**: Bottom sheet taking ~80% of screen height
 - **Category Context**: Inherits selected category from tasks page for filtering
-- **Model Selection**: Dropdown in the chat header; users must select a model before sending messages (no automatic fallback)
+- **Model Selection**: Required dropdown in the chat header; users must explicitly select a model before sending messages - no automatic fallback
 - **State Management**: Reactive integration with Riverpod providers
 
 ### Data Layer Integration
@@ -119,7 +120,8 @@ Complex data retrieval engine:
 4. **AI Summary Extraction**: Latest AI responses with metadata preservation
 
 ### Model Integration
-- **Model Selection**: Select an eligible model per session (function-calling + text input required)
+- **Model Selection**: Explicit selection required - select an eligible model per session (function-calling + text input required)
+- **No Fallback**: System enforces model selection before sending messages - no automatic defaults
 - **Providers**: Works with Ollama (local), OpenAI-compatible APIs, Gemini, and more (via unified config)
 - **Function Calling**: OpenAI-compatible tool definitions
 - **Context Management**: Prompt includes prior conversation context
@@ -155,7 +157,7 @@ Comprehensive test suite covering all components:
 ### Chat Flow
 1. **Initiation**: Tap brain icon (🧠) in tasks page app bar
 2. **Context Setup**: Chat automatically inherits selected category context
-3. **Model Selection**: Pick a model in the chat header
+3. **Model Selection**: Required - must pick a model in the chat header before sending any messages
 4. **Natural Queries**: Ask questions in natural language about tasks
 5. **Real-time Responses**: Watch AI responses stream as formatted Markdown
 6. **Session Management**: Continue conversations or start new chats
@@ -251,15 +253,17 @@ The AI Chat feature has been optimized for production use with several key perfo
 - **Modularity**: Loosely coupled components with clear interfaces
 
 ## 🔧 How To Use
-- Configure at least one AI provider and add eligible models (function calling + text input) in settings.
-- Open the AI chat via the brain icon (🧠) in the tasks page.
-- Select a model from the header dropdown (required before sending messages).
-- Ask a question in natural language; responses stream in as Markdown.
+1. Configure at least one AI provider and add eligible models (function calling + text input) in settings.
+2. Open the AI chat via the brain icon (🧠) in the tasks page.
+3. **Required**: Select a model from the header dropdown before sending any messages - there is no automatic fallback.
+4. Ask a question in natural language; responses stream in as Markdown.
 
 ## ♿ Accessibility & UX Notes
 
+- Model selection is mandatory - the system will show an error if you try to send a message without selecting a model.
 - Dropdown is disabled while the model is streaming to avoid accidental context changes.
 - Error banner includes retry and dismiss actions when something goes wrong.
+- Clear error messages guide users to select a model when attempting to send without one.
 
 ---
 
