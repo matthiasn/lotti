@@ -169,22 +169,39 @@ class ChatMessageProcessor {
     for (final msg in messages) {
       String? line;
       if (msg.role == ChatCompletionMessageRole.user) {
-        final content = msg.content is ChatCompletionUserMessageContent
-            ? (msg.content! as ChatCompletionUserMessageContent).whenOrNull(
-                  string: (text) => text,
-                ) ??
-                msg.content.toString()
-            : msg.content?.toString() ?? '';
+        final content = _extractUserText(msg.content);
         line = 'User: $content';
       } else if (msg.role == ChatCompletionMessageRole.assistant &&
           msg.content != null) {
-        line = 'Assistant: ${msg.content}';
+        final content = _extractAssistantText(msg.content);
+        line = 'Assistant: $content';
       } else if (msg.role == ChatCompletionMessageRole.tool) {
-        line = 'Tool response: ${msg.content}';
+        final content = _extractToolText(msg.content);
+        line = 'Tool response: $content';
       }
       if (line != null) parts.add(line);
     }
     return parts;
+  }
+
+  String _extractUserText(Object? content) {
+    if (content is ChatCompletionUserMessageContent) {
+      return content.when(
+        string: (text) => text,
+        parts: (parts) => parts.map((p) => p.toString()).join(' '),
+      );
+    }
+    return content?.toString() ?? '';
+  }
+
+  String _extractAssistantText(Object? content) {
+    // Assistant content is typically a plain string in our usage
+    return content?.toString() ?? '';
+  }
+
+  String _extractToolText(Object? content) {
+    // Tool content should be stringified JSON; ensure a string fallback
+    return content?.toString() ?? '';
   }
 
   /// Build conversation context for the prompt
@@ -238,7 +255,14 @@ class ChatMessageProcessor {
   ) {
     for (final toolCallDelta in toolCallDeltas) {
       if (toolCallDelta.function != null) {
-        final toolId = toolCallDelta.id ?? 'tool_${toolCalls.length}';
+        // Use a stable deterministic id for this tool call within the stream
+        // Prefer provided id; otherwise use index if available; otherwise a local fallback
+        final fallbackIdByIndex =
+            toolCallDelta.index != null ? 'tool_${toolCallDelta.index}' : null;
+        final toolId = toolCallDelta.id ??
+            fallbackIdByIndex ??
+            // Last resort: create a unique id based on current argument buffer count
+            'tool_${argumentBuffers.length}';
 
         // Initialize buffer for this tool call if needed
         argumentBuffers.putIfAbsent(toolId, StringBuffer.new);

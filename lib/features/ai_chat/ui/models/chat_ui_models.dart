@@ -9,6 +9,7 @@ class ChatSessionUiModel {
     required this.messages,
     required this.isLoading,
     required this.isStreaming,
+    this.metadata,
     this.selectedModelId,
     this.error,
     this.streamingMessageId,
@@ -39,6 +40,7 @@ class ChatSessionUiModel {
       messages: session.messages,
       isLoading: isLoading,
       isStreaming: isStreaming,
+      metadata: session.metadata,
       selectedModelId: session.metadata?['selectedModelId'] is String
           ? session.metadata!['selectedModelId'] as String
           : null,
@@ -52,6 +54,7 @@ class ChatSessionUiModel {
   final List<ChatMessage> messages;
   final bool isLoading;
   final bool isStreaming;
+  final Map<String, dynamic>? metadata;
   final String? selectedModelId;
   final String? error;
   final String? streamingMessageId;
@@ -62,6 +65,7 @@ class ChatSessionUiModel {
     List<ChatMessage>? messages,
     bool? isLoading,
     bool? isStreaming,
+    Map<String, dynamic>? metadata,
     Object? selectedModelId = const Object(),
     Object? error = const Object(),
     Object? streamingMessageId = const Object(),
@@ -72,6 +76,7 @@ class ChatSessionUiModel {
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
       isStreaming: isStreaming ?? this.isStreaming,
+      metadata: metadata ?? this.metadata,
       selectedModelId: selectedModelId == const Object()
           ? this.selectedModelId
           : selectedModelId as String?,
@@ -84,8 +89,9 @@ class ChatSessionUiModel {
 
   /// Convert to domain model
   ChatSession toDomain() {
-    // Preserve existing metadata and store selectedModelId into metadata for persistence
+    // Merge existing metadata with selectedModelId; do not drop unrelated keys
     final updatedMetadata = <String, dynamic>{
+      ...?metadata,
       if (selectedModelId != null) 'selectedModelId': selectedModelId,
     };
     return ChatSession(

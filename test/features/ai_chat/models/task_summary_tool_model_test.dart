@@ -17,14 +17,21 @@ void main() {
     });
 
     test('TaskSummaryRequest JSON uses start_date and end_date', () {
+      // Use UTC to avoid timezone-dependent behavior
       final req = TaskSummaryRequest(
-        startDate: DateTime.parse('2024-01-01T00:00:00.000'),
-        endDate: DateTime.parse('2024-01-02T00:00:00.000'),
+        startDate: DateTime.parse('2024-01-01T00:00:00.000Z').toUtc(),
+        endDate: DateTime.parse('2024-01-02T00:00:00.000Z').toUtc(),
       );
       final json = req.toJson();
       expect(json['start_date'], isNotNull);
       expect(json['end_date'], isNotNull);
       final back = TaskSummaryRequest.fromJson(json);
+      // Round-trip must preserve UTC instants
+      expect(back.startDate.toUtc().millisecondsSinceEpoch,
+          equals(req.startDate.toUtc().millisecondsSinceEpoch));
+      expect(back.endDate.toUtc().millisecondsSinceEpoch,
+          equals(req.endDate.toUtc().millisecondsSinceEpoch));
+      // Keep existing limit assertion
       expect(back.limit, 100);
     });
 

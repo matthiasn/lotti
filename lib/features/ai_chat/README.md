@@ -89,7 +89,7 @@ Complex data retrieval engine:
 - **Entry Point**: Psychology icon (🧠) in tasks page app bar
 - **Modal Design**: Bottom sheet taking ~80% of screen height
 - **Category Context**: Inherits selected category from tasks page for filtering
-- **Model Selection**: Dropdown in the chat header; sending is gated until a model is selected
+- **Model Selection**: Dropdown in the chat header; messages can be sent without selecting a model (a sensible default is used), but choosing a model gives you explicit control
 - **State Management**: Reactive integration with Riverpod providers
 
 ### Data Layer Integration
@@ -253,7 +253,7 @@ The AI Chat feature has been optimized for production use with several key perfo
 ## 🔧 How To Use
 - Configure at least one AI provider and add eligible models (function calling + text input) in settings.
 - Open the AI chat via the brain icon (🧠) in the tasks page.
-- Select a model from the header dropdown (required before sending).
+- Optionally select a model from the header dropdown (if not selected, a sensible default is used).
 - Ask a question in natural language; responses stream in as Markdown.
 
 ## ♿ Accessibility & UX Notes
