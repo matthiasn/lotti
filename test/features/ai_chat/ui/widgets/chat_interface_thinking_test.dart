@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
@@ -444,6 +445,30 @@ void main() {
 
       await streamController.close();
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('reasoning uses the same Markdown renderer', (tester) async {
+      when(() => mockRepo.createSession(categoryId: 'test-category'))
+          .thenAnswer(
+        (_) async => ChatSession(
+          id: 'session-3',
+          title: 'Test Session',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          lastMessageAt: DateTime(2024, 3, 15, 10, 30),
+          messages: [
+            ChatMessage.assistant('<think>internal</think>Visible response'),
+          ],
+          metadata: const {'selectedModelId': 'test-model'},
+        ),
+      );
+
+      await pumpChatInterface(tester, repository: mockRepo);
+      await tester.tap(find.text('Show reasoning'));
+      await tester.pumpAndSettle();
+
+      // Reasoning content and visible content each use GptMarkdown
+      // We expect at least two instances present in the message bubble.
+      expect(find.byType(GptMarkdown), findsAtLeastNWidgets(2));
     });
   });
 }

@@ -105,5 +105,67 @@ void main() {
       final visible = ThinkingUtils.stripThinking(input);
       expect(visible, 'pre  mid   end');
     });
+
+    test('inserts markdown HR between segments', () {
+      const input = 'X <think>one</think> Y [think]two[/think] Z';
+      final parsed = parseThinking(input);
+      final t = parsed.thinking ?? '';
+      final hrCount = '---'.allMatches(t).length;
+      expect(hrCount, 1);
+      expect(t, contains('one'));
+      expect(t, contains('two'));
+    });
+
+    test('memoizes parsed results for identical content', () {
+      const input = 'Some <think>cache me</think> content';
+      final a = parseThinking(input);
+      final b = parseThinking(input);
+      expect(identical(a, b), isTrue);
+      expect(a.visible, equals(b.visible));
+      expect(a.thinking, equals(b.thinking));
+    });
+
+    test('when thinking fills limit, extra segments append truncated notice', () {
+      final exact = 'x' * ThinkingUtils.maxThinkingLength;
+      final input = '<think>$exact</think> tail [think]more[/think]';
+      final parsed = parseThinking(input);
+      // Visible keeps non-thinking content intact
+      expect(parsed.visible.trim(), 'tail');
+      final t = parsed.thinking ?? '';
+      // First segment fully included, then truncated notice is appended once.
+      expect(t.startsWith(exact), isTrue);
+      expect(t, contains('[Thinking content truncated...]'));
+    });
+
+    test('oversized content is not cached (no identical memoization)', () {
+      // Build a single message exceeding the cache size threshold (> 10k).
+      final big = 'x' * 12000;
+      final input = '<think>$big</think>';
+      final first = parseThinking(input);
+      final second = parseThinking(input);
+      // Should not be identical instances because large content is not cached.
+      expect(identical(first, second), isFalse);
+      expect(first.thinking, second.thinking);
+      expect(first.visible, second.visible);
+    });
+
+    test('LRU cache evicts oldest entries when capacity exceeded', () {
+      // Seed the cache with a key we can probe later.
+      const key = 'seed <think>value</think>';
+      final original = parseThinking(key);
+
+      // Push many unique entries to exceed cache limit and trigger eviction.
+      // Cache limit is 100; use more than that.
+      for (var i = 0; i < 150; i++) {
+        final s = 'k$i <think>v$i</think>';
+        parseThinking(s);
+      }
+
+      // Re-parse the original key; if it was evicted, a new instance is made.
+      final again = parseThinking(key);
+      expect(identical(original, again), isFalse);
+      expect(again.thinking, original.thinking);
+      expect(again.visible, original.visible);
+    });
   });
 }
