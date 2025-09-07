@@ -325,8 +325,8 @@ class ChatMessageProcessor {
           },
           'debug': {
             'categoryId': categoryId,
-            'requestedStart': request.startDate.toIso8601String(),
-            'requestedEnd': request.endDate.toIso8601String(),
+            'requestedStart': request.startDate,
+            'requestedEnd': request.endDate,
           },
         });
       }

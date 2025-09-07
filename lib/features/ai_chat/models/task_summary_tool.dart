@@ -4,31 +4,6 @@ import 'package:openai_dart/openai_dart.dart';
 part 'task_summary_tool.freezed.dart';
 part 'task_summary_tool.g.dart';
 
-/// Ensures DateTime values are parsed/written as UTC ISO 8601 strings (with Z).
-class UtcDateTimeConverter implements JsonConverter<DateTime, String> {
-  const UtcDateTimeConverter();
-
-  @override
-  DateTime fromJson(String json) {
-    // Require explicit UTC with trailing 'Z' to avoid timezone ambiguity
-    if (!json.endsWith('Z')) {
-      throw const FormatException(
-        'Date must be ISO 8601 UTC with trailing Z (e.g., 2025-08-26T00:00:00.000Z)',
-      );
-    }
-    final dt = DateTime.parse(json);
-    if (!dt.isUtc) {
-      throw const FormatException(
-        'Parsed date is not UTC. Provide UTC with trailing Z',
-      );
-    }
-    return dt;
-  }
-
-  @override
-  String toJson(DateTime object) => object.toUtc().toIso8601String();
-}
-
 /// Tool definition for retrieving task summaries
 class TaskSummaryTool {
   static const String name = 'get_task_summaries';
@@ -37,21 +12,22 @@ class TaskSummaryTool {
         type: ChatCompletionToolType.function,
         function: FunctionObject(
           name: name,
-          description: 'Retrieve task summaries for a specified date range',
+          description:
+              'Retrieve task summaries for a specified date range (local dates only)',
           parameters: {
             'type': 'object',
             'properties': {
               'start_date': {
                 'type': 'string',
-                'format': 'date-time',
+                'format': 'date',
                 'description':
-                    'Start timestamp in ISO 8601 UTC format, e.g. 2025-08-26T00:00:00.000Z',
+                    'Start date in local time, YYYY-MM-DD (no time or timezone).',
               },
               'end_date': {
                 'type': 'string',
-                'format': 'date-time',
+                'format': 'date',
                 'description':
-                    'End timestamp in ISO 8601 UTC format, e.g. 2025-08-26T23:59:59.999Z',
+                    'End date in local time, YYYY-MM-DD (no time or timezone).',
               },
               'limit': {
                 'type': 'integer',
@@ -68,12 +44,8 @@ class TaskSummaryTool {
 @freezed
 class TaskSummaryRequest with _$TaskSummaryRequest {
   const factory TaskSummaryRequest({
-    @UtcDateTimeConverter()
-    @JsonKey(name: 'start_date')
-    required DateTime startDate,
-    @UtcDateTimeConverter()
-    @JsonKey(name: 'end_date')
-    required DateTime endDate,
+    @JsonKey(name: 'start_date') required String startDate,
+    @JsonKey(name: 'end_date') required String endDate,
     @Default(100) int limit,
   }) = _TaskSummaryRequest;
 

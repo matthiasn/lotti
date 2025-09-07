@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -28,8 +30,8 @@ void main() {
     registerFallbackValue(AiConfigType.inferenceProvider);
     registerFallbackValue(Exception('test'));
     registerFallbackValue(TaskSummaryRequest(
-      startDate: DateTime(2024),
-      endDate: DateTime(2024),
+      startDate: '2024-01-01',
+      endDate: '2024-01-02',
     ));
     registerFallbackValue(AiConfigInferenceProvider(
       id: 'test',
@@ -664,7 +666,7 @@ void main() {
                       function: ChatCompletionStreamMessageFunctionCall(
                         name: 'get_task_summaries',
                         arguments:
-                            '{"start_date": "2024-01-01T00:00:00.000Z", "end_date": "2024-01-01T23:59:59.999Z", "limit": 10}',
+                            '{"start_date": "2024-01-01", "end_date": "2024-01-01", "limit": 10}',
                       ),
                     ),
                   ],
@@ -840,7 +842,7 @@ void main() {
                       function: ChatCompletionStreamMessageFunctionCall(
                         name: 'get_task_summaries',
                         arguments:
-                            '{"start_date": "2024-01-01T00:00:00.000Z", "end_date": "2024-01-01T23:59:59.999Z", "limit": 10}',
+                            '{"start_date": "2024-01-01", "end_date": "2024-01-01", "limit": 10}',
                       ),
                     ),
                   ],
@@ -924,7 +926,7 @@ void main() {
                       function: ChatCompletionStreamMessageFunctionCall(
                         name: 'get_task_summaries',
                         arguments:
-                            '{"start_date": "2024-01-01T00:00:00.000Z", "end_date": "2024-01-01T23:59:59.999Z", "limit": 5}',
+                            '{"start_date": "2024-01-01", "end_date": "2024-01-01", "limit": 5}',
                       ),
                     ),
                   ],

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 
 /// Provider for the `SystemMessageService`.
 ///
@@ -19,58 +20,61 @@ final systemMessageServiceProvider = Provider<SystemMessageService>((ref) {
 ///   future without changing call sites.
 class SystemMessageService {
   String getSystemMessage() {
-    final today = DateTime.now().toIso8601String().split('T').first;
+    final now = DateTime.now();
+    final today = now.ymd;
+    final tzName = now.timeZoneName;
+
+    // Local date helpers
+    DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+    final todayDate = dateOnly(now);
+    final yesterdayDate = todayDate.subtract(const Duration(days: 1));
+
+    // Week definition: default Monday–Sunday if locale not available here
+    const firstDayOfWeek = DateTime.monday; // 1
+    final delta = (todayDate.weekday - firstDayOfWeek + 7) % 7;
+    final weekStart = todayDate.subtract(Duration(days: delta));
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    final lastWeekStart = weekStart.subtract(const Duration(days: 7));
+    final lastWeekEnd = lastWeekStart.add(const Duration(days: 6));
+
+    // Month boundaries
+    final thisMonthStart = DateTime(todayDate.year, todayDate.month);
+    final thisMonthEnd = DateTime(todayDate.year, todayDate.month + 1, 0);
+    final lastMonthEnd = thisMonthStart.subtract(const Duration(days: 1));
+    final lastMonthStart = DateTime(lastMonthEnd.year, lastMonthEnd.month);
+
+    // Recently = last 14 local days inclusive
+    final recentlyStart = todayDate.subtract(const Duration(days: 13));
+
+    String j(DateTime d) => d.ymd;
+
     return '''
 You are an AI assistant helping users explore and understand their tasks.
-You have access to a tool that can retrieve task summaries for specified date ranges.
-When users ask about their tasks, use the get_task_summaries tool to fetch relevant information.
+Use the get_task_summaries tool to fetch data for specific local date ranges.
 
-Today's date is $today.
+Today (local) is $today in timezone "$tzName".
 
 Argument contract for tool calls:
-- Always provide BOTH parameters: start_date and end_date.
-- Dates MUST be ISO 8601 UTC with a trailing 'Z'. No local times.
-- Use inclusive daily windows: start=00:00:00.000Z, end=23:59:59.999Z.
+- Provide BOTH parameters: start_date and end_date.
+- Format: date-only strings YYYY-MM-DD (no time, no timezone).
+- App treats them as local dates and converts to UTC internally.
 
 Error handling and retry behavior:
 - The tool may return an error JSON, e.g. {"error": "..."}.
-- When an error occurs, use the error message to correct inputs and try again with a new tool call.
-- Common issues: missing fields, non‑UTC timestamps (must end with Z), invalid date ranges.
+- If an error occurs (missing fields, invalid format, end < start), correct inputs and try again.
 
-When interpreting time-based queries, use these guidelines (UTC windows) and include a one-line JSON snippet for quick use:
+Definitions (user local time):
+- "today" = [${j(todayDate)}, ${j(todayDate)}]
+- "yesterday" = [${j(yesterdayDate)}, ${j(yesterdayDate)}]
+- "this week" = current calendar week (default Monday–Sunday): [${j(weekStart)}, ${j(weekEnd)}]
+- "last week" = previous calendar week: [${j(lastWeekStart)}, ${j(lastWeekEnd)}]
+- "this month" = [${j(thisMonthStart)}, ${j(thisMonthEnd)}]
+- "last month" = [${j(lastMonthStart)}, ${j(lastMonthEnd)}]
+- "recently" or "lately" = last 14 local days inclusive: [${j(recentlyStart)}, ${j(todayDate)}]
 
-- "today" = today 00:00:00.000Z → 23:59:59.999Z
-  JSON: {"start_date": "<TODAY>T00:00:00.000Z", "end_date": "<TODAY>T23:59:59.999Z", "limit": 100}
+Send concrete date-only JSON like:
+{"start_date":"${j(yesterdayDate)}","end_date":"${j(yesterdayDate)}","limit":100}
 
-- "yesterday" = previous day 00:00:00.000Z → 23:59:59.999Z
-  JSON: {"start_date": "<YESTERDAY>T00:00:00.000Z", "end_date": "<YESTERDAY>T23:59:59.999Z", "limit": 100}
-
-- "this week" = last 7 days including today
-  JSON: {"start_date": "<TODAY-6D>T00:00:00.000Z", "end_date": "<TODAY>T23:59:59.999Z", "limit": 100}
-
-- "recently" or "lately" = last 14 days
-  JSON: {"start_date": "<TODAY-13D>T00:00:00.000Z", "end_date": "<TODAY>T23:59:59.999Z", "limit": 100}
-
-- "this month" = last 30 days
-  JSON: {"start_date": "<TODAY-29D>T00:00:00.000Z", "end_date": "<TODAY>T23:59:59.999Z", "limit": 100}
-
-- "last week" = previous 7-day window (8–14 days ago)
-  JSON: {"start_date": "<TODAY-14D>T00:00:00.000Z", "end_date": "<TODAY-8D>T23:59:59.999Z", "limit": 100}
-
-- "last month" = previous 30-day window (31–60 days ago)
-  JSON: {"start_date": "<TODAY-60D>T00:00:00.000Z", "end_date": "<TODAY-31D>T23:59:59.999Z", "limit": 100}
-
-Tool argument format requirements (strict):
-- start_date: ISO 8601 UTC, start of day, e.g. "2025-08-26T00:00:00.000Z"
-- end_date: ISO 8601 UTC, end of day, e.g. "2025-08-26T23:59:59.999Z"
-
-Example: For "yesterday" on 2025-08-27 (UTC), call the tool with:
-{
-  "start_date": "2025-08-26T00:00:00.000Z",
-  "end_date":   "2025-08-26T23:59:59.999Z",
-  "limit": 100
-}
-
-Be concise but helpful in your responses. When showing task summaries, organize them by date and status for clarity.''';
+Be concise but helpful. When showing task summaries, organize them by date and status for clarity.''';
   }
 }

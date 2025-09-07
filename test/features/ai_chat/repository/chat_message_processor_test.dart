@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -25,7 +27,7 @@ class MockLoggingService extends Mock implements LoggingService {}
 void main() {
   setUpAll(() {
     registerFallbackValue(
-        TaskSummaryRequest(startDate: DateTime.now(), endDate: DateTime.now()));
+        TaskSummaryRequest(startDate: '2024-01-01', endDate: '2024-01-02'));
     registerFallbackValue(Exception('test'));
   });
 
@@ -130,8 +132,8 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'get_task_summaries',
             arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000Z',
-              'end_date': '2024-01-01T23:59:59.999Z',
+              'start_date': '2024-01-01',
+              'end_date': '2024-01-01',
               'limit': 10,
             }),
           ),
@@ -174,8 +176,8 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'get_task_summaries',
             arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000Z',
-              'end_date': '2024-01-01T23:59:59.999Z',
+              'start_date': '2024-01-01',
+              'end_date': '2024-01-01',
               'limit': 10,
             }),
           ),

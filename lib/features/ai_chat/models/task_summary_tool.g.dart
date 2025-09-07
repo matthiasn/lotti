@@ -9,18 +9,16 @@ part of 'task_summary_tool.dart';
 _$TaskSummaryRequestImpl _$$TaskSummaryRequestImplFromJson(
         Map<String, dynamic> json) =>
     _$TaskSummaryRequestImpl(
-      startDate:
-          const UtcDateTimeConverter().fromJson(json['start_date'] as String),
-      endDate:
-          const UtcDateTimeConverter().fromJson(json['end_date'] as String),
+      startDate: json['start_date'] as String,
+      endDate: json['end_date'] as String,
       limit: (json['limit'] as num?)?.toInt() ?? 100,
     );
 
 Map<String, dynamic> _$$TaskSummaryRequestImplToJson(
         _$TaskSummaryRequestImpl instance) =>
     <String, dynamic>{
-      'start_date': const UtcDateTimeConverter().toJson(instance.startDate),
-      'end_date': const UtcDateTimeConverter().toJson(instance.endDate),
+      'start_date': instance.startDate,
+      'end_date': instance.endDate,
       'limit': instance.limit,
     };
 
