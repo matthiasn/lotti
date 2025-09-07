@@ -221,7 +221,9 @@ class ChatMessageProcessor {
         // Use a stable deterministic id for this tool call within the stream.
         // Prefer provided id; otherwise, use index. If neither is present, skip as malformed.
         final toolId = toolCallDelta.id ??
-            (toolCallDelta.index != null ? 'tool_${toolCallDelta.index}' : null);
+            (toolCallDelta.index != null
+                ? 'tool_${toolCallDelta.index}'
+                : null);
         if (toolId == null) {
           loggingService.captureEvent(
             'Malformed tool call stream: missing id and index. delta: $toolCallDelta',

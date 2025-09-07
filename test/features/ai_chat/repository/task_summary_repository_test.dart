@@ -766,19 +766,19 @@ void main() {
             ),
           );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc =
-            DateTime(testStartDate.year, testStartDate.month, testStartDate.day)
-                .toUtc();
-        final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
-                testEndDate.day, 23, 59, 59, 999)
-            .toUtc();
-        when(() => mockJournalDb.workEntriesInDateRange(
-              ['JournalEntry', 'JournalAudio'],
-              [testCategoryId],
-              expectedStartUtc,
-              expectedEndUtc,
-            )).thenReturn(mockWorkEntriesSelectable);
+          final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+          final expectedStartUtc = DateTime(
+                  testStartDate.year, testStartDate.month, testStartDate.day)
+              .toUtc();
+          final expectedEndUtc = DateTime(testEndDate.year, testEndDate.month,
+                  testEndDate.day, 23, 59, 59, 999)
+              .toUtc();
+          when(() => mockJournalDb.workEntriesInDateRange(
+                ['JournalEntry', 'JournalAudio'],
+                [testCategoryId],
+                expectedStartUtc,
+                expectedEndUtc,
+              )).thenReturn(mockWorkEntriesSelectable);
           when(mockWorkEntriesSelectable.get)
               .thenAnswer((_) async => [testJournalDbEntry]);
 

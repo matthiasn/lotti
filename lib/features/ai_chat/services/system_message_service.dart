@@ -48,6 +48,13 @@ class SystemMessageService {
 
     String j(DateTime d) => d.ymd;
 
+    // Example windows for month-only phrases
+    final julyStart = DateTime(todayDate.year, 7);
+    final julyEnd = DateTime(todayDate.year, 8, 0);
+    final decYear = 12 > todayDate.month ? todayDate.year - 1 : todayDate.year;
+    final decemberStart = DateTime(decYear, 12);
+    final decemberEnd = DateTime(decYear, 13, 0);
+
     return '''
 You are an AI assistant helping users explore and understand their tasks.
 Use the get_task_summaries tool to fetch data for specific local date ranges.
@@ -71,6 +78,14 @@ Definitions (user local time):
 - "this month" = [${j(thisMonthStart)}, ${j(thisMonthEnd)}]
 - "last month" = [${j(lastMonthStart)}, ${j(lastMonthEnd)}]
 - "recently" or "lately" = last 14 local days inclusive: [${j(recentlyStart)}, ${j(todayDate)}]
+
+Month-only phrases (no year provided):
+- Resolve to the most recent occurrence of that month in the user's local time.
+- If the month has already occurred this year (month <= current month), use the current year.
+- If the month has not yet occurred this year (month > current month), use the previous year.
+- Examples based on today:
+  - "July" → [${j(julyStart)}, ${j(julyEnd)}]
+  - "December" → [${j(decemberStart)}, ${j(decemberEnd)}]
 
 Send concrete date-only JSON like:
 {"start_date":"${j(yesterdayDate)}","end_date":"${j(yesterdayDate)}","limit":100}
