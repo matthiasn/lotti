@@ -20,8 +20,10 @@ TaskSummaryRequest _$TaskSummaryRequestFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$TaskSummaryRequest {
+  @UtcDateTimeConverter()
   @JsonKey(name: 'start_date')
   DateTime get startDate => throw _privateConstructorUsedError;
+  @UtcDateTimeConverter()
   @JsonKey(name: 'end_date')
   DateTime get endDate => throw _privateConstructorUsedError;
   int get limit => throw _privateConstructorUsedError;
@@ -43,8 +45,8 @@ abstract class $TaskSummaryRequestCopyWith<$Res> {
       _$TaskSummaryRequestCopyWithImpl<$Res, TaskSummaryRequest>;
   @useResult
   $Res call(
-      {@JsonKey(name: 'start_date') DateTime startDate,
-      @JsonKey(name: 'end_date') DateTime endDate,
+      {@UtcDateTimeConverter() @JsonKey(name: 'start_date') DateTime startDate,
+      @UtcDateTimeConverter() @JsonKey(name: 'end_date') DateTime endDate,
       int limit});
 }
 
@@ -93,8 +95,8 @@ abstract class _$$TaskSummaryRequestImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: 'start_date') DateTime startDate,
-      @JsonKey(name: 'end_date') DateTime endDate,
+      {@UtcDateTimeConverter() @JsonKey(name: 'start_date') DateTime startDate,
+      @UtcDateTimeConverter() @JsonKey(name: 'end_date') DateTime endDate,
       int limit});
 }
 
@@ -136,17 +138,21 @@ class __$$TaskSummaryRequestImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$TaskSummaryRequestImpl implements _TaskSummaryRequest {
   const _$TaskSummaryRequestImpl(
-      {@JsonKey(name: 'start_date') required this.startDate,
-      @JsonKey(name: 'end_date') required this.endDate,
+      {@UtcDateTimeConverter()
+      @JsonKey(name: 'start_date')
+      required this.startDate,
+      @UtcDateTimeConverter() @JsonKey(name: 'end_date') required this.endDate,
       this.limit = 100});
 
   factory _$TaskSummaryRequestImpl.fromJson(Map<String, dynamic> json) =>
       _$$TaskSummaryRequestImplFromJson(json);
 
   @override
+  @UtcDateTimeConverter()
   @JsonKey(name: 'start_date')
   final DateTime startDate;
   @override
+  @UtcDateTimeConverter()
   @JsonKey(name: 'end_date')
   final DateTime endDate;
   @override
@@ -192,17 +198,23 @@ class _$TaskSummaryRequestImpl implements _TaskSummaryRequest {
 
 abstract class _TaskSummaryRequest implements TaskSummaryRequest {
   const factory _TaskSummaryRequest(
-      {@JsonKey(name: 'start_date') required final DateTime startDate,
-      @JsonKey(name: 'end_date') required final DateTime endDate,
+      {@UtcDateTimeConverter()
+      @JsonKey(name: 'start_date')
+      required final DateTime startDate,
+      @UtcDateTimeConverter()
+      @JsonKey(name: 'end_date')
+      required final DateTime endDate,
       final int limit}) = _$TaskSummaryRequestImpl;
 
   factory _TaskSummaryRequest.fromJson(Map<String, dynamic> json) =
       _$TaskSummaryRequestImpl.fromJson;
 
   @override
+  @UtcDateTimeConverter()
   @JsonKey(name: 'start_date')
   DateTime get startDate;
   @override
+  @UtcDateTimeConverter()
   @JsonKey(name: 'end_date')
   DateTime get endDate;
   @override

@@ -7,7 +7,7 @@ part of 'chat_model_providers.dart';
 // **************************************************************************
 
 String _$eligibleChatModelsForCategoryHash() =>
-    r'af9ae8fbd283e902184cac20aea7939c7d2232f2';
+    r'b5e651f43fe8c84aba39cdf9eba439009ddb7e3b';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,9 +30,8 @@ class _SystemHash {
   }
 }
 
-/// Eligible chat models for a category
+/// Eligible chat models (category-agnostic)
 /// Criteria:
-/// - Model id is referenced by at least one allowed prompt in the category
 /// - Model supports function calling
 /// - Model supports text input modality
 ///
@@ -41,27 +40,24 @@ class _SystemHash {
 const eligibleChatModelsForCategoryProvider =
     EligibleChatModelsForCategoryFamily();
 
-/// Eligible chat models for a category
+/// Eligible chat models (category-agnostic)
 /// Criteria:
-/// - Model id is referenced by at least one allowed prompt in the category
 /// - Model supports function calling
 /// - Model supports text input modality
 ///
 /// Copied from [eligibleChatModelsForCategory].
 class EligibleChatModelsForCategoryFamily
     extends Family<AsyncValue<List<AiConfigModel>>> {
-  /// Eligible chat models for a category
+  /// Eligible chat models (category-agnostic)
   /// Criteria:
-  /// - Model id is referenced by at least one allowed prompt in the category
   /// - Model supports function calling
   /// - Model supports text input modality
   ///
   /// Copied from [eligibleChatModelsForCategory].
   const EligibleChatModelsForCategoryFamily();
 
-  /// Eligible chat models for a category
+  /// Eligible chat models (category-agnostic)
   /// Criteria:
-  /// - Model id is referenced by at least one allowed prompt in the category
   /// - Model supports function calling
   /// - Model supports text input modality
   ///
@@ -98,18 +94,16 @@ class EligibleChatModelsForCategoryFamily
   String? get name => r'eligibleChatModelsForCategoryProvider';
 }
 
-/// Eligible chat models for a category
+/// Eligible chat models (category-agnostic)
 /// Criteria:
-/// - Model id is referenced by at least one allowed prompt in the category
 /// - Model supports function calling
 /// - Model supports text input modality
 ///
 /// Copied from [eligibleChatModelsForCategory].
 class EligibleChatModelsForCategoryProvider
     extends AutoDisposeFutureProvider<List<AiConfigModel>> {
-  /// Eligible chat models for a category
+  /// Eligible chat models (category-agnostic)
   /// Criteria:
-  /// - Model id is referenced by at least one allowed prompt in the category
   /// - Model supports function calling
   /// - Model supports text input modality
   ///

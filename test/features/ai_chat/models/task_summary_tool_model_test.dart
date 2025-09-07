@@ -49,5 +49,35 @@ void main() {
       expect(back.taskId, 't1');
       expect(back.metadata?['m'], 'v');
     });
+
+    test('TaskSummaryRequest rejects non-UTC or missing Z timestamps', () {
+      // Missing trailing Z
+      final nonUtcJson1 = {
+        'start_date': '2024-01-01T00:00:00.000',
+        'end_date': '2024-01-02T00:00:00.000',
+      };
+      expect(
+        () => TaskSummaryRequest.fromJson(nonUtcJson1),
+        throwsA(isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains('ISO 8601 UTC with trailing Z'),
+        )),
+      );
+
+      // Local time with timezone offset instead of Z
+      final nonUtcJson2 = {
+        'start_date': '2024-01-01T00:00:00.000+02:00',
+        'end_date': '2024-01-01T23:59:59.999+02:00',
+      };
+      expect(
+        () => TaskSummaryRequest.fromJson(nonUtcJson2),
+        throwsA(isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains('trailing Z'),
+        )),
+      );
+    });
   });
 }

@@ -654,7 +654,7 @@ void main() {
                       function: ChatCompletionStreamMessageFunctionCall(
                         name: 'get_task_summaries',
                         arguments:
-                            '{"start_date": "2024-01-01T00:00:00.000", "end_date": "2024-01-01T23:59:59.999", "limit": 10}',
+                            '{"start_date": "2024-01-01T00:00:00.000Z", "end_date": "2024-01-01T23:59:59.999Z", "limit": 10}',
                       ),
                     ),
                   ],
@@ -836,7 +836,7 @@ void main() {
                       function: ChatCompletionStreamMessageFunctionCall(
                         name: 'get_task_summaries',
                         arguments:
-                            '{"start_date": "2024-01-01T00:00:00.000", "end_date": "2024-01-01T23:59:59.999", "limit": 10}',
+                            '{"start_date": "2024-01-01T00:00:00.000Z", "end_date": "2024-01-01T23:59:59.999Z", "limit": 10}',
                       ),
                     ),
                   ],
@@ -923,7 +923,7 @@ void main() {
                       function: ChatCompletionStreamMessageFunctionCall(
                         name: 'get_task_summaries',
                         arguments:
-                            '{"start_date": "2024-01-01T00:00:00.000", "end_date": "2024-01-01T23:59:59.999", "limit": 5}',
+                            '{"start_date": "2024-01-01T00:00:00.000Z", "end_date": "2024-01-01T23:59:59.999Z", "limit": 5}',
                       ),
                     ),
                   ],

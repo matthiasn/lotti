@@ -184,8 +184,8 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'get_task_summaries',
             arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000',
-              'end_date': '2024-01-01T23:59:59.999',
+              'start_date': '2024-01-01T00:00:00.000Z',
+              'end_date': '2024-01-01T23:59:59.999Z',
               'limit': 10,
             }),
           ),
@@ -228,8 +228,8 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'get_task_summaries',
             arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000',
-              'end_date': '2024-01-01T23:59:59.999',
+              'start_date': '2024-01-01T00:00:00.000Z',
+              'end_date': '2024-01-01T23:59:59.999Z',
               'limit': 10,
             }),
           ),
@@ -350,8 +350,8 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'get_task_summaries',
             arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000',
-              'end_date': '2024-01-02T00:00:00.000',
+              'start_date': '2024-01-01T00:00:00.000Z',
+              'end_date': '2024-01-02T00:00:00.000Z',
             }),
           ),
         );
@@ -518,7 +518,7 @@ void main() {
                       id: 'tool_1',
                       function: ChatCompletionStreamMessageFunctionCall(
                         name: 'get_task_summaries',
-                        arguments: '01-01T00:00:00.000"}',
+                        arguments: '01-01T00:00:00.000Z"}',
                       ),
                     ),
                   ],
@@ -536,7 +536,7 @@ void main() {
         expect(result.toolCalls[0].id, 'tool_1');
         expect(result.toolCalls[0].function.name, 'get_task_summaries');
         expect(result.toolCalls[0].function.arguments,
-            '{"start_date": "2024-01-01T00:00:00.000"}');
+            '{"start_date": "2024-01-01T00:00:00.000Z"}');
       });
 
       test('handles empty stream', () async {
