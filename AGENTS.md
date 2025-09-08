@@ -67,3 +67,12 @@
   - In tests, you may add line ignores for clarity (e.g., `// ignore: avoid_redundant_argument_values`).
   - In production code, fix the root cause rather than ignoring.
 - Run `dart-mcp.dart_format` to normalize formatting prior to final checks.
+
+## Misc
+- Maintain feature READMEs and update them alongside code changes.
+- Only report completion after code compiles and all tests pass; verify via analyze and test via the dart-mcp server.
+- Invest in making tests work; avoid deleting or abandoning failing tests prematurely.
+- When old and new feature versions coexist, create no dependencies from the new code to the old.
+- Uphold high standards: DRY where sensible, proper modularity, and strong testability.
+- Use `fvm` for all `flutter` commands.
+- Read `test/README.md` at session start and update it with relevant new information.

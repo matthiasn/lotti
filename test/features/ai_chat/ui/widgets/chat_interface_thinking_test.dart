@@ -219,6 +219,8 @@ void main() {
       // Send a message
       final textField = find.byType(TextField);
       await tester.enterText(textField, 'Test message');
+      // Allow input listener to rebuild trailing icon from mic -> send
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byIcon(Icons.send));
       await tester.pump();
 
@@ -341,6 +343,8 @@ void main() {
       // Send a message
       final textField = find.byType(TextField);
       await tester.enterText(textField, 'Test message');
+      // Allow input listener to rebuild trailing icon from mic -> send
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byIcon(Icons.send));
       await tester.pump();
 
@@ -411,6 +415,8 @@ void main() {
       // Send a message
       final textField = find.byType(TextField);
       await tester.enterText(textField, 'Test message');
+      // Allow input listener to rebuild trailing icon from mic -> send
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byIcon(Icons.send));
       await tester.pump();
 
