@@ -202,8 +202,13 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
     try {
       await _ampSub?.cancel();
       await _recorder!.stop();
-    } catch (_) {
-      // ignore
+    } catch (e, s) {
+      getIt<LoggingService>().captureException(
+        e,
+        stackTrace: s,
+        domain: 'ChatRecorderController',
+        subDomain: 'stopAndTranscribe.stop',
+      );
     }
 
     final filePath = _filePath;
@@ -254,10 +259,24 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
     _maxTimer?.cancel();
     try {
       await _ampSub?.cancel();
-    } catch (_) {}
+    } catch (e, s) {
+      getIt<LoggingService>().captureException(
+        e,
+        stackTrace: s,
+        domain: 'ChatRecorderController',
+        subDomain: 'cancel.ampSub',
+      );
+    }
     try {
       await _recorder?.stop();
-    } catch (_) {}
+    } catch (e, s) {
+      getIt<LoggingService>().captureException(
+        e,
+        stackTrace: s,
+        domain: 'ChatRecorderController',
+        subDomain: 'cancel.recorder',
+      );
+    }
     await _cleanupInternal();
     state = state.copyWith(status: ChatRecorderStatus.idle);
   }
@@ -275,12 +294,19 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
 
   // Normalize dBFS history to 0.05..1.0 range for UI
   List<double> getNormalizedAmplitudeHistory() {
+    const minDBFS = -80;
+    const maxDBFS = -10;
+    const rangeDBFS = maxDBFS - minDBFS; // 70
+    const minNormalized = 0.05;
+    const maxNormalized = 1;
+    const rangeNormalized = maxNormalized - minNormalized; // 0.95
+
     return state.amplitudeHistory.map((dBFS) {
-      if (dBFS <= -80) return 0.05;
-      if (dBFS >= -10) return 1.0;
-      final normalized = (dBFS + 80) / 70; // -80..-10 -> 0..1
-      final scaled = normalized * 0.95 + 0.05;
-      return scaled.clamp(0.05, 1.0);
+      if (dBFS <= minDBFS) return minNormalized; // double
+      if (dBFS >= maxDBFS) return maxNormalized.toDouble();
+      final normalized = (dBFS - minDBFS) / rangeDBFS; // -80..-10 -> 0..1
+      final scaled = normalized * rangeNormalized + minNormalized;
+      return scaled.clamp(minNormalized, maxNormalized).toDouble();
     }).toList();
   }
 

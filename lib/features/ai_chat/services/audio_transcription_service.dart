@@ -5,23 +5,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-// ignore_for_file: public_member_api_docs
 
 const _kDefaultAudioModel = 'gemini-2.5-flash';
 const _kTranscriptionPrompt = 'Transcribe the audio to natural text.';
 
+/// Service that transcribes a local audio file to text using the
+/// configured cloud inference provider and selected audio-capable model.
 class AudioTranscriptionService {
+  /// Creates an [AudioTranscriptionService] backed by Riverpod [Ref].
   AudioTranscriptionService(this.ref);
 
   final Ref ref;
 
-  /// Transcribe audio from a local file using the currently configured provider.
+  /// Transcribes audio from a local file at [filePath] to natural text.
   ///
-  /// NOTE: Uses base64 encoding as required by current API; this can be
-  /// revisited when streaming is supported.
+  /// The appropriate provider and model are resolved from persisted AI configs
+  /// by selecting an audio-capable model, preferring `gemini-2.5-flash` when
+  /// available, and then routing the request to the matching provider.
+  /// Returns the full transcription as a single concatenated string.
+  ///
+  /// Note: The audio payload is base64-encoded to match current API
+  /// requirements; this can be revisited once streaming uploads are supported.
   Future<String> transcribe(String filePath) async {
     final aiRepo = ref.read(aiConfigRepositoryProvider);
-    final models = await aiRepo.getConfigsByType(AiConfigType.model);
+    // Fetch models and providers in parallel to reduce I/O latency
+    final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
+    final providersFuture =
+        aiRepo.getConfigsByType(AiConfigType.inferenceProvider);
+    final models = await modelsFuture;
+    final providers = await providersFuture;
 
     // Find all audio-capable models across all providers
     final audioModels = models
@@ -42,8 +54,6 @@ class AudioTranscriptionService {
     );
 
     // Get the provider for the selected model
-    final providers =
-        await aiRepo.getConfigsByType(AiConfigType.inferenceProvider);
     final provider = providers
         .whereType<AiConfigInferenceProvider>()
         .firstWhere((p) => p.id == model.inferenceProviderId,

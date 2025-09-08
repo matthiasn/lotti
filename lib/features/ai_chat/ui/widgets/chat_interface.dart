@@ -781,6 +781,7 @@ class _InputArea extends ConsumerStatefulWidget {
 
 class _InputAreaState extends ConsumerState<_InputArea> {
   bool _hasText = false;
+  late final ProviderSubscription<ChatRecorderState> _transcriptSubscription;
 
   @override
   void initState() {
@@ -788,8 +789,8 @@ class _InputAreaState extends ConsumerState<_InputArea> {
     _hasText = widget.controller.text.trim().isNotEmpty;
     widget.controller.addListener(_onTextChanged);
 
-    // Listen for transcript changes
-    ref.listenManual<ChatRecorderState>(
+    // Listen for transcript changes and store the subscription
+    _transcriptSubscription = ref.listenManual<ChatRecorderState>(
       chatRecorderControllerProvider,
       (previous, next) {
         if (next.transcript != null &&
@@ -816,6 +817,7 @@ class _InputAreaState extends ConsumerState<_InputArea> {
   @override
   void dispose() {
     widget.controller.removeListener(_onTextChanged);
+    _transcriptSubscription.close();
     super.dispose();
   }
 
@@ -964,7 +966,7 @@ class _InputAreaState extends ConsumerState<_InputArea> {
     if (recState.status == ChatRecorderStatus.processing || widget.isLoading) {
       return 'Processing...';
     }
-    final hasText = widget.controller.text.trim().isNotEmpty;
+    final hasText = _hasText;
     if (recState.status == ChatRecorderStatus.recording) {
       return 'Stop and transcribe';
     }

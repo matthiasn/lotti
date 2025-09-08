@@ -291,20 +291,12 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Debug: print the widget tree to see what's actually rendered
-      // print(find.byType(Text).evaluate().map((e) => (e.widget as Text).data));
-
       // Check header elements
       expect(find.text('AI Assistant'), findsOneWidget);
-      // The session title only shows if sessionTitle.isNotEmpty - check if it's actually there
-      final titleFinder = find.text('My Test Chat');
-      if (titleFinder.evaluate().isEmpty) {
-        // If not found, the session might not be initialized properly
-        // Let's check for the default "New Chat" text instead
-        expect(find.textContaining('Chat'), findsWidgets);
-      } else {
-        expect(titleFinder, findsOneWidget);
-      }
+      // Ensure async initialization completes deterministically, then assert title
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+      expect(find.text('My Test Chat'), findsOneWidget);
       expect(find.byIcon(Icons.add_comment_outlined), findsOneWidget);
     });
 
