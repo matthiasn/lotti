@@ -4,9 +4,12 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
+import 'package:lotti/features/ai/util/gemini_config.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -15,10 +18,12 @@ part 'cloud_inference_repository.g.dart';
 class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
+        _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
         _whisperRepository = WhisperInferenceRepository(httpClient: httpClient);
 
   final Ref ref;
   final OllamaInferenceRepository _ollamaRepository;
+  final GeminiInferenceRepository _geminiRepository;
   final WhisperInferenceRepository _whisperRepository;
 
   /// Helper method to create common request parameters
@@ -115,6 +120,22 @@ class CloudInferenceRepository {
         maxCompletionTokens: maxCompletionTokens,
         provider: provider,
         tools: tools,
+      );
+    }
+
+    // For Gemini, use the native Gemini repository to enable thinking config
+    if (provider != null &&
+        provider.inferenceProviderType == InferenceProviderType.gemini) {
+      final thinking = getDefaultThinkingConfig(model);
+      return _geminiRepository.generateText(
+        prompt: prompt,
+        model: model,
+        temperature: temperature,
+        systemMessage: systemMessage,
+        maxCompletionTokens: maxCompletionTokens,
+        provider: provider,
+        tools: tools,
+        thinkingConfig: thinking,
       );
     }
 
