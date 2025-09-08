@@ -992,7 +992,7 @@ class ChatVoiceControls extends ConsumerWidget {
                 child: WaveformBars(
                   key: const ValueKey('waveform_bars'),
                   amplitudesNormalized: ref
-                      .read(chatRecorderControllerProvider.notifier)
+                      .watch(chatRecorderControllerProvider.notifier)
                       .getNormalizedAmplitudeHistory(),
                 ),
               ),

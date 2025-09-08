@@ -92,6 +92,7 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
   Directory? _tempDir;
   String? _filePath;
   bool _isStarting = false;
+  int _operationId = 0; // Incremented for each new operation to prevent races
 
   static const int _historyMax = 200; // ~10s at 50ms; UI will sample to fit
   static const int _cleanupTimeoutSeconds = 2;
@@ -137,11 +138,23 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
 
       _recorder = recorder;
 
+      // Increment operation ID for this recording session
+      final currentOpId = ++_operationId;
+
+      // Set recording status immediately after successful start
+      state = state.copyWith(
+        status: ChatRecorderStatus.recording,
+        amplitudeHistory: [], // Clear old history
+      );
+
       // Amplitude stream (throttled)
       _ampSub = recorder
           .onAmplitudeChanged(
               Duration(milliseconds: _config.amplitudeIntervalMs))
           .listen((event) {
+        // Check if this operation is still current
+        if (currentOpId != _operationId) return;
+
         final dBFS = event.current;
         final history = List<double>.from(state.amplitudeHistory)..add(dBFS);
         if (history.length > _historyMax) history.removeAt(0);
@@ -154,7 +167,10 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
       // Safety stop after configured max duration
       _maxTimer?.cancel();
       _maxTimer = Timer(Duration(seconds: _config.maxSeconds), () {
-        unawaited(stopAndTranscribe());
+        // Check if this operation is still current
+        if (currentOpId == _operationId) {
+          unawaited(stopAndTranscribe());
+        }
       });
 
       // Log start
@@ -176,6 +192,10 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
 
   Future<void> stopAndTranscribe() async {
     if (_recorder == null) return;
+
+    // Capture current operation ID
+    final currentOpId = _operationId;
+
     state = state.copyWith(status: ChatRecorderStatus.processing);
     _maxTimer?.cancel();
 
@@ -189,24 +209,33 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
     final filePath = _filePath;
     if (filePath == null) {
       await _cleanupInternal();
-      state = state.copyWith(
-        status: ChatRecorderStatus.idle,
-        error: 'No audio file available',
-        errorType: ChatRecorderErrorType.noAudioFile,
-      );
+      // Only update state if this operation is still current
+      if (currentOpId == _operationId) {
+        state = state.copyWith(
+          status: ChatRecorderStatus.idle,
+          error: 'No audio file available',
+          errorType: ChatRecorderErrorType.noAudioFile,
+        );
+      }
       return;
     }
 
     try {
       final transcript = await _transcribe(filePath);
-      state = state.copyWith(
-          status: ChatRecorderStatus.idle, transcript: transcript);
+      // Only update state if this operation is still current
+      if (currentOpId == _operationId) {
+        state = state.copyWith(
+            status: ChatRecorderStatus.idle, transcript: transcript);
+      }
     } catch (e) {
-      state = state.copyWith(
-        status: ChatRecorderStatus.idle,
-        error: 'Transcription failed: $e',
-        errorType: ChatRecorderErrorType.transcriptionFailed,
-      );
+      // Only update state if this operation is still current
+      if (currentOpId == _operationId) {
+        state = state.copyWith(
+          status: ChatRecorderStatus.idle,
+          error: 'Transcription failed: $e',
+          errorType: ChatRecorderErrorType.transcriptionFailed,
+        );
+      }
     } finally {
       await _cleanupInternal();
     }
@@ -218,6 +247,10 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
         state.status != ChatRecorderStatus.processing) {
       return;
     }
+
+    // Invalidate current operation to prevent any in-flight async work from updating state
+    _operationId++;
+
     _maxTimer?.cancel();
     try {
       await _ampSub?.cancel();

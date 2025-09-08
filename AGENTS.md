@@ -70,7 +70,7 @@
 
 ## Misc
 - Maintain feature READMEs and update them alongside code changes.
-- Only report completion after code compiles and all tests pass; verify via analyze and test vis the dart-mcp server.
+- Only report completion after code compiles and all tests pass; verify via analyze and test via the dart-mcp server.
 - Invest in making tests work; avoid deleting or abandoning failing tests prematurely.
 - When old and new feature versions coexist, create no dependencies from the new code to the old.
 - Uphold high standards: DRY where sensible, proper modularity, and strong testability.

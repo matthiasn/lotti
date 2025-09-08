@@ -117,15 +117,18 @@ void main() {
         ),
       );
 
-      final container = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byType(WaveformBars),
-              matching: find.byType(Container),
-            )
-            .first,
+      // The WaveformBars widget creates a Container with height set directly
+      // We need to check the rendered size instead of the widget property
+      final waveformBars = tester.widget<WaveformBars>(
+        find.byType(WaveformBars),
       );
-      expect(container.constraints?.maxHeight, customHeight);
+      expect(waveformBars.height, customHeight);
+
+      // Alternatively, verify the rendered size
+      final renderBox = tester.renderObject<RenderBox>(
+        find.byType(WaveformBars),
+      );
+      expect(renderBox.size.height, customHeight);
     });
 
     testWidgets('respects custom bar width and spacing', (tester) async {
