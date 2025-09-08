@@ -7,7 +7,7 @@ part of 'chat_session_controller.dart';
 // **************************************************************************
 
 String _$chatSessionControllerHash() =>
-    r'e55907b25c845d6760ec1e9d27b9c14a0b25777b';
+    r'aaed4d3c2924cba02bad864f410016ac9e3ee819';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -39,16 +39,40 @@ abstract class _$ChatSessionController
   );
 }
 
-/// See also [ChatSessionController].
+/// Riverpod controller for a single AI chat session.
+///
+/// Owns UI-facing state (messages, streaming flags, errors) and delegates
+/// sending to `ChatRepository`. Enforces explicit model selection and manages
+/// streaming placeholders for assistant messages.
+///
+/// Copied from [ChatSessionController].
 @ProviderFor(ChatSessionController)
 const chatSessionControllerProvider = ChatSessionControllerFamily();
 
-/// See also [ChatSessionController].
+/// Riverpod controller for a single AI chat session.
+///
+/// Owns UI-facing state (messages, streaming flags, errors) and delegates
+/// sending to `ChatRepository`. Enforces explicit model selection and manages
+/// streaming placeholders for assistant messages.
+///
+/// Copied from [ChatSessionController].
 class ChatSessionControllerFamily extends Family<ChatSessionUiModel> {
-  /// See also [ChatSessionController].
+  /// Riverpod controller for a single AI chat session.
+  ///
+  /// Owns UI-facing state (messages, streaming flags, errors) and delegates
+  /// sending to `ChatRepository`. Enforces explicit model selection and manages
+  /// streaming placeholders for assistant messages.
+  ///
+  /// Copied from [ChatSessionController].
   const ChatSessionControllerFamily();
 
-  /// See also [ChatSessionController].
+  /// Riverpod controller for a single AI chat session.
+  ///
+  /// Owns UI-facing state (messages, streaming flags, errors) and delegates
+  /// sending to `ChatRepository`. Enforces explicit model selection and manages
+  /// streaming placeholders for assistant messages.
+  ///
+  /// Copied from [ChatSessionController].
   ChatSessionControllerProvider call(
     String categoryId,
   ) {
@@ -81,10 +105,22 @@ class ChatSessionControllerFamily extends Family<ChatSessionUiModel> {
   String? get name => r'chatSessionControllerProvider';
 }
 
-/// See also [ChatSessionController].
+/// Riverpod controller for a single AI chat session.
+///
+/// Owns UI-facing state (messages, streaming flags, errors) and delegates
+/// sending to `ChatRepository`. Enforces explicit model selection and manages
+/// streaming placeholders for assistant messages.
+///
+/// Copied from [ChatSessionController].
 class ChatSessionControllerProvider extends AutoDisposeNotifierProviderImpl<
     ChatSessionController, ChatSessionUiModel> {
-  /// See also [ChatSessionController].
+  /// Riverpod controller for a single AI chat session.
+  ///
+  /// Owns UI-facing state (messages, streaming flags, errors) and delegates
+  /// sending to `ChatRepository`. Enforces explicit model selection and manages
+  /// streaming placeholders for assistant messages.
+  ///
+  /// Copied from [ChatSessionController].
   ChatSessionControllerProvider(
     String categoryId,
   ) : this._internal(

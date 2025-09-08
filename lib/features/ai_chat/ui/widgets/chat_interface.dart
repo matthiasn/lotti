@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
+import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_session_controller.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_sessions_controller.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
 
 /// Top-level chat UI for the AI Assistant. Renders messages, streaming
 /// placeholders, and a collapsible "reasoning" disclosure when hidden
@@ -98,6 +100,7 @@ class _ChatInterfaceState extends ConsumerState<ChatInterface> {
           canSend: sessionState.canSendMessage,
           onSendMessage: sessionController.sendMessage,
           requiresModelSelection: sessionState.selectedModelId == null,
+          categoryId: widget.categoryId,
         ),
       ],
     );
@@ -753,7 +756,7 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
-class _InputArea extends StatefulWidget {
+class _InputArea extends ConsumerStatefulWidget {
   const _InputArea({
     required this.controller,
     required this.scrollController,
@@ -761,6 +764,7 @@ class _InputArea extends StatefulWidget {
     required this.canSend,
     required this.onSendMessage,
     required this.requiresModelSelection,
+    required this.categoryId,
   });
 
   final TextEditingController controller;
@@ -769,12 +773,61 @@ class _InputArea extends StatefulWidget {
   final bool canSend;
   final ValueChanged<String> onSendMessage;
   final bool requiresModelSelection;
+  final String categoryId;
 
   @override
-  State<_InputArea> createState() => _InputAreaState();
+  ConsumerState<_InputArea> createState() => _InputAreaState();
 }
 
-class _InputAreaState extends State<_InputArea> {
+class _InputAreaState extends ConsumerState<_InputArea> {
+  bool _hasText = false;
+  late final ProviderSubscription<ChatRecorderState> _transcriptSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _hasText = widget.controller.text.trim().isNotEmpty;
+    widget.controller.addListener(_onTextChanged);
+
+    // Listen for transcript changes and store the subscription
+    _transcriptSubscription = ref.listenManual<ChatRecorderState>(
+      chatRecorderControllerProvider,
+      (previous, next) {
+        if (next.transcript != null &&
+            next.transcript != previous?.transcript) {
+          if (!mounted) return;
+          final transcript = next.transcript!.trim();
+          if (transcript.isNotEmpty) {
+            if (widget.canSend) {
+              _sendMessage(transcript);
+            } else {
+              widget.controller.text = transcript;
+              // Set cursor to end of text
+              widget.controller.selection = TextSelection.collapsed(
+                offset: widget.controller.text.length,
+              );
+            }
+          }
+          ref.read(chatRecorderControllerProvider.notifier).clearResult();
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onTextChanged);
+    _transcriptSubscription.close();
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    final v = widget.controller.text.trim().isNotEmpty;
+    if (v != _hasText) {
+      setState(() => _hasText = v);
+    }
+  }
+
   void _sendMessage([String? text]) {
     final message = text ?? widget.controller.text.trim();
     if (message.isEmpty || !widget.canSend) return;
@@ -796,6 +849,8 @@ class _InputAreaState extends State<_InputArea> {
 
   @override
   Widget build(BuildContext context) {
+    final recState = ref.watch(chatRecorderControllerProvider);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -807,54 +862,161 @@ class _InputAreaState extends State<_InputArea> {
         ),
       ),
       child: SafeArea(
+        child: (recState.status == ChatRecorderStatus.recording)
+            ? ChatVoiceControls(
+                onCancel: () =>
+                    ref.read(chatRecorderControllerProvider.notifier).cancel(),
+                onStop: () => ref
+                    .read(chatRecorderControllerProvider.notifier)
+                    .stopAndTranscribe(),
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: TextField(
+                        key: const ValueKey('chat_text_field'),
+                        controller: widget.controller,
+                        decoration: InputDecoration(
+                          hintText: widget.requiresModelSelection
+                              ? 'Select a model to start chatting'
+                              : 'Ask about your tasks and productivity...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).dividerColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).dividerColor),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                        maxLines: null,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: widget.canSend ? _sendMessage : null,
+                        enabled:
+                            recState.status != ChatRecorderStatus.processing &&
+                                widget.canSend,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  if (recState.status != ChatRecorderStatus.recording)
+                    IconButton.filled(
+                      icon: _buildTrailingIcon(
+                        isProcessing:
+                            recState.status == ChatRecorderStatus.processing,
+                      ),
+                      onPressed: _buildTrailingOnPressed(
+                        recState: recState,
+                      ),
+                      tooltip: _buildTrailingTooltip(recState: recState),
+                    ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildTrailingIcon({required bool isProcessing}) {
+    if (isProcessing || widget.isLoading) {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    final hasText = _hasText;
+    final recState = ref.read(chatRecorderControllerProvider);
+    if (recState.status == ChatRecorderStatus.recording) {
+      return const Icon(Icons.stop);
+    }
+    return hasText ? const Icon(Icons.send) : const Icon(Icons.mic);
+  }
+
+  VoidCallback? _buildTrailingOnPressed({required ChatRecorderState recState}) {
+    if (recState.status == ChatRecorderStatus.processing || widget.isLoading) {
+      return null;
+    }
+    final hasText = _hasText;
+    if (recState.status == ChatRecorderStatus.recording) {
+      return () =>
+          ref.read(chatRecorderControllerProvider.notifier).stopAndTranscribe();
+    }
+    if (hasText) {
+      return widget.canSend ? _sendMessage : null;
+    }
+    return () => ref.read(chatRecorderControllerProvider.notifier).start();
+  }
+
+  String _buildTrailingTooltip({required ChatRecorderState recState}) {
+    if (recState.status == ChatRecorderStatus.processing || widget.isLoading) {
+      return 'Processing...';
+    }
+    final hasText = _hasText;
+    if (recState.status == ChatRecorderStatus.recording) {
+      return 'Stop and transcribe';
+    }
+    if (hasText) return widget.canSend ? 'Send message' : 'Please wait...';
+    return 'Record voice message';
+  }
+}
+
+class ChatVoiceControls extends ConsumerWidget {
+  const ChatVoiceControls({
+    required this.onCancel,
+    required this.onStop,
+    super.key,
+  });
+
+  final VoidCallback onCancel;
+  final VoidCallback onStop;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): onCancel,
+      },
+      child: Focus(
+        autofocus: true,
         child: Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: widget.controller,
-                decoration: InputDecoration(
-                  hintText: widget.requiresModelSelection
-                      ? 'Select a model to start chatting'
-                      : 'Ask about your tasks and productivity...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide:
-                        BorderSide(color: Theme.of(context).dividerColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide:
-                        BorderSide(color: Theme.of(context).dividerColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: WaveformBars(
+                  key: const ValueKey('waveform_bars'),
+                  amplitudesNormalized: ref
+                      .watch(chatRecorderControllerProvider.notifier)
+                      .getNormalizedAmplitudeHistory(),
                 ),
-                maxLines: null,
-                textInputAction: TextInputAction.send,
-                onSubmitted: widget.canSend ? _sendMessage : null,
-                enabled: widget.canSend,
               ),
             ),
             const SizedBox(width: 12),
+            IconButton.outlined(
+              icon: const Icon(Icons.close),
+              tooltip: 'Cancel recording (Esc)',
+              onPressed: onCancel,
+            ),
+            const SizedBox(width: 8),
             IconButton.filled(
-              icon: widget.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.send),
-              onPressed: widget.canSend ? _sendMessage : null,
-              tooltip: widget.canSend ? 'Send message' : 'Please wait...',
+              icon: const Icon(Icons.stop),
+              tooltip: 'Stop and transcribe',
+              onPressed: onStop,
             ),
           ],
         ),

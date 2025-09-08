@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
+import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -27,11 +28,28 @@ void main() {
   });
 
   // Helper to set up test environment with adequate size
-  Future<void> setupTestWidget(WidgetTester tester, Widget child) async {
+  Future<void> setupTestWidget(
+    WidgetTester tester,
+    Widget child, {
+    List<Override> overrides = const [],
+  }) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() => tester.view.reset());
-    await tester.pumpWidget(child);
+
+    // Combine default overrides with test-specific ones
+    final allOverrides = [
+      eligibleChatModelsForCategoryProvider('test-category')
+          .overrideWith((_) async => []),
+      ...overrides,
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: allOverrides,
+        child: child,
+      ),
+    );
   }
 
   group('ChatInterface', () {
@@ -54,27 +72,34 @@ void main() {
     });
 
     testWidgets('displays empty state when no messages', (tester) async {
+      final session = ChatSession(
+        id: 'test-session',
+        title: 'New Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
       when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ));
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession('test-session'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.saveSession(any()))
+          .thenAnswer((_) async => session);
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -95,14 +120,24 @@ void main() {
           .thenAnswer((_) async => []);
       when(() => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider))
           .thenAnswer((_) async => []);
+
+      final session = ChatSession(
+        id: 'test-session',
+        title: 'New Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
       when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ));
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession('test-session'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.saveSession(any()))
+          .thenAnswer((_) async => session);
 
       await setupTestWidget(
         tester,
@@ -123,40 +158,49 @@ void main() {
       expect(find.text('No eligible models'), findsOneWidget);
     });
 
-    testWidgets('input disabled and hint when no model selected',
+    testWidgets('input disabled hint, mic active with no model selected',
         (tester) async {
+      final session = ChatSession(
+        id: 'test-session',
+        title: 'New Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [],
+        // Note: no selectedModelId to test the "no model" case
+        metadata: const {},
+      );
+
       when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ));
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession('test-session'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.saveSession(any()))
+          .thenAnswer((_) async => session);
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
       expect(find.text('Select a model to start chatting'), findsOneWidget);
-      // Send button should be disabled
-      final sendButtonFinder = find.ancestor(
-        of: find.byIcon(Icons.send),
+      // Mic is shown by default and remains active even if a model
+      // isn’t selected (recording is allowed; text send is not).
+      final micButtonFinder = find.ancestor(
+        of: find.byIcon(Icons.mic),
         matching: find.byType(IconButton),
       );
-      final send = tester.widget<IconButton>(sendButtonFinder);
-      expect(send.onPressed, isNull);
+      final mic = tester.widget<IconButton>(micButtonFinder);
+      expect(mic.onPressed, isNotNull);
     });
 
     testWidgets('error banner close hides the banner', (tester) async {
@@ -165,16 +209,14 @@ void main() {
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -197,16 +239,14 @@ void main() {
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -219,33 +259,43 @@ void main() {
     });
 
     testWidgets('displays header with session title', (tester) async {
+      final session = ChatSession(
+        id: 'test-session',
+        title: 'My Test Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
       when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'My Test Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ));
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession('test-session'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.saveSession(any()))
+          .thenAnswer((_) async => session);
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
 
       // Check header elements
       expect(find.text('AI Assistant'), findsOneWidget);
+      // Ensure async initialization completes deterministically, then assert title
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
       expect(find.text('My Test Chat'), findsOneWidget);
       expect(find.byIcon(Icons.add_comment_outlined), findsOneWidget);
     });
@@ -256,29 +306,40 @@ void main() {
         ChatMessage.assistant('I am doing well, thank you for asking!'),
       ];
 
+      final session = ChatSession(
+        id: 'test-session',
+        title: 'Chat with Messages',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: messages,
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
       when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'Chat with Messages',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: messages,
-              ));
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession('test-session'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.saveSession(any()))
+          .thenAnswer((_) async => session);
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
+      await tester.pumpAndSettle();
+
+      // Wait a bit more for async initialization
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
       // Check messages are displayed
@@ -302,20 +363,19 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: messages,
+                metadata: const {'selectedModelId': 'test-model'},
               ));
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -332,20 +392,19 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: [],
+                metadata: const {'selectedModelId': 'test-model'},
               ));
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -367,16 +426,14 @@ void main() {
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -385,7 +442,8 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Ask about your tasks and productivity...'),
           findsOneWidget);
-      expect(find.byIcon(Icons.send), findsOneWidget);
+      // Mic is shown by default when input is empty
+      expect(find.byIcon(Icons.mic), findsOneWidget);
     });
 
     testWidgets('shows error banner when error exists', (tester) async {
@@ -394,16 +452,14 @@ void main() {
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -446,22 +502,31 @@ void main() {
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
 
-      // Enter text and send message
+      // Verify mic button is shown initially
+      expect(find.byIcon(Icons.mic), findsOneWidget);
+      expect(find.byIcon(Icons.send), findsNothing);
+
+      // Enter text and wait for UI to update
       await tester.enterText(find.byType(TextField), 'Hello, AI!');
+      await tester.pump(); // Let the UI update after text entry
+
+      // Now send button should be visible
+      expect(find.byIcon(Icons.mic), findsNothing);
+      expect(find.byIcon(Icons.send), findsOneWidget);
+
+      // Tap send button
       await tester.tap(find.byIcon(Icons.send));
       await tester.pumpAndSettle();
 
@@ -506,16 +571,14 @@ void main() {
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -547,23 +610,21 @@ void main() {
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
 
       // Verify main UI elements are displayed
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.send), findsOneWidget);
+      expect(find.byIcon(Icons.mic), findsOneWidget);
       expect(find.text('AI Assistant'), findsOneWidget);
     });
 
@@ -601,22 +662,23 @@ void main() {
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
 
       await tester.pumpAndSettle();
 
       // Send a message to trigger streaming
       await tester.enterText(find.byType(TextField), 'Test message');
+      await tester.pump(); // Let UI update after text entry
+
+      // Now tap send button
       await tester.tap(find.byIcon(Icons.send));
       await tester.pump(); // Trigger the send
 
@@ -658,6 +720,8 @@ void main() {
         ProviderScope(
           overrides: [
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            eligibleChatModelsForCategoryProvider('test-category')
+                .overrideWith((_) async => []),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -734,22 +798,24 @@ void main() {
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            aiConfigRepositoryProvider.overrideWithValue(mockAiRepo),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiRepo),
+          // Override eligible models to return the test model
+          eligibleChatModelsForCategoryProvider('test-category')
+              .overrideWith((_) async => [model]),
+        ],
       );
 
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'Hi');
+      await tester.pump(); // Let UI update after text entry
       await tester.tap(find.byIcon(Icons.send));
       await tester.pump();
 
@@ -764,35 +830,134 @@ void main() {
     });
 
     testWidgets('new chat button triggers session creation', (tester) async {
+      var callCount = 0;
       when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => ChatSession(
-                id: 's-new',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: const [],
-              ));
+          .thenAnswer((_) async {
+        callCount++;
+        return ChatSession(
+          id: 's-new-$callCount',
+          title: 'New Chat $callCount',
+          createdAt: DateTime(2024),
+          lastMessageAt: DateTime(2024),
+          messages: const [],
+          metadata: const {'selectedModelId': 'test-model'},
+        );
+      });
 
       await setupTestWidget(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: ChatInterface(categoryId: 'test-category'),
-            ),
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
           ),
         ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
       );
       await tester.pumpAndSettle();
 
+      // Initial session creation should have been called
+      expect(callCount, 1);
+
+      // Tap new chat button
       await tester.tap(find.byIcon(Icons.add_comment_outlined));
       await tester.pumpAndSettle();
-      final verification = verify(
-          () => mockChatRepository.createSession(categoryId: 'test-category'));
-      expect(verification.callCount, greaterThanOrEqualTo(2));
+
+      // Another session should have been created
+      expect(callCount, 2);
+    });
+
+    testWidgets('shows mic button when input is empty', (tester) async {
+      final session = ChatSession(
+        id: 'test-session',
+        title: 'New Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
+      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession('test-session'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.saveSession(any()))
+          .thenAnswer((_) async => session);
+
+      await setupTestWidget(
+        tester,
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
+          ),
+        ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      // Mic button should be visible when input is empty
+      expect(find.byIcon(Icons.mic), findsOneWidget);
+      expect(find.byIcon(Icons.send), findsNothing);
+    });
+
+    testWidgets('shows send button when text is entered', (tester) async {
+      final session = ChatSession(
+        id: 'test-session',
+        title: 'New Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
+      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession('test-session'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.saveSession(any()))
+          .thenAnswer((_) async => session);
+
+      await setupTestWidget(
+        tester,
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
+          ),
+        ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      // Initially mic is shown
+      expect(find.byIcon(Icons.mic), findsOneWidget);
+      expect(find.byIcon(Icons.send), findsNothing);
+
+      // Enter text
+      await tester.enterText(find.byType(TextField), 'Hello');
+      await tester.pump(); // Let UI update
+
+      // Now send button should be visible
+      expect(find.byIcon(Icons.mic), findsNothing);
+      expect(find.byIcon(Icons.send), findsOneWidget);
+
+      // Clear text
+      await tester.enterText(find.byType(TextField), '');
+      await tester.pump(); // Let UI update
+
+      // Mic should be visible again
+      expect(find.byIcon(Icons.mic), findsOneWidget);
+      expect(find.byIcon(Icons.send), findsNothing);
     });
   });
 }
