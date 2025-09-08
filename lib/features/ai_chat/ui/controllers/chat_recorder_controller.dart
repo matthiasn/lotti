@@ -317,11 +317,6 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
 
   @override
   void dispose() {
-    // Reset state to avoid keeping amplitude history across sessions
-    state = const ChatRecorderState(
-      status: ChatRecorderStatus.idle,
-      amplitudeHistory: <double>[],
-    );
     // Best-effort async cleanup, don't await in dispose
     unawaited(_cleanupInternal());
     super.dispose();
