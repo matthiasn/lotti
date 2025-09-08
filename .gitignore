@@ -110,6 +110,8 @@ CLAUDE.local.md
 # Python virtual environments
 venv/
 **/venv/
+# Allow gemma-local venv to be checked in
+!services/gemma-local/venv/
 **/__pycache__/
 *.pyc
 *.pyo

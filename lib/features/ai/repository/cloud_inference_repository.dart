@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
+import 'package:lotti/features/ai/repository/gemma_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -15,11 +16,13 @@ part 'cloud_inference_repository.g.dart';
 class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
-        _whisperRepository = WhisperInferenceRepository(httpClient: httpClient);
+        _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
+        _gemmaRepository = GemmaInferenceRepository(httpClient: httpClient);
 
   final Ref ref;
   final OllamaInferenceRepository _ollamaRepository;
   final WhisperInferenceRepository _whisperRepository;
+  final GemmaInferenceRepository _gemmaRepository;
 
   /// Helper method to create common request parameters
   CreateChatCompletionRequest _createBaseRequest({
@@ -233,6 +236,8 @@ class CloudInferenceRepository {
   ///   apiKey: The API key for authentication
   ///   provider: The inference provider configuration
   ///   maxCompletionTokens: Maximum tokens for completion
+  ///   temperature: Temperature for generation (default: 0.7)
+  ///   language: Language hint for transcription
   ///   overrideClient: Optional client override for testing
   ///
   /// Returns:
@@ -245,6 +250,8 @@ class CloudInferenceRepository {
     required String apiKey,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
+    double temperature = 0.7,
+    String? language,
     OpenAIClient? overrideClient,
     List<ChatCompletionTool>? tools,
   }) {
@@ -262,6 +269,20 @@ class CloudInferenceRepository {
         baseUrl: baseUrl,
         prompt: prompt, // Optional parameter
         maxCompletionTokens: maxCompletionTokens,
+        language: language,
+      );
+    }
+
+    // For Gemma, use the dedicated repository
+    if (provider.inferenceProviderType == InferenceProviderType.gemma) {
+      return _gemmaRepository.transcribeAudio(
+        audioBase64: audioBase64,
+        model: model,
+        temperature: temperature,
+        provider: provider,
+        contextPrompt: prompt,
+        maxCompletionTokens: maxCompletionTokens,
+        language: language,
       );
     }
 
@@ -292,6 +313,7 @@ class CloudInferenceRepository {
               ),
             ],
             model: model,
+            temperature: temperature,
             maxCompletionTokens: maxCompletionTokens,
             tools: tools,
           ),
