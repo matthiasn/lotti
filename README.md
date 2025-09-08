@@ -244,6 +244,12 @@ This project uses [Buildkite](https://buildkite.com/docs/agent/v3/macos) on macO
 TestFlight on iOS and macOS, and GitHub Actions for publishing to GitHub Releases for all other
 platforms. 
 
+## TODO
+
+- **Audio Transcription Model Selection**: The audio transcription in `lib/features/ai_chat/services/audio_transcription_service.dart` needs improvements:
+  - Allow users to select from available audio-capable models or configure a preferred model (currently defaults to 'gemini-2.5-flash')
+  - ~~Support any audio-capable provider, not just Gemini~~ (Fixed: now supports any provider with audio-capable models)
+
 ## Contributions
 
 Contributions to this project are very welcome. How can you help?

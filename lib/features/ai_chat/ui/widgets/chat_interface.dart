@@ -826,10 +826,11 @@ class _InputAreaState extends ConsumerState<_InputArea> {
     final recState = ref.watch(chatRecorderControllerProvider);
 
     // Auto-consume transcript when it arrives
-    if (recState.transcript != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    ref.listen<ChatRecorderState>(chatRecorderControllerProvider,
+        (previous, next) {
+      if (next.transcript != null && next.transcript != previous?.transcript) {
         if (!mounted) return;
-        final transcript = recState.transcript!.trim();
+        final transcript = next.transcript!.trim();
         if (transcript.isNotEmpty) {
           if (widget.canSend) {
             _sendMessage(transcript);
@@ -838,8 +839,8 @@ class _InputAreaState extends ConsumerState<_InputArea> {
           }
         }
         ref.read(chatRecorderControllerProvider.notifier).clearResult();
-      });
-    }
+      }
+    });
 
     return Container(
       padding: const EdgeInsets.all(16),

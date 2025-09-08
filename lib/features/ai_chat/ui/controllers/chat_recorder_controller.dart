@@ -92,7 +92,6 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
   Directory? _tempDir;
   String? _filePath;
   bool _isStarting = false;
-  DateTime? _lastAmpUpdate;
 
   static const int _historyMax = 200; // ~10s at 50ms; UI will sample to fit
   static const int _cleanupTimeoutSeconds = 2;
@@ -139,18 +138,10 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
       _recorder = recorder;
 
       // Amplitude stream (throttled)
-      _lastAmpUpdate = DateTime.now();
       _ampSub = recorder
           .onAmplitudeChanged(
               Duration(milliseconds: _config.amplitudeIntervalMs))
           .listen((event) {
-        final now = DateTime.now();
-        final last = _lastAmpUpdate;
-        if (last != null &&
-            now.difference(last).inMilliseconds < _config.amplitudeIntervalMs) {
-          return;
-        }
-        _lastAmpUpdate = now;
         final dBFS = event.current;
         final history = List<double>.from(state.amplitudeHistory)..add(dBFS);
         if (history.length > _historyMax) history.removeAt(0);
@@ -264,22 +255,36 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
     try {
       await _ampSub?.cancel();
       _ampSub = null;
-    } catch (_) {}
+    } catch (e, s) {
+      getIt<LoggingService>().captureException(
+        e,
+        stackTrace: s,
+        domain: 'ChatRecorderController',
+        subDomain: 'cleanup.ampSub',
+      );
+    }
     try {
       await _recorder?.dispose();
-    } catch (_) {}
+    } catch (e, s) {
+      getIt<LoggingService>().captureException(
+        e,
+        stackTrace: s,
+        domain: 'ChatRecorderController',
+        subDomain: 'cleanup.recorder',
+      );
+    }
     _recorder = null;
     _maxTimer?.cancel();
     _maxTimer = null;
     try {
       if (_filePath != null) {
         final f = File(_filePath!);
-        // ignore: avoid_slow_async_io
-        final exists = await f.exists();
-        if (exists) {
+        try {
           await f.delete().timeout(
                 const Duration(seconds: _fileDeleteTimeoutSeconds),
               );
+        } on PathNotFoundException {
+          // File doesn't exist, nothing to delete
         }
       }
     } catch (e) {
@@ -292,15 +297,22 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
     }
     try {
       if (_tempDir != null) {
-        // ignore: avoid_slow_async_io
-        final exists = await _tempDir!.exists();
-        if (exists) {
+        try {
           await _tempDir!
               .delete(recursive: true)
               .timeout(const Duration(seconds: _cleanupTimeoutSeconds));
+        } on PathNotFoundException {
+          // Directory doesn't exist, nothing to delete
         }
       }
-    } catch (_) {}
+    } catch (e, s) {
+      getIt<LoggingService>().captureException(
+        e,
+        stackTrace: s,
+        domain: 'ChatRecorderController',
+        subDomain: 'cleanup.tempDir',
+      );
+    }
     _tempDir = null;
     _filePath = null;
     // Keep amplitude history so UI shows a bit of trailing bars until next start
