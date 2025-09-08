@@ -9,6 +9,7 @@ The AI Chat feature enables users to:
 - Analyze productivity patterns and achievements
 - Get AI-powered insights from their task history
 - Interact through a streamlined chat interface with real-time streaming
+- Speak instead of typing with built‑in voice input and transcription
 
 ## 🏗️ Architecture
 
@@ -26,11 +27,15 @@ lib/features/ai_chat/
 │   └── task_summary_repository.dart    # Task data retrieval
 └── ui/
     ├── controllers/                    # Riverpod state management
+    │   └── chat_recorder_controller.dart # Audio recording + state machine
     ├── models/chat_ui_models.dart      # UI-specific models
     ├── pages/chat_modal_page.dart      # Modal integration
     └── widgets/
-        ├── chat_interface.dart         # Main chat UI with reasoning disclosure
+        ├── chat_interface.dart         # Main chat UI with reasoning disclosure + voice controls
+        ├── waveform_bars.dart          # Live waveform visualization of mic input
         └── thinking_parser.dart        # Streaming-friendly reasoning parser
+├── services/
+│   └── audio_transcription_service.dart # Gemini-based audio transcription
 ```
 
 ## 💡 Key Features
@@ -46,6 +51,12 @@ lib/features/ai_chat/
 - **Streaming Markdown**: Tokens stream from providers and render incrementally as Markdown with a typing indicator
 - **Collapsible Reasoning**: Hidden “thinking” blocks are parsed and shown behind a collapsed disclosure. Multiple segments are aggregated with a subtle divider and rendered with the same Markdown widget for consistent typography.
 - **Copy Behavior**: Copying assistant messages strips hidden thinking by default.
+
+### ✅ Voice Input & Transcription
+- **One‑tap Recording**: Tap the mic to start recording; see a live waveform
+- **Accessible Controls**: Cancel (Esc shortcut) or Stop and transcribe
+- **Smart Transcription**: Uses Gemini 2.5 Flash when available; falls back to the first audio‑capable model for the configured Gemini provider
+- **Flexible Send**: If a model is selected, the transcript auto‑sends; otherwise it’s inserted into the input field for review
 
 ### ✅ Sophisticated Data Processing
 - **Complex Query Engine**: 4-step process to find work entries, resolve task relationships, and retrieve AI summaries
@@ -97,6 +108,12 @@ Complex data retrieval engine:
 - **Category Context**: Inherits selected category from tasks page for filtering
 - **Model Selection**: Required dropdown in the chat header; users must explicitly select a model before sending messages - no automatic fallback
 - **State Management**: Reactive integration with Riverpod providers
+- **Microphone UI**: Input area shows a mic button when empty; switches to waveform + Cancel/Stop controls while recording
+
+### Permissions & Platform Notes
+- **Microphone Access**: Requires microphone permission on supported platforms
+- **Temporary Files**: Audio is recorded into an app‑scoped temp directory and removed after processing or cancel
+- **Keyboard Shortcuts**: Escape key cancels recording (focus requested when controls are visible)
 
 ### Data Layer Integration
 - **JournalDb**: Direct database access for task and work entry retrieval
@@ -143,11 +160,17 @@ Comprehensive test suite covering all components:
 
 ### UI Tests
 - **ChatInterface**: Widget testing for UI components
+- **Voice Controls**: Chat input mic → waveform → cancel/stop flow with tooltips, keyboard handling, and disabled states while processing
+- **WaveformBars**: Robust rendering tests (empty, large sets, bounds, sizing, theming)
 - **ChatModalPage**: Page-level integration tests
 - **Controllers**: State management validation
 
 ### Service Tests
 - **UI Models**: Data model validation and conversion
+- **AudioTranscriptionService**: Stream aggregation, model fallback, and error conditions
+
+### Controller Tests
+- **ChatRecorderController**: Permission handling, concurrent starts, temp file lifecycle, cleanup on cancel/dispose, timeout and error surfacing, amplitude normalization
 
 ### Test Coverage Highlights
 - ✅ All business logic paths covered
@@ -166,6 +189,12 @@ Comprehensive test suite covering all components:
 4. **Natural Queries**: Ask questions in natural language about tasks
 5. **Real-time Responses**: Watch AI responses stream as formatted Markdown
 6. **Session Management**: Continue conversations or start new chats
+
+### Voice Flow
+1. **Start**: Tap the mic when the input is empty
+2. **Recording**: Waveform appears; use Cancel (or Esc) or Stop
+3. **Processing**: Spinner shows while transcribing; input disabled
+4. **Result**: Transcript is auto‑sent if a model is selected, otherwise it’s inserted into the input field
 
 ### Example Interactions
 ```
@@ -216,7 +245,7 @@ The AI Chat feature has been optimized for production use with several key perfo
   
 - **Multi-Category Support**: Enable querying across multiple categories simultaneously  
 - **Export Functionality**: Export chat conversations as markdown or PDF
-- **Voice Integration**: Add speech-to-text input and text-to-speech output
+- **Text‑to‑Speech**: Add read‑back for assistant responses
 - **Advanced Analytics**: Pattern recognition and productivity insights
 - **Task Modification**: Enable task creation and editing through chat commands
 
@@ -242,6 +271,8 @@ The AI Chat feature has been optimized for production use with several key perfo
 - **flutter_riverpod**: State management and dependency injection
 - **gpt_markdown**: Rich text rendering for AI responses
 - **mocktail**: Comprehensive testing framework
+- **record**: Cross‑platform audio capture
+- **path_provider**: App‑scoped temporary directories for audio files
 
 ### Architecture Principles
 - **Clean Architecture**: Clear separation between domain, data, and presentation layers

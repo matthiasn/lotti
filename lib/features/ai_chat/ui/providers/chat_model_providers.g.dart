@@ -30,36 +30,52 @@ class _SystemHash {
   }
 }
 
-/// Eligible chat models (category-agnostic)
+/// Eligible chat models (category-agnostic).
+///
 /// Criteria:
 /// - Model supports function calling
 /// - Model supports text input modality
+///
+/// The provider does not inspect "reasoning" capability; it is exposed by
+/// `hasReasoningModelForCategory` below for UX decisions.
 ///
 /// Copied from [eligibleChatModelsForCategory].
 @ProviderFor(eligibleChatModelsForCategory)
 const eligibleChatModelsForCategoryProvider =
     EligibleChatModelsForCategoryFamily();
 
-/// Eligible chat models (category-agnostic)
+/// Eligible chat models (category-agnostic).
+///
 /// Criteria:
 /// - Model supports function calling
 /// - Model supports text input modality
 ///
+/// The provider does not inspect "reasoning" capability; it is exposed by
+/// `hasReasoningModelForCategory` below for UX decisions.
+///
 /// Copied from [eligibleChatModelsForCategory].
 class EligibleChatModelsForCategoryFamily
     extends Family<AsyncValue<List<AiConfigModel>>> {
-  /// Eligible chat models (category-agnostic)
+  /// Eligible chat models (category-agnostic).
+  ///
   /// Criteria:
   /// - Model supports function calling
   /// - Model supports text input modality
   ///
+  /// The provider does not inspect "reasoning" capability; it is exposed by
+  /// `hasReasoningModelForCategory` below for UX decisions.
+  ///
   /// Copied from [eligibleChatModelsForCategory].
   const EligibleChatModelsForCategoryFamily();
 
-  /// Eligible chat models (category-agnostic)
+  /// Eligible chat models (category-agnostic).
+  ///
   /// Criteria:
   /// - Model supports function calling
   /// - Model supports text input modality
+  ///
+  /// The provider does not inspect "reasoning" capability; it is exposed by
+  /// `hasReasoningModelForCategory` below for UX decisions.
   ///
   /// Copied from [eligibleChatModelsForCategory].
   EligibleChatModelsForCategoryProvider call(
@@ -94,18 +110,26 @@ class EligibleChatModelsForCategoryFamily
   String? get name => r'eligibleChatModelsForCategoryProvider';
 }
 
-/// Eligible chat models (category-agnostic)
+/// Eligible chat models (category-agnostic).
+///
 /// Criteria:
 /// - Model supports function calling
 /// - Model supports text input modality
 ///
+/// The provider does not inspect "reasoning" capability; it is exposed by
+/// `hasReasoningModelForCategory` below for UX decisions.
+///
 /// Copied from [eligibleChatModelsForCategory].
 class EligibleChatModelsForCategoryProvider
     extends AutoDisposeFutureProvider<List<AiConfigModel>> {
-  /// Eligible chat models (category-agnostic)
+  /// Eligible chat models (category-agnostic).
+  ///
   /// Criteria:
   /// - Model supports function calling
   /// - Model supports text input modality
+  ///
+  /// The provider does not inspect "reasoning" capability; it is exposed by
+  /// `hasReasoningModelForCategory` below for UX decisions.
   ///
   /// Copied from [eligibleChatModelsForCategory].
   EligibleChatModelsForCategoryProvider(
