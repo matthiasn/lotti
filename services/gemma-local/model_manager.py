@@ -142,13 +142,14 @@ class GemmaModelManager:
                 self.download_status.error = str(e)
                 self.download_status.message = f"Download failed: {e}"
                 logger.error(f"Model download failed: {e}")
+                logger.error(f"Full traceback:", exc_info=True)
                 
                 yield {
-                    "status": f"Error: {e}",
+                    "status": "Error: Model download failed.",
                     "progress": 0,
                     "total": 0,
                     "completed": 0,
-                    "error": str(e)
+                    "error": "Model download failed."
                 }
                 raise
     
