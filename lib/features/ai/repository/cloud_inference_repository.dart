@@ -236,6 +236,8 @@ class CloudInferenceRepository {
   ///   apiKey: The API key for authentication
   ///   provider: The inference provider configuration
   ///   maxCompletionTokens: Maximum tokens for completion
+  ///   temperature: Temperature for generation (default: 0.7)
+  ///   language: Language hint for transcription
   ///   overrideClient: Optional client override for testing
   ///
   /// Returns:
@@ -248,6 +250,8 @@ class CloudInferenceRepository {
     required String apiKey,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
+    double temperature = 0.7,
+    String? language,
     OpenAIClient? overrideClient,
     List<ChatCompletionTool>? tools,
   }) {
@@ -265,6 +269,7 @@ class CloudInferenceRepository {
         baseUrl: baseUrl,
         prompt: prompt, // Optional parameter
         maxCompletionTokens: maxCompletionTokens,
+        language: language,
       );
     }
 
@@ -273,10 +278,11 @@ class CloudInferenceRepository {
       return _gemmaRepository.transcribeAudio(
         audioBase64: audioBase64,
         model: model,
-        temperature: 0.7,
+        temperature: temperature,
         provider: provider,
         contextPrompt: prompt,
         maxCompletionTokens: maxCompletionTokens,
+        language: language,
       );
     }
 
@@ -307,6 +313,7 @@ class CloudInferenceRepository {
               ),
             ],
             model: model,
+            temperature: temperature,
             maxCompletionTokens: maxCompletionTokens,
             tools: tools,
           ),

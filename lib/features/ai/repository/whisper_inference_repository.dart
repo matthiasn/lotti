@@ -26,6 +26,7 @@ class WhisperInferenceRepository {
   ///   baseUrl: The base URL of the local Whisper server
   ///   prompt: Optional text prompt for context (not used by Whisper)
   ///   maxCompletionTokens: Optional token limit (not used by Whisper)
+  ///   language: Optional language hint for transcription (not used by Whisper)
   ///   timeout: Optional timeout override (defaults to whisperTranscriptionTimeoutSeconds)
   ///
   /// Returns:
@@ -40,6 +41,7 @@ class WhisperInferenceRepository {
     required String baseUrl,
     String? prompt, // Made optional since it's not used
     int? maxCompletionTokens, // Already optional, not used
+    String? language, // Optional language hint (not used by Whisper)
     Duration? timeout, // Optional timeout override
   }) {
     // Validate required inputs consistently

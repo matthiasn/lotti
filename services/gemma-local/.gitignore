@@ -26,7 +26,7 @@ share/python-wheels/
 .env
 .venv
 env/
-venv/
+# venv/  # Commented out to allow sharing venv
 ENV/
 env.bak/
 venv.bak/

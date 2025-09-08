@@ -198,6 +198,8 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       apiKey: provider.apiKey,
       provider: provider,
       maxCompletionTokens: maxCompletionTokens,
+      temperature: temperature,
+      language: language,
     );
   }
 
