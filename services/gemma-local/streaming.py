@@ -67,7 +67,7 @@ class StreamGenerator:
             logger.error(f"Streaming generation error: {e}")
             logger.error(f"Full traceback:", exc_info=True)
             error_chunk = {
-                "error": str(e),
+                "error": "An internal error occurred during streaming generation.",
                 "done": True
             }
             yield f"data: {json.dumps(error_chunk)}\n\n"
@@ -168,9 +168,10 @@ class StreamGenerator:
             
         except Exception as e:
             logger.error(f"Chat streaming error: {e}")
+            logger.error(f"Full traceback:", exc_info=True)
             error_chunk = {
                 "error": {
-                    "message": str(e),
+                    "message": "An internal error occurred during chat streaming generation.",
                     "type": "generation_error",
                     "code": 500
                 }
