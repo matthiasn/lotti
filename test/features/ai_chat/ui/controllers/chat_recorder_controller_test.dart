@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_slow_async_io
+// ignore_for_file: avoid_slow_async_io, cascade_invocations, prefer_const_constructors
 import 'dart:async';
 import 'dart:io';
 
@@ -54,6 +54,53 @@ class _FakeLoggingService extends LoggingService {
   }) {}
 }
 
+class _MockLoggingService extends Mock implements LoggingService {}
+
+class _ThrowingCancelSubscription
+    implements StreamSubscription<record.Amplitude> {
+  _ThrowingCancelSubscription();
+
+  @override
+  Future<void> cancel() => Future.error(Exception('amp cancel fail'));
+
+  @override
+  bool get isPaused => false;
+
+  @override
+  void onData(void Function(record.Amplitude data)? handleData) {}
+
+  @override
+  void onDone(void Function()? handleDone) {}
+
+  @override
+  void onError(Function? handleError) {}
+
+  @override
+  void pause([Future<void>? resumeSignal]) {}
+
+  @override
+  void resume() {}
+
+  @override
+  Future<E> asFuture<E>([E? futureValue]) => Future.value(futureValue as E);
+}
+
+class _ThrowOnCancelStream extends Stream<record.Amplitude> {
+  @override
+  StreamSubscription<record.Amplitude> listen(
+    void Function(record.Amplitude event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    final sub = _ThrowingCancelSubscription();
+    // simulate immediate data then done
+    onData?.call(record.Amplitude(current: -40, max: -30));
+    onDone?.call();
+    return sub;
+  }
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(const record.RecordConfig());
@@ -78,11 +125,8 @@ void main() {
     }
   });
 
-  tearDown(() async {
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
-  });
+  // Intentionally keep LoggingService registered across tests to avoid
+  // late-dispose races during async cleanup.
 
   test('start() without permission sets errorType and message', () async {
     final mockRecorder = _MockAudioRecorder();
@@ -99,6 +143,8 @@ void main() {
               )),
     ]);
     // No need to keep provider alive for this quick path
+    final sub1 = container.listen(chatRecorderControllerProvider, (_, __) {});
+    addTearDown(sub1.close);
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
     final state = container.read(chatRecorderControllerProvider);
@@ -132,6 +178,8 @@ void main() {
     ]);
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
 
+    final sub2 = container.listen(chatRecorderControllerProvider, (_, __) {});
+    addTearDown(sub2.close);
     final controller = container.read(chatRecorderControllerProvider.notifier);
     unawaited(controller.start());
     await controller.start();
@@ -218,6 +266,8 @@ void main() {
     ]);
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
 
+    final sub3 = container.listen(chatRecorderControllerProvider, (_, __) {});
+    addTearDown(sub3.close);
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
     await controller.stopAndTranscribe();
@@ -470,5 +520,224 @@ void main() {
 
     sub.close();
     container.dispose();
+  });
+
+  test('stopAndTranscribe logs when recorder.stop throws', () async {
+    final mockLogger = _MockLoggingService();
+    if (!getIt.isRegistered<LoggingService>()) {
+      getIt.registerSingleton<LoggingService>(mockLogger);
+    } else {
+      getIt.unregister<LoggingService>();
+      getIt.registerSingleton<LoggingService>(mockLogger);
+    }
+
+    final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+    final mockRecorder = _MockAudioRecorder();
+    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+    when(() => mockRecorder.onAmplitudeChanged(any()))
+        .thenAnswer((_) => Stream<record.Amplitude>.empty());
+    when(() => mockRecorder.start(any<record.RecordConfig>(),
+        path: any(named: 'path'))).thenAnswer((invocation) async {
+      final path = invocation.namedArguments[#path] as String;
+      await File(path).create(recursive: true);
+    });
+    when(() => mockRecorder.stop()).thenThrow(Exception('stop fail'));
+
+    final container = ProviderContainer(overrides: [
+      chatRecorderControllerProvider.overrideWith((ref) {
+        ref.keepAlive();
+        return ChatRecorderController(
+          ref,
+          recorderFactory: () => mockRecorder,
+          tempDirectoryProvider: () async => baseTemp,
+          config: const ChatRecorderConfig(maxSeconds: 2),
+        );
+      }),
+      audioTranscriptionServiceProvider
+          .overrideWithValue(_MockTranscriptionService()),
+    ]);
+    addTearDown(container.dispose);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    await controller.start();
+    await controller.stopAndTranscribe();
+
+    verify(() => mockLogger.captureException(
+          any<dynamic>(),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+          domain: 'ChatRecorderController',
+          subDomain: 'stopAndTranscribe.stop',
+        )).called(1);
+  });
+
+  test('cancel logs when ampSub.cancel and recorder.stop throw', () async {
+    final mockLogger = _MockLoggingService();
+    if (!getIt.isRegistered<LoggingService>()) {
+      getIt.registerSingleton<LoggingService>(mockLogger);
+    } else {
+      getIt.unregister<LoggingService>();
+      getIt.registerSingleton<LoggingService>(mockLogger);
+    }
+
+    final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+    final mockRecorder = _MockAudioRecorder();
+    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+    // Stream that returns a subscription whose cancel throws
+    when(() => mockRecorder.onAmplitudeChanged(any()))
+        .thenAnswer((_) => _ThrowOnCancelStream());
+    when(() => mockRecorder.start(any<record.RecordConfig>(),
+        path: any(named: 'path'))).thenAnswer((invocation) async {
+      final path = invocation.namedArguments[#path] as String;
+      await File(path).create(recursive: true);
+    });
+    when(() => mockRecorder.stop()).thenThrow(Exception('stop fail'));
+
+    final container = ProviderContainer(overrides: [
+      chatRecorderControllerProvider.overrideWith((ref) {
+        ref.keepAlive();
+        return ChatRecorderController(
+          ref,
+          recorderFactory: () => mockRecorder,
+          tempDirectoryProvider: () async => baseTemp,
+          config: const ChatRecorderConfig(maxSeconds: 2),
+        );
+      }),
+      audioTranscriptionServiceProvider
+          .overrideWithValue(_MockTranscriptionService()),
+    ]);
+    addTearDown(container.dispose);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    await controller.start();
+    await controller.cancel();
+
+    verify(() => mockLogger.captureException(
+          any<dynamic>(),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+          domain: 'ChatRecorderController',
+          subDomain: 'cancel.ampSub',
+        )).called(1);
+    verify(() => mockLogger.captureException(
+          any<dynamic>(),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+          domain: 'ChatRecorderController',
+          subDomain: 'cancel.recorder',
+        )).called(1);
+  });
+
+  test('cleanup logs when file/dir are missing (PathNotFound)', () async {
+    final mockLogger = _MockLoggingService();
+    if (!getIt.isRegistered<LoggingService>()) {
+      getIt.registerSingleton<LoggingService>(mockLogger);
+    } else {
+      getIt.unregister<LoggingService>();
+      getIt.registerSingleton<LoggingService>(mockLogger);
+    }
+
+    final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+    final mockRecorder = _MockAudioRecorder();
+    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+    when(() => mockRecorder.onAmplitudeChanged(any()))
+        .thenAnswer((_) => Stream<record.Amplitude>.empty());
+    when(() => mockRecorder.start(any<record.RecordConfig>(),
+        path: any(named: 'path'))).thenAnswer((invocation) async {
+      final path = invocation.namedArguments[#path] as String;
+      final f = await File(path).create(recursive: true);
+      await f.writeAsBytes([1, 2, 3]);
+    });
+    when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+    final container = ProviderContainer(overrides: [
+      chatRecorderControllerProvider.overrideWith((ref) {
+        ref.keepAlive();
+        return ChatRecorderController(
+          ref,
+          recorderFactory: () => mockRecorder,
+          tempDirectoryProvider: () async => baseTemp,
+          config: const ChatRecorderConfig(maxSeconds: 2),
+        );
+      }),
+      audioTranscriptionServiceProvider
+          .overrideWithValue(_MockTranscriptionService()),
+    ]);
+    addTearDown(container.dispose);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    await controller.start();
+
+    // Remove the entire temp directory to trigger path-not-found during cleanup
+    final tempSubdir = Directory('${baseTemp.path}/lotti_chat_rec');
+    if (await tempSubdir.exists()) {
+      await tempSubdir.delete(recursive: true);
+    }
+
+    await controller.cancel();
+
+    // We accept either specific PathNotFound logs or the generic cleanup log,
+    // depending on platform exception types.
+    verify(() => mockLogger.captureException(
+          any<dynamic>(),
+          domain: 'ChatRecorderController',
+          subDomain: any<String>(
+              named: 'subDomain',
+              that: predicate((s) =>
+                  s == 'cleanup.fileNotFound' ||
+                  s == 'cleanup.tempDirNotFound' ||
+                  s == 'cleanup' ||
+                  s == 'cleanup.tempDir')),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        )).called(greaterThanOrEqualTo(1));
+  });
+
+  test('getNormalizedAmplitudeHistory clamps and scales as expected', () async {
+    final container = ProviderContainer(overrides: [
+      audioTranscriptionServiceProvider
+          .overrideWithValue(_MockTranscriptionService()),
+    ]);
+    addTearDown(container.dispose);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    // Inject sample dBFS values
+    controller.state = controller.state.copyWith(
+      amplitudeHistory: <double>[-100, -80, -50, -10, 0],
+    );
+
+    final normalized = controller.getNormalizedAmplitudeHistory();
+    expect(normalized.length, 5);
+    // Values below min clamp to 0.05
+    expect(normalized[0], closeTo(0.05, 1e-6));
+    // Exactly min dBFS
+    expect(normalized[1], closeTo(0.05, 1e-6));
+    // Mid-range maps between 0.05 and 1.0
+    expect(normalized[2], closeTo(0.4571428571, 1e-6));
+    // Exactly max dBFS
+    expect(normalized[3], closeTo(1.0, 1e-6));
+    // Above max clamps to 1.0
+    expect(normalized[4], closeTo(1.0, 1e-6));
+  });
+
+  test('clearResult removes transcript and error but preserves history',
+      () async {
+    final container = ProviderContainer(overrides: [
+      audioTranscriptionServiceProvider
+          .overrideWithValue(_MockTranscriptionService()),
+    ]);
+    addTearDown(container.dispose);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    controller
+      ..state = controller.state.copyWith(
+        amplitudeHistory: const <double>[0.2, 0.5],
+        transcript: 'hello world',
+        error: 'some error',
+      )
+      ..clearResult();
+    final state = container.read(chatRecorderControllerProvider);
+    expect(state.transcript, isNull);
+    expect(state.error, isNull);
+    expect(state.amplitudeHistory, equals(const <double>[0.2, 0.5]));
   });
 }

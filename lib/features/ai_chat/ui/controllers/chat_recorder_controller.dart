@@ -342,8 +342,14 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
           await f.delete().timeout(
                 const Duration(seconds: _fileDeleteTimeoutSeconds),
               );
-        } on PathNotFoundException {
-          // File doesn't exist, nothing to delete
+        } on PathNotFoundException catch (e, s) {
+          // Log and continue; file already gone
+          getIt<LoggingService>().captureException(
+            e,
+            stackTrace: s,
+            domain: 'ChatRecorderController',
+            subDomain: 'cleanup.fileNotFound',
+          );
         }
       }
     } catch (e) {
@@ -360,8 +366,14 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
           await _tempDir!
               .delete(recursive: true)
               .timeout(const Duration(seconds: _cleanupTimeoutSeconds));
-        } on PathNotFoundException {
-          // Directory doesn't exist, nothing to delete
+        } on PathNotFoundException catch (e, s) {
+          // Log and continue; directory already gone
+          getIt<LoggingService>().captureException(
+            e,
+            stackTrace: s,
+            domain: 'ChatRecorderController',
+            subDomain: 'cleanup.tempDirNotFound',
+          );
         }
       }
     } catch (e, s) {

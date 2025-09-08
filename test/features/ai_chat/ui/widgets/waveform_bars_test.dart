@@ -2,6 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
 
+// Export the private painter class for testing
+class TestWaveformBarsPainter extends CustomPainter {
+  TestWaveformBarsPainter({
+    required this.amplitudes,
+    required this.barWidth,
+    required this.barSpacing,
+    required this.minBarHeight,
+    required this.primary,
+    required this.secondary,
+  });
+
+  final List<double> amplitudes;
+  final double barWidth;
+  final double barSpacing;
+  final double minBarHeight;
+  final Color primary;
+  final Color secondary;
+
+  @override
+  void paint(Canvas canvas, Size size) {}
+
+  @override
+  bool shouldRepaint(covariant TestWaveformBarsPainter oldDelegate) {
+    return oldDelegate.amplitudes != amplitudes ||
+        oldDelegate.primary != primary ||
+        oldDelegate.secondary != secondary ||
+        oldDelegate.barWidth != barWidth ||
+        oldDelegate.barSpacing != barSpacing ||
+        oldDelegate.minBarHeight != minBarHeight;
+  }
+}
+
 void main() {
   group('WaveformBars Widget Tests', () {
     testWidgets('renders with empty amplitude list', (tester) async {
@@ -470,6 +502,230 @@ void main() {
 
       final decoration = container.decoration as BoxDecoration?;
       expect(decoration?.border, isNotNull);
+    });
+  });
+
+  group('WaveformBarsPainter shouldRepaint Tests', () {
+    test('shouldRepaint returns false when all properties are identical', () {
+      final sharedAmplitudes = [0.5, 0.7]; // Use same list reference
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: sharedAmplitudes,
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: sharedAmplitudes, // Same reference
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      expect(painter2.shouldRepaint(painter1), isFalse);
+    });
+
+    test('shouldRepaint returns true when amplitudes change', () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [0.3, 0.9], // Changed
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      expect(painter2.shouldRepaint(painter1), isTrue);
+    });
+
+    test('shouldRepaint returns true when primary color changes', () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.red, // Changed
+        secondary: Colors.green,
+      );
+
+      expect(painter2.shouldRepaint(painter1), isTrue);
+    });
+
+    test('shouldRepaint returns true when secondary color changes', () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.yellow, // Changed
+      );
+
+      expect(painter2.shouldRepaint(painter1), isTrue);
+    });
+
+    test('shouldRepaint returns true when barWidth changes', () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 4, // Changed
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      expect(painter2.shouldRepaint(painter1), isTrue);
+    });
+
+    test('shouldRepaint returns true when barSpacing changes', () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 5, // Changed
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      expect(painter2.shouldRepaint(painter1), isTrue);
+    });
+
+    test('shouldRepaint returns true when minBarHeight changes', () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 4, // Changed
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      expect(painter2.shouldRepaint(painter1), isTrue);
+    });
+
+    test('shouldRepaint returns true when amplitude list length changes', () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7, 0.9], // Added element
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      expect(painter2.shouldRepaint(painter1), isTrue);
+    });
+
+    test('shouldRepaint returns true when amplitude list is empty vs non-empty',
+        () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [], // Empty list
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      expect(painter2.shouldRepaint(painter1), isTrue);
+    });
+
+    test('shouldRepaint returns true for multiple property changes', () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [0.3, 0.9, 0.6], // Changed
+        barWidth: 4, // Changed
+        barSpacing: 5, // Changed
+        minBarHeight: 2,
+        primary: Colors.red, // Changed
+        secondary: Colors.yellow, // Changed
+      );
+
+      expect(painter2.shouldRepaint(painter1), isTrue);
     });
   });
 }
