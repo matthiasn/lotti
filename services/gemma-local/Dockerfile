@@ -26,7 +26,7 @@ RUN mkdir -p /root/.cache/gemma-local/models \
     && mkdir -p /root/.logs/gemma-local
 
 # Expose port
-EXPOSE 8000
+EXPOSE 11343
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -34,7 +34,7 @@ ENV LOG_LEVEL=INFO
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:11343/health || exit 1
 
 # Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["python", "main.py"]
