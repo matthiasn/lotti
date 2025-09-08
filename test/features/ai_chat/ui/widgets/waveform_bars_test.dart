@@ -347,7 +347,7 @@ void main() {
       expect(waveform.amplitudesNormalized.length, 3);
     });
 
-    testWidgets('handles negative amplitude values by clamping',
+    testWidgets('does not crash with invalid amplitude values',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -506,8 +506,31 @@ void main() {
   });
 
   group('WaveformBarsPainter shouldRepaint Tests', () {
-    test('shouldRepaint returns false when all properties are identical', () {
-      final sharedAmplitudes = [0.5, 0.7]; // Use same list reference
+    test('shouldRepaint returns true even when amplitude values are identical (different list instances)', () {
+      final painter1 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7],
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      final painter2 = TestWaveformBarsPainter(
+        amplitudes: [0.5, 0.7], // Different list instance with same values
+        barWidth: 2,
+        barSpacing: 3,
+        minBarHeight: 2,
+        primary: Colors.blue,
+        secondary: Colors.green,
+      );
+
+      // Should return true because lists are different instances even with same values
+      expect(painter2.shouldRepaint(painter1), isTrue);
+    });
+
+    test('shouldRepaint returns false when using same list reference', () {
+      final sharedAmplitudes = [0.5, 0.7];
       final painter1 = TestWaveformBarsPainter(
         amplitudes: sharedAmplitudes,
         barWidth: 2,
