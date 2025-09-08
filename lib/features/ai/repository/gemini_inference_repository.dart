@@ -39,19 +39,6 @@ class GeminiInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
   }) async* {
-    // Temporary: use non-streaming path for robustness while we harden the
-    // streaming parser across providers.
-    yield* _generateNonStreaming(
-      prompt: prompt,
-      model: model,
-      temperature: temperature,
-      thinkingConfig: thinkingConfig,
-      provider: provider,
-      systemMessage: systemMessage,
-      maxCompletionTokens: maxCompletionTokens,
-      tools: tools,
-    );
-    return;
     final uri = _buildStreamGenerateContentUri(
       baseUrl: provider.baseUrl,
       model: model,
@@ -143,10 +130,10 @@ class GeminiInferenceRepository {
         progressed = false;
         final start = text.indexOf('{');
         if (start == -1) break;
-        int depth = 0;
-        bool inStr = false;
-        bool esc = false;
-        int end = -1;
+        var depth = 0;
+        var inStr = false;
+        var esc = false;
+        var end = -1;
         for (int i = start; i < text.length; i++) {
           final ch = text[i];
           if (inStr) {
@@ -179,13 +166,11 @@ class GeminiInferenceRepository {
         try {
           obj = jsonDecode(objStr) as Map<String, dynamic>;
         } catch (_) {
-          malformedLines++;
           text = text.substring(end + 1);
           text = stripLeading(text);
           progressed = true;
           continue;
         }
-        linesProcessed++;
 
         // consume processed portion and strip
         text = text.substring(end + 1);
@@ -588,120 +573,4 @@ class GeminiInferenceRepository {
   // (unused helpers removed)
 }
 
-extension on GeminiInferenceRepository {
-  Stream<CreateChatCompletionStreamResponse> _generateNonStreaming({
-    required String prompt,
-    required String model,
-    required double temperature,
-    required GeminiThinkingConfig thinkingConfig,
-    required AiConfigInferenceProvider provider,
-    String? systemMessage,
-    int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-  }) async* {
-    final uri = _buildGenerateContentUri(
-      baseUrl: provider.baseUrl,
-      model: model,
-      apiKey: provider.apiKey,
-    );
-    final body = _buildRequestBody(
-      prompt: prompt,
-      temperature: temperature,
-      thinkingConfig: thinkingConfig,
-      systemMessage: systemMessage,
-      maxTokens: maxCompletionTokens,
-      tools: tools,
-    );
-
-    final resp = await _httpClient.post(
-      uri,
-      headers: const {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode(body),
-    );
-    if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      throw Exception('Gemini API error ${resp.statusCode}: ${resp.body}');
-    }
-
-    final decoded = jsonDecode(resp.body) as Map<String, dynamic>;
-    final candidates = decoded['candidates'];
-    if (candidates is! List || candidates.isEmpty) return;
-    final first = candidates.first;
-    final content = first is Map<String, dynamic> ? first['content'] : null;
-    if (content is! Map<String, dynamic>) return;
-    final parts = content['parts'];
-    if (parts is! List) return;
-
-    final isFlash = model.toLowerCase().contains('flash');
-    final thinking = StringBuffer();
-    final visible = StringBuffer();
-    ChatCompletionStreamMessageToolCallChunk? toolChunk;
-    for (final pp in parts) {
-      if (pp is! Map<String, dynamic>) continue;
-      final isThought = pp['thought'] == true;
-      final txt = pp['text'];
-      if (isThought && thinkingConfig.includeThoughts && !isFlash) {
-        if (txt is String && txt.isNotEmpty) thinking.write(txt);
-      } else if (txt is String && txt.isNotEmpty) {
-        visible.write(txt);
-      }
-      final fc = pp['functionCall'];
-      if (fc is Map<String, dynamic>) {
-        final name = fc['name']?.toString() ?? '';
-        final args = jsonEncode(fc['args'] ?? {});
-        toolChunk = ChatCompletionStreamMessageToolCallChunk(
-          index: 0,
-          id: 'tool_0',
-          function: ChatCompletionStreamMessageFunctionCall(
-            name: name,
-            arguments: args,
-          ),
-        );
-      }
-    }
-
-    if (thinking.isNotEmpty) {
-      yield CreateChatCompletionStreamResponse(
-        id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-        created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        model: model,
-        choices: [
-          ChatCompletionStreamResponseChoice(
-            index: 0,
-            delta: ChatCompletionStreamResponseDelta(
-              content: '<thinking>\n$thinking\n</thinking>\n',
-            ),
-          ),
-        ],
-      );
-    }
-    if (visible.isNotEmpty) {
-      yield CreateChatCompletionStreamResponse(
-        id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-        created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        model: model,
-        choices: [
-          ChatCompletionStreamResponseChoice(
-            index: 0,
-            delta: ChatCompletionStreamResponseDelta(content: visible.toString()),
-          ),
-        ],
-      );
-    }
-    if (toolChunk != null) {
-      yield CreateChatCompletionStreamResponse(
-        id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-        created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        model: model,
-        choices: [
-          ChatCompletionStreamResponseChoice(
-            index: 0,
-            delta: ChatCompletionStreamResponseDelta(toolCalls: [toolChunk]),
-          ),
-        ],
-      );
-    }
-  }
-}
+// no non-stream adapter

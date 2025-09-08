@@ -224,6 +224,11 @@ class ChatMessageProcessor {
     List<ChatCompletionStreamMessageToolCallChunk> toolCallDeltas,
     Map<String, StringBuffer> argumentBuffers,
   ) {
+    bool _isCompleteJson(String s) {
+      final t = s.trim();
+      return t.isNotEmpty && t.startsWith('{') && t.endsWith('}');
+    }
+
     for (final toolCallDelta in toolCallDeltas) {
       if (toolCallDelta.function != null) {
         // Use a stable deterministic id for this tool call within the stream.
@@ -244,9 +249,18 @@ class ChatMessageProcessor {
         // Initialize buffer for this tool call if needed
         argumentBuffers.putIfAbsent(toolId, StringBuffer.new);
 
-        // Append arguments to buffer
-        if (toolCallDelta.function?.arguments != null) {
-          argumentBuffers[toolId]!.write(toolCallDelta.function!.arguments);
+        // Append arguments to buffer. If both existing and incoming are
+        // complete JSON objects, replace with the latest instead of
+        // concatenating (guards against providers that resend full args).
+        final incoming = toolCallDelta.function?.arguments;
+        if (incoming != null) {
+          final buf = argumentBuffers[toolId]!;
+          final incomingStr = incoming;
+          if (_isCompleteJson(incomingStr) && _isCompleteJson(buf.toString())) {
+            argumentBuffers[toolId] = StringBuffer(incomingStr);
+          } else {
+            buf.write(incomingStr);
+          }
         }
 
         // Find or create tool call

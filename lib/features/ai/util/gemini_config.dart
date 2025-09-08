@@ -4,18 +4,11 @@ GeminiThinkingConfig getDefaultThinkingConfig(String modelId) {
   switch (modelId) {
     case 'models/gemini-2.5-flash':
     case 'gemini-2.5-flash':
-      // Flash can interleave thoughts in ways that confuse separation; default
-      // to hidden thoughts disabled for clean UX.
-      return const GeminiThinkingConfig(
-        thinkingBudget: 8192,
-        includeThoughts: false,
-      );
+      // Default: standard budget; thoughts off by default handled elsewhere.
+      return GeminiThinkingConfig.standard;
     case 'models/gemini-2.5-flash-lite':
     case 'gemini-2.5-flash-lite':
-      return const GeminiThinkingConfig(
-        thinkingBudget: 4096,
-        includeThoughts: false,
-      );
+      return const GeminiThinkingConfig(thinkingBudget: 4096);
     case 'models/gemini-2.5-pro':
     case 'gemini-2.5-pro':
       return GeminiThinkingConfig.auto; // Can't be disabled
