@@ -391,7 +391,13 @@ async def pull_model(request: ModelPullRequest):
             # Streaming progress updates
             async def generate():
                 async for progress in model_manager.download_model():
-                    yield f"data: {json.dumps(progress)}\n\n"
+                    # Sanitize error information before sending to client
+                    sanitized_progress = progress.copy()
+                    if "error" in sanitized_progress:
+                        sanitized_progress["error"] = "Model download failed."
+                    if sanitized_progress.get("status", "").startswith("Error:"):
+                        sanitized_progress["status"] = "Error: Model download failed."
+                    yield f"data: {json.dumps(sanitized_progress)}\n\n"
                 yield "data: [DONE]\n\n"
             
             return StreamingResponse(
@@ -404,11 +410,19 @@ async def pull_model(request: ModelPullRequest):
             async for progress in model_manager.download_model():
                 final_status = progress
             
+            # Sanitize final status before returning to client
+            if final_status and "error" in final_status:
+                final_status = final_status.copy()
+                final_status["error"] = "Model download failed."
+                if final_status.get("status", "").startswith("Error:"):
+                    final_status["status"] = "Error: Model download failed."
+            
             return final_status
     
     except Exception as e:
         logger.error(f"Model pull error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Full traceback:", exc_info=True)
+        raise HTTPException(status_code=500, detail="Model download failed.")
 
 
 @app.get("/v1/models")
