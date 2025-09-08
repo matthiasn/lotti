@@ -16,11 +16,7 @@ class GeminiInferenceRepository {
 
   final http.Client _httpClient;
 
-  /// Generate text from a plain prompt with optional system instruction and tools.
-  ///
-  /// This uses the non-streaming `generateContent` endpoint internally and
-  /// adapts the result into a simple two-event stream: one for content (if any)
-  /// and one for tool calls (if present).
+  /// Generate text via Gemini streaming API with thinking and function-calling support.
   Stream<CreateChatCompletionStreamResponse> generateText({
     required String prompt,
     required String model,
@@ -31,7 +27,7 @@ class GeminiInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
   }) async* {
-    final uri = _buildGenerateContentUri(
+    final uri = _buildStreamGenerateContentUri(
       baseUrl: provider.baseUrl,
       model: model,
       apiKey: provider.apiKey,
@@ -39,38 +35,144 @@ class GeminiInferenceRepository {
 
     final body = _buildRequestBody(
       prompt: prompt,
-      systemMessage: systemMessage,
       temperature: temperature,
-      maxTokens: maxCompletionTokens,
       thinkingConfig: thinkingConfig,
+      systemMessage: systemMessage,
+      maxTokens: maxCompletionTokens,
       tools: tools,
     );
 
     developer.log(
-      'Gemini generateContent request to: $uri',
+      'Gemini streamGenerateContent request to: $uri',
       name: 'GeminiInferenceRepository',
     );
 
-    final resp = await _httpClient.post(
-      uri,
-      headers: const {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body),
-    );
+    final req = http.Request('POST', uri)
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode(body);
 
-    if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      throw Exception(
-          'Gemini API error ${resp.statusCode}: ${resp.body.isNotEmpty ? resp.body : resp.reasonPhrase}');
+    final streamed = await _httpClient.send(req);
+    if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
+      final bytes = await streamed.stream.toBytes();
+      final reason = utf8.decode(bytes);
+      throw Exception('Gemini API error ${streamed.statusCode}: $reason');
     }
 
-    final decoded = jsonDecode(resp.body) as Map<String, dynamic>;
+    final idPrefix = 'gemini-${DateTime.now().millisecondsSinceEpoch}';
+    final created = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-    final contentText = _extractText(decoded);
-    final toolCalls = _extractToolCalls(decoded);
+    final thinkingBuffer = StringBuffer();
+    var inThinking = false;
 
-    // Emit content chunk if present
-    if (contentText.isNotEmpty) {
+    await for (final line in streamed.stream
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())) {
+      if (line.trim().isEmpty) continue;
+      Map<String, dynamic> obj;
+      try {
+        obj = jsonDecode(line) as Map<String, dynamic>;
+      } catch (_) {
+        // Skip malformed lines
+        continue;
+      }
+
+      // Extract parts from this chunk
+      final candidates = obj['candidates'];
+      if (candidates is! List || candidates.isEmpty) {
+        continue;
+      }
+      final first = candidates.first;
+      final content = first is Map<String, dynamic> ? first['content'] : null;
+      if (content is! Map<String, dynamic>) continue;
+      final parts = content['parts'];
+      if (parts is! List) continue;
+
+      for (final p in parts) {
+        if (p is! Map<String, dynamic>) continue;
+
+        // Accumulate thinking parts (if present and requested)
+        final thought = p['thought'];
+        if (thought is String && thinkingConfig.includeThoughts) {
+          inThinking = true;
+          thinkingBuffer.write(thought);
+          continue;
+        }
+
+        // Emit thinking block once we transition to regular text/content
+        if (inThinking) {
+          yield CreateChatCompletionStreamResponse(
+            id: idPrefix,
+            created: created,
+            model: model,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: '<thinking>\n$thinkingBuffer\n</thinking>\n',
+                ),
+              ),
+            ],
+          );
+          thinkingBuffer.clear();
+          inThinking = false;
+        }
+
+        // Regular text part
+        final text = p['text'];
+        if (text is String && text.isNotEmpty) {
+          yield CreateChatCompletionStreamResponse(
+            id: idPrefix,
+            created: created,
+            model: model,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: text),
+              ),
+            ],
+          );
+          continue;
+        }
+
+        // Function call (tool)
+        if (p['functionCall'] is Map<String, dynamic>) {
+          final fc = p['functionCall'] as Map<String, dynamic>;
+          final name = fc['name']?.toString() ?? '';
+          final argsObj = fc['args'];
+          String args;
+          try {
+            args = jsonEncode(argsObj ?? <String, dynamic>{});
+          } catch (_) {
+            args = argsObj?.toString() ?? '{}';
+          }
+          yield CreateChatCompletionStreamResponse(
+            id: idPrefix,
+            created: created,
+            model: model,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool_0',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: name,
+                        arguments: args,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+      }
+    }
+
+    // Flush any remaining thinking at end of stream
+    if (inThinking && thinkingBuffer.isNotEmpty) {
       yield CreateChatCompletionStreamResponse(
         id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
         created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -78,29 +180,16 @@ class GeminiInferenceRepository {
         choices: [
           ChatCompletionStreamResponseChoice(
             index: 0,
-            delta: ChatCompletionStreamResponseDelta(content: contentText),
-          ),
-        ],
-      );
-    }
-
-    // Emit tool call chunk if present
-    if (toolCalls.isNotEmpty) {
-      yield CreateChatCompletionStreamResponse(
-        id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-        created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        model: model,
-        choices: [
-          ChatCompletionStreamResponseChoice(
-            index: 0,
-            delta: ChatCompletionStreamResponseDelta(toolCalls: toolCalls),
+            delta: ChatCompletionStreamResponseDelta(
+              content: '<thinking>\n$thinkingBuffer\n</thinking>\n',
+            ),
           ),
         ],
       );
     }
   }
 
-  Uri _buildGenerateContentUri({
+  Uri _buildStreamGenerateContentUri({
     required String baseUrl,
     required String model,
     required String apiKey,
@@ -109,7 +198,7 @@ class GeminiInferenceRepository {
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
     final modelPath = model.startsWith('models/') ? model : 'models/$model';
-    final url = '$normalizedBase/v1beta/$modelPath:generateContent';
+    final url = '$normalizedBase/v1beta/$modelPath:streamGenerateContent';
     return Uri.parse(url)
         .replace(queryParameters: <String, String>{'key': apiKey});
   }
@@ -168,64 +257,5 @@ class GeminiInferenceRepository {
     return request;
   }
 
-  String _extractText(Map<String, dynamic> response) {
-    final list = response['candidates']
-        as List<dynamic>?; // safe cast from dynamic
-    if (list == null || list.isEmpty) return '';
-    final first = list.first;
-    final content = first is Map<String, dynamic> ? first['content'] : null;
-    if (content is! Map<String, dynamic>) return '';
-    final parts = content['parts'];
-    if (parts is! List) return '';
-
-    final buffer = StringBuffer();
-    for (final p in parts) {
-      if (p is Map<String, dynamic> && p['text'] is String) {
-        buffer.write(p['text'] as String);
-      }
-    }
-    return buffer.toString();
-  }
-
-  List<ChatCompletionStreamMessageToolCallChunk> _extractToolCalls(
-    Map<String, dynamic> response,
-  ) {
-    final result = <ChatCompletionStreamMessageToolCallChunk>[];
-    final list = response['candidates']
-        as List<dynamic>?; // safe cast from dynamic
-    if (list == null || list.isEmpty) return result;
-    final first = list.first;
-    final content = first is Map<String, dynamic> ? first['content'] : null;
-    if (content is! Map<String, dynamic>) return result;
-    final parts = content['parts'];
-    if (parts is! List) return result;
-
-    var idx = 0;
-    for (final p in parts) {
-      if (p is Map<String, dynamic> &&
-          p['functionCall'] is Map<String, dynamic>) {
-        final fc = p['functionCall'] as Map<String, dynamic>;
-        final name = fc['name']?.toString() ?? '';
-        final argsObj = fc['args'];
-        String args;
-        try {
-          args = jsonEncode(argsObj ?? <String, dynamic>{});
-        } catch (_) {
-          args = argsObj?.toString() ?? '{}';
-        }
-        result.add(
-          ChatCompletionStreamMessageToolCallChunk(
-            index: idx,
-            id: 'tool_$idx',
-            function: ChatCompletionStreamMessageFunctionCall(
-              name: name,
-              arguments: args,
-            ),
-          ),
-        );
-        idx++;
-      }
-    }
-    return result;
-  }
+  // (unused helpers removed)
 }

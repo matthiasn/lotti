@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
+import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/gemini_config.dart';
@@ -127,6 +129,11 @@ class CloudInferenceRepository {
     if (provider != null &&
         provider.inferenceProviderType == InferenceProviderType.gemini) {
       final thinking = getDefaultThinkingConfig(model);
+      final includeThoughts = ref.read(geminiIncludeThoughtsProvider);
+      final finalThinking = GeminiThinkingConfig(
+        thinkingBudget: thinking.thinkingBudget,
+        includeThoughts: includeThoughts,
+      );
       return _geminiRepository.generateText(
         prompt: prompt,
         model: model,
@@ -135,7 +142,7 @@ class CloudInferenceRepository {
         maxCompletionTokens: maxCompletionTokens,
         provider: provider,
         tools: tools,
-        thinkingConfig: thinking,
+        thinkingConfig: finalThinking,
       );
     }
 

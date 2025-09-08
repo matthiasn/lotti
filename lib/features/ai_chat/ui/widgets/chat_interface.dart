@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_session_controller.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_sessions_controller.d
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
+import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 /// Top-level chat UI for the AI Assistant. Renders messages, streaming
 /// placeholders, and a collapsible "reasoning" disclosure when hidden
@@ -154,6 +156,7 @@ class _ChatHeader extends ConsumerWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'AI Assistant',
@@ -167,10 +170,21 @@ class _ChatHeader extends ConsumerWidget {
                         ),
                     overflow: TextOverflow.ellipsis,
                   ),
+                const SizedBox(height: 6),
+                UnifiedToggleField(
+                  title: 'Show reasoning',
+                  value: ref.watch(geminiIncludeThoughtsProvider),
+                  dense: true,
+                  onChanged: isStreaming
+                      ? null
+                      : (v) => ref
+                          .read(geminiIncludeThoughtsProvider.notifier)
+                          .state = v,
+                ),
               ],
             ),
           ),
-          // Model selector
+          // Model selector + reasoning toggle
           eligibleAsync.when(
             data: (models) {
               if (models.isEmpty) {
@@ -200,7 +214,10 @@ class _ChatHeader extends ConsumerWidget {
                     for (final m in models)
                       DropdownMenuItem<String>(
                         value: m.id,
-                        child: Text(m.name, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          m.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                   ],
                 ),

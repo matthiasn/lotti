@@ -4,10 +4,16 @@ GeminiThinkingConfig getDefaultThinkingConfig(String modelId) {
   switch (modelId) {
     case 'models/gemini-2.5-flash':
     case 'gemini-2.5-flash':
-      return GeminiThinkingConfig.standard;
+      return const GeminiThinkingConfig(
+        thinkingBudget: 8192,
+        includeThoughts: true,
+      );
     case 'models/gemini-2.5-flash-lite':
     case 'gemini-2.5-flash-lite':
-      return const GeminiThinkingConfig(thinkingBudget: 4096);
+      return const GeminiThinkingConfig(
+        thinkingBudget: 4096,
+        includeThoughts: true,
+      );
     case 'models/gemini-2.5-pro':
     case 'gemini-2.5-pro':
       return GeminiThinkingConfig.auto; // Can't be disabled
