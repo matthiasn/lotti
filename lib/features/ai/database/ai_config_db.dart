@@ -63,9 +63,25 @@ class AiConfigDb extends _$AiConfigDb {
   Future<AiConfig?> getConfigById(String id) async {
     final dbEntity = await configById(id).getSingleOrNull();
     if (dbEntity == null) return null;
+    final raw = jsonDecode(dbEntity.serialized) as Map<String, dynamic>;
+    final map = Map<String, dynamic>.from(raw);
 
-    return AiConfig.fromJson(
-      jsonDecode(dbEntity.serialized) as Map<String, dynamic>,
-    );
+    // Harden parsing for legacy/unknown provider types to avoid crashes when
+    // reading single configs (e.g., during delete actions).
+    final providerType = map['inferenceProviderType'];
+    if (providerType is String) {
+      map['inferenceProviderType'] = _normalizeProviderType(providerType);
+    }
+
+    return AiConfig.fromJson(map);
+  }
+
+  String _normalizeProviderType(String value) {
+    final valid = InferenceProviderType.values.map((e) => e.name).toSet();
+    if (value == 'unknown') {
+      return InferenceProviderType.genericOpenAi.name;
+    }
+    if (valid.contains(value)) return value;
+    return InferenceProviderType.genericOpenAi.name;
   }
 }

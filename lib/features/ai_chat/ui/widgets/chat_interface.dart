@@ -132,9 +132,10 @@ class _ChatHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eligibleAsync = ref.watch(
-      eligibleChatModelsForCategoryProvider(categoryId),
-    );
+    // Fetch eligible models once in the header scope so the bottom sheet can
+    // reuse the result reliably on narrow screens.
+    final eligibleAsync =
+        ref.watch(eligibleChatModelsForCategoryProvider(categoryId));
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -170,61 +171,117 @@ class _ChatHeader extends ConsumerWidget {
                         ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                const SizedBox(height: 6),
-                UnifiedToggleField(
-                  title: 'Show reasoning',
-                  value: ref.watch(geminiIncludeThoughtsProvider),
-                  dense: true,
-                  onChanged: isStreaming
-                      ? null
-                      : (v) => ref
-                          .read(geminiIncludeThoughtsProvider.notifier)
-                          .state = v,
-                ),
               ],
             ),
           ),
-          // Model selector + reasoning toggle
-          eligibleAsync.when(
-            data: (models) {
-              if (models.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.only(right: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.info_outline, size: 16),
-                      SizedBox(width: 6),
-                      Text('No eligible models'),
-                    ],
-                  ),
-                );
-              }
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: DropdownButton<String>(
-                  value: selectedModelId,
-                  hint: const Text('Select model'),
-                  onChanged: isStreaming
-                      ? null
-                      : (v) {
-                          if (v != null) onSelectModel(v);
-                        },
-                  items: [
-                    for (final m in models)
-                      DropdownMenuItem<String>(
-                        value: m.id,
-                        child: Text(
-                          m.name,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+          // Assistant settings button for narrow screens
+          IconButton(
+            icon: const Icon(Icons.tune),
+            tooltip: 'Assistant settings',
+            onPressed: () {
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                builder: (ctx) {
+                  return SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Assistant Settings',
+                            style: Theme.of(ctx).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          // Model selector (uses pre-fetched eligibleAsync)
+                          eligibleAsync.when(
+                            data: (models) {
+                              if (models.isEmpty) {
+                                return const Text('No eligible models');
+                              }
+                              return DropdownButtonFormField<String>(
+                                initialValue: selectedModelId,
+                                decoration: const InputDecoration(
+                                  labelText: 'Model',
+                                  border: OutlineInputBorder(),
+                                ),
+                                hint: const Text('Select model'),
+                                onChanged: isStreaming
+                                    ? null
+                                    : (v) {
+                                        if (v != null) onSelectModel(v);
+                                      },
+                                items: [
+                                  for (final m in models)
+                                    DropdownMenuItem<String>(
+                                      value: m.id,
+                                      child: Text(
+                                        m.name,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                            loading: () => const SizedBox(
+                              height: 48,
+                              child: Center(
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                            error: (err, __) => Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Failed to load models'),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '$err',
+                                  style: Theme.of(ctx)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(ctx).colorScheme.error,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Reasoning toggle
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final includeThoughts =
+                                  ref.watch(geminiIncludeThoughtsProvider);
+                              return UnifiedToggleField(
+                                title: 'Show reasoning',
+                                value: includeThoughts,
+                                onChanged: isStreaming
+                                    ? null
+                                    : (v) => ref
+                                        .read(geminiIncludeThoughtsProvider
+                                            .notifier)
+                                        .state = v,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('Close'),
+                            ),
+                          ),
+                        ],
                       ),
-                  ],
-                ),
+                    ),
+                  );
+                },
               );
             },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
           ),
 
           IconButton(

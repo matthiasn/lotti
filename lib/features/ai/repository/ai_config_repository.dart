@@ -155,8 +155,27 @@ class AiConfigRepository {
 
   /// Helper method to decode JSON
   Map<String, dynamic> _jsonDecode(String serialized) {
-    return Map<String, dynamic>.from(
+    final map = Map<String, dynamic>.from(
       const JsonDecoder().convert(serialized) as Map,
     );
+
+    // Harden parsing for provider type: normalize known aliases and
+    // default to OpenAI-compatible when unknown.
+    final dynamic rawType = map['inferenceProviderType'];
+    if (rawType is String) {
+      map['inferenceProviderType'] = _normalizeProviderType(rawType);
+    }
+    return map;
+  }
+
+  // Strict normalization: if not a known enum (or 'unknown'),
+  // default to 'genericOpenAi'. No alias mapping.
+  String _normalizeProviderType(String value) {
+    final valid = InferenceProviderType.values.map((e) => e.name).toSet();
+    if (value == 'unknown') {
+      return InferenceProviderType.genericOpenAi.name;
+    }
+    if (valid.contains(value)) return value;
+    return InferenceProviderType.genericOpenAi.name;
   }
 }

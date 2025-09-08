@@ -19,18 +19,21 @@ class ParsedThinking {
 
 /// Compiled patterns and configuration for parsing thinking blocks.
 class ThinkingPatterns {
-  // HTML-like tags (case-insensitive)
-  static final RegExp htmlOpen = RegExp('<think>', caseSensitive: false);
-  static final RegExp htmlClose = RegExp('</think>', caseSensitive: false);
+  // HTML-like tags (case-insensitive) — support <think> and <thinking>
+  static final RegExp htmlOpen =
+      RegExp('<think(?:ing)?>', caseSensitive: false);
+  static final RegExp htmlClose =
+      RegExp('</think(?:ing)?>', caseSensitive: false);
 
-  // Bracket-style tags (case-insensitive)
-  static final RegExp bracketOpen = RegExp(r'\[think\]', caseSensitive: false);
+  // Bracket-style tags (case-insensitive) — support [think] and [thinking]
+  static final RegExp bracketOpen =
+      RegExp(r'\[thinking?\]', caseSensitive: false);
   static final RegExp bracketClose =
-      RegExp(r'\[/think\]', caseSensitive: false);
+      RegExp(r'\[/thinking?\]', caseSensitive: false);
 
-  // Fenced code block language (case-insensitive)
+  // Fenced code block language (case-insensitive) — support ```think and ```thinking
   static final RegExp fenceOpen =
-      RegExp(r'```[ \t]*think[ \t]*\n', caseSensitive: false);
+      RegExp(r'```[ \t]*thinking?[ \t]*\n', caseSensitive: false);
   static const String fenceClose = '```';
 }
 
@@ -129,8 +132,30 @@ ParsedThinking parseThinking(String content) {
 
     while (index < content.length) {
       final lower = content.toLowerCase();
-      final htmlIdx = lower.indexOf('<think>', index);
-      final bracketIdx = lower.indexOf('[think]', index);
+      // Find earliest of <think> or <thinking>
+      final htmlIdxThink = lower.indexOf('<think>', index);
+      final htmlIdxThinking = lower.indexOf('<thinking>', index);
+      int htmlIdx;
+      if (htmlIdxThink == -1) {
+        htmlIdx = htmlIdxThinking;
+      } else if (htmlIdxThinking == -1) {
+        htmlIdx = htmlIdxThink;
+      } else {
+        htmlIdx = htmlIdxThink < htmlIdxThinking ? htmlIdxThink : htmlIdxThinking;
+      }
+
+      // Find earliest of [think] or [thinking]
+      final bracketIdxThink = lower.indexOf('[think]', index);
+      final bracketIdxThinking = lower.indexOf('[thinking]', index);
+      int bracketIdx;
+      if (bracketIdxThink == -1) {
+        bracketIdx = bracketIdxThinking;
+      } else if (bracketIdxThinking == -1) {
+        bracketIdx = bracketIdxThink;
+      } else {
+        bracketIdx =
+            bracketIdxThink < bracketIdxThinking ? bracketIdxThink : bracketIdxThinking;
+      }
       var fenceIdx = -1;
       final iter =
           ThinkingPatterns.fenceOpen.allMatches(content, index).iterator;
@@ -172,13 +197,24 @@ ParsedThinking parseThinking(String content) {
 
       switch (type) {
         case 'html':
-          bodyStart = nextIdx + '<think>'.length;
-          closeToken = '</think>';
+          // Determine which opening tag matched at nextIdx
+          if (lower.startsWith('<thinking>', nextIdx)) {
+            bodyStart = nextIdx + '<thinking>'.length;
+            closeToken = '</thinking>';
+          } else {
+            bodyStart = nextIdx + '<think>'.length;
+            closeToken = '</think>';
+          }
           afterCloseAdvance = closeToken.length;
 
         case 'bracket':
-          bodyStart = nextIdx + '[think]'.length;
-          closeToken = '[/think]';
+          if (lower.startsWith('[thinking]', nextIdx)) {
+            bodyStart = nextIdx + '[thinking]'.length;
+            closeToken = '[/thinking]';
+          } else {
+            bodyStart = nextIdx + '[think]'.length;
+            closeToken = '[/think]';
+          }
           afterCloseAdvance = closeToken.length;
 
         case 'fence':
