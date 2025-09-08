@@ -787,6 +787,30 @@ class _InputAreaState extends ConsumerState<_InputArea> {
     super.initState();
     _hasText = widget.controller.text.trim().isNotEmpty;
     widget.controller.addListener(_onTextChanged);
+
+    // Listen for transcript changes
+    ref.listenManual<ChatRecorderState>(
+      chatRecorderControllerProvider,
+      (previous, next) {
+        if (next.transcript != null &&
+            next.transcript != previous?.transcript) {
+          if (!mounted) return;
+          final transcript = next.transcript!.trim();
+          if (transcript.isNotEmpty) {
+            if (widget.canSend) {
+              _sendMessage(transcript);
+            } else {
+              widget.controller.text = transcript;
+              // Set cursor to end of text
+              widget.controller.selection = TextSelection.collapsed(
+                offset: widget.controller.text.length,
+              );
+            }
+          }
+          ref.read(chatRecorderControllerProvider.notifier).clearResult();
+        }
+      },
+    );
   }
 
   @override
@@ -824,23 +848,6 @@ class _InputAreaState extends ConsumerState<_InputArea> {
   @override
   Widget build(BuildContext context) {
     final recState = ref.watch(chatRecorderControllerProvider);
-
-    // Auto-consume transcript when it arrives
-    ref.listen<ChatRecorderState>(chatRecorderControllerProvider,
-        (previous, next) {
-      if (next.transcript != null && next.transcript != previous?.transcript) {
-        if (!mounted) return;
-        final transcript = next.transcript!.trim();
-        if (transcript.isNotEmpty) {
-          if (widget.canSend) {
-            _sendMessage(transcript);
-          } else {
-            widget.controller.text = transcript;
-          }
-        }
-        ref.read(chatRecorderControllerProvider.notifier).clearResult();
-      }
-    });
 
     return Container(
       padding: const EdgeInsets.all(16),
