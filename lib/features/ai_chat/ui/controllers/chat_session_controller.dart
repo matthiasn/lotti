@@ -146,7 +146,8 @@ class ChatSessionController extends _$ChatSessionController {
             for (var i = maxLen; i > 0; i--) {
               final prefix = token.substring(0, i);
               if (lower.endsWith(prefix)) {
-                if (prefix.startsWith('<') || prefix.startsWith('[') ||
+                if (prefix.startsWith('<') ||
+                    prefix.startsWith('[') ||
                     prefix.startsWith('`')) {
                   if (i > carry.length) carry = s.substring(s.length - i);
                 }
@@ -159,7 +160,8 @@ class ChatSessionController extends _$ChatSessionController {
           final fullOpeners = <RegExp>[
             RegExp(r'<think(?:ing)?\s*>\s*$', caseSensitive: false),
             RegExp(r'\[(?:think|thinking)\s*\]\s*$', caseSensitive: false),
-            RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n\s*$', caseSensitive: false),
+            RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n\s*$',
+                caseSensitive: false),
           ];
           for (final re in fullOpeners) {
             if (re.hasMatch(trimmed)) return '';
@@ -175,7 +177,8 @@ class ChatSessionController extends _$ChatSessionController {
 
         void appendVisible(String text) {
           if (text.trim().isEmpty) return;
-          if (_currentStreamingMessageId == null || !_streamingIsVisibleSegment) {
+          if (_currentStreamingMessageId == null ||
+              !_streamingIsVisibleSegment) {
             _currentStreamingMessageId = const Uuid().v4();
             _streamingIsVisibleSegment = true;
             final streamingMessage = ChatMessage(
@@ -197,7 +200,8 @@ class ChatSessionController extends _$ChatSessionController {
         void appendThinkingFinal(String text) {
           if (text.trim().isEmpty) return; // Avoid empty reasoning bubbles
           // Finalize any visible streaming first
-          if (_currentStreamingMessageId != null && _streamingIsVisibleSegment) {
+          if (_currentStreamingMessageId != null &&
+              _streamingIsVisibleSegment) {
             _finalizeStreamingMessage(preserveStreamingFlags: true);
           }
           final wrapped = '<thinking>\n$text\n</thinking>';
@@ -207,7 +211,8 @@ class ChatSessionController extends _$ChatSessionController {
             role: ChatMessageRole.assistant,
             timestamp: DateTime.now(),
           );
-          state = state.copyWith(messages: [...state.messages, thinkingMessage]);
+          state =
+              state.copyWith(messages: [...state.messages, thinkingMessage]);
           _currentStreamingMessageId = null;
           _streamingIsVisibleSegment = false;
         }
@@ -219,8 +224,8 @@ class ChatSessionController extends _$ChatSessionController {
             RegExp(r'\[(?:think|thinking)\s*\]', caseSensitive: false);
         final bracketClose =
             RegExp(r'\[/(?:think|thinking)\s*\]', caseSensitive: false);
-        final fenceOpen =
-            RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n', caseSensitive: false);
+        final fenceOpen = RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n',
+            caseSensitive: false);
         final fenceClose = RegExp('```', caseSensitive: false);
 
         RegExp closeRegexFromToken(String token) {
@@ -232,8 +237,8 @@ class ChatSessionController extends _$ChatSessionController {
         var index = 0;
         while (index < chunk.length) {
           if (_inThinkingStream) {
-            final closeMatch =
-                closeRegexFromToken(_activeCloseToken).firstMatch(chunk.substring(index));
+            final closeMatch = closeRegexFromToken(_activeCloseToken)
+                .firstMatch(chunk.substring(index));
             if (closeMatch == null) {
               _thinkingStreamBuffer.write(chunk.substring(index));
               index = chunk.length;
@@ -344,12 +349,13 @@ class ChatSessionController extends _$ChatSessionController {
 
     // If the streaming message is empty or whitespace-only, drop it instead of
     // finalizing to avoid empty bubbles.
-    final existing = state.messages
-        .firstWhere((m) => m.id == _currentStreamingMessageId);
+    final existing =
+        state.messages.firstWhere((m) => m.id == _currentStreamingMessageId);
     final trimmed = existing.content.trim();
     if (trimmed.isEmpty) {
-      final without =
-          state.messages.where((m) => m.id != _currentStreamingMessageId).toList();
+      final without = state.messages
+          .where((m) => m.id != _currentStreamingMessageId)
+          .toList();
       state = state.copyWith(
         messages: without,
         isLoading: preserveStreamingFlags && state.isLoading,
