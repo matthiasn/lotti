@@ -137,13 +137,15 @@ class _ChatHeader extends ConsumerWidget {
     final eligibleAsync =
         ref.watch(eligibleChatModelsForCategoryProvider(categoryId));
 
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).appBarTheme.backgroundColor,
+        color: theme.colorScheme.surfaceContainerLow,
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
+            color: theme.dividerColor,
           ),
         ),
       ),
@@ -151,7 +153,7 @@ class _ChatHeader extends ConsumerWidget {
         children: [
           Icon(
             Icons.psychology_outlined,
-            color: Theme.of(context).colorScheme.primary,
+            color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -161,14 +163,14 @@ class _ChatHeader extends ConsumerWidget {
               children: [
                 Text(
                   'AI Assistant',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: theme.textTheme.titleMedium,
                 ),
                 if (sessionTitle.isNotEmpty)
                   Text(
                     sessionTitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
               ],
@@ -334,6 +336,8 @@ class _MessagesArea extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -343,20 +347,19 @@ class _EmptyState extends StatelessWidget {
             Icon(
               Icons.psychology_outlined,
               size: 64,
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               'Ask me about your tasks',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
               'I can help analyze your productivity patterns, summarize completed tasks, and provide insights about your work habits.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -427,8 +430,7 @@ class _MessageBubble extends StatelessWidget {
                         !message.isStreaming &&
                         // Only show overlay copy button when there's visible
                         // content (i.e., not a thinking-only message).
-                        ThinkingUtils
-                            .stripThinking(message.content)
+                        ThinkingUtils.stripThinking(message.content)
                             .trim()
                             .isNotEmpty)
                       Positioned(
@@ -802,21 +804,23 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Theme.of(context).colorScheme.errorContainer,
+      color: theme.colorScheme.errorContainer,
       child: Row(
         children: [
           Icon(
             Icons.error_outline,
-            color: Theme.of(context).colorScheme.error,
+            color: theme.colorScheme.error,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               error,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onErrorContainer,
+                color: theme.colorScheme.onErrorContainer,
               ),
             ),
           ),
@@ -825,7 +829,7 @@ class _ErrorBanner extends StatelessWidget {
             child: Text(
               'Retry',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
+                color: theme.colorScheme.error,
               ),
             ),
           ),
@@ -934,14 +938,15 @@ class _InputAreaState extends ConsumerState<_InputArea> {
   @override
   Widget build(BuildContext context) {
     final recState = ref.watch(chatRecorderControllerProvider);
+    final theme = Theme.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: theme.colorScheme.surfaceContainerLow,
         border: Border(
           top: BorderSide(
-            color: Theme.of(context).dividerColor,
+            color: theme.dividerColor,
           ),
         ),
       ),
@@ -968,18 +973,16 @@ class _InputAreaState extends ConsumerState<_InputArea> {
                               : 'Ask about your tasks and productivity...',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(
-                                color: Theme.of(context).dividerColor),
+                            borderSide: BorderSide(color: theme.dividerColor),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(
-                                color: Theme.of(context).dividerColor),
+                            borderSide: BorderSide(color: theme.dividerColor),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
+                              color: theme.colorScheme.primary,
                               width: 2,
                             ),
                           ),
