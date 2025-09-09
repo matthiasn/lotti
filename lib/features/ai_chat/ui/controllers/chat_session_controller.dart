@@ -174,14 +174,13 @@ class ChatSessionController extends _$ChatSessionController {
         }
 
         void appendVisible(String text) {
-          final t = text.trim();
-          if (t.isEmpty) return;
+          if (text.trim().isEmpty) return;
           if (_currentStreamingMessageId == null || !_streamingIsVisibleSegment) {
             _currentStreamingMessageId = const Uuid().v4();
             _streamingIsVisibleSegment = true;
             final streamingMessage = ChatMessage(
               id: _currentStreamingMessageId!,
-              content: t,
+              content: text,
               role: ChatMessageRole.assistant,
               timestamp: DateTime.now(),
               isStreaming: true,
@@ -191,7 +190,7 @@ class ChatSessionController extends _$ChatSessionController {
               streamingMessageId: _currentStreamingMessageId,
             );
           } else {
-            _updateStreamingMessage(t);
+            _updateStreamingMessage(text);
           }
         }
 
