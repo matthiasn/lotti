@@ -125,7 +125,7 @@ class GeminiInferenceRepository {
       }
 
       text = stripLeading(text);
-      bool progressed = true;
+      var progressed = true;
       while (progressed) {
         progressed = false;
         final start = text.indexOf('{');
@@ -134,12 +134,12 @@ class GeminiInferenceRepository {
         var inStr = false;
         var esc = false;
         var end = -1;
-        for (int i = start; i < text.length; i++) {
+        for (var i = start; i < text.length; i++) {
           final ch = text[i];
           if (inStr) {
             if (esc) {
               esc = false;
-            } else if (ch == '\\') {
+            } else if (ch == r'\') {
               esc = true;
             } else if (ch == '"') {
               inStr = false;

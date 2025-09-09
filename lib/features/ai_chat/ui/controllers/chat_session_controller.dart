@@ -3,6 +3,7 @@ import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -20,6 +21,10 @@ class ChatSessionController extends _$ChatSessionController {
   final LoggingService _loggingService = getIt<LoggingService>();
   static const int maxStreamingContentSize = 1000000; // 1MB cap
   String? _currentStreamingMessageId;
+  // Tracks if the current streaming message (if any) represents a visible
+  // answer segment. Thinking segments are emitted as discrete, completed
+  // messages and never streamed into.
+  bool _streamingIsVisibleSegment = false;
 
   @override
   ChatSessionUiModel build(String categoryId) {
@@ -55,9 +60,13 @@ class ChatSessionController extends _$ChatSessionController {
 
   /// Send a new message in the current session.
   ///
-  /// Adds the user message and a streaming assistant placeholder, then
-  /// updates the placeholder as deltas arrive. Finalizes the message when the
-  /// stream completes. Errors remove the placeholder and set `state.error`.
+  /// Behavior change: thinking vs. answer are emitted as separate bubbles.
+  /// - Thinking segments are added as their own assistant messages (collapsed
+  ///   reasoning UI), never merged into the visible answer bubble.
+  /// - Visible text segments stream into a dedicated assistant message.
+  /// - When the segment type switches (e.g., thinking -> visible or visible ->
+  ///   thinking), the previous streaming message is finalized and a new
+  ///   message is started for the new segment type.
   Future<void> sendMessage(String content) async {
     // Only allow sending non-empty messages when not busy.
     // Note: The UI requires model selection before this can be called.
@@ -78,21 +87,15 @@ class ChatSessionController extends _$ChatSessionController {
     final userMessage = ChatMessage.user(content);
     final updatedMessages = [...state.messages, userMessage];
 
-    // Create streaming placeholder for AI response
-    _currentStreamingMessageId = const Uuid().v4();
-    final streamingMessage = ChatMessage(
-      id: _currentStreamingMessageId!,
-      content: '',
-      role: ChatMessageRole.assistant,
-      timestamp: DateTime.now(),
-      isStreaming: true,
-    );
-
+    // Start streaming state (no assistant placeholder yet — we will create
+    // messages per segment as chunks arrive).
+    _currentStreamingMessageId = null;
+    _streamingIsVisibleSegment = false;
     state = state.copyWith(
-      messages: [...updatedMessages, streamingMessage],
+      messages: [...updatedMessages],
       isLoading: true,
       isStreaming: true,
-      streamingMessageId: _currentStreamingMessageId,
+      streamingMessageId: null,
     );
 
     try {
@@ -107,11 +110,71 @@ class ChatSessionController extends _$ChatSessionController {
         modelId: modelId,
         categoryId: categoryId,
       )) {
-        _updateStreamingMessage(chunk);
+        // Split the incoming chunk into ordered thinking/visible segments
+        final segments = splitThinkingSegments(chunk);
+        for (final seg in segments) {
+          if (seg.isThinking) {
+            // If we were streaming a visible answer, finalize it before
+            // appending a new thinking bubble.
+            if (_currentStreamingMessageId != null &&
+                _streamingIsVisibleSegment) {
+              _finalizeStreamingMessage();
+            }
+
+            // Append a completed assistant message that only contains the
+            // thinking block (wrapped so UI recognizes it as reasoning).
+            final thinkingWrapped = '<thinking>\n${seg.text}\n</thinking>';
+            final thinkingMessage = ChatMessage(
+              id: const Uuid().v4(),
+              content: thinkingWrapped,
+              role: ChatMessageRole.assistant,
+              timestamp: DateTime.now(),
+            );
+            state = state.copyWith(
+              messages: [...state.messages, thinkingMessage],
+            );
+            // Ensure no active streaming message is tracked.
+            _currentStreamingMessageId = null;
+            _streamingIsVisibleSegment = false;
+          } else {
+            // Visible text segment: stream into a dedicated assistant message.
+            if (_currentStreamingMessageId == null ||
+                !_streamingIsVisibleSegment) {
+              // Start a new streaming assistant message for visible content.
+              _currentStreamingMessageId = const Uuid().v4();
+              _streamingIsVisibleSegment = true;
+              final streamingMessage = ChatMessage(
+                id: _currentStreamingMessageId!,
+                content: seg.text,
+                role: ChatMessageRole.assistant,
+                timestamp: DateTime.now(),
+                isStreaming: true,
+              );
+              state = state.copyWith(
+                messages: [...state.messages, streamingMessage],
+                streamingMessageId: _currentStreamingMessageId,
+              );
+            } else {
+              // Append to existing visible streaming message.
+              _updateStreamingMessage(seg.text);
+            }
+          }
+        }
       }
 
-      // Finalize the streaming message
-      _finalizeStreamingMessage();
+      // Finalize any remaining visible streaming message
+      if (_currentStreamingMessageId != null && _streamingIsVisibleSegment) {
+        _finalizeStreamingMessage();
+      }
+      // Ensure global streaming flags are cleared even if we ended on a
+      // thinking segment (no active streaming message to finalize).
+      if (state.isLoading || state.isStreaming) {
+        state = state.copyWith(
+          isLoading: false,
+          isStreaming: false,
+          streamingMessageId: null,
+        );
+      }
 
       // Save the updated session to the repository
       await _saveCurrentSession();
@@ -156,7 +219,7 @@ class ChatSessionController extends _$ChatSessionController {
   }
 
   /// Finalize the streaming assistant message (mark as completed).
-  void _finalizeStreamingMessage() {
+  void _finalizeStreamingMessage({bool preserveStreamingFlags = false}) {
     if (_currentStreamingMessageId == null) return;
 
     final updatedMessages = state.messages.map((msg) {
@@ -168,8 +231,8 @@ class ChatSessionController extends _$ChatSessionController {
 
     state = state.copyWith(
       messages: updatedMessages,
-      isLoading: false,
-      isStreaming: false,
+      isLoading: preserveStreamingFlags && state.isLoading,
+      isStreaming: preserveStreamingFlags && state.isStreaming,
     );
 
     _currentStreamingMessageId = null;

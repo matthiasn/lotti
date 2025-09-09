@@ -511,17 +511,17 @@ class _MessageContent extends StatelessWidget {
     }
 
     if (!isUser) {
-      // Parse assistant content for hidden thinking blocks and render a
-      // collapsible reasoning section similar to popular chat UIs.
-      final parsed = parseThinking(message.content);
+      // Split into ordered segments and render each as its own section. This
+      // keeps multiple thinking/visible sections distinct in the transcript.
+      final segments = splitThinkingSegments(message.content);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if ((parsed.thinking ?? '').isNotEmpty)
-            _ThinkingDisclosure(thinking: parsed.thinking!),
-          SelectionArea(
-            child: GptMarkdown(parsed.visible),
-          ),
+          for (final seg in segments)
+            if (seg.isThinking)
+              _ThinkingDisclosure(thinking: seg.text)
+            else
+              SelectionArea(child: GptMarkdown(seg.text)),
         ],
       );
     }
@@ -572,22 +572,22 @@ class _StreamingContent extends StatelessWidget {
       );
     }
 
-    final parsed = parseThinking(content);
-
+    final segments = splitThinkingSegments(content);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!isUser && (parsed.thinking ?? '').isNotEmpty)
-          _ThinkingDisclosure(thinking: parsed.thinking!),
-        if (isUser)
-          SelectionArea(
-            child: DefaultTextStyle.merge(
-              style: TextStyle(color: theme.colorScheme.onPrimary),
-              child: GptMarkdown(parsed.visible),
-            ),
-          )
-        else if (parsed.visible.isNotEmpty)
-          GptMarkdown(parsed.visible),
+        for (final seg in segments)
+          if (seg.isThinking)
+            _ThinkingDisclosure(thinking: seg.text)
+          else if (isUser)
+            SelectionArea(
+              child: DefaultTextStyle.merge(
+                style: TextStyle(color: theme.colorScheme.onPrimary),
+                child: GptMarkdown(seg.text),
+              ),
+            )
+          else
+            GptMarkdown(seg.text),
         const SizedBox(height: 20),
         _TypingIndicator(isUser: isUser),
       ],
