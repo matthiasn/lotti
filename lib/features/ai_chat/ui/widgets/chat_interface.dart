@@ -142,10 +142,10 @@ class _ChatHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
+        color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.92),
         border: Border(
           bottom: BorderSide(
-            color: theme.dividerColor,
+            color: theme.colorScheme.outlineVariant,
           ),
         ),
       ),
@@ -382,11 +382,25 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = message.role == ChatMessageRole.user;
     final theme = Theme.of(context);
+    final isAssistant = message.role == ChatMessageRole.assistant;
+
+    bool isThinkingOnlyMessage(String content) {
+      try {
+        final segments = splitThinkingSegments(content);
+        if (segments.isEmpty) return false;
+        return segments.every((s) => s.isThinking);
+      } catch (_) {
+        return false;
+      }
+    }
+
+    final hideTimestamp =
+        isAssistant && !message.isStreaming && isThinkingOnlyMessage(message.content);
 
     // Add asymmetric horizontal margins to differentiate roles visually.
     return Padding(
       padding: EdgeInsets.only(
-        bottom: 16,
+        bottom: hideTimestamp ? 8 : 16,
         left: isUser ? 20 : 0,
         right: isUser ? 0 : 20,
       ),
@@ -401,23 +415,65 @@ class _MessageBubble extends StatelessWidget {
                   isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                          horizontal: 18, vertical: 14),
                       decoration: BoxDecoration(
                         color: isUser
                             ? theme.colorScheme.primary
-                            : theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(20),
-                          topRight: const Radius.circular(20),
-                          bottomLeft: isUser
-                              ? const Radius.circular(20)
-                              : const Radius.circular(4),
-                          bottomRight: isUser
-                              ? const Radius.circular(4)
-                              : const Radius.circular(20),
+                            : theme.colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.98),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          if (!isUser)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.10),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
+                            ),
+                          if (!isUser)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.10),
+                              blurRadius: 3,
+                              offset: const Offset(0, 1),
+                            ),
+                          if (isUser)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          if (isUser)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          if (isUser)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                        ],
+                        border: Border.all(
+                          color: isUser
+                              ? theme.colorScheme.primary
+                                  .withValues(alpha: 0.16)
+                              : theme.colorScheme.outlineVariant
+                                  .withValues(alpha: 0.18),
+                        ),
+                      ),
+                      foregroundDecoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: isUser
+                              ? theme.colorScheme.onPrimary
+                                  .withValues(alpha: 0.10)
+                              : theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.06),
                         ),
                       ),
                       child: _MessageContent(
@@ -426,21 +482,38 @@ class _MessageBubble extends StatelessWidget {
                         theme: theme,
                       ),
                     ),
+                    if (isUser)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(18),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.10),
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 0.7],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     if (!isUser &&
                         !message.isStreaming &&
-                        // Only show overlay copy button when there's visible
-                        // content (i.e., not a thinking-only message).
-                        ThinkingUtils.stripThinking(message.content)
+                        ThinkingUtils
+                            .stripThinking(message.content)
                             .trim()
                             .isNotEmpty)
                       Positioned(
-                        top: 4,
-                        right: 4,
-                        child: IconButton(
-                          tooltip: 'Copy assistant message',
-                          icon: const Icon(Icons.copy, size: 16),
-                          onPressed: () async {
-                            // Strip hidden thinking when copying assistant content
+                        top: -10,
+                        right: -10,
+                        child: _BubbleCornerAction(
+                          tooltip: 'Copy',
+                          icon: Icons.copy,
+                          onTap: () async {
                             final text =
                                 ThinkingUtils.stripThinking(message.content);
                             await Clipboard.setData(ClipboardData(text: text));
@@ -451,26 +524,21 @@ class _MessageBubble extends StatelessWidget {
                               );
                             }
                           },
-                          constraints: const BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
                         ),
                       ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _MessageTimestamp(
-                      timestamp: message.timestamp,
-                      isUser: isUser,
-                    ),
-                  ],
-                ),
+                if (!hideTimestamp)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _MessageTimestamp(
+                        timestamp: message.timestamp,
+                        isUser: isUser,
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -635,10 +703,15 @@ class _ThinkingDisclosureState extends State<_ThinkingDisclosure> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      _expanded ? Icons.expand_less : Icons.expand_more,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 170),
+                      curve: Curves.easeOut,
+                      child: Icon(
+                        Icons.expand_more,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Text(_expanded ? 'Hide reasoning' : 'Show reasoning',
@@ -660,10 +733,18 @@ class _ThinkingDisclosureState extends State<_ThinkingDisclosure> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: theme.colorScheme.outlineVariant,
+                    color: theme.colorScheme.outlineVariant
+                        .withValues(alpha: 0.24),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.10),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: SelectionArea(
                   // Render reasoning using the same markdown widget as the
@@ -711,6 +792,40 @@ class _TypingIndicator extends StatefulWidget {
 
   @override
   State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _BubbleCornerAction extends StatelessWidget {
+  const _BubbleCornerAction({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHigh,
+        elevation: 2,
+        shape: const CircleBorder(),
+        shadowColor: Colors.black.withValues(alpha: 0.3),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(icon, size: 16, color: theme.colorScheme.onSurface),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _TypingIndicatorState extends State<_TypingIndicator>
@@ -971,13 +1086,20 @@ class _InputAreaState extends ConsumerState<_InputArea> {
                           hintText: widget.requiresModelSelection
                               ? 'Select a model to start chatting'
                               : 'Ask about your tasks and productivity...',
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerHigh
+                              .withValues(alpha: 0.85),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: theme.dividerColor),
+                            borderSide: BorderSide(
+                                color: theme.colorScheme.outline
+                                    .withValues(alpha: 0.10)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: theme.dividerColor),
+                            borderSide: BorderSide(
+                                color: theme.colorScheme.outline
+                                    .withValues(alpha: 0.10)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
@@ -1031,7 +1153,9 @@ class _InputAreaState extends ConsumerState<_InputArea> {
     if (recState.status == ChatRecorderStatus.recording) {
       return const Icon(Icons.stop);
     }
-    return hasText ? const Icon(Icons.send) : const Icon(Icons.mic);
+    if (hasText) return const Icon(Icons.send);
+    if (widget.requiresModelSelection) return const Icon(Icons.tune);
+    return const Icon(Icons.mic);
   }
 
   VoidCallback? _buildTrailingOnPressed({required ChatRecorderState recState}) {
@@ -1045,6 +1169,15 @@ class _InputAreaState extends ConsumerState<_InputArea> {
     }
     if (hasText) {
       return widget.canSend ? _sendMessage : null;
+    }
+    if (widget.requiresModelSelection) {
+      return () {
+        showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          builder: (ctx) => _ModelSelectorSheet(categoryId: widget.categoryId),
+        );
+      };
     }
     return () => ref.read(chatRecorderControllerProvider.notifier).start();
   }
@@ -1104,6 +1237,89 @@ class ChatVoiceControls extends ConsumerWidget {
               icon: const Icon(Icons.stop),
               tooltip: 'Stop and transcribe',
               onPressed: onStop,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Simple model selector sheet reused from header behavior
+class _ModelSelectorSheet extends ConsumerWidget {
+  const _ModelSelectorSheet({required this.categoryId});
+  final String categoryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eligibleAsync =
+        ref.watch(eligibleChatModelsForCategoryProvider(categoryId));
+    final sessionController =
+        ref.read(chatSessionControllerProvider(categoryId).notifier);
+    final sessionState =
+        ref.watch(chatSessionControllerProvider(categoryId));
+    final isStreaming = sessionState.isStreaming;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Assistant Settings',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            eligibleAsync.when(
+              data: (models) {
+                if (models.isEmpty) {
+                  return const Text('No eligible models');
+                }
+                return DropdownButtonFormField<String>(
+                  initialValue: sessionState.selectedModelId,
+                  decoration: const InputDecoration(
+                    labelText: 'Model',
+                    border: OutlineInputBorder(),
+                  ),
+                  hint: const Text('Select model'),
+                  onChanged: isStreaming
+                      ? null
+                      : (v) async {
+                          if (v != null) await sessionController.setModel(v);
+                        },
+                  items: [
+                    for (final m in models)
+                      DropdownMenuItem<String>(
+                        value: m.id,
+                        child: Text(m.name, overflow: TextOverflow.ellipsis),
+                      ),
+                  ],
+                );
+              },
+              loading: () => const SizedBox(
+                height: 48,
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+              error: (err, __) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Failed to load models'),
+                  const SizedBox(height: 8),
+                  Text('$err',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: Theme.of(context).colorScheme.error)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
             ),
           ],
         ),
