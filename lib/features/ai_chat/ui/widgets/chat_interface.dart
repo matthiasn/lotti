@@ -78,11 +78,26 @@ class _ChatInterfaceState extends ConsumerState<ChatInterface> {
           onSelectModel: sessionController.setModel,
         ),
 
-        // Messages area
+        // Messages area with a background gradient that always fills
         Expanded(
-          child: _MessagesArea(
-            messages: sessionState.messages,
-            scrollController: _scrollController,
+          child: ShaderMask(
+            shaderCallback: (Rect rect) {
+              return const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0x03000000), // slight top sheen
+                  Color(0x00000000),
+                  Color(0x06000000), // bottom depth
+                ],
+                stops: [0.0, 0.6, 1.0],
+              ).createShader(rect);
+            },
+            blendMode: BlendMode.srcOver,
+            child: _MessagesArea(
+              messages: sessionState.messages,
+              scrollController: _scrollController,
+            ),
           ),
         ),
 
@@ -180,7 +195,6 @@ class _ChatHeader extends ConsumerWidget {
             onPressed: () {
               showDialog<void>(
                 context: context,
-                barrierDismissible: true,
                 barrierColor: Colors.black.withValues(alpha: 0.32),
                 builder: (ctx) => Dialog(
                   backgroundColor: Colors.transparent,

@@ -263,7 +263,7 @@ void main() {
       expect(chatInterfaceWidget.categoryId, equals(categoryId));
     });
 
-    testWidgets('uses SizedBox with 80% screen height constraint',
+    testWidgets('uses SizedBox with 85% screen height constraint',
         (tester) async {
       final state = JournalPageState(
         match: '',
@@ -320,7 +320,7 @@ void main() {
       // Get screen height
       final screenHeight =
           MediaQuery.of(tester.element(find.byType(ChatModalPage))).size.height;
-      final expectedHeight = screenHeight * 0.8;
+      final expectedHeight = screenHeight * 0.85;
 
       expect(sizedBox.height, equals(expectedHeight));
     });
