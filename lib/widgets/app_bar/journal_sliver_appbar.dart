@@ -173,7 +173,7 @@ class AiChatIcon extends StatelessWidget {
             context: context,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
-            barrierColor: Colors.black.withValues(alpha: 0.32),
+            barrierColor: Colors.black.withValues(alpha: 0.7),
             builder: (BuildContext modalContext) {
               return MultiBlocProvider(
                 providers: [

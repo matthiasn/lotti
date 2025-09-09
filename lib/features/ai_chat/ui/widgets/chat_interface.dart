@@ -299,8 +299,9 @@ class _MessageBubble extends StatelessWidget {
       }
     }
 
-    final hideTimestamp =
-        isAssistant && !message.isStreaming && isThinkingOnlyMessage(message.content);
+    final hideTimestamp = isAssistant &&
+        !message.isStreaming &&
+        isThinkingOnlyMessage(message.content);
 
     // Add asymmetric horizontal margins to differentiate roles visually.
     return Padding(
@@ -408,8 +409,7 @@ class _MessageBubble extends StatelessWidget {
                       ),
                     if (!isUser &&
                         !message.isStreaming &&
-                        ThinkingUtils
-                            .stripThinking(message.content)
+                        ThinkingUtils.stripThinking(message.content)
                             .trim()
                             .isNotEmpty)
                       Positioned(
@@ -1079,8 +1079,7 @@ class _InputAreaState extends ConsumerState<_InputArea> {
       return () {
         showDialog<void>(
           context: context,
-          barrierDismissible: true,
-          barrierColor: Colors.black.withValues(alpha: 0.32),
+          barrierColor: Colors.black.withValues(alpha: 0.7),
           builder: (ctx) => Dialog(
             backgroundColor: Colors.transparent,
             insetPadding: const EdgeInsets.all(16),
@@ -1167,150 +1166,146 @@ class _AssistantSettingsSheet extends ConsumerWidget {
         ref.watch(eligibleChatModelsForCategoryProvider(categoryId));
     final sessionController =
         ref.read(chatSessionControllerProvider(categoryId).notifier);
-    final sessionState =
-        ref.watch(chatSessionControllerProvider(categoryId));
+    final sessionState = ref.watch(chatSessionControllerProvider(categoryId));
     final isStreaming = sessionState.isStreaming;
     final includeThoughts = ref.watch(geminiIncludeThoughtsProvider);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.98),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant,
+    // Important: Do not wrap with full-screen Center/SafeArea here, or the
+    // dialog's barrier won't receive outside taps. Return only the card-sized
+    // panel so taps outside hit the barrier (barrierDismissible works).
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 680),
+      child: Container(
+        decoration: BoxDecoration(
+          color:
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.98),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
+              ),
+              const SizedBox(height: 12),
+              // Header row
+              Row(
+                children: [
+                  Icon(Icons.tune, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Assistant Settings',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              const SizedBox(height: 12),
+              // Model selector
+              eligibleAsync.when(
+                data: (models) {
+                  if (models.isEmpty) {
+                    return const Text('No eligible models');
+                  }
+                  return DropdownButtonFormField<String>(
+                    initialValue: sessionState.selectedModelId,
+                    decoration: InputDecoration(
+                      labelText: 'Model',
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHigh
+                          .withValues(alpha: 0.92),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    hint: const Text('Select model'),
+                    onChanged: isStreaming
+                        ? null
+                        : (v) async {
+                            if (v != null) await sessionController.setModel(v);
+                          },
+                    items: [
+                      for (final m in models)
+                        DropdownMenuItem<String>(
+                          value: m.id,
+                          child: Text(m.name, overflow: TextOverflow.ellipsis),
+                        ),
+                    ],
+                  );
+                },
+                loading: () => const SizedBox(
+                  height: 48,
+                  child:
+                      Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                ),
+                error: (err, __) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Drag handle
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.outlineVariant,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Header row
-                    Row(
-                      children: [
-                        Icon(Icons.tune, color: theme.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Assistant Settings',
-                            style: theme.textTheme.titleMedium,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          tooltip: 'Close',
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Model selector
-                    eligibleAsync.when(
-              data: (models) {
-                if (models.isEmpty) {
-                  return const Text('No eligible models');
-                }
-                return DropdownButtonFormField<String>(
-                  initialValue: sessionState.selectedModelId,
-                  decoration: InputDecoration(
-                    labelText: 'Model',
-                    filled: true,
-                    fillColor:
-                        theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.92),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.primary,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  hint: const Text('Select model'),
-                  onChanged: isStreaming
-                      ? null
-                      : (v) async {
-                          if (v != null) await sessionController.setModel(v);
-                        },
-                  items: [
-                    for (final m in models)
-                      DropdownMenuItem<String>(
-                        value: m.id,
-                        child: Text(m.name, overflow: TextOverflow.ellipsis),
-                      ),
-                  ],
-                );
-              },
-              loading: () => const SizedBox(
-                height: 48,
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-              ),
-              error: (err, __) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Failed to load models'),
-                  const SizedBox(height: 8),
-                  Text('$err',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.error)),
-                ],
-              ),
-            ),
-                    const SizedBox(height: 16),
-                    // Reasoning toggle
-                    UnifiedToggleField(
-                      title: 'Show reasoning',
-                      value: includeThoughts,
-                      onChanged: isStreaming
-                          ? null
-                          : (v) => ref
-                              .read(geminiIncludeThoughtsProvider.notifier)
-                              .state = v,
-                    ),
+                    const Text('Failed to load models'),
                     const SizedBox(height: 8),
+                    Text('$err',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: theme.colorScheme.error)),
                   ],
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+              // Reasoning toggle
+              UnifiedToggleField(
+                title: 'Show reasoning',
+                value: includeThoughts,
+                onChanged: isStreaming
+                    ? null
+                    : (v) => ref
+                        .read(geminiIncludeThoughtsProvider.notifier)
+                        .state = v,
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
         ),
       ),
