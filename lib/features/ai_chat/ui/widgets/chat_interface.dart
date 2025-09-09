@@ -97,6 +97,7 @@ class _ChatInterfaceState extends ConsumerState<ChatInterface> {
             child: _MessagesArea(
               messages: sessionState.messages,
               scrollController: _scrollController,
+              showTypingIndicator: sessionState.isStreaming,
             ),
           ),
         ),
@@ -226,26 +227,51 @@ class _MessagesArea extends StatelessWidget {
   const _MessagesArea({
     required this.messages,
     required this.scrollController,
+    required this.showTypingIndicator,
   });
 
   final List<ChatMessage> messages;
   final ScrollController scrollController;
+  final bool showTypingIndicator;
 
   @override
   Widget build(BuildContext context) {
     if (messages.isEmpty) {
-      return _EmptyState();
+      return Stack(
+        children: [
+          const Positioned.fill(child: _EmptyState()),
+          if (showTypingIndicator)
+            const Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: Row(
+                children: [
+                  _TypingIndicator(isUser: false),
+                ],
+              ),
+            ),
+        ],
+      );
     }
 
+    final itemCount = messages.length + (showTypingIndicator ? 1 : 0);
     return ListView.builder(
       controller: scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: messages.length,
+      itemCount: itemCount,
       itemBuilder: (context, index) {
-        final message = messages[index];
-        return _MessageBubble(
-          message: message,
-          key: ValueKey(message.id),
+        if (index < messages.length) {
+          final message = messages[index];
+          return _MessageBubble(
+            message: message,
+            key: ValueKey(message.id),
+          );
+        }
+        // Trailing typing indicator row at bottom of list
+        return const Padding(
+          padding: EdgeInsets.only(top: 4, bottom: 8),
+          child: _TypingIndicator(isUser: false),
         );
       },
     );
@@ -253,6 +279,7 @@ class _MessagesArea extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
+  const _EmptyState();
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -580,8 +607,6 @@ class _StreamingContent extends StatelessWidget {
             )
           else
             GptMarkdown(seg.text),
-        const SizedBox(height: 20),
-        _TypingIndicator(isUser: isUser),
       ],
     );
   }
