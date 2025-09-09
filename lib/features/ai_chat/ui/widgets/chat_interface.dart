@@ -134,9 +134,6 @@ class _ChatHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Fetch eligible models once in the header scope so the bottom sheet can
     // reuse the result reliably on narrow screens.
-    final eligibleAsync =
-        ref.watch(eligibleChatModelsForCategoryProvider(categoryId));
-
     final theme = Theme.of(context);
 
     return Container(
@@ -181,107 +178,15 @@ class _ChatHeader extends ConsumerWidget {
             icon: const Icon(Icons.tune),
             tooltip: 'Assistant settings',
             onPressed: () {
-              showModalBottomSheet<void>(
+              showDialog<void>(
                 context: context,
-                isScrollControlled: true,
-                builder: (ctx) {
-                  return SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Assistant Settings',
-                            style: Theme.of(ctx).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 12),
-                          // Model selector (uses pre-fetched eligibleAsync)
-                          eligibleAsync.when(
-                            data: (models) {
-                              if (models.isEmpty) {
-                                return const Text('No eligible models');
-                              }
-                              return DropdownButtonFormField<String>(
-                                initialValue: selectedModelId,
-                                decoration: const InputDecoration(
-                                  labelText: 'Model',
-                                  border: OutlineInputBorder(),
-                                ),
-                                hint: const Text('Select model'),
-                                onChanged: isStreaming
-                                    ? null
-                                    : (v) {
-                                        if (v != null) onSelectModel(v);
-                                      },
-                                items: [
-                                  for (final m in models)
-                                    DropdownMenuItem<String>(
-                                      value: m.id,
-                                      child: Text(
-                                        m.name,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                ],
-                              );
-                            },
-                            loading: () => const SizedBox(
-                              height: 48,
-                              child: Center(
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            ),
-                            error: (err, __) => Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Failed to load models'),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '$err',
-                                  style: Theme.of(ctx)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(ctx).colorScheme.error,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Reasoning toggle
-                          Consumer(
-                            builder: (context, ref, _) {
-                              final includeThoughts =
-                                  ref.watch(geminiIncludeThoughtsProvider);
-                              return UnifiedToggleField(
-                                title: 'Show reasoning',
-                                value: includeThoughts,
-                                onChanged: isStreaming
-                                    ? null
-                                    : (v) => ref
-                                        .read(geminiIncludeThoughtsProvider
-                                            .notifier)
-                                        .state = v,
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(),
-                              child: const Text('Close'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                barrierDismissible: true,
+                barrierColor: Colors.black.withValues(alpha: 0.32),
+                builder: (ctx) => Dialog(
+                  backgroundColor: Colors.transparent,
+                  insetPadding: const EdgeInsets.all(16),
+                  child: _AssistantSettingsSheet(categoryId: categoryId),
+                ),
               );
             },
           ),
@@ -1172,10 +1077,15 @@ class _InputAreaState extends ConsumerState<_InputArea> {
     }
     if (widget.requiresModelSelection) {
       return () {
-        showModalBottomSheet<void>(
+        showDialog<void>(
           context: context,
-          isScrollControlled: true,
-          builder: (ctx) => _ModelSelectorSheet(categoryId: widget.categoryId),
+          barrierDismissible: true,
+          barrierColor: Colors.black.withValues(alpha: 0.32),
+          builder: (ctx) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(16),
+            child: _AssistantSettingsSheet(categoryId: widget.categoryId),
+          ),
         );
       };
     }
@@ -1246,12 +1156,13 @@ class ChatVoiceControls extends ConsumerWidget {
 }
 
 // Simple model selector sheet reused from header behavior
-class _ModelSelectorSheet extends ConsumerWidget {
-  const _ModelSelectorSheet({required this.categoryId});
+class _AssistantSettingsSheet extends ConsumerWidget {
+  const _AssistantSettingsSheet({required this.categoryId});
   final String categoryId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final eligibleAsync =
         ref.watch(eligibleChatModelsForCategoryProvider(categoryId));
     final sessionController =
@@ -1259,27 +1170,100 @@ class _ModelSelectorSheet extends ConsumerWidget {
     final sessionState =
         ref.watch(chatSessionControllerProvider(categoryId));
     final isStreaming = sessionState.isStreaming;
+    final includeThoughts = ref.watch(geminiIncludeThoughtsProvider);
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Assistant Settings',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            eligibleAsync.when(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.98),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.outlineVariant,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Header row
+                    Row(
+                      children: [
+                        Icon(Icons.tune, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Assistant Settings',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: 'Close',
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Model selector
+                    eligibleAsync.when(
               data: (models) {
                 if (models.isEmpty) {
                   return const Text('No eligible models');
                 }
                 return DropdownButtonFormField<String>(
                   initialValue: sessionState.selectedModelId,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Model',
-                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor:
+                        theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.92),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
                   ),
                   hint: const Text('Select model'),
                   onChanged: isStreaming
@@ -1306,22 +1290,28 @@ class _ModelSelectorSheet extends ConsumerWidget {
                   const Text('Failed to load models'),
                   const SizedBox(height: 8),
                   Text('$err',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: Theme.of(context).colorScheme.error)),
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: theme.colorScheme.error)),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
+                    const SizedBox(height: 16),
+                    // Reasoning toggle
+                    UnifiedToggleField(
+                      title: 'Show reasoning',
+                      value: includeThoughts,
+                      onChanged: isStreaming
+                          ? null
+                          : (v) => ref
+                              .read(geminiIncludeThoughtsProvider.notifier)
+                              .state = v,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
