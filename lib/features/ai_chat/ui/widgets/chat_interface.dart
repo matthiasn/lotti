@@ -155,10 +155,10 @@ class _ChatHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.92),
+        color: theme.colorScheme.surfaceContainerLow,
         border: Border(
           bottom: BorderSide(
-            color: theme.colorScheme.outlineVariant,
+            color: theme.dividerColor,
           ),
         ),
       ),

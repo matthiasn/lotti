@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,17 +75,7 @@ class ChatModalPage extends ConsumerWidget {
                   maxWidth: 880,
                   maxHeight: MediaQuery.of(context).size.height * 0.85,
                 ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: theme.colorScheme.outlineVariant
-                            .withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ),
-                  child: innerContent,
-                ),
+                child: innerContent,
               ),
             ),
           ),
@@ -168,11 +159,15 @@ class _AmbientPulseBorderState extends State<_AmbientPulseBorder>
             theme.colorScheme.primary.withValues(alpha: overlayAlpha);
         // Reduced halo size and intensity
         final glow1Blur = widget.isActive ? (6.0 + 10.0 * sine) : 0.0; // 6–16
-        final glow1Spread = widget.isActive ? (0.5 + 1.5 * sine) : 0.0; // 0.5–2.0
-        final glow1Alpha = widget.isActive ? (0.18 + 0.10 * sine) : 0.0; // 0.18–0.28
+        final glow1Spread =
+            widget.isActive ? (0.5 + 1.5 * sine) : 0.0; // 0.5–2.0
+        final glow1Alpha =
+            widget.isActive ? (0.1 + 0.1 * sine) : 0.0; // 0.18–0.28
         final glow2Blur = widget.isActive ? (3.0 + 7.0 * sine) : 0.0; // 3–10
-        final glow2Spread = widget.isActive ? (0.25 + 0.75 * sine) : 0.0; // 0.25–1.0
-        final glow2Alpha = widget.isActive ? (0.10 + 0.06 * sine) : 0.0; // 0.10–0.16
+        final glow2Spread =
+            widget.isActive ? (0.25 + 0.75 * sine) : 0.0; // 0.25–1.0
+        final glow2Alpha =
+            widget.isActive ? (0.10 + 0.06 * sine) : 0.0; // 0.10–0.16
 
         return Container(
           decoration: BoxDecoration(
