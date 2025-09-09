@@ -397,29 +397,67 @@ class _MessageBubble extends StatelessWidget {
               crossAxisAlignment:
                   isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isUser
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(20),
-                      topRight: const Radius.circular(20),
-                      bottomLeft: isUser
-                          ? const Radius.circular(20)
-                          : const Radius.circular(4),
-                      bottomRight: isUser
-                          ? const Radius.circular(4)
-                          : const Radius.circular(20),
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isUser
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(20),
+                          topRight: const Radius.circular(20),
+                          bottomLeft: isUser
+                              ? const Radius.circular(20)
+                              : const Radius.circular(4),
+                          bottomRight: isUser
+                              ? const Radius.circular(4)
+                              : const Radius.circular(20),
+                        ),
+                      ),
+                      child: _MessageContent(
+                        message: message,
+                        isUser: isUser,
+                        theme: theme,
+                      ),
                     ),
-                  ),
-                  child: _MessageContent(
-                    message: message,
-                    isUser: isUser,
-                    theme: theme,
-                  ),
+                    if (!isUser &&
+                        !message.isStreaming &&
+                        // Only show overlay copy button when there's visible
+                        // content (i.e., not a thinking-only message).
+                        ThinkingUtils
+                            .stripThinking(message.content)
+                            .trim()
+                            .isNotEmpty)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: IconButton(
+                          tooltip: 'Copy assistant message',
+                          icon: const Icon(Icons.copy, size: 16),
+                          onPressed: () async {
+                            // Strip hidden thinking when copying assistant content
+                            final text =
+                                ThinkingUtils.stripThinking(message.content);
+                            await Clipboard.setData(ClipboardData(text: text));
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Copied to clipboard')),
+                              );
+                            }
+                          },
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -429,8 +467,6 @@ class _MessageBubble extends StatelessWidget {
                       timestamp: message.timestamp,
                       isUser: isUser,
                     ),
-                    const SizedBox(width: 8),
-                    _CopyMessageButton(message: message),
                   ],
                 ),
               ],
@@ -442,40 +478,7 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-class _CopyMessageButton extends StatelessWidget {
-  const _CopyMessageButton({required this.message});
-
-  final ChatMessage message;
-
-  @override
-  Widget build(BuildContext context) {
-    final isAssistant = message.role == ChatMessageRole.assistant;
-    return IconButton(
-      tooltip: isAssistant ? 'Copy assistant message' : 'Copy message',
-      icon: const Icon(Icons.copy, size: 16),
-      onPressed: () async {
-        // For assistant messages, prefer copying the full raw content without
-        // any hidden thinking blocks.
-        var text = message.content;
-        if (isAssistant) {
-          // Strip thinking via shared utility.
-          text = ThinkingUtils.stripThinking(text);
-        }
-        await Clipboard.setData(ClipboardData(text: text));
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Copied to clipboard')),
-          );
-        }
-      },
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      padding: EdgeInsets.zero,
-      visualDensity: VisualDensity.compact,
-    );
-  }
-
-  // Thinking stripping handled by ThinkingUtils
-}
+// Removed old copy button in favor of in-bubble actions.
 
 class _MessageContent extends StatelessWidget {
   const _MessageContent({
@@ -640,27 +643,6 @@ class _ThinkingDisclosureState extends State<_ThinkingDisclosure> {
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         )),
-                    const SizedBox(width: 8),
-                    Semantics(
-                      label: 'Copy reasoning',
-                      child: IconButton(
-                        tooltip: 'Copy reasoning',
-                        icon: const Icon(Icons.copy, size: 16),
-                        onPressed: () async {
-                          await Clipboard.setData(
-                              ClipboardData(text: widget.thinking));
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Reasoning copied')),
-                            );
-                          }
-                        },
-                        constraints:
-                            const BoxConstraints(minWidth: 32, minHeight: 32),
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -669,21 +651,49 @@ class _ThinkingDisclosureState extends State<_ThinkingDisclosure> {
         ),
         if (_expanded) ...[
           const SizedBox(height: 20),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant,
+          Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant,
+                  ),
+                ),
+                child: SelectionArea(
+                  // Render reasoning using the same markdown widget as the
+                  // visible response to ensure consistent typography and spacing.
+                  child: GptMarkdown(widget.thinking),
+                ),
               ),
-            ),
-            child: SelectionArea(
-              // Render reasoning using the same markdown widget as the
-              // visible response to ensure consistent typography and spacing.
-              child: GptMarkdown(widget.thinking),
-            ),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Semantics(
+                  label: 'Copy reasoning',
+                  child: IconButton(
+                    tooltip: 'Copy reasoning',
+                    icon: const Icon(Icons.copy, size: 16),
+                    onPressed: () async {
+                      await Clipboard.setData(
+                          ClipboardData(text: widget.thinking));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Reasoning copied')),
+                        );
+                      }
+                    },
+                    constraints:
+                        const BoxConstraints(minWidth: 32, minHeight: 32),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
         ],

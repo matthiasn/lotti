@@ -174,13 +174,14 @@ class ChatSessionController extends _$ChatSessionController {
         }
 
         void appendVisible(String text) {
-          if (text.isEmpty) return;
+          final t = text.trim();
+          if (t.isEmpty) return;
           if (_currentStreamingMessageId == null || !_streamingIsVisibleSegment) {
             _currentStreamingMessageId = const Uuid().v4();
             _streamingIsVisibleSegment = true;
             final streamingMessage = ChatMessage(
               id: _currentStreamingMessageId!,
-              content: text,
+              content: t,
               role: ChatMessageRole.assistant,
               timestamp: DateTime.now(),
               isStreaming: true,
@@ -190,12 +191,12 @@ class ChatSessionController extends _$ChatSessionController {
               streamingMessageId: _currentStreamingMessageId,
             );
           } else {
-            _updateStreamingMessage(text);
+            _updateStreamingMessage(t);
           }
         }
 
         void appendThinkingFinal(String text) {
-          if (text.isEmpty) return; // Avoid empty reasoning bubbles
+          if (text.trim().isEmpty) return; // Avoid empty reasoning bubbles
           // Finalize any visible streaming first
           if (_currentStreamingMessageId != null && _streamingIsVisibleSegment) {
             _finalizeStreamingMessage(preserveStreamingFlags: true);
@@ -342,18 +343,33 @@ class ChatSessionController extends _$ChatSessionController {
   void _finalizeStreamingMessage({bool preserveStreamingFlags = false}) {
     if (_currentStreamingMessageId == null) return;
 
-    final updatedMessages = state.messages.map((msg) {
-      if (msg.id == _currentStreamingMessageId) {
-        return msg.copyWith(isStreaming: false);
-      }
-      return msg;
-    }).toList();
+    // If the streaming message is empty or whitespace-only, drop it instead of
+    // finalizing to avoid empty bubbles.
+    final existing = state.messages
+        .firstWhere((m) => m.id == _currentStreamingMessageId);
+    final trimmed = existing.content.trim();
+    if (trimmed.isEmpty) {
+      final without =
+          state.messages.where((m) => m.id != _currentStreamingMessageId).toList();
+      state = state.copyWith(
+        messages: without,
+        isLoading: preserveStreamingFlags && state.isLoading,
+        isStreaming: preserveStreamingFlags && state.isStreaming,
+      );
+    } else {
+      final updatedMessages = state.messages.map((msg) {
+        if (msg.id == _currentStreamingMessageId) {
+          return msg.copyWith(isStreaming: false);
+        }
+        return msg;
+      }).toList();
 
-    state = state.copyWith(
-      messages: updatedMessages,
-      isLoading: preserveStreamingFlags && state.isLoading,
-      isStreaming: preserveStreamingFlags && state.isStreaming,
-    );
+      state = state.copyWith(
+        messages: updatedMessages,
+        isLoading: preserveStreamingFlags && state.isLoading,
+        isStreaming: preserveStreamingFlags && state.isStreaming,
+      );
+    }
 
     _currentStreamingMessageId = null;
   }
