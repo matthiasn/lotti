@@ -91,8 +91,8 @@ class GeminiInferenceRepository {
 
     // Robust NDJSON/SSE parser: accumulate chunks and parse per line.
     final buffer = StringBuffer();
-    var linesProcessed = 0;
-    var malformedLines = 0;
+    const linesProcessed = 0;
+    const malformedLines = 0;
     var emittedAny = false;
     var rawChunkLogs = 0;
     const rawPreviewLen = 200;

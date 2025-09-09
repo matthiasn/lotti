@@ -224,7 +224,7 @@ class ChatMessageProcessor {
     List<ChatCompletionStreamMessageToolCallChunk> toolCallDeltas,
     Map<String, StringBuffer> argumentBuffers,
   ) {
-    bool _isCompleteJson(String s) {
+    bool isCompleteJson(String s) {
       final t = s.trim();
       return t.isNotEmpty && t.startsWith('{') && t.endsWith('}');
     }
@@ -256,7 +256,7 @@ class ChatMessageProcessor {
         if (incoming != null) {
           final buf = argumentBuffers[toolId]!;
           final incomingStr = incoming;
-          if (_isCompleteJson(incomingStr) && _isCompleteJson(buf.toString())) {
+          if (isCompleteJson(incomingStr) && isCompleteJson(buf.toString())) {
             argumentBuffers[toolId] = StringBuffer(incomingStr);
           } else {
             buf.write(incomingStr);

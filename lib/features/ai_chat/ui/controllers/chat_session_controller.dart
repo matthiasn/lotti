@@ -3,7 +3,6 @@ import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
-import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -25,6 +24,13 @@ class ChatSessionController extends _$ChatSessionController {
   // answer segment. Thinking segments are emitted as discrete, completed
   // messages and never streamed into.
   bool _streamingIsVisibleSegment = false;
+  // Carry-over for partial opening thinking tokens (e.g., "<thin", "```thin").
+  // Prevents leaking broken tag prefixes into visible text across stream chunks.
+  String _pendingOpenTagTail = '';
+  // Streaming state for cross-chunk thinking blocks
+  bool _inThinkingStream = false;
+  String _activeCloseToken = '';
+  final StringBuffer _thinkingStreamBuffer = StringBuffer();
 
   @override
   ChatSessionUiModel build(String categoryId) {
@@ -104,60 +110,174 @@ class ChatSessionController extends _$ChatSessionController {
       // Get conversation history (excluding the streaming message)
       final conversationHistory = state.completedMessages;
 
-      await for (final chunk in chatRepository.sendMessage(
+      // Reset cross-chunk state
+      _pendingOpenTagTail = '';
+      _inThinkingStream = false;
+      _activeCloseToken = '';
+      _thinkingStreamBuffer.clear();
+
+      await for (final rawChunk in chatRepository.sendMessage(
         message: content,
         conversationHistory: conversationHistory,
         modelId: modelId,
         categoryId: categoryId,
       )) {
-        // Split the incoming chunk into ordered thinking/visible segments
-        final segments = splitThinkingSegments(chunk);
-        for (final seg in segments) {
-          if (seg.isThinking) {
-            // If we were streaming a visible answer, finalize it before
-            // appending a new thinking bubble.
-            if (_currentStreamingMessageId != null &&
-                _streamingIsVisibleSegment) {
-              _finalizeStreamingMessage();
-            }
+        // Merge any carried partial open-tag from previous chunk to avoid
+        // showing broken tokens like "<thin" as visible text.
+        var chunk = _pendingOpenTagTail + rawChunk;
+        _pendingOpenTagTail = '';
 
-            // Append a completed assistant message that only contains the
-            // thinking block (wrapped so UI recognizes it as reasoning).
-            final thinkingWrapped = '<thinking>\n${seg.text}\n</thinking>';
-            final thinkingMessage = ChatMessage(
-              id: const Uuid().v4(),
-              content: thinkingWrapped,
+        // Detect if the current chunk ends with a partial thinking opener and
+        // carry it to the next iteration.
+        String computeOpenTagCarry(String s) {
+          // Candidate opening tokens (without the closing char to support partials).
+          const candidates = <String>[
+            '<thinking',
+            '<think',
+            '[thinking',
+            '[think',
+            '```thinking',
+            '```think',
+          ];
+          final lower = s.toLowerCase();
+          var carry = '';
+          for (final token in candidates) {
+            final maxLen = token.length;
+            for (var i = maxLen; i > 0; i--) {
+              final prefix = token.substring(0, i);
+              if (lower.endsWith(prefix)) {
+                if (prefix.startsWith('<') || prefix.startsWith('[') ||
+                    prefix.startsWith('`')) {
+                  if (i > carry.length) carry = s.substring(s.length - i);
+                }
+                break;
+              }
+            }
+          }
+          // Do not treat a complete opener (with optional whitespace) as carry
+          final trimmed = lower.trimRight();
+          final fullOpeners = <RegExp>[
+            RegExp(r'<think(?:ing)?\s*>\s*$', caseSensitive: false),
+            RegExp(r'\[(?:think|thinking)\s*\]\s*$', caseSensitive: false),
+            RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n\s*$', caseSensitive: false),
+          ];
+          for (final re in fullOpeners) {
+            if (re.hasMatch(trimmed)) return '';
+          }
+          return carry;
+        }
+
+        final carry = computeOpenTagCarry(chunk);
+        if (carry.isNotEmpty) {
+          chunk = chunk.substring(0, chunk.length - carry.length);
+          _pendingOpenTagTail = carry;
+        }
+
+        void appendVisible(String text) {
+          if (text.isEmpty) return;
+          if (_currentStreamingMessageId == null || !_streamingIsVisibleSegment) {
+            _currentStreamingMessageId = const Uuid().v4();
+            _streamingIsVisibleSegment = true;
+            final streamingMessage = ChatMessage(
+              id: _currentStreamingMessageId!,
+              content: text,
               role: ChatMessageRole.assistant,
               timestamp: DateTime.now(),
+              isStreaming: true,
             );
             state = state.copyWith(
-              messages: [...state.messages, thinkingMessage],
+              messages: [...state.messages, streamingMessage],
+              streamingMessageId: _currentStreamingMessageId,
             );
-            // Ensure no active streaming message is tracked.
-            _currentStreamingMessageId = null;
-            _streamingIsVisibleSegment = false;
           } else {
-            // Visible text segment: stream into a dedicated assistant message.
-            if (_currentStreamingMessageId == null ||
-                !_streamingIsVisibleSegment) {
-              // Start a new streaming assistant message for visible content.
-              _currentStreamingMessageId = const Uuid().v4();
-              _streamingIsVisibleSegment = true;
-              final streamingMessage = ChatMessage(
-                id: _currentStreamingMessageId!,
-                content: seg.text,
-                role: ChatMessageRole.assistant,
-                timestamp: DateTime.now(),
-                isStreaming: true,
-              );
-              state = state.copyWith(
-                messages: [...state.messages, streamingMessage],
-                streamingMessageId: _currentStreamingMessageId,
-              );
+            _updateStreamingMessage(text);
+          }
+        }
+
+        void appendThinkingFinal(String text) {
+          if (text.isEmpty) return; // Avoid empty reasoning bubbles
+          // Finalize any visible streaming first
+          if (_currentStreamingMessageId != null && _streamingIsVisibleSegment) {
+            _finalizeStreamingMessage(preserveStreamingFlags: true);
+          }
+          final wrapped = '<thinking>\n$text\n</thinking>';
+          final thinkingMessage = ChatMessage(
+            id: const Uuid().v4(),
+            content: wrapped,
+            role: ChatMessageRole.assistant,
+            timestamp: DateTime.now(),
+          );
+          state = state.copyWith(messages: [...state.messages, thinkingMessage]);
+          _currentStreamingMessageId = null;
+          _streamingIsVisibleSegment = false;
+        }
+
+        // Regex patterns for open/close tokens (whitespace-tolerant)
+        final htmlOpen = RegExp(r'<think(?:ing)?\s*>', caseSensitive: false);
+        final htmlClose = RegExp(r'</think(?:ing)?\s*>', caseSensitive: false);
+        final bracketOpen =
+            RegExp(r'\[(?:think|thinking)\s*\]', caseSensitive: false);
+        final bracketClose =
+            RegExp(r'\[/(?:think|thinking)\s*\]', caseSensitive: false);
+        final fenceOpen =
+            RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n', caseSensitive: false);
+        final fenceClose = RegExp('```', caseSensitive: false);
+
+        RegExp closeRegexFromToken(String token) {
+          if (token.startsWith('<')) return htmlClose;
+          if (token.startsWith('[')) return bracketClose;
+          return fenceClose; // fallback for fenced
+        }
+
+        var index = 0;
+        while (index < chunk.length) {
+          if (_inThinkingStream) {
+            final closeMatch =
+                closeRegexFromToken(_activeCloseToken).firstMatch(chunk.substring(index));
+            if (closeMatch == null) {
+              _thinkingStreamBuffer.write(chunk.substring(index));
+              index = chunk.length;
+              break;
             } else {
-              // Append to existing visible streaming message.
-              _updateStreamingMessage(seg.text);
+              final closeIdx = index + closeMatch.start;
+              _thinkingStreamBuffer.write(chunk.substring(index, closeIdx));
+              appendThinkingFinal(_thinkingStreamBuffer.toString());
+              _thinkingStreamBuffer.clear();
+              _inThinkingStream = false;
+              _activeCloseToken = '';
+              index = closeIdx + closeMatch.group(0)!.length;
+              continue;
             }
+          } else {
+            // Find earliest open token
+            final openSpecs = <({RegExp re, String token, String closeToken})>[
+              (re: htmlOpen, token: '<thinking>', closeToken: '</thinking>'),
+              (re: bracketOpen, token: '[thinking]', closeToken: '[/thinking]'),
+              (re: fenceOpen, token: '```thinking\n', closeToken: '```'),
+            ];
+            ({int idx, int end, String closeToken})? earliest;
+            for (final spec in openSpecs) {
+              final m = spec.re.firstMatch(chunk.substring(index));
+              if (m == null) continue;
+              final start = index + m.start;
+              final end = index + m.end;
+              if (earliest == null || start < earliest.idx) {
+                earliest = (idx: start, end: end, closeToken: spec.closeToken);
+              }
+            }
+
+            if (earliest == null) {
+              appendVisible(chunk.substring(index));
+              break;
+            }
+            // Emit preceding visible content
+            if (earliest.idx > index) {
+              appendVisible(chunk.substring(index, earliest.idx));
+            }
+            // Enter thinking
+            _inThinkingStream = true;
+            _activeCloseToken = earliest.closeToken;
+            index = earliest.end;
           }
         }
       }

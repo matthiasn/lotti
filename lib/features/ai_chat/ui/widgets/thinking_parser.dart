@@ -36,13 +36,13 @@ class ThinkingPatterns {
 
   // Bracket-style tags (case-insensitive) — support [think] and [thinking]
   static final RegExp bracketOpen =
-      RegExp(r'\[thinking?\]', caseSensitive: false);
+      RegExp(r'\[(?:think|thinking)\]', caseSensitive: false);
   static final RegExp bracketClose =
-      RegExp(r'\[/thinking?\]', caseSensitive: false);
+      RegExp(r'\[/(?:think|thinking)\]', caseSensitive: false);
 
   // Fenced code block language (case-insensitive) — support ```think and ```thinking
   static final RegExp fenceOpen =
-      RegExp(r'```[ \t]*thinking?[ \t]*\n', caseSensitive: false);
+      RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n', caseSensitive: false);
   static const String fenceClose = '```';
 }
 
@@ -203,6 +203,7 @@ ParsedThinking parseThinking(String content) {
 
       // Advance past opening token and capture thinking until its close (or end)
       int bodyStart;
+      String openToken;
       String closeToken;
       int afterCloseAdvance;
 
@@ -210,27 +211,35 @@ ParsedThinking parseThinking(String content) {
         case 'html':
           // Determine which opening tag matched at nextIdx
           if (lower.startsWith('<thinking>', nextIdx)) {
-            bodyStart = nextIdx + '<thinking>'.length;
+            openToken = '<thinking>';
             closeToken = '</thinking>';
           } else {
-            bodyStart = nextIdx + '<think>'.length;
+            openToken = '<think>';
             closeToken = '</think>';
           }
+          bodyStart = nextIdx + openToken.length;
           afterCloseAdvance = closeToken.length;
 
         case 'bracket':
           if (lower.startsWith('[thinking]', nextIdx)) {
-            bodyStart = nextIdx + '[thinking]'.length;
+            openToken = '[thinking]';
             closeToken = '[/thinking]';
           } else {
-            bodyStart = nextIdx + '[think]'.length;
+            openToken = '[think]';
             closeToken = '[/think]';
           }
+          bodyStart = nextIdx + openToken.length;
           afterCloseAdvance = closeToken.length;
 
         case 'fence':
+          // Determine which fence matched to compute bodyStart correctly.
+          if (lower.startsWith('```thinking', nextIdx)) {
+            openToken = '```thinking';
+          } else {
+            openToken = '```think';
+          }
           bodyStart =
-              fenceBodyStartFor(nextIdx) ?? (nextIdx + '```think'.length);
+              fenceBodyStartFor(nextIdx) ?? (nextIdx + openToken.length);
           closeToken = ThinkingPatterns.fenceClose;
           afterCloseAdvance = closeToken.length;
 
@@ -245,11 +254,11 @@ ParsedThinking parseThinking(String content) {
       int nextIndexAfterClose;
 
       if (type == 'html') {
-        final res = extractNested(bodyStart, '<think>', '</think>');
+        final res = extractNested(bodyStart, openToken, closeToken);
         segment = res.body;
         nextIndexAfterClose = res.end;
       } else if (type == 'bracket') {
-        final res = extractNested(bodyStart, '[think]', '[/think]');
+        final res = extractNested(bodyStart, openToken, closeToken);
         segment = res.body;
         nextIndexAfterClose = res.end;
       } else {
@@ -376,7 +385,9 @@ List<ThinkingSegment> splitThinkingSegments(String content) {
       var fenceIdx = -1;
       final iter =
           ThinkingPatterns.fenceOpen.allMatches(content, index).iterator;
-      if (iter.moveNext()) fenceIdx = iter.current.start;
+      if (iter.moveNext()) {
+        fenceIdx = iter.current.start;
+      }
 
       var nextIdx = content.length;
       String? type;
@@ -410,35 +421,44 @@ List<ThinkingSegment> splitThinkingSegments(String content) {
       }
 
       int bodyStart;
+      String openToken;
       String closeToken;
       int afterCloseAdvance;
       final lowerAll = content.toLowerCase();
       switch (type) {
         case 'html':
           if (lowerAll.startsWith('<thinking>', nextIdx)) {
-            bodyStart = nextIdx + '<thinking>'.length;
+            openToken = '<thinking>';
             closeToken = '</thinking>';
           } else {
-            bodyStart = nextIdx + '<think>'.length;
+            openToken = '<think>';
             closeToken = '</think>';
           }
+          bodyStart = nextIdx + openToken.length;
           afterCloseAdvance = closeToken.length;
         case 'bracket':
           if (lowerAll.startsWith('[thinking]', nextIdx)) {
-            bodyStart = nextIdx + '[thinking]'.length;
+            openToken = '[thinking]';
             closeToken = '[/thinking]';
           } else {
-            bodyStart = nextIdx + '[think]'.length;
+            openToken = '[think]';
             closeToken = '[/think]';
           }
+          bodyStart = nextIdx + openToken.length;
           afterCloseAdvance = closeToken.length;
         case 'fence':
+          if (lowerAll.startsWith('```thinking', nextIdx)) {
+            openToken = '```thinking';
+          } else {
+            openToken = '```think';
+          }
           bodyStart =
-              fenceBodyStartFor(nextIdx) ?? (nextIdx + '```thinking'.length);
+              fenceBodyStartFor(nextIdx) ?? (nextIdx + openToken.length);
           closeToken = ThinkingPatterns.fenceClose;
           afterCloseAdvance = closeToken.length;
         default:
           bodyStart = nextIdx;
+          openToken = '';
           closeToken = '';
           afterCloseAdvance = 0;
       }
@@ -455,10 +475,7 @@ List<ThinkingSegment> splitThinkingSegments(String content) {
           nextIndexAfterClose = content.length;
         }
       } else {
-        final res = extractNested(
-            bodyStart,
-            type == 'html' ? '<think>' : '[think]',
-            type == 'html' ? '</think>' : '[/think]');
+        final res = extractNested(bodyStart, openToken, closeToken);
         segment = res.body;
         nextIndexAfterClose = res.end;
       }
