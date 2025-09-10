@@ -231,4 +231,118 @@ void main() {
       throwsA(isA<Exception>()),
     );
   });
+
+  test('throws when provider for selected audio model is missing', () async {
+    final aiRepo = _InMemoryAiConfigRepo(sharedDb);
+    // Only a model without its provider
+    await aiRepo.saveConfig(
+      AiConfig.model(
+        id: 'm1',
+        name: 'gemini-2.5-flash',
+        providerModelId: 'gemini-2.5-flash',
+        inferenceProviderId: 'prov-missing',
+        createdAt: DateTime.now(),
+        inputModalities: const [Modality.audio],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      ),
+      fromSync: true,
+    );
+
+    final container = ProviderContainer(
+      overrides: [aiConfigRepositoryProvider.overrideWith((_) => aiRepo)],
+    );
+    addTearDown(container.dispose);
+
+    final svc = container.read(audioTranscriptionServiceProvider);
+    await expectLater(
+      () => svc.transcribe('/tmp/file.m4a'),
+      throwsA(predicate((e) => e.toString().contains('Provider not found'))),
+    );
+  });
+
+  test('ignores empty content chunks from cloud stream', () async {
+    final aiRepo = _InMemoryAiConfigRepo(sharedDb);
+    await aiRepo.saveConfig(
+      AiConfig.inferenceProvider(
+        id: 'p1',
+        baseUrl: 'http://localhost:1234',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      ),
+      fromSync: true,
+    );
+    await aiRepo.saveConfig(
+      AiConfig.model(
+        id: 'm1',
+        name: 'gemini-2.5-flash',
+        providerModelId: 'gemini-2.5-flash',
+        inferenceProviderId: 'p1',
+        createdAt: DateTime.now(),
+        inputModalities: const [Modality.audio],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      ),
+      fromSync: true,
+    );
+
+    final dir = await Directory.systemTemp.createTemp('svc_more_');
+    final file = File('${dir.path}/c.m4a');
+    await file.writeAsBytes([7, 8, 9]);
+
+    final mockCloud = _MockCloudRepo();
+    when(
+      () => mockCloud.generateWithAudio(
+        any(),
+        model: any(named: 'model'),
+        audioBase64: any(named: 'audioBase64'),
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        provider: any(named: 'provider'),
+        maxCompletionTokens: any(named: 'maxCompletionTokens'),
+        overrideClient: any(named: 'overrideClient'),
+        tools: any(named: 'tools'),
+      ),
+    ).thenAnswer(
+      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
+        const CreateChatCompletionStreamResponse(
+          id: '1',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(content: ''),
+            ),
+          ],
+        ),
+        const CreateChatCompletionStreamResponse(
+          id: '2',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+            ),
+          ],
+        ),
+      ]),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final svc = container.read(audioTranscriptionServiceProvider);
+    final result = await svc.transcribe(file.path);
+    expect(result, 'ok');
+    await dir.delete(recursive: true);
+  });
 }

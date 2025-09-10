@@ -75,20 +75,6 @@ void main() {
                 mockChatRepository.createSession(categoryId: 'test-category'))
             .thenAnswer((_) async => newSession);
 
-        // Keep provider alive during async streaming by listening to it
-        final sbSubscription = container.listen(
-          chatSessionControllerProvider('test-category'),
-          (_, __) {},
-          fireImmediately: true,
-        );
-
-        // Keep provider alive during async streaming by listening to it
-        final sub = container.listen(
-          chatSessionControllerProvider('test-category'),
-          (_, __) {},
-          fireImmediately: true,
-        );
-
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,
         );
@@ -105,9 +91,7 @@ void main() {
                 mockChatRepository.createSession(categoryId: 'test-category'))
             .called(1);
 
-        // Close the listen subscriptions to avoid resource leaks
-        sbSubscription.close();
-        sub.close();
+        // No streaming here; nothing to close
       });
 
       test('loads existing session when sessionId provided', () async {
@@ -227,6 +211,13 @@ void main() {
                   messages: const [],
                 ));
 
+        // Keep provider alive during async streaming
+        final keepAlive = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,
         );
@@ -255,8 +246,9 @@ void main() {
         // The controller should have upgraded the soft break to a blank line
         // before the heading so Markdown recognizes the header properly.
         expect(assistant.content.contains('\n\n# Title'), isTrue);
-        // Close the listen subscription
+        // Close the listen subscriptions
         sbSubscription.close();
+        keepAlive.close();
       });
       test('does not send empty messages', () async {
         final controller = container.read(
@@ -338,6 +330,13 @@ void main() {
                   messages: [],
                 ));
 
+        // Keep provider alive during async streaming
+        final keepAlive = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,
         );
@@ -366,6 +365,7 @@ void main() {
         expect(state.messages[1].role, equals(ChatMessageRole.assistant));
         expect(state.messages[1].content, equals('Hello there!'));
         expect(state.messages[1].isStreaming, isFalse);
+        keepAlive.close();
       });
     });
 
@@ -538,6 +538,13 @@ void main() {
                   messages: [],
                 ));
 
+        // Keep provider alive during async streaming
+        final keepAlive = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,
         );
@@ -561,6 +568,7 @@ void main() {
               categoryId: 'test-category',
               modelId: any(named: 'modelId'),
             )).called(1);
+        keepAlive.close();
       });
     });
 
@@ -714,6 +722,11 @@ void main() {
           (_, __) {},
           fireImmediately: true,
         );
+        final keepAlive = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
 
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,
@@ -742,8 +755,9 @@ void main() {
         final assistant = state.messages.last;
         expect(assistant.content.length, cap + 1);
         expect(assistant.content.endsWith('…'), isTrue);
-        // Close the subscription to allow disposal in tearDown
+        // Close subscriptions
         sub.close();
+        keepAlive.close();
       });
 
       test('does not send a second message while streaming', () async {
@@ -796,6 +810,199 @@ void main() {
             )).called(1);
 
         await streamController.close();
+      });
+
+      test('drops empty streaming assistant message on finalize', () async {
+        // Initialize empty session
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+
+        final streamController = StreamController<String>();
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                ));
+
+        // Keep provider alive during async streaming by listening to it
+        final keepSub = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+        await controller.setModel('model-1');
+
+        // Start streaming and emit only whitespace so assistant message should be dropped
+        // ignore: unawaited_futures
+        controller.sendMessage('Hi');
+        await Future<void>.delayed(Duration.zero);
+        streamController.add('   ');
+        await streamController.close();
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        // Only user message remains
+        expect(state.messages.length, 1);
+        expect(state.messages.first.role, ChatMessageRole.user);
+
+        // End
+        keepSub.close();
+      });
+
+      test('flushes trailing thinking buffer without close token', () async {
+        // Initialize empty session
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+
+        final streamController = StreamController<String>();
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                ));
+
+        // Keep provider alive during async streaming by listening to it
+        final sub = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+        await controller.setModel('model-1');
+
+        // Start streaming and emit only an unterminated thinking block
+        // ignore: unawaited_futures
+        controller.sendMessage('Hi');
+        await Future<void>.delayed(Duration.zero);
+        streamController.add('<thinking>Work in progress');
+        await streamController.close();
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        // Expect user + a finalized thinking message (wrapped)
+        expect(state.isStreaming, isFalse);
+        expect(state.isLoading, isFalse);
+        expect(state.streamingMessageId, isNull);
+        expect(state.messages.length, 2);
+        final assistant = state.messages.last;
+        expect(assistant.role, ChatMessageRole.assistant);
+        expect(assistant.content.contains('<thinking>'), isTrue);
+        expect(assistant.content.contains('Work in progress'), isTrue);
+        expect(assistant.content.contains('</thinking>'), isTrue);
+        sub.close();
+      });
+
+      test('finalizes visible then flushes trailing thinking buffer', () async {
+        // Initialize empty session
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: [],
+                ));
+
+        final streamController = StreamController<String>();
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                ));
+
+        // Keep provider alive during async streaming by listening to it
+        final sub = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+        await controller.setModel('model-1');
+
+        // Start streaming: first visible text, then an unterminated thinking block
+        // ignore: unawaited_futures
+        controller.sendMessage('Hi');
+        await Future<void>.delayed(Duration.zero);
+        streamController.add('Visible part');
+        await Future<void>.delayed(Duration.zero);
+        streamController.add('<thinking>Hidden rationale');
+        await streamController.close();
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        // Expect user + finalized visible assistant + finalized thinking assistant
+        expect(state.isStreaming, isFalse);
+        expect(state.streamingMessageId, isNull);
+        expect(state.messages.length, 3);
+        final visible = state.messages[1];
+        final thinking = state.messages[2];
+        expect(visible.role, ChatMessageRole.assistant);
+        expect(visible.content, contains('Visible part'));
+        expect(thinking.content.contains('<thinking>'), isTrue);
+        expect(thinking.content.contains('Hidden rationale'), isTrue);
+        expect(thinking.content.contains('</thinking>'), isTrue);
+        sub.close();
       });
     });
   });

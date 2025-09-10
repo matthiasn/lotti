@@ -312,6 +312,30 @@ class ChatSessionController extends _$ChatSessionController {
         }
       }
 
+      // If we ended while still inside a thinking block without seeing a
+      // closing token, flush the accumulated buffer as a finalized thinking
+      // message before touching global streaming flags or visible finalization.
+      if (_thinkingStreamBuffer.isNotEmpty) {
+        // Finalize any visible streaming message first to keep segments
+        // separated as distinct bubbles.
+        if (_currentStreamingMessageId != null && _streamingIsVisibleSegment) {
+          _finalizeStreamingMessage(preserveStreamingFlags: true);
+        }
+        final wrapped = '<thinking>\n$_thinkingStreamBuffer\n</thinking>';
+        final thinkingMessage = ChatMessage(
+          id: const Uuid().v4(),
+          content: wrapped,
+          role: ChatMessageRole.assistant,
+          timestamp: DateTime.now(),
+        );
+        state = state.copyWith(messages: [...state.messages, thinkingMessage]);
+        _currentStreamingMessageId = null;
+        _streamingIsVisibleSegment = false;
+        _thinkingStreamBuffer.clear();
+        _inThinkingStream = false;
+        _activeCloseToken = '';
+      }
+
       // Finalize any remaining visible streaming message
       if (_currentStreamingMessageId != null && _streamingIsVisibleSegment) {
         _finalizeStreamingMessage();

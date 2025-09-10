@@ -395,6 +395,17 @@ void main() {
         // Expect newest first by lastMessageAt: C, B, A
         expect(results.map((s) => s.id).toList(), [sC.id, sB.id, sA.id]);
       });
+
+      test('with empty query returns getSessions limited', () async {
+        // Create more sessions than the limit
+        for (var i = 0; i < 5; i++) {
+          await repository.createSession(categoryId: 'cat', title: 'S$i');
+        }
+
+        final results = await repository.searchSessions(
+            query: '   ', categoryId: 'cat', limit: 3);
+        expect(results.length, 3);
+      });
     });
 
     group('system message', () {

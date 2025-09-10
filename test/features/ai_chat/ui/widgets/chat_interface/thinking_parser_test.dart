@@ -79,8 +79,55 @@ void main() {
       expect(parsed.visible, 'xyz');
       // thinking is the two blocks joined with hr in between by default parser
       expect(parsed.thinking, isNotNull);
+      // ignore: unnecessary_null_checks
       expect(parsed.thinking!.contains('a'), isTrue);
+      // ignore: unnecessary_null_checks
       expect(parsed.thinking!.contains('b'), isTrue);
+    });
+
+    test('handles open-ended HTML block (streaming)', () {
+      const input = 'Hello <thinking>partial stream';
+      final parsed = parseThinking(input);
+      expect(parsed.visible.trim(), 'Hello');
+      expect(parsed.thinking, isNotNull);
+      // ignore: unnecessary_null_checks
+      expect(parsed.thinking!.contains('partial stream'), isTrue);
+    });
+
+    test('handles nested think blocks', () {
+      const input = '<think>outer <think>inner</think> end</think> tail';
+      final parsed = parseThinking(input);
+      expect(parsed.visible.trim(), 'tail');
+      expect(parsed.thinking, isNotNull);
+      expect(parsed.thinking, contains('outer'));
+      expect(parsed.thinking, contains('inner'));
+    });
+
+    test('handles open-ended fenced block', () {
+      const input = 'pre```think\nBODY without closing fence';
+      final parsed = parseThinking(input);
+      expect(parsed.visible, 'pre');
+      expect(parsed.thinking, isNotNull);
+      // ignore: unnecessary_null_checks
+      expect(parsed.thinking!.startsWith('BODY'), isTrue);
+    });
+
+    test('enforces max thinking length with truncation notice', () {
+      final long = 'A' * (ThinkingUtils.maxThinkingLength + 50);
+      final input = '<thinking>$long</thinking>';
+      final parsed = parseThinking(input);
+      expect(parsed.visible, isEmpty);
+      expect(parsed.thinking, isNotNull);
+      // ignore: unnecessary_null_checks
+      expect(
+          parsed.thinking!.endsWith('[Thinking content truncated...]'), isTrue);
+    });
+
+    test('memoization cache returns identical instance for same input', () {
+      const input = 'X<think>Y</think>Z';
+      final a = parseThinking(input);
+      final b = parseThinking(input);
+      expect(identical(a, b), isTrue);
     });
   });
 }
