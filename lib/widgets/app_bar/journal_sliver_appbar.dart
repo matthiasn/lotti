@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/features/ai_chat/ui/pages/chat_modal_page.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/ai_chat_icon.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -152,74 +152,6 @@ class JournalFilterIcon extends StatelessWidget {
           );
         },
         icon: Icon(MdiIcons.filterVariant),
-      ),
-    );
-  }
-}
-
-class AiChatIcon extends StatelessWidget {
-  const AiChatIcon({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 5),
-      child: IconButton(
-        onPressed: () {
-          // Capture the cubit before showing the modal
-          final journalPageCubit = context.read<JournalPageCubit>();
-
-          showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            barrierColor: Colors.black.withValues(alpha: 0.7),
-            builder: (BuildContext modalContext) {
-              return MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(
-                    value: journalPageCubit,
-                  ),
-                ],
-                child: SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: MediaQuery.of(modalContext).viewInsets,
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                      child: Material(
-                        color: Theme.of(modalContext).colorScheme.surface,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              margin: const EdgeInsets.only(top: 10),
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Theme.of(modalContext).dividerColor,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const ChatModalPage(),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-        icon: const Icon(
-          Icons.psychology_outlined,
-          semanticLabel: 'AI Chat Assistant',
-        ),
-        tooltip: 'AI Chat Assistant',
       ),
     );
   }
