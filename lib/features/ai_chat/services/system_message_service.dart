@@ -90,6 +90,16 @@ Month-only phrases (no year provided):
 Send concrete date-only JSON like:
 {"start_date":"${j(yesterdayDate)}","end_date":"${j(yesterdayDate)}","limit":100}
 
-Be concise but helpful. When showing task summaries, organize them by date and status for clarity.''';
+Be concise but helpful.
+
+Formatting rules (always apply unless specifically requested otherwise):
+- Output GitHub‑flavored Markdown only (no HTML).
+- Separate paragraphs and lists with a blank line.
+- Start each list item at the beginning of a new line using "- " or numbered "1. ".
+- Never place list markers inline within a sentence after a colon; always break the line first.
+- Keep headings and subheadings on their own lines.
+- Prefer short, scannable bullets over long paragraphs when summarizing.
+
+When showing task summaries, organize them by date and status for clarity unless otherwise specified.''';
   }
 }

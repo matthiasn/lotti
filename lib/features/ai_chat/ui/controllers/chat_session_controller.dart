@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'package:collection/collection.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
@@ -32,6 +31,10 @@ class ChatSessionController extends _$ChatSessionController {
   bool _inThinkingStream = false;
   String _activeCloseToken = '';
   final StringBuffer _thinkingStreamBuffer = StringBuffer();
+  // If the provider emitted a soft line break chunk (whitespace + \n),
+  // hold it briefly to decide whether to upgrade to a blank line when the
+  // next chunk starts a list/heading. See appendVisible().
+  bool _pendingSoftBreak = false;
 
   @override
   ChatSessionUiModel build(String categoryId) {
@@ -176,8 +179,29 @@ class ChatSessionController extends _$ChatSessionController {
           _pendingOpenTagTail = carry;
         }
 
-        void appendVisible(String text) {
-          if (text.trim().isEmpty) return;
+        void appendVisible(String rawText) {
+          if (rawText.isEmpty) return;
+          final hasLineBreak = rawText.contains('\n') || rawText.contains('\r');
+          final isWhitespaceOnly = rawText.trim().isEmpty;
+
+          // If this chunk is only whitespace but contains a newline, hold it.
+          // We'll decide on the next chunk whether to convert to a blank line.
+          if (hasLineBreak && isWhitespaceOnly) {
+            _pendingSoftBreak = true;
+            return;
+          }
+
+          // If we have a pending soft break and the next chunk appears to
+          // start a list item or heading, upgrade to a blank line to satisfy
+          // strict markdown parsers (Flutter markdown often requires it).
+          var text = rawText;
+          if (_pendingSoftBreak) {
+            final startsListOrHeading = RegExp(r'^\s*(?:[-*•]|\d{1,2}\.|#{1,6}\s)')
+                .hasMatch(text);
+            final prefix = startsListOrHeading ? '\n\n' : '\n';
+            text = '$prefix$text';
+            _pendingSoftBreak = false;
+          }
           if (_currentStreamingMessageId == null ||
               !_streamingIsVisibleSegment) {
             _currentStreamingMessageId = const Uuid().v4();
@@ -332,25 +356,6 @@ class ChatSessionController extends _$ChatSessionController {
         if (msg.content.endsWith('…')) return msg;
 
         var newContent = '${msg.content}$content';
-        // Light, idempotent streaming-time normalization for inline list markers
-        // (more aggressive normalization is applied on finalize).
-        String normalizeListsForStreaming(String text) {
-          var out = text;
-          // Convert punctuation-boundary bullets like ": - ", ") - ", ". - "
-          out = out.replaceAll(
-            RegExp(r'(?<=[\.:;\)])\s(?:[-–—]|•)\s'),
-            '\n- ',
-          );
-          // Common pattern: ":- " or ": - " directly after a colon
-          out = out.replaceAll(RegExp(r':\s*[-–—•]\s'), ':\n- ');
-          // Insert paragraph break before inline enumerations like ".2. " or ")3. "
-          out = out.replaceAllMapped(
-            RegExp(r'(?<=[\.)])(\d+)\.\s'),
-            (m) => '\n\n${m.group(1)}. ',
-          );
-          return out;
-        }
-        newContent = normalizeListsForStreaming(newContent);
         if (newContent.length > maxStreamingContentSize) {
           // Truncate to cap and add ellipsis
           newContent = '${newContent.substring(0, maxStreamingContentSize)}…';
@@ -382,81 +387,9 @@ class ChatSessionController extends _$ChatSessionController {
         isStreaming: preserveStreamingFlags && state.isStreaming,
       );
     } else {
-      String cleanStreamingArtifacts(String text) {
-        // Heuristic cleanup for provider-specific stream tails (e.g., Ollama/Qwen)
-        // 1) Trim whitespace at end
-        var out = text.trimRight();
-        // 2) Remove trailing ",<small hex>" fragments sometimes leaked at chunk boundaries
-        out = out.replaceFirst(
-          RegExp(r',[a-f0-9]{1,4}$', caseSensitive: false),
-          '',
-        );
-        // 3) Remove stray trailing single quotes or commas
-        out = out.replaceFirst(RegExp(r"[,'’]\s*$"), '');
-        // 4) Collapse triple hyphen runs at end (---) often produced mid-stream
-        out = out.replaceFirst(RegExp(r'[-–—]{2,}\s*$'), '');
-        return out;
-      }
-
-      String normalizeListsForMarkdown(String text) {
-        // Heuristic: Qwen/Ollama often emits inline " - " bullets after a colon
-        // (e.g., "include: - Item A - Item B ..."). Convert to real Markdown lists.
-        // Apply when there appear to be at least two inline bullets.
-        var inlineBullets =
-            RegExp(r'\s[-–—]\s|•\s').allMatches(text).length;
-        if (inlineBullets < 2) {
-          // Fallback: count generic '- ' tokens (common in Qwen output like "Design- Foo - Bar")
-          inlineBullets = RegExp(r'-\s').allMatches(text).length;
-          if (inlineBullets < 2) return text;
-        }
-
-        var converted = text;
-        // Convert spaced dash separators and bullet glyphs
-        converted = converted.replaceAll(RegExp(r'\s[-–—]\s'), '\n- ');
-        converted = converted.replaceAll(RegExp(r'•\s'), '\n- ');
-        // Convert lone "- " (hyphen followed by space) into list items as well
-        // when we detected an enumeration (>=2 bullets).
-        converted = converted.replaceAll(RegExp(r'(?<!-)\-\s'), '\n- ');
-        // Normalize double newlines before list items
-        converted = converted.replaceAll(RegExp(r'\s*\n-\s'), '\n- ');
-        // Ensure a blank line before list items so markdown parses reliably
-        converted = converted.replaceAll(RegExp(r'(?<!\n)\n-\s'), '\n\n- ');
-        // Also add a blank line before inline-numbered items like "2. " when glued
-        converted = converted.replaceAllMapped(
-          RegExp(r'(?<=[^\n])(\d+)\.\s'),
-          (m) => '\n\n${m.group(1)}. ',
-        );
-
-        // If nothing changed, leave text as-is.
-        return converted;
-      }
-
       final updatedMessages = state.messages.map((msg) {
         if (msg.id == _currentStreamingMessageId) {
-          final sanitized = cleanStreamingArtifacts(msg.content);
-          final normalized = normalizeListsForMarkdown(sanitized);
-
-          // Debug logging: help diagnose Qwen/Ollama list formatting issues
-          final modelIdForLog = state.selectedModelId ?? 'unknown-model';
-          try {
-            final hadLineBullets = sanitized.contains('\n- ');
-            final spacedDashCount = RegExp(r'\s[-–—]\s').allMatches(sanitized).length;
-            final glyphCount = RegExp(r'•\s').allMatches(sanitized).length;
-            final dashSpaceCount = RegExp(r'(?<!-)\-\s').allMatches(sanitized).length;
-            final changed = normalized != sanitized;
-            final previewBefore = sanitized.length > 400 ? sanitized.substring(0, 400) : sanitized;
-            final previewAfter = normalized.length > 400 ? normalized.substring(0, 400) : normalized;
-            developer.log(
-              'list-normalization model=$modelIdForLog changed=$changed '
-              'hadLineBullets=$hadLineBullets spacedDash=$spacedDashCount '
-              'glyph=$glyphCount dashSpace=$dashSpaceCount\n'
-              'BEFORE: $previewBefore\nAFTER:  $previewAfter',
-              name: 'ChatSessionController.finalizeStreamingMessage',
-            );
-          } catch (_) {
-            // Swallow logging errors; never fail user flow for diagnostics.
-          }
-          return msg.copyWith(isStreaming: false, content: normalized);
+          return msg.copyWith(isStreaming: false);
         }
         return msg;
       }).toList();
