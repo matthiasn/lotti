@@ -22,6 +22,7 @@ class GeminiStreamParser {
   GeminiStreamParser({this.verbose = false, this.maxBufferSize = 64 * 1024});
 
   final bool verbose;
+
   /// Maximum number of characters the internal buffer may hold.
   /// Defaults to 64KB to prevent unbounded growth when upstream framing is noisy.
   final int maxBufferSize;
@@ -42,7 +43,8 @@ class GeminiStreamParser {
       final needed = (_buffer.length + chunk.length) - maxBufferSize;
       if (needed > 0) {
         final existing = _buffer.toString();
-        var trimmed = needed >= existing.length ? '' : existing.substring(needed);
+        var trimmed =
+            needed >= existing.length ? '' : existing.substring(needed);
         // Prefer aligning to the next JSON object start if present.
         final brace = trimmed.indexOf('{');
         if (brace > 0) {

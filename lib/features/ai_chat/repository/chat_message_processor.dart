@@ -255,8 +255,7 @@ class ChatMessageProcessor {
         if (incoming != null) {
           final buf = argumentBuffers[toolId]!;
           final incomingStr = incoming;
-          if (_isCompleteJson(incomingStr) &&
-              _isCompleteJson(buf.toString())) {
+          if (_isCompleteJson(incomingStr) && _isCompleteJson(buf.toString())) {
             argumentBuffers[toolId] = StringBuffer(incomingStr);
           } else {
             buf.write(incomingStr);
