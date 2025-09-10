@@ -252,6 +252,11 @@ int? _fenceBodyStartFor(String content, int from) {
 /// - ```think\n ... \n``` (fenced code with language `think`)
 /// - `[think] ... [/think]` (BBCode-like)
 ///
+/// Examples:
+/// - `<thinking>Reasoning steps here</thinking> Visible answer here.`
+/// - ```thinking\nChain-of-thought steps...\n```\nFinal answer.```
+/// - `[thinking]Reasoning...[/thinking] Result text.`
+///
 /// Streaming-friendly: also detects open-ended blocks (no closing yet) and
 /// assigns all remaining content to `thinking` until more tokens arrive.
 ParsedThinking parseThinking(String content) {

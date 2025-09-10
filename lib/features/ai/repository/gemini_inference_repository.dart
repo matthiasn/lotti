@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -44,7 +45,15 @@ class GeminiInferenceRepository {
   static const bool kVerboseStreamLogging = false;
   static const int kMaxRawChunkLogs = 3; // max raw chunk previews
   static const int kMaxRawLineLogs = 10; // max raw line previews
-  static const int kRawPreviewLen = 200; // chars per preview
+  // Preview length for debug logging and error previews
+  static const int kPreviewLength = 200;
+
+  // Centralized caps and timeouts
+  static const int kMaxStreamingChars = 1000000; // 1M safety cap
+  static const Duration kInitialRequestTimeout = Duration(seconds: 30);
+  static const Duration kNonStreamingTimeout = Duration(seconds: 60);
+  static const int kMaxRetries = 3;
+  static const Duration kRetryBaseDelay = Duration(milliseconds: 500);
 
   bool _isFlashModel(String modelId) => GeminiUtils.isFlashModel(modelId);
 
@@ -99,13 +108,19 @@ class GeminiInferenceRepository {
       name: 'GeminiInferenceRepository',
     );
 
-    final req = http.Request('POST', uri)
-      ..headers['Content-Type'] = 'application/json'
-      ..headers['Accept'] =
-          'application/x-ndjson, application/json, text/event-stream'
-      ..body = jsonEncode(body);
+    http.Request buildStreamRequest() {
+      return http.Request('POST', uri)
+        ..headers['Content-Type'] = 'application/json'
+        ..headers['Accept'] =
+            'application/x-ndjson, application/json, text/event-stream'
+        ..body = jsonEncode(body);
+    }
 
-    final streamed = await _httpClient.send(req);
+    final streamed = await _sendStreamWithRateLimitBackoff(
+      buildRequest: buildStreamRequest,
+      context:
+          'Gemini streamGenerateContent (model=$model, baseUrl=${provider.baseUrl})',
+    );
     if (kVerboseStreamLogging) {
       developer.log(
         'Gemini streaming status: ${streamed.statusCode}',
@@ -119,43 +134,210 @@ class GeminiInferenceRepository {
     if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
       final bytes = await streamed.stream.toBytes();
       final reason = utf8.decode(bytes);
-      throw Exception('Gemini API error ${streamed.statusCode}: $reason');
+      throw Exception(
+        'Gemini streaming error ${streamed.statusCode} for model "$model" at ${provider.baseUrl}: $reason. '
+        'If rate-limited (429), wait and retry.',
+      );
     }
 
-    final idPrefix = 'gemini-${DateTime.now().millisecondsSinceEpoch}';
-    final created = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final now = DateTime.now();
+    final idPrefix = 'gemini-${now.millisecondsSinceEpoch}';
+    final created = now.millisecondsSinceEpoch ~/ 1000;
 
     final thinkingBuffer = StringBuffer();
     var inThinking = false;
     var answerStarted = false;
 
-    // Robust NDJSON/SSE parser: accumulate chunks and parse per line.
-    final buffer = StringBuffer();
-    const linesProcessed = 0;
-    const malformedLines = 0;
+    // Robust NDJSON/SSE parser (extracted utility)
+    final parser = GeminiStreamParser();
     var emittedAny = false;
     var rawChunkLogs = 0;
-    const rawPreviewLen = 200;
+    // Metrics
+    final requestStart = DateTime.now();
+    var chunkProcessingMicros = 0;
+    var thinkingChars = 0;
+    var visibleChars = 0;
+    var totalCharsEmitted = 0;
     var toolCallIndex = 0; // ensure unique IDs/indices across tool calls
     await for (final chunk in streamed.stream.transform(utf8.decoder)) {
       if (kVerboseStreamLogging && rawChunkLogs < 3) {
-        final preview = chunk.length > rawPreviewLen
-            ? chunk.substring(0, rawPreviewLen)
+        final preview = chunk.length > kPreviewLength
+            ? chunk.substring(0, kPreviewLength)
             : chunk;
         developer.log(
             'raw chunk (${chunk.length} chars): ${preview.replaceAll('\n', r'\n')}',
             name: 'GeminiInferenceRepository');
         rawChunkLogs++;
       }
-      buffer.write(chunk);
-      var text = buffer.toString();
-      // Convert possible SSE/NDJSON/JSON-array stream into complete JSON
-      // objects by scanning brace depth. Strip leading array wrappers, commas,
-      // and SSE data: lines.
-      text = GeminiUtils.stripLeadingFraming(text);
-      var progressed = true;
-      while (progressed) {
-        progressed = false;
+      final sw = Stopwatch()..start();
+      // Use extracted incremental parser to decode mixed-framing chunks
+      {
+        final objs = parser.addChunk(chunk);
+        for (final obj in objs) {
+          final candidates = obj['candidates'];
+          if (candidates is! List || candidates.isEmpty) {
+            if (kVerboseStreamLogging) {
+              final keys = obj.keys.join(',');
+              developer.log('no candidates; obj keys=[$keys]',
+                  name: 'GeminiInferenceRepository');
+            }
+            continue;
+          }
+          final first = candidates.first;
+          final content =
+              first is Map<String, dynamic> ? first['content'] : null;
+          if (content is! Map<String, dynamic>) {
+            if (kVerboseStreamLogging) {
+              developer.log('candidate.content missing or not a map',
+                  name: 'GeminiInferenceRepository');
+            }
+            continue;
+          }
+          final parts = content['parts'];
+          if (parts is! List) {
+            if (kVerboseStreamLogging) {
+              developer.log('content.parts missing or not a list',
+                  name: 'GeminiInferenceRepository');
+            }
+            continue;
+          }
+
+          for (final p in parts) {
+            if (p is! Map<String, dynamic>) continue;
+
+            // Accumulate thinking parts (if present and requested).
+            // Gemini marks thoughts with a boolean `thought: true` and the
+            // actual text in `text`.
+            final isThought = p['thought'] == true;
+            if (isThought) {
+              // Include thoughts only for non-flash models when requested and
+              // only before the visible answer has started. Otherwise, drop
+              // thought parts entirely (do not surface as regular text).
+              if (!answerStarted &&
+                  thinkingConfig.includeThoughts &&
+                  !_isFlashModel(model)) {
+                final t = p['text'];
+                if (t is String && t.isNotEmpty) {
+                  inThinking = true;
+                  // Enforce cap during accumulation
+                  final remaining = kMaxStreamingChars -
+                      (thinkingBuffer.length + visibleChars);
+                  if (remaining > 0) {
+                    final toAdd = t.length > remaining ? remaining : t.length;
+                    thinkingBuffer.write(t.substring(0, toAdd));
+                    thinkingChars += toAdd;
+                  }
+                }
+              }
+              continue;
+            }
+
+            // Emit thinking block once we transition to regular text/content
+            if (inThinking) {
+              emittedAny = true;
+              yield CreateChatCompletionStreamResponse(
+                id: idPrefix,
+                created: created,
+                model: model,
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(
+                      content: '<thinking>\n$thinkingBuffer\n</thinking>\n',
+                    ),
+                  ),
+                ],
+              );
+              thinkingBuffer.clear();
+              inThinking = false;
+              if (kVerboseStreamLogging) {
+                developer.log(
+                  'Flushed thinking block',
+                  name: 'GeminiInferenceRepository',
+                );
+              }
+            }
+
+            // Regular text part
+            final text = p['text'];
+            if (text is String && text.isNotEmpty) {
+              answerStarted = true;
+              emittedAny = true;
+              visibleChars += text.length;
+              totalCharsEmitted = visibleChars + thinkingChars;
+              yield CreateChatCompletionStreamResponse(
+                id: idPrefix,
+                created: created,
+                model: model,
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(content: text),
+                  ),
+                ],
+              );
+              if (kVerboseStreamLogging) {
+                developer.log(
+                  'Text delta (${text.length} chars)',
+                  name: 'GeminiInferenceRepository',
+                );
+              }
+              if (totalCharsEmitted >= kMaxStreamingChars) {
+                developer.log(
+                  'Max streaming char cap reached ($kMaxStreamingChars). Terminating stream early.',
+                  name: 'GeminiInferenceRepository',
+                );
+                return; // end generator and cancel stream
+              }
+              continue;
+            }
+
+            // Function call (tool)
+            if (p['functionCall'] is Map<String, dynamic>) {
+              final fc = p['functionCall'] as Map<String, dynamic>;
+              final name = fc['name']?.toString() ?? '';
+              final args = jsonEncode(fc['args'] ?? {});
+              emittedAny = true;
+              final currentIndex = toolCallIndex++;
+              yield CreateChatCompletionStreamResponse(
+                id: idPrefix,
+                created: created,
+                model: model,
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(
+                      toolCalls: [
+                        ChatCompletionStreamMessageToolCallChunk(
+                          index: currentIndex,
+                          id: 'tool_$currentIndex',
+                          function: ChatCompletionStreamMessageFunctionCall(
+                            name: name,
+                            arguments: args,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+              if (kVerboseStreamLogging) {
+                developer.log(
+                  'Tool call: $name',
+                  name: 'GeminiInferenceRepository',
+                );
+              }
+            }
+          }
+        }
+        sw.stop();
+        chunkProcessingMicros += sw.elapsedMicroseconds;
+        continue; // next network chunk; skip legacy scanner below
+      }
+      // legacy scanner removed
+      /* var progressed = false; // legacy scanner disabled
+      while (false) {
+        progressed = false; // unreachable
         final start = text.indexOf('{');
         if (start == -1) break;
         var depth = 0;
@@ -204,8 +386,8 @@ class GeminiInferenceRepository {
               stackTrace: st,
             );
             // Include a shortened preview of the offending JSON for debugging
-            final preview = objStr.length > kRawPreviewLen
-                ? objStr.substring(0, kRawPreviewLen)
+            final preview = objStr.length > kPreviewLength
+                ? objStr.substring(0, kPreviewLength)
                 : objStr;
             developer.log('obj preview: $preview',
                 name: 'GeminiInferenceRepository');
@@ -268,7 +450,14 @@ class GeminiInferenceRepository {
               final t = p['text'];
               if (t is String && t.isNotEmpty) {
                 inThinking = true;
-                thinkingBuffer.write(t);
+                // Enforce cap during accumulation
+                final remaining = kMaxStreamingChars -
+                    (thinkingBuffer.length + visibleChars);
+                if (remaining > 0) {
+                  final toAdd = t.length > remaining ? remaining : t.length;
+                  thinkingBuffer.write(t.substring(0, toAdd));
+                  thinkingChars += toAdd;
+                }
               }
             }
             continue;
@@ -305,6 +494,8 @@ class GeminiInferenceRepository {
           if (text is String && text.isNotEmpty) {
             answerStarted = true;
             emittedAny = true;
+            visibleChars += text.length;
+            totalCharsEmitted = visibleChars + thinkingChars;
             yield CreateChatCompletionStreamResponse(
               id: idPrefix,
               created: created,
@@ -321,6 +512,13 @@ class GeminiInferenceRepository {
                 'Text delta (${text.length} chars)',
                 name: 'GeminiInferenceRepository',
               );
+            }
+            if (totalCharsEmitted >= kMaxStreamingChars) {
+              developer.log(
+                'Max streaming char cap reached ($kMaxStreamingChars). Terminating stream early.',
+                name: 'GeminiInferenceRepository',
+              );
+              return; // end generator and cancel stream
             }
             continue;
           }
@@ -364,10 +562,8 @@ class GeminiInferenceRepository {
           progressed = true;
         }
       }
-      // preserve any remainder (partial JSON line) in buffer
-      buffer
-        ..clear()
-        ..write(text);
+      */
+      // legacy scanner fully removed
     }
 
     // Flush any remaining thinking at end of stream
@@ -395,8 +591,12 @@ class GeminiInferenceRepository {
     }
 
     if (kVerboseStreamLogging) {
+      final totalLatency = DateTime.now().difference(requestStart);
+      final denom = visibleChars + thinkingChars;
+      final thinkingRatio = denom > 0 ? (thinkingChars / denom) : 0.0;
       developer.log(
-        'Gemini stream finished. lines=$linesProcessed malformed=$malformedLines',
+        'Gemini stream finished. latency=${totalLatency.inMilliseconds}ms, processing=$chunkProcessingMicrosµs, '
+        'visibleChars=$visibleChars, thinkingChars=$thinkingChars, thinkingRatio=${thinkingRatio.toStringAsFixed(3)}',
         name: 'GeminiInferenceRepository',
       );
     }
@@ -411,14 +611,16 @@ class GeminiInferenceRepository {
         model: model,
         apiKey: provider.apiKey,
       );
-      final fallbackResp = await _httpClient.post(
-        nonStreamingUri,
-        headers: const {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(body),
-      );
+      final fallbackResp = await _httpClient
+          .post(
+            nonStreamingUri,
+            headers: const {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(kNonStreamingTimeout);
       if (fallbackResp.statusCode >= 200 && fallbackResp.statusCode < 300) {
         final decoded = jsonDecode(fallbackResp.body) as Map<String, dynamic>;
         final payload = _processGeminiPayload(
@@ -472,12 +674,60 @@ class GeminiInferenceRepository {
           );
         }
       } else {
-        if (kVerboseStreamLogging) {
+        developer.log(
+          'Gemini non-stream fallback failed: HTTP ${fallbackResp.statusCode} for model "$model" at ${provider.baseUrl}. '
+          'Body preview: ${fallbackResp.body.substring(0, fallbackResp.body.length > kPreviewLength ? kPreviewLength : fallbackResp.body.length)}. '
+          'If this is a transient error or rate limit, please try again.',
+          name: 'GeminiInferenceRepository',
+        );
+      }
+    }
+  }
+
+  /// Send a HTTP streamed request with exponential backoff for rate limiting
+  /// (429/503) and an initial handshake timeout. Builds a fresh request per attempt.
+  Future<http.StreamedResponse> _sendStreamWithRateLimitBackoff({
+    required http.Request Function() buildRequest,
+    required String context,
+    int maxRetries = kMaxRetries,
+    Duration baseDelay = kRetryBaseDelay,
+  }) async {
+    var attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        final req = buildRequest();
+        final resp =
+            await _httpClient.send(req).timeout(kInitialRequestTimeout);
+        if (resp.statusCode == 429 || resp.statusCode == 503) {
+          if (attempt > maxRetries) return resp; // let caller inspect body
+          // Honor Retry-After header if present (seconds)
+          final retryAfter = resp.headers['retry-after'];
+          Duration delay;
+          if (retryAfter != null) {
+            final secs = int.tryParse(retryAfter.trim());
+            delay = secs != null
+                ? Duration(seconds: secs)
+                : baseDelay * (1 << (attempt - 1));
+          } else {
+            delay = baseDelay * (1 << (attempt - 1));
+          }
           developer.log(
-            'Fallback non-stream failed: ${fallbackResp.statusCode} ${fallbackResp.body}',
+            'Rate limited (${resp.statusCode}) during $context; retrying in ${delay.inMilliseconds}ms (attempt $attempt/$maxRetries)...',
             name: 'GeminiInferenceRepository',
           );
+          await Future<void>.delayed(delay);
+          continue;
         }
+        return resp;
+      } on TimeoutException {
+        if (attempt > maxRetries) rethrow;
+        final delay = baseDelay * (1 << (attempt - 1));
+        developer.log(
+          'Timeout during $context; retrying in ${delay.inMilliseconds}ms (attempt $attempt/$maxRetries)...',
+          name: 'GeminiInferenceRepository',
+        );
+        await Future<void>.delayed(delay);
       }
     }
   }

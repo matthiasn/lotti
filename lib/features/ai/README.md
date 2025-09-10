@@ -55,7 +55,7 @@ The repository layer has been refactored for better separation of concerns:
   - Translates Gemini payloads into `CreateChatCompletionStreamResponse` deltas
   - Surfaces a single consolidated `<thinking>` block for non-flash models when enabled; always hides thoughts for flash
   - Emits OpenAI-style tool-call chunks with stable IDs (`tool_#`) and indices to support accumulation
-  - Robust stream parsing: handles SSE `data:` lines, NDJSON, and JSON array framing without relying on line boundaries
+  - Robust stream parsing via `gemini_stream_parser.dart`: handles SSE `data:` lines, NDJSON, and JSON array framing without relying on line boundaries
   - Non-streaming fallback via `:generateContent` kicks in only if the streaming path produced no events, aggregating thinking, text, and tools
 
 - **`gemini_utils.dart`**: Shared helpers used by the Gemini repository
@@ -63,6 +63,11 @@ The repository layer has been refactored for better separation of concerns:
   - `buildStreamGenerateContentUri` / `buildGenerateContentUri` – constructs correct Gemini endpoints from a base URL
   - `buildRequestBody` – builds request payloads including thinking config and function tools (mapped from OpenAI style)
   - `stripLeadingFraming` – removes SSE `data:` prefixes and JSON array framing from mixed-format streams
+  
+- **`gemini_stream_parser.dart`**: Streaming JSON parser for mixed-framing Gemini responses
+  - Incremental parser resilient to SSE `data:` lines, NDJSON, and JSON array framing
+  - Accumulates objects across chunks and ignores braces inside string literals
+  - Returns decoded `Map<String,dynamic>` objects ready for adapter consumption
 
 - **`whisper_inference_repository.dart`**: Handles audio transcription
   - Interfaces with locally running Whisper instances
