@@ -240,8 +240,11 @@ int? _fenceBodyStartFor(String content, int from) {
       final openToken = lowerAll.startsWith('```thinking', nextIdx)
           ? '```thinking'
           : '```think';
-      final bodyStart =
-          _fenceBodyStartFor(content, nextIdx) ?? (nextIdx + openToken.length);
+      // Prefer computed body start (newline after the fence line); otherwise,
+      // fall back to the next newline after `nextIdx`, or end-of-content.
+      final computed = _fenceBodyStartFor(content, nextIdx);
+      final fallbackNl = content.indexOf('\n', nextIdx);
+      final bodyStart = computed ?? (fallbackNl >= 0 ? fallbackNl + 1 : content.length);
       const closeToken = ThinkingPatterns.fenceClose;
       return (
         bodyStart: bodyStart,

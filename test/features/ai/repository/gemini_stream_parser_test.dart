@@ -82,5 +82,17 @@ void main() {
       expect(out.length, 1);
       expect(out.first['ok'], true);
     });
+
+    test('respects maxBufferSize and trims from the left', () {
+      final small = GeminiStreamParser(maxBufferSize: 32);
+      // Create a long prefix with junk, then a valid object
+      final junk = 'x' * 100; // 100 characters
+      final obj = jsonEncode({'z': 9});
+      final out = small.addChunk('$junk$obj');
+      // We still parse the object; buffer should not exceed cap
+      expect(out.length, 1);
+      expect(out.first['z'], 9);
+      expect(small.remainder().length <= 32, isTrue);
+    });
   });
 }

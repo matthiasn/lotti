@@ -19,15 +19,40 @@ import 'package:lotti/features/ai/repository/gemini_utils.dart';
 ///
 /// The parser maintains internal buffer state between calls.
 class GeminiStreamParser {
-  GeminiStreamParser({this.verbose = false});
+  GeminiStreamParser({this.verbose = false, this.maxBufferSize = 64 * 1024});
 
   final bool verbose;
+  /// Maximum number of characters the internal buffer may hold.
+  /// Defaults to 64KB to prevent unbounded growth when upstream framing is noisy.
+  final int maxBufferSize;
   final StringBuffer _buffer = StringBuffer();
 
   /// Add a raw text [chunk], returning all complete decoded JSON objects
   /// contained within. Any incomplete tail remains buffered internally until
   /// more data arrives.
+  ///
+  /// The internal buffer is capped at [maxBufferSize]; when incoming data
+  /// would exceed the cap, the oldest content is trimmed from the left before
+  /// appending. Trimming prefers to align to the next '{' if present to
+  /// increase the odds of beginning at an object boundary.
   List<Map<String, dynamic>> addChunk(String chunk) {
+    // Enforce a cap by trimming oldest data before appending the new chunk.
+    // This prevents unbounded growth under pathological streams.
+    if (_buffer.length + chunk.length > maxBufferSize) {
+      final needed = (_buffer.length + chunk.length) - maxBufferSize;
+      if (needed > 0) {
+        final existing = _buffer.toString();
+        var trimmed = needed >= existing.length ? '' : existing.substring(needed);
+        // Prefer aligning to the next JSON object start if present.
+        final brace = trimmed.indexOf('{');
+        if (brace > 0) {
+          trimmed = trimmed.substring(brace);
+        }
+        _buffer
+          ..clear()
+          ..write(trimmed);
+      }
+    }
     _buffer.write(chunk);
     var text = _buffer.toString();
     // Normalize framing before scanning
