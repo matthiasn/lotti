@@ -168,6 +168,129 @@ void main() {
       expect(secondContent, 'Here are your tasks.');
     });
 
+    test('skips malformed JSON object and continues with next valid one',
+        () async {
+      // Malformed object with unquoted keys should be dropped; subsequent valid
+      // object should still be parsed and emitted.
+      const malformed = '{a:b}';
+      final valid = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'OK'},
+              ]
+            }
+          }
+        ]
+      });
+
+      final client = _FakeStreamClient(200, [malformed, valid]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+            provider: provider,
+          )
+          .toList();
+      expect(events.length, 1);
+      expect(events.first.choices!.first.delta!.content, 'OK');
+    });
+
+    test('fallback emits thinking, then text, then aggregated tools', () async {
+      // Streaming yields empty parts to trigger fallback
+      final streamLine = jsonEncode({
+        'candidates': [
+          {
+            'content': {'role': 'model', 'parts': <Object?>[]}
+          }
+        ]
+      });
+
+      // Fallback contains thinking + visible text + two tool calls
+      final fallback = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'Reason A', 'thought': true},
+                {'text': 'Visible'},
+                {
+                  'functionCall': {
+                    'name': 'a',
+                    'args': {'x': 1}
+                  }
+                },
+                {
+                  'functionCall': {
+                    'name': 'b',
+                    'args': {'y': 2}
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      });
+
+      final client = _RoutingFakeClient(
+        streamLines: [streamLine],
+        fallbackBody: fallback,
+      );
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(
+              thinkingBudget: 64,
+              includeThoughts: true,
+            ),
+            provider: provider,
+          )
+          .toList();
+
+      // Expect three events: thinking, text, then aggregated tools
+      expect(events.length, 3);
+      final thinkDelta = events[0].choices!.first.delta!;
+      expect(thinkDelta.content, isNotNull);
+      // includes <thinking> wrapper
+      expect(thinkDelta.content!.contains('Reason A'), isTrue);
+
+      final textDelta = events[1].choices!.first.delta!;
+      expect(textDelta.content, 'Visible');
+
+      final toolsDelta = events[2].choices!.first.delta!;
+      expect(toolsDelta.toolCalls, isNotNull);
+      expect(toolsDelta.toolCalls!.length, 2);
+      expect(toolsDelta.toolCalls![0].id, 'tool_0');
+      expect(toolsDelta.toolCalls![1].id, 'tool_1');
+    });
+
     test('maps functionCall to tool call chunk', () async {
       final line = jsonEncode({
         'candidates': [

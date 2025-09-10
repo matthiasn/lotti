@@ -193,7 +193,21 @@ class GeminiInferenceRepository {
         Map<String, dynamic> obj;
         try {
           obj = jsonDecode(objStr) as Map<String, dynamic>;
-        } catch (_) {
+        } catch (e, st) {
+          if (kVerboseStreamLogging) {
+            developer.log(
+              'Failed to decode JSON object',
+              name: 'GeminiInferenceRepository',
+              error: e,
+              stackTrace: st,
+            );
+            // Include a shortened preview of the offending JSON for debugging
+            final preview = objStr.length > kRawPreviewLen
+                ? objStr.substring(0, kRawPreviewLen)
+                : objStr;
+            developer.log('obj preview: $preview',
+                name: 'GeminiInferenceRepository');
+          }
           text = text.substring(end + 1);
           text = GeminiUtils.stripLeadingFraming(text);
           progressed = true;
@@ -405,92 +419,55 @@ class GeminiInferenceRepository {
       );
       if (fallbackResp.statusCode >= 200 && fallbackResp.statusCode < 300) {
         final decoded = jsonDecode(fallbackResp.body) as Map<String, dynamic>;
-        // Emit thinking + text + tools in a compact form
-        final candidates = decoded['candidates'];
-        if (candidates is List && candidates.isNotEmpty) {
-          final first = candidates.first;
-          final content =
-              first is Map<String, dynamic> ? first['content'] : null;
-          if (content is Map<String, dynamic>) {
-            final parts = content['parts'];
-            if (parts is List) {
-              final tb = StringBuffer();
-              final cb = StringBuffer();
-              final toolChunks = <ChatCompletionStreamMessageToolCallChunk>[];
-              var toolIndex = 0;
-              for (final p in parts) {
-                if (p is! Map<String, dynamic>) continue;
-                final isThought = p['thought'] == true;
-                final text = p['text'];
-                if (isThought && thinkingConfig.includeThoughts) {
-                  if (text is String && text.isNotEmpty) tb.write(text);
-                } else if (text is String && text.isNotEmpty) {
-                  cb.write(text);
-                }
-                final fc = p['functionCall'];
-                if (fc is Map<String, dynamic>) {
-                  final name = fc['name']?.toString() ?? '';
-                  final args = jsonEncode(fc['args'] ?? {});
-                  final idx = toolIndex++;
-                  toolChunks.add(
-                    ChatCompletionStreamMessageToolCallChunk(
-                      index: idx,
-                      id: 'tool_$idx',
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: name,
-                        arguments: args,
-                      ),
-                    ),
-                  );
-                }
-              }
-              if (tb.isNotEmpty) {
-                yield CreateChatCompletionStreamResponse(
-                  id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                  model: model,
-                  choices: [
-                    ChatCompletionStreamResponseChoice(
-                      index: 0,
-                      delta: ChatCompletionStreamResponseDelta(
-                        content: '<thinking>\n$tb\n</thinking>\n',
-                      ),
-                    ),
-                  ],
-                );
-              }
-              if (cb.isNotEmpty) {
-                yield CreateChatCompletionStreamResponse(
-                  id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                  model: model,
-                  choices: [
-                    ChatCompletionStreamResponseChoice(
-                      index: 0,
-                      delta: ChatCompletionStreamResponseDelta(
-                        content: cb.toString(),
-                      ),
-                    ),
-                  ],
-                );
-              }
-              if (toolChunks.isNotEmpty) {
-                yield CreateChatCompletionStreamResponse(
-                  id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                  model: model,
-                  choices: [
-                    ChatCompletionStreamResponseChoice(
-                      index: 0,
-                      delta: ChatCompletionStreamResponseDelta(
-                        toolCalls: toolChunks,
-                      ),
-                    ),
-                  ],
-                );
-              }
-            }
-          }
+        final payload = _processGeminiPayload(
+          decoded,
+          includeThoughts:
+              thinkingConfig.includeThoughts && !_isFlashModel(model),
+        );
+        if (payload.thinking.isNotEmpty) {
+          yield CreateChatCompletionStreamResponse(
+            id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            model: model,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: '<thinking>\n${payload.thinking}\n</thinking>\n',
+                ),
+              ),
+            ],
+          );
+        }
+        if (payload.visible.isNotEmpty) {
+          yield CreateChatCompletionStreamResponse(
+            id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            model: model,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: payload.visible,
+                ),
+              ),
+            ],
+          );
+        }
+        if (payload.toolChunks.isNotEmpty) {
+          yield CreateChatCompletionStreamResponse(
+            id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            model: model,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: payload.toolChunks,
+                ),
+              ),
+            ],
+          );
         }
       } else {
         if (kVerboseStreamLogging) {
@@ -502,6 +479,72 @@ class GeminiInferenceRepository {
       }
     }
   }
+}
+
+/// Internal helper result for consolidated (non-streaming) Gemini payloads.
+class _ProcessedPayload {
+  _ProcessedPayload({
+    required this.thinking,
+    required this.visible,
+    required this.toolChunks,
+  });
+
+  final String thinking;
+  final String visible;
+  final List<ChatCompletionStreamMessageToolCallChunk> toolChunks;
+}
+
+/// Processes a decoded Gemini response (non-streaming) into compact outputs.
+_ProcessedPayload _processGeminiPayload(
+  Map<String, dynamic> decoded, {
+  required bool includeThoughts,
+}) {
+  final tb = StringBuffer();
+  final cb = StringBuffer();
+  final toolChunks = <ChatCompletionStreamMessageToolCallChunk>[];
+  var toolIndex = 0;
+
+  final candidates = decoded['candidates'];
+  if (candidates is List && candidates.isNotEmpty) {
+    final first = candidates.first;
+    final content = first is Map<String, dynamic> ? first['content'] : null;
+    if (content is Map<String, dynamic>) {
+      final parts = content['parts'];
+      if (parts is List) {
+        for (final p in parts) {
+          if (p is! Map<String, dynamic>) continue;
+          final isThought = p['thought'] == true;
+          final text = p['text'];
+          if (isThought && includeThoughts) {
+            if (text is String && text.isNotEmpty) tb.write(text);
+          } else if (text is String && text.isNotEmpty) {
+            cb.write(text);
+          }
+          final fc = p['functionCall'];
+          if (fc is Map<String, dynamic>) {
+            final name = fc['name']?.toString() ?? '';
+            final args = jsonEncode(fc['args'] ?? {});
+            final idx = toolIndex++;
+            toolChunks.add(
+              ChatCompletionStreamMessageToolCallChunk(
+                index: idx,
+                id: 'tool_$idx',
+                function: ChatCompletionStreamMessageFunctionCall(
+                  name: name,
+                  arguments: args,
+                ),
+              ),
+            );
+          }
+        }
+      }
+    }
+  }
+  return _ProcessedPayload(
+    thinking: tb.toString(),
+    visible: cb.toString(),
+    toolChunks: toolChunks,
+  );
 }
 
 // no non-stream adapter

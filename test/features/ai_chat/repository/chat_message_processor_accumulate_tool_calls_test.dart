@@ -104,5 +104,39 @@ void main() {
             subDomain: 'accumulateToolCalls',
           )).called(1);
     });
+
+    test('replaces arguments if both existing and incoming are complete JSON',
+        () {
+      final toolCalls = <ChatCompletionMessageToolCall>[];
+      final buffers = <String, StringBuffer>{};
+
+      // First delta provides a complete JSON object
+      const d1 = ChatCompletionStreamMessageToolCallChunk(
+        index: 0,
+        id: 'rep',
+        function: ChatCompletionStreamMessageFunctionCall(
+          name: 'get_task_summaries',
+          arguments: '{"a":1}',
+        ),
+      );
+
+      // Second delta resends full args (also complete JSON) — should replace
+      const d2 = ChatCompletionStreamMessageToolCallChunk(
+        index: 0,
+        id: 'rep',
+        function: ChatCompletionStreamMessageFunctionCall(
+          name: 'get_task_summaries',
+          arguments: '{"a":2}',
+        ),
+      );
+
+      processor
+        ..accumulateToolCalls(toolCalls, [d1], buffers)
+        ..accumulateToolCalls(toolCalls, [d2], buffers);
+
+      expect(toolCalls.length, 1);
+      expect(toolCalls.first.id, 'rep');
+      expect(toolCalls.first.function.arguments, '{"a":2}');
+    });
   });
 }

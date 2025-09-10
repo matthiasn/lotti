@@ -133,7 +133,7 @@ class ChatSessionController extends _$ChatSessionController {
         if (text.trim().isEmpty) return; // Avoid empty reasoning bubbles
         // Finalize any visible streaming first
         if (_currentStreamingMessageId != null && _streamingIsVisibleSegment) {
-          _finalizeStreamingMessage(preserveStreamingFlags: true);
+          _finalizeStreamingMessage();
         }
         final wrapped = ChatStreamUtils.wrapThinkingBlock(text);
         final thinkingMessage = ChatMessage(
@@ -230,7 +230,7 @@ class ChatSessionController extends _$ChatSessionController {
   }
 
   /// Finalize the streaming assistant message (mark as completed).
-  void _finalizeStreamingMessage({bool preserveStreamingFlags = false}) {
+  void _finalizeStreamingMessage() {
     if (_currentStreamingMessageId == null) return;
 
     // Safely find the streaming message; if missing, just clear the ID.

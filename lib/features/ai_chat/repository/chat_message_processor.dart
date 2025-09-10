@@ -225,8 +225,12 @@ class ChatMessageProcessor {
     Map<String, StringBuffer> argumentBuffers,
   ) {
     bool isCompleteJson(String s) {
-      final t = s.trim();
-      return t.isNotEmpty && t.startsWith('{') && t.endsWith('}');
+      try {
+        jsonDecode(s);
+        return true;
+      } catch (_) {
+        return false;
+      }
     }
 
     for (final toolCallDelta in toolCallDeltas) {
