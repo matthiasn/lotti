@@ -45,7 +45,15 @@ class StreamingContent extends StatelessWidget {
       );
     }
 
-    final segments = splitThinkingSegments(content);
+    // Segment thinking/visible parts defensively; on parsing issues, render
+    // the raw content as a single non-thinking segment.
+    final segments = () {
+      try {
+        return splitThinkingSegments(content);
+      } on Exception {
+        return [ThinkingSegment(isThinking: false, text: content)];
+      }
+    }();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

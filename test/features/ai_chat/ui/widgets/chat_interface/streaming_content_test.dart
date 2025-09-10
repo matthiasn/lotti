@@ -78,4 +78,35 @@ void main() {
       expect(find.byType(GptMarkdown), findsNothing);
     });
   });
+
+  group('StreamingContent fallback', () {
+    testWidgets(
+        'renders visible markdown and does not break on malformed content',
+        (tester) async {
+      // Malformed/open-ended thinking with some visible content before it.
+      const malformed =
+          'Visible part before bad block\n<thinking>Unclosed block';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: StreamingContent(
+                content: malformed,
+                isUser: true,
+                theme: Theme.of(context),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // The visible portion should render as markdown and remain selectable
+      expect(find.byType(SelectionArea), findsOneWidget);
+      expect(find.byType(GptMarkdown), findsOneWidget);
+      expect(find.textContaining('Visible part before'), findsOneWidget);
+    });
+  });
 }
