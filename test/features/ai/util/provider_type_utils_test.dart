@@ -17,8 +17,8 @@ void main() {
     });
 
     test('defaults invalid strings to genericOpenAi', () {
-      expect(normalizeProviderType(''),
-          InferenceProviderType.genericOpenAi.name);
+      expect(
+          normalizeProviderType(''), InferenceProviderType.genericOpenAi.name);
       expect(normalizeProviderType('not-a-real-type'),
           InferenceProviderType.genericOpenAi.name);
       // Case-sensitive check: enum names are lowerCamelCase; uppercase should not match

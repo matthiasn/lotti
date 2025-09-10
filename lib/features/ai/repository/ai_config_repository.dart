@@ -168,5 +168,4 @@ class AiConfigRepository {
     }
     return map;
   }
-
 }

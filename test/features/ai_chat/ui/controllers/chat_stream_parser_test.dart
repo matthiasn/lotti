@@ -80,6 +80,42 @@ void main() {
       expect((flushed.single as ThinkingFinal).text, 'incomplete');
     });
 
+    test('finish flushes pending open-tag tail into thinking block', () {
+      final p = ChatStreamParser();
+      // Ends with a partial opener; carry should be '<thin'
+      final e1 = p.processChunk('<thinking>abc<thin');
+      expect(e1, isEmpty, reason: 'No close token yet, still inside thinking');
+      final flushed = p.finish();
+      expect(flushed.single, isA<ThinkingFinal>());
+      expect((flushed.single as ThinkingFinal).text, 'abc<thin');
+    });
+
+    test('finish emits pending open-tag tail as visible when not in thinking',
+        () {
+      final p = ChatStreamParser();
+      final e1 = p.processChunk('before<thin');
+      // Visible 'before' should emit immediately; '<thin' is carried
+      expect(e1.single, isA<VisibleAppend>());
+      expect((e1.single as VisibleAppend).text, 'before');
+      final flushed = p.finish();
+      expect(flushed.single, isA<VisibleAppend>());
+      expect((flushed.single as VisibleAppend).text, '<thin');
+    });
+
+    test('finish resets parser state for reuse', () {
+      final p = ChatStreamParser();
+      // Leave the parser mid-thinking with a pending tail
+      // ignore: cascade_invocations
+      p.processChunk('<thinking>x<thin');
+      final flushed = p.finish();
+      expect(flushed.single, isA<ThinkingFinal>());
+      // After finish, parser should accept new content as fresh visible text
+      final next = p.processChunk('OK');
+      expect(next.single, isA<VisibleAppend>());
+      expect((next.single as VisibleAppend).text, 'OK');
+      expect(p.finish(), isEmpty);
+    });
+
     test('whitespace-only unterminated thinking is not flushed', () {
       final p = ChatStreamParser();
       // ignore: cascade_invocations

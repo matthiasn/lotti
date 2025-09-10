@@ -245,8 +245,9 @@ class ChatSessionController extends _$ChatSessionController {
     // finalizing to avoid empty bubbles.
     final trimmed = existing.content.trim();
     if (trimmed.isEmpty) {
-      final without =
-          state.messages.where((m) => m.id != _currentStreamingMessageId).toList();
+      final without = state.messages
+          .where((m) => m.id != _currentStreamingMessageId)
+          .toList();
       state = state.copyWith(messages: without);
     } else {
       final updatedMessages = state.messages.map((msg) {

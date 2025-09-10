@@ -100,15 +100,40 @@ class ChatStreamParser {
   /// Flush any remaining state when the stream ends.
   List<ChatStreamEvent> finish() {
     final events = <ChatStreamEvent>[];
+
+    // If we carried a partial opener/tail to EOF, flush it now.
+    // - If we are inside a thinking stream, treat it as part of thinking.
+    // - Otherwise, surface it as visible content (respecting soft breaks).
+    if (_pendingOpenTagTail.isNotEmpty) {
+      if (_inThinkingStream) {
+        _thinkingBuffer.write(_pendingOpenTagTail);
+      } else {
+        final prep = ChatStreamUtils.prepareVisibleChunk(
+          _pendingOpenTagTail,
+          pendingSoftBreak: _pendingSoftBreak,
+        );
+        _pendingSoftBreak = prep.pendingSoftBreak;
+        final text = prep.text;
+        if (text != null && text.isNotEmpty) {
+          events.add(VisibleAppend(text));
+        }
+      }
+      _pendingOpenTagTail = '';
+    }
+
+    // Flush any remaining thinking as a final block.
     if (_thinkingBuffer.isNotEmpty) {
       final text = _thinkingBuffer.toString();
       _thinkingBuffer.clear();
-      _inThinkingStream = false;
-      _activeCloseToken = '';
       if (text.trim().isNotEmpty) {
         events.add(ThinkingFinal(text));
       }
     }
+
+    // Reset state so the parser can be reused safely.
+    _inThinkingStream = false;
+    _activeCloseToken = '';
+
     return events;
   }
 }

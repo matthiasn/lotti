@@ -77,5 +77,4 @@ class AiConfigDb extends _$AiConfigDb {
 
     return AiConfig.fromJson(map);
   }
-
 }

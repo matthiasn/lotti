@@ -82,10 +82,10 @@ class AssistantSettingsSheet extends ConsumerWidget {
                   }
                   // Use a safe selected value to avoid assertion if the
                   // previously selected model is not in the eligible list.
-                  final safeSelectedId = models
-                          .any((m) => m.id == sessionState.selectedModelId)
-                      ? sessionState.selectedModelId
-                      : null;
+                  final safeSelectedId =
+                      models.any((m) => m.id == sessionState.selectedModelId)
+                          ? sessionState.selectedModelId
+                          : null;
                   return DropdownButtonFormField<String>(
                     initialValue: safeSelectedId,
                     decoration: InputDecoration(
