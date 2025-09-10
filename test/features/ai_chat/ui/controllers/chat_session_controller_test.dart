@@ -75,6 +75,20 @@ void main() {
                 mockChatRepository.createSession(categoryId: 'test-category'))
             .thenAnswer((_) async => newSession);
 
+        // Keep provider alive during async streaming by listening to it
+        final sbSubscription = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        // Keep provider alive during async streaming by listening to it
+        final sub = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,
         );
@@ -90,6 +104,10 @@ void main() {
         verify(() =>
                 mockChatRepository.createSession(categoryId: 'test-category'))
             .called(1);
+
+        // Close the listen subscriptions to avoid resource leaks
+        sbSubscription.close();
+        sub.close();
       });
 
       test('loads existing session when sessionId provided', () async {
@@ -174,6 +192,72 @@ void main() {
     });
 
     group('sendMessage', () {
+      test('upgrades soft break before heading to blank line for Markdown',
+          () async {
+        // Initialize empty session
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                ));
+
+        final streamController = StreamController<String>();
+        // Keep provider alive during async streaming
+        final sbSubscription = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                ));
+
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        await controller.initializeSession();
+        await controller.setModel('model-1');
+
+        // Start streaming (do not await to keep stream open)
+        // ignore: unawaited_futures
+        controller.sendMessage('Hello');
+        await Future<void>.delayed(Duration.zero);
+
+        // Visible segments: text, then whitespace+newline, then heading start
+        streamController.add('Intro');
+        await Future<void>.delayed(Duration.zero);
+        streamController.add(' \n');
+        await Future<void>.delayed(Duration.zero);
+        streamController.add('# Title');
+        await streamController.close();
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        final assistant = state.messages.last;
+
+        // The controller should have upgraded the soft break to a blank line
+        // before the heading so Markdown recognizes the header properly.
+        expect(assistant.content.contains('\n\n# Title'), isTrue);
+        // Close the listen subscription
+        sbSubscription.close();
+      });
       test('does not send empty messages', () async {
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,

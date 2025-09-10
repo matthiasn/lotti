@@ -352,10 +352,11 @@ class GeminiInferenceRepository {
       );
     }
 
-    // Fallback: If the streaming API produced no deltas, perform a
-    // non-streaming call and emit a single content/tool chunk so the UI
-    // doesn't show an empty bubble.
-    if (!emittedAny || !answerStarted) {
+    // Fallback: If the streaming API produced no deltas at all, perform a
+    // non-streaming call and emit chunks so the UI doesn't show an empty
+    // bubble. If we already emitted anything (thinking/text/tool), skip
+    // fallback to avoid duplicate output.
+    if (!emittedAny) {
       final nonStreamingUri = _buildGenerateContentUri(
         baseUrl: provider.baseUrl,
         model: model,

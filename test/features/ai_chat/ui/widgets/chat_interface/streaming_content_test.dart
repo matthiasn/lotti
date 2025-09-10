@@ -60,5 +60,22 @@ void main() {
       expect(find.byType(SelectionArea), findsWidgets);
       expect(find.byType(GptMarkdown), findsNWidgets(2));
     });
+
+    testWidgets('thinking-only content renders only disclosures',
+        (tester) async {
+      const content = '<think>chain of thought</think>';
+
+      await tester.pumpWidget(wrap(
+        StreamingContent(
+          content: content,
+          isUser: false,
+          theme: ThemeData(),
+        ),
+      ));
+
+      // No visible markdown segments; only the disclosure is present
+      expect(find.byType(ThinkingDisclosure), findsOneWidget);
+      expect(find.byType(GptMarkdown), findsNothing);
+    });
   });
 }

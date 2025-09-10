@@ -7,7 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
 void main() {
-  Widget _wrap(Widget child) =>
+  Widget wrap(Widget child) =>
       ProviderScope(child: MaterialApp(home: Scaffold(body: child)));
 
   testWidgets('ChatHeader displays title + sessionTitle and opens settings',
@@ -16,7 +16,7 @@ void main() {
     if (!getIt.isRegistered<LoggingService>()) {
       getIt.registerSingleton<LoggingService>(LoggingService());
     }
-    await tester.pumpWidget(_wrap(ChatHeader(
+    await tester.pumpWidget(wrap(ChatHeader(
       sessionTitle: 'My Session',
       canClearChat: false,
       onClearChat: () {},

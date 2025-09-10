@@ -3,11 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 
 void main() {
-  Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
+  Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 
   testWidgets('ThinkingDisclosure toggles expansion', (tester) async {
     await tester
-        .pumpWidget(_wrap(const ThinkingDisclosure(thinking: 'internal plan')));
+        .pumpWidget(wrap(const ThinkingDisclosure(thinking: 'internal plan')));
 
     // Initially shows "Show reasoning"
     expect(find.text('Show reasoning'), findsOneWidget);

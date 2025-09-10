@@ -31,8 +31,9 @@ void main() {
             'content': {
               'role': 'model',
               'parts': [
-                {'thought': 'Consider tasks... '},
-                {'thought': 'Check dates.'},
+                // Gemini thinking parts include a boolean flag and text
+                {'text': 'Consider tasks... ', 'thought': true},
+                {'text': 'Check dates.', 'thought': true},
                 {'text': 'Here are your tasks.'},
               ],
             }
@@ -54,7 +55,8 @@ void main() {
 
       final stream = repo.generateText(
         prompt: 'Summarize tasks',
-        model: 'gemini-2.5-flash',
+        // Use a non-"flash" model so thinking blocks are surfaced
+        model: 'gemini-2.5-pro',
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(
           thinkingBudget: 1024,

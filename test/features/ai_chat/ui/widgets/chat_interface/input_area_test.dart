@@ -5,7 +5,7 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.d
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/input_area.dart';
 
 void main() {
-  Widget _wrap(Widget child, {List<Override> overrides = const []}) =>
+  Widget wrap(Widget child, {List<Override> overrides = const []}) =>
       ProviderScope(
         overrides: overrides,
         child: MaterialApp(home: Scaffold(body: child)),
@@ -15,7 +15,7 @@ void main() {
     String? sent;
     final controller = TextEditingController(text: 'hello');
     await tester.pumpWidget(
-      _wrap(
+      wrap(
         InputArea(
           controller: controller,
           scrollController: ScrollController(),
@@ -43,7 +43,7 @@ void main() {
   testWidgets('InputArea shows mic when empty and not requiresModelSelection',
       (tester) async {
     await tester.pumpWidget(
-      _wrap(
+      wrap(
         InputArea(
           controller: TextEditingController(),
           scrollController: ScrollController(),

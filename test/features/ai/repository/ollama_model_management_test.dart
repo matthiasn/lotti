@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -50,6 +52,10 @@ void main() {
       // Configure the mock ref to return the OllamaInferenceRepository with mocked HTTP
       when(() => mockRef.read(ollamaInferenceRepositoryProvider))
           .thenReturn(ollamaRepo);
+      // Also provide a real GeminiInferenceRepository to satisfy constructor deps
+      final geminiRepo = GeminiInferenceRepository(httpClient: mockHttpClient);
+      when(() => mockRef.read(geminiInferenceRepositoryProvider))
+          .thenReturn(geminiRepo);
 
       repository =
           CloudInferenceRepository(mockRef, httpClient: mockHttpClient);
@@ -417,6 +423,9 @@ void main() {
 
         when(() => testMockRef.read(ollamaInferenceRepositoryProvider))
             .thenReturn(testOllamaRepo);
+        // Provide Gemini repo as well for this specialized ref
+        when(() => testMockRef.read(geminiInferenceRepositoryProvider))
+            .thenReturn(GeminiInferenceRepository(httpClient: mockHttpClient));
 
         repository = TestCloudInferenceRepository(testMockRef,
             httpClient: mockHttpClient);
