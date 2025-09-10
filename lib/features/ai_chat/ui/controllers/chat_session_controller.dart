@@ -196,8 +196,8 @@ class ChatSessionController extends _$ChatSessionController {
           // strict markdown parsers (Flutter markdown often requires it).
           var text = rawText;
           if (_pendingSoftBreak) {
-            final startsListOrHeading = RegExp(r'^\s*(?:[-*•]|\d{1,2}\.|#{1,6}\s)')
-                .hasMatch(text);
+            final startsListOrHeading =
+                RegExp(r'^\s*(?:[-*•]|\d{1,2}\.|#{1,6}\s)').hasMatch(text);
             final prefix = startsListOrHeading ? '\n\n' : '\n';
             text = '$prefix$text';
             _pendingSoftBreak = false;

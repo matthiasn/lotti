@@ -113,7 +113,7 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('shows "No eligible models" when no eligible models',
+    testWidgets('shows "No eligible models" inside settings sheet when none',
         (tester) async {
       final mockAiRepo = MockAiConfigRepository();
       when(() => mockAiRepo.getConfigsByType(AiConfigType.model))
@@ -155,10 +155,16 @@ void main() {
       );
 
       await tester.pumpAndSettle();
+
+      // Open Assistant Settings via header button
+      await tester.tap(find.byTooltip('Assistant settings'));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Assistant Settings'), findsOneWidget);
       expect(find.text('No eligible models'), findsOneWidget);
     });
 
-    testWidgets('input disabled hint, mic active with no model selected',
+    testWidgets('input disabled and settings action when no model selected',
         (tester) async {
       final session = ChatSession(
         id: 'test-session',
@@ -192,15 +198,19 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      expect(find.text('Select a model to start chatting'), findsOneWidget);
-      // Mic is shown by default and remains active even if a model
-      // isn’t selected (recording is allowed; text send is not).
-      final micButtonFinder = find.ancestor(
-        of: find.byIcon(Icons.mic),
-        matching: find.byType(IconButton),
+
+      // Text input is disabled when no model is selected
+      final tf = tester.widget<TextField>(
+        find.byKey(const ValueKey('chat_text_field')),
       );
-      final mic = tester.widget<IconButton>(micButtonFinder);
-      expect(mic.onPressed, isNotNull);
+      expect(tf.enabled, isFalse);
+      // Mic is not available; a settings (tune) action is shown instead
+      expect(find.byIcon(Icons.mic), findsNothing);
+      final tuneBtn = tester.widget<IconButton>(find.ancestor(
+        of: find.byIcon(Icons.tune).first,
+        matching: find.byType(IconButton),
+      ));
+      expect(tuneBtn.onPressed, isNotNull);
     });
 
     testWidgets('error banner close hides the banner', (tester) async {
@@ -235,6 +245,7 @@ void main() {
                 createdAt: DateTime(2024),
                 lastMessageAt: DateTime(2024),
                 messages: [],
+                metadata: const {'selectedModelId': 'test-model'},
               ));
 
       await setupTestWidget(
@@ -347,10 +358,10 @@ void main() {
       expect(
           find.text('I am doing well, thank you for asking!'), findsOneWidget);
 
-      // New UX: no avatars on bubbles; copy buttons present
+      // New UX: no avatars on bubbles; copy button present for assistant only
       expect(find.byIcon(Icons.person), findsNothing);
       expect(find.byIcon(Icons.psychology), findsNothing);
-      expect(find.byIcon(Icons.copy), findsNWidgets(2));
+      expect(find.byIcon(Icons.copy), findsOneWidget);
     });
 
     testWidgets('shows clear chat button when messages exist', (tester) async {
@@ -624,7 +635,6 @@ void main() {
 
       // Verify main UI elements are displayed
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.mic), findsOneWidget);
       expect(find.text('AI Assistant'), findsOneWidget);
     });
 
@@ -685,8 +695,8 @@ void main() {
       // Wait for the streaming state to initialize
       await tester.pump();
 
-      // First check that we have an empty streaming message with "Thinking..."
-      expect(find.text('Thinking...'), findsOneWidget);
+      // First check that we have an empty streaming message indicator
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       // Add some streaming content
       streamController.add('Hello');
@@ -742,7 +752,9 @@ void main() {
       expect(find.text('Previous message'), findsOneWidget);
     });
 
-    testWidgets('model dropdown disabled during streaming', (tester) async {
+    testWidgets(
+        'model selection disabled during streaming (via settings sheet)',
+        (tester) async {
       final mockAiRepo = MockAiConfigRepository();
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -819,14 +831,19 @@ void main() {
       await tester.tap(find.byIcon(Icons.send));
       await tester.pump();
 
-      final dropdownFinder = find.byType(DropdownButton<String>);
-      final dropdown = tester.widget<DropdownButton<String>>(dropdownFinder);
-      expect(dropdown.onChanged, isNull);
+      // Open Assistant Settings
+      await tester.tap(find.byTooltip('Assistant settings'));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Assistant Settings'), findsOneWidget);
+      // DropdownFormField should be disabled while streaming
+      final ddFinder = find.byType(DropdownButtonFormField<String>);
+      final dd = tester.widget<DropdownButtonFormField<String>>(ddFinder);
+      expect(dd.onChanged, isNull);
 
       // Cleanup timers and stream
       await streamController.close();
       await tester.pump(const Duration(milliseconds: 250));
-      await tester.pumpAndSettle();
     });
 
     testWidgets('new chat button triggers session creation', (tester) async {

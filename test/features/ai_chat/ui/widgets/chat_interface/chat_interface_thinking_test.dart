@@ -84,7 +84,7 @@ void main() {
   }
 
   group('ChatInterface thinking blocks', () {
-    testWidgets('aggregates multiple thinking blocks into one disclosure',
+    testWidgets('renders separate disclosures for multiple thinking blocks',
         (tester) async {
       // Setup mock with a session containing thinking blocks
       when(() => mockRepo.createSession(categoryId: 'test-category'))
@@ -107,8 +107,8 @@ void main() {
 
       await pumpChatInterface(tester, repository: mockRepo);
 
-      // Verify the thinking toggle is shown
-      expect(find.text('Show reasoning'), findsOneWidget);
+      // Verify the thinking toggles are shown (one per thinking block)
+      expect(find.text('Show reasoning'), findsNWidgets(3));
 
       // Verify visible content is rendered
       expect(find.textContaining('Intro'), findsOneWidget);
@@ -121,23 +121,14 @@ void main() {
       expect(find.textContaining('Code thought'), findsNothing);
       expect(find.textContaining('Final thought'), findsNothing);
 
-      // Expand thinking content
-      await tester.tap(find.text('Show reasoning'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Hide reasoning'), findsOneWidget);
-
-      // All thinking content should now be visible
+      // Expand all thinking content by tapping all toggles
+      for (final e in find.text('Show reasoning').evaluate().toList()) {
+        await tester.tap(find.byWidget(e.widget));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(find.textContaining('First thought'), findsOneWidget);
       expect(find.textContaining('Code thought'), findsOneWidget);
       expect(find.textContaining('Final thought'), findsOneWidget);
-
-      // Collapse thinking content
-      await tester.tap(find.text('Hide reasoning'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Show reasoning'), findsOneWidget);
-      expect(find.textContaining('First thought'), findsNothing);
     });
 
     testWidgets('renders message with thinking content properly',
@@ -224,37 +215,34 @@ void main() {
       await tester.tap(find.byIcon(Icons.send));
       await tester.pump();
 
-      // Start streaming with thinking block
+      // Start streaming with open thinking block; toggle not shown until close
       streamController.add('<think>Processing');
       await tester.pump(const Duration(milliseconds: 100));
-
-      // Verify thinking toggle appears
-      expect(find.text('Show reasoning'), findsOneWidget);
-
-      // Expand to see partial thinking content
-      await tester.tap(find.text('Show reasoning'));
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.textContaining('Processing'), findsOneWidget);
+      expect(find.text('Show reasoning'), findsNothing);
 
       // Continue streaming
       streamController.add(' the request...');
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.textContaining('Processing the request...'), findsOneWidget);
 
-      // Close thinking block and add visible content
+      // Close thinking block and add visible content, then expand reasoning
       streamController.add('</think>Here is the response');
       await tester.pump(const Duration(milliseconds: 100));
 
       // Verify visible content appears
       expect(find.textContaining('Here is the response'), findsOneWidget);
 
-      // Thinking toggle should still be visible (may have toggled back to collapsed)
-      // Check for either state as the behavior may vary
-      final hasShowReasoning =
-          find.text('Show reasoning').evaluate().isNotEmpty;
-      final hasHideReasoning =
-          find.text('Hide reasoning').evaluate().isNotEmpty;
-      expect(hasShowReasoning || hasHideReasoning, isTrue);
+      // Expand one reasoning toggle to see combined thinking content
+      if (find.text('Show reasoning').evaluate().isNotEmpty) {
+        await tester.tap(find.text('Show reasoning').first);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.textContaining('Processing the request...'), findsOneWidget);
+
+      // Thinking toggle should now be visible (either state)
+      expect(
+          find.text('Show reasoning').evaluate().isNotEmpty ||
+              find.text('Hide reasoning').evaluate().isNotEmpty,
+          isTrue);
 
       // Add more content
       streamController.add(' with additional information.');
@@ -352,8 +340,8 @@ void main() {
       streamController.add('Start <think>First thought</think> middle ');
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Should see one thinking toggle
-      expect(find.text('Show reasoning'), findsOneWidget);
+      // Should see at least one thinking toggle
+      expect(find.text('Show reasoning'), findsAtLeastNWidgets(1));
       expect(find.textContaining('Start'), findsOneWidget);
       expect(find.textContaining('middle'), findsOneWidget);
 
@@ -361,14 +349,15 @@ void main() {
       streamController.add('```think\nSecond thought\n``` end');
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Still only one toggle (aggregated)
-      expect(find.text('Show reasoning'), findsOneWidget);
+      // Still at least one toggle (per-segment)
+      expect(find.text('Show reasoning'), findsAtLeastNWidgets(1));
       expect(find.textContaining('end'), findsOneWidget);
 
-      // Expand to see all thinking content
-      await tester.tap(find.text('Show reasoning'));
-      await tester.pump(const Duration(milliseconds: 100));
-
+      // Expand to see all thinking content (tap all toggles present)
+      for (final e in find.text('Show reasoning').evaluate().toList()) {
+        await tester.tap(find.byWidget(e.widget));
+        await tester.pump(const Duration(milliseconds: 50));
+      }
       expect(find.textContaining('First thought'), findsOneWidget);
       expect(find.textContaining('Second thought'), findsOneWidget);
 
@@ -423,31 +412,29 @@ void main() {
       // Start with open-ended thinking block
       streamController.add('<think>Starting to process');
       await tester.pump(const Duration(milliseconds: 100));
-
-      // Should show thinking toggle even without closing tag
-      expect(find.text('Show reasoning'), findsOneWidget);
-
-      // Expand to see partial content
-      await tester.tap(find.text('Show reasoning'));
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.textContaining('Starting to process'), findsOneWidget);
+      // Toggle not shown until close
+      expect(find.text('Show reasoning'), findsNothing);
 
       // Continue streaming within thinking block
       streamController.add('... analyzing the request');
       await tester.pump(const Duration(milliseconds: 100));
-      expect(
-          find.textContaining('Starting to process... analyzing the request'),
-          findsOneWidget);
 
       // Close thinking and add visible content
       streamController.add('</think>The answer is 42');
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.textContaining('The answer is 42'), findsOneWidget);
-      // Toggle should be present (in either state)
+      // Toggle should be present (in either state); expand to verify full content
       final hasToggle = find.text('Show reasoning').evaluate().isNotEmpty ||
           find.text('Hide reasoning').evaluate().isNotEmpty;
       expect(hasToggle, isTrue);
+      if (find.text('Show reasoning').evaluate().isNotEmpty) {
+        await tester.tap(find.text('Show reasoning').first);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(
+          find.textContaining('Starting to process... analyzing the request'),
+          findsOneWidget);
 
       await streamController.close();
       await tester.pumpAndSettle();

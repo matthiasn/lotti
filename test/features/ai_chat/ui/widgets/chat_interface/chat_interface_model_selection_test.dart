@@ -28,7 +28,8 @@ void main() {
     ));
   });
 
-  testWidgets('shows model dropdown and persists selection', (tester) async {
+  testWidgets('opens settings, shows model dropdown and persists selection',
+      (tester) async {
     final mockChatRepository = MockChatRepository();
     final mockLoggingService = MockLoggingService();
     final mockAiRepo = MockAiConfigRepository();
@@ -98,19 +99,26 @@ void main() {
 
     await tester.pumpAndSettle();
 
+    // Open Assistant Settings via header tune button
+    await tester.tap(find.byTooltip('Assistant settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Assistant Settings'), findsOneWidget);
+
     // Dropdown should be present with hint
-    expect(find.byType(DropdownButton<String>), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
     expect(find.text('Select model'), findsOneWidget);
 
     // Open and select the single model option
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Gemini Flash').last);
     await tester.pumpAndSettle();
 
-    // After selection, the input hint should change (canSend becomes true)
-    expect(
-        find.text('Ask about your tasks and productivity...'), findsOneWidget);
+    // After selection, the input should become enabled (canSend becomes true)
+    final tf = tester.widget<TextField>(
+      find.byKey(const ValueKey('chat_text_field')),
+    );
+    expect(tf.enabled, isTrue);
 
     // Verify persistence via repository
     verify(() => mockChatRepository.saveSession(any())).called(1);
