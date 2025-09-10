@@ -228,15 +228,6 @@ class ChatMessageProcessor {
     List<ChatCompletionStreamMessageToolCallChunk> toolCallDeltas,
     Map<String, StringBuffer> argumentBuffers,
   ) {
-    bool isCompleteJson(String s) {
-      try {
-        final decoded = jsonDecode(s);
-        return decoded is Map;
-      } catch (_) {
-        return false;
-      }
-    }
-
     for (final toolCallDelta in toolCallDeltas) {
       if (toolCallDelta.function != null) {
         // Use a stable deterministic id for this tool call within the stream.
@@ -264,7 +255,8 @@ class ChatMessageProcessor {
         if (incoming != null) {
           final buf = argumentBuffers[toolId]!;
           final incomingStr = incoming;
-          if (isCompleteJson(incomingStr) && isCompleteJson(buf.toString())) {
+          if (_isCompleteJson(incomingStr) &&
+              _isCompleteJson(buf.toString())) {
             argumentBuffers[toolId] = StringBuffer(incomingStr);
           } else {
             buf.write(incomingStr);
@@ -476,5 +468,15 @@ class ChatMessageProcessor {
           content: message.content,
         );
     }
+  }
+}
+
+// Checks whether a string parses to a JSON object (Map).
+bool _isCompleteJson(String s) {
+  try {
+    final decoded = jsonDecode(s);
+    return decoded is Map;
+  } catch (_) {
+    return false;
   }
 }
