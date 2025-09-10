@@ -67,6 +67,177 @@ class ThinkingUtils {
   static String stripThinking(String input) => parseThinking(input).visible;
 }
 
+// Shared helpers to avoid duplication between parseThinking and
+// splitThinkingSegments.
+
+// Finds the body start for a fenced block beginning at or after `from`.
+int? _fenceBodyStartFor(String content, int from) {
+  final match = ThinkingPatterns.fenceOpen.firstMatch(content.substring(from));
+  if (match == null) return null;
+  return from + match.end;
+}
+
+// Extract a possibly nested block using open/close tokens (case-insensitive).
+// Returns the end index after the close and the extracted body.
+({int end, String body}) _extractNested(
+  String content,
+  int bodyStart,
+  String openToken,
+  String closeToken,
+) {
+  final lower = content.toLowerCase();
+  final open = openToken.toLowerCase();
+  final close = closeToken.toLowerCase();
+  var depth = 1;
+  var pos = bodyStart;
+  while (pos < content.length) {
+    final nextOpen = lower.indexOf(open, pos);
+    final nextClose = lower.indexOf(close, pos);
+    if (nextClose < 0) {
+      // Open-ended
+      return (end: content.length, body: content.substring(bodyStart));
+    }
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      depth += 1;
+      pos = nextOpen + open.length;
+    } else {
+      depth -= 1;
+      pos = nextClose + close.length;
+      if (depth == 0) {
+        final body = content.substring(bodyStart, nextClose);
+        return (end: pos, body: body);
+      }
+    }
+  }
+  // If we exit the loop, treat as open-ended
+  return (end: content.length, body: content.substring(bodyStart));
+}
+
+// Determine the next block type and its index from a given position.
+// Returns null if no further blocks are found.
+({String type, int nextIdx})? _findNextBlockType(String content, int index) {
+  final lower = content.toLowerCase();
+
+  // Earliest of <think> or <thinking>
+  final htmlIdxThink = lower.indexOf('<think>', index);
+  final htmlIdxThinking = lower.indexOf('<thinking>', index);
+  int htmlIdx;
+  if (htmlIdxThink == -1) {
+    htmlIdx = htmlIdxThinking;
+  } else if (htmlIdxThinking == -1) {
+    htmlIdx = htmlIdxThink;
+  } else {
+    htmlIdx = htmlIdxThink < htmlIdxThinking ? htmlIdxThink : htmlIdxThinking;
+  }
+
+  // Earliest of [think] or [thinking]
+  final bracketIdxThink = lower.indexOf('[think]', index);
+  final bracketIdxThinking = lower.indexOf('[thinking]', index);
+  int bracketIdx;
+  if (bracketIdxThink == -1) {
+    bracketIdx = bracketIdxThinking;
+  } else if (bracketIdxThinking == -1) {
+    bracketIdx = bracketIdxThink;
+  } else {
+    bracketIdx = bracketIdxThink < bracketIdxThinking
+        ? bracketIdxThink
+        : bracketIdxThinking;
+  }
+
+  // Fenced: find next match start
+  var fenceIdx = -1;
+  final iter = ThinkingPatterns.fenceOpen.allMatches(content, index).iterator;
+  if (iter.moveNext()) {
+    fenceIdx = iter.current.start;
+  }
+
+  var nextIdx = content.length;
+  String? type;
+  if (htmlIdx >= 0 && htmlIdx < nextIdx) {
+    nextIdx = htmlIdx;
+    type = 'html';
+  }
+  if (bracketIdx >= 0 && bracketIdx < nextIdx) {
+    nextIdx = bracketIdx;
+    type = 'bracket';
+  }
+  if (fenceIdx >= 0 && fenceIdx < nextIdx) {
+    nextIdx = fenceIdx;
+    type = 'fence';
+  }
+
+  if (type == null) return null;
+  return (type: type, nextIdx: nextIdx);
+}
+
+// Given a block type and its start index, resolve tokens and body start.
+({int bodyStart, String openToken, String closeToken, int afterCloseAdvance})
+    _resolveTokens(String content, String type, int nextIdx) {
+  final lowerAll = content.toLowerCase();
+  switch (type) {
+    case 'html':
+      if (lowerAll.startsWith('<thinking>', nextIdx)) {
+        const openToken = '<thinking>';
+        const closeToken = '</thinking>';
+        return (
+          bodyStart: nextIdx + openToken.length,
+          openToken: openToken,
+          closeToken: closeToken,
+          afterCloseAdvance: closeToken.length,
+        );
+      } else {
+        const openToken = '<think>';
+        const closeToken = '</think>';
+        return (
+          bodyStart: nextIdx + openToken.length,
+          openToken: openToken,
+          closeToken: closeToken,
+          afterCloseAdvance: closeToken.length,
+        );
+      }
+    case 'bracket':
+      if (lowerAll.startsWith('[thinking]', nextIdx)) {
+        const openToken = '[thinking]';
+        const closeToken = '[/thinking]';
+        return (
+          bodyStart: nextIdx + openToken.length,
+          openToken: openToken,
+          closeToken: closeToken,
+          afterCloseAdvance: closeToken.length,
+        );
+      } else {
+        const openToken = '[think]';
+        const closeToken = '[/think]';
+        return (
+          bodyStart: nextIdx + openToken.length,
+          openToken: openToken,
+          closeToken: closeToken,
+          afterCloseAdvance: closeToken.length,
+        );
+      }
+    case 'fence':
+      final openToken = lowerAll.startsWith('```thinking', nextIdx)
+          ? '```thinking'
+          : '```think';
+      final bodyStart =
+          _fenceBodyStartFor(content, nextIdx) ?? (nextIdx + openToken.length);
+      const closeToken = ThinkingPatterns.fenceClose;
+      return (
+        bodyStart: bodyStart,
+        openToken: openToken,
+        closeToken: closeToken,
+        afterCloseAdvance: closeToken.length,
+      );
+    default:
+      return (
+        bodyStart: nextIdx,
+        openToken: '',
+        closeToken: '',
+        afterCloseAdvance: 0,
+      );
+  }
+}
+
 /// Parses assistant output to extract any hidden `thinking` sections and
 /// return visible content separately.
 ///
@@ -97,178 +268,42 @@ ParsedThinking parseThinking(String content) {
     var index = 0;
     var foundThinking = false;
 
-    int? fenceBodyStartFor(int from) {
-      final match =
-          ThinkingPatterns.fenceOpen.firstMatch(content.substring(from));
-      if (match == null) return null;
-      return from + match.end; // body begins after the opening line
-    }
-
-    // Extract a possibly nested block using open/close tokens (case-insensitive).
-    // Returns the end index after the close and the extracted body.
-    ({int end, String body}) extractNested(
-      int bodyStart,
-      String openToken,
-      String closeToken,
-    ) {
-      final lower = content.toLowerCase();
-      final open = openToken.toLowerCase();
-      final close = closeToken.toLowerCase();
-      var depth = 1;
-      var pos = bodyStart;
-      while (pos < content.length) {
-        final nextOpen = lower.indexOf(open, pos);
-        final nextClose = lower.indexOf(close, pos);
-        if (nextClose < 0) {
-          // Open-ended
-          return (end: content.length, body: content.substring(bodyStart));
-        }
-        if (nextOpen >= 0 && nextOpen < nextClose) {
-          depth += 1;
-          pos = nextOpen + open.length;
-        } else {
-          depth -= 1;
-          pos = nextClose + close.length;
-          if (depth == 0) {
-            final body = content.substring(bodyStart, nextClose);
-            return (end: pos, body: body);
-          }
-        }
-      }
-      // If we exit the loop, treat as open-ended
-      return (end: content.length, body: content.substring(bodyStart));
-    }
-
     while (index < content.length) {
-      final lower = content.toLowerCase();
-      // Find earliest of <think> or <thinking>
-      final htmlIdxThink = lower.indexOf('<think>', index);
-      final htmlIdxThinking = lower.indexOf('<thinking>', index);
-      int htmlIdx;
-      if (htmlIdxThink == -1) {
-        htmlIdx = htmlIdxThinking;
-      } else if (htmlIdxThinking == -1) {
-        htmlIdx = htmlIdxThink;
-      } else {
-        htmlIdx =
-            htmlIdxThink < htmlIdxThinking ? htmlIdxThink : htmlIdxThinking;
-      }
-
-      // Find earliest of [think] or [thinking]
-      final bracketIdxThink = lower.indexOf('[think]', index);
-      final bracketIdxThinking = lower.indexOf('[thinking]', index);
-      int bracketIdx;
-      if (bracketIdxThink == -1) {
-        bracketIdx = bracketIdxThinking;
-      } else if (bracketIdxThinking == -1) {
-        bracketIdx = bracketIdxThink;
-      } else {
-        bracketIdx = bracketIdxThink < bracketIdxThinking
-            ? bracketIdxThink
-            : bracketIdxThinking;
-      }
-      var fenceIdx = -1;
-      final iter =
-          ThinkingPatterns.fenceOpen.allMatches(content, index).iterator;
-      if (iter.moveNext()) {
-        fenceIdx = iter.current.start;
-      }
-
-      // Choose earliest start token from current index
-      var nextIdx = content.length;
-      String? type;
-      if (htmlIdx >= 0 && htmlIdx < nextIdx) {
-        nextIdx = htmlIdx;
-        type = 'html';
-      }
-      if (bracketIdx >= 0 && bracketIdx < nextIdx) {
-        nextIdx = bracketIdx;
-        type = 'bracket';
-      }
-      if (fenceIdx >= 0 && fenceIdx < nextIdx) {
-        nextIdx = fenceIdx;
-        type = 'fence';
-      }
-
-      if (type == null) {
+      final found = _findNextBlockType(content, index);
+      if (found == null) {
         // No more thinking blocks; add remainder to visible and stop.
         visible.write(content.substring(index));
         break;
       }
 
       // Emit preceding visible content
-      if (nextIdx > index) {
-        visible.write(content.substring(index, nextIdx));
+      if (found.nextIdx > index) {
+        visible.write(content.substring(index, found.nextIdx));
       }
 
       // Advance past opening token and capture thinking until its close (or end)
-      int bodyStart;
-      String openToken;
-      String closeToken;
-      int afterCloseAdvance;
-
-      switch (type) {
-        case 'html':
-          // Determine which opening tag matched at nextIdx
-          if (lower.startsWith('<thinking>', nextIdx)) {
-            openToken = '<thinking>';
-            closeToken = '</thinking>';
-          } else {
-            openToken = '<think>';
-            closeToken = '</think>';
-          }
-          bodyStart = nextIdx + openToken.length;
-          afterCloseAdvance = closeToken.length;
-
-        case 'bracket':
-          if (lower.startsWith('[thinking]', nextIdx)) {
-            openToken = '[thinking]';
-            closeToken = '[/thinking]';
-          } else {
-            openToken = '[think]';
-            closeToken = '[/think]';
-          }
-          bodyStart = nextIdx + openToken.length;
-          afterCloseAdvance = closeToken.length;
-
-        case 'fence':
-          // Determine which fence matched to compute bodyStart correctly.
-          if (lower.startsWith('```thinking', nextIdx)) {
-            openToken = '```thinking';
-          } else {
-            openToken = '```think';
-          }
-          bodyStart =
-              fenceBodyStartFor(nextIdx) ?? (nextIdx + openToken.length);
-          closeToken = ThinkingPatterns.fenceClose;
-          afterCloseAdvance = closeToken.length;
-
-        default:
-          // Should not happen; treat as visible
-          visible.write(content.substring(nextIdx));
-          index = content.length;
-          continue;
-      }
+      final tokens = _resolveTokens(content, found.type, found.nextIdx);
 
       String segment;
       int nextIndexAfterClose;
 
-      if (type == 'html') {
-        final res = extractNested(bodyStart, openToken, closeToken);
-        segment = res.body;
-        nextIndexAfterClose = res.end;
-      } else if (type == 'bracket') {
-        final res = extractNested(bodyStart, openToken, closeToken);
+      if (found.type == 'html' || found.type == 'bracket') {
+        final res = _extractNested(
+          content,
+          tokens.bodyStart,
+          tokens.openToken,
+          tokens.closeToken,
+        );
         segment = res.body;
         nextIndexAfterClose = res.end;
       } else {
         // fence: not nested, find next ```
-        final closeIdx = content.indexOf(closeToken, bodyStart);
+        final closeIdx = content.indexOf(tokens.closeToken, tokens.bodyStart);
         if (closeIdx >= 0) {
-          segment = content.substring(bodyStart, closeIdx);
-          nextIndexAfterClose = closeIdx + afterCloseAdvance;
+          segment = content.substring(tokens.bodyStart, closeIdx);
+          nextIndexAfterClose = closeIdx + tokens.afterCloseAdvance;
         } else {
-          segment = content.substring(bodyStart);
+          segment = content.substring(tokens.bodyStart);
           nextIndexAfterClose = content.length;
         }
       }
@@ -316,95 +351,9 @@ List<ThinkingSegment> splitThinkingSegments(String content) {
 
     var index = 0;
 
-    int? fenceBodyStartFor(int from) {
-      final match =
-          ThinkingPatterns.fenceOpen.firstMatch(content.substring(from));
-      if (match == null) return null;
-      return from + match.end;
-    }
-
-    ({int end, String body}) extractNested(
-      int bodyStart,
-      String openToken,
-      String closeToken,
-    ) {
-      final lower = content.toLowerCase();
-      final open = openToken.toLowerCase();
-      final close = closeToken.toLowerCase();
-      var depth = 1;
-      var pos = bodyStart;
-      while (pos < content.length) {
-        final nextOpen = lower.indexOf(open, pos);
-        final nextClose = lower.indexOf(close, pos);
-        if (nextClose < 0) {
-          // Open-ended
-          return (end: content.length, body: content.substring(bodyStart));
-        }
-        if (nextOpen >= 0 && nextOpen < nextClose) {
-          depth += 1;
-          pos = nextOpen + open.length;
-        } else {
-          depth -= 1;
-          pos = nextClose + close.length;
-          if (depth == 0) {
-            final body = content.substring(bodyStart, nextClose);
-            return (end: pos, body: body);
-          }
-        }
-      }
-      return (end: content.length, body: content.substring(bodyStart));
-    }
-
     while (index < content.length) {
-      final lower = content.toLowerCase();
-      final htmlIdxThink = lower.indexOf('<think>', index);
-      final htmlIdxThinking = lower.indexOf('<thinking>', index);
-      int htmlIdx;
-      if (htmlIdxThink == -1) {
-        htmlIdx = htmlIdxThinking;
-      } else if (htmlIdxThinking == -1) {
-        htmlIdx = htmlIdxThink;
-      } else {
-        htmlIdx =
-            htmlIdxThink < htmlIdxThinking ? htmlIdxThink : htmlIdxThinking;
-      }
-
-      final bracketIdxThink = lower.indexOf('[think]', index);
-      final bracketIdxThinking = lower.indexOf('[thinking]', index);
-      int bracketIdx;
-      if (bracketIdxThink == -1) {
-        bracketIdx = bracketIdxThinking;
-      } else if (bracketIdxThinking == -1) {
-        bracketIdx = bracketIdxThink;
-      } else {
-        bracketIdx = bracketIdxThink < bracketIdxThinking
-            ? bracketIdxThink
-            : bracketIdxThinking;
-      }
-
-      var fenceIdx = -1;
-      final iter =
-          ThinkingPatterns.fenceOpen.allMatches(content, index).iterator;
-      if (iter.moveNext()) {
-        fenceIdx = iter.current.start;
-      }
-
-      var nextIdx = content.length;
-      String? type;
-      if (htmlIdx >= 0 && htmlIdx < nextIdx) {
-        nextIdx = htmlIdx;
-        type = 'html';
-      }
-      if (bracketIdx >= 0 && bracketIdx < nextIdx) {
-        nextIdx = bracketIdx;
-        type = 'bracket';
-      }
-      if (fenceIdx >= 0 && fenceIdx < nextIdx) {
-        nextIdx = fenceIdx;
-        type = 'fence';
-      }
-
-      if (type == null) {
+      final found = _findNextBlockType(content, index);
+      if (found == null) {
         final tail = content.substring(index);
         if (tail.isNotEmpty) {
           segments.add(ThinkingSegment(isThinking: false, text: tail));
@@ -413,69 +362,33 @@ List<ThinkingSegment> splitThinkingSegments(String content) {
       }
 
       // Visible before block
-      if (nextIdx > index) {
-        final vis = content.substring(index, nextIdx);
+      if (found.nextIdx > index) {
+        final vis = content.substring(index, found.nextIdx);
         if (vis.isNotEmpty) {
           segments.add(ThinkingSegment(isThinking: false, text: vis));
         }
       }
 
-      int bodyStart;
-      String openToken;
-      String closeToken;
-      int afterCloseAdvance;
-      final lowerAll = content.toLowerCase();
-      switch (type) {
-        case 'html':
-          if (lowerAll.startsWith('<thinking>', nextIdx)) {
-            openToken = '<thinking>';
-            closeToken = '</thinking>';
-          } else {
-            openToken = '<think>';
-            closeToken = '</think>';
-          }
-          bodyStart = nextIdx + openToken.length;
-          afterCloseAdvance = closeToken.length;
-        case 'bracket':
-          if (lowerAll.startsWith('[thinking]', nextIdx)) {
-            openToken = '[thinking]';
-            closeToken = '[/thinking]';
-          } else {
-            openToken = '[think]';
-            closeToken = '[/think]';
-          }
-          bodyStart = nextIdx + openToken.length;
-          afterCloseAdvance = closeToken.length;
-        case 'fence':
-          if (lowerAll.startsWith('```thinking', nextIdx)) {
-            openToken = '```thinking';
-          } else {
-            openToken = '```think';
-          }
-          bodyStart =
-              fenceBodyStartFor(nextIdx) ?? (nextIdx + openToken.length);
-          closeToken = ThinkingPatterns.fenceClose;
-          afterCloseAdvance = closeToken.length;
-        default:
-          bodyStart = nextIdx;
-          openToken = '';
-          closeToken = '';
-          afterCloseAdvance = 0;
-      }
+      final tokens = _resolveTokens(content, found.type, found.nextIdx);
 
       String segment;
       int nextIndexAfterClose;
-      if (type == 'fence') {
-        final closeIdx = content.indexOf(closeToken, bodyStart);
+      if (found.type == 'fence') {
+        final closeIdx = content.indexOf(tokens.closeToken, tokens.bodyStart);
         if (closeIdx >= 0) {
-          segment = content.substring(bodyStart, closeIdx);
-          nextIndexAfterClose = closeIdx + afterCloseAdvance;
+          segment = content.substring(tokens.bodyStart, closeIdx);
+          nextIndexAfterClose = closeIdx + tokens.afterCloseAdvance;
         } else {
-          segment = content.substring(bodyStart);
+          segment = content.substring(tokens.bodyStart);
           nextIndexAfterClose = content.length;
         }
       } else {
-        final res = extractNested(bodyStart, openToken, closeToken);
+        final res = _extractNested(
+          content,
+          tokens.bodyStart,
+          tokens.openToken,
+          tokens.closeToken,
+        );
         segment = res.body;
         nextIndexAfterClose = res.end;
       }

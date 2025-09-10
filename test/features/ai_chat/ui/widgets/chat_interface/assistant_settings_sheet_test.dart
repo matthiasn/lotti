@@ -88,14 +88,17 @@ void main() {
     expect(find.text('Show reasoning'), findsOneWidget);
   });
 
-  testWidgets('dropdown shows null when previously selected model is ineligible',
+  testWidgets(
+      'dropdown shows null when previously selected model is ineligible',
       (tester) async {
     // Ensure LoggingService is available
     if (!getIt.isRegistered<LoggingService>()) {
       getIt.registerSingleton<LoggingService>(LoggingService());
     }
 
-    final models = [_model('m1', 'A-Model')]; // Does not include 'missing-model'
+    final models = [
+      _model('m1', 'A-Model')
+    ]; // Does not include 'missing-model'
 
     await tester.pumpWidget(
       ProviderScope(
