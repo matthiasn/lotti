@@ -94,6 +94,7 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                       ),
                       icon: const Icon(Icons.copy, size: 16),
                       onPressed: () async {
+                        // Copying from the disclosure copies reasoning only; the main bubble copy strips thinking.
                         await Clipboard.setData(
                             ClipboardData(text: widget.thinking));
                         if (context.mounted) {

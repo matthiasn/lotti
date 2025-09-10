@@ -182,6 +182,10 @@ class ChatMessageProcessor {
   ///
   /// The returned `content` is the full concatenation of content deltas.
   /// Tool call arguments are accumulated across deltas by tool id.
+  ///
+  /// Note: Reasoning/thinking text (if present) is not stripped here.
+  /// The chat UI uses `thinking_parser.dart` to hide/show thinking blocks
+  /// without altering provider semantics.
   Future<StreamProcessingResult> processStreamResponse(
     Stream<CreateChatCompletionStreamResponse> stream,
   ) async {

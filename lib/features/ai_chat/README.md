@@ -49,7 +49,7 @@ lib/features/ai_chat/
 - **Model Selection**: Users must explicitly select an AI model from configured providers (e.g., Ollama, OpenAI-compatible, Gemini, etc.) per chat session - no automatic fallback
 - **Function Calling**: Uses the `get_task_summaries` tool to retrieve relevant data
 - **Streaming Markdown**: Tokens stream from providers and render incrementally as Markdown with a typing indicator
-- **Collapsible Reasoning**: Hidden “thinking” blocks are parsed and shown behind a collapsed disclosure. Multiple segments are aggregated with a subtle divider and rendered with the same Markdown widget for consistent typography.
+- **Collapsible Reasoning**: Hidden “thinking” blocks are parsed and shown behind a collapsed disclosure. Multiple segments are aggregated with a subtle divider and rendered with the same Markdown widget for consistent typography. For Gemini providers, non‑flash models may include a single consolidated thinking block before the visible answer (when enabled); flash models never surface thinking.
 - **Copy Behavior**: Copying assistant messages strips hidden thinking by default.
 
 ### ✅ Voice Input & Transcription
@@ -79,7 +79,7 @@ lib/features/ai_chat/
 Central orchestrator handling:
 - Session CRUD operations (in-memory storage)
 - Real-time streaming: forwards content deltas to the UI while accumulating tool calls
-- AI service integration through CloudInferenceRepository (provider-agnostic)
+- AI service integration through CloudInferenceRepository (provider‑aware routing)
 - Tool calling orchestration for task summaries and streaming of final responses
 
 ### ChatMessageProcessor
@@ -90,6 +90,18 @@ Extracted testable logic for:
 - Tool call processing and response handling
 - Prompt building from conversation history
 - No fallback mechanism - requires explicit model selection
+
+### Reasoning & Copy Behavior
+
+- Hidden reasoning is never rendered inline. The UI provides a single collapsed
+  disclosure per assistant message. Multiple reasoning segments are concatenated
+  with a Markdown horizontal rule (---) for readability.
+- Copying assistant messages strips reasoning by default (only visible answer is
+  copied). Copying from the reasoning disclosure copies the reasoning text.
+- Gemini mapping: For non‑flash models (when enabled), at most one consolidated
+  `<thinking>` block may appear before the visible answer; flash models never
+  surface thinking. See `thinking_parser.dart` for the exact patterns supported
+  and streaming/open‑ended handling.
 
 ### TaskSummaryRepository
 Complex data retrieval engine:
@@ -127,6 +139,16 @@ Complex data retrieval engine:
 - **Streaming**: Provider streams are forwarded as deltas to the UI
 - **Error Handling**: Consistent with existing AI error patterns
 
+### Provider Integration
+
+The chat feature is provider‑agnostic at the UI layer and routes inference via a shared orchestration layer:
+
+- `CloudInferenceRepository` selects the appropriate adapter per provider:
+  - Gemini → `GeminiInferenceRepository` (native REST) with a robust streaming parser that handles SSE `data:` lines, NDJSON, and array framing. Emits OpenAI‑compatible deltas and enforces the thinking visibility policy (non‑flash may include a single consolidated `<thinking>` block before visible content; flash models never include thinking).
+  - Ollama → `OllamaInferenceRepository` using the `/api/chat` endpoint for streaming and function calling.
+  - OpenAI‑compatible → direct `openai_dart` streaming.
+- The chat UI consumes OpenAI‑compatible content deltas and uses `thinking_parser.dart` to hide/show reasoning without altering provider semantics.
+
 ## 📊 Technical Specifications
 
 ### Performance Characteristics
@@ -145,6 +167,7 @@ Complex data retrieval engine:
 - **Model Selection**: Explicit selection required - select an eligible model per session (function-calling + text input required)
 - **No Fallback**: System enforces model selection before sending messages - no automatic defaults
 - **Providers**: Works with Ollama (local), OpenAI-compatible APIs, Gemini, and more (via unified config)
+ - **Providers**: Works with Ollama (local), OpenAI-compatible APIs, Gemini, and more (via unified config and provider‑aware adapters)
 - **Function Calling**: OpenAI-compatible tool definitions
 - **Context Management**: Prompt includes prior conversation context
 - **Token Efficiency**: Optimized prompts for cost-effective usage

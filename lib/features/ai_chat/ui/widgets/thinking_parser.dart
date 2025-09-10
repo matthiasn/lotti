@@ -1,4 +1,25 @@
 // Result of parsing a message that may contain hidden `thinking` content.
+/*
+Reasoning Behavior
+
+- Supported markers: <think>…</think>, <thinking>…</thinking>, [think]…[/think],
+  [thinking]…[/thinking], and fenced code blocks with language "think" or
+  "thinking" (```think / ```thinking).
+- UI model: thinking is NEVER rendered inline. The chat UI exposes a single
+  collapsible disclosure per assistant message. When multiple thinking blocks
+  are present, they are concatenated (in order) and separated by a Markdown
+  horizontal rule (---) for readability.
+- Streaming/open‑ended: if a close token has not arrived yet (e.g., mid‑stream),
+  everything after the opening token is treated as thinking until the close
+  appears in a later chunk. This keeps the disclosure consistent during
+  streaming.
+- Gemini mapping: the backend adapter emits at most one consolidated
+  <thinking> block BEFORE visible content on non‑flash models when enabled;
+  flash models never surface thinking. The parser treats that block like any
+  other thinking segment.
+- Copy behavior: when copying an assistant message, the UI strips thinking by
+  default so users share only the visible answer.
+*/
 import 'dart:collection';
 
 class ParsedThinking {

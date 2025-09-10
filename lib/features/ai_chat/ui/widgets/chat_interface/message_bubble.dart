@@ -130,6 +130,7 @@ class MessageBubble extends StatelessWidget {
                           tooltip: 'Copy',
                           icon: Icons.copy,
                           onTap: () async {
+                            // Copy strips hidden thinking by default to share only the visible answer.
                             final text =
                                 ThinkingUtils.stripThinking(message.content);
                             await Clipboard.setData(ClipboardData(text: text));
