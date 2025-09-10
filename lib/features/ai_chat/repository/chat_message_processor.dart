@@ -226,8 +226,8 @@ class ChatMessageProcessor {
   ) {
     bool isCompleteJson(String s) {
       try {
-        jsonDecode(s);
-        return true;
+        final decoded = jsonDecode(s);
+        return decoded is Map;
       } catch (_) {
         return false;
       }

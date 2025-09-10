@@ -167,6 +167,8 @@ class GeminiInferenceRepository {
           if (inStr) {
             if (esc) {
               esc = false;
+            } else if (ch.codeUnitAt(0) == 92) {
+              esc = true;
             } else if (ch == r'\') {
               esc = true;
             } else if (ch == '"') {
@@ -372,8 +374,8 @@ class GeminiInferenceRepository {
     if (inThinking && thinkingBuffer.isNotEmpty) {
       emittedAny = true;
       yield CreateChatCompletionStreamResponse(
-        id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-        created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        id: idPrefix,
+        created: created,
         model: model,
         choices: [
           ChatCompletionStreamResponseChoice(
@@ -426,8 +428,8 @@ class GeminiInferenceRepository {
         );
         if (payload.thinking.isNotEmpty) {
           yield CreateChatCompletionStreamResponse(
-            id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            id: idPrefix,
+            created: created,
             model: model,
             choices: [
               ChatCompletionStreamResponseChoice(
@@ -441,8 +443,8 @@ class GeminiInferenceRepository {
         }
         if (payload.visible.isNotEmpty) {
           yield CreateChatCompletionStreamResponse(
-            id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            id: idPrefix,
+            created: created,
             model: model,
             choices: [
               ChatCompletionStreamResponseChoice(
@@ -456,8 +458,8 @@ class GeminiInferenceRepository {
         }
         if (payload.toolChunks.isNotEmpty) {
           yield CreateChatCompletionStreamResponse(
-            id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            id: idPrefix,
+            created: created,
             model: model,
             choices: [
               ChatCompletionStreamResponseChoice(
