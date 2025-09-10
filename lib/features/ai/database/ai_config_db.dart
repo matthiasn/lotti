@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/provider_type_utils.dart';
 
 part 'ai_config_db.g.dart';
 
@@ -68,20 +69,13 @@ class AiConfigDb extends _$AiConfigDb {
 
     // Harden parsing for legacy/unknown provider types to avoid crashes when
     // reading single configs (e.g., during delete actions).
-    final providerType = map['inferenceProviderType'];
-    if (providerType is String) {
-      map['inferenceProviderType'] = _normalizeProviderType(providerType);
-    }
+    final dynamic rawType = map['inferenceProviderType'];
+    final normalized = normalizeProviderType(
+      rawType is String ? rawType : (rawType?.toString() ?? ''),
+    );
+    map['inferenceProviderType'] = normalized;
 
     return AiConfig.fromJson(map);
   }
 
-  String _normalizeProviderType(String value) {
-    final valid = InferenceProviderType.values.map((e) => e.name).toSet();
-    if (value == 'unknown') {
-      return InferenceProviderType.genericOpenAi.name;
-    }
-    if (valid.contains(value)) return value;
-    return InferenceProviderType.genericOpenAi.name;
-  }
 }

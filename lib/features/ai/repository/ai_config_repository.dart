@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/provider_type_utils.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -163,19 +164,9 @@ class AiConfigRepository {
     // default to OpenAI-compatible when unknown.
     final dynamic rawType = map['inferenceProviderType'];
     if (rawType is String) {
-      map['inferenceProviderType'] = _normalizeProviderType(rawType);
+      map['inferenceProviderType'] = normalizeProviderType(rawType);
     }
     return map;
   }
 
-  // Strict normalization: if not a known enum (or 'unknown'),
-  // default to 'genericOpenAi'. No alias mapping.
-  String _normalizeProviderType(String value) {
-    final valid = InferenceProviderType.values.map((e) => e.name).toSet();
-    if (value == 'unknown') {
-      return InferenceProviderType.genericOpenAi.name;
-    }
-    if (valid.contains(value)) return value;
-    return InferenceProviderType.genericOpenAi.name;
-  }
 }

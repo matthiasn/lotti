@@ -80,8 +80,14 @@ class AssistantSettingsSheet extends ConsumerWidget {
                   if (models.isEmpty) {
                     return const Text('No eligible models');
                   }
+                  // Use a safe selected value to avoid assertion if the
+                  // previously selected model is not in the eligible list.
+                  final safeSelectedId = models
+                          .any((m) => m.id == sessionState.selectedModelId)
+                      ? sessionState.selectedModelId
+                      : null;
                   return DropdownButtonFormField<String>(
-                    initialValue: sessionState.selectedModelId,
+                    initialValue: safeSelectedId,
                     decoration: InputDecoration(
                       labelText: 'Model',
                       filled: true,
@@ -108,6 +114,7 @@ class AssistantSettingsSheet extends ConsumerWidget {
                       ),
                     ),
                     hint: const Text('Select model'),
+                    isExpanded: true,
                     onChanged: isStreaming
                         ? null
                         : (v) async {

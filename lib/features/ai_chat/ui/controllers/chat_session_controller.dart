@@ -233,20 +233,21 @@ class ChatSessionController extends _$ChatSessionController {
   void _finalizeStreamingMessage({bool preserveStreamingFlags = false}) {
     if (_currentStreamingMessageId == null) return;
 
+    // Safely find the streaming message; if missing, just clear the ID.
+    final existing = state.messages
+        .firstWhereOrNull((m) => m.id == _currentStreamingMessageId);
+    if (existing == null) {
+      _currentStreamingMessageId = null;
+      return;
+    }
+
     // If the streaming message is empty or whitespace-only, drop it instead of
     // finalizing to avoid empty bubbles.
-    final existing =
-        state.messages.firstWhere((m) => m.id == _currentStreamingMessageId);
     final trimmed = existing.content.trim();
     if (trimmed.isEmpty) {
-      final without = state.messages
-          .where((m) => m.id != _currentStreamingMessageId)
-          .toList();
-      state = state.copyWith(
-        messages: without,
-        isLoading: preserveStreamingFlags && state.isLoading,
-        isStreaming: preserveStreamingFlags && state.isStreaming,
-      );
+      final without =
+          state.messages.where((m) => m.id != _currentStreamingMessageId).toList();
+      state = state.copyWith(messages: without);
     } else {
       final updatedMessages = state.messages.map((msg) {
         if (msg.id == _currentStreamingMessageId) {
@@ -255,11 +256,7 @@ class ChatSessionController extends _$ChatSessionController {
         return msg;
       }).toList();
 
-      state = state.copyWith(
-        messages: updatedMessages,
-        isLoading: preserveStreamingFlags && state.isLoading,
-        isStreaming: preserveStreamingFlags && state.isStreaming,
-      );
+      state = state.copyWith(messages: updatedMessages);
     }
 
     _currentStreamingMessageId = null;
