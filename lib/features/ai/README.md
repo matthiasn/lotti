@@ -50,11 +50,25 @@ The repository layer has been refactored for better separation of concerns:
   - Retry logic with exponential backoff
   - Custom `ModelNotInstalledException` for better error handling
 
+- **`gemini_inference_repository.dart`**: Native Gemini streaming adapter with OpenAI-compatible output
+  - Calls Gemini `:streamGenerateContent` directly using provider base URL and API key
+  - Translates Gemini payloads into `CreateChatCompletionStreamResponse` deltas
+  - Surfaces a single consolidated `<thinking>` block for non-flash models when enabled; always hides thoughts for flash
+  - Emits OpenAI-style tool-call chunks with stable IDs (`tool_#`) and indices to support accumulation
+  - Robust stream parsing: handles SSE `data:` lines, NDJSON, and JSON array framing without relying on line boundaries
+  - Non-streaming fallback via `:generateContent` kicks in only if the streaming path produced no events, aggregating thinking, text, and tools
+
+- **`gemini_utils.dart`**: Shared helpers used by the Gemini repository
+  - `isFlashModel` – detects flash variants to control thought visibility
+  - `buildStreamGenerateContentUri` / `buildGenerateContentUri` – constructs correct Gemini endpoints from a base URL
+  - `buildRequestBody` – builds request payloads including thinking config and function tools (mapped from OpenAI style)
+  - `stripLeadingFraming` – removes SSE `data:` prefixes and JSON array framing from mixed-format streams
+
 - **`whisper_inference_repository.dart`**: Handles audio transcription
   - Interfaces with locally running Whisper instances
   - Converts audio to transcription responses
   - Custom `WhisperTranscriptionException` for error handling
-
+  
 - **`ai_input_repository.dart`**: Prepares task data for AI processing
 
 #### Services (`services/`)
@@ -297,7 +311,10 @@ The system supports multiple inference providers through a modular architecture:
 ### Cloud Providers
 - **OpenAI**: GPT-3.5, GPT-4, and other models via official API
 - **Anthropic**: Claude models (Opus, Sonnet, Haiku) with streaming support
-- **Google Gemini**: Gemini Pro and other Google AI models
+- **Google Gemini**: Gemini Pro and flash models with native streaming adapter
+  - Uses `gemini_inference_repository.dart` for REST calls and OpenAI-compatible streaming
+  - Thought visibility policy: flash models hide thoughts; non-flash can surface a consolidated `<thinking>` block
+  - Function calling maps to OpenAI-style tool calls with stable IDs and indices
 - **OpenRouter**: Access to multiple models through unified API
 - **Nebius AI Studio**: Enterprise AI platform support
 - **Generic OpenAI-Compatible**: Any service implementing OpenAI's API specification
@@ -997,3 +1014,9 @@ InferenceRepositoryInterface createInferenceRepo(AiConfigInferenceProvider provi
   - Convert non-streaming responses to streams for API consistency
   - Solve issues with concatenated JSON in tool call arguments
   - Provide cleaner tool call parsing without accumulation complexity
+##### How Gemini ties into chat
+
+- Provider routing: `cloud_inference_repository.dart` selects `GeminiInferenceRepository` when `InferenceProviderType.gemini` is active. The repository streams OpenAI-compatible deltas.
+- Tool calls: the Gemini adapter emits tool calls with unique IDs (`tool_0`, `tool_1`, …) and indices. The conversation layer accumulates arguments across chunks using those identifiers and remains backward-compatible with "Gemini-style" complete tool-call batches.
+- Thinking blocks: for non-flash models the adapter optionally emits a single consolidated `<thinking>` block before visible content; for flash models thoughts are never emitted. The conversation manager simply appends the received content to the assistant message buffer.
+- Fallback behavior: if a Gemini stream yields no deltas at all, the adapter performs a single non-streaming call and emits at most three deltas (thinking, text, tools) so the UI never shows an empty bubble.

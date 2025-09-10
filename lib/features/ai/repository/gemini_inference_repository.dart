@@ -5,11 +5,34 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-/// Minimal Gemini repository using REST to support thinking configuration and
-/// tool declarations. Returns OpenAI-compatible stream chunks to integrate
-/// with the existing pipeline.
+/// Gemini inference over raw HTTP with OpenAI-compatible streaming output.
+///
+/// What this repository does:
+/// - Calls Gemini's `:streamGenerateContent` REST endpoint directly using
+///   the base URL and API key from the selected `AiConfigInferenceProvider`.
+/// - Translates Gemini responses (including thinking parts and function
+///   calls) into OpenAI-compatible `CreateChatCompletionStreamResponse` deltas
+///   so the rest of the app can consume a uniform format.
+/// - Implements robust, allocation-friendly parsing of mixed streaming
+///   formats (NDJSON, SSE `data:` lines, and JSON array framing) without
+///   relying on line boundaries.
+/// - Handles "thinking" parts based on feature flags and model type:
+///   - Non-flash models: optionally surface a single consolidated
+///     `<thinking>` block before visible content when `includeThoughts=true`.
+///   - Flash models: thoughts are always hidden and never emitted.
+/// - Emits OpenAI-style tool-call chunks for Gemini `functionCall` parts and
+///   ensures unique, stable IDs (`tool_#`) and indices for accumulation.
+/// - Provides a non-streaming fallback (`:generateContent`) that runs only
+///   if the streaming path produced no events; the fallback compacts all
+///   thinking, visible text, and tool calls into at most three deltas
+///   (thinking, text, tools) to avoid empty responses.
+///
+/// The adapter is intentionally small and self-contained and uses
+/// [GeminiUtils] for URI and request body construction and for minimal
+/// framing cleanup.
 class GeminiInferenceRepository {
   GeminiInferenceRepository({http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client();
@@ -23,12 +46,29 @@ class GeminiInferenceRepository {
   static const int kMaxRawLineLogs = 10; // max raw line previews
   static const int kRawPreviewLen = 200; // chars per preview
 
-  bool _isFlashModel(String modelId) {
-    final m = modelId.toLowerCase();
-    return m.contains('flash');
-  }
+  bool _isFlashModel(String modelId) => GeminiUtils.isFlashModel(modelId);
 
-  /// Generate text via Gemini streaming API with thinking and function-calling support.
+  /// Generates text via Gemini's streaming API with thinking and function-calling support.
+  ///
+  /// Parameters:
+  /// - `prompt`: user content to send to the model.
+  /// - `model`: Gemini model ID (e.g. `gemini-2.5-pro` or `gemini-2.5-flash`).
+  /// - `temperature`: sampling temperature forwarded to Gemini.
+  /// - `thinkingConfig`: budget and policy controlling whether thinking is
+  ///   surfaced for non-flash models.
+  /// - `provider`: contains base URL and API key.
+  /// - `systemMessage`: optional system instruction.
+  /// - `maxCompletionTokens`: model-specific token cap.
+  /// - `tools`: OpenAI-style function tools mapped to Gemini function declarations.
+  ///
+  /// Returns a stream of OpenAI-compatible deltas. The stream may emit up to
+  /// three logical segments:
+  /// 1) a single `<thinking>` block (when enabled on non-flash models),
+  /// 2) visible text chunks, and
+  /// 3) tool-call chunks with unique IDs/indices for accumulation.
+  ///
+  /// If the streaming call completes without emitting anything, a
+  /// non-streaming fallback is invoked to avoid an empty response bubble.
   Stream<CreateChatCompletionStreamResponse> generateText({
     required String prompt,
     required String model,
@@ -39,13 +79,13 @@ class GeminiInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
   }) async* {
-    final uri = _buildStreamGenerateContentUri(
+    final uri = GeminiUtils.buildStreamGenerateContentUri(
       baseUrl: provider.baseUrl,
       model: model,
       apiKey: provider.apiKey,
     );
 
-    final body = _buildRequestBody(
+    final body = GeminiUtils.buildRequestBody(
       prompt: prompt,
       temperature: temperature,
       thinkingConfig: thinkingConfig,
@@ -96,6 +136,7 @@ class GeminiInferenceRepository {
     var emittedAny = false;
     var rawChunkLogs = 0;
     const rawPreviewLen = 200;
+    var toolCallIndex = 0; // ensure unique IDs/indices across tool calls
     await for (final chunk in streamed.stream.transform(utf8.decoder)) {
       if (kVerboseStreamLogging && rawChunkLogs < 3) {
         final preview = chunk.length > rawPreviewLen
@@ -111,20 +152,7 @@ class GeminiInferenceRepository {
       // Convert possible SSE/NDJSON/JSON-array stream into complete JSON
       // objects by scanning brace depth. Strip leading array wrappers, commas,
       // and SSE data: lines.
-      String stripLeading(String src) {
-        var s = src.trimLeft();
-        while (s.startsWith('data:')) {
-          final nl = s.indexOf('\n');
-          if (nl == -1) return s; // wait for more
-          s = s.substring(nl + 1).trimLeft();
-        }
-        while (s.isNotEmpty && (s[0] == '[' || s[0] == ']' || s[0] == ',')) {
-          s = s.substring(1).trimLeft();
-        }
-        return s;
-      }
-
-      text = stripLeading(text);
+      text = GeminiUtils.stripLeadingFraming(text);
       var progressed = true;
       while (progressed) {
         progressed = false;
@@ -167,14 +195,14 @@ class GeminiInferenceRepository {
           obj = jsonDecode(objStr) as Map<String, dynamic>;
         } catch (_) {
           text = text.substring(end + 1);
-          text = stripLeading(text);
+          text = GeminiUtils.stripLeadingFraming(text);
           progressed = true;
           continue;
         }
 
         // consume processed portion and strip
         text = text.substring(end + 1);
-        text = stripLeading(text);
+        text = GeminiUtils.stripLeadingFraming(text);
 
         // Extract parts from this chunk
         final candidates = obj['candidates'];
@@ -214,14 +242,18 @@ class GeminiInferenceRepository {
           // Gemini marks thoughts with a boolean `thought: true` and the
           // actual text in `text`.
           final isThought = p['thought'] == true;
-          final hideThought = !answerStarted &&
-              thinkingConfig.includeThoughts &&
-              !_isFlashModel(model);
-          if (isThought && hideThought) {
-            final t = p['text'];
-            if (t is String && t.isNotEmpty) {
-              inThinking = true;
-              thinkingBuffer.write(t);
+          if (isThought) {
+            // Include thoughts only for non-flash models when requested and
+            // only before the visible answer has started. Otherwise, drop
+            // thought parts entirely (do not surface as regular text).
+            if (!answerStarted &&
+                thinkingConfig.includeThoughts &&
+                !_isFlashModel(model)) {
+              final t = p['text'];
+              if (t is String && t.isNotEmpty) {
+                inThinking = true;
+                thinkingBuffer.write(t);
+              }
             }
             continue;
           }
@@ -283,6 +315,7 @@ class GeminiInferenceRepository {
             final name = fc['name']?.toString() ?? '';
             final args = jsonEncode(fc['args'] ?? {});
             emittedAny = true;
+            final currentIndex = toolCallIndex++;
             yield CreateChatCompletionStreamResponse(
               id: idPrefix,
               created: created,
@@ -293,8 +326,8 @@ class GeminiInferenceRepository {
                   delta: ChatCompletionStreamResponseDelta(
                     toolCalls: [
                       ChatCompletionStreamMessageToolCallChunk(
-                        index: 0,
-                        id: 'tool_0',
+                        index: currentIndex,
+                        id: 'tool_$currentIndex',
                         function: ChatCompletionStreamMessageFunctionCall(
                           name: name,
                           arguments: args,
@@ -357,7 +390,7 @@ class GeminiInferenceRepository {
     // bubble. If we already emitted anything (thinking/text/tool), skip
     // fallback to avoid duplicate output.
     if (!emittedAny) {
-      final nonStreamingUri = _buildGenerateContentUri(
+      final nonStreamingUri = GeminiUtils.buildGenerateContentUri(
         baseUrl: provider.baseUrl,
         model: model,
         apiKey: provider.apiKey,
@@ -383,7 +416,8 @@ class GeminiInferenceRepository {
             if (parts is List) {
               final tb = StringBuffer();
               final cb = StringBuffer();
-              ChatCompletionStreamMessageToolCallChunk? toolChunk;
+              final toolChunks = <ChatCompletionStreamMessageToolCallChunk>[];
+              var toolIndex = 0;
               for (final p in parts) {
                 if (p is! Map<String, dynamic>) continue;
                 final isThought = p['thought'] == true;
@@ -397,12 +431,15 @@ class GeminiInferenceRepository {
                 if (fc is Map<String, dynamic>) {
                   final name = fc['name']?.toString() ?? '';
                   final args = jsonEncode(fc['args'] ?? {});
-                  toolChunk = ChatCompletionStreamMessageToolCallChunk(
-                    index: 0,
-                    id: 'tool_0',
-                    function: ChatCompletionStreamMessageFunctionCall(
-                      name: name,
-                      arguments: args,
+                  final idx = toolIndex++;
+                  toolChunks.add(
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: idx,
+                      id: 'tool_$idx',
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: name,
+                        arguments: args,
+                      ),
                     ),
                   );
                 }
@@ -437,7 +474,7 @@ class GeminiInferenceRepository {
                   ],
                 );
               }
-              if (toolChunk != null) {
+              if (toolChunks.isNotEmpty) {
                 yield CreateChatCompletionStreamResponse(
                   id: 'gemini-${DateTime.now().millisecondsSinceEpoch}',
                   created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -446,7 +483,7 @@ class GeminiInferenceRepository {
                     ChatCompletionStreamResponseChoice(
                       index: 0,
                       delta: ChatCompletionStreamResponseDelta(
-                        toolCalls: [toolChunk],
+                        toolCalls: toolChunks,
                       ),
                     ),
                   ],
@@ -465,113 +502,6 @@ class GeminiInferenceRepository {
       }
     }
   }
-
-  Uri _buildStreamGenerateContentUri({
-    required String baseUrl,
-    required String model,
-    required String apiKey,
-  }) {
-    // Many configs reuse an OpenAI-compatible baseUrl that includes path
-    // segments like '/openai/v1beta'. For Gemini native endpoints we always
-    // construct the URL from the root authority to avoid duplicated segments.
-    final parsed = Uri.parse(baseUrl);
-    final root = Uri(
-      scheme: parsed.scheme.isNotEmpty ? parsed.scheme : 'https',
-      host: parsed.host,
-      port: parsed.hasPort ? parsed.port : null,
-    );
-
-    final trimmed = model.trim().endsWith('/')
-        ? model.trim().substring(0, model.trim().length - 1)
-        : model.trim();
-    final modelPath =
-        trimmed.startsWith('models/') ? trimmed : 'models/$trimmed';
-    // Build '/v1beta/models/{id}:streamGenerateContent?key=...'
-    final path = '/v1beta/$modelPath:streamGenerateContent';
-    return root.replace(
-      path: path,
-      queryParameters: <String, String>{'key': apiKey},
-    );
-  }
-
-  Uri _buildGenerateContentUri({
-    required String baseUrl,
-    required String model,
-    required String apiKey,
-  }) {
-    final parsed = Uri.parse(baseUrl);
-    final root = Uri(
-      scheme: parsed.scheme.isNotEmpty ? parsed.scheme : 'https',
-      host: parsed.host,
-      port: parsed.hasPort ? parsed.port : null,
-    );
-    final trimmed = model.trim().endsWith('/')
-        ? model.trim().substring(0, model.trim().length - 1)
-        : model.trim();
-    final modelPath =
-        trimmed.startsWith('models/') ? trimmed : 'models/$trimmed';
-    final path = '/v1beta/$modelPath:generateContent';
-    return root.replace(
-      path: path,
-      queryParameters: <String, String>{'key': apiKey},
-    );
-  }
-
-  Map<String, dynamic> _buildRequestBody({
-    required String prompt,
-    required double temperature,
-    required GeminiThinkingConfig thinkingConfig,
-    String? systemMessage,
-    int? maxTokens,
-    List<ChatCompletionTool>? tools,
-  }) {
-    final contents = <Map<String, dynamic>>[
-      {
-        'role': 'user',
-        'parts': [
-          {'text': prompt},
-        ],
-      },
-    ];
-
-    final generationConfig = <String, dynamic>{
-      'temperature': temperature,
-      if (maxTokens != null) 'maxOutputTokens': maxTokens,
-      'thinkingConfig': thinkingConfig.toJson(),
-    };
-
-    final request = <String, dynamic>{
-      'contents': contents,
-      'generationConfig': generationConfig,
-      if (tools != null && tools.isNotEmpty)
-        'tools': [
-          {
-            'functionDeclarations': tools
-                .map((t) => {
-                      'name': t.function.name,
-                      if (t.function.description != null)
-                        'description': t.function.description,
-                      if (t.function.parameters != null)
-                        'parameters': t.function.parameters,
-                    })
-                .toList(),
-          }
-        ],
-    };
-
-    if (systemMessage != null && systemMessage.trim().isNotEmpty) {
-      request['systemInstruction'] = {
-        'role': 'system',
-        'parts': [
-          {'text': systemMessage},
-        ],
-      };
-    }
-
-    return request;
-  }
-
-  // (unused helpers removed)
 }
 
 // no non-stream adapter
