@@ -158,6 +158,8 @@ async def transcribe_audio(
     Accepts either:
     - file: Audio file upload
     - audio: Base64-encoded audio data
+    
+    When context (prompt) is provided, uses chat completions for context-aware transcription.
     """
     
     # Check if this is a JSON request (from the Dart client)
@@ -216,10 +218,14 @@ async def transcribe_audio(
         # Process audio with context (now supports chunking)
         
         try:
+            # TESTING: Disable chunking completely for better coherence
+            use_chunking = False
+            logger.info(f"Audio processing: use_chunking={use_chunking} (disabled for testing)")
+            
             result = await audio_processor.process_audio_base64(
                 audio_base64,
                 prompt,
-                use_chunking=True
+                use_chunking=use_chunking
             )
         except Exception as e:
             logger.error(f"Audio processing failed: {type(e).__name__}: {e}")
@@ -228,68 +234,140 @@ async def transcribe_audio(
         
         # Handle both single audio and chunked audio
         if isinstance(result[0], list):
-            # Multiple chunks
+            # Multiple chunks - THIS SHOULD NOT HAPPEN with use_chunking=False
             audio_chunks, combined_prompt = result
+            logger.warning(f"UNEXPECTED: Got {len(result[0])} chunks despite use_chunking=False!")
         else:
-            # Single audio array
+            # Single audio array - EXPECTED path
             audio_array, combined_prompt = result
             audio_chunks = [audio_array]
+            logger.info(f"SUCCESS: Got single audio array, duration={len(audio_array)/16000:.1f}s")
         
         # Add language hint if provided
         if language:
             combined_prompt = f"{combined_prompt}\n\nLanguage: {language}"
         
+        # Log the full prompt for debugging when context is provided
+        if prompt:
+            logger.info("=" * 60)
+            logger.info("TRANSCRIPTION WITH CONTEXT - Using Chat Completions")
+            logger.info(f"Original context/prompt: {prompt}")
+            logger.info(f"Combined prompt being sent to model: {combined_prompt}")
+            logger.info("=" * 60)
+        
         # Generate transcription
-        if stream:
-            # Streaming response
-            generator = StreamGenerator(
-                model_manager=model_manager,
-                audio_processor=audio_processor
-            )
+        # Use chat completions approach when context is provided for better results
+        use_chat_completions = bool(prompt and prompt.strip())
+        
+        if use_chat_completions:
+            # Build chat-style messages for context-aware transcription
+            messages = [
+                {"role": "system", "content": "You are a helpful assistant that transcribes audio accurately. Format the transcription clearly with proper punctuation and paragraph breaks. If there are multiple speakers, indicate speaker changes. Remove filler words. Focus on the context provided."},
+                {"role": "user", "content": combined_prompt}
+            ]
             
-            return StreamingResponse(
-                generator.generate_stream(
-                    prompt=combined_prompt,
-                    audio_array=audio_chunks[0] if len(audio_chunks) == 1 else audio_chunks,
-                    temperature=temperature,
-                    max_tokens=ServiceConfig.DEFAULT_MAX_TOKENS
-                ),
-                media_type="text/event-stream"
-            )
-        else:
-            # Non-streaming response
-            if len(audio_chunks) == 1:
-                # Single chunk processing
-                transcription = await generate_transcription_optimized(
-                    prompt=combined_prompt,
-                    audio_array=audio_chunks[0],
-                    temperature=temperature
+            logger.info("Using CHAT COMPLETIONS endpoint for context-aware transcription")
+            
+            # Process through chat completions for better context handling
+            # Flutter now sends stream: false for better compatibility
+            if stream:
+                # Streaming is still supported but not used by Flutter for transcription
+                logger.warning("Streaming transcription with context requested - using fallback")
+                # Fall back to regular streaming without context for now
+                generator = StreamGenerator(
+                    model_manager=model_manager,
+                    audio_processor=audio_processor
+                )
+                
+                return StreamingResponse(
+                    generator.generate_stream(
+                        prompt=combined_prompt,
+                        audio_array=audio_chunks[0] if len(audio_chunks) == 1 else audio_chunks,
+                        temperature=temperature,
+                        max_tokens=ServiceConfig.DEFAULT_MAX_TOKENS
+                    ),
+                    media_type="text/event-stream"
                 )
             else:
-                # Multi-chunk processing
-                transcription = await process_audio_chunks(
-                    chunks=audio_chunks,
-                    prompt=combined_prompt,
-                    temperature=temperature
+                # Non-streaming chat completion (now the default for Flutter)
+                logger.info("Processing non-streaming transcription with chat context")
+                
+                # For audio transcription through chat, we need to pass audio to the model
+                # We'll use a hybrid approach
+                if len(audio_chunks) == 1:
+                    transcription = await generate_transcription_with_chat_context(
+                        messages=messages,
+                        audio_array=audio_chunks[0],
+                        temperature=temperature
+                    )
+                else:
+                    # Multi-chunk processing with context
+                    transcription = await process_audio_chunks_with_context(
+                        chunks=audio_chunks,
+                        messages=messages,
+                        temperature=temperature
+                    )
+        else:
+            # Original transcription logic without context
+            if stream:
+                # Streaming response
+                generator = StreamGenerator(
+                    model_manager=model_manager,
+                    audio_processor=audio_processor
                 )
-            
-            # Calculate total duration for response
-            total_duration = sum(len(chunk) for chunk in audio_chunks) / audio_processor.sample_rate
-            
-            # Format response based on response_format
-            
-            if response_format == "text":
-                return transcription
-            elif response_format == "verbose_json":
-                response = TranscriptionResponse(
-                    text=transcription,
-                    language=language,
-                    duration=total_duration
+                
+                return StreamingResponse(
+                    generator.generate_stream(
+                        prompt=combined_prompt,
+                        audio_array=audio_chunks[0] if len(audio_chunks) == 1 else audio_chunks,
+                        temperature=temperature,
+                        max_tokens=ServiceConfig.DEFAULT_MAX_TOKENS
+                    ),
+                    media_type="text/event-stream"
                 )
-                return response
-            else:  # json
-                response = {"text": transcription}
-                return response
+            else:
+                # Non-streaming response
+                if len(audio_chunks) == 1:
+                    # Single chunk processing
+                    transcription = await generate_transcription_optimized(
+                        prompt=combined_prompt,
+                        audio_array=audio_chunks[0],
+                        temperature=temperature
+                    )
+                else:
+                    # Multi-chunk processing
+                    transcription = await process_audio_chunks(
+                        chunks=audio_chunks,
+                        prompt=combined_prompt,
+                        temperature=temperature
+                    )
+        
+        # Calculate total duration for response (MOVED OUTSIDE THE ELSE BLOCK)
+        total_duration = sum(len(chunk) for chunk in audio_chunks) / audio_processor.sample_rate
+        
+        # Log the transcription result for debugging
+        logger.info("=" * 60)
+        logger.info(f"TRANSCRIPTION RESULT:")
+        logger.info(f"Text: {transcription}")
+        logger.info(f"Audio duration: {total_duration:.2f} seconds")
+        logger.info(f"Used chat completions: {use_chat_completions}")
+        logger.info("=" * 60)
+        
+        # Format response based on response_format
+        if response_format == "text":
+            return transcription
+        elif response_format == "verbose_json":
+            response = TranscriptionResponse(
+                text=transcription,
+                language=language,
+                duration=total_duration
+            )
+            return response
+        else:  # json
+            response = {"text": transcription}
+            logger.info(f"Returning JSON response: {response}")
+            # Return JSONResponse to ensure proper content-type and immediate flush
+            return JSONResponse(content=response)
     
     except HTTPException:
         raise
@@ -620,6 +698,112 @@ async def process_audio_chunks(
     final_transcription = " ".join(transcriptions)
     
     return final_transcription
+
+
+async def generate_transcription_with_chat_context(
+    messages: List[Dict[str, Any]],
+    audio_array: np.ndarray,
+    temperature: float
+) -> str:
+    """Generate transcription using chat context for better understanding."""
+    try:
+        # Build chat prompt from messages
+        chat_prompt = build_chat_prompt(messages)
+        
+        logger.info(f"Chat-based transcription prompt: {chat_prompt[:200]}...")
+        
+        # Reshape audio to add batch dimension if needed
+        if audio_array.ndim == 1:
+            audio_array = audio_array.reshape(1, -1)
+        
+        # Process audio and text through the unified processor
+        inputs = model_manager.processor(
+            audio=audio_array,
+            text=chat_prompt,
+            sampling_rate=ServiceConfig.AUDIO_SAMPLE_RATE,
+            return_tensors="pt"
+        )
+        
+        # Move inputs to device
+        inputs = {k: v.to(model_manager.device) if hasattr(v, 'to') else v for k, v in inputs.items()}
+        
+        # Get optimized generation config
+        gen_config = ServiceConfig.get_generation_config("cpu_optimized")
+        gen_config.update({
+            'pad_token_id': model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id,
+            'eos_token_id': model_manager.tokenizer.eos_token_id,
+            'temperature': temperature if temperature > 0 else 0.1,
+        })
+        
+        # Use inference mode for better performance
+        if model_manager.device == "cpu":
+            with torch.inference_mode():
+                outputs = model_manager.model.generate(**inputs, **gen_config)
+        else:
+            with torch.no_grad():
+                outputs = model_manager.model.generate(**inputs, **gen_config)
+        
+        # Decode the output, skipping the input tokens
+        input_length = inputs['input_ids'].shape[1] if 'input_ids' in inputs else 0
+        response = model_manager.tokenizer.decode(
+            outputs[0][input_length:],
+            skip_special_tokens=True
+        )
+        
+        transcription = response.strip()
+        logger.info(f"Chat-based transcription result: {transcription}")
+        
+        return transcription
+    
+    except Exception as e:
+        logger.error(f"Chat-context transcription error: {e}")
+        logger.error(f"Full traceback:", exc_info=True)
+        raise
+
+
+async def process_audio_chunks_with_context(
+    chunks: List[np.ndarray],
+    messages: List[Dict[str, Any]],
+    temperature: float
+) -> str:
+    """Process multiple audio chunks with chat context."""
+    transcriptions = []
+    
+    logger.info(f"Processing {len(chunks)} audio chunks with context")
+    
+    for i, chunk in enumerate(chunks):
+        try:
+            logger.info(f"Processing chunk {i+1}/{len(chunks)}")
+            
+            # For chunks after the first, use simpler prompt
+            if i > 0:
+                # Simpler continuation message without including previous text
+                chunk_messages = [
+                    {"role": "system", "content": "You are a helpful assistant that transcribes audio accurately."},
+                    {"role": "user", "content": "Transcribe this audio segment:"}
+                ]
+            else:
+                chunk_messages = messages
+            
+            transcription = await generate_transcription_with_chat_context(
+                messages=chunk_messages,
+                audio_array=chunk,
+                temperature=temperature
+            )
+            
+            # Clean up transcription to avoid repetition markers
+            cleaned = transcription.strip()
+            # Remove repetition markers like ---|---|---
+            cleaned = cleaned.replace('---|', '').replace('|---', '')
+            
+            if cleaned and not cleaned.startswith('Previous transcription:'):
+                transcriptions.append(cleaned)
+                logger.info(f"Chunk {i+1} transcribed: {cleaned[:100]}...")
+        
+        except Exception as e:
+            logger.warning(f"Failed to process chunk {i+1} with context: {e}")
+    
+    return " ".join(transcriptions)
 
 
 async def generate_text(

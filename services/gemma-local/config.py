@@ -73,7 +73,7 @@ class ServiceConfig:
     DEFAULT_TOP_K = 20
     
     # CPU-specific generation settings
-    CPU_MAX_NEW_TOKENS = 100
+    CPU_MAX_NEW_TOKENS = 300  # Balanced for longer audio transcriptions
     CPU_BATCH_SIZE = 1
     USE_CACHE = True
     

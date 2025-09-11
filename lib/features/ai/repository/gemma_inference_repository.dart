@@ -107,12 +107,13 @@ class GemmaInferenceRepository implements InferenceRepositoryInterface {
       'prompt': contextPrompt,
       'temperature': temperature,
       'language': language,
-      'stream': true,
+      'stream': false,  // Changed to non-streaming for better context handling
       'response_format': 'json',
       if (maxCompletionTokens != null) 'max_tokens': maxCompletionTokens,
     };
 
-    return _streamTranscriptionRequest(
+    // Use non-streaming request for transcription
+    return _nonStreamTranscriptionRequest(
       requestBody: requestBody,
       provider: provider,
       model: model,
@@ -216,69 +217,63 @@ class GemmaInferenceRepository implements InferenceRepositoryInterface {
     }
   }
 
-  /// Stream Gemma transcription responses
-  Stream<CreateChatCompletionStreamResponse> _streamTranscriptionRequest({
+  /// Non-streaming Gemma transcription request
+  Stream<CreateChatCompletionStreamResponse> _nonStreamTranscriptionRequest({
     required Map<String, dynamic> requestBody,
     required AiConfigInferenceProvider provider,
     String? model,
   }) async* {
     try {
-      final request = await _httpClient
-          .send(
-            http.Request(
-              'POST',
-              Uri.parse('${provider.baseUrl}/v1/audio/transcriptions'),
-            )
-              ..headers['Content-Type'] = 'application/json'
-              ..body = jsonEncode(requestBody),
+      developer.log(
+        'Sending non-streaming transcription request to ${provider.baseUrl}/v1/audio/transcriptions',
+        name: 'GemmaInferenceRepository',
+      );
+      
+      final response = await _httpClient
+          .post(
+            Uri.parse('${provider.baseUrl}/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(requestBody),
           )
-          .timeout(const Duration(seconds: 300)); // Longer timeout for audio
+          .timeout(const Duration(seconds: 600)); // Extended timeout for long audio processing
 
-      if (request.statusCode != 200) {
-        final responseBody = await request.stream.bytesToString();
-        if (request.statusCode == 404 &&
-            responseBody.contains('not downloaded')) {
+      developer.log(
+        'Received response: status=${response.statusCode}, body length=${response.body.length}',
+        name: 'GemmaInferenceRepository',
+      );
+
+      if (response.statusCode != 200) {
+        if (response.statusCode == 404 &&
+            response.body.contains('not downloaded')) {
           throw ModelNotInstalledException(model ?? 'gemma');
         }
         throw Exception(
-            'Gemma transcription failed with status ${request.statusCode}: $responseBody');
+            'Gemma transcription failed with status ${response.statusCode}: ${response.body}');
       }
 
-      // Process streaming response
-      await for (final chunk in request.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())) {
-        if (chunk.isEmpty || !chunk.startsWith('data: ')) continue;
-
-        final data = chunk.substring(6); // Remove 'data: ' prefix
-        if (data == '[DONE]') break;
-
-        try {
-          final json = jsonDecode(data) as Map<String, dynamic>;
-
-          // Convert transcription response to chat format
-          if (json['text'] != null) {
-            yield CreateChatCompletionStreamResponse(
-              id: 'gemma-${DateTime.now().millisecondsSinceEpoch}',
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: json['text'] as String,
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            );
-          }
-        } catch (e) {
-          developer.log(
-            'Error parsing Gemma transcription chunk: $chunk',
-            error: e,
-            name: 'GemmaInferenceRepository',
-          );
-        }
+      // Parse the non-streaming response
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      
+      developer.log(
+        'Parsed response: ${json.keys.join(", ")}',
+        name: 'GemmaInferenceRepository',
+      );
+      
+      // Convert to chat completion format for compatibility
+      if (json['text'] != null) {
+        yield CreateChatCompletionStreamResponse(
+          id: 'gemma-${DateTime.now().millisecondsSinceEpoch}',
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                content: json['text'] as String,
+              ),
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
       }
     } catch (e) {
       if (e is ModelNotInstalledException) {
@@ -287,6 +282,7 @@ class GemmaInferenceRepository implements InferenceRepositoryInterface {
       throw Exception('Gemma transcription error: $e');
     }
   }
+
 
   /// Check if model is available
   Future<bool> isModelAvailable(String baseUrl) async {
