@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
-import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/input_area.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
 
 class _FakeRecorderController extends ChatRecorderController {

@@ -347,8 +347,7 @@ void main() {
       expect(waveform.amplitudesNormalized.length, 3);
     });
 
-    testWidgets('does not crash with invalid amplitude values',
-        (tester) async {
+    testWidgets('does not crash with invalid amplitude values', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -506,7 +505,9 @@ void main() {
   });
 
   group('WaveformBarsPainter shouldRepaint Tests', () {
-    test('shouldRepaint returns true even when amplitude values are identical (different list instances)', () {
+    test(
+        'shouldRepaint returns true even when amplitude values are identical (different list instances)',
+        () {
       final painter1 = TestWaveformBarsPainter(
         amplitudes: [0.5, 0.7],
         barWidth: 2,

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/provider_type_utils.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -155,8 +156,16 @@ class AiConfigRepository {
 
   /// Helper method to decode JSON
   Map<String, dynamic> _jsonDecode(String serialized) {
-    return Map<String, dynamic>.from(
+    final map = Map<String, dynamic>.from(
       const JsonDecoder().convert(serialized) as Map,
     );
+
+    // Harden parsing for provider type: normalize known aliases and
+    // default to OpenAI-compatible when unknown.
+    final dynamic rawType = map['inferenceProviderType'];
+    if (rawType is String) {
+      map['inferenceProviderType'] = normalizeProviderType(rawType);
+    }
+    return map;
   }
 }

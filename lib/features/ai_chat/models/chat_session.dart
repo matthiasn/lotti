@@ -2,8 +2,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:uuid/uuid.dart';
 
-part './chat_session.freezed.dart';
-part './chat_session.g.dart';
+part 'chat_session.freezed.dart';
+part 'chat_session.g.dart';
 
 // Reuse single UUID instance for efficiency
 const _uuid = Uuid();

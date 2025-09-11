@@ -182,6 +182,10 @@ class ChatMessageProcessor {
   ///
   /// The returned `content` is the full concatenation of content deltas.
   /// Tool call arguments are accumulated across deltas by tool id.
+  ///
+  /// Note: Reasoning/thinking text (if present) is not stripped here.
+  /// The chat UI uses `thinking_parser.dart` to hide/show thinking blocks
+  /// without altering provider semantics.
   Future<StreamProcessingResult> processStreamResponse(
     Stream<CreateChatCompletionStreamResponse> stream,
   ) async {
@@ -244,9 +248,18 @@ class ChatMessageProcessor {
         // Initialize buffer for this tool call if needed
         argumentBuffers.putIfAbsent(toolId, StringBuffer.new);
 
-        // Append arguments to buffer
-        if (toolCallDelta.function?.arguments != null) {
-          argumentBuffers[toolId]!.write(toolCallDelta.function!.arguments);
+        // Append arguments to buffer. If both existing and incoming are
+        // complete JSON objects, replace with the latest instead of
+        // concatenating (guards against providers that resend full args).
+        final incoming = toolCallDelta.function?.arguments;
+        if (incoming != null) {
+          final buf = argumentBuffers[toolId]!;
+          final incomingStr = incoming;
+          if (_isCompleteJson(incomingStr) && _isCompleteJson(buf.toString())) {
+            argumentBuffers[toolId] = StringBuffer(incomingStr);
+          } else {
+            buf.write(incomingStr);
+          }
         }
 
         // Find or create tool call
@@ -454,5 +467,15 @@ class ChatMessageProcessor {
           content: message.content,
         );
     }
+  }
+}
+
+// Checks whether a string parses to a JSON object (Map).
+bool _isCompleteJson(String s) {
+  try {
+    final decoded = jsonDecode(s);
+    return decoded is Map;
+  } catch (_) {
+    return false;
   }
 }

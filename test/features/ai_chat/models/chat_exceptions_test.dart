@@ -1,6 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 
+// File-level helper to exercise base toString implementation.
+class _BasicChatException extends ChatException {
+  const _BasicChatException(super.message);
+}
+
 void main() {
   group('ChatException', () {
     group('ChatRepositoryException', () {
@@ -44,6 +49,14 @@ void main() {
             equals('ChatProcessingException: Processing failed'));
         expect(exception, isA<ChatException>());
       });
+
+      test('accepts optional cause', () {
+        final cause = StateError('boom');
+        final exception = ChatProcessingException('Processing failed', cause);
+        expect(exception.cause, same(cause));
+        expect(exception.toString(),
+            equals('ChatProcessingException: Processing failed'));
+      });
     });
 
     group('ChatToolException', () {
@@ -55,6 +68,18 @@ void main() {
             equals('ChatToolException: Tool call failed'));
         expect(exception, isA<ChatException>());
       });
+
+      test('accepts optional cause', () {
+        final cause = ArgumentError('bad');
+        final exception = ChatToolException('Tool call failed', cause);
+        expect(exception.cause, same(cause));
+        expect(exception.toString(), 'ChatToolException: Tool call failed');
+      });
+    });
+
+    test('ChatException base toString formats message', () {
+      const ex = _BasicChatException('base message');
+      expect(ex.toString(), 'ChatException: base message');
     });
   });
 }

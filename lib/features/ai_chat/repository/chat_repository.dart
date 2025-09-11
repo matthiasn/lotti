@@ -33,6 +33,14 @@ final Provider<ChatRepository> chatRepositoryProvider = Provider((ref) {
 /// - Executes tool calls and streams the final response after tools, when
 ///   required.
 /// - Manages in-memory storage of sessions/messages (pending persistence).
+/// - Delegates to provider‑aware adapters via [CloudInferenceRepository]:
+///   - Gemini uses a native REST adapter that emits OpenAI‑compatible deltas
+///     and enforces thinking visibility (non‑flash may include a single
+///     consolidated thinking block before visible content; flash models never
+///     surface thinking). The UI is responsible for hiding/showing thinking
+///     via `thinking_parser.dart`.
+///   - Ollama uses the `/api/chat` endpoint to support function calling.
+///   - OpenAI‑compatible providers stream directly via `openai_dart`.
 class ChatRepository {
   ChatRepository({
     required this.cloudInferenceRepository,

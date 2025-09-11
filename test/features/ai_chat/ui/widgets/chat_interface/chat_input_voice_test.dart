@@ -152,7 +152,7 @@ void main() {
     expect(find.byIcon(Icons.mic), findsOneWidget);
   });
 
-  testWidgets('Inserts transcript when cannot send (no model selected)',
+  testWidgets('When cannot send, mic is hidden and settings opens sheet',
       (tester) async {
     const categoryId = 'cat-1';
     await getIt.reset();
@@ -177,19 +177,14 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 50));
 
-    await tester.tap(find.byIcon(Icons.mic));
-    await tester.pump();
-    await tester.tap(find.byIcon(Icons.stop));
-    await tester.pump();
-    await tester.pumpAndSettle(const Duration(seconds: 1));
+    // Mic hidden; header settings present
+    expect(find.byIcon(Icons.mic), findsNothing);
+    expect(find.byTooltip('Assistant settings'), findsOneWidget);
 
-    // Transcript should be inserted into the input (no auto-send)
-    final textField = tester.widget<TextField>(
-      find.byKey(const ValueKey('chat_text_field')),
-    );
-    expect(textField.controller!.text, 'Hi there');
-    // No send occurred
-    // Nothing to assert for lastSent here
+    // Tapping header settings opens the Assistant Settings sheet
+    await tester.tap(find.byTooltip('Assistant settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Assistant Settings'), findsOneWidget);
   });
 
   testWidgets('Processing state shows spinner and disables input',
@@ -234,7 +229,8 @@ void main() {
     // No cancel available in processing; finish without teardown actions
   });
 
-  testWidgets('Tooltips reflect state transitions', (tester) async {
+  testWidgets('Tooltips reflect state transitions (sendable session)',
+      (tester) async {
     const categoryId = 'cat-1';
     await getIt.reset();
     getIt.registerSingleton<LoggingService>(_FakeLoggingService());
@@ -245,8 +241,10 @@ void main() {
           chatRecorderControllerProvider.overrideWith(
             _FakeChatRecorderController.new,
           ),
+          // Make session sendable so mic is available
           chatSessionControllerProvider(categoryId).overrideWith(
-            _NonSendableChatSessionController.new,
+            () =>
+                _FakeChatSessionController(sink: ValueNotifier<String?>(null)),
           ),
           eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
@@ -264,6 +262,41 @@ void main() {
     await tester.pump();
     expect(find.byTooltip('Cancel recording (Esc)'), findsOneWidget);
     expect(find.byTooltip('Stop and transcribe'), findsOneWidget);
+  });
+
+  testWidgets('When cannot send, mic is hidden and settings opens sheet',
+      (tester) async {
+    const categoryId = 'cat-1';
+    await getIt.reset();
+    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            _FakeChatRecorderController.new,
+          ),
+          // Non-sendable session (no selected model)
+          chatSessionControllerProvider(categoryId)
+              .overrideWith(_NonSendableChatSessionController.new),
+          eligibleChatModelsForCategoryProvider(categoryId)
+              .overrideWith((_) async => []),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: ChatInterface(categoryId: categoryId)),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Mic hidden; header settings available
+    expect(find.byIcon(Icons.mic), findsNothing);
+    expect(find.byTooltip('Assistant settings'), findsOneWidget);
+
+    // Tapping header settings opens the Assistant Settings sheet
+    await tester.tap(find.byTooltip('Assistant settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Assistant Settings'), findsOneWidget);
   });
 }
 

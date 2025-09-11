@@ -26,7 +26,7 @@
 
 ## Testing Guidelines
 - Framework: `flutter_test` with helpers in `test/`. Name tests `*_test.dart` and co‑locate by feature (e.g., `test/features/...`).
-- Run: `make test` or `flutter test`. Integration: `make integration_test`.
+- Run: `flutter test` or better via mcp. Integration: `make integration_test`.
 - Aim to maintain/improve coverage; open report with `make coverage`.
 
 ## Commit & Pull Request Guidelines
@@ -70,6 +70,7 @@
 
 ## Misc
 - Maintain feature READMEs and update them alongside code changes.
+- Whenever touching any function, consider its docstring and if it needs updating
 - Only report completion after code compiles and all tests pass; verify via analyze and test via the dart-mcp server.
 - Invest in making tests work; avoid deleting or abandoning failing tests prematurely.
 - When old and new feature versions coexist, create no dependencies from the new code to the old.

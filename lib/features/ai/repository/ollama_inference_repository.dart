@@ -417,12 +417,13 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
               );
             } else if (message['content'] != null) {
               // Regular content response
+              final frag = message['content'] as String;
               yield CreateChatCompletionStreamResponse(
                 id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
                 choices: [
                   ChatCompletionStreamResponseChoice(
                     delta: ChatCompletionStreamResponseDelta(
-                      content: message['content'] as String,
+                      content: frag,
                     ),
                     index: 0,
                   ),

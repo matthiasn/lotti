@@ -2,6 +2,8 @@ import 'package:collection/collection.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
+import 'package:lotti/features/ai_chat/ui/controllers/chat_stream_parser.dart';
+import 'package:lotti/features/ai_chat/ui/controllers/chat_stream_utils.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -18,8 +20,13 @@ part 'chat_session_controller.g.dart';
 @riverpod
 class ChatSessionController extends _$ChatSessionController {
   final LoggingService _loggingService = getIt<LoggingService>();
-  static const int maxStreamingContentSize = 1000000; // 1MB cap
+  // Cap moved to ChatStreamUtils.maxStreamingContentSize
   String? _currentStreamingMessageId;
+  // Tracks if the current streaming message (if any) represents a visible
+  // answer segment. Thinking segments are emitted as discrete, completed
+  // messages and never streamed into.
+  bool _streamingIsVisibleSegment = false;
+  // Streaming parse state moved into ChatStreamParser.
 
   @override
   ChatSessionUiModel build(String categoryId) {
@@ -55,9 +62,13 @@ class ChatSessionController extends _$ChatSessionController {
 
   /// Send a new message in the current session.
   ///
-  /// Adds the user message and a streaming assistant placeholder, then
-  /// updates the placeholder as deltas arrive. Finalizes the message when the
-  /// stream completes. Errors remove the placeholder and set `state.error`.
+  /// Behavior change: thinking vs. answer are emitted as separate bubbles.
+  /// - Thinking segments are added as their own assistant messages (collapsed
+  ///   reasoning UI), never merged into the visible answer bubble.
+  /// - Visible text segments stream into a dedicated assistant message.
+  /// - When the segment type switches (e.g., thinking -> visible or visible ->
+  ///   thinking), the previous streaming message is finalized and a new
+  ///   message is started for the new segment type.
   Future<void> sendMessage(String content) async {
     // Only allow sending non-empty messages when not busy.
     // Note: The UI requires model selection before this can be called.
@@ -78,21 +89,15 @@ class ChatSessionController extends _$ChatSessionController {
     final userMessage = ChatMessage.user(content);
     final updatedMessages = [...state.messages, userMessage];
 
-    // Create streaming placeholder for AI response
-    _currentStreamingMessageId = const Uuid().v4();
-    final streamingMessage = ChatMessage(
-      id: _currentStreamingMessageId!,
-      content: '',
-      role: ChatMessageRole.assistant,
-      timestamp: DateTime.now(),
-      isStreaming: true,
-    );
-
+    // Start streaming state (no assistant placeholder yet — we will create
+    // messages per segment as chunks arrive).
+    _currentStreamingMessageId = null;
+    _streamingIsVisibleSegment = false;
     state = state.copyWith(
-      messages: [...updatedMessages, streamingMessage],
+      messages: [...updatedMessages],
       isLoading: true,
       isStreaming: true,
-      streamingMessageId: _currentStreamingMessageId,
+      streamingMessageId: null,
     );
 
     try {
@@ -101,17 +106,84 @@ class ChatSessionController extends _$ChatSessionController {
       // Get conversation history (excluding the streaming message)
       final conversationHistory = state.completedMessages;
 
-      await for (final chunk in chatRepository.sendMessage(
+      // Initialize streaming parser
+      final parser = ChatStreamParser();
+
+      void appendVisible(String text) {
+        if (_currentStreamingMessageId == null || !_streamingIsVisibleSegment) {
+          _currentStreamingMessageId = const Uuid().v4();
+          _streamingIsVisibleSegment = true;
+          final streamingMessage = ChatMessage(
+            id: _currentStreamingMessageId!,
+            content: text,
+            role: ChatMessageRole.assistant,
+            timestamp: DateTime.now(),
+            isStreaming: true,
+          );
+          state = state.copyWith(
+            messages: [...state.messages, streamingMessage],
+            streamingMessageId: _currentStreamingMessageId,
+          );
+        } else {
+          _updateStreamingMessage(text);
+        }
+      }
+
+      void appendThinkingFinal(String text) {
+        if (text.trim().isEmpty) return; // Avoid empty reasoning bubbles
+        // Finalize any visible streaming first
+        if (_currentStreamingMessageId != null && _streamingIsVisibleSegment) {
+          _finalizeStreamingMessage();
+        }
+        final wrapped = ChatStreamUtils.wrapThinkingBlock(text);
+        final thinkingMessage = ChatMessage(
+          id: const Uuid().v4(),
+          content: wrapped,
+          role: ChatMessageRole.assistant,
+          timestamp: DateTime.now(),
+        );
+        state = state.copyWith(messages: [...state.messages, thinkingMessage]);
+        _currentStreamingMessageId = null;
+        _streamingIsVisibleSegment = false;
+      }
+
+      await for (final rawChunk in chatRepository.sendMessage(
         message: content,
         conversationHistory: conversationHistory,
         modelId: modelId,
         categoryId: categoryId,
       )) {
-        _updateStreamingMessage(chunk);
+        for (final event in parser.processChunk(rawChunk)) {
+          if (event is VisibleAppend) {
+            appendVisible(event.text);
+          } else if (event is ThinkingFinal) {
+            appendThinkingFinal(event.text);
+          }
+        }
       }
 
-      // Finalize the streaming message
-      _finalizeStreamingMessage();
+      // Flush any remaining parser buffers (e.g., unterminated thinking)
+      for (final event in parser.finish()) {
+        if (event is VisibleAppend) {
+          appendVisible(event.text);
+        } else if (event is ThinkingFinal) {
+          appendThinkingFinal(event.text);
+        }
+      }
+
+      // Finalize any remaining visible streaming message
+      if (_currentStreamingMessageId != null && _streamingIsVisibleSegment) {
+        _finalizeStreamingMessage();
+      }
+      // Ensure global streaming flags are cleared even if we ended on a
+      // thinking segment (no active streaming message to finalize).
+      if (state.isLoading || state.isStreaming) {
+        state = state.copyWith(
+          isLoading: false,
+          isStreaming: false,
+          streamingMessageId: null,
+        );
+      }
 
       // Save the updated session to the repository
       await _saveCurrentSession();
@@ -140,12 +212,14 @@ class ChatSessionController extends _$ChatSessionController {
     final updatedMessages = state.messages.map((msg) {
       if (msg.id == _currentStreamingMessageId) {
         // If already truncated, ignore further chunks to avoid extra work
-        if (msg.content.endsWith('…')) return msg;
+        if (ChatStreamUtils.isTruncated(msg.content)) return msg;
 
         var newContent = '${msg.content}$content';
-        if (newContent.length > maxStreamingContentSize) {
-          // Truncate to cap and add ellipsis
-          newContent = '${newContent.substring(0, maxStreamingContentSize)}…';
+        if (newContent.length > ChatStreamUtils.maxStreamingContentSize) {
+          newContent = ChatStreamUtils.truncateWithEllipsis(
+            newContent,
+            ChatStreamUtils.maxStreamingContentSize,
+          );
         }
         return msg.copyWith(content: newContent);
       }
@@ -159,18 +233,32 @@ class ChatSessionController extends _$ChatSessionController {
   void _finalizeStreamingMessage() {
     if (_currentStreamingMessageId == null) return;
 
-    final updatedMessages = state.messages.map((msg) {
-      if (msg.id == _currentStreamingMessageId) {
-        return msg.copyWith(isStreaming: false);
-      }
-      return msg;
-    }).toList();
+    // Safely find the streaming message; if missing, just clear the ID.
+    final existing = state.messages
+        .firstWhereOrNull((m) => m.id == _currentStreamingMessageId);
+    if (existing == null) {
+      _currentStreamingMessageId = null;
+      return;
+    }
 
-    state = state.copyWith(
-      messages: updatedMessages,
-      isLoading: false,
-      isStreaming: false,
-    );
+    // If the streaming message is empty or whitespace-only, drop it instead of
+    // finalizing to avoid empty bubbles.
+    final trimmed = existing.content.trim();
+    if (trimmed.isEmpty) {
+      final without = state.messages
+          .where((m) => m.id != _currentStreamingMessageId)
+          .toList();
+      state = state.copyWith(messages: without);
+    } else {
+      final updatedMessages = state.messages.map((msg) {
+        if (msg.id == _currentStreamingMessageId) {
+          return msg.copyWith(isStreaming: false);
+        }
+        return msg;
+      }).toList();
+
+      state = state.copyWith(messages: updatedMessages);
+    }
 
     _currentStreamingMessageId = null;
   }

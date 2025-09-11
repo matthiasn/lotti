@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,6 +21,9 @@ class MockRef extends Mock implements Ref<Object?> {}
 
 class MockOllamaInferenceRepository extends Mock
     implements OllamaInferenceRepository {}
+
+class MockGeminiInferenceRepository extends Mock
+    implements GeminiInferenceRepository {}
 
 // We need to register fallback values for complex types that will be used with 'any()' matcher
 class FakeCreateChatCompletionRequest extends Fake
@@ -52,10 +57,13 @@ void main() {
       // Create and configure the mock ref
       final mockRef = MockRef();
       final mockOllamaRepo = MockOllamaInferenceRepository();
+      final mockGeminiRepo = MockGeminiInferenceRepository();
 
       // Configure the mock ref to return the mocked OllamaInferenceRepository
       when(() => mockRef.read(ollamaInferenceRepositoryProvider))
           .thenReturn(mockOllamaRepo);
+      when(() => mockRef.read(geminiInferenceRepositoryProvider))
+          .thenReturn(mockGeminiRepo);
 
       repository =
           CloudInferenceRepository(mockRef, httpClient: mockHttpClient);
@@ -1259,9 +1267,12 @@ void main() {
       // Create and configure a new mock ref for this test
       final mockRef = MockRef();
       final mockOllamaRepo = MockOllamaInferenceRepository();
+      final mockGeminiRepo = MockGeminiInferenceRepository();
 
       when(() => mockRef.read(ollamaInferenceRepositoryProvider))
           .thenReturn(mockOllamaRepo);
+      when(() => mockRef.read(geminiInferenceRepositoryProvider))
+          .thenReturn(mockGeminiRepo);
 
       final customRepository = CloudInferenceRepository(
         mockRef,
