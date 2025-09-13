@@ -50,11 +50,6 @@ mixin _$LoginFormState {
   @override
   int get hashCode => Object.hash(runtimeType, homeServer, userName, password,
       status, isLoggedIn, loginFailed);
-
-  @override
-  String toString() {
-    return 'LoginFormState(homeServer: $homeServer, userName: $userName, password: $password, status: $status, isLoggedIn: $isLoggedIn, loginFailed: $loginFailed)';
-  }
 }
 
 /// @nodoc
@@ -361,11 +356,6 @@ class _LoginFormState implements LoginFormState {
   @override
   int get hashCode => Object.hash(runtimeType, homeServer, userName, password,
       status, isLoggedIn, loginFailed);
-
-  @override
-  String toString() {
-    return 'LoginFormState(homeServer: $homeServer, userName: $userName, password: $password, status: $status, isLoggedIn: $isLoggedIn, loginFailed: $loginFailed)';
-  }
 }
 
 /// @nodoc

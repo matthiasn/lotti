@@ -12,7 +12,8 @@ _ChecklistCompletionSuggestion _$ChecklistCompletionSuggestionFromJson(
       checklistItemId: json['checklistItemId'] as String,
       reason: json['reason'] as String,
       confidence: $enumDecode(
-          _$ChecklistCompletionConfidenceEnumMap, json['confidence']),
+          _$ChecklistCompletionConfidenceEnumMap, json['confidence'],
+          unknownValue: ChecklistCompletionConfidence.low),
     );
 
 Map<String, dynamic> _$ChecklistCompletionSuggestionToJson(

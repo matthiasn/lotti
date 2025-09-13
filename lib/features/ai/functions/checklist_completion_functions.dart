@@ -92,6 +92,7 @@ abstract class ChecklistCompletionSuggestion
   const factory ChecklistCompletionSuggestion({
     required String checklistItemId,
     required String reason,
+    @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
     required ChecklistCompletionConfidence confidence,
   }) = _ChecklistCompletionSuggestion;
 

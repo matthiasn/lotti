@@ -16,6 +16,7 @@ T _$identity<T>(T value) => value;
 mixin _$ChecklistCompletionSuggestion {
   String get checklistItemId;
   String get reason;
+  @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
   ChecklistCompletionConfidence get confidence;
 
   /// Create a copy of ChecklistCompletionSuggestion
@@ -63,6 +64,7 @@ abstract mixin class $ChecklistCompletionSuggestionCopyWith<$Res> {
   $Res call(
       {String checklistItemId,
       String reason,
+      @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
       ChecklistCompletionConfidence confidence});
 }
 
@@ -194,7 +196,10 @@ extension ChecklistCompletionSuggestionPatterns
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String checklistItemId, String reason,
+    TResult Function(
+            String checklistItemId,
+            String reason,
+            @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
             ChecklistCompletionConfidence confidence)?
         $default, {
     required TResult orElse(),
@@ -223,7 +228,10 @@ extension ChecklistCompletionSuggestionPatterns
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String checklistItemId, String reason,
+    TResult Function(
+            String checklistItemId,
+            String reason,
+            @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
             ChecklistCompletionConfidence confidence)
         $default,
   ) {
@@ -250,7 +258,10 @@ extension ChecklistCompletionSuggestionPatterns
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String checklistItemId, String reason,
+    TResult? Function(
+            String checklistItemId,
+            String reason,
+            @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
             ChecklistCompletionConfidence confidence)?
         $default,
   ) {
@@ -270,6 +281,7 @@ class _ChecklistCompletionSuggestion implements ChecklistCompletionSuggestion {
   const _ChecklistCompletionSuggestion(
       {required this.checklistItemId,
       required this.reason,
+      @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
       required this.confidence});
   factory _ChecklistCompletionSuggestion.fromJson(Map<String, dynamic> json) =>
       _$ChecklistCompletionSuggestionFromJson(json);
@@ -279,6 +291,7 @@ class _ChecklistCompletionSuggestion implements ChecklistCompletionSuggestion {
   @override
   final String reason;
   @override
+  @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
   final ChecklistCompletionConfidence confidence;
 
   /// Create a copy of ChecklistCompletionSuggestion
@@ -332,6 +345,7 @@ abstract mixin class _$ChecklistCompletionSuggestionCopyWith<$Res>
   $Res call(
       {String checklistItemId,
       String reason,
+      @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
       ChecklistCompletionConfidence confidence});
 }
 

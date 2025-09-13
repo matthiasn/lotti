@@ -26,7 +26,8 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../mocks/mocks.dart';
 import '../../mocks/sync_config_test_mocks.dart';
-import '../../test_data/sync_config_test_data.dart';
+
+const defaultWait = Duration(milliseconds: 100);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -63,11 +63,6 @@ mixin _$AiConfig {
   @override
   int get hashCode =>
       Object.hash(runtimeType, id, name, createdAt, updatedAt, description);
-
-  @override
-  String toString() {
-    return 'AiConfig(id: $id, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, description: $description)';
-  }
 }
 
 /// @nodoc
@@ -626,11 +621,6 @@ class AiConfigInferenceProvider implements AiConfig {
   @override
   int get hashCode => Object.hash(runtimeType, id, baseUrl, apiKey, name,
       createdAt, inferenceProviderType, updatedAt, description);
-
-  @override
-  String toString() {
-    return 'AiConfig.inferenceProvider(id: $id, baseUrl: $baseUrl, apiKey: $apiKey, name: $name, createdAt: $createdAt, inferenceProviderType: $inferenceProviderType, updatedAt: $updatedAt, description: $description)';
-  }
 }
 
 /// @nodoc
@@ -830,11 +820,6 @@ class AiConfigModel implements AiConfig {
       updatedAt,
       description,
       maxCompletionTokens);
-
-  @override
-  String toString() {
-    return 'AiConfig.model(id: $id, name: $name, providerModelId: $providerModelId, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, supportsFunctionCalling: $supportsFunctionCalling, updatedAt: $updatedAt, description: $description, maxCompletionTokens: $maxCompletionTokens)';
-  }
 }
 
 /// @nodoc
@@ -1095,11 +1080,6 @@ class AiConfigPrompt implements AiConfig {
       archived,
       trackPreconfigured,
       preconfiguredPromptId);
-
-  @override
-  String toString() {
-    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, aiResponseType: $aiResponseType, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category, archived: $archived, trackPreconfigured: $trackPreconfigured, preconfiguredPromptId: $preconfiguredPromptId)';
-  }
 }
 
 /// @nodoc

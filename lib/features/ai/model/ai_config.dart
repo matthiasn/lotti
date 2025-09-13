@@ -29,7 +29,7 @@ enum InputDataType {
   images,
 }
 
-@freezed
+@Freezed(toStringOverride: false)
 sealed class AiConfig with _$AiConfig {
   const factory AiConfig.inferenceProvider({
     required String id,
@@ -86,6 +86,59 @@ enum AiConfigType {
   inferenceProvider,
   prompt,
   model,
+}
+
+extension AiConfigLogging on AiConfig {
+  /// Returns a string representation safe for logging.
+  /// Masks secrets such as apiKey for providers.
+  String toSafeString() {
+    return switch (this) {
+      AiConfigInferenceProvider(
+        :final id,
+        :final name,
+        :final baseUrl,
+        :final createdAt,
+        :final inferenceProviderType,
+        :final updatedAt,
+        :final description
+      ) =>
+        'AiConfigInferenceProvider(id: $id, name: $name, baseUrl: $baseUrl, apiKey: ***, createdAt: $createdAt, inferenceProviderType: $inferenceProviderType, updatedAt: $updatedAt, description: $description)',
+      AiConfigModel(
+        :final id,
+        :final name,
+        :final providerModelId,
+        :final inferenceProviderId,
+        :final createdAt,
+        :final inputModalities,
+        :final outputModalities,
+        :final isReasoningModel,
+        :final supportsFunctionCalling,
+        :final updatedAt,
+        :final description,
+        :final maxCompletionTokens
+      ) =>
+        'AiConfigModel(id: $id, name: $name, providerModelId: $providerModelId, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, supportsFunctionCalling: $supportsFunctionCalling, updatedAt: $updatedAt, description: $description, maxCompletionTokens: $maxCompletionTokens)',
+      AiConfigPrompt(
+        :final id,
+        :final name,
+        :final defaultModelId,
+        :final modelIds,
+        :final createdAt,
+        :final useReasoning,
+        :final requiredInputData,
+        :final aiResponseType,
+        :final comment,
+        :final updatedAt,
+        :final description,
+        :final defaultVariables,
+        :final category,
+        :final archived,
+        :final trackPreconfigured,
+        :final preconfiguredPromptId
+      ) =>
+        'AiConfigPrompt(id: $id, name: $name, systemMessage: ***, userMessage: ***, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, aiResponseType: $aiResponseType, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: ${defaultVariables?.keys.toList()}, category: $category, archived: $archived, trackPreconfigured: $trackPreconfigured, preconfiguredPromptId: $preconfiguredPromptId)'
+    };
+  }
 }
 
 /// Checks if a given [AiConfigModel] meets the requirements specified by a [AiConfigPrompt].
