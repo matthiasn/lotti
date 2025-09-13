@@ -2751,8 +2751,6 @@ extension JournalEntityPatterns on JournalEntity {
         return habitCompletion(_that);
       case SurveyEntry():
         return survey(_that);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 
@@ -3010,8 +3008,6 @@ extension JournalEntityPatterns on JournalEntity {
       case SurveyEntry():
         return survey(
             _that.meta, _that.data, _that.entryText, _that.geolocation);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 

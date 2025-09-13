@@ -8,6 +8,7 @@ import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../helpers/fallbacks.dart';
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
@@ -15,7 +16,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   registerFallbackValue(FakeEntryText());
   registerFallbackValue(FakeTaskData());
-  registerFallbackValue(FakeJournalEntity());
+  registerFallbackValue(fallbackJournalEntity);
 
   group('RadialAddTagButtons Widget Tests - ', () {
     final mockNavService = MockNavService();

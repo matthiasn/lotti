@@ -34,6 +34,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../utils/utils.dart';
@@ -259,7 +260,7 @@ void main() {
 
   // setUpAll at main scope
   setUpAll(() {
-    registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeEntryText());
     registerFallbackValue(FakeTaskData());

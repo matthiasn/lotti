@@ -24,6 +24,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
+
 /// Integration test to verify that concurrent AI processing and user modifications
 /// work correctly with the Read-Current-Write pattern implementation.
 ///
@@ -66,8 +68,6 @@ class FakeTaskData extends Fake implements TaskData {}
 
 class FakeAiResponseData extends Fake implements AiResponseData {}
 
-class FakeJournalEntity extends Fake implements JournalEntity {}
-
 void main() {
   late UnifiedAiInferenceRepository repository;
   late MockRef mockRef;
@@ -89,7 +89,7 @@ void main() {
     registerFallbackValue(FakeTaskData());
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(FakeAiResponseData());
-    registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(fallbackJournalEntity);
   });
 
   setUp(() {

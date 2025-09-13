@@ -213,8 +213,6 @@ extension TagEntityPatterns on TagEntity {
         return personTag(_that);
       case StoryTag():
         return storyTag(_that);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 
@@ -426,8 +424,6 @@ extension TagEntityPatterns on TagEntity {
             _that.longTitle,
             _that.deletedAt,
             _that.inactive);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 

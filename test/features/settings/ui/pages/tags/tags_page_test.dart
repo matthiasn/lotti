@@ -11,6 +11,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
@@ -20,7 +21,7 @@ void main() {
 
   group('TagsPage Widget Tests - ', () {
     setUpAll(() {
-      registerFallbackValue(FakeTagEntity());
+      registerFallbackValue(fallbackTagEntity);
     });
 
     setUp(() {

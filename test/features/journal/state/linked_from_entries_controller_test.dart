@@ -13,24 +13,6 @@ class MockJournalRepository extends Mock implements JournalRepository {}
 
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
-class MockJournalEntity extends Mock implements JournalEntity {
-  MockJournalEntity(this._id)
-      : _meta = Metadata(
-          id: _id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        );
-
-  // ignore: unused_field
-  final String _id;
-  final Metadata _meta;
-
-  @override
-  Metadata get meta => _meta;
-}
-
 class MockLinkedFromEntriesController extends LinkedFromEntriesController {
   MockLinkedFromEntriesController(this._entities);
 
@@ -69,8 +51,24 @@ void main() {
   group('LinkedFromEntriesController', () {
     const testId = 'test-entry-id';
     final testEntities = [
-      MockJournalEntity('linked-from-id-1'),
-      MockJournalEntity('linked-from-id-2'),
+      JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'linked-from-id-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      ),
+      JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'linked-from-id-2',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      ),
     ];
 
     test('loads linked entities on initialization', () async {
@@ -108,9 +106,23 @@ void main() {
           .thenAnswer((_) async => testEntities);
 
       final updatedEntities = [
-        MockJournalEntity('linked-from-id-1'),
-        MockJournalEntity(
-          'linked-from-id-3',
+        JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'linked-from-id-1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        ),
+        JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'linked-from-id-3',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
         ), // Changed from linked-from-id-2 to linked-from-id-3
       ];
 
@@ -207,8 +219,24 @@ void main() {
     test('can be overridden with a mock controller', () async {
       // Arrange
       final mockEntities = [
-        MockJournalEntity('mock-id-1'),
-        MockJournalEntity('mock-id-2'),
+        JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'mock-id-1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        ),
+        JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'mock-id-2',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        ),
       ];
 
       // Act

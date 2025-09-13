@@ -188,8 +188,6 @@ extension EntryStatePatterns on EntryState {
         return saved(_that);
       case EntryStateDirty():
         return dirty(_that);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 
@@ -306,8 +304,6 @@ extension EntryStatePatterns on EntryState {
       case EntryStateDirty():
         return dirty(_that.entryId, _that.entry, _that.showMap, _that.isFocused,
             _that.shouldShowEditorToolBar, _that.formKey);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 

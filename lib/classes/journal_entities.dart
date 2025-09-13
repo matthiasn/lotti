@@ -103,7 +103,7 @@ abstract class SurveyData with _$SurveyData {
 }
 
 @freezed
-abstract class JournalEntity with _$JournalEntity {
+sealed class JournalEntity with _$JournalEntity {
   const factory JournalEntity.journalEntry({
     required Metadata meta,
     EntryText? entryText,

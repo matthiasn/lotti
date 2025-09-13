@@ -20,6 +20,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
+
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockAiInputRepository extends Mock implements AiInputRepository {}
@@ -48,8 +50,6 @@ class FakeMetadata extends Fake implements Metadata {}
 
 class FakeTaskData extends Fake implements TaskData {}
 
-class FakeJournalEntity extends Fake implements JournalEntity {}
-
 void main() {
   late UnifiedAiInferenceRepository repository;
   late MockRef mockRef;
@@ -67,7 +67,7 @@ void main() {
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeTaskData());
-    registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(InferenceStatus.idle);
   });
 

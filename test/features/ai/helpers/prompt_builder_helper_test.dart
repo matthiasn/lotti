@@ -10,19 +10,19 @@ import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+
 // Mocks
 class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
-
-class FakeJournalEntity extends Fake implements JournalEntity {}
 
 void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
 
   setUpAll(() {
-    registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(fallbackJournalEntity);
   });
 
   setUp(() {

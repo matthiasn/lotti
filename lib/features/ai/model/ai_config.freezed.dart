@@ -188,8 +188,6 @@ extension AiConfigPatterns on AiConfig {
         return model(_that);
       case AiConfigPrompt():
         return prompt(_that);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 
@@ -441,8 +439,6 @@ extension AiConfigPatterns on AiConfig {
             _that.archived,
             _that.trackPreconfigured,
             _that.preconfiguredPromptId);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 

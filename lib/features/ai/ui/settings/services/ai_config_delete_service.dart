@@ -88,9 +88,6 @@ class AiConfigDeleteService {
             _showConfigDeletedSnackbar(context, ref, config);
           }
           return true;
-
-        default:
-          throw ArgumentError('Unsupported config type: ${config.runtimeType}');
       }
     } catch (error) {
       if (context.mounted) {
@@ -601,7 +598,6 @@ class AiConfigDeleteService {
       AiConfigInferenceProvider() => 'Delete Provider',
       AiConfigModel() => 'Delete Model',
       AiConfigPrompt() => 'Delete Prompt',
-      _ => 'Delete Configuration',
     };
   }
 
@@ -612,7 +608,6 @@ class AiConfigDeleteService {
       AiConfigModel() =>
         'This will permanently delete the model configuration.',
       AiConfigPrompt() => 'This will permanently delete the prompt template.',
-      _ => 'This will permanently delete the configuration.',
     };
   }
 
@@ -621,7 +616,6 @@ class AiConfigDeleteService {
       AiConfigInferenceProvider() => Icons.hub,
       AiConfigModel() => Icons.smart_toy,
       AiConfigPrompt() => Icons.psychology,
-      _ => Icons.settings,
     };
   }
 
@@ -630,7 +624,6 @@ class AiConfigDeleteService {
       AiConfigInferenceProvider() => 'Provider',
       AiConfigModel() => 'Model',
       AiConfigPrompt() => 'Prompt',
-      _ => 'Configuration',
     };
   }
 }

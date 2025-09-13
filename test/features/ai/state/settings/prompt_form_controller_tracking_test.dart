@@ -7,17 +7,17 @@ import 'package:lotti/features/ai/state/settings/prompt_form_controller.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
+
 // Mocks
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
-class FakeAiConfig extends Fake implements AiConfig {}
 
 void main() {
   late ProviderContainer container;
   late MockAiConfigRepository mockAiConfigRepository;
 
   setUpAll(() {
-    registerFallbackValue(FakeAiConfig());
+    registerFallbackValue(fallbackAiConfig);
   });
 
   setUp(() {

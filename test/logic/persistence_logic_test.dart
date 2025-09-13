@@ -16,7 +16,6 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
@@ -34,6 +33,7 @@ import 'package:lotti/utils/location.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../helpers/fallbacks.dart';
 import '../helpers/path_provider.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
@@ -41,18 +41,15 @@ import '../test_data/test_data.dart';
 // Create a FakeGeolocation class for registerFallbackValue
 class FakeGeolocation extends Fake implements Geolocation {}
 
-// Create a FakeSyncMessage class for registerFallbackValue
-class FakeSyncMessage extends Fake implements SyncMessage {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final secureStorageMock = MockSecureStorage();
   setFakeDocumentsPath();
-  registerFallbackValue(FakeJournalEntity());
+  registerFallbackValue(fallbackJournalEntity);
   registerFallbackValue(FakeHabitDefinition());
   registerFallbackValue(FakeMetadata());
   registerFallbackValue(FakeGeolocation());
-  registerFallbackValue(FakeSyncMessage());
+  registerFallbackValue(fallbackSyncMessage);
 
   final mockNotificationService = MockNotificationService();
   final mockUpdateNotifications = MockUpdateNotifications();

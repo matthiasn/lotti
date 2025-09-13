@@ -137,8 +137,6 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfig(_that);
       case SyncAiConfigDelete():
         return aiConfigDelete(_that);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 
@@ -271,8 +269,6 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete():
         return aiConfigDelete(_that.id);
-      case _:
-        throw StateError('Unexpected subclass');
     }
   }
 

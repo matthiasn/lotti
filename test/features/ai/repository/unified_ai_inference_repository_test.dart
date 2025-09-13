@@ -34,6 +34,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
+
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockAiInputRepository extends Mock implements AiInputRepository {}
@@ -99,8 +101,6 @@ class FakeAudioData extends Fake implements AudioData {}
 
 class FakeAiResponseData extends Fake implements AiResponseData {}
 
-class FakeJournalEntity extends Fake implements JournalEntity {}
-
 class FakeJournalAudio extends Fake implements JournalAudio {}
 
 class FakeChecklistData extends Fake implements ChecklistData {}
@@ -131,7 +131,7 @@ void main() {
     registerFallbackValue(FakeAudioData());
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(FakeAiResponseData());
-    registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(FakeJournalAudio());
     registerFallbackValue(FakeChecklistData());
     registerFallbackValue(FakeChecklistItemData());

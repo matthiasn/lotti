@@ -15,6 +15,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -33,7 +34,7 @@ void main() {
   late MockTaskSummaryRefreshService mockTaskSummaryRefreshService;
 
   setUpAll(() {
-    registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeTaskData());
     registerFallbackValue(

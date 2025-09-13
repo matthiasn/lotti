@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/process_message.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../../helpers/fallbacks.dart';
 
 // Mock classes
 class MockEvent extends Mock implements Event {}
@@ -24,29 +24,7 @@ class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
-class MockJournalEntity extends Mock implements JournalEntity {
-  MockJournalEntity([this._affectedIds = const {'default-id'}]);
-
-  final Set<String> _affectedIds;
-
-  Set<String> get affectedIds => _affectedIds;
-}
-
-class MockEntryLink extends Mock implements EntryLink {
-  MockEntryLink(
-    this.mockFromId,
-    this.mockToId,
-  );
-
-  final String mockFromId;
-  final String mockToId;
-
-  @override
-  String get fromId => mockFromId;
-
-  @override
-  String get toId => mockToId;
-}
+// Use real data objects via test helpers instead of fakes/mocks for model classes
 
 void main() {
   late MockEvent mockEvent;
@@ -61,9 +39,18 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
-    registerFallbackValue(MockJournalEntity());
-    // We can't directly create these, so we'll just mock them
-    registerFallbackValue(MockEntryLink('mock-from', 'mock-to'));
+    registerFallbackValue(fallbackJournalEntity);
+    // Real fallback link instance
+    registerFallbackValue(
+      EntryLink.basic(
+        id: 'fallback-link-id',
+        fromId: 'mock-from',
+        toId: 'mock-to',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+      ),
+    );
     registerFallbackValue(<String>{});
   });
 
