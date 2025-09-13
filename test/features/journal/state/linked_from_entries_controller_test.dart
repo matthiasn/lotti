@@ -8,28 +8,13 @@ import 'package:lotti/features/journal/state/linked_from_entries_controller.dart
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../../test_utils/sealed_class_helpers.dart';
 
 class MockJournalRepository extends Mock implements JournalRepository {}
 
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
-class MockJournalEntity extends Mock implements JournalEntity {
-  MockJournalEntity(this._id)
-      : _meta = Metadata(
-          id: _id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        );
-
-  // ignore: unused_field
-  final String _id;
-  final Metadata _meta;
-
-  @override
-  Metadata get meta => _meta;
-}
+// MockJournalEntity is now imported from sealed_class_helpers.dart
 
 class MockLinkedFromEntriesController extends LinkedFromEntriesController {
   MockLinkedFromEntriesController(this._entities);

@@ -6,7 +6,7 @@ part 'player_state.freezed.dart';
 enum AudioPlayerStatus { initializing, initialized, playing, paused, stopped }
 
 @freezed
-class AudioPlayerState with _$AudioPlayerState {
+abstract class AudioPlayerState with _$AudioPlayerState {
   factory AudioPlayerState({
     required AudioPlayerStatus status,
     required Duration totalDuration,

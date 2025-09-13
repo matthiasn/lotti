@@ -155,19 +155,13 @@ class FakeHabitDefinition extends Fake implements HabitDefinition {}
 
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
 
-class FakeTagEntity extends Fake implements TagEntity {}
-
 class FakeEntryText extends Fake implements EntryText {}
 
 class FakeTaskData extends Fake implements TaskData {}
 
-class FakeJournalEntity extends Fake implements JournalEntity {}
-
 class FakeMetadata extends Fake implements Metadata {}
 
 class FakeQuillController extends Fake implements QuillController {}
-
-class FakeJournalAudio extends Fake implements JournalAudio {}
 
 class FakeMeasurementData extends Fake implements MeasurementData {}
 
@@ -177,4 +171,75 @@ class MockMaintenance extends Mock implements Maintenance {}
 
 class MockMatrixService extends Mock implements MatrixService {}
 
-class FakeSyncMessage extends Fake implements SyncMessage {}
+// Factory functions for creating test instances of sealed classes
+TagEntity createTestGenericTag({
+  String? id,
+  String? tag,
+  bool? private,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+}) =>
+    TagEntity.genericTag(
+      id: id ?? 'test-tag-id',
+      tag: tag ?? 'test-tag',
+      private: private ?? false,
+      createdAt: createdAt ?? DateTime.now(),
+      updatedAt: updatedAt ?? DateTime.now(),
+      vectorClock: null,
+    );
+
+JournalEntity createTestJournalEntry({
+  String? id,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  DateTime? dateFrom,
+  DateTime? dateTo,
+}) =>
+    JournalEntity.journalEntry(
+      meta: Metadata(
+        id: id ?? 'test-entry-id',
+        createdAt: createdAt ?? DateTime.now(),
+        updatedAt: updatedAt ?? DateTime.now(),
+        dateFrom: dateFrom ?? DateTime.now(),
+        dateTo: dateTo ?? DateTime.now(),
+      ),
+    );
+
+JournalEntity createTestJournalAudio({
+  String? id,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  DateTime? dateFrom,
+  DateTime? dateTo,
+  String? audioFile,
+  String? audioDirectory,
+  Duration? duration,
+}) =>
+    JournalEntity.journalAudio(
+      meta: Metadata(
+        id: id ?? 'test-audio-id',
+        createdAt: createdAt ?? DateTime.now(),
+        updatedAt: updatedAt ?? DateTime.now(),
+        dateFrom: dateFrom ?? DateTime.now(),
+        dateTo: dateTo ?? DateTime.now(),
+      ),
+      data: AudioData(
+        dateFrom: dateFrom ?? DateTime.now(),
+        dateTo: dateTo ?? DateTime.now(),
+        audioFile: audioFile ?? 'test.m4a',
+        audioDirectory: audioDirectory ?? '/test',
+        duration: duration ?? const Duration(seconds: 10),
+      ),
+    );
+
+SyncMessage createTestSyncJournalEntity({
+  String? id,
+  String? jsonPath,
+  SyncEntryStatus? status,
+}) =>
+    SyncMessage.journalEntity(
+      id: id ?? 'test-sync-id',
+      jsonPath: jsonPath ?? '/test.json',
+      vectorClock: null,
+      status: status ?? SyncEntryStatus.initial,
+    );

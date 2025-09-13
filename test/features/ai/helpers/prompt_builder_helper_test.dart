@@ -15,14 +15,20 @@ class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
 
-class FakeJournalEntity extends Fake implements JournalEntity {}
-
 void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
 
   setUpAll(() {
-    registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(JournalEntity.journalEntry(
+      meta: Metadata(
+        id: 'test-id',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+      ),
+    ));
   });
 
   setUp(() {

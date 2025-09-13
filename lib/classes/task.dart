@@ -8,7 +8,7 @@ part 'task.freezed.dart';
 part 'task.g.dart';
 
 @freezed
-class TaskStatus with _$TaskStatus {
+sealed class TaskStatus with _$TaskStatus {
   const factory TaskStatus.open({
     required String id,
     required DateTime createdAt,
@@ -72,7 +72,7 @@ class TaskStatus with _$TaskStatus {
 }
 
 @freezed
-class TaskData with _$TaskData {
+abstract class TaskData with _$TaskData {
   const factory TaskData({
     required TaskStatus status,
     required DateTime dateFrom,
@@ -151,7 +151,6 @@ extension TaskStatusExtension on TaskStatus {
       _TaskOnHold() => context.messages.taskStatusOnHold,
       _TaskDone() => context.messages.taskStatusDone,
       _TaskRejected() => context.messages.taskStatusRejected,
-      _ => 'Unknown',
     };
   }
 

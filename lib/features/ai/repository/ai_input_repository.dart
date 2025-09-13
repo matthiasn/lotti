@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -128,14 +129,18 @@ class AiInputRepository {
 
     final aiInput = AiInputTaskObject(
       title: task.data.title,
-      status: task.data.status.map(
-        open: (_) => 'OPEN',
-        groomed: (_) => 'GROOMED',
-        inProgress: (_) => 'IN PROGRESS',
-        blocked: (_) => 'BLOCKED',
-        onHold: (_) => 'ON HOLD',
-        done: (_) => 'DONE',
-        rejected: (_) => 'REJECTED',
+      status: task.data.status.when(
+        open: (id, createdAt, utcOffset, timezone, geolocation) => 'OPEN',
+        groomed: (id, createdAt, utcOffset, timezone, geolocation) => 'GROOMED',
+        inProgress: (id, createdAt, utcOffset, timezone, geolocation) =>
+            'IN PROGRESS',
+        blocked: (id, createdAt, utcOffset, reason, timezone, geolocation) =>
+            'BLOCKED',
+        onHold: (id, createdAt, utcOffset, reason, timezone, geolocation) =>
+            'ON HOLD',
+        done: (id, createdAt, utcOffset, timezone, geolocation) => 'DONE',
+        rejected: (id, createdAt, utcOffset, timezone, geolocation) =>
+            'REJECTED',
       ),
       creationDate: task.meta.createdAt,
       actionItems: actionItems,

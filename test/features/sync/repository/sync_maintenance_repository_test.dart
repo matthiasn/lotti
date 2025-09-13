@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../../test_utils/sealed_class_helpers.dart';
 
 // Mock classes
 class MockJournalDb extends Mock implements JournalDb {}
@@ -16,7 +17,7 @@ class MockOutboxService extends Mock implements OutboxService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
-class SyncMessageFake extends Fake implements SyncMessage {}
+// SyncMessageFake is now FakeSyncMessage from sealed_class_helpers.dart
 
 class ExceptionFake extends Fake implements Exception {}
 
@@ -60,7 +61,7 @@ void main() {
   late SyncMaintenanceRepository syncMaintenanceRepository;
 
   setUpAll(() {
-    registerFallbackValue(SyncMessageFake());
+    registerFallbackValue(FakeSyncMessage());
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(ExceptionFake());
   });

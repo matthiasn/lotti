@@ -4,18 +4,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../test_utils/sealed_class_helpers.dart';
+
 class MockAiConfigDb extends Mock implements AiConfigDb {}
 
 class MockOutboxService extends Mock implements OutboxService {}
-
-class FakeAiConfig extends Fake implements AiConfig {}
-
-class FakeSyncMessage extends Fake implements SyncMessage {}
 
 void main() {
   late MockAiConfigDb mockDb;

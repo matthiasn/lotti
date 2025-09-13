@@ -21,7 +21,7 @@ enum EntryFlag {
 }
 
 @freezed
-class Metadata with _$Metadata {
+abstract class Metadata with _$Metadata {
   const factory Metadata({
     required String id,
     required DateTime createdAt,
@@ -45,7 +45,7 @@ class Metadata with _$Metadata {
 }
 
 @freezed
-class ImageData with _$ImageData {
+abstract class ImageData with _$ImageData {
   const factory ImageData({
     required DateTime capturedAt,
     required String imageId,
@@ -59,7 +59,7 @@ class ImageData with _$ImageData {
 }
 
 @freezed
-class AudioData with _$AudioData {
+abstract class AudioData with _$AudioData {
   const factory AudioData({
     required DateTime dateFrom,
     required DateTime dateTo,
@@ -76,7 +76,7 @@ class AudioData with _$AudioData {
 }
 
 @freezed
-class AudioTranscript with _$AudioTranscript {
+abstract class AudioTranscript with _$AudioTranscript {
   const factory AudioTranscript({
     required DateTime created,
     required String library,
@@ -91,7 +91,7 @@ class AudioTranscript with _$AudioTranscript {
 }
 
 @freezed
-class SurveyData with _$SurveyData {
+abstract class SurveyData with _$SurveyData {
   const factory SurveyData({
     required RPTaskResult taskResult,
     required Map<String, Set<String>> scoreDefinitions,
@@ -103,7 +103,7 @@ class SurveyData with _$SurveyData {
 }
 
 @freezed
-class JournalEntity with _$JournalEntity {
+sealed class JournalEntity with _$JournalEntity {
   const factory JournalEntity.journalEntry({
     required Metadata meta,
     EntryText? entryText,

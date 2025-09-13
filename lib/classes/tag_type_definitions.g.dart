@@ -6,8 +6,7 @@ part of 'tag_type_definitions.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$GenericTagImpl _$$GenericTagImplFromJson(Map<String, dynamic> json) =>
-    _$GenericTagImpl(
+GenericTag _$GenericTagFromJson(Map<String, dynamic> json) => GenericTag(
       id: json['id'] as String,
       tag: json['tag'] as String,
       private: json['private'] as bool,
@@ -23,7 +22,7 @@ _$GenericTagImpl _$$GenericTagImplFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$GenericTagImplToJson(_$GenericTagImpl instance) =>
+Map<String, dynamic> _$GenericTagToJson(GenericTag instance) =>
     <String, dynamic>{
       'id': instance.id,
       'tag': instance.tag,
@@ -36,8 +35,7 @@ Map<String, dynamic> _$$GenericTagImplToJson(_$GenericTagImpl instance) =>
       'runtimeType': instance.$type,
     };
 
-_$PersonTagImpl _$$PersonTagImplFromJson(Map<String, dynamic> json) =>
-    _$PersonTagImpl(
+PersonTag _$PersonTagFromJson(Map<String, dynamic> json) => PersonTag(
       id: json['id'] as String,
       tag: json['tag'] as String,
       private: json['private'] as bool,
@@ -55,8 +53,7 @@ _$PersonTagImpl _$$PersonTagImplFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$PersonTagImplToJson(_$PersonTagImpl instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$PersonTagToJson(PersonTag instance) => <String, dynamic>{
       'id': instance.id,
       'tag': instance.tag,
       'private': instance.private,
@@ -70,8 +67,7 @@ Map<String, dynamic> _$$PersonTagImplToJson(_$PersonTagImpl instance) =>
       'runtimeType': instance.$type,
     };
 
-_$StoryTagImpl _$$StoryTagImplFromJson(Map<String, dynamic> json) =>
-    _$StoryTagImpl(
+StoryTag _$StoryTagFromJson(Map<String, dynamic> json) => StoryTag(
       id: json['id'] as String,
       tag: json['tag'] as String,
       private: json['private'] as bool,
@@ -89,8 +85,7 @@ _$StoryTagImpl _$$StoryTagImplFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$StoryTagImplToJson(_$StoryTagImpl instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$StoryTagToJson(StoryTag instance) => <String, dynamic>{
       'id': instance.id,
       'tag': instance.tag,
       'private': instance.private,

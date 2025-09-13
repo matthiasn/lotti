@@ -42,7 +42,7 @@ class TaskSummaryTool {
 }
 
 @freezed
-class TaskSummaryRequest with _$TaskSummaryRequest {
+abstract class TaskSummaryRequest with _$TaskSummaryRequest {
   const factory TaskSummaryRequest({
     @JsonKey(name: 'start_date') required String startDate,
     @JsonKey(name: 'end_date') required String endDate,
@@ -54,7 +54,7 @@ class TaskSummaryRequest with _$TaskSummaryRequest {
 }
 
 @freezed
-class TaskSummaryResult with _$TaskSummaryResult {
+abstract class TaskSummaryResult with _$TaskSummaryResult {
   const factory TaskSummaryResult({
     required String taskId,
     required String taskTitle,

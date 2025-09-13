@@ -34,6 +34,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../test_utils/sealed_class_helpers.dart';
+
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockAiInputRepository extends Mock implements AiInputRepository {}
@@ -98,8 +100,6 @@ class FakeImageData extends Fake implements ImageData {}
 class FakeAudioData extends Fake implements AudioData {}
 
 class FakeAiResponseData extends Fake implements AiResponseData {}
-
-class FakeJournalEntity extends Fake implements JournalEntity {}
 
 class FakeJournalAudio extends Fake implements JournalAudio {}
 

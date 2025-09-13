@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
+import '../../../../../test_utils/sealed_class_helpers.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {

@@ -20,6 +20,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../test_utils/sealed_class_helpers.dart';
+
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockAiInputRepository extends Mock implements AiInputRepository {}
@@ -47,8 +49,6 @@ class FakeAiConfigInferenceProvider extends Fake
 class FakeMetadata extends Fake implements Metadata {}
 
 class FakeTaskData extends Fake implements TaskData {}
-
-class FakeJournalEntity extends Fake implements JournalEntity {}
 
 void main() {
   late UnifiedAiInferenceRepository repository;

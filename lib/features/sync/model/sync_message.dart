@@ -11,7 +11,7 @@ part 'sync_message.g.dart';
 enum SyncEntryStatus { initial, update }
 
 @freezed
-class SyncMessage with _$SyncMessage {
+sealed class SyncMessage with _$SyncMessage {
   const factory SyncMessage.journalEntity({
     required String id,
     required String jsonPath,

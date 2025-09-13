@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -14,9 +15,13 @@ class SaveButtonController extends _$SaveButtonController {
   Future<bool?> build({required String id}) async {
     final state = ref.watch(entryControllerProvider(id: id)).value;
     _id = id;
-    final unsaved = state?.map(
-      dirty: (_) => true,
-      saved: (_) => false,
+    final unsaved = state?.when(
+      dirty: (entryId, entry, showMap, isFocused, shouldShowEditorToolBar,
+              formKey) =>
+          true,
+      saved: (entryId, entry, showMap, isFocused, shouldShowEditorToolBar,
+              formKey) =>
+          false,
     );
 
     return unsaved;

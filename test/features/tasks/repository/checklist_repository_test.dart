@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../test_utils/sealed_class_helpers.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 

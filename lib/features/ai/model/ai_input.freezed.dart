@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,122 +9,76 @@ part of 'ai_input.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-AiInputTaskObject _$AiInputTaskObjectFromJson(Map<String, dynamic> json) {
-  return _AiInputTaskObject.fromJson(json);
-}
 
 /// @nodoc
 mixin _$AiInputTaskObject {
-  String get title => throw _privateConstructorUsedError;
-  String get status => throw _privateConstructorUsedError;
-  String get estimatedDuration => throw _privateConstructorUsedError;
-  String get timeSpent => throw _privateConstructorUsedError;
-  DateTime get creationDate => throw _privateConstructorUsedError;
-  List<AiActionItem> get actionItems => throw _privateConstructorUsedError;
-  List<AiInputLogEntryObject> get logEntries =>
-      throw _privateConstructorUsedError;
-  String? get languageCode => throw _privateConstructorUsedError;
-
-  /// Serializes this AiInputTaskObject to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get title;
+  String get status;
+  String get estimatedDuration;
+  String get timeSpent;
+  DateTime get creationDate;
+  List<AiActionItem> get actionItems;
+  List<AiInputLogEntryObject> get logEntries;
+  String? get languageCode;
 
   /// Create a copy of AiInputTaskObject
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $AiInputTaskObjectCopyWith<AiInputTaskObject> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AiInputTaskObjectCopyWith<$Res> {
-  factory $AiInputTaskObjectCopyWith(
-          AiInputTaskObject value, $Res Function(AiInputTaskObject) then) =
-      _$AiInputTaskObjectCopyWithImpl<$Res, AiInputTaskObject>;
-  @useResult
-  $Res call(
-      {String title,
-      String status,
-      String estimatedDuration,
-      String timeSpent,
-      DateTime creationDate,
-      List<AiActionItem> actionItems,
-      List<AiInputLogEntryObject> logEntries,
-      String? languageCode});
-}
-
-/// @nodoc
-class _$AiInputTaskObjectCopyWithImpl<$Res, $Val extends AiInputTaskObject>
-    implements $AiInputTaskObjectCopyWith<$Res> {
-  _$AiInputTaskObjectCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AiInputTaskObject
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $AiInputTaskObjectCopyWith<AiInputTaskObject> get copyWith =>
+      _$AiInputTaskObjectCopyWithImpl<AiInputTaskObject>(
+          this as AiInputTaskObject, _$identity);
+
+  /// Serializes this AiInputTaskObject to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? title = null,
-    Object? status = null,
-    Object? estimatedDuration = null,
-    Object? timeSpent = null,
-    Object? creationDate = null,
-    Object? actionItems = null,
-    Object? logEntries = null,
-    Object? languageCode = freezed,
-  }) {
-    return _then(_value.copyWith(
-      title: null == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String,
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as String,
-      estimatedDuration: null == estimatedDuration
-          ? _value.estimatedDuration
-          : estimatedDuration // ignore: cast_nullable_to_non_nullable
-              as String,
-      timeSpent: null == timeSpent
-          ? _value.timeSpent
-          : timeSpent // ignore: cast_nullable_to_non_nullable
-              as String,
-      creationDate: null == creationDate
-          ? _value.creationDate
-          : creationDate // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      actionItems: null == actionItems
-          ? _value.actionItems
-          : actionItems // ignore: cast_nullable_to_non_nullable
-              as List<AiActionItem>,
-      logEntries: null == logEntries
-          ? _value.logEntries
-          : logEntries // ignore: cast_nullable_to_non_nullable
-              as List<AiInputLogEntryObject>,
-      languageCode: freezed == languageCode
-          ? _value.languageCode
-          : languageCode // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AiInputTaskObject &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.estimatedDuration, estimatedDuration) ||
+                other.estimatedDuration == estimatedDuration) &&
+            (identical(other.timeSpent, timeSpent) ||
+                other.timeSpent == timeSpent) &&
+            (identical(other.creationDate, creationDate) ||
+                other.creationDate == creationDate) &&
+            const DeepCollectionEquality()
+                .equals(other.actionItems, actionItems) &&
+            const DeepCollectionEquality()
+                .equals(other.logEntries, logEntries) &&
+            (identical(other.languageCode, languageCode) ||
+                other.languageCode == languageCode));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      title,
+      status,
+      estimatedDuration,
+      timeSpent,
+      creationDate,
+      const DeepCollectionEquality().hash(actionItems),
+      const DeepCollectionEquality().hash(logEntries),
+      languageCode);
+
+  @override
+  String toString() {
+    return 'AiInputTaskObject(title: $title, status: $status, estimatedDuration: $estimatedDuration, timeSpent: $timeSpent, creationDate: $creationDate, actionItems: $actionItems, logEntries: $logEntries, languageCode: $languageCode)';
   }
 }
 
 /// @nodoc
-abstract class _$$AiInputTaskObjectImplCopyWith<$Res>
-    implements $AiInputTaskObjectCopyWith<$Res> {
-  factory _$$AiInputTaskObjectImplCopyWith(_$AiInputTaskObjectImpl value,
-          $Res Function(_$AiInputTaskObjectImpl) then) =
-      __$$AiInputTaskObjectImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $AiInputTaskObjectCopyWith<$Res> {
+  factory $AiInputTaskObjectCopyWith(
+          AiInputTaskObject value, $Res Function(AiInputTaskObject) _then) =
+      _$AiInputTaskObjectCopyWithImpl;
   @useResult
   $Res call(
       {String title,
@@ -138,12 +92,12 @@ abstract class _$$AiInputTaskObjectImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AiInputTaskObjectImplCopyWithImpl<$Res>
-    extends _$AiInputTaskObjectCopyWithImpl<$Res, _$AiInputTaskObjectImpl>
-    implements _$$AiInputTaskObjectImplCopyWith<$Res> {
-  __$$AiInputTaskObjectImplCopyWithImpl(_$AiInputTaskObjectImpl _value,
-      $Res Function(_$AiInputTaskObjectImpl) _then)
-      : super(_value, _then);
+class _$AiInputTaskObjectCopyWithImpl<$Res>
+    implements $AiInputTaskObjectCopyWith<$Res> {
+  _$AiInputTaskObjectCopyWithImpl(this._self, this._then);
+
+  final AiInputTaskObject _self;
+  final $Res Function(AiInputTaskObject) _then;
 
   /// Create a copy of AiInputTaskObject
   /// with the given fields replaced by the non-null parameter values.
@@ -159,47 +113,255 @@ class __$$AiInputTaskObjectImplCopyWithImpl<$Res>
     Object? logEntries = null,
     Object? languageCode = freezed,
   }) {
-    return _then(_$AiInputTaskObjectImpl(
+    return _then(_self.copyWith(
       title: null == title
-          ? _value.title
+          ? _self.title
           : title // ignore: cast_nullable_to_non_nullable
               as String,
       status: null == status
-          ? _value.status
+          ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
               as String,
       estimatedDuration: null == estimatedDuration
-          ? _value.estimatedDuration
+          ? _self.estimatedDuration
           : estimatedDuration // ignore: cast_nullable_to_non_nullable
               as String,
       timeSpent: null == timeSpent
-          ? _value.timeSpent
+          ? _self.timeSpent
           : timeSpent // ignore: cast_nullable_to_non_nullable
               as String,
       creationDate: null == creationDate
-          ? _value.creationDate
+          ? _self.creationDate
           : creationDate // ignore: cast_nullable_to_non_nullable
               as DateTime,
       actionItems: null == actionItems
-          ? _value._actionItems
+          ? _self.actionItems
           : actionItems // ignore: cast_nullable_to_non_nullable
               as List<AiActionItem>,
       logEntries: null == logEntries
-          ? _value._logEntries
+          ? _self.logEntries
           : logEntries // ignore: cast_nullable_to_non_nullable
               as List<AiInputLogEntryObject>,
       languageCode: freezed == languageCode
-          ? _value.languageCode
+          ? _self.languageCode
           : languageCode // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [AiInputTaskObject].
+extension AiInputTaskObjectPatterns on AiInputTaskObject {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_AiInputTaskObject value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputTaskObject() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_AiInputTaskObject value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputTaskObject():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_AiInputTaskObject value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputTaskObject() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            String title,
+            String status,
+            String estimatedDuration,
+            String timeSpent,
+            DateTime creationDate,
+            List<AiActionItem> actionItems,
+            List<AiInputLogEntryObject> logEntries,
+            String? languageCode)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputTaskObject() when $default != null:
+        return $default(
+            _that.title,
+            _that.status,
+            _that.estimatedDuration,
+            _that.timeSpent,
+            _that.creationDate,
+            _that.actionItems,
+            _that.logEntries,
+            _that.languageCode);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            String title,
+            String status,
+            String estimatedDuration,
+            String timeSpent,
+            DateTime creationDate,
+            List<AiActionItem> actionItems,
+            List<AiInputLogEntryObject> logEntries,
+            String? languageCode)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputTaskObject():
+        return $default(
+            _that.title,
+            _that.status,
+            _that.estimatedDuration,
+            _that.timeSpent,
+            _that.creationDate,
+            _that.actionItems,
+            _that.logEntries,
+            _that.languageCode);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            String title,
+            String status,
+            String estimatedDuration,
+            String timeSpent,
+            DateTime creationDate,
+            List<AiActionItem> actionItems,
+            List<AiInputLogEntryObject> logEntries,
+            String? languageCode)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputTaskObject() when $default != null:
+        return $default(
+            _that.title,
+            _that.status,
+            _that.estimatedDuration,
+            _that.timeSpent,
+            _that.creationDate,
+            _that.actionItems,
+            _that.logEntries,
+            _that.languageCode);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
-  const _$AiInputTaskObjectImpl(
+class _AiInputTaskObject implements AiInputTaskObject {
+  const _AiInputTaskObject(
       {required this.title,
       required this.status,
       required this.estimatedDuration,
@@ -210,9 +372,8 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
       this.languageCode})
       : _actionItems = actionItems,
         _logEntries = logEntries;
-
-  factory _$AiInputTaskObjectImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiInputTaskObjectImplFromJson(json);
+  factory _AiInputTaskObject.fromJson(Map<String, dynamic> json) =>
+      _$AiInputTaskObjectFromJson(json);
 
   @override
   final String title;
@@ -243,16 +404,26 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
   @override
   final String? languageCode;
 
+  /// Create a copy of AiInputTaskObject
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AiInputTaskObject(title: $title, status: $status, estimatedDuration: $estimatedDuration, timeSpent: $timeSpent, creationDate: $creationDate, actionItems: $actionItems, logEntries: $logEntries, languageCode: $languageCode)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AiInputTaskObjectCopyWith<_AiInputTaskObject> get copyWith =>
+      __$AiInputTaskObjectCopyWithImpl<_AiInputTaskObject>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiInputTaskObjectToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiInputTaskObjectImpl &&
+            other is _AiInputTaskObject &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.estimatedDuration, estimatedDuration) ||
@@ -282,238 +453,114 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
       const DeepCollectionEquality().hash(_logEntries),
       languageCode);
 
-  /// Create a copy of AiInputTaskObject
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AiInputTaskObjectImplCopyWith<_$AiInputTaskObjectImpl> get copyWith =>
-      __$$AiInputTaskObjectImplCopyWithImpl<_$AiInputTaskObjectImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AiInputTaskObjectImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _AiInputTaskObject implements AiInputTaskObject {
-  const factory _AiInputTaskObject(
-      {required final String title,
-      required final String status,
-      required final String estimatedDuration,
-      required final String timeSpent,
-      required final DateTime creationDate,
-      required final List<AiActionItem> actionItems,
-      required final List<AiInputLogEntryObject> logEntries,
-      final String? languageCode}) = _$AiInputTaskObjectImpl;
-
-  factory _AiInputTaskObject.fromJson(Map<String, dynamic> json) =
-      _$AiInputTaskObjectImpl.fromJson;
-
-  @override
-  String get title;
-  @override
-  String get status;
-  @override
-  String get estimatedDuration;
-  @override
-  String get timeSpent;
-  @override
-  DateTime get creationDate;
-  @override
-  List<AiActionItem> get actionItems;
-  @override
-  List<AiInputLogEntryObject> get logEntries;
-  @override
-  String? get languageCode;
-
-  /// Create a copy of AiInputTaskObject
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiInputTaskObjectImplCopyWith<_$AiInputTaskObjectImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-AiActionItem _$AiActionItemFromJson(Map<String, dynamic> json) {
-  return _AiActionItem.fromJson(json);
-}
-
-/// @nodoc
-mixin _$AiActionItem {
-  String get title => throw _privateConstructorUsedError;
-  bool get completed => throw _privateConstructorUsedError;
-  String? get id => throw _privateConstructorUsedError;
-  DateTime? get deadline => throw _privateConstructorUsedError;
-  DateTime? get completionDate => throw _privateConstructorUsedError;
-
-  /// Serializes this AiActionItem to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of AiActionItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $AiActionItemCopyWith<AiActionItem> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AiActionItemCopyWith<$Res> {
-  factory $AiActionItemCopyWith(
-          AiActionItem value, $Res Function(AiActionItem) then) =
-      _$AiActionItemCopyWithImpl<$Res, AiActionItem>;
-  @useResult
-  $Res call(
-      {String title,
-      bool completed,
-      String? id,
-      DateTime? deadline,
-      DateTime? completionDate});
-}
-
-/// @nodoc
-class _$AiActionItemCopyWithImpl<$Res, $Val extends AiActionItem>
-    implements $AiActionItemCopyWith<$Res> {
-  _$AiActionItemCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AiActionItem
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? title = null,
-    Object? completed = null,
-    Object? id = freezed,
-    Object? deadline = freezed,
-    Object? completionDate = freezed,
-  }) {
-    return _then(_value.copyWith(
-      title: null == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String,
-      completed: null == completed
-          ? _value.completed
-          : completed // ignore: cast_nullable_to_non_nullable
-              as bool,
-      id: freezed == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String?,
-      deadline: freezed == deadline
-          ? _value.deadline
-          : deadline // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      completionDate: freezed == completionDate
-          ? _value.completionDate
-          : completionDate // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ) as $Val);
+  String toString() {
+    return 'AiInputTaskObject(title: $title, status: $status, estimatedDuration: $estimatedDuration, timeSpent: $timeSpent, creationDate: $creationDate, actionItems: $actionItems, logEntries: $logEntries, languageCode: $languageCode)';
   }
 }
 
 /// @nodoc
-abstract class _$$AiActionItemImplCopyWith<$Res>
-    implements $AiActionItemCopyWith<$Res> {
-  factory _$$AiActionItemImplCopyWith(
-          _$AiActionItemImpl value, $Res Function(_$AiActionItemImpl) then) =
-      __$$AiActionItemImplCopyWithImpl<$Res>;
+abstract mixin class _$AiInputTaskObjectCopyWith<$Res>
+    implements $AiInputTaskObjectCopyWith<$Res> {
+  factory _$AiInputTaskObjectCopyWith(
+          _AiInputTaskObject value, $Res Function(_AiInputTaskObject) _then) =
+      __$AiInputTaskObjectCopyWithImpl;
   @override
   @useResult
   $Res call(
       {String title,
-      bool completed,
-      String? id,
-      DateTime? deadline,
-      DateTime? completionDate});
+      String status,
+      String estimatedDuration,
+      String timeSpent,
+      DateTime creationDate,
+      List<AiActionItem> actionItems,
+      List<AiInputLogEntryObject> logEntries,
+      String? languageCode});
 }
 
 /// @nodoc
-class __$$AiActionItemImplCopyWithImpl<$Res>
-    extends _$AiActionItemCopyWithImpl<$Res, _$AiActionItemImpl>
-    implements _$$AiActionItemImplCopyWith<$Res> {
-  __$$AiActionItemImplCopyWithImpl(
-      _$AiActionItemImpl _value, $Res Function(_$AiActionItemImpl) _then)
-      : super(_value, _then);
+class __$AiInputTaskObjectCopyWithImpl<$Res>
+    implements _$AiInputTaskObjectCopyWith<$Res> {
+  __$AiInputTaskObjectCopyWithImpl(this._self, this._then);
 
-  /// Create a copy of AiActionItem
+  final _AiInputTaskObject _self;
+  final $Res Function(_AiInputTaskObject) _then;
+
+  /// Create a copy of AiInputTaskObject
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? title = null,
-    Object? completed = null,
-    Object? id = freezed,
-    Object? deadline = freezed,
-    Object? completionDate = freezed,
+    Object? status = null,
+    Object? estimatedDuration = null,
+    Object? timeSpent = null,
+    Object? creationDate = null,
+    Object? actionItems = null,
+    Object? logEntries = null,
+    Object? languageCode = freezed,
   }) {
-    return _then(_$AiActionItemImpl(
+    return _then(_AiInputTaskObject(
       title: null == title
-          ? _value.title
+          ? _self.title
           : title // ignore: cast_nullable_to_non_nullable
               as String,
-      completed: null == completed
-          ? _value.completed
-          : completed // ignore: cast_nullable_to_non_nullable
-              as bool,
-      id: freezed == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      estimatedDuration: null == estimatedDuration
+          ? _self.estimatedDuration
+          : estimatedDuration // ignore: cast_nullable_to_non_nullable
+              as String,
+      timeSpent: null == timeSpent
+          ? _self.timeSpent
+          : timeSpent // ignore: cast_nullable_to_non_nullable
+              as String,
+      creationDate: null == creationDate
+          ? _self.creationDate
+          : creationDate // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      actionItems: null == actionItems
+          ? _self._actionItems
+          : actionItems // ignore: cast_nullable_to_non_nullable
+              as List<AiActionItem>,
+      logEntries: null == logEntries
+          ? _self._logEntries
+          : logEntries // ignore: cast_nullable_to_non_nullable
+              as List<AiInputLogEntryObject>,
+      languageCode: freezed == languageCode
+          ? _self.languageCode
+          : languageCode // ignore: cast_nullable_to_non_nullable
               as String?,
-      deadline: freezed == deadline
-          ? _value.deadline
-          : deadline // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      completionDate: freezed == completionDate
-          ? _value.completionDate
-          : completionDate // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
-class _$AiActionItemImpl implements _AiActionItem {
-  const _$AiActionItemImpl(
-      {required this.title,
-      required this.completed,
-      this.id,
-      this.deadline,
-      this.completionDate});
+mixin _$AiActionItem {
+  String get title;
+  bool get completed;
+  String? get id;
+  DateTime? get deadline;
+  DateTime? get completionDate;
 
-  factory _$AiActionItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiActionItemImplFromJson(json);
+  /// Create a copy of AiActionItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AiActionItemCopyWith<AiActionItem> get copyWith =>
+      _$AiActionItemCopyWithImpl<AiActionItem>(
+          this as AiActionItem, _$identity);
 
-  @override
-  final String title;
-  @override
-  final bool completed;
-  @override
-  final String? id;
-  @override
-  final DateTime? deadline;
-  @override
-  final DateTime? completionDate;
-
-  @override
-  String toString() {
-    return 'AiActionItem(title: $title, completed: $completed, id: $id, deadline: $deadline, completionDate: $completionDate)';
-  }
+  /// Serializes this AiActionItem to a JSON map.
+  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiActionItemImpl &&
+            other is AiActionItem &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.completed, completed) ||
                 other.completed == completed) &&
@@ -529,248 +576,384 @@ class _$AiActionItemImpl implements _AiActionItem {
   int get hashCode =>
       Object.hash(runtimeType, title, completed, id, deadline, completionDate);
 
-  /// Create a copy of AiActionItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AiActionItemImplCopyWith<_$AiActionItemImpl> get copyWith =>
-      __$$AiActionItemImplCopyWithImpl<_$AiActionItemImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AiActionItemImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _AiActionItem implements AiActionItem {
-  const factory _AiActionItem(
-      {required final String title,
-      required final bool completed,
-      final String? id,
-      final DateTime? deadline,
-      final DateTime? completionDate}) = _$AiActionItemImpl;
-
-  factory _AiActionItem.fromJson(Map<String, dynamic> json) =
-      _$AiActionItemImpl.fromJson;
-
-  @override
-  String get title;
-  @override
-  bool get completed;
-  @override
-  String? get id;
-  @override
-  DateTime? get deadline;
-  @override
-  DateTime? get completionDate;
-
-  /// Create a copy of AiActionItem
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiActionItemImplCopyWith<_$AiActionItemImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-AiInputLogEntryObject _$AiInputLogEntryObjectFromJson(
-    Map<String, dynamic> json) {
-  return _AiInputLogEntryObject.fromJson(json);
-}
-
-/// @nodoc
-mixin _$AiInputLogEntryObject {
-  DateTime get creationTimestamp => throw _privateConstructorUsedError;
-  String get loggedDuration => throw _privateConstructorUsedError;
-  String get text => throw _privateConstructorUsedError;
-  String? get audioTranscript => throw _privateConstructorUsedError;
-  String? get transcriptLanguage => throw _privateConstructorUsedError;
-  String? get entryType => throw _privateConstructorUsedError;
-
-  /// Serializes this AiInputLogEntryObject to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of AiInputLogEntryObject
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $AiInputLogEntryObjectCopyWith<AiInputLogEntryObject> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AiInputLogEntryObjectCopyWith<$Res> {
-  factory $AiInputLogEntryObjectCopyWith(AiInputLogEntryObject value,
-          $Res Function(AiInputLogEntryObject) then) =
-      _$AiInputLogEntryObjectCopyWithImpl<$Res, AiInputLogEntryObject>;
-  @useResult
-  $Res call(
-      {DateTime creationTimestamp,
-      String loggedDuration,
-      String text,
-      String? audioTranscript,
-      String? transcriptLanguage,
-      String? entryType});
-}
-
-/// @nodoc
-class _$AiInputLogEntryObjectCopyWithImpl<$Res,
-        $Val extends AiInputLogEntryObject>
-    implements $AiInputLogEntryObjectCopyWith<$Res> {
-  _$AiInputLogEntryObjectCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AiInputLogEntryObject
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? creationTimestamp = null,
-    Object? loggedDuration = null,
-    Object? text = null,
-    Object? audioTranscript = freezed,
-    Object? transcriptLanguage = freezed,
-    Object? entryType = freezed,
-  }) {
-    return _then(_value.copyWith(
-      creationTimestamp: null == creationTimestamp
-          ? _value.creationTimestamp
-          : creationTimestamp // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      loggedDuration: null == loggedDuration
-          ? _value.loggedDuration
-          : loggedDuration // ignore: cast_nullable_to_non_nullable
-              as String,
-      text: null == text
-          ? _value.text
-          : text // ignore: cast_nullable_to_non_nullable
-              as String,
-      audioTranscript: freezed == audioTranscript
-          ? _value.audioTranscript
-          : audioTranscript // ignore: cast_nullable_to_non_nullable
-              as String?,
-      transcriptLanguage: freezed == transcriptLanguage
-          ? _value.transcriptLanguage
-          : transcriptLanguage // ignore: cast_nullable_to_non_nullable
-              as String?,
-      entryType: freezed == entryType
-          ? _value.entryType
-          : entryType // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+  String toString() {
+    return 'AiActionItem(title: $title, completed: $completed, id: $id, deadline: $deadline, completionDate: $completionDate)';
   }
 }
 
 /// @nodoc
-abstract class _$$AiInputLogEntryObjectImplCopyWith<$Res>
-    implements $AiInputLogEntryObjectCopyWith<$Res> {
-  factory _$$AiInputLogEntryObjectImplCopyWith(
-          _$AiInputLogEntryObjectImpl value,
-          $Res Function(_$AiInputLogEntryObjectImpl) then) =
-      __$$AiInputLogEntryObjectImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $AiActionItemCopyWith<$Res> {
+  factory $AiActionItemCopyWith(
+          AiActionItem value, $Res Function(AiActionItem) _then) =
+      _$AiActionItemCopyWithImpl;
   @useResult
   $Res call(
-      {DateTime creationTimestamp,
-      String loggedDuration,
-      String text,
-      String? audioTranscript,
-      String? transcriptLanguage,
-      String? entryType});
+      {String title,
+      bool completed,
+      String? id,
+      DateTime? deadline,
+      DateTime? completionDate});
 }
 
 /// @nodoc
-class __$$AiInputLogEntryObjectImplCopyWithImpl<$Res>
-    extends _$AiInputLogEntryObjectCopyWithImpl<$Res,
-        _$AiInputLogEntryObjectImpl>
-    implements _$$AiInputLogEntryObjectImplCopyWith<$Res> {
-  __$$AiInputLogEntryObjectImplCopyWithImpl(_$AiInputLogEntryObjectImpl _value,
-      $Res Function(_$AiInputLogEntryObjectImpl) _then)
-      : super(_value, _then);
+class _$AiActionItemCopyWithImpl<$Res> implements $AiActionItemCopyWith<$Res> {
+  _$AiActionItemCopyWithImpl(this._self, this._then);
 
-  /// Create a copy of AiInputLogEntryObject
+  final AiActionItem _self;
+  final $Res Function(AiActionItem) _then;
+
+  /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? creationTimestamp = null,
-    Object? loggedDuration = null,
-    Object? text = null,
-    Object? audioTranscript = freezed,
-    Object? transcriptLanguage = freezed,
-    Object? entryType = freezed,
+    Object? title = null,
+    Object? completed = null,
+    Object? id = freezed,
+    Object? deadline = freezed,
+    Object? completionDate = freezed,
   }) {
-    return _then(_$AiInputLogEntryObjectImpl(
-      creationTimestamp: null == creationTimestamp
-          ? _value.creationTimestamp
-          : creationTimestamp // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      loggedDuration: null == loggedDuration
-          ? _value.loggedDuration
-          : loggedDuration // ignore: cast_nullable_to_non_nullable
+    return _then(_self.copyWith(
+      title: null == title
+          ? _self.title
+          : title // ignore: cast_nullable_to_non_nullable
               as String,
-      text: null == text
-          ? _value.text
-          : text // ignore: cast_nullable_to_non_nullable
-              as String,
-      audioTranscript: freezed == audioTranscript
-          ? _value.audioTranscript
-          : audioTranscript // ignore: cast_nullable_to_non_nullable
+      completed: null == completed
+          ? _self.completed
+          : completed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      id: freezed == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
               as String?,
-      transcriptLanguage: freezed == transcriptLanguage
-          ? _value.transcriptLanguage
-          : transcriptLanguage // ignore: cast_nullable_to_non_nullable
-              as String?,
-      entryType: freezed == entryType
-          ? _value.entryType
-          : entryType // ignore: cast_nullable_to_non_nullable
-              as String?,
+      deadline: freezed == deadline
+          ? _self.deadline
+          : deadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      completionDate: freezed == completionDate
+          ? _self.completionDate
+          : completionDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [AiActionItem].
+extension AiActionItemPatterns on AiActionItem {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_AiActionItem value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiActionItem() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_AiActionItem value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiActionItem():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_AiActionItem value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiActionItem() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(String title, bool completed, String? id,
+            DateTime? deadline, DateTime? completionDate)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiActionItem() when $default != null:
+        return $default(_that.title, _that.completed, _that.id, _that.deadline,
+            _that.completionDate);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(String title, bool completed, String? id,
+            DateTime? deadline, DateTime? completionDate)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiActionItem():
+        return $default(_that.title, _that.completed, _that.id, _that.deadline,
+            _that.completionDate);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(String title, bool completed, String? id,
+            DateTime? deadline, DateTime? completionDate)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiActionItem() when $default != null:
+        return $default(_that.title, _that.completed, _that.id, _that.deadline,
+            _that.completionDate);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$AiInputLogEntryObjectImpl implements _AiInputLogEntryObject {
-  const _$AiInputLogEntryObjectImpl(
-      {required this.creationTimestamp,
-      required this.loggedDuration,
-      required this.text,
-      this.audioTranscript,
-      this.transcriptLanguage,
-      this.entryType});
-
-  factory _$AiInputLogEntryObjectImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiInputLogEntryObjectImplFromJson(json);
+class _AiActionItem implements AiActionItem {
+  const _AiActionItem(
+      {required this.title,
+      required this.completed,
+      this.id,
+      this.deadline,
+      this.completionDate});
+  factory _AiActionItem.fromJson(Map<String, dynamic> json) =>
+      _$AiActionItemFromJson(json);
 
   @override
-  final DateTime creationTimestamp;
+  final String title;
   @override
-  final String loggedDuration;
+  final bool completed;
   @override
-  final String text;
+  final String? id;
   @override
-  final String? audioTranscript;
+  final DateTime? deadline;
   @override
-  final String? transcriptLanguage;
+  final DateTime? completionDate;
+
+  /// Create a copy of AiActionItem
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  final String? entryType;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AiActionItemCopyWith<_AiActionItem> get copyWith =>
+      __$AiActionItemCopyWithImpl<_AiActionItem>(this, _$identity);
 
   @override
-  String toString() {
-    return 'AiInputLogEntryObject(creationTimestamp: $creationTimestamp, loggedDuration: $loggedDuration, text: $text, audioTranscript: $audioTranscript, transcriptLanguage: $transcriptLanguage, entryType: $entryType)';
+  Map<String, dynamic> toJson() {
+    return _$AiActionItemToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiInputLogEntryObjectImpl &&
+            other is _AiActionItem &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.completed, completed) ||
+                other.completed == completed) &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.deadline, deadline) ||
+                other.deadline == deadline) &&
+            (identical(other.completionDate, completionDate) ||
+                other.completionDate == completionDate));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, title, completed, id, deadline, completionDate);
+
+  @override
+  String toString() {
+    return 'AiActionItem(title: $title, completed: $completed, id: $id, deadline: $deadline, completionDate: $completionDate)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$AiActionItemCopyWith<$Res>
+    implements $AiActionItemCopyWith<$Res> {
+  factory _$AiActionItemCopyWith(
+          _AiActionItem value, $Res Function(_AiActionItem) _then) =
+      __$AiActionItemCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String title,
+      bool completed,
+      String? id,
+      DateTime? deadline,
+      DateTime? completionDate});
+}
+
+/// @nodoc
+class __$AiActionItemCopyWithImpl<$Res>
+    implements _$AiActionItemCopyWith<$Res> {
+  __$AiActionItemCopyWithImpl(this._self, this._then);
+
+  final _AiActionItem _self;
+  final $Res Function(_AiActionItem) _then;
+
+  /// Create a copy of AiActionItem
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? title = null,
+    Object? completed = null,
+    Object? id = freezed,
+    Object? deadline = freezed,
+    Object? completionDate = freezed,
+  }) {
+    return _then(_AiActionItem(
+      title: null == title
+          ? _self.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      completed: null == completed
+          ? _self.completed
+          : completed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      id: freezed == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
+      deadline: freezed == deadline
+          ? _self.deadline
+          : deadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      completionDate: freezed == completionDate
+          ? _self.completionDate
+          : completionDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+mixin _$AiInputLogEntryObject {
+  DateTime get creationTimestamp;
+  String get loggedDuration;
+  String get text;
+  String? get audioTranscript;
+  String? get transcriptLanguage;
+  String? get entryType;
+
+  /// Create a copy of AiInputLogEntryObject
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AiInputLogEntryObjectCopyWith<AiInputLogEntryObject> get copyWith =>
+      _$AiInputLogEntryObjectCopyWithImpl<AiInputLogEntryObject>(
+          this as AiInputLogEntryObject, _$identity);
+
+  /// Serializes this AiInputLogEntryObject to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AiInputLogEntryObject &&
             (identical(other.creationTimestamp, creationTimestamp) ||
                 other.creationTimestamp == creationTimestamp) &&
             (identical(other.loggedDuration, loggedDuration) ||
@@ -789,132 +972,459 @@ class _$AiInputLogEntryObjectImpl implements _AiInputLogEntryObject {
   int get hashCode => Object.hash(runtimeType, creationTimestamp,
       loggedDuration, text, audioTranscript, transcriptLanguage, entryType);
 
-  /// Create a copy of AiInputLogEntryObject
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AiInputLogEntryObjectImplCopyWith<_$AiInputLogEntryObjectImpl>
-      get copyWith => __$$AiInputLogEntryObjectImplCopyWithImpl<
-          _$AiInputLogEntryObjectImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AiInputLogEntryObjectImplToJson(
-      this,
-    );
+  String toString() {
+    return 'AiInputLogEntryObject(creationTimestamp: $creationTimestamp, loggedDuration: $loggedDuration, text: $text, audioTranscript: $audioTranscript, transcriptLanguage: $transcriptLanguage, entryType: $entryType)';
   }
 }
 
-abstract class _AiInputLogEntryObject implements AiInputLogEntryObject {
-  const factory _AiInputLogEntryObject(
-      {required final DateTime creationTimestamp,
-      required final String loggedDuration,
-      required final String text,
-      final String? audioTranscript,
-      final String? transcriptLanguage,
-      final String? entryType}) = _$AiInputLogEntryObjectImpl;
+/// @nodoc
+abstract mixin class $AiInputLogEntryObjectCopyWith<$Res> {
+  factory $AiInputLogEntryObjectCopyWith(AiInputLogEntryObject value,
+          $Res Function(AiInputLogEntryObject) _then) =
+      _$AiInputLogEntryObjectCopyWithImpl;
+  @useResult
+  $Res call(
+      {DateTime creationTimestamp,
+      String loggedDuration,
+      String text,
+      String? audioTranscript,
+      String? transcriptLanguage,
+      String? entryType});
+}
 
-  factory _AiInputLogEntryObject.fromJson(Map<String, dynamic> json) =
-      _$AiInputLogEntryObjectImpl.fromJson;
+/// @nodoc
+class _$AiInputLogEntryObjectCopyWithImpl<$Res>
+    implements $AiInputLogEntryObjectCopyWith<$Res> {
+  _$AiInputLogEntryObjectCopyWithImpl(this._self, this._then);
+
+  final AiInputLogEntryObject _self;
+  final $Res Function(AiInputLogEntryObject) _then;
+
+  /// Create a copy of AiInputLogEntryObject
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? creationTimestamp = null,
+    Object? loggedDuration = null,
+    Object? text = null,
+    Object? audioTranscript = freezed,
+    Object? transcriptLanguage = freezed,
+    Object? entryType = freezed,
+  }) {
+    return _then(_self.copyWith(
+      creationTimestamp: null == creationTimestamp
+          ? _self.creationTimestamp
+          : creationTimestamp // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      loggedDuration: null == loggedDuration
+          ? _self.loggedDuration
+          : loggedDuration // ignore: cast_nullable_to_non_nullable
+              as String,
+      text: null == text
+          ? _self.text
+          : text // ignore: cast_nullable_to_non_nullable
+              as String,
+      audioTranscript: freezed == audioTranscript
+          ? _self.audioTranscript
+          : audioTranscript // ignore: cast_nullable_to_non_nullable
+              as String?,
+      transcriptLanguage: freezed == transcriptLanguage
+          ? _self.transcriptLanguage
+          : transcriptLanguage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      entryType: freezed == entryType
+          ? _self.entryType
+          : entryType // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [AiInputLogEntryObject].
+extension AiInputLogEntryObjectPatterns on AiInputLogEntryObject {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_AiInputLogEntryObject value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputLogEntryObject() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_AiInputLogEntryObject value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputLogEntryObject():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_AiInputLogEntryObject value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputLogEntryObject() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            DateTime creationTimestamp,
+            String loggedDuration,
+            String text,
+            String? audioTranscript,
+            String? transcriptLanguage,
+            String? entryType)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputLogEntryObject() when $default != null:
+        return $default(
+            _that.creationTimestamp,
+            _that.loggedDuration,
+            _that.text,
+            _that.audioTranscript,
+            _that.transcriptLanguage,
+            _that.entryType);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            DateTime creationTimestamp,
+            String loggedDuration,
+            String text,
+            String? audioTranscript,
+            String? transcriptLanguage,
+            String? entryType)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputLogEntryObject():
+        return $default(
+            _that.creationTimestamp,
+            _that.loggedDuration,
+            _that.text,
+            _that.audioTranscript,
+            _that.transcriptLanguage,
+            _that.entryType);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            DateTime creationTimestamp,
+            String loggedDuration,
+            String text,
+            String? audioTranscript,
+            String? transcriptLanguage,
+            String? entryType)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputLogEntryObject() when $default != null:
+        return $default(
+            _that.creationTimestamp,
+            _that.loggedDuration,
+            _that.text,
+            _that.audioTranscript,
+            _that.transcriptLanguage,
+            _that.entryType);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _AiInputLogEntryObject implements AiInputLogEntryObject {
+  const _AiInputLogEntryObject(
+      {required this.creationTimestamp,
+      required this.loggedDuration,
+      required this.text,
+      this.audioTranscript,
+      this.transcriptLanguage,
+      this.entryType});
+  factory _AiInputLogEntryObject.fromJson(Map<String, dynamic> json) =>
+      _$AiInputLogEntryObjectFromJson(json);
 
   @override
-  DateTime get creationTimestamp;
+  final DateTime creationTimestamp;
   @override
-  String get loggedDuration;
+  final String loggedDuration;
   @override
-  String get text;
+  final String text;
   @override
-  String? get audioTranscript;
+  final String? audioTranscript;
   @override
-  String? get transcriptLanguage;
+  final String? transcriptLanguage;
   @override
-  String? get entryType;
+  final String? entryType;
 
   /// Create a copy of AiInputLogEntryObject
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiInputLogEntryObjectImplCopyWith<_$AiInputLogEntryObjectImpl>
-      get copyWith => throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  _$AiInputLogEntryObjectCopyWith<_AiInputLogEntryObject> get copyWith =>
+      __$AiInputLogEntryObjectCopyWithImpl<_AiInputLogEntryObject>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiInputLogEntryObjectToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _AiInputLogEntryObject &&
+            (identical(other.creationTimestamp, creationTimestamp) ||
+                other.creationTimestamp == creationTimestamp) &&
+            (identical(other.loggedDuration, loggedDuration) ||
+                other.loggedDuration == loggedDuration) &&
+            (identical(other.text, text) || other.text == text) &&
+            (identical(other.audioTranscript, audioTranscript) ||
+                other.audioTranscript == audioTranscript) &&
+            (identical(other.transcriptLanguage, transcriptLanguage) ||
+                other.transcriptLanguage == transcriptLanguage) &&
+            (identical(other.entryType, entryType) ||
+                other.entryType == entryType));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, creationTimestamp,
+      loggedDuration, text, audioTranscript, transcriptLanguage, entryType);
+
+  @override
+  String toString() {
+    return 'AiInputLogEntryObject(creationTimestamp: $creationTimestamp, loggedDuration: $loggedDuration, text: $text, audioTranscript: $audioTranscript, transcriptLanguage: $transcriptLanguage, entryType: $entryType)';
+  }
 }
 
-AiInputActionItemsList _$AiInputActionItemsListFromJson(
-    Map<String, dynamic> json) {
-  return _AiInputActionItemsList.fromJson(json);
+/// @nodoc
+abstract mixin class _$AiInputLogEntryObjectCopyWith<$Res>
+    implements $AiInputLogEntryObjectCopyWith<$Res> {
+  factory _$AiInputLogEntryObjectCopyWith(_AiInputLogEntryObject value,
+          $Res Function(_AiInputLogEntryObject) _then) =
+      __$AiInputLogEntryObjectCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {DateTime creationTimestamp,
+      String loggedDuration,
+      String text,
+      String? audioTranscript,
+      String? transcriptLanguage,
+      String? entryType});
+}
+
+/// @nodoc
+class __$AiInputLogEntryObjectCopyWithImpl<$Res>
+    implements _$AiInputLogEntryObjectCopyWith<$Res> {
+  __$AiInputLogEntryObjectCopyWithImpl(this._self, this._then);
+
+  final _AiInputLogEntryObject _self;
+  final $Res Function(_AiInputLogEntryObject) _then;
+
+  /// Create a copy of AiInputLogEntryObject
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? creationTimestamp = null,
+    Object? loggedDuration = null,
+    Object? text = null,
+    Object? audioTranscript = freezed,
+    Object? transcriptLanguage = freezed,
+    Object? entryType = freezed,
+  }) {
+    return _then(_AiInputLogEntryObject(
+      creationTimestamp: null == creationTimestamp
+          ? _self.creationTimestamp
+          : creationTimestamp // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      loggedDuration: null == loggedDuration
+          ? _self.loggedDuration
+          : loggedDuration // ignore: cast_nullable_to_non_nullable
+              as String,
+      text: null == text
+          ? _self.text
+          : text // ignore: cast_nullable_to_non_nullable
+              as String,
+      audioTranscript: freezed == audioTranscript
+          ? _self.audioTranscript
+          : audioTranscript // ignore: cast_nullable_to_non_nullable
+              as String?,
+      transcriptLanguage: freezed == transcriptLanguage
+          ? _self.transcriptLanguage
+          : transcriptLanguage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      entryType: freezed == entryType
+          ? _self.entryType
+          : entryType // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
 }
 
 /// @nodoc
 mixin _$AiInputActionItemsList {
-  List<AiActionItem> get items => throw _privateConstructorUsedError;
-
-  /// Serializes this AiInputActionItemsList to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  List<AiActionItem> get items;
 
   /// Create a copy of AiInputActionItemsList
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $AiInputActionItemsListCopyWith<AiInputActionItemsList> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AiInputActionItemsListCopyWith<$Res> {
-  factory $AiInputActionItemsListCopyWith(AiInputActionItemsList value,
-          $Res Function(AiInputActionItemsList) then) =
-      _$AiInputActionItemsListCopyWithImpl<$Res, AiInputActionItemsList>;
-  @useResult
-  $Res call({List<AiActionItem> items});
-}
-
-/// @nodoc
-class _$AiInputActionItemsListCopyWithImpl<$Res,
-        $Val extends AiInputActionItemsList>
-    implements $AiInputActionItemsListCopyWith<$Res> {
-  _$AiInputActionItemsListCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AiInputActionItemsList
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $AiInputActionItemsListCopyWith<AiInputActionItemsList> get copyWith =>
+      _$AiInputActionItemsListCopyWithImpl<AiInputActionItemsList>(
+          this as AiInputActionItemsList, _$identity);
+
+  /// Serializes this AiInputActionItemsList to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? items = null,
-  }) {
-    return _then(_value.copyWith(
-      items: null == items
-          ? _value.items
-          : items // ignore: cast_nullable_to_non_nullable
-              as List<AiActionItem>,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AiInputActionItemsList &&
+            const DeepCollectionEquality().equals(other.items, items));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, const DeepCollectionEquality().hash(items));
+
+  @override
+  String toString() {
+    return 'AiInputActionItemsList(items: $items)';
   }
 }
 
 /// @nodoc
-abstract class _$$AiInputActionItemsListImplCopyWith<$Res>
-    implements $AiInputActionItemsListCopyWith<$Res> {
-  factory _$$AiInputActionItemsListImplCopyWith(
-          _$AiInputActionItemsListImpl value,
-          $Res Function(_$AiInputActionItemsListImpl) then) =
-      __$$AiInputActionItemsListImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $AiInputActionItemsListCopyWith<$Res> {
+  factory $AiInputActionItemsListCopyWith(AiInputActionItemsList value,
+          $Res Function(AiInputActionItemsList) _then) =
+      _$AiInputActionItemsListCopyWithImpl;
   @useResult
   $Res call({List<AiActionItem> items});
 }
 
 /// @nodoc
-class __$$AiInputActionItemsListImplCopyWithImpl<$Res>
-    extends _$AiInputActionItemsListCopyWithImpl<$Res,
-        _$AiInputActionItemsListImpl>
-    implements _$$AiInputActionItemsListImplCopyWith<$Res> {
-  __$$AiInputActionItemsListImplCopyWithImpl(
-      _$AiInputActionItemsListImpl _value,
-      $Res Function(_$AiInputActionItemsListImpl) _then)
-      : super(_value, _then);
+class _$AiInputActionItemsListCopyWithImpl<$Res>
+    implements $AiInputActionItemsListCopyWith<$Res> {
+  _$AiInputActionItemsListCopyWithImpl(this._self, this._then);
+
+  final AiInputActionItemsList _self;
+  final $Res Function(AiInputActionItemsList) _then;
 
   /// Create a copy of AiInputActionItemsList
   /// with the given fields replaced by the non-null parameter values.
@@ -923,23 +1433,179 @@ class __$$AiInputActionItemsListImplCopyWithImpl<$Res>
   $Res call({
     Object? items = null,
   }) {
-    return _then(_$AiInputActionItemsListImpl(
+    return _then(_self.copyWith(
       items: null == items
-          ? _value._items
+          ? _self.items
           : items // ignore: cast_nullable_to_non_nullable
               as List<AiActionItem>,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [AiInputActionItemsList].
+extension AiInputActionItemsListPatterns on AiInputActionItemsList {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_AiInputActionItemsList value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputActionItemsList() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_AiInputActionItemsList value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputActionItemsList():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_AiInputActionItemsList value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputActionItemsList() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(List<AiActionItem> items)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputActionItemsList() when $default != null:
+        return $default(_that.items);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(List<AiActionItem> items) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputActionItemsList():
+        return $default(_that.items);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(List<AiActionItem> items)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiInputActionItemsList() when $default != null:
+        return $default(_that.items);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$AiInputActionItemsListImpl implements _AiInputActionItemsList {
-  const _$AiInputActionItemsListImpl({required final List<AiActionItem> items})
+class _AiInputActionItemsList implements AiInputActionItemsList {
+  const _AiInputActionItemsList({required final List<AiActionItem> items})
       : _items = items;
-
-  factory _$AiInputActionItemsListImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiInputActionItemsListImplFromJson(json);
+  factory _AiInputActionItemsList.fromJson(Map<String, dynamic> json) =>
+      _$AiInputActionItemsListFromJson(json);
 
   final List<AiActionItem> _items;
   @override
@@ -949,16 +1615,27 @@ class _$AiInputActionItemsListImpl implements _AiInputActionItemsList {
     return EqualUnmodifiableListView(_items);
   }
 
+  /// Create a copy of AiInputActionItemsList
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AiInputActionItemsList(items: $items)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AiInputActionItemsListCopyWith<_AiInputActionItemsList> get copyWith =>
+      __$AiInputActionItemsListCopyWithImpl<_AiInputActionItemsList>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiInputActionItemsListToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiInputActionItemsListImpl &&
+            other is _AiInputActionItemsList &&
             const DeepCollectionEquality().equals(other._items, _items));
   }
 
@@ -967,37 +1644,45 @@ class _$AiInputActionItemsListImpl implements _AiInputActionItemsList {
   int get hashCode =>
       Object.hash(runtimeType, const DeepCollectionEquality().hash(_items));
 
-  /// Create a copy of AiInputActionItemsList
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AiInputActionItemsListImplCopyWith<_$AiInputActionItemsListImpl>
-      get copyWith => __$$AiInputActionItemsListImplCopyWithImpl<
-          _$AiInputActionItemsListImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AiInputActionItemsListImplToJson(
-      this,
-    );
+  String toString() {
+    return 'AiInputActionItemsList(items: $items)';
   }
 }
 
-abstract class _AiInputActionItemsList implements AiInputActionItemsList {
-  const factory _AiInputActionItemsList(
-      {required final List<AiActionItem> items}) = _$AiInputActionItemsListImpl;
-
-  factory _AiInputActionItemsList.fromJson(Map<String, dynamic> json) =
-      _$AiInputActionItemsListImpl.fromJson;
-
+/// @nodoc
+abstract mixin class _$AiInputActionItemsListCopyWith<$Res>
+    implements $AiInputActionItemsListCopyWith<$Res> {
+  factory _$AiInputActionItemsListCopyWith(_AiInputActionItemsList value,
+          $Res Function(_AiInputActionItemsList) _then) =
+      __$AiInputActionItemsListCopyWithImpl;
   @override
-  List<AiActionItem> get items;
+  @useResult
+  $Res call({List<AiActionItem> items});
+}
+
+/// @nodoc
+class __$AiInputActionItemsListCopyWithImpl<$Res>
+    implements _$AiInputActionItemsListCopyWith<$Res> {
+  __$AiInputActionItemsListCopyWithImpl(this._self, this._then);
+
+  final _AiInputActionItemsList _self;
+  final $Res Function(_AiInputActionItemsList) _then;
 
   /// Create a copy of AiInputActionItemsList
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiInputActionItemsListImplCopyWith<_$AiInputActionItemsListImpl>
-      get copyWith => throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? items = null,
+  }) {
+    return _then(_AiInputActionItemsList(
+      items: null == items
+          ? _self._items
+          : items // ignore: cast_nullable_to_non_nullable
+              as List<AiActionItem>,
+    ));
+  }
 }
+
+// dart format on

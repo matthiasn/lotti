@@ -9,7 +9,7 @@ part 'chat_session.g.dart';
 const _uuid = Uuid();
 
 @freezed
-class ChatSession with _$ChatSession {
+abstract class ChatSession with _$ChatSession {
   const factory ChatSession({
     required String id,
     required String title,

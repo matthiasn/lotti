@@ -5,9 +5,9 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../test_utils/sealed_class_helpers.dart';
 
-class FakeAiConfig extends Fake implements AiConfig {}
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 void main() {
   setUpAll(() {

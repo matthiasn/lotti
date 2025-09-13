@@ -6,8 +6,7 @@ part of 'geolocation.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$GeolocationImpl _$$GeolocationImplFromJson(Map<String, dynamic> json) =>
-    _$GeolocationImpl(
+_Geolocation _$GeolocationFromJson(Map<String, dynamic> json) => _Geolocation(
       createdAt: DateTime.parse(json['createdAt'] as String),
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
@@ -22,7 +21,7 @@ _$GeolocationImpl _$$GeolocationImplFromJson(Map<String, dynamic> json) =>
       altitude: (json['altitude'] as num?)?.toDouble(),
     );
 
-Map<String, dynamic> _$$GeolocationImplToJson(_$GeolocationImpl instance) =>
+Map<String, dynamic> _$GeolocationToJson(_Geolocation instance) =>
     <String, dynamic>{
       'createdAt': instance.createdAt.toIso8601String(),
       'latitude': instance.latitude,

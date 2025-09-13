@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,11 +9,8 @@ part of 'ai_config.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
 AiConfig _$AiConfigFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
     case 'inferenceProvider':
@@ -31,107 +28,212 @@ AiConfig _$AiConfigFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$AiConfig {
-  String get id => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
-  DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime? get updatedAt => throw _privateConstructorUsedError;
-  String? get description => throw _privateConstructorUsedError;
+  String get id;
+  String get name;
+  DateTime get createdAt;
+  DateTime? get updatedAt;
+  String? get description;
+
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AiConfigCopyWith<AiConfig> get copyWith =>
+      _$AiConfigCopyWithImpl<AiConfig>(this as AiConfig, _$identity);
+
+  /// Serializes this AiConfig to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AiConfig &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.description, description) ||
+                other.description == description));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, id, name, createdAt, updatedAt, description);
+
+  @override
+  String toString() {
+    return 'AiConfig(id: $id, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, description: $description)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $AiConfigCopyWith<$Res> {
+  factory $AiConfigCopyWith(AiConfig value, $Res Function(AiConfig) _then) =
+      _$AiConfigCopyWithImpl;
+  @useResult
+  $Res call(
+      {String id,
+      String name,
+      DateTime createdAt,
+      DateTime? updatedAt,
+      String? description});
+}
+
+/// @nodoc
+class _$AiConfigCopyWithImpl<$Res> implements $AiConfigCopyWith<$Res> {
+  _$AiConfigCopyWithImpl(this._self, this._then);
+
+  final AiConfig _self;
+  final $Res Function(AiConfig) _then;
+
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? createdAt = null,
+    Object? updatedAt = freezed,
+    Object? description = freezed,
+  }) {
+    return _then(_self.copyWith(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: freezed == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [AiConfig].
+extension AiConfigPatterns on AiConfig {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)
-        inferenceProvider,
-    required TResult Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)
-        model,
-    required TResult Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)
-        prompt,
-  }) =>
-      throw _privateConstructorUsedError;
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult Function(AiConfigModel value)? model,
+    TResult Function(AiConfigPrompt value)? prompt,
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case AiConfigInferenceProvider() when inferenceProvider != null:
+        return inferenceProvider(_that);
+      case AiConfigModel() when model != null:
+        return model(_that);
+      case AiConfigPrompt() when prompt != null:
+        return prompt(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)?
+  TResult map<TResult extends Object?>({
+    required TResult Function(AiConfigInferenceProvider value)
         inferenceProvider,
-    TResult? Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)?
-        model,
-    TResult? Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)?
-        prompt,
-  }) =>
-      throw _privateConstructorUsedError;
+    required TResult Function(AiConfigModel value) model,
+    required TResult Function(AiConfigPrompt value) prompt,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case AiConfigInferenceProvider():
+        return inferenceProvider(_that);
+      case AiConfigModel():
+        return model(_that);
+      case AiConfigPrompt():
+        return prompt(_that);
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult? Function(AiConfigModel value)? model,
+    TResult? Function(AiConfigPrompt value)? prompt,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case AiConfigInferenceProvider() when inferenceProvider != null:
+        return inferenceProvider(_that);
+      case AiConfigModel() when model != null:
+        return model(_that);
+      case AiConfigPrompt() when prompt != null:
+        return prompt(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(
@@ -179,185 +281,282 @@ mixin _$AiConfig {
             String? preconfiguredPromptId)?
         prompt,
     required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AiConfigInferenceProvider value)
-        inferenceProvider,
-    required TResult Function(AiConfigModel value) model,
-    required TResult Function(AiConfigPrompt value) prompt,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
-    TResult? Function(AiConfigModel value)? model,
-    TResult? Function(AiConfigPrompt value)? prompt,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
-    TResult Function(AiConfigModel value)? model,
-    TResult Function(AiConfigPrompt value)? prompt,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-
-  /// Serializes this AiConfig to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of AiConfig
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $AiConfigCopyWith<AiConfig> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AiConfigCopyWith<$Res> {
-  factory $AiConfigCopyWith(AiConfig value, $Res Function(AiConfig) then) =
-      _$AiConfigCopyWithImpl<$Res, AiConfig>;
-  @useResult
-  $Res call(
-      {String id,
-      String name,
-      DateTime createdAt,
-      DateTime? updatedAt,
-      String? description});
-}
-
-/// @nodoc
-class _$AiConfigCopyWithImpl<$Res, $Val extends AiConfig>
-    implements $AiConfigCopyWith<$Res> {
-  _$AiConfigCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AiConfig
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? name = null,
-    Object? createdAt = null,
-    Object? updatedAt = freezed,
-    Object? description = freezed,
   }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      updatedAt: freezed == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+    final _that = this;
+    switch (_that) {
+      case AiConfigInferenceProvider() when inferenceProvider != null:
+        return inferenceProvider(
+            _that.id,
+            _that.baseUrl,
+            _that.apiKey,
+            _that.name,
+            _that.createdAt,
+            _that.inferenceProviderType,
+            _that.updatedAt,
+            _that.description);
+      case AiConfigModel() when model != null:
+        return model(
+            _that.id,
+            _that.name,
+            _that.providerModelId,
+            _that.inferenceProviderId,
+            _that.createdAt,
+            _that.inputModalities,
+            _that.outputModalities,
+            _that.isReasoningModel,
+            _that.supportsFunctionCalling,
+            _that.updatedAt,
+            _that.description,
+            _that.maxCompletionTokens);
+      case AiConfigPrompt() when prompt != null:
+        return prompt(
+            _that.id,
+            _that.name,
+            _that.systemMessage,
+            _that.userMessage,
+            _that.defaultModelId,
+            _that.modelIds,
+            _that.createdAt,
+            _that.useReasoning,
+            _that.requiredInputData,
+            _that.aiResponseType,
+            _that.comment,
+            _that.updatedAt,
+            _that.description,
+            _that.defaultVariables,
+            _that.category,
+            _that.archived,
+            _that.trackPreconfigured,
+            _that.preconfiguredPromptId);
+      case _:
+        return orElse();
+    }
   }
-}
 
-/// @nodoc
-abstract class _$$AiConfigInferenceProviderImplCopyWith<$Res>
-    implements $AiConfigCopyWith<$Res> {
-  factory _$$AiConfigInferenceProviderImplCopyWith(
-          _$AiConfigInferenceProviderImpl value,
-          $Res Function(_$AiConfigInferenceProviderImpl) then) =
-      __$$AiConfigInferenceProviderImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {String id,
-      String baseUrl,
-      String apiKey,
-      String name,
-      DateTime createdAt,
-      InferenceProviderType inferenceProviderType,
-      DateTime? updatedAt,
-      String? description});
-}
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
 
-/// @nodoc
-class __$$AiConfigInferenceProviderImplCopyWithImpl<$Res>
-    extends _$AiConfigCopyWithImpl<$Res, _$AiConfigInferenceProviderImpl>
-    implements _$$AiConfigInferenceProviderImplCopyWith<$Res> {
-  __$$AiConfigInferenceProviderImplCopyWithImpl(
-      _$AiConfigInferenceProviderImpl _value,
-      $Res Function(_$AiConfigInferenceProviderImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of AiConfig
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? baseUrl = null,
-    Object? apiKey = null,
-    Object? name = null,
-    Object? createdAt = null,
-    Object? inferenceProviderType = null,
-    Object? updatedAt = freezed,
-    Object? description = freezed,
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? description)
+        inferenceProvider,
+    required TResult Function(
+            String id,
+            String name,
+            String providerModelId,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            bool supportsFunctionCalling,
+            DateTime? updatedAt,
+            String? description,
+            int? maxCompletionTokens)
+        model,
+    required TResult Function(
+            String id,
+            String name,
+            String systemMessage,
+            String userMessage,
+            String defaultModelId,
+            List<String> modelIds,
+            DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
+            String? comment,
+            DateTime? updatedAt,
+            String? description,
+            Map<String, String>? defaultVariables,
+            String? category,
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)
+        prompt,
   }) {
-    return _then(_$AiConfigInferenceProviderImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      baseUrl: null == baseUrl
-          ? _value.baseUrl
-          : baseUrl // ignore: cast_nullable_to_non_nullable
-              as String,
-      apiKey: null == apiKey
-          ? _value.apiKey
-          : apiKey // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      inferenceProviderType: null == inferenceProviderType
-          ? _value.inferenceProviderType
-          : inferenceProviderType // ignore: cast_nullable_to_non_nullable
-              as InferenceProviderType,
-      updatedAt: freezed == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
+    final _that = this;
+    switch (_that) {
+      case AiConfigInferenceProvider():
+        return inferenceProvider(
+            _that.id,
+            _that.baseUrl,
+            _that.apiKey,
+            _that.name,
+            _that.createdAt,
+            _that.inferenceProviderType,
+            _that.updatedAt,
+            _that.description);
+      case AiConfigModel():
+        return model(
+            _that.id,
+            _that.name,
+            _that.providerModelId,
+            _that.inferenceProviderId,
+            _that.createdAt,
+            _that.inputModalities,
+            _that.outputModalities,
+            _that.isReasoningModel,
+            _that.supportsFunctionCalling,
+            _that.updatedAt,
+            _that.description,
+            _that.maxCompletionTokens);
+      case AiConfigPrompt():
+        return prompt(
+            _that.id,
+            _that.name,
+            _that.systemMessage,
+            _that.userMessage,
+            _that.defaultModelId,
+            _that.modelIds,
+            _that.createdAt,
+            _that.useReasoning,
+            _that.requiredInputData,
+            _that.aiResponseType,
+            _that.comment,
+            _that.updatedAt,
+            _that.description,
+            _that.defaultVariables,
+            _that.category,
+            _that.archived,
+            _that.trackPreconfigured,
+            _that.preconfiguredPromptId);
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? description)?
+        inferenceProvider,
+    TResult? Function(
+            String id,
+            String name,
+            String providerModelId,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            bool supportsFunctionCalling,
+            DateTime? updatedAt,
+            String? description,
+            int? maxCompletionTokens)?
+        model,
+    TResult? Function(
+            String id,
+            String name,
+            String systemMessage,
+            String userMessage,
+            String defaultModelId,
+            List<String> modelIds,
+            DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
+            String? comment,
+            DateTime? updatedAt,
+            String? description,
+            Map<String, String>? defaultVariables,
+            String? category,
+            bool archived,
+            bool trackPreconfigured,
+            String? preconfiguredPromptId)?
+        prompt,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case AiConfigInferenceProvider() when inferenceProvider != null:
+        return inferenceProvider(
+            _that.id,
+            _that.baseUrl,
+            _that.apiKey,
+            _that.name,
+            _that.createdAt,
+            _that.inferenceProviderType,
+            _that.updatedAt,
+            _that.description);
+      case AiConfigModel() when model != null:
+        return model(
+            _that.id,
+            _that.name,
+            _that.providerModelId,
+            _that.inferenceProviderId,
+            _that.createdAt,
+            _that.inputModalities,
+            _that.outputModalities,
+            _that.isReasoningModel,
+            _that.supportsFunctionCalling,
+            _that.updatedAt,
+            _that.description,
+            _that.maxCompletionTokens);
+      case AiConfigPrompt() when prompt != null:
+        return prompt(
+            _that.id,
+            _that.name,
+            _that.systemMessage,
+            _that.userMessage,
+            _that.defaultModelId,
+            _that.modelIds,
+            _that.createdAt,
+            _that.useReasoning,
+            _that.requiredInputData,
+            _that.aiResponseType,
+            _that.comment,
+            _that.updatedAt,
+            _that.description,
+            _that.defaultVariables,
+            _that.category,
+            _that.archived,
+            _that.trackPreconfigured,
+            _that.preconfiguredPromptId);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
-  const _$AiConfigInferenceProviderImpl(
+class AiConfigInferenceProvider implements AiConfig {
+  const AiConfigInferenceProvider(
       {required this.id,
       required this.baseUrl,
       required this.apiKey,
@@ -368,21 +567,17 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
       this.description,
       final String? $type})
       : $type = $type ?? 'inferenceProvider';
-
-  factory _$AiConfigInferenceProviderImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiConfigInferenceProviderImplFromJson(json);
+  factory AiConfigInferenceProvider.fromJson(Map<String, dynamic> json) =>
+      _$AiConfigInferenceProviderFromJson(json);
 
   @override
   final String id;
-  @override
   final String baseUrl;
-  @override
   final String apiKey;
   @override
   final String name;
   @override
   final DateTime createdAt;
-  @override
   final InferenceProviderType inferenceProviderType;
   @override
   final DateTime? updatedAt;
@@ -392,16 +587,27 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AiConfig.inferenceProvider(id: $id, baseUrl: $baseUrl, apiKey: $apiKey, name: $name, createdAt: $createdAt, inferenceProviderType: $inferenceProviderType, updatedAt: $updatedAt, description: $description)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AiConfigInferenceProviderCopyWith<AiConfigInferenceProvider> get copyWith =>
+      _$AiConfigInferenceProviderCopyWithImpl<AiConfigInferenceProvider>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiConfigInferenceProviderToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiConfigInferenceProviderImpl &&
+            other is AiConfigInferenceProvider &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl) &&
             (identical(other.apiKey, apiKey) || other.apiKey == apiKey) &&
@@ -421,360 +627,94 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
   int get hashCode => Object.hash(runtimeType, id, baseUrl, apiKey, name,
       createdAt, inferenceProviderType, updatedAt, description);
 
-  /// Create a copy of AiConfig
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AiConfigInferenceProviderImplCopyWith<_$AiConfigInferenceProviderImpl>
-      get copyWith => __$$AiConfigInferenceProviderImplCopyWithImpl<
-          _$AiConfigInferenceProviderImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)
-        inferenceProvider,
-    required TResult Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)
-        model,
-    required TResult Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)
-        prompt,
-  }) {
-    return inferenceProvider(id, baseUrl, apiKey, name, createdAt,
-        inferenceProviderType, updatedAt, description);
+  String toString() {
+    return 'AiConfig.inferenceProvider(id: $id, baseUrl: $baseUrl, apiKey: $apiKey, name: $name, createdAt: $createdAt, inferenceProviderType: $inferenceProviderType, updatedAt: $updatedAt, description: $description)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)?
-        inferenceProvider,
-    TResult? Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)?
-        model,
-    TResult? Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)?
-        prompt,
-  }) {
-    return inferenceProvider?.call(id, baseUrl, apiKey, name, createdAt,
-        inferenceProviderType, updatedAt, description);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)?
-        inferenceProvider,
-    TResult Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)?
-        model,
-    TResult Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)?
-        prompt,
-    required TResult orElse(),
-  }) {
-    if (inferenceProvider != null) {
-      return inferenceProvider(id, baseUrl, apiKey, name, createdAt,
-          inferenceProviderType, updatedAt, description);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AiConfigInferenceProvider value)
-        inferenceProvider,
-    required TResult Function(AiConfigModel value) model,
-    required TResult Function(AiConfigPrompt value) prompt,
-  }) {
-    return inferenceProvider(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
-    TResult? Function(AiConfigModel value)? model,
-    TResult? Function(AiConfigPrompt value)? prompt,
-  }) {
-    return inferenceProvider?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
-    TResult Function(AiConfigModel value)? model,
-    TResult Function(AiConfigPrompt value)? prompt,
-    required TResult orElse(),
-  }) {
-    if (inferenceProvider != null) {
-      return inferenceProvider(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AiConfigInferenceProviderImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class AiConfigInferenceProvider implements AiConfig {
-  const factory AiConfigInferenceProvider(
-      {required final String id,
-      required final String baseUrl,
-      required final String apiKey,
-      required final String name,
-      required final DateTime createdAt,
-      required final InferenceProviderType inferenceProviderType,
-      final DateTime? updatedAt,
-      final String? description}) = _$AiConfigInferenceProviderImpl;
-
-  factory AiConfigInferenceProvider.fromJson(Map<String, dynamic> json) =
-      _$AiConfigInferenceProviderImpl.fromJson;
-
-  @override
-  String get id;
-  String get baseUrl;
-  String get apiKey;
-  @override
-  String get name;
-  @override
-  DateTime get createdAt;
-  InferenceProviderType get inferenceProviderType;
-  @override
-  DateTime? get updatedAt;
-  @override
-  String? get description;
-
-  /// Create a copy of AiConfig
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiConfigInferenceProviderImplCopyWith<_$AiConfigInferenceProviderImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AiConfigModelImplCopyWith<$Res>
+abstract mixin class $AiConfigInferenceProviderCopyWith<$Res>
     implements $AiConfigCopyWith<$Res> {
-  factory _$$AiConfigModelImplCopyWith(
-          _$AiConfigModelImpl value, $Res Function(_$AiConfigModelImpl) then) =
-      __$$AiConfigModelImplCopyWithImpl<$Res>;
+  factory $AiConfigInferenceProviderCopyWith(AiConfigInferenceProvider value,
+          $Res Function(AiConfigInferenceProvider) _then) =
+      _$AiConfigInferenceProviderCopyWithImpl;
   @override
   @useResult
   $Res call(
       {String id,
+      String baseUrl,
+      String apiKey,
       String name,
-      String providerModelId,
-      String inferenceProviderId,
       DateTime createdAt,
-      List<Modality> inputModalities,
-      List<Modality> outputModalities,
-      bool isReasoningModel,
-      bool supportsFunctionCalling,
+      InferenceProviderType inferenceProviderType,
       DateTime? updatedAt,
-      String? description,
-      int? maxCompletionTokens});
+      String? description});
 }
 
 /// @nodoc
-class __$$AiConfigModelImplCopyWithImpl<$Res>
-    extends _$AiConfigCopyWithImpl<$Res, _$AiConfigModelImpl>
-    implements _$$AiConfigModelImplCopyWith<$Res> {
-  __$$AiConfigModelImplCopyWithImpl(
-      _$AiConfigModelImpl _value, $Res Function(_$AiConfigModelImpl) _then)
-      : super(_value, _then);
+class _$AiConfigInferenceProviderCopyWithImpl<$Res>
+    implements $AiConfigInferenceProviderCopyWith<$Res> {
+  _$AiConfigInferenceProviderCopyWithImpl(this._self, this._then);
+
+  final AiConfigInferenceProvider _self;
+  final $Res Function(AiConfigInferenceProvider) _then;
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
+    Object? baseUrl = null,
+    Object? apiKey = null,
     Object? name = null,
-    Object? providerModelId = null,
-    Object? inferenceProviderId = null,
     Object? createdAt = null,
-    Object? inputModalities = null,
-    Object? outputModalities = null,
-    Object? isReasoningModel = null,
-    Object? supportsFunctionCalling = null,
+    Object? inferenceProviderType = null,
     Object? updatedAt = freezed,
     Object? description = freezed,
-    Object? maxCompletionTokens = freezed,
   }) {
-    return _then(_$AiConfigModelImpl(
+    return _then(AiConfigInferenceProvider(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+      baseUrl: null == baseUrl
+          ? _self.baseUrl
+          : baseUrl // ignore: cast_nullable_to_non_nullable
+              as String,
+      apiKey: null == apiKey
+          ? _self.apiKey
+          : apiKey // ignore: cast_nullable_to_non_nullable
+              as String,
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      providerModelId: null == providerModelId
-          ? _value.providerModelId
-          : providerModelId // ignore: cast_nullable_to_non_nullable
-              as String,
-      inferenceProviderId: null == inferenceProviderId
-          ? _value.inferenceProviderId
-          : inferenceProviderId // ignore: cast_nullable_to_non_nullable
-              as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      inputModalities: null == inputModalities
-          ? _value._inputModalities
-          : inputModalities // ignore: cast_nullable_to_non_nullable
-              as List<Modality>,
-      outputModalities: null == outputModalities
-          ? _value._outputModalities
-          : outputModalities // ignore: cast_nullable_to_non_nullable
-              as List<Modality>,
-      isReasoningModel: null == isReasoningModel
-          ? _value.isReasoningModel
-          : isReasoningModel // ignore: cast_nullable_to_non_nullable
-              as bool,
-      supportsFunctionCalling: null == supportsFunctionCalling
-          ? _value.supportsFunctionCalling
-          : supportsFunctionCalling // ignore: cast_nullable_to_non_nullable
-              as bool,
+      inferenceProviderType: null == inferenceProviderType
+          ? _self.inferenceProviderType
+          : inferenceProviderType // ignore: cast_nullable_to_non_nullable
+              as InferenceProviderType,
       updatedAt: freezed == updatedAt
-          ? _value.updatedAt
+          ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
       description: freezed == description
-          ? _value.description
+          ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
-      maxCompletionTokens: freezed == maxCompletionTokens
-          ? _value.maxCompletionTokens
-          : maxCompletionTokens // ignore: cast_nullable_to_non_nullable
-              as int?,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$AiConfigModelImpl implements AiConfigModel {
-  const _$AiConfigModelImpl(
+class AiConfigModel implements AiConfig {
+  const AiConfigModel(
       {required this.id,
       required this.name,
       required this.providerModelId,
@@ -791,22 +731,18 @@ class _$AiConfigModelImpl implements AiConfigModel {
       : _inputModalities = inputModalities,
         _outputModalities = outputModalities,
         $type = $type ?? 'model';
-
-  factory _$AiConfigModelImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiConfigModelImplFromJson(json);
+  factory AiConfigModel.fromJson(Map<String, dynamic> json) =>
+      _$AiConfigModelFromJson(json);
 
   @override
   final String id;
   @override
   final String name;
-  @override
   final String providerModelId;
-  @override
   final String inferenceProviderId;
   @override
   final DateTime createdAt;
   final List<Modality> _inputModalities;
-  @override
   List<Modality> get inputModalities {
     if (_inputModalities is EqualUnmodifiableListView) return _inputModalities;
     // ignore: implicit_dynamic_type
@@ -814,7 +750,6 @@ class _$AiConfigModelImpl implements AiConfigModel {
   }
 
   final List<Modality> _outputModalities;
-  @override
   List<Modality> get outputModalities {
     if (_outputModalities is EqualUnmodifiableListView)
       return _outputModalities;
@@ -822,31 +757,38 @@ class _$AiConfigModelImpl implements AiConfigModel {
     return EqualUnmodifiableListView(_outputModalities);
   }
 
-  @override
   final bool isReasoningModel;
-  @override
   @JsonKey()
   final bool supportsFunctionCalling;
   @override
   final DateTime? updatedAt;
   @override
   final String? description;
-  @override
   final int? maxCompletionTokens;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AiConfig.model(id: $id, name: $name, providerModelId: $providerModelId, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, supportsFunctionCalling: $supportsFunctionCalling, updatedAt: $updatedAt, description: $description, maxCompletionTokens: $maxCompletionTokens)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AiConfigModelCopyWith<AiConfigModel> get copyWith =>
+      _$AiConfigModelCopyWithImpl<AiConfigModel>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiConfigModelToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiConfigModelImpl &&
+            other is AiConfigModel &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.providerModelId, providerModelId) ||
@@ -889,436 +831,118 @@ class _$AiConfigModelImpl implements AiConfigModel {
       description,
       maxCompletionTokens);
 
-  /// Create a copy of AiConfig
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AiConfigModelImplCopyWith<_$AiConfigModelImpl> get copyWith =>
-      __$$AiConfigModelImplCopyWithImpl<_$AiConfigModelImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)
-        inferenceProvider,
-    required TResult Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)
-        model,
-    required TResult Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)
-        prompt,
-  }) {
-    return model(
-        id,
-        name,
-        providerModelId,
-        inferenceProviderId,
-        createdAt,
-        inputModalities,
-        outputModalities,
-        isReasoningModel,
-        supportsFunctionCalling,
-        updatedAt,
-        description,
-        maxCompletionTokens);
+  String toString() {
+    return 'AiConfig.model(id: $id, name: $name, providerModelId: $providerModelId, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, supportsFunctionCalling: $supportsFunctionCalling, updatedAt: $updatedAt, description: $description, maxCompletionTokens: $maxCompletionTokens)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)?
-        inferenceProvider,
-    TResult? Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)?
-        model,
-    TResult? Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)?
-        prompt,
-  }) {
-    return model?.call(
-        id,
-        name,
-        providerModelId,
-        inferenceProviderId,
-        createdAt,
-        inputModalities,
-        outputModalities,
-        isReasoningModel,
-        supportsFunctionCalling,
-        updatedAt,
-        description,
-        maxCompletionTokens);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)?
-        inferenceProvider,
-    TResult Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)?
-        model,
-    TResult Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)?
-        prompt,
-    required TResult orElse(),
-  }) {
-    if (model != null) {
-      return model(
-          id,
-          name,
-          providerModelId,
-          inferenceProviderId,
-          createdAt,
-          inputModalities,
-          outputModalities,
-          isReasoningModel,
-          supportsFunctionCalling,
-          updatedAt,
-          description,
-          maxCompletionTokens);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AiConfigInferenceProvider value)
-        inferenceProvider,
-    required TResult Function(AiConfigModel value) model,
-    required TResult Function(AiConfigPrompt value) prompt,
-  }) {
-    return model(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
-    TResult? Function(AiConfigModel value)? model,
-    TResult? Function(AiConfigPrompt value)? prompt,
-  }) {
-    return model?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
-    TResult Function(AiConfigModel value)? model,
-    TResult Function(AiConfigPrompt value)? prompt,
-    required TResult orElse(),
-  }) {
-    if (model != null) {
-      return model(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AiConfigModelImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class AiConfigModel implements AiConfig {
-  const factory AiConfigModel(
-      {required final String id,
-      required final String name,
-      required final String providerModelId,
-      required final String inferenceProviderId,
-      required final DateTime createdAt,
-      required final List<Modality> inputModalities,
-      required final List<Modality> outputModalities,
-      required final bool isReasoningModel,
-      final bool supportsFunctionCalling,
-      final DateTime? updatedAt,
-      final String? description,
-      final int? maxCompletionTokens}) = _$AiConfigModelImpl;
-
-  factory AiConfigModel.fromJson(Map<String, dynamic> json) =
-      _$AiConfigModelImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  String get name;
-  String get providerModelId;
-  String get inferenceProviderId;
-  @override
-  DateTime get createdAt;
-  List<Modality> get inputModalities;
-  List<Modality> get outputModalities;
-  bool get isReasoningModel;
-  bool get supportsFunctionCalling;
-  @override
-  DateTime? get updatedAt;
-  @override
-  String? get description;
-  int? get maxCompletionTokens;
-
-  /// Create a copy of AiConfig
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiConfigModelImplCopyWith<_$AiConfigModelImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AiConfigPromptImplCopyWith<$Res>
+abstract mixin class $AiConfigModelCopyWith<$Res>
     implements $AiConfigCopyWith<$Res> {
-  factory _$$AiConfigPromptImplCopyWith(_$AiConfigPromptImpl value,
-          $Res Function(_$AiConfigPromptImpl) then) =
-      __$$AiConfigPromptImplCopyWithImpl<$Res>;
+  factory $AiConfigModelCopyWith(
+          AiConfigModel value, $Res Function(AiConfigModel) _then) =
+      _$AiConfigModelCopyWithImpl;
   @override
   @useResult
   $Res call(
       {String id,
       String name,
-      String systemMessage,
-      String userMessage,
-      String defaultModelId,
-      List<String> modelIds,
+      String providerModelId,
+      String inferenceProviderId,
       DateTime createdAt,
-      bool useReasoning,
-      List<InputDataType> requiredInputData,
-      AiResponseType aiResponseType,
-      String? comment,
+      List<Modality> inputModalities,
+      List<Modality> outputModalities,
+      bool isReasoningModel,
+      bool supportsFunctionCalling,
       DateTime? updatedAt,
       String? description,
-      Map<String, String>? defaultVariables,
-      String? category,
-      bool archived,
-      bool trackPreconfigured,
-      String? preconfiguredPromptId});
+      int? maxCompletionTokens});
 }
 
 /// @nodoc
-class __$$AiConfigPromptImplCopyWithImpl<$Res>
-    extends _$AiConfigCopyWithImpl<$Res, _$AiConfigPromptImpl>
-    implements _$$AiConfigPromptImplCopyWith<$Res> {
-  __$$AiConfigPromptImplCopyWithImpl(
-      _$AiConfigPromptImpl _value, $Res Function(_$AiConfigPromptImpl) _then)
-      : super(_value, _then);
+class _$AiConfigModelCopyWithImpl<$Res>
+    implements $AiConfigModelCopyWith<$Res> {
+  _$AiConfigModelCopyWithImpl(this._self, this._then);
+
+  final AiConfigModel _self;
+  final $Res Function(AiConfigModel) _then;
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? name = null,
-    Object? systemMessage = null,
-    Object? userMessage = null,
-    Object? defaultModelId = null,
-    Object? modelIds = null,
+    Object? providerModelId = null,
+    Object? inferenceProviderId = null,
     Object? createdAt = null,
-    Object? useReasoning = null,
-    Object? requiredInputData = null,
-    Object? aiResponseType = null,
-    Object? comment = freezed,
+    Object? inputModalities = null,
+    Object? outputModalities = null,
+    Object? isReasoningModel = null,
+    Object? supportsFunctionCalling = null,
     Object? updatedAt = freezed,
     Object? description = freezed,
-    Object? defaultVariables = freezed,
-    Object? category = freezed,
-    Object? archived = null,
-    Object? trackPreconfigured = null,
-    Object? preconfiguredPromptId = freezed,
+    Object? maxCompletionTokens = freezed,
   }) {
-    return _then(_$AiConfigPromptImpl(
+    return _then(AiConfigModel(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      systemMessage: null == systemMessage
-          ? _value.systemMessage
-          : systemMessage // ignore: cast_nullable_to_non_nullable
+      providerModelId: null == providerModelId
+          ? _self.providerModelId
+          : providerModelId // ignore: cast_nullable_to_non_nullable
               as String,
-      userMessage: null == userMessage
-          ? _value.userMessage
-          : userMessage // ignore: cast_nullable_to_non_nullable
+      inferenceProviderId: null == inferenceProviderId
+          ? _self.inferenceProviderId
+          : inferenceProviderId // ignore: cast_nullable_to_non_nullable
               as String,
-      defaultModelId: null == defaultModelId
-          ? _value.defaultModelId
-          : defaultModelId // ignore: cast_nullable_to_non_nullable
-              as String,
-      modelIds: null == modelIds
-          ? _value._modelIds
-          : modelIds // ignore: cast_nullable_to_non_nullable
-              as List<String>,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      useReasoning: null == useReasoning
-          ? _value.useReasoning
-          : useReasoning // ignore: cast_nullable_to_non_nullable
+      inputModalities: null == inputModalities
+          ? _self._inputModalities
+          : inputModalities // ignore: cast_nullable_to_non_nullable
+              as List<Modality>,
+      outputModalities: null == outputModalities
+          ? _self._outputModalities
+          : outputModalities // ignore: cast_nullable_to_non_nullable
+              as List<Modality>,
+      isReasoningModel: null == isReasoningModel
+          ? _self.isReasoningModel
+          : isReasoningModel // ignore: cast_nullable_to_non_nullable
               as bool,
-      requiredInputData: null == requiredInputData
-          ? _value._requiredInputData
-          : requiredInputData // ignore: cast_nullable_to_non_nullable
-              as List<InputDataType>,
-      aiResponseType: null == aiResponseType
-          ? _value.aiResponseType
-          : aiResponseType // ignore: cast_nullable_to_non_nullable
-              as AiResponseType,
-      comment: freezed == comment
-          ? _value.comment
-          : comment // ignore: cast_nullable_to_non_nullable
-              as String?,
+      supportsFunctionCalling: null == supportsFunctionCalling
+          ? _self.supportsFunctionCalling
+          : supportsFunctionCalling // ignore: cast_nullable_to_non_nullable
+              as bool,
       updatedAt: freezed == updatedAt
-          ? _value.updatedAt
+          ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
       description: freezed == description
-          ? _value.description
+          ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
-      defaultVariables: freezed == defaultVariables
-          ? _value._defaultVariables
-          : defaultVariables // ignore: cast_nullable_to_non_nullable
-              as Map<String, String>?,
-      category: freezed == category
-          ? _value.category
-          : category // ignore: cast_nullable_to_non_nullable
-              as String?,
-      archived: null == archived
-          ? _value.archived
-          : archived // ignore: cast_nullable_to_non_nullable
-              as bool,
-      trackPreconfigured: null == trackPreconfigured
-          ? _value.trackPreconfigured
-          : trackPreconfigured // ignore: cast_nullable_to_non_nullable
-              as bool,
-      preconfiguredPromptId: freezed == preconfiguredPromptId
-          ? _value.preconfiguredPromptId
-          : preconfiguredPromptId // ignore: cast_nullable_to_non_nullable
-              as String?,
+      maxCompletionTokens: freezed == maxCompletionTokens
+          ? _self.maxCompletionTokens
+          : maxCompletionTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$AiConfigPromptImpl implements AiConfigPrompt {
-  const _$AiConfigPromptImpl(
+class AiConfigPrompt implements AiConfig {
+  const AiConfigPrompt(
       {required this.id,
       required this.name,
       required this.systemMessage,
@@ -1342,22 +966,17 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
         _requiredInputData = requiredInputData,
         _defaultVariables = defaultVariables,
         $type = $type ?? 'prompt';
-
-  factory _$AiConfigPromptImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiConfigPromptImplFromJson(json);
+  factory AiConfigPrompt.fromJson(Map<String, dynamic> json) =>
+      _$AiConfigPromptFromJson(json);
 
   @override
   final String id;
   @override
   final String name;
-  @override
   final String systemMessage;
-  @override
   final String userMessage;
-  @override
   final String defaultModelId;
   final List<String> _modelIds;
-  @override
   List<String> get modelIds {
     if (_modelIds is EqualUnmodifiableListView) return _modelIds;
     // ignore: implicit_dynamic_type
@@ -1366,10 +985,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
 
   @override
   final DateTime createdAt;
-  @override
   final bool useReasoning;
   final List<InputDataType> _requiredInputData;
-  @override
   List<InputDataType> get requiredInputData {
     if (_requiredInputData is EqualUnmodifiableListView)
       return _requiredInputData;
@@ -1377,16 +994,13 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     return EqualUnmodifiableListView(_requiredInputData);
   }
 
-  @override
   final AiResponseType aiResponseType;
-  @override
   final String? comment;
   @override
   final DateTime? updatedAt;
   @override
   final String? description;
   final Map<String, String>? _defaultVariables;
-  @override
   Map<String, String>? get defaultVariables {
     final value = _defaultVariables;
     if (value == null) return null;
@@ -1395,30 +1009,36 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     return EqualUnmodifiableMapView(value);
   }
 
-  @override
   final String? category;
-  @override
   @JsonKey()
   final bool archived;
-  @override
   @JsonKey()
   final bool trackPreconfigured;
-  @override
   final String? preconfiguredPromptId;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, aiResponseType: $aiResponseType, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category, archived: $archived, trackPreconfigured: $trackPreconfigured, preconfiguredPromptId: $preconfiguredPromptId)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AiConfigPromptCopyWith<AiConfigPrompt> get copyWith =>
+      _$AiConfigPromptCopyWithImpl<AiConfigPrompt>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiConfigPromptToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiConfigPromptImpl &&
+            other is AiConfigPrompt &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.systemMessage, systemMessage) ||
@@ -1476,321 +1096,148 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       trackPreconfigured,
       preconfiguredPromptId);
 
+  @override
+  String toString() {
+    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, aiResponseType: $aiResponseType, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category, archived: $archived, trackPreconfigured: $trackPreconfigured, preconfiguredPromptId: $preconfiguredPromptId)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $AiConfigPromptCopyWith<$Res>
+    implements $AiConfigCopyWith<$Res> {
+  factory $AiConfigPromptCopyWith(
+          AiConfigPrompt value, $Res Function(AiConfigPrompt) _then) =
+      _$AiConfigPromptCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String name,
+      String systemMessage,
+      String userMessage,
+      String defaultModelId,
+      List<String> modelIds,
+      DateTime createdAt,
+      bool useReasoning,
+      List<InputDataType> requiredInputData,
+      AiResponseType aiResponseType,
+      String? comment,
+      DateTime? updatedAt,
+      String? description,
+      Map<String, String>? defaultVariables,
+      String? category,
+      bool archived,
+      bool trackPreconfigured,
+      String? preconfiguredPromptId});
+}
+
+/// @nodoc
+class _$AiConfigPromptCopyWithImpl<$Res>
+    implements $AiConfigPromptCopyWith<$Res> {
+  _$AiConfigPromptCopyWithImpl(this._self, this._then);
+
+  final AiConfigPrompt _self;
+  final $Res Function(AiConfigPrompt) _then;
+
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$AiConfigPromptImplCopyWith<_$AiConfigPromptImpl> get copyWith =>
-      __$$AiConfigPromptImplCopyWithImpl<_$AiConfigPromptImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)
-        inferenceProvider,
-    required TResult Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)
-        model,
-    required TResult Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)
-        prompt,
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? systemMessage = null,
+    Object? userMessage = null,
+    Object? defaultModelId = null,
+    Object? modelIds = null,
+    Object? createdAt = null,
+    Object? useReasoning = null,
+    Object? requiredInputData = null,
+    Object? aiResponseType = null,
+    Object? comment = freezed,
+    Object? updatedAt = freezed,
+    Object? description = freezed,
+    Object? defaultVariables = freezed,
+    Object? category = freezed,
+    Object? archived = null,
+    Object? trackPreconfigured = null,
+    Object? preconfiguredPromptId = freezed,
   }) {
-    return prompt(
-        id,
-        name,
-        systemMessage,
-        userMessage,
-        defaultModelId,
-        modelIds,
-        createdAt,
-        useReasoning,
-        requiredInputData,
-        aiResponseType,
-        comment,
-        updatedAt,
-        description,
-        defaultVariables,
-        category,
-        archived,
-        trackPreconfigured,
-        preconfiguredPromptId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)?
-        inferenceProvider,
-    TResult? Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)?
-        model,
-    TResult? Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)?
-        prompt,
-  }) {
-    return prompt?.call(
-        id,
-        name,
-        systemMessage,
-        userMessage,
-        defaultModelId,
-        modelIds,
-        createdAt,
-        useReasoning,
-        requiredInputData,
-        aiResponseType,
-        comment,
-        updatedAt,
-        description,
-        defaultVariables,
-        category,
-        archived,
-        trackPreconfigured,
-        preconfiguredPromptId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            InferenceProviderType inferenceProviderType,
-            DateTime? updatedAt,
-            String? description)?
-        inferenceProvider,
-    TResult Function(
-            String id,
-            String name,
-            String providerModelId,
-            String inferenceProviderId,
-            DateTime createdAt,
-            List<Modality> inputModalities,
-            List<Modality> outputModalities,
-            bool isReasoningModel,
-            bool supportsFunctionCalling,
-            DateTime? updatedAt,
-            String? description,
-            int? maxCompletionTokens)?
-        model,
-    TResult Function(
-            String id,
-            String name,
-            String systemMessage,
-            String userMessage,
-            String defaultModelId,
-            List<String> modelIds,
-            DateTime createdAt,
-            bool useReasoning,
-            List<InputDataType> requiredInputData,
-            AiResponseType aiResponseType,
-            String? comment,
-            DateTime? updatedAt,
-            String? description,
-            Map<String, String>? defaultVariables,
-            String? category,
-            bool archived,
-            bool trackPreconfigured,
-            String? preconfiguredPromptId)?
-        prompt,
-    required TResult orElse(),
-  }) {
-    if (prompt != null) {
-      return prompt(
-          id,
-          name,
-          systemMessage,
-          userMessage,
-          defaultModelId,
-          modelIds,
-          createdAt,
-          useReasoning,
-          requiredInputData,
-          aiResponseType,
-          comment,
-          updatedAt,
-          description,
-          defaultVariables,
-          category,
-          archived,
-          trackPreconfigured,
-          preconfiguredPromptId);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AiConfigInferenceProvider value)
-        inferenceProvider,
-    required TResult Function(AiConfigModel value) model,
-    required TResult Function(AiConfigPrompt value) prompt,
-  }) {
-    return prompt(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
-    TResult? Function(AiConfigModel value)? model,
-    TResult? Function(AiConfigPrompt value)? prompt,
-  }) {
-    return prompt?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
-    TResult Function(AiConfigModel value)? model,
-    TResult Function(AiConfigPrompt value)? prompt,
-    required TResult orElse(),
-  }) {
-    if (prompt != null) {
-      return prompt(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AiConfigPromptImplToJson(
-      this,
-    );
+    return _then(AiConfigPrompt(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      systemMessage: null == systemMessage
+          ? _self.systemMessage
+          : systemMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      userMessage: null == userMessage
+          ? _self.userMessage
+          : userMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      defaultModelId: null == defaultModelId
+          ? _self.defaultModelId
+          : defaultModelId // ignore: cast_nullable_to_non_nullable
+              as String,
+      modelIds: null == modelIds
+          ? _self._modelIds
+          : modelIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      useReasoning: null == useReasoning
+          ? _self.useReasoning
+          : useReasoning // ignore: cast_nullable_to_non_nullable
+              as bool,
+      requiredInputData: null == requiredInputData
+          ? _self._requiredInputData
+          : requiredInputData // ignore: cast_nullable_to_non_nullable
+              as List<InputDataType>,
+      aiResponseType: null == aiResponseType
+          ? _self.aiResponseType
+          : aiResponseType // ignore: cast_nullable_to_non_nullable
+              as AiResponseType,
+      comment: freezed == comment
+          ? _self.comment
+          : comment // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      defaultVariables: freezed == defaultVariables
+          ? _self._defaultVariables
+          : defaultVariables // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>?,
+      category: freezed == category
+          ? _self.category
+          : category // ignore: cast_nullable_to_non_nullable
+              as String?,
+      archived: null == archived
+          ? _self.archived
+          : archived // ignore: cast_nullable_to_non_nullable
+              as bool,
+      trackPreconfigured: null == trackPreconfigured
+          ? _self.trackPreconfigured
+          : trackPreconfigured // ignore: cast_nullable_to_non_nullable
+              as bool,
+      preconfiguredPromptId: freezed == preconfiguredPromptId
+          ? _self.preconfiguredPromptId
+          : preconfiguredPromptId // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
   }
 }
 
-abstract class AiConfigPrompt implements AiConfig {
-  const factory AiConfigPrompt(
-      {required final String id,
-      required final String name,
-      required final String systemMessage,
-      required final String userMessage,
-      required final String defaultModelId,
-      required final List<String> modelIds,
-      required final DateTime createdAt,
-      required final bool useReasoning,
-      required final List<InputDataType> requiredInputData,
-      required final AiResponseType aiResponseType,
-      final String? comment,
-      final DateTime? updatedAt,
-      final String? description,
-      final Map<String, String>? defaultVariables,
-      final String? category,
-      final bool archived,
-      final bool trackPreconfigured,
-      final String? preconfiguredPromptId}) = _$AiConfigPromptImpl;
-
-  factory AiConfigPrompt.fromJson(Map<String, dynamic> json) =
-      _$AiConfigPromptImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  String get name;
-  String get systemMessage;
-  String get userMessage;
-  String get defaultModelId;
-  List<String> get modelIds;
-  @override
-  DateTime get createdAt;
-  bool get useReasoning;
-  List<InputDataType> get requiredInputData;
-  AiResponseType get aiResponseType;
-  String? get comment;
-  @override
-  DateTime? get updatedAt;
-  @override
-  String? get description;
-  Map<String, String>? get defaultVariables;
-  String? get category;
-  bool get archived;
-  bool get trackPreconfigured;
-  String? get preconfiguredPromptId;
-
-  /// Create a copy of AiConfig
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiConfigPromptImplCopyWith<_$AiConfigPromptImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// dart format on

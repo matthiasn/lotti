@@ -23,7 +23,7 @@ enum AudioRecorderStatus {
 /// This state is managed by [AudioRecorderController] and consumed by
 /// UI components to display recording status, audio levels, and controls.
 @freezed
-class AudioRecorderState with _$AudioRecorderState {
+abstract class AudioRecorderState with _$AudioRecorderState {
   factory AudioRecorderState({
     /// Current status of the recorder.
     required AudioRecorderStatus status,

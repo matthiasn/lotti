@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,88 +9,54 @@ part of 'task_summary_tool.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-TaskSummaryRequest _$TaskSummaryRequestFromJson(Map<String, dynamic> json) {
-  return _TaskSummaryRequest.fromJson(json);
-}
 
 /// @nodoc
 mixin _$TaskSummaryRequest {
   @JsonKey(name: 'start_date')
-  String get startDate => throw _privateConstructorUsedError;
+  String get startDate;
   @JsonKey(name: 'end_date')
-  String get endDate => throw _privateConstructorUsedError;
-  int get limit => throw _privateConstructorUsedError;
-
-  /// Serializes this TaskSummaryRequest to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get endDate;
+  int get limit;
 
   /// Create a copy of TaskSummaryRequest
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $TaskSummaryRequestCopyWith<TaskSummaryRequest> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $TaskSummaryRequestCopyWith<$Res> {
-  factory $TaskSummaryRequestCopyWith(
-          TaskSummaryRequest value, $Res Function(TaskSummaryRequest) then) =
-      _$TaskSummaryRequestCopyWithImpl<$Res, TaskSummaryRequest>;
-  @useResult
-  $Res call(
-      {@JsonKey(name: 'start_date') String startDate,
-      @JsonKey(name: 'end_date') String endDate,
-      int limit});
-}
-
-/// @nodoc
-class _$TaskSummaryRequestCopyWithImpl<$Res, $Val extends TaskSummaryRequest>
-    implements $TaskSummaryRequestCopyWith<$Res> {
-  _$TaskSummaryRequestCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of TaskSummaryRequest
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $TaskSummaryRequestCopyWith<TaskSummaryRequest> get copyWith =>
+      _$TaskSummaryRequestCopyWithImpl<TaskSummaryRequest>(
+          this as TaskSummaryRequest, _$identity);
+
+  /// Serializes this TaskSummaryRequest to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? startDate = null,
-    Object? endDate = null,
-    Object? limit = null,
-  }) {
-    return _then(_value.copyWith(
-      startDate: null == startDate
-          ? _value.startDate
-          : startDate // ignore: cast_nullable_to_non_nullable
-              as String,
-      endDate: null == endDate
-          ? _value.endDate
-          : endDate // ignore: cast_nullable_to_non_nullable
-              as String,
-      limit: null == limit
-          ? _value.limit
-          : limit // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is TaskSummaryRequest &&
+            (identical(other.startDate, startDate) ||
+                other.startDate == startDate) &&
+            (identical(other.endDate, endDate) || other.endDate == endDate) &&
+            (identical(other.limit, limit) || other.limit == limit));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, startDate, endDate, limit);
+
+  @override
+  String toString() {
+    return 'TaskSummaryRequest(startDate: $startDate, endDate: $endDate, limit: $limit)';
   }
 }
 
 /// @nodoc
-abstract class _$$TaskSummaryRequestImplCopyWith<$Res>
-    implements $TaskSummaryRequestCopyWith<$Res> {
-  factory _$$TaskSummaryRequestImplCopyWith(_$TaskSummaryRequestImpl value,
-          $Res Function(_$TaskSummaryRequestImpl) then) =
-      __$$TaskSummaryRequestImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $TaskSummaryRequestCopyWith<$Res> {
+  factory $TaskSummaryRequestCopyWith(
+          TaskSummaryRequest value, $Res Function(TaskSummaryRequest) _then) =
+      _$TaskSummaryRequestCopyWithImpl;
   @useResult
   $Res call(
       {@JsonKey(name: 'start_date') String startDate,
@@ -99,12 +65,12 @@ abstract class _$$TaskSummaryRequestImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TaskSummaryRequestImplCopyWithImpl<$Res>
-    extends _$TaskSummaryRequestCopyWithImpl<$Res, _$TaskSummaryRequestImpl>
-    implements _$$TaskSummaryRequestImplCopyWith<$Res> {
-  __$$TaskSummaryRequestImplCopyWithImpl(_$TaskSummaryRequestImpl _value,
-      $Res Function(_$TaskSummaryRequestImpl) _then)
-      : super(_value, _then);
+class _$TaskSummaryRequestCopyWithImpl<$Res>
+    implements $TaskSummaryRequestCopyWith<$Res> {
+  _$TaskSummaryRequestCopyWithImpl(this._self, this._then);
+
+  final TaskSummaryRequest _self;
+  final $Res Function(TaskSummaryRequest) _then;
 
   /// Create a copy of TaskSummaryRequest
   /// with the given fields replaced by the non-null parameter values.
@@ -115,33 +81,195 @@ class __$$TaskSummaryRequestImplCopyWithImpl<$Res>
     Object? endDate = null,
     Object? limit = null,
   }) {
-    return _then(_$TaskSummaryRequestImpl(
+    return _then(_self.copyWith(
       startDate: null == startDate
-          ? _value.startDate
+          ? _self.startDate
           : startDate // ignore: cast_nullable_to_non_nullable
               as String,
       endDate: null == endDate
-          ? _value.endDate
+          ? _self.endDate
           : endDate // ignore: cast_nullable_to_non_nullable
               as String,
       limit: null == limit
-          ? _value.limit
+          ? _self.limit
           : limit // ignore: cast_nullable_to_non_nullable
               as int,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [TaskSummaryRequest].
+extension TaskSummaryRequestPatterns on TaskSummaryRequest {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_TaskSummaryRequest value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryRequest() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_TaskSummaryRequest value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryRequest():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_TaskSummaryRequest value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryRequest() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(@JsonKey(name: 'start_date') String startDate,
+            @JsonKey(name: 'end_date') String endDate, int limit)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryRequest() when $default != null:
+        return $default(_that.startDate, _that.endDate, _that.limit);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(@JsonKey(name: 'start_date') String startDate,
+            @JsonKey(name: 'end_date') String endDate, int limit)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryRequest():
+        return $default(_that.startDate, _that.endDate, _that.limit);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(@JsonKey(name: 'start_date') String startDate,
+            @JsonKey(name: 'end_date') String endDate, int limit)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryRequest() when $default != null:
+        return $default(_that.startDate, _that.endDate, _that.limit);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$TaskSummaryRequestImpl implements _TaskSummaryRequest {
-  const _$TaskSummaryRequestImpl(
+class _TaskSummaryRequest implements TaskSummaryRequest {
+  const _TaskSummaryRequest(
       {@JsonKey(name: 'start_date') required this.startDate,
       @JsonKey(name: 'end_date') required this.endDate,
       this.limit = 100});
-
-  factory _$TaskSummaryRequestImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskSummaryRequestImplFromJson(json);
+  factory _TaskSummaryRequest.fromJson(Map<String, dynamic> json) =>
+      _$TaskSummaryRequestFromJson(json);
 
   @override
   @JsonKey(name: 'start_date')
@@ -153,16 +281,26 @@ class _$TaskSummaryRequestImpl implements _TaskSummaryRequest {
   @JsonKey()
   final int limit;
 
+  /// Create a copy of TaskSummaryRequest
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskSummaryRequest(startDate: $startDate, endDate: $endDate, limit: $limit)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$TaskSummaryRequestCopyWith<_TaskSummaryRequest> get copyWith =>
+      __$TaskSummaryRequestCopyWithImpl<_TaskSummaryRequest>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskSummaryRequestToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskSummaryRequestImpl &&
+            other is _TaskSummaryRequest &&
             (identical(other.startDate, startDate) ||
                 other.startDate == startDate) &&
             (identical(other.endDate, endDate) || other.endDate == endDate) &&
@@ -173,145 +311,111 @@ class _$TaskSummaryRequestImpl implements _TaskSummaryRequest {
   @override
   int get hashCode => Object.hash(runtimeType, startDate, endDate, limit);
 
-  /// Create a copy of TaskSummaryRequest
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskSummaryRequestImplCopyWith<_$TaskSummaryRequestImpl> get copyWith =>
-      __$$TaskSummaryRequestImplCopyWithImpl<_$TaskSummaryRequestImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskSummaryRequestImplToJson(
-      this,
-    );
+  String toString() {
+    return 'TaskSummaryRequest(startDate: $startDate, endDate: $endDate, limit: $limit)';
   }
 }
 
-abstract class _TaskSummaryRequest implements TaskSummaryRequest {
-  const factory _TaskSummaryRequest(
-      {@JsonKey(name: 'start_date') required final String startDate,
-      @JsonKey(name: 'end_date') required final String endDate,
-      final int limit}) = _$TaskSummaryRequestImpl;
+/// @nodoc
+abstract mixin class _$TaskSummaryRequestCopyWith<$Res>
+    implements $TaskSummaryRequestCopyWith<$Res> {
+  factory _$TaskSummaryRequestCopyWith(
+          _TaskSummaryRequest value, $Res Function(_TaskSummaryRequest) _then) =
+      __$TaskSummaryRequestCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'start_date') String startDate,
+      @JsonKey(name: 'end_date') String endDate,
+      int limit});
+}
 
-  factory _TaskSummaryRequest.fromJson(Map<String, dynamic> json) =
-      _$TaskSummaryRequestImpl.fromJson;
+/// @nodoc
+class __$TaskSummaryRequestCopyWithImpl<$Res>
+    implements _$TaskSummaryRequestCopyWith<$Res> {
+  __$TaskSummaryRequestCopyWithImpl(this._self, this._then);
 
-  @override
-  @JsonKey(name: 'start_date')
-  String get startDate;
-  @override
-  @JsonKey(name: 'end_date')
-  String get endDate;
-  @override
-  int get limit;
+  final _TaskSummaryRequest _self;
+  final $Res Function(_TaskSummaryRequest) _then;
 
   /// Create a copy of TaskSummaryRequest
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskSummaryRequestImplCopyWith<_$TaskSummaryRequestImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-TaskSummaryResult _$TaskSummaryResultFromJson(Map<String, dynamic> json) {
-  return _TaskSummaryResult.fromJson(json);
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? startDate = null,
+    Object? endDate = null,
+    Object? limit = null,
+  }) {
+    return _then(_TaskSummaryRequest(
+      startDate: null == startDate
+          ? _self.startDate
+          : startDate // ignore: cast_nullable_to_non_nullable
+              as String,
+      endDate: null == endDate
+          ? _self.endDate
+          : endDate // ignore: cast_nullable_to_non_nullable
+              as String,
+      limit: null == limit
+          ? _self.limit
+          : limit // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
 }
 
 /// @nodoc
 mixin _$TaskSummaryResult {
-  String get taskId => throw _privateConstructorUsedError;
-  String get taskTitle => throw _privateConstructorUsedError;
-  String get summary => throw _privateConstructorUsedError;
-  DateTime get taskDate => throw _privateConstructorUsedError;
-  String get status => throw _privateConstructorUsedError;
-  Map<String, dynamic>? get metadata => throw _privateConstructorUsedError;
-
-  /// Serializes this TaskSummaryResult to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get taskId;
+  String get taskTitle;
+  String get summary;
+  DateTime get taskDate;
+  String get status;
+  Map<String, dynamic>? get metadata;
 
   /// Create a copy of TaskSummaryResult
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $TaskSummaryResultCopyWith<TaskSummaryResult> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $TaskSummaryResultCopyWith<$Res> {
-  factory $TaskSummaryResultCopyWith(
-          TaskSummaryResult value, $Res Function(TaskSummaryResult) then) =
-      _$TaskSummaryResultCopyWithImpl<$Res, TaskSummaryResult>;
-  @useResult
-  $Res call(
-      {String taskId,
-      String taskTitle,
-      String summary,
-      DateTime taskDate,
-      String status,
-      Map<String, dynamic>? metadata});
-}
-
-/// @nodoc
-class _$TaskSummaryResultCopyWithImpl<$Res, $Val extends TaskSummaryResult>
-    implements $TaskSummaryResultCopyWith<$Res> {
-  _$TaskSummaryResultCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of TaskSummaryResult
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $TaskSummaryResultCopyWith<TaskSummaryResult> get copyWith =>
+      _$TaskSummaryResultCopyWithImpl<TaskSummaryResult>(
+          this as TaskSummaryResult, _$identity);
+
+  /// Serializes this TaskSummaryResult to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? taskId = null,
-    Object? taskTitle = null,
-    Object? summary = null,
-    Object? taskDate = null,
-    Object? status = null,
-    Object? metadata = freezed,
-  }) {
-    return _then(_value.copyWith(
-      taskId: null == taskId
-          ? _value.taskId
-          : taskId // ignore: cast_nullable_to_non_nullable
-              as String,
-      taskTitle: null == taskTitle
-          ? _value.taskTitle
-          : taskTitle // ignore: cast_nullable_to_non_nullable
-              as String,
-      summary: null == summary
-          ? _value.summary
-          : summary // ignore: cast_nullable_to_non_nullable
-              as String,
-      taskDate: null == taskDate
-          ? _value.taskDate
-          : taskDate // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as String,
-      metadata: freezed == metadata
-          ? _value.metadata
-          : metadata // ignore: cast_nullable_to_non_nullable
-              as Map<String, dynamic>?,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is TaskSummaryResult &&
+            (identical(other.taskId, taskId) || other.taskId == taskId) &&
+            (identical(other.taskTitle, taskTitle) ||
+                other.taskTitle == taskTitle) &&
+            (identical(other.summary, summary) || other.summary == summary) &&
+            (identical(other.taskDate, taskDate) ||
+                other.taskDate == taskDate) &&
+            (identical(other.status, status) || other.status == status) &&
+            const DeepCollectionEquality().equals(other.metadata, metadata));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, taskId, taskTitle, summary,
+      taskDate, status, const DeepCollectionEquality().hash(metadata));
+
+  @override
+  String toString() {
+    return 'TaskSummaryResult(taskId: $taskId, taskTitle: $taskTitle, summary: $summary, taskDate: $taskDate, status: $status, metadata: $metadata)';
   }
 }
 
 /// @nodoc
-abstract class _$$TaskSummaryResultImplCopyWith<$Res>
-    implements $TaskSummaryResultCopyWith<$Res> {
-  factory _$$TaskSummaryResultImplCopyWith(_$TaskSummaryResultImpl value,
-          $Res Function(_$TaskSummaryResultImpl) then) =
-      __$$TaskSummaryResultImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $TaskSummaryResultCopyWith<$Res> {
+  factory $TaskSummaryResultCopyWith(
+          TaskSummaryResult value, $Res Function(TaskSummaryResult) _then) =
+      _$TaskSummaryResultCopyWithImpl;
   @useResult
   $Res call(
       {String taskId,
@@ -323,12 +427,12 @@ abstract class _$$TaskSummaryResultImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TaskSummaryResultImplCopyWithImpl<$Res>
-    extends _$TaskSummaryResultCopyWithImpl<$Res, _$TaskSummaryResultImpl>
-    implements _$$TaskSummaryResultImplCopyWith<$Res> {
-  __$$TaskSummaryResultImplCopyWithImpl(_$TaskSummaryResultImpl _value,
-      $Res Function(_$TaskSummaryResultImpl) _then)
-      : super(_value, _then);
+class _$TaskSummaryResultCopyWithImpl<$Res>
+    implements $TaskSummaryResultCopyWith<$Res> {
+  _$TaskSummaryResultCopyWithImpl(this._self, this._then);
+
+  final TaskSummaryResult _self;
+  final $Res Function(TaskSummaryResult) _then;
 
   /// Create a copy of TaskSummaryResult
   /// with the given fields replaced by the non-null parameter values.
@@ -342,39 +446,205 @@ class __$$TaskSummaryResultImplCopyWithImpl<$Res>
     Object? status = null,
     Object? metadata = freezed,
   }) {
-    return _then(_$TaskSummaryResultImpl(
+    return _then(_self.copyWith(
       taskId: null == taskId
-          ? _value.taskId
+          ? _self.taskId
           : taskId // ignore: cast_nullable_to_non_nullable
               as String,
       taskTitle: null == taskTitle
-          ? _value.taskTitle
+          ? _self.taskTitle
           : taskTitle // ignore: cast_nullable_to_non_nullable
               as String,
       summary: null == summary
-          ? _value.summary
+          ? _self.summary
           : summary // ignore: cast_nullable_to_non_nullable
               as String,
       taskDate: null == taskDate
-          ? _value.taskDate
+          ? _self.taskDate
           : taskDate // ignore: cast_nullable_to_non_nullable
               as DateTime,
       status: null == status
-          ? _value.status
+          ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
               as String,
       metadata: freezed == metadata
-          ? _value._metadata
+          ? _self.metadata
           : metadata // ignore: cast_nullable_to_non_nullable
               as Map<String, dynamic>?,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [TaskSummaryResult].
+extension TaskSummaryResultPatterns on TaskSummaryResult {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_TaskSummaryResult value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryResult() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_TaskSummaryResult value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryResult():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_TaskSummaryResult value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryResult() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(String taskId, String taskTitle, String summary,
+            DateTime taskDate, String status, Map<String, dynamic>? metadata)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryResult() when $default != null:
+        return $default(_that.taskId, _that.taskTitle, _that.summary,
+            _that.taskDate, _that.status, _that.metadata);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(String taskId, String taskTitle, String summary,
+            DateTime taskDate, String status, Map<String, dynamic>? metadata)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryResult():
+        return $default(_that.taskId, _that.taskTitle, _that.summary,
+            _that.taskDate, _that.status, _that.metadata);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(String taskId, String taskTitle, String summary,
+            DateTime taskDate, String status, Map<String, dynamic>? metadata)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskSummaryResult() when $default != null:
+        return $default(_that.taskId, _that.taskTitle, _that.summary,
+            _that.taskDate, _that.status, _that.metadata);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$TaskSummaryResultImpl implements _TaskSummaryResult {
-  const _$TaskSummaryResultImpl(
+class _TaskSummaryResult implements TaskSummaryResult {
+  const _TaskSummaryResult(
       {required this.taskId,
       required this.taskTitle,
       required this.summary,
@@ -382,9 +652,8 @@ class _$TaskSummaryResultImpl implements _TaskSummaryResult {
       required this.status,
       final Map<String, dynamic>? metadata})
       : _metadata = metadata;
-
-  factory _$TaskSummaryResultImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskSummaryResultImplFromJson(json);
+  factory _TaskSummaryResult.fromJson(Map<String, dynamic> json) =>
+      _$TaskSummaryResultFromJson(json);
 
   @override
   final String taskId;
@@ -406,16 +675,26 @@ class _$TaskSummaryResultImpl implements _TaskSummaryResult {
     return EqualUnmodifiableMapView(value);
   }
 
+  /// Create a copy of TaskSummaryResult
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskSummaryResult(taskId: $taskId, taskTitle: $taskTitle, summary: $summary, taskDate: $taskDate, status: $status, metadata: $metadata)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$TaskSummaryResultCopyWith<_TaskSummaryResult> get copyWith =>
+      __$TaskSummaryResultCopyWithImpl<_TaskSummaryResult>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskSummaryResultToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskSummaryResultImpl &&
+            other is _TaskSummaryResult &&
             (identical(other.taskId, taskId) || other.taskId == taskId) &&
             (identical(other.taskTitle, taskTitle) ||
                 other.taskTitle == taskTitle) &&
@@ -431,52 +710,76 @@ class _$TaskSummaryResultImpl implements _TaskSummaryResult {
   int get hashCode => Object.hash(runtimeType, taskId, taskTitle, summary,
       taskDate, status, const DeepCollectionEquality().hash(_metadata));
 
-  /// Create a copy of TaskSummaryResult
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskSummaryResultImplCopyWith<_$TaskSummaryResultImpl> get copyWith =>
-      __$$TaskSummaryResultImplCopyWithImpl<_$TaskSummaryResultImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskSummaryResultImplToJson(
-      this,
-    );
+  String toString() {
+    return 'TaskSummaryResult(taskId: $taskId, taskTitle: $taskTitle, summary: $summary, taskDate: $taskDate, status: $status, metadata: $metadata)';
   }
 }
 
-abstract class _TaskSummaryResult implements TaskSummaryResult {
-  const factory _TaskSummaryResult(
-      {required final String taskId,
-      required final String taskTitle,
-      required final String summary,
-      required final DateTime taskDate,
-      required final String status,
-      final Map<String, dynamic>? metadata}) = _$TaskSummaryResultImpl;
+/// @nodoc
+abstract mixin class _$TaskSummaryResultCopyWith<$Res>
+    implements $TaskSummaryResultCopyWith<$Res> {
+  factory _$TaskSummaryResultCopyWith(
+          _TaskSummaryResult value, $Res Function(_TaskSummaryResult) _then) =
+      __$TaskSummaryResultCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String taskId,
+      String taskTitle,
+      String summary,
+      DateTime taskDate,
+      String status,
+      Map<String, dynamic>? metadata});
+}
 
-  factory _TaskSummaryResult.fromJson(Map<String, dynamic> json) =
-      _$TaskSummaryResultImpl.fromJson;
+/// @nodoc
+class __$TaskSummaryResultCopyWithImpl<$Res>
+    implements _$TaskSummaryResultCopyWith<$Res> {
+  __$TaskSummaryResultCopyWithImpl(this._self, this._then);
 
-  @override
-  String get taskId;
-  @override
-  String get taskTitle;
-  @override
-  String get summary;
-  @override
-  DateTime get taskDate;
-  @override
-  String get status;
-  @override
-  Map<String, dynamic>? get metadata;
+  final _TaskSummaryResult _self;
+  final $Res Function(_TaskSummaryResult) _then;
 
   /// Create a copy of TaskSummaryResult
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskSummaryResultImplCopyWith<_$TaskSummaryResultImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? taskId = null,
+    Object? taskTitle = null,
+    Object? summary = null,
+    Object? taskDate = null,
+    Object? status = null,
+    Object? metadata = freezed,
+  }) {
+    return _then(_TaskSummaryResult(
+      taskId: null == taskId
+          ? _self.taskId
+          : taskId // ignore: cast_nullable_to_non_nullable
+              as String,
+      taskTitle: null == taskTitle
+          ? _self.taskTitle
+          : taskTitle // ignore: cast_nullable_to_non_nullable
+              as String,
+      summary: null == summary
+          ? _self.summary
+          : summary // ignore: cast_nullable_to_non_nullable
+              as String,
+      taskDate: null == taskDate
+          ? _self.taskDate
+          : taskDate // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      metadata: freezed == metadata
+          ? _self._metadata
+          : metadata // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+    ));
+  }
 }
+
+// dart format on

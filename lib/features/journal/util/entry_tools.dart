@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -64,11 +65,13 @@ class InfoText extends StatelessWidget {
 }
 
 String entryTextForQuant(QuantitativeEntry qe) {
-  return qe.data.map(
-    cumulativeQuantityData: (qd) => '${formatType(qd.dataType)}: '
-        '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-    discreteQuantityData: (qd) => '${formatType(qd.dataType)}: '
-        '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+  return qe.data.when(
+    cumulativeQuantityData:
+        (dateFrom, dateTo, value, dataType, unit, deviceType, platformType) =>
+            '${formatType(dataType)}: ${nf.format(value)} ${formatUnit(unit)}',
+    discreteQuantityData: (dateFrom, dateTo, value, dataType, unit, deviceType,
+            platformType, sourceName, sourceId, sourceUrl) =>
+        '${formatType(dataType)}: ${nf.format(value)} ${formatUnit(unit)}',
   );
 }
 

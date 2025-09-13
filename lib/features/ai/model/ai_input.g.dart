@@ -6,9 +6,8 @@ part of 'ai_input.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$AiInputTaskObjectImpl _$$AiInputTaskObjectImplFromJson(
-        Map<String, dynamic> json) =>
-    _$AiInputTaskObjectImpl(
+_AiInputTaskObject _$AiInputTaskObjectFromJson(Map<String, dynamic> json) =>
+    _AiInputTaskObject(
       title: json['title'] as String,
       status: json['status'] as String,
       estimatedDuration: json['estimatedDuration'] as String,
@@ -23,8 +22,7 @@ _$AiInputTaskObjectImpl _$$AiInputTaskObjectImplFromJson(
       languageCode: json['languageCode'] as String?,
     );
 
-Map<String, dynamic> _$$AiInputTaskObjectImplToJson(
-        _$AiInputTaskObjectImpl instance) =>
+Map<String, dynamic> _$AiInputTaskObjectToJson(_AiInputTaskObject instance) =>
     <String, dynamic>{
       'title': instance.title,
       'status': instance.status,
@@ -36,8 +34,8 @@ Map<String, dynamic> _$$AiInputTaskObjectImplToJson(
       'languageCode': instance.languageCode,
     };
 
-_$AiActionItemImpl _$$AiActionItemImplFromJson(Map<String, dynamic> json) =>
-    _$AiActionItemImpl(
+_AiActionItem _$AiActionItemFromJson(Map<String, dynamic> json) =>
+    _AiActionItem(
       title: json['title'] as String,
       completed: json['completed'] as bool,
       id: json['id'] as String?,
@@ -49,7 +47,7 @@ _$AiActionItemImpl _$$AiActionItemImplFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['completionDate'] as String),
     );
 
-Map<String, dynamic> _$$AiActionItemImplToJson(_$AiActionItemImpl instance) =>
+Map<String, dynamic> _$AiActionItemToJson(_AiActionItem instance) =>
     <String, dynamic>{
       'title': instance.title,
       'completed': instance.completed,
@@ -58,9 +56,9 @@ Map<String, dynamic> _$$AiActionItemImplToJson(_$AiActionItemImpl instance) =>
       'completionDate': instance.completionDate?.toIso8601String(),
     };
 
-_$AiInputLogEntryObjectImpl _$$AiInputLogEntryObjectImplFromJson(
+_AiInputLogEntryObject _$AiInputLogEntryObjectFromJson(
         Map<String, dynamic> json) =>
-    _$AiInputLogEntryObjectImpl(
+    _AiInputLogEntryObject(
       creationTimestamp: DateTime.parse(json['creationTimestamp'] as String),
       loggedDuration: json['loggedDuration'] as String,
       text: json['text'] as String,
@@ -69,8 +67,8 @@ _$AiInputLogEntryObjectImpl _$$AiInputLogEntryObjectImplFromJson(
       entryType: json['entryType'] as String?,
     );
 
-Map<String, dynamic> _$$AiInputLogEntryObjectImplToJson(
-        _$AiInputLogEntryObjectImpl instance) =>
+Map<String, dynamic> _$AiInputLogEntryObjectToJson(
+        _AiInputLogEntryObject instance) =>
     <String, dynamic>{
       'creationTimestamp': instance.creationTimestamp.toIso8601String(),
       'loggedDuration': instance.loggedDuration,
@@ -80,16 +78,16 @@ Map<String, dynamic> _$$AiInputLogEntryObjectImplToJson(
       'entryType': instance.entryType,
     };
 
-_$AiInputActionItemsListImpl _$$AiInputActionItemsListImplFromJson(
+_AiInputActionItemsList _$AiInputActionItemsListFromJson(
         Map<String, dynamic> json) =>
-    _$AiInputActionItemsListImpl(
+    _AiInputActionItemsList(
       items: (json['items'] as List<dynamic>)
           .map((e) => AiActionItem.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 
-Map<String, dynamic> _$$AiInputActionItemsListImplToJson(
-        _$AiInputActionItemsListImpl instance) =>
+Map<String, dynamic> _$AiInputActionItemsListToJson(
+        _AiInputActionItemsList instance) =>
     <String, dynamic>{
       'items': instance.items,
     };

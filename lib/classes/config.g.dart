@@ -6,8 +6,7 @@ part of 'config.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$ImapConfigImpl _$$ImapConfigImplFromJson(Map<String, dynamic> json) =>
-    _$ImapConfigImpl(
+_ImapConfig _$ImapConfigFromJson(Map<String, dynamic> json) => _ImapConfig(
       host: json['host'] as String,
       folder: json['folder'] as String,
       userName: json['userName'] as String,
@@ -15,7 +14,7 @@ _$ImapConfigImpl _$$ImapConfigImplFromJson(Map<String, dynamic> json) =>
       port: (json['port'] as num).toInt(),
     );
 
-Map<String, dynamic> _$$ImapConfigImplToJson(_$ImapConfigImpl instance) =>
+Map<String, dynamic> _$ImapConfigToJson(_ImapConfig instance) =>
     <String, dynamic>{
       'host': instance.host,
       'folder': instance.folder,
@@ -24,28 +23,27 @@ Map<String, dynamic> _$$ImapConfigImplToJson(_$ImapConfigImpl instance) =>
       'port': instance.port,
     };
 
-_$MatrixConfigImpl _$$MatrixConfigImplFromJson(Map<String, dynamic> json) =>
-    _$MatrixConfigImpl(
+_MatrixConfig _$MatrixConfigFromJson(Map<String, dynamic> json) =>
+    _MatrixConfig(
       homeServer: json['homeServer'] as String,
       user: json['user'] as String,
       password: json['password'] as String,
     );
 
-Map<String, dynamic> _$$MatrixConfigImplToJson(_$MatrixConfigImpl instance) =>
+Map<String, dynamic> _$MatrixConfigToJson(_MatrixConfig instance) =>
     <String, dynamic>{
       'homeServer': instance.homeServer,
       'user': instance.user,
       'password': instance.password,
     };
 
-_$SyncConfigImpl _$$SyncConfigImplFromJson(Map<String, dynamic> json) =>
-    _$SyncConfigImpl(
+_SyncConfig _$SyncConfigFromJson(Map<String, dynamic> json) => _SyncConfig(
       imapConfig:
           ImapConfig.fromJson(json['imapConfig'] as Map<String, dynamic>),
       sharedSecret: json['sharedSecret'] as String,
     );
 
-Map<String, dynamic> _$$SyncConfigImplToJson(_$SyncConfigImpl instance) =>
+Map<String, dynamic> _$SyncConfigToJson(_SyncConfig instance) =>
     <String, dynamic>{
       'imapConfig': instance.imapConfig,
       'sharedSecret': instance.sharedSecret,

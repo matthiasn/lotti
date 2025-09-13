@@ -120,9 +120,6 @@ class AiSettingsNavigationService {
             configId: config.id,
           ),
         ),
-      _ => throw ArgumentError(
-          'Unsupported config type: ${config.runtimeType}',
-        ),
     };
   }
 

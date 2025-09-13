@@ -7,7 +7,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 part 'habit_settings_state.freezed.dart';
 
 @freezed
-class HabitSettingsState with _$HabitSettingsState {
+abstract class HabitSettingsState with _$HabitSettingsState {
   factory HabitSettingsState({
     required HabitDefinition habitDefinition,
     required bool dirty,

@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,11 +9,8 @@ part of 'health.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
 QuantitativeData _$QuantitativeDataFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
     case 'cumulativeQuantityData':
@@ -29,311 +26,30 @@ QuantitativeData _$QuantitativeDataFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$QuantitativeData {
-  DateTime get dateFrom => throw _privateConstructorUsedError;
-  DateTime get dateTo => throw _privateConstructorUsedError;
-  num get value => throw _privateConstructorUsedError;
-  String get dataType => throw _privateConstructorUsedError;
-  String get unit => throw _privateConstructorUsedError;
-  String? get deviceType => throw _privateConstructorUsedError;
-  String? get platformType => throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType)
-        cumulativeQuantityData,
-    required TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType,
-            String? sourceName,
-            String? sourceId,
-            String? deviceId)
-        discreteQuantityData,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType)?
-        cumulativeQuantityData,
-    TResult? Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType,
-            String? sourceName,
-            String? sourceId,
-            String? deviceId)?
-        discreteQuantityData,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType)?
-        cumulativeQuantityData,
-    TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType,
-            String? sourceName,
-            String? sourceId,
-            String? deviceId)?
-        discreteQuantityData,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(CumulativeQuantityData value)
-        cumulativeQuantityData,
-    required TResult Function(DiscreteQuantityData value) discreteQuantityData,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(CumulativeQuantityData value)? cumulativeQuantityData,
-    TResult? Function(DiscreteQuantityData value)? discreteQuantityData,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(CumulativeQuantityData value)? cumulativeQuantityData,
-    TResult Function(DiscreteQuantityData value)? discreteQuantityData,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-
-  /// Serializes this QuantitativeData to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  DateTime get dateFrom;
+  DateTime get dateTo;
+  num get value;
+  String get dataType;
+  String get unit;
+  String? get deviceType;
+  String? get platformType;
 
   /// Create a copy of QuantitativeData
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
   $QuantitativeDataCopyWith<QuantitativeData> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+      _$QuantitativeDataCopyWithImpl<QuantitativeData>(
+          this as QuantitativeData, _$identity);
 
-/// @nodoc
-abstract class $QuantitativeDataCopyWith<$Res> {
-  factory $QuantitativeDataCopyWith(
-          QuantitativeData value, $Res Function(QuantitativeData) then) =
-      _$QuantitativeDataCopyWithImpl<$Res, QuantitativeData>;
-  @useResult
-  $Res call(
-      {DateTime dateFrom,
-      DateTime dateTo,
-      num value,
-      String dataType,
-      String unit,
-      String? deviceType,
-      String? platformType});
-}
-
-/// @nodoc
-class _$QuantitativeDataCopyWithImpl<$Res, $Val extends QuantitativeData>
-    implements $QuantitativeDataCopyWith<$Res> {
-  _$QuantitativeDataCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of QuantitativeData
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? value = null,
-    Object? dataType = null,
-    Object? unit = null,
-    Object? deviceType = freezed,
-    Object? platformType = freezed,
-  }) {
-    return _then(_value.copyWith(
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      value: null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as num,
-      dataType: null == dataType
-          ? _value.dataType
-          : dataType // ignore: cast_nullable_to_non_nullable
-              as String,
-      unit: null == unit
-          ? _value.unit
-          : unit // ignore: cast_nullable_to_non_nullable
-              as String,
-      deviceType: freezed == deviceType
-          ? _value.deviceType
-          : deviceType // ignore: cast_nullable_to_non_nullable
-              as String?,
-      platformType: freezed == platformType
-          ? _value.platformType
-          : platformType // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$CumulativeQuantityDataImplCopyWith<$Res>
-    implements $QuantitativeDataCopyWith<$Res> {
-  factory _$$CumulativeQuantityDataImplCopyWith(
-          _$CumulativeQuantityDataImpl value,
-          $Res Function(_$CumulativeQuantityDataImpl) then) =
-      __$$CumulativeQuantityDataImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {DateTime dateFrom,
-      DateTime dateTo,
-      num value,
-      String dataType,
-      String unit,
-      String? deviceType,
-      String? platformType});
-}
-
-/// @nodoc
-class __$$CumulativeQuantityDataImplCopyWithImpl<$Res>
-    extends _$QuantitativeDataCopyWithImpl<$Res, _$CumulativeQuantityDataImpl>
-    implements _$$CumulativeQuantityDataImplCopyWith<$Res> {
-  __$$CumulativeQuantityDataImplCopyWithImpl(
-      _$CumulativeQuantityDataImpl _value,
-      $Res Function(_$CumulativeQuantityDataImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of QuantitativeData
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? value = null,
-    Object? dataType = null,
-    Object? unit = null,
-    Object? deviceType = freezed,
-    Object? platformType = freezed,
-  }) {
-    return _then(_$CumulativeQuantityDataImpl(
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      value: null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as num,
-      dataType: null == dataType
-          ? _value.dataType
-          : dataType // ignore: cast_nullable_to_non_nullable
-              as String,
-      unit: null == unit
-          ? _value.unit
-          : unit // ignore: cast_nullable_to_non_nullable
-              as String,
-      deviceType: freezed == deviceType
-          ? _value.deviceType
-          : deviceType // ignore: cast_nullable_to_non_nullable
-              as String?,
-      platformType: freezed == platformType
-          ? _value.platformType
-          : platformType // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$CumulativeQuantityDataImpl implements CumulativeQuantityData {
-  const _$CumulativeQuantityDataImpl(
-      {required this.dateFrom,
-      required this.dateTo,
-      required this.value,
-      required this.dataType,
-      required this.unit,
-      this.deviceType,
-      this.platformType,
-      final String? $type})
-      : $type = $type ?? 'cumulativeQuantityData';
-
-  factory _$CumulativeQuantityDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$CumulativeQuantityDataImplFromJson(json);
-
-  @override
-  final DateTime dateFrom;
-  @override
-  final DateTime dateTo;
-  @override
-  final num value;
-  @override
-  final String dataType;
-  @override
-  final String unit;
-  @override
-  final String? deviceType;
-  @override
-  final String? platformType;
-
-  @JsonKey(name: 'runtimeType')
-  final String $type;
-
-  @override
-  String toString() {
-    return 'QuantitativeData.cumulativeQuantityData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataType: $dataType, unit: $unit, deviceType: $deviceType, platformType: $platformType)';
-  }
+  /// Serializes this QuantitativeData to a JSON map.
+  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$CumulativeQuantityDataImpl &&
+            other is QuantitativeData &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -352,74 +68,181 @@ class _$CumulativeQuantityDataImpl implements CumulativeQuantityData {
   int get hashCode => Object.hash(runtimeType, dateFrom, dateTo, value,
       dataType, unit, deviceType, platformType);
 
+  @override
+  String toString() {
+    return 'QuantitativeData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataType: $dataType, unit: $unit, deviceType: $deviceType, platformType: $platformType)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $QuantitativeDataCopyWith<$Res> {
+  factory $QuantitativeDataCopyWith(
+          QuantitativeData value, $Res Function(QuantitativeData) _then) =
+      _$QuantitativeDataCopyWithImpl;
+  @useResult
+  $Res call(
+      {DateTime dateFrom,
+      DateTime dateTo,
+      num value,
+      String dataType,
+      String unit,
+      String? deviceType,
+      String? platformType});
+}
+
+/// @nodoc
+class _$QuantitativeDataCopyWithImpl<$Res>
+    implements $QuantitativeDataCopyWith<$Res> {
+  _$QuantitativeDataCopyWithImpl(this._self, this._then);
+
+  final QuantitativeData _self;
+  final $Res Function(QuantitativeData) _then;
+
   /// Create a copy of QuantitativeData
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
   @pragma('vm:prefer-inline')
-  _$$CumulativeQuantityDataImplCopyWith<_$CumulativeQuantityDataImpl>
-      get copyWith => __$$CumulativeQuantityDataImplCopyWithImpl<
-          _$CumulativeQuantityDataImpl>(this, _$identity);
-
   @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType)
-        cumulativeQuantityData,
-    required TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType,
-            String? sourceName,
-            String? sourceId,
-            String? deviceId)
-        discreteQuantityData,
+  $Res call({
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? value = null,
+    Object? dataType = null,
+    Object? unit = null,
+    Object? deviceType = freezed,
+    Object? platformType = freezed,
   }) {
-    return cumulativeQuantityData(
-        dateFrom, dateTo, value, dataType, unit, deviceType, platformType);
+    return _then(_self.copyWith(
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      value: null == value
+          ? _self.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as num,
+      dataType: null == dataType
+          ? _self.dataType
+          : dataType // ignore: cast_nullable_to_non_nullable
+              as String,
+      unit: null == unit
+          ? _self.unit
+          : unit // ignore: cast_nullable_to_non_nullable
+              as String,
+      deviceType: freezed == deviceType
+          ? _self.deviceType
+          : deviceType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      platformType: freezed == platformType
+          ? _self.platformType
+          : platformType // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [QuantitativeData].
+extension QuantitativeDataPatterns on QuantitativeData {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(CumulativeQuantityData value)? cumulativeQuantityData,
+    TResult Function(DiscreteQuantityData value)? discreteQuantityData,
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case CumulativeQuantityData() when cumulativeQuantityData != null:
+        return cumulativeQuantityData(_that);
+      case DiscreteQuantityData() when discreteQuantityData != null:
+        return discreteQuantityData(_that);
+      case _:
+        return orElse();
+    }
   }
 
-  @override
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType)?
+  TResult map<TResult extends Object?>({
+    required TResult Function(CumulativeQuantityData value)
         cumulativeQuantityData,
-    TResult? Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType,
-            String? sourceName,
-            String? sourceId,
-            String? deviceId)?
-        discreteQuantityData,
+    required TResult Function(DiscreteQuantityData value) discreteQuantityData,
   }) {
-    return cumulativeQuantityData?.call(
-        dateFrom, dateTo, value, dataType, unit, deviceType, platformType);
+    final _that = this;
+    switch (_that) {
+      case CumulativeQuantityData():
+        return cumulativeQuantityData(_that);
+      case DiscreteQuantityData():
+        return discreteQuantityData(_that);
+    }
   }
 
-  @override
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(CumulativeQuantityData value)? cumulativeQuantityData,
+    TResult? Function(DiscreteQuantityData value)? discreteQuantityData,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case CumulativeQuantityData() when cumulativeQuantityData != null:
+        return cumulativeQuantityData(_that);
+      case DiscreteQuantityData() when discreteQuantityData != null:
+        return discreteQuantityData(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(
@@ -445,183 +268,148 @@ class _$CumulativeQuantityDataImpl implements CumulativeQuantityData {
         discreteQuantityData,
     required TResult orElse(),
   }) {
-    if (cumulativeQuantityData != null) {
-      return cumulativeQuantityData(
-          dateFrom, dateTo, value, dataType, unit, deviceType, platformType);
+    final _that = this;
+    switch (_that) {
+      case CumulativeQuantityData() when cumulativeQuantityData != null:
+        return cumulativeQuantityData(_that.dateFrom, _that.dateTo, _that.value,
+            _that.dataType, _that.unit, _that.deviceType, _that.platformType);
+      case DiscreteQuantityData() when discreteQuantityData != null:
+        return discreteQuantityData(
+            _that.dateFrom,
+            _that.dateTo,
+            _that.value,
+            _that.dataType,
+            _that.unit,
+            _that.deviceType,
+            _that.platformType,
+            _that.sourceName,
+            _that.sourceId,
+            _that.deviceId);
+      case _:
+        return orElse();
     }
-    return orElse();
   }
 
-  @override
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(CumulativeQuantityData value)
+  TResult when<TResult extends Object?>({
+    required TResult Function(
+            DateTime dateFrom,
+            DateTime dateTo,
+            num value,
+            String dataType,
+            String unit,
+            String? deviceType,
+            String? platformType)
         cumulativeQuantityData,
-    required TResult Function(DiscreteQuantityData value) discreteQuantityData,
+    required TResult Function(
+            DateTime dateFrom,
+            DateTime dateTo,
+            num value,
+            String dataType,
+            String unit,
+            String? deviceType,
+            String? platformType,
+            String? sourceName,
+            String? sourceId,
+            String? deviceId)
+        discreteQuantityData,
   }) {
-    return cumulativeQuantityData(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(CumulativeQuantityData value)? cumulativeQuantityData,
-    TResult? Function(DiscreteQuantityData value)? discreteQuantityData,
-  }) {
-    return cumulativeQuantityData?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(CumulativeQuantityData value)? cumulativeQuantityData,
-    TResult Function(DiscreteQuantityData value)? discreteQuantityData,
-    required TResult orElse(),
-  }) {
-    if (cumulativeQuantityData != null) {
-      return cumulativeQuantityData(this);
+    final _that = this;
+    switch (_that) {
+      case CumulativeQuantityData():
+        return cumulativeQuantityData(_that.dateFrom, _that.dateTo, _that.value,
+            _that.dataType, _that.unit, _that.deviceType, _that.platformType);
+      case DiscreteQuantityData():
+        return discreteQuantityData(
+            _that.dateFrom,
+            _that.dateTo,
+            _that.value,
+            _that.dataType,
+            _that.unit,
+            _that.deviceType,
+            _that.platformType,
+            _that.sourceName,
+            _that.sourceId,
+            _that.deviceId);
     }
-    return orElse();
   }
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$CumulativeQuantityDataImplToJson(
-      this,
-    );
-  }
-}
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
 
-abstract class CumulativeQuantityData implements QuantitativeData {
-  const factory CumulativeQuantityData(
-      {required final DateTime dateFrom,
-      required final DateTime dateTo,
-      required final num value,
-      required final String dataType,
-      required final String unit,
-      final String? deviceType,
-      final String? platformType}) = _$CumulativeQuantityDataImpl;
-
-  factory CumulativeQuantityData.fromJson(Map<String, dynamic> json) =
-      _$CumulativeQuantityDataImpl.fromJson;
-
-  @override
-  DateTime get dateFrom;
-  @override
-  DateTime get dateTo;
-  @override
-  num get value;
-  @override
-  String get dataType;
-  @override
-  String get unit;
-  @override
-  String? get deviceType;
-  @override
-  String? get platformType;
-
-  /// Create a copy of QuantitativeData
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$CumulativeQuantityDataImplCopyWith<_$CumulativeQuantityDataImpl>
-      get copyWith => throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class _$$DiscreteQuantityDataImplCopyWith<$Res>
-    implements $QuantitativeDataCopyWith<$Res> {
-  factory _$$DiscreteQuantityDataImplCopyWith(_$DiscreteQuantityDataImpl value,
-          $Res Function(_$DiscreteQuantityDataImpl) then) =
-      __$$DiscreteQuantityDataImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {DateTime dateFrom,
-      DateTime dateTo,
-      num value,
-      String dataType,
-      String unit,
-      String? deviceType,
-      String? platformType,
-      String? sourceName,
-      String? sourceId,
-      String? deviceId});
-}
-
-/// @nodoc
-class __$$DiscreteQuantityDataImplCopyWithImpl<$Res>
-    extends _$QuantitativeDataCopyWithImpl<$Res, _$DiscreteQuantityDataImpl>
-    implements _$$DiscreteQuantityDataImplCopyWith<$Res> {
-  __$$DiscreteQuantityDataImplCopyWithImpl(_$DiscreteQuantityDataImpl _value,
-      $Res Function(_$DiscreteQuantityDataImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of QuantitativeData
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? value = null,
-    Object? dataType = null,
-    Object? unit = null,
-    Object? deviceType = freezed,
-    Object? platformType = freezed,
-    Object? sourceName = freezed,
-    Object? sourceId = freezed,
-    Object? deviceId = freezed,
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(
+            DateTime dateFrom,
+            DateTime dateTo,
+            num value,
+            String dataType,
+            String unit,
+            String? deviceType,
+            String? platformType)?
+        cumulativeQuantityData,
+    TResult? Function(
+            DateTime dateFrom,
+            DateTime dateTo,
+            num value,
+            String dataType,
+            String unit,
+            String? deviceType,
+            String? platformType,
+            String? sourceName,
+            String? sourceId,
+            String? deviceId)?
+        discreteQuantityData,
   }) {
-    return _then(_$DiscreteQuantityDataImpl(
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      value: null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as num,
-      dataType: null == dataType
-          ? _value.dataType
-          : dataType // ignore: cast_nullable_to_non_nullable
-              as String,
-      unit: null == unit
-          ? _value.unit
-          : unit // ignore: cast_nullable_to_non_nullable
-              as String,
-      deviceType: freezed == deviceType
-          ? _value.deviceType
-          : deviceType // ignore: cast_nullable_to_non_nullable
-              as String?,
-      platformType: freezed == platformType
-          ? _value.platformType
-          : platformType // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sourceName: freezed == sourceName
-          ? _value.sourceName
-          : sourceName // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sourceId: freezed == sourceId
-          ? _value.sourceId
-          : sourceId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      deviceId: freezed == deviceId
-          ? _value.deviceId
-          : deviceId // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
+    final _that = this;
+    switch (_that) {
+      case CumulativeQuantityData() when cumulativeQuantityData != null:
+        return cumulativeQuantityData(_that.dateFrom, _that.dateTo, _that.value,
+            _that.dataType, _that.unit, _that.deviceType, _that.platformType);
+      case DiscreteQuantityData() when discreteQuantityData != null:
+        return discreteQuantityData(
+            _that.dateFrom,
+            _that.dateTo,
+            _that.value,
+            _that.dataType,
+            _that.unit,
+            _that.deviceType,
+            _that.platformType,
+            _that.sourceName,
+            _that.sourceId,
+            _that.deviceId);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$DiscreteQuantityDataImpl implements DiscreteQuantityData {
-  const _$DiscreteQuantityDataImpl(
+class CumulativeQuantityData implements QuantitativeData {
+  const CumulativeQuantityData(
       {required this.dateFrom,
       required this.dateTo,
       required this.value,
@@ -629,14 +417,10 @@ class _$DiscreteQuantityDataImpl implements DiscreteQuantityData {
       required this.unit,
       this.deviceType,
       this.platformType,
-      this.sourceName,
-      this.sourceId,
-      this.deviceId,
       final String? $type})
-      : $type = $type ?? 'discreteQuantityData';
-
-  factory _$DiscreteQuantityDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$DiscreteQuantityDataImplFromJson(json);
+      : $type = $type ?? 'cumulativeQuantityData';
+  factory CumulativeQuantityData.fromJson(Map<String, dynamic> json) =>
+      _$CumulativeQuantityDataFromJson(json);
 
   @override
   final DateTime dateFrom;
@@ -652,26 +436,188 @@ class _$DiscreteQuantityDataImpl implements DiscreteQuantityData {
   final String? deviceType;
   @override
   final String? platformType;
-  @override
-  final String? sourceName;
-  @override
-  final String? sourceId;
-  @override
-  final String? deviceId;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'QuantitativeData.discreteQuantityData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataType: $dataType, unit: $unit, deviceType: $deviceType, platformType: $platformType, sourceName: $sourceName, sourceId: $sourceId, deviceId: $deviceId)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $CumulativeQuantityDataCopyWith<CumulativeQuantityData> get copyWith =>
+      _$CumulativeQuantityDataCopyWithImpl<CumulativeQuantityData>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$CumulativeQuantityDataToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DiscreteQuantityDataImpl &&
+            other is CumulativeQuantityData &&
+            (identical(other.dateFrom, dateFrom) ||
+                other.dateFrom == dateFrom) &&
+            (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
+            (identical(other.value, value) || other.value == value) &&
+            (identical(other.dataType, dataType) ||
+                other.dataType == dataType) &&
+            (identical(other.unit, unit) || other.unit == unit) &&
+            (identical(other.deviceType, deviceType) ||
+                other.deviceType == deviceType) &&
+            (identical(other.platformType, platformType) ||
+                other.platformType == platformType));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, dateFrom, dateTo, value,
+      dataType, unit, deviceType, platformType);
+
+  @override
+  String toString() {
+    return 'QuantitativeData.cumulativeQuantityData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataType: $dataType, unit: $unit, deviceType: $deviceType, platformType: $platformType)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $CumulativeQuantityDataCopyWith<$Res>
+    implements $QuantitativeDataCopyWith<$Res> {
+  factory $CumulativeQuantityDataCopyWith(CumulativeQuantityData value,
+          $Res Function(CumulativeQuantityData) _then) =
+      _$CumulativeQuantityDataCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {DateTime dateFrom,
+      DateTime dateTo,
+      num value,
+      String dataType,
+      String unit,
+      String? deviceType,
+      String? platformType});
+}
+
+/// @nodoc
+class _$CumulativeQuantityDataCopyWithImpl<$Res>
+    implements $CumulativeQuantityDataCopyWith<$Res> {
+  _$CumulativeQuantityDataCopyWithImpl(this._self, this._then);
+
+  final CumulativeQuantityData _self;
+  final $Res Function(CumulativeQuantityData) _then;
+
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? value = null,
+    Object? dataType = null,
+    Object? unit = null,
+    Object? deviceType = freezed,
+    Object? platformType = freezed,
+  }) {
+    return _then(CumulativeQuantityData(
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      value: null == value
+          ? _self.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as num,
+      dataType: null == dataType
+          ? _self.dataType
+          : dataType // ignore: cast_nullable_to_non_nullable
+              as String,
+      unit: null == unit
+          ? _self.unit
+          : unit // ignore: cast_nullable_to_non_nullable
+              as String,
+      deviceType: freezed == deviceType
+          ? _self.deviceType
+          : deviceType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      platformType: freezed == platformType
+          ? _self.platformType
+          : platformType // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class DiscreteQuantityData implements QuantitativeData {
+  const DiscreteQuantityData(
+      {required this.dateFrom,
+      required this.dateTo,
+      required this.value,
+      required this.dataType,
+      required this.unit,
+      this.deviceType,
+      this.platformType,
+      this.sourceName,
+      this.sourceId,
+      this.deviceId,
+      final String? $type})
+      : $type = $type ?? 'discreteQuantityData';
+  factory DiscreteQuantityData.fromJson(Map<String, dynamic> json) =>
+      _$DiscreteQuantityDataFromJson(json);
+
+  @override
+  final DateTime dateFrom;
+  @override
+  final DateTime dateTo;
+  @override
+  final num value;
+  @override
+  final String dataType;
+  @override
+  final String unit;
+  @override
+  final String? deviceType;
+  @override
+  final String? platformType;
+  final String? sourceName;
+  final String? sourceId;
+  final String? deviceId;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DiscreteQuantityDataCopyWith<DiscreteQuantityData> get copyWith =>
+      _$DiscreteQuantityDataCopyWithImpl<DiscreteQuantityData>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$DiscreteQuantityDataToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is DiscreteQuantityData &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -696,185 +642,100 @@ class _$DiscreteQuantityDataImpl implements DiscreteQuantityData {
   int get hashCode => Object.hash(runtimeType, dateFrom, dateTo, value,
       dataType, unit, deviceType, platformType, sourceName, sourceId, deviceId);
 
+  @override
+  String toString() {
+    return 'QuantitativeData.discreteQuantityData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataType: $dataType, unit: $unit, deviceType: $deviceType, platformType: $platformType, sourceName: $sourceName, sourceId: $sourceId, deviceId: $deviceId)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $DiscreteQuantityDataCopyWith<$Res>
+    implements $QuantitativeDataCopyWith<$Res> {
+  factory $DiscreteQuantityDataCopyWith(DiscreteQuantityData value,
+          $Res Function(DiscreteQuantityData) _then) =
+      _$DiscreteQuantityDataCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {DateTime dateFrom,
+      DateTime dateTo,
+      num value,
+      String dataType,
+      String unit,
+      String? deviceType,
+      String? platformType,
+      String? sourceName,
+      String? sourceId,
+      String? deviceId});
+}
+
+/// @nodoc
+class _$DiscreteQuantityDataCopyWithImpl<$Res>
+    implements $DiscreteQuantityDataCopyWith<$Res> {
+  _$DiscreteQuantityDataCopyWithImpl(this._self, this._then);
+
+  final DiscreteQuantityData _self;
+  final $Res Function(DiscreteQuantityData) _then;
+
   /// Create a copy of QuantitativeData
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$DiscreteQuantityDataImplCopyWith<_$DiscreteQuantityDataImpl>
-      get copyWith =>
-          __$$DiscreteQuantityDataImplCopyWithImpl<_$DiscreteQuantityDataImpl>(
-              this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType)
-        cumulativeQuantityData,
-    required TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType,
-            String? sourceName,
-            String? sourceId,
-            String? deviceId)
-        discreteQuantityData,
+  $Res call({
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? value = null,
+    Object? dataType = null,
+    Object? unit = null,
+    Object? deviceType = freezed,
+    Object? platformType = freezed,
+    Object? sourceName = freezed,
+    Object? sourceId = freezed,
+    Object? deviceId = freezed,
   }) {
-    return discreteQuantityData(dateFrom, dateTo, value, dataType, unit,
-        deviceType, platformType, sourceName, sourceId, deviceId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType)?
-        cumulativeQuantityData,
-    TResult? Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType,
-            String? sourceName,
-            String? sourceId,
-            String? deviceId)?
-        discreteQuantityData,
-  }) {
-    return discreteQuantityData?.call(dateFrom, dateTo, value, dataType, unit,
-        deviceType, platformType, sourceName, sourceId, deviceId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType)?
-        cumulativeQuantityData,
-    TResult Function(
-            DateTime dateFrom,
-            DateTime dateTo,
-            num value,
-            String dataType,
-            String unit,
-            String? deviceType,
-            String? platformType,
-            String? sourceName,
-            String? sourceId,
-            String? deviceId)?
-        discreteQuantityData,
-    required TResult orElse(),
-  }) {
-    if (discreteQuantityData != null) {
-      return discreteQuantityData(dateFrom, dateTo, value, dataType, unit,
-          deviceType, platformType, sourceName, sourceId, deviceId);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(CumulativeQuantityData value)
-        cumulativeQuantityData,
-    required TResult Function(DiscreteQuantityData value) discreteQuantityData,
-  }) {
-    return discreteQuantityData(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(CumulativeQuantityData value)? cumulativeQuantityData,
-    TResult? Function(DiscreteQuantityData value)? discreteQuantityData,
-  }) {
-    return discreteQuantityData?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(CumulativeQuantityData value)? cumulativeQuantityData,
-    TResult Function(DiscreteQuantityData value)? discreteQuantityData,
-    required TResult orElse(),
-  }) {
-    if (discreteQuantityData != null) {
-      return discreteQuantityData(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$DiscreteQuantityDataImplToJson(
-      this,
-    );
+    return _then(DiscreteQuantityData(
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      value: null == value
+          ? _self.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as num,
+      dataType: null == dataType
+          ? _self.dataType
+          : dataType // ignore: cast_nullable_to_non_nullable
+              as String,
+      unit: null == unit
+          ? _self.unit
+          : unit // ignore: cast_nullable_to_non_nullable
+              as String,
+      deviceType: freezed == deviceType
+          ? _self.deviceType
+          : deviceType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      platformType: freezed == platformType
+          ? _self.platformType
+          : platformType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sourceName: freezed == sourceName
+          ? _self.sourceName
+          : sourceName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sourceId: freezed == sourceId
+          ? _self.sourceId
+          : sourceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      deviceId: freezed == deviceId
+          ? _self.deviceId
+          : deviceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
   }
 }
 
-abstract class DiscreteQuantityData implements QuantitativeData {
-  const factory DiscreteQuantityData(
-      {required final DateTime dateFrom,
-      required final DateTime dateTo,
-      required final num value,
-      required final String dataType,
-      required final String unit,
-      final String? deviceType,
-      final String? platformType,
-      final String? sourceName,
-      final String? sourceId,
-      final String? deviceId}) = _$DiscreteQuantityDataImpl;
-
-  factory DiscreteQuantityData.fromJson(Map<String, dynamic> json) =
-      _$DiscreteQuantityDataImpl.fromJson;
-
-  @override
-  DateTime get dateFrom;
-  @override
-  DateTime get dateTo;
-  @override
-  num get value;
-  @override
-  String get dataType;
-  @override
-  String get unit;
-  @override
-  String? get deviceType;
-  @override
-  String? get platformType;
-  String? get sourceName;
-  String? get sourceId;
-  String? get deviceId;
-
-  /// Create a copy of QuantitativeData
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DiscreteQuantityDataImplCopyWith<_$DiscreteQuantityDataImpl>
-      get copyWith => throw _privateConstructorUsedError;
-}
+// dart format on

@@ -87,7 +87,8 @@ class ChecklistCompletionFunctions {
 
 /// Response from the suggest checklist completion function
 @freezed
-class ChecklistCompletionSuggestion with _$ChecklistCompletionSuggestion {
+abstract class ChecklistCompletionSuggestion
+    with _$ChecklistCompletionSuggestion {
   const factory ChecklistCompletionSuggestion({
     required String checklistItemId,
     required String reason,
@@ -106,7 +107,7 @@ enum ChecklistCompletionConfidence {
 
 /// Response from the add checklist item function
 @freezed
-class AddChecklistItemResult with _$AddChecklistItemResult {
+abstract class AddChecklistItemResult with _$AddChecklistItemResult {
   const factory AddChecklistItemResult({
     required String checklistId,
     required String checklistItemId,

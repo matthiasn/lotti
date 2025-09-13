@@ -4,7 +4,7 @@ part 'ai_input.freezed.dart';
 part 'ai_input.g.dart';
 
 @freezed
-class AiInputTaskObject with _$AiInputTaskObject {
+abstract class AiInputTaskObject with _$AiInputTaskObject {
   const factory AiInputTaskObject({
     required String title,
     required String status,
@@ -21,7 +21,7 @@ class AiInputTaskObject with _$AiInputTaskObject {
 }
 
 @freezed
-class AiActionItem with _$AiActionItem {
+abstract class AiActionItem with _$AiActionItem {
   const factory AiActionItem({
     required String title,
     required bool completed,
@@ -35,7 +35,7 @@ class AiActionItem with _$AiActionItem {
 }
 
 @freezed
-class AiInputLogEntryObject with _$AiInputLogEntryObject {
+abstract class AiInputLogEntryObject with _$AiInputLogEntryObject {
   const factory AiInputLogEntryObject({
     required DateTime creationTimestamp,
     required String loggedDuration,
