@@ -12,7 +12,7 @@ enum HabitDisplayFilter {
 }
 
 @freezed
-class HabitsState with _$HabitsState {
+abstract class HabitsState with _$HabitsState {
   factory HabitsState({
     required List<HabitDefinition> habitDefinitions,
     required List<HabitDefinition> openHabits,

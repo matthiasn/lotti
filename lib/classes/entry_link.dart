@@ -5,7 +5,7 @@ part 'entry_link.g.dart';
 part 'entry_link.freezed.dart';
 
 @freezed
-class EntryLink with _$EntryLink {
+abstract class EntryLink with _$EntryLink {
   const factory EntryLink.basic({
     required String id,
     required String fromId,

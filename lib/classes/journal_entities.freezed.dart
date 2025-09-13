@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,169 +9,97 @@ part of 'journal_entities.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-Metadata _$MetadataFromJson(Map<String, dynamic> json) {
-  return _Metadata.fromJson(json);
-}
 
 /// @nodoc
 mixin _$Metadata {
-  String get id => throw _privateConstructorUsedError;
-  DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime get updatedAt => throw _privateConstructorUsedError;
-  DateTime get dateFrom => throw _privateConstructorUsedError;
-  DateTime get dateTo => throw _privateConstructorUsedError;
-  String? get categoryId => throw _privateConstructorUsedError;
-  List<String>? get tags => throw _privateConstructorUsedError;
-  List<String>? get tagIds => throw _privateConstructorUsedError;
-  int? get utcOffset => throw _privateConstructorUsedError;
-  String? get timezone => throw _privateConstructorUsedError;
-  VectorClock? get vectorClock => throw _privateConstructorUsedError;
-  DateTime? get deletedAt => throw _privateConstructorUsedError;
-  EntryFlag? get flag => throw _privateConstructorUsedError;
-  bool? get starred => throw _privateConstructorUsedError;
-  bool? get private => throw _privateConstructorUsedError;
-
-  /// Serializes this Metadata to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get id;
+  DateTime get createdAt;
+  DateTime get updatedAt;
+  DateTime get dateFrom;
+  DateTime get dateTo;
+  String? get categoryId;
+  List<String>? get tags;
+  List<String>? get tagIds;
+  int? get utcOffset;
+  String? get timezone;
+  VectorClock? get vectorClock;
+  DateTime? get deletedAt;
+  EntryFlag? get flag;
+  bool? get starred;
+  bool? get private;
 
   /// Create a copy of Metadata
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $MetadataCopyWith<Metadata> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $MetadataCopyWith<$Res> {
-  factory $MetadataCopyWith(Metadata value, $Res Function(Metadata) then) =
-      _$MetadataCopyWithImpl<$Res, Metadata>;
-  @useResult
-  $Res call(
-      {String id,
-      DateTime createdAt,
-      DateTime updatedAt,
-      DateTime dateFrom,
-      DateTime dateTo,
-      String? categoryId,
-      List<String>? tags,
-      List<String>? tagIds,
-      int? utcOffset,
-      String? timezone,
-      VectorClock? vectorClock,
-      DateTime? deletedAt,
-      EntryFlag? flag,
-      bool? starred,
-      bool? private});
-}
-
-/// @nodoc
-class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
-    implements $MetadataCopyWith<$Res> {
-  _$MetadataCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of Metadata
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<Metadata> get copyWith =>
+      _$MetadataCopyWithImpl<Metadata>(this as Metadata, _$identity);
+
+  /// Serializes this Metadata to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? id = null,
-    Object? createdAt = null,
-    Object? updatedAt = null,
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? categoryId = freezed,
-    Object? tags = freezed,
-    Object? tagIds = freezed,
-    Object? utcOffset = freezed,
-    Object? timezone = freezed,
-    Object? vectorClock = freezed,
-    Object? deletedAt = freezed,
-    Object? flag = freezed,
-    Object? starred = freezed,
-    Object? private = freezed,
-  }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      updatedAt: null == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      categoryId: freezed == categoryId
-          ? _value.categoryId
-          : categoryId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      tags: freezed == tags
-          ? _value.tags
-          : tags // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      tagIds: freezed == tagIds
-          ? _value.tagIds
-          : tagIds // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      utcOffset: freezed == utcOffset
-          ? _value.utcOffset
-          : utcOffset // ignore: cast_nullable_to_non_nullable
-              as int?,
-      timezone: freezed == timezone
-          ? _value.timezone
-          : timezone // ignore: cast_nullable_to_non_nullable
-              as String?,
-      vectorClock: freezed == vectorClock
-          ? _value.vectorClock
-          : vectorClock // ignore: cast_nullable_to_non_nullable
-              as VectorClock?,
-      deletedAt: freezed == deletedAt
-          ? _value.deletedAt
-          : deletedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      flag: freezed == flag
-          ? _value.flag
-          : flag // ignore: cast_nullable_to_non_nullable
-              as EntryFlag?,
-      starred: freezed == starred
-          ? _value.starred
-          : starred // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      private: freezed == private
-          ? _value.private
-          : private // ignore: cast_nullable_to_non_nullable
-              as bool?,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is Metadata &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.dateFrom, dateFrom) ||
+                other.dateFrom == dateFrom) &&
+            (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
+            (identical(other.categoryId, categoryId) ||
+                other.categoryId == categoryId) &&
+            const DeepCollectionEquality().equals(other.tags, tags) &&
+            const DeepCollectionEquality().equals(other.tagIds, tagIds) &&
+            (identical(other.utcOffset, utcOffset) ||
+                other.utcOffset == utcOffset) &&
+            (identical(other.timezone, timezone) ||
+                other.timezone == timezone) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt) &&
+            (identical(other.flag, flag) || other.flag == flag) &&
+            (identical(other.starred, starred) || other.starred == starred) &&
+            (identical(other.private, private) || other.private == private));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      createdAt,
+      updatedAt,
+      dateFrom,
+      dateTo,
+      categoryId,
+      const DeepCollectionEquality().hash(tags),
+      const DeepCollectionEquality().hash(tagIds),
+      utcOffset,
+      timezone,
+      vectorClock,
+      deletedAt,
+      flag,
+      starred,
+      private);
+
+  @override
+  String toString() {
+    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
   }
 }
 
 /// @nodoc
-abstract class _$$MetadataImplCopyWith<$Res>
-    implements $MetadataCopyWith<$Res> {
-  factory _$$MetadataImplCopyWith(
-          _$MetadataImpl value, $Res Function(_$MetadataImpl) then) =
-      __$$MetadataImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $MetadataCopyWith<$Res> {
+  factory $MetadataCopyWith(Metadata value, $Res Function(Metadata) _then) =
+      _$MetadataCopyWithImpl;
   @useResult
   $Res call(
       {String id,
@@ -192,12 +120,11 @@ abstract class _$$MetadataImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$MetadataImplCopyWithImpl<$Res>
-    extends _$MetadataCopyWithImpl<$Res, _$MetadataImpl>
-    implements _$$MetadataImplCopyWith<$Res> {
-  __$$MetadataImplCopyWithImpl(
-      _$MetadataImpl _value, $Res Function(_$MetadataImpl) _then)
-      : super(_value, _then);
+class _$MetadataCopyWithImpl<$Res> implements $MetadataCopyWith<$Res> {
+  _$MetadataCopyWithImpl(this._self, this._then);
+
+  final Metadata _self;
+  final $Res Function(Metadata) _then;
 
   /// Create a copy of Metadata
   /// with the given fields replaced by the non-null parameter values.
@@ -220,75 +147,325 @@ class __$$MetadataImplCopyWithImpl<$Res>
     Object? starred = freezed,
     Object? private = freezed,
   }) {
-    return _then(_$MetadataImpl(
+    return _then(_self.copyWith(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       updatedAt: null == updatedAt
-          ? _value.updatedAt
+          ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       dateFrom: null == dateFrom
-          ? _value.dateFrom
+          ? _self.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
               as DateTime,
       dateTo: null == dateTo
-          ? _value.dateTo
+          ? _self.dateTo
           : dateTo // ignore: cast_nullable_to_non_nullable
               as DateTime,
       categoryId: freezed == categoryId
-          ? _value.categoryId
+          ? _self.categoryId
           : categoryId // ignore: cast_nullable_to_non_nullable
               as String?,
       tags: freezed == tags
-          ? _value._tags
+          ? _self.tags
           : tags // ignore: cast_nullable_to_non_nullable
               as List<String>?,
       tagIds: freezed == tagIds
-          ? _value._tagIds
+          ? _self.tagIds
           : tagIds // ignore: cast_nullable_to_non_nullable
               as List<String>?,
       utcOffset: freezed == utcOffset
-          ? _value.utcOffset
+          ? _self.utcOffset
           : utcOffset // ignore: cast_nullable_to_non_nullable
               as int?,
       timezone: freezed == timezone
-          ? _value.timezone
+          ? _self.timezone
           : timezone // ignore: cast_nullable_to_non_nullable
               as String?,
       vectorClock: freezed == vectorClock
-          ? _value.vectorClock
+          ? _self.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
       deletedAt: freezed == deletedAt
-          ? _value.deletedAt
+          ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
       flag: freezed == flag
-          ? _value.flag
+          ? _self.flag
           : flag // ignore: cast_nullable_to_non_nullable
               as EntryFlag?,
       starred: freezed == starred
-          ? _value.starred
+          ? _self.starred
           : starred // ignore: cast_nullable_to_non_nullable
               as bool?,
       private: freezed == private
-          ? _value.private
+          ? _self.private
           : private // ignore: cast_nullable_to_non_nullable
               as bool?,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [Metadata].
+extension MetadataPatterns on Metadata {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_Metadata value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _Metadata() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_Metadata value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Metadata():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_Metadata value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Metadata() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            DateTime dateFrom,
+            DateTime dateTo,
+            String? categoryId,
+            List<String>? tags,
+            List<String>? tagIds,
+            int? utcOffset,
+            String? timezone,
+            VectorClock? vectorClock,
+            DateTime? deletedAt,
+            EntryFlag? flag,
+            bool? starred,
+            bool? private)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _Metadata() when $default != null:
+        return $default(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.dateFrom,
+            _that.dateTo,
+            _that.categoryId,
+            _that.tags,
+            _that.tagIds,
+            _that.utcOffset,
+            _that.timezone,
+            _that.vectorClock,
+            _that.deletedAt,
+            _that.flag,
+            _that.starred,
+            _that.private);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            DateTime dateFrom,
+            DateTime dateTo,
+            String? categoryId,
+            List<String>? tags,
+            List<String>? tagIds,
+            int? utcOffset,
+            String? timezone,
+            VectorClock? vectorClock,
+            DateTime? deletedAt,
+            EntryFlag? flag,
+            bool? starred,
+            bool? private)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Metadata():
+        return $default(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.dateFrom,
+            _that.dateTo,
+            _that.categoryId,
+            _that.tags,
+            _that.tagIds,
+            _that.utcOffset,
+            _that.timezone,
+            _that.vectorClock,
+            _that.deletedAt,
+            _that.flag,
+            _that.starred,
+            _that.private);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            DateTime dateFrom,
+            DateTime dateTo,
+            String? categoryId,
+            List<String>? tags,
+            List<String>? tagIds,
+            int? utcOffset,
+            String? timezone,
+            VectorClock? vectorClock,
+            DateTime? deletedAt,
+            EntryFlag? flag,
+            bool? starred,
+            bool? private)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Metadata() when $default != null:
+        return $default(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.dateFrom,
+            _that.dateTo,
+            _that.categoryId,
+            _that.tags,
+            _that.tagIds,
+            _that.utcOffset,
+            _that.timezone,
+            _that.vectorClock,
+            _that.deletedAt,
+            _that.flag,
+            _that.starred,
+            _that.private);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$MetadataImpl implements _Metadata {
-  const _$MetadataImpl(
+class _Metadata implements Metadata {
+  const _Metadata(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -306,9 +483,8 @@ class _$MetadataImpl implements _Metadata {
       this.private})
       : _tags = tags,
         _tagIds = tagIds;
-
-  factory _$MetadataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$MetadataImplFromJson(json);
+  factory _Metadata.fromJson(Map<String, dynamic> json) =>
+      _$MetadataFromJson(json);
 
   @override
   final String id;
@@ -357,16 +533,26 @@ class _$MetadataImpl implements _Metadata {
   @override
   final bool? private;
 
+  /// Create a copy of Metadata
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$MetadataCopyWith<_Metadata> get copyWith =>
+      __$MetadataCopyWithImpl<_Metadata>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$MetadataToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MetadataImpl &&
+            other is _Metadata &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -412,276 +598,153 @@ class _$MetadataImpl implements _Metadata {
       starred,
       private);
 
-  /// Create a copy of Metadata
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$MetadataImplCopyWith<_$MetadataImpl> get copyWith =>
-      __$$MetadataImplCopyWithImpl<_$MetadataImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$MetadataImplToJson(
-      this,
-    );
+  String toString() {
+    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
   }
 }
 
-abstract class _Metadata implements Metadata {
-  const factory _Metadata(
-      {required final String id,
-      required final DateTime createdAt,
-      required final DateTime updatedAt,
-      required final DateTime dateFrom,
-      required final DateTime dateTo,
-      final String? categoryId,
-      final List<String>? tags,
-      final List<String>? tagIds,
-      final int? utcOffset,
-      final String? timezone,
-      final VectorClock? vectorClock,
-      final DateTime? deletedAt,
-      final EntryFlag? flag,
-      final bool? starred,
-      final bool? private}) = _$MetadataImpl;
+/// @nodoc
+abstract mixin class _$MetadataCopyWith<$Res>
+    implements $MetadataCopyWith<$Res> {
+  factory _$MetadataCopyWith(_Metadata value, $Res Function(_Metadata) _then) =
+      __$MetadataCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      DateTime createdAt,
+      DateTime updatedAt,
+      DateTime dateFrom,
+      DateTime dateTo,
+      String? categoryId,
+      List<String>? tags,
+      List<String>? tagIds,
+      int? utcOffset,
+      String? timezone,
+      VectorClock? vectorClock,
+      DateTime? deletedAt,
+      EntryFlag? flag,
+      bool? starred,
+      bool? private});
+}
 
-  factory _Metadata.fromJson(Map<String, dynamic> json) =
-      _$MetadataImpl.fromJson;
+/// @nodoc
+class __$MetadataCopyWithImpl<$Res> implements _$MetadataCopyWith<$Res> {
+  __$MetadataCopyWithImpl(this._self, this._then);
 
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  DateTime get updatedAt;
-  @override
-  DateTime get dateFrom;
-  @override
-  DateTime get dateTo;
-  @override
-  String? get categoryId;
-  @override
-  List<String>? get tags;
-  @override
-  List<String>? get tagIds;
-  @override
-  int? get utcOffset;
-  @override
-  String? get timezone;
-  @override
-  VectorClock? get vectorClock;
-  @override
-  DateTime? get deletedAt;
-  @override
-  EntryFlag? get flag;
-  @override
-  bool? get starred;
-  @override
-  bool? get private;
+  final _Metadata _self;
+  final $Res Function(_Metadata) _then;
 
   /// Create a copy of Metadata
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$MetadataImplCopyWith<_$MetadataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-ImageData _$ImageDataFromJson(Map<String, dynamic> json) {
-  return _ImageData.fromJson(json);
-}
-
-/// @nodoc
-mixin _$ImageData {
-  DateTime get capturedAt => throw _privateConstructorUsedError;
-  String get imageId => throw _privateConstructorUsedError;
-  String get imageFile => throw _privateConstructorUsedError;
-  String get imageDirectory => throw _privateConstructorUsedError;
-  Geolocation? get geolocation => throw _privateConstructorUsedError;
-
-  /// Serializes this ImageData to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of ImageData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $ImageDataCopyWith<ImageData> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $ImageDataCopyWith<$Res> {
-  factory $ImageDataCopyWith(ImageData value, $Res Function(ImageData) then) =
-      _$ImageDataCopyWithImpl<$Res, ImageData>;
-  @useResult
-  $Res call(
-      {DateTime capturedAt,
-      String imageId,
-      String imageFile,
-      String imageDirectory,
-      Geolocation? geolocation});
-
-  $GeolocationCopyWith<$Res>? get geolocation;
-}
-
-/// @nodoc
-class _$ImageDataCopyWithImpl<$Res, $Val extends ImageData>
-    implements $ImageDataCopyWith<$Res> {
-  _$ImageDataCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of ImageData
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? capturedAt = null,
-    Object? imageId = null,
-    Object? imageFile = null,
-    Object? imageDirectory = null,
-    Object? geolocation = freezed,
+    Object? id = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? categoryId = freezed,
+    Object? tags = freezed,
+    Object? tagIds = freezed,
+    Object? utcOffset = freezed,
+    Object? timezone = freezed,
+    Object? vectorClock = freezed,
+    Object? deletedAt = freezed,
+    Object? flag = freezed,
+    Object? starred = freezed,
+    Object? private = freezed,
   }) {
-    return _then(_value.copyWith(
-      capturedAt: null == capturedAt
-          ? _value.capturedAt
-          : capturedAt // ignore: cast_nullable_to_non_nullable
+    return _then(_Metadata(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      imageId: null == imageId
-          ? _value.imageId
-          : imageId // ignore: cast_nullable_to_non_nullable
-              as String,
-      imageFile: null == imageFile
-          ? _value.imageFile
-          : imageFile // ignore: cast_nullable_to_non_nullable
-              as String,
-      imageDirectory: null == imageDirectory
-          ? _value.imageDirectory
-          : imageDirectory // ignore: cast_nullable_to_non_nullable
-              as String,
-      geolocation: freezed == geolocation
-          ? _value.geolocation
-          : geolocation // ignore: cast_nullable_to_non_nullable
-              as Geolocation?,
-    ) as $Val);
-  }
-
-  /// Create a copy of ImageData
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $GeolocationCopyWith<$Res>? get geolocation {
-    if (_value.geolocation == null) {
-      return null;
-    }
-
-    return $GeolocationCopyWith<$Res>(_value.geolocation!, (value) {
-      return _then(_value.copyWith(geolocation: value) as $Val);
-    });
-  }
-}
-
-/// @nodoc
-abstract class _$$ImageDataImplCopyWith<$Res>
-    implements $ImageDataCopyWith<$Res> {
-  factory _$$ImageDataImplCopyWith(
-          _$ImageDataImpl value, $Res Function(_$ImageDataImpl) then) =
-      __$$ImageDataImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {DateTime capturedAt,
-      String imageId,
-      String imageFile,
-      String imageDirectory,
-      Geolocation? geolocation});
-
-  @override
-  $GeolocationCopyWith<$Res>? get geolocation;
-}
-
-/// @nodoc
-class __$$ImageDataImplCopyWithImpl<$Res>
-    extends _$ImageDataCopyWithImpl<$Res, _$ImageDataImpl>
-    implements _$$ImageDataImplCopyWith<$Res> {
-  __$$ImageDataImplCopyWithImpl(
-      _$ImageDataImpl _value, $Res Function(_$ImageDataImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of ImageData
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? capturedAt = null,
-    Object? imageId = null,
-    Object? imageFile = null,
-    Object? imageDirectory = null,
-    Object? geolocation = freezed,
-  }) {
-    return _then(_$ImageDataImpl(
-      capturedAt: null == capturedAt
-          ? _value.capturedAt
-          : capturedAt // ignore: cast_nullable_to_non_nullable
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      imageId: null == imageId
-          ? _value.imageId
-          : imageId // ignore: cast_nullable_to_non_nullable
-              as String,
-      imageFile: null == imageFile
-          ? _value.imageFile
-          : imageFile // ignore: cast_nullable_to_non_nullable
-              as String,
-      imageDirectory: null == imageDirectory
-          ? _value.imageDirectory
-          : imageDirectory // ignore: cast_nullable_to_non_nullable
-              as String,
-      geolocation: freezed == geolocation
-          ? _value.geolocation
-          : geolocation // ignore: cast_nullable_to_non_nullable
-              as Geolocation?,
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      categoryId: freezed == categoryId
+          ? _self.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      tags: freezed == tags
+          ? _self._tags
+          : tags // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      tagIds: freezed == tagIds
+          ? _self._tagIds
+          : tagIds // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      utcOffset: freezed == utcOffset
+          ? _self.utcOffset
+          : utcOffset // ignore: cast_nullable_to_non_nullable
+              as int?,
+      timezone: freezed == timezone
+          ? _self.timezone
+          : timezone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      flag: freezed == flag
+          ? _self.flag
+          : flag // ignore: cast_nullable_to_non_nullable
+              as EntryFlag?,
+      starred: freezed == starred
+          ? _self.starred
+          : starred // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      private: freezed == private
+          ? _self.private
+          : private // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
-class _$ImageDataImpl implements _ImageData {
-  const _$ImageDataImpl(
-      {required this.capturedAt,
-      required this.imageId,
-      required this.imageFile,
-      required this.imageDirectory,
-      this.geolocation});
+mixin _$ImageData {
+  DateTime get capturedAt;
+  String get imageId;
+  String get imageFile;
+  String get imageDirectory;
+  Geolocation? get geolocation;
 
-  factory _$ImageDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$ImageDataImplFromJson(json);
+  /// Create a copy of ImageData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $ImageDataCopyWith<ImageData> get copyWith =>
+      _$ImageDataCopyWithImpl<ImageData>(this as ImageData, _$identity);
 
-  @override
-  final DateTime capturedAt;
-  @override
-  final String imageId;
-  @override
-  final String imageFile;
-  @override
-  final String imageDirectory;
-  @override
-  final Geolocation? geolocation;
-
-  @override
-  String toString() {
-    return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation)';
-  }
+  /// Serializes this ImageData to a JSON map.
+  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$ImageDataImpl &&
+            other is ImageData &&
             (identical(other.capturedAt, capturedAt) ||
                 other.capturedAt == capturedAt) &&
             (identical(other.imageId, imageId) || other.imageId == imageId) &&
@@ -698,161 +761,458 @@ class _$ImageDataImpl implements _ImageData {
   int get hashCode => Object.hash(
       runtimeType, capturedAt, imageId, imageFile, imageDirectory, geolocation);
 
-  /// Create a copy of ImageData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$ImageDataImplCopyWith<_$ImageDataImpl> get copyWith =>
-      __$$ImageDataImplCopyWithImpl<_$ImageDataImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$ImageDataImplToJson(
-      this,
-    );
+  String toString() {
+    return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation)';
   }
 }
 
-abstract class _ImageData implements ImageData {
-  const factory _ImageData(
-      {required final DateTime capturedAt,
-      required final String imageId,
-      required final String imageFile,
-      required final String imageDirectory,
-      final Geolocation? geolocation}) = _$ImageDataImpl;
+/// @nodoc
+abstract mixin class $ImageDataCopyWith<$Res> {
+  factory $ImageDataCopyWith(ImageData value, $Res Function(ImageData) _then) =
+      _$ImageDataCopyWithImpl;
+  @useResult
+  $Res call(
+      {DateTime capturedAt,
+      String imageId,
+      String imageFile,
+      String imageDirectory,
+      Geolocation? geolocation});
 
-  factory _ImageData.fromJson(Map<String, dynamic> json) =
-      _$ImageDataImpl.fromJson;
+  $GeolocationCopyWith<$Res>? get geolocation;
+}
+
+/// @nodoc
+class _$ImageDataCopyWithImpl<$Res> implements $ImageDataCopyWith<$Res> {
+  _$ImageDataCopyWithImpl(this._self, this._then);
+
+  final ImageData _self;
+  final $Res Function(ImageData) _then;
+
+  /// Create a copy of ImageData
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? capturedAt = null,
+    Object? imageId = null,
+    Object? imageFile = null,
+    Object? imageDirectory = null,
+    Object? geolocation = freezed,
+  }) {
+    return _then(_self.copyWith(
+      capturedAt: null == capturedAt
+          ? _self.capturedAt
+          : capturedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      imageId: null == imageId
+          ? _self.imageId
+          : imageId // ignore: cast_nullable_to_non_nullable
+              as String,
+      imageFile: null == imageFile
+          ? _self.imageFile
+          : imageFile // ignore: cast_nullable_to_non_nullable
+              as String,
+      imageDirectory: null == imageDirectory
+          ? _self.imageDirectory
+          : imageDirectory // ignore: cast_nullable_to_non_nullable
+              as String,
+      geolocation: freezed == geolocation
+          ? _self.geolocation
+          : geolocation // ignore: cast_nullable_to_non_nullable
+              as Geolocation?,
+    ));
+  }
+
+  /// Create a copy of ImageData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
+  }
+}
+
+/// Adds pattern-matching-related methods to [ImageData].
+extension ImageDataPatterns on ImageData {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_ImageData value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _ImageData() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_ImageData value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _ImageData():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_ImageData value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _ImageData() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(DateTime capturedAt, String imageId, String imageFile,
+            String imageDirectory, Geolocation? geolocation)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _ImageData() when $default != null:
+        return $default(_that.capturedAt, _that.imageId, _that.imageFile,
+            _that.imageDirectory, _that.geolocation);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(DateTime capturedAt, String imageId, String imageFile,
+            String imageDirectory, Geolocation? geolocation)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _ImageData():
+        return $default(_that.capturedAt, _that.imageId, _that.imageFile,
+            _that.imageDirectory, _that.geolocation);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(DateTime capturedAt, String imageId, String imageFile,
+            String imageDirectory, Geolocation? geolocation)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _ImageData() when $default != null:
+        return $default(_that.capturedAt, _that.imageId, _that.imageFile,
+            _that.imageDirectory, _that.geolocation);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _ImageData implements ImageData {
+  const _ImageData(
+      {required this.capturedAt,
+      required this.imageId,
+      required this.imageFile,
+      required this.imageDirectory,
+      this.geolocation});
+  factory _ImageData.fromJson(Map<String, dynamic> json) =>
+      _$ImageDataFromJson(json);
 
   @override
-  DateTime get capturedAt;
+  final DateTime capturedAt;
   @override
-  String get imageId;
+  final String imageId;
   @override
-  String get imageFile;
+  final String imageFile;
   @override
-  String get imageDirectory;
+  final String imageDirectory;
   @override
-  Geolocation? get geolocation;
+  final Geolocation? geolocation;
 
   /// Create a copy of ImageData
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$ImageDataImplCopyWith<_$ImageDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  _$ImageDataCopyWith<_ImageData> get copyWith =>
+      __$ImageDataCopyWithImpl<_ImageData>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$ImageDataToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _ImageData &&
+            (identical(other.capturedAt, capturedAt) ||
+                other.capturedAt == capturedAt) &&
+            (identical(other.imageId, imageId) || other.imageId == imageId) &&
+            (identical(other.imageFile, imageFile) ||
+                other.imageFile == imageFile) &&
+            (identical(other.imageDirectory, imageDirectory) ||
+                other.imageDirectory == imageDirectory) &&
+            (identical(other.geolocation, geolocation) ||
+                other.geolocation == geolocation));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, capturedAt, imageId, imageFile, imageDirectory, geolocation);
+
+  @override
+  String toString() {
+    return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation)';
+  }
 }
 
-AudioData _$AudioDataFromJson(Map<String, dynamic> json) {
-  return _AudioData.fromJson(json);
+/// @nodoc
+abstract mixin class _$ImageDataCopyWith<$Res>
+    implements $ImageDataCopyWith<$Res> {
+  factory _$ImageDataCopyWith(
+          _ImageData value, $Res Function(_ImageData) _then) =
+      __$ImageDataCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {DateTime capturedAt,
+      String imageId,
+      String imageFile,
+      String imageDirectory,
+      Geolocation? geolocation});
+
+  @override
+  $GeolocationCopyWith<$Res>? get geolocation;
+}
+
+/// @nodoc
+class __$ImageDataCopyWithImpl<$Res> implements _$ImageDataCopyWith<$Res> {
+  __$ImageDataCopyWithImpl(this._self, this._then);
+
+  final _ImageData _self;
+  final $Res Function(_ImageData) _then;
+
+  /// Create a copy of ImageData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? capturedAt = null,
+    Object? imageId = null,
+    Object? imageFile = null,
+    Object? imageDirectory = null,
+    Object? geolocation = freezed,
+  }) {
+    return _then(_ImageData(
+      capturedAt: null == capturedAt
+          ? _self.capturedAt
+          : capturedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      imageId: null == imageId
+          ? _self.imageId
+          : imageId // ignore: cast_nullable_to_non_nullable
+              as String,
+      imageFile: null == imageFile
+          ? _self.imageFile
+          : imageFile // ignore: cast_nullable_to_non_nullable
+              as String,
+      imageDirectory: null == imageDirectory
+          ? _self.imageDirectory
+          : imageDirectory // ignore: cast_nullable_to_non_nullable
+              as String,
+      geolocation: freezed == geolocation
+          ? _self.geolocation
+          : geolocation // ignore: cast_nullable_to_non_nullable
+              as Geolocation?,
+    ));
+  }
+
+  /// Create a copy of ImageData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
+  }
 }
 
 /// @nodoc
 mixin _$AudioData {
-  DateTime get dateFrom => throw _privateConstructorUsedError;
-  DateTime get dateTo => throw _privateConstructorUsedError;
-  String get audioFile => throw _privateConstructorUsedError;
-  String get audioDirectory => throw _privateConstructorUsedError;
-  Duration get duration => throw _privateConstructorUsedError;
-  bool get autoTranscribeWasActive => throw _privateConstructorUsedError;
-  String? get language => throw _privateConstructorUsedError;
-  List<AudioTranscript>? get transcripts => throw _privateConstructorUsedError;
-
-  /// Serializes this AudioData to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  DateTime get dateFrom;
+  DateTime get dateTo;
+  String get audioFile;
+  String get audioDirectory;
+  Duration get duration;
+  bool get autoTranscribeWasActive;
+  String? get language;
+  List<AudioTranscript>? get transcripts;
 
   /// Create a copy of AudioData
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $AudioDataCopyWith<AudioData> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AudioDataCopyWith<$Res> {
-  factory $AudioDataCopyWith(AudioData value, $Res Function(AudioData) then) =
-      _$AudioDataCopyWithImpl<$Res, AudioData>;
-  @useResult
-  $Res call(
-      {DateTime dateFrom,
-      DateTime dateTo,
-      String audioFile,
-      String audioDirectory,
-      Duration duration,
-      bool autoTranscribeWasActive,
-      String? language,
-      List<AudioTranscript>? transcripts});
-}
-
-/// @nodoc
-class _$AudioDataCopyWithImpl<$Res, $Val extends AudioData>
-    implements $AudioDataCopyWith<$Res> {
-  _$AudioDataCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AudioData
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $AudioDataCopyWith<AudioData> get copyWith =>
+      _$AudioDataCopyWithImpl<AudioData>(this as AudioData, _$identity);
+
+  /// Serializes this AudioData to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? audioFile = null,
-    Object? audioDirectory = null,
-    Object? duration = null,
-    Object? autoTranscribeWasActive = null,
-    Object? language = freezed,
-    Object? transcripts = freezed,
-  }) {
-    return _then(_value.copyWith(
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      audioFile: null == audioFile
-          ? _value.audioFile
-          : audioFile // ignore: cast_nullable_to_non_nullable
-              as String,
-      audioDirectory: null == audioDirectory
-          ? _value.audioDirectory
-          : audioDirectory // ignore: cast_nullable_to_non_nullable
-              as String,
-      duration: null == duration
-          ? _value.duration
-          : duration // ignore: cast_nullable_to_non_nullable
-              as Duration,
-      autoTranscribeWasActive: null == autoTranscribeWasActive
-          ? _value.autoTranscribeWasActive
-          : autoTranscribeWasActive // ignore: cast_nullable_to_non_nullable
-              as bool,
-      language: freezed == language
-          ? _value.language
-          : language // ignore: cast_nullable_to_non_nullable
-              as String?,
-      transcripts: freezed == transcripts
-          ? _value.transcripts
-          : transcripts // ignore: cast_nullable_to_non_nullable
-              as List<AudioTranscript>?,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AudioData &&
+            (identical(other.dateFrom, dateFrom) ||
+                other.dateFrom == dateFrom) &&
+            (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
+            (identical(other.audioFile, audioFile) ||
+                other.audioFile == audioFile) &&
+            (identical(other.audioDirectory, audioDirectory) ||
+                other.audioDirectory == audioDirectory) &&
+            (identical(other.duration, duration) ||
+                other.duration == duration) &&
+            (identical(
+                    other.autoTranscribeWasActive, autoTranscribeWasActive) ||
+                other.autoTranscribeWasActive == autoTranscribeWasActive) &&
+            (identical(other.language, language) ||
+                other.language == language) &&
+            const DeepCollectionEquality()
+                .equals(other.transcripts, transcripts));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      dateFrom,
+      dateTo,
+      audioFile,
+      audioDirectory,
+      duration,
+      autoTranscribeWasActive,
+      language,
+      const DeepCollectionEquality().hash(transcripts));
+
+  @override
+  String toString() {
+    return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, language: $language, transcripts: $transcripts)';
   }
 }
 
 /// @nodoc
-abstract class _$$AudioDataImplCopyWith<$Res>
-    implements $AudioDataCopyWith<$Res> {
-  factory _$$AudioDataImplCopyWith(
-          _$AudioDataImpl value, $Res Function(_$AudioDataImpl) then) =
-      __$$AudioDataImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $AudioDataCopyWith<$Res> {
+  factory $AudioDataCopyWith(AudioData value, $Res Function(AudioData) _then) =
+      _$AudioDataCopyWithImpl;
   @useResult
   $Res call(
       {DateTime dateFrom,
@@ -866,12 +1226,11 @@ abstract class _$$AudioDataImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AudioDataImplCopyWithImpl<$Res>
-    extends _$AudioDataCopyWithImpl<$Res, _$AudioDataImpl>
-    implements _$$AudioDataImplCopyWith<$Res> {
-  __$$AudioDataImplCopyWithImpl(
-      _$AudioDataImpl _value, $Res Function(_$AudioDataImpl) _then)
-      : super(_value, _then);
+class _$AudioDataCopyWithImpl<$Res> implements $AudioDataCopyWith<$Res> {
+  _$AudioDataCopyWithImpl(this._self, this._then);
+
+  final AudioData _self;
+  final $Res Function(AudioData) _then;
 
   /// Create a copy of AudioData
   /// with the given fields replaced by the non-null parameter values.
@@ -887,47 +1246,255 @@ class __$$AudioDataImplCopyWithImpl<$Res>
     Object? language = freezed,
     Object? transcripts = freezed,
   }) {
-    return _then(_$AudioDataImpl(
+    return _then(_self.copyWith(
       dateFrom: null == dateFrom
-          ? _value.dateFrom
+          ? _self.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
               as DateTime,
       dateTo: null == dateTo
-          ? _value.dateTo
+          ? _self.dateTo
           : dateTo // ignore: cast_nullable_to_non_nullable
               as DateTime,
       audioFile: null == audioFile
-          ? _value.audioFile
+          ? _self.audioFile
           : audioFile // ignore: cast_nullable_to_non_nullable
               as String,
       audioDirectory: null == audioDirectory
-          ? _value.audioDirectory
+          ? _self.audioDirectory
           : audioDirectory // ignore: cast_nullable_to_non_nullable
               as String,
       duration: null == duration
-          ? _value.duration
+          ? _self.duration
           : duration // ignore: cast_nullable_to_non_nullable
               as Duration,
       autoTranscribeWasActive: null == autoTranscribeWasActive
-          ? _value.autoTranscribeWasActive
+          ? _self.autoTranscribeWasActive
           : autoTranscribeWasActive // ignore: cast_nullable_to_non_nullable
               as bool,
       language: freezed == language
-          ? _value.language
+          ? _self.language
           : language // ignore: cast_nullable_to_non_nullable
               as String?,
       transcripts: freezed == transcripts
-          ? _value._transcripts
+          ? _self.transcripts
           : transcripts // ignore: cast_nullable_to_non_nullable
               as List<AudioTranscript>?,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [AudioData].
+extension AudioDataPatterns on AudioData {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_AudioData value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AudioData() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_AudioData value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AudioData():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_AudioData value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AudioData() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            DateTime dateFrom,
+            DateTime dateTo,
+            String audioFile,
+            String audioDirectory,
+            Duration duration,
+            bool autoTranscribeWasActive,
+            String? language,
+            List<AudioTranscript>? transcripts)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AudioData() when $default != null:
+        return $default(
+            _that.dateFrom,
+            _that.dateTo,
+            _that.audioFile,
+            _that.audioDirectory,
+            _that.duration,
+            _that.autoTranscribeWasActive,
+            _that.language,
+            _that.transcripts);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            DateTime dateFrom,
+            DateTime dateTo,
+            String audioFile,
+            String audioDirectory,
+            Duration duration,
+            bool autoTranscribeWasActive,
+            String? language,
+            List<AudioTranscript>? transcripts)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AudioData():
+        return $default(
+            _that.dateFrom,
+            _that.dateTo,
+            _that.audioFile,
+            _that.audioDirectory,
+            _that.duration,
+            _that.autoTranscribeWasActive,
+            _that.language,
+            _that.transcripts);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            DateTime dateFrom,
+            DateTime dateTo,
+            String audioFile,
+            String audioDirectory,
+            Duration duration,
+            bool autoTranscribeWasActive,
+            String? language,
+            List<AudioTranscript>? transcripts)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AudioData() when $default != null:
+        return $default(
+            _that.dateFrom,
+            _that.dateTo,
+            _that.audioFile,
+            _that.audioDirectory,
+            _that.duration,
+            _that.autoTranscribeWasActive,
+            _that.language,
+            _that.transcripts);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$AudioDataImpl implements _AudioData {
-  const _$AudioDataImpl(
+class _AudioData implements AudioData {
+  const _AudioData(
       {required this.dateFrom,
       required this.dateTo,
       required this.audioFile,
@@ -937,9 +1504,8 @@ class _$AudioDataImpl implements _AudioData {
       this.language,
       final List<AudioTranscript>? transcripts})
       : _transcripts = transcripts;
-
-  factory _$AudioDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AudioDataImplFromJson(json);
+  factory _AudioData.fromJson(Map<String, dynamic> json) =>
+      _$AudioDataFromJson(json);
 
   @override
   final DateTime dateFrom;
@@ -966,16 +1532,26 @@ class _$AudioDataImpl implements _AudioData {
     return EqualUnmodifiableListView(value);
   }
 
+  /// Create a copy of AudioData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, language: $language, transcripts: $transcripts)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AudioDataCopyWith<_AudioData> get copyWith =>
+      __$AudioDataCopyWithImpl<_AudioData>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AudioDataToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AudioDataImpl &&
+            other is _AudioData &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -1007,253 +1583,114 @@ class _$AudioDataImpl implements _AudioData {
       language,
       const DeepCollectionEquality().hash(_transcripts));
 
-  /// Create a copy of AudioData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AudioDataImplCopyWith<_$AudioDataImpl> get copyWith =>
-      __$$AudioDataImplCopyWithImpl<_$AudioDataImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AudioDataImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _AudioData implements AudioData {
-  const factory _AudioData(
-      {required final DateTime dateFrom,
-      required final DateTime dateTo,
-      required final String audioFile,
-      required final String audioDirectory,
-      required final Duration duration,
-      final bool autoTranscribeWasActive,
-      final String? language,
-      final List<AudioTranscript>? transcripts}) = _$AudioDataImpl;
-
-  factory _AudioData.fromJson(Map<String, dynamic> json) =
-      _$AudioDataImpl.fromJson;
-
-  @override
-  DateTime get dateFrom;
-  @override
-  DateTime get dateTo;
-  @override
-  String get audioFile;
-  @override
-  String get audioDirectory;
-  @override
-  Duration get duration;
-  @override
-  bool get autoTranscribeWasActive;
-  @override
-  String? get language;
-  @override
-  List<AudioTranscript>? get transcripts;
-
-  /// Create a copy of AudioData
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AudioDataImplCopyWith<_$AudioDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-AudioTranscript _$AudioTranscriptFromJson(Map<String, dynamic> json) {
-  return _AudioTranscript.fromJson(json);
-}
-
-/// @nodoc
-mixin _$AudioTranscript {
-  DateTime get created => throw _privateConstructorUsedError;
-  String get library => throw _privateConstructorUsedError;
-  String get model => throw _privateConstructorUsedError;
-  String get detectedLanguage => throw _privateConstructorUsedError;
-  String get transcript => throw _privateConstructorUsedError;
-  Duration? get processingTime => throw _privateConstructorUsedError;
-
-  /// Serializes this AudioTranscript to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of AudioTranscript
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $AudioTranscriptCopyWith<AudioTranscript> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AudioTranscriptCopyWith<$Res> {
-  factory $AudioTranscriptCopyWith(
-          AudioTranscript value, $Res Function(AudioTranscript) then) =
-      _$AudioTranscriptCopyWithImpl<$Res, AudioTranscript>;
-  @useResult
-  $Res call(
-      {DateTime created,
-      String library,
-      String model,
-      String detectedLanguage,
-      String transcript,
-      Duration? processingTime});
-}
-
-/// @nodoc
-class _$AudioTranscriptCopyWithImpl<$Res, $Val extends AudioTranscript>
-    implements $AudioTranscriptCopyWith<$Res> {
-  _$AudioTranscriptCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AudioTranscript
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? created = null,
-    Object? library = null,
-    Object? model = null,
-    Object? detectedLanguage = null,
-    Object? transcript = null,
-    Object? processingTime = freezed,
-  }) {
-    return _then(_value.copyWith(
-      created: null == created
-          ? _value.created
-          : created // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      library: null == library
-          ? _value.library
-          : library // ignore: cast_nullable_to_non_nullable
-              as String,
-      model: null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as String,
-      detectedLanguage: null == detectedLanguage
-          ? _value.detectedLanguage
-          : detectedLanguage // ignore: cast_nullable_to_non_nullable
-              as String,
-      transcript: null == transcript
-          ? _value.transcript
-          : transcript // ignore: cast_nullable_to_non_nullable
-              as String,
-      processingTime: freezed == processingTime
-          ? _value.processingTime
-          : processingTime // ignore: cast_nullable_to_non_nullable
-              as Duration?,
-    ) as $Val);
+  String toString() {
+    return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, language: $language, transcripts: $transcripts)';
   }
 }
 
 /// @nodoc
-abstract class _$$AudioTranscriptImplCopyWith<$Res>
-    implements $AudioTranscriptCopyWith<$Res> {
-  factory _$$AudioTranscriptImplCopyWith(_$AudioTranscriptImpl value,
-          $Res Function(_$AudioTranscriptImpl) then) =
-      __$$AudioTranscriptImplCopyWithImpl<$Res>;
+abstract mixin class _$AudioDataCopyWith<$Res>
+    implements $AudioDataCopyWith<$Res> {
+  factory _$AudioDataCopyWith(
+          _AudioData value, $Res Function(_AudioData) _then) =
+      __$AudioDataCopyWithImpl;
   @override
   @useResult
   $Res call(
-      {DateTime created,
-      String library,
-      String model,
-      String detectedLanguage,
-      String transcript,
-      Duration? processingTime});
+      {DateTime dateFrom,
+      DateTime dateTo,
+      String audioFile,
+      String audioDirectory,
+      Duration duration,
+      bool autoTranscribeWasActive,
+      String? language,
+      List<AudioTranscript>? transcripts});
 }
 
 /// @nodoc
-class __$$AudioTranscriptImplCopyWithImpl<$Res>
-    extends _$AudioTranscriptCopyWithImpl<$Res, _$AudioTranscriptImpl>
-    implements _$$AudioTranscriptImplCopyWith<$Res> {
-  __$$AudioTranscriptImplCopyWithImpl(
-      _$AudioTranscriptImpl _value, $Res Function(_$AudioTranscriptImpl) _then)
-      : super(_value, _then);
+class __$AudioDataCopyWithImpl<$Res> implements _$AudioDataCopyWith<$Res> {
+  __$AudioDataCopyWithImpl(this._self, this._then);
 
-  /// Create a copy of AudioTranscript
+  final _AudioData _self;
+  final $Res Function(_AudioData) _then;
+
+  /// Create a copy of AudioData
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
-    Object? created = null,
-    Object? library = null,
-    Object? model = null,
-    Object? detectedLanguage = null,
-    Object? transcript = null,
-    Object? processingTime = freezed,
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? audioFile = null,
+    Object? audioDirectory = null,
+    Object? duration = null,
+    Object? autoTranscribeWasActive = null,
+    Object? language = freezed,
+    Object? transcripts = freezed,
   }) {
-    return _then(_$AudioTranscriptImpl(
-      created: null == created
-          ? _value.created
-          : created // ignore: cast_nullable_to_non_nullable
+    return _then(_AudioData(
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      library: null == library
-          ? _value.library
-          : library // ignore: cast_nullable_to_non_nullable
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      audioFile: null == audioFile
+          ? _self.audioFile
+          : audioFile // ignore: cast_nullable_to_non_nullable
               as String,
-      model: null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
+      audioDirectory: null == audioDirectory
+          ? _self.audioDirectory
+          : audioDirectory // ignore: cast_nullable_to_non_nullable
               as String,
-      detectedLanguage: null == detectedLanguage
-          ? _value.detectedLanguage
-          : detectedLanguage // ignore: cast_nullable_to_non_nullable
-              as String,
-      transcript: null == transcript
-          ? _value.transcript
-          : transcript // ignore: cast_nullable_to_non_nullable
-              as String,
-      processingTime: freezed == processingTime
-          ? _value.processingTime
-          : processingTime // ignore: cast_nullable_to_non_nullable
-              as Duration?,
+      duration: null == duration
+          ? _self.duration
+          : duration // ignore: cast_nullable_to_non_nullable
+              as Duration,
+      autoTranscribeWasActive: null == autoTranscribeWasActive
+          ? _self.autoTranscribeWasActive
+          : autoTranscribeWasActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      language: freezed == language
+          ? _self.language
+          : language // ignore: cast_nullable_to_non_nullable
+              as String?,
+      transcripts: freezed == transcripts
+          ? _self._transcripts
+          : transcripts // ignore: cast_nullable_to_non_nullable
+              as List<AudioTranscript>?,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
-class _$AudioTranscriptImpl implements _AudioTranscript {
-  const _$AudioTranscriptImpl(
-      {required this.created,
-      required this.library,
-      required this.model,
-      required this.detectedLanguage,
-      required this.transcript,
-      this.processingTime});
+mixin _$AudioTranscript {
+  DateTime get created;
+  String get library;
+  String get model;
+  String get detectedLanguage;
+  String get transcript;
+  Duration? get processingTime;
 
-  factory _$AudioTranscriptImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AudioTranscriptImplFromJson(json);
+  /// Create a copy of AudioTranscript
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AudioTranscriptCopyWith<AudioTranscript> get copyWith =>
+      _$AudioTranscriptCopyWithImpl<AudioTranscript>(
+          this as AudioTranscript, _$identity);
 
-  @override
-  final DateTime created;
-  @override
-  final String library;
-  @override
-  final String model;
-  @override
-  final String detectedLanguage;
-  @override
-  final String transcript;
-  @override
-  final Duration? processingTime;
-
-  @override
-  String toString() {
-    return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript, processingTime: $processingTime)';
-  }
+  /// Serializes this AudioTranscript to a JSON map.
+  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AudioTranscriptImpl &&
+            other is AudioTranscript &&
             (identical(other.created, created) || other.created == created) &&
             (identical(other.library, library) || other.library == library) &&
             (identical(other.model, model) || other.model == model) &&
@@ -1270,132 +1707,439 @@ class _$AudioTranscriptImpl implements _AudioTranscript {
   int get hashCode => Object.hash(runtimeType, created, library, model,
       detectedLanguage, transcript, processingTime);
 
-  /// Create a copy of AudioTranscript
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AudioTranscriptImplCopyWith<_$AudioTranscriptImpl> get copyWith =>
-      __$$AudioTranscriptImplCopyWithImpl<_$AudioTranscriptImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AudioTranscriptImplToJson(
-      this,
-    );
+  String toString() {
+    return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript, processingTime: $processingTime)';
   }
 }
 
-abstract class _AudioTranscript implements AudioTranscript {
-  const factory _AudioTranscript(
-      {required final DateTime created,
-      required final String library,
-      required final String model,
-      required final String detectedLanguage,
-      required final String transcript,
-      final Duration? processingTime}) = _$AudioTranscriptImpl;
+/// @nodoc
+abstract mixin class $AudioTranscriptCopyWith<$Res> {
+  factory $AudioTranscriptCopyWith(
+          AudioTranscript value, $Res Function(AudioTranscript) _then) =
+      _$AudioTranscriptCopyWithImpl;
+  @useResult
+  $Res call(
+      {DateTime created,
+      String library,
+      String model,
+      String detectedLanguage,
+      String transcript,
+      Duration? processingTime});
+}
 
-  factory _AudioTranscript.fromJson(Map<String, dynamic> json) =
-      _$AudioTranscriptImpl.fromJson;
+/// @nodoc
+class _$AudioTranscriptCopyWithImpl<$Res>
+    implements $AudioTranscriptCopyWith<$Res> {
+  _$AudioTranscriptCopyWithImpl(this._self, this._then);
+
+  final AudioTranscript _self;
+  final $Res Function(AudioTranscript) _then;
+
+  /// Create a copy of AudioTranscript
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? created = null,
+    Object? library = null,
+    Object? model = null,
+    Object? detectedLanguage = null,
+    Object? transcript = null,
+    Object? processingTime = freezed,
+  }) {
+    return _then(_self.copyWith(
+      created: null == created
+          ? _self.created
+          : created // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      library: null == library
+          ? _self.library
+          : library // ignore: cast_nullable_to_non_nullable
+              as String,
+      model: null == model
+          ? _self.model
+          : model // ignore: cast_nullable_to_non_nullable
+              as String,
+      detectedLanguage: null == detectedLanguage
+          ? _self.detectedLanguage
+          : detectedLanguage // ignore: cast_nullable_to_non_nullable
+              as String,
+      transcript: null == transcript
+          ? _self.transcript
+          : transcript // ignore: cast_nullable_to_non_nullable
+              as String,
+      processingTime: freezed == processingTime
+          ? _self.processingTime
+          : processingTime // ignore: cast_nullable_to_non_nullable
+              as Duration?,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [AudioTranscript].
+extension AudioTranscriptPatterns on AudioTranscript {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_AudioTranscript value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AudioTranscript() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_AudioTranscript value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AudioTranscript():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_AudioTranscript value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AudioTranscript() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            DateTime created,
+            String library,
+            String model,
+            String detectedLanguage,
+            String transcript,
+            Duration? processingTime)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AudioTranscript() when $default != null:
+        return $default(_that.created, _that.library, _that.model,
+            _that.detectedLanguage, _that.transcript, _that.processingTime);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            DateTime created,
+            String library,
+            String model,
+            String detectedLanguage,
+            String transcript,
+            Duration? processingTime)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AudioTranscript():
+        return $default(_that.created, _that.library, _that.model,
+            _that.detectedLanguage, _that.transcript, _that.processingTime);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            DateTime created,
+            String library,
+            String model,
+            String detectedLanguage,
+            String transcript,
+            Duration? processingTime)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AudioTranscript() when $default != null:
+        return $default(_that.created, _that.library, _that.model,
+            _that.detectedLanguage, _that.transcript, _that.processingTime);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _AudioTranscript implements AudioTranscript {
+  const _AudioTranscript(
+      {required this.created,
+      required this.library,
+      required this.model,
+      required this.detectedLanguage,
+      required this.transcript,
+      this.processingTime});
+  factory _AudioTranscript.fromJson(Map<String, dynamic> json) =>
+      _$AudioTranscriptFromJson(json);
 
   @override
-  DateTime get created;
+  final DateTime created;
   @override
-  String get library;
+  final String library;
   @override
-  String get model;
+  final String model;
   @override
-  String get detectedLanguage;
+  final String detectedLanguage;
   @override
-  String get transcript;
+  final String transcript;
   @override
-  Duration? get processingTime;
+  final Duration? processingTime;
 
   /// Create a copy of AudioTranscript
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AudioTranscriptImplCopyWith<_$AudioTranscriptImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  _$AudioTranscriptCopyWith<_AudioTranscript> get copyWith =>
+      __$AudioTranscriptCopyWithImpl<_AudioTranscript>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AudioTranscriptToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _AudioTranscript &&
+            (identical(other.created, created) || other.created == created) &&
+            (identical(other.library, library) || other.library == library) &&
+            (identical(other.model, model) || other.model == model) &&
+            (identical(other.detectedLanguage, detectedLanguage) ||
+                other.detectedLanguage == detectedLanguage) &&
+            (identical(other.transcript, transcript) ||
+                other.transcript == transcript) &&
+            (identical(other.processingTime, processingTime) ||
+                other.processingTime == processingTime));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, created, library, model,
+      detectedLanguage, transcript, processingTime);
+
+  @override
+  String toString() {
+    return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript, processingTime: $processingTime)';
+  }
 }
 
-SurveyData _$SurveyDataFromJson(Map<String, dynamic> json) {
-  return _SurveyData.fromJson(json);
+/// @nodoc
+abstract mixin class _$AudioTranscriptCopyWith<$Res>
+    implements $AudioTranscriptCopyWith<$Res> {
+  factory _$AudioTranscriptCopyWith(
+          _AudioTranscript value, $Res Function(_AudioTranscript) _then) =
+      __$AudioTranscriptCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {DateTime created,
+      String library,
+      String model,
+      String detectedLanguage,
+      String transcript,
+      Duration? processingTime});
+}
+
+/// @nodoc
+class __$AudioTranscriptCopyWithImpl<$Res>
+    implements _$AudioTranscriptCopyWith<$Res> {
+  __$AudioTranscriptCopyWithImpl(this._self, this._then);
+
+  final _AudioTranscript _self;
+  final $Res Function(_AudioTranscript) _then;
+
+  /// Create a copy of AudioTranscript
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? created = null,
+    Object? library = null,
+    Object? model = null,
+    Object? detectedLanguage = null,
+    Object? transcript = null,
+    Object? processingTime = freezed,
+  }) {
+    return _then(_AudioTranscript(
+      created: null == created
+          ? _self.created
+          : created // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      library: null == library
+          ? _self.library
+          : library // ignore: cast_nullable_to_non_nullable
+              as String,
+      model: null == model
+          ? _self.model
+          : model // ignore: cast_nullable_to_non_nullable
+              as String,
+      detectedLanguage: null == detectedLanguage
+          ? _self.detectedLanguage
+          : detectedLanguage // ignore: cast_nullable_to_non_nullable
+              as String,
+      transcript: null == transcript
+          ? _self.transcript
+          : transcript // ignore: cast_nullable_to_non_nullable
+              as String,
+      processingTime: freezed == processingTime
+          ? _self.processingTime
+          : processingTime // ignore: cast_nullable_to_non_nullable
+              as Duration?,
+    ));
+  }
 }
 
 /// @nodoc
 mixin _$SurveyData {
-  RPTaskResult get taskResult => throw _privateConstructorUsedError;
-  Map<String, Set<String>> get scoreDefinitions =>
-      throw _privateConstructorUsedError;
-  Map<String, int> get calculatedScores => throw _privateConstructorUsedError;
-
-  /// Serializes this SurveyData to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  RPTaskResult get taskResult;
+  Map<String, Set<String>> get scoreDefinitions;
+  Map<String, int> get calculatedScores;
 
   /// Create a copy of SurveyData
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $SurveyDataCopyWith<SurveyData> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $SurveyDataCopyWith<$Res> {
-  factory $SurveyDataCopyWith(
-          SurveyData value, $Res Function(SurveyData) then) =
-      _$SurveyDataCopyWithImpl<$Res, SurveyData>;
-  @useResult
-  $Res call(
-      {RPTaskResult taskResult,
-      Map<String, Set<String>> scoreDefinitions,
-      Map<String, int> calculatedScores});
-}
-
-/// @nodoc
-class _$SurveyDataCopyWithImpl<$Res, $Val extends SurveyData>
-    implements $SurveyDataCopyWith<$Res> {
-  _$SurveyDataCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of SurveyData
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $SurveyDataCopyWith<SurveyData> get copyWith =>
+      _$SurveyDataCopyWithImpl<SurveyData>(this as SurveyData, _$identity);
+
+  /// Serializes this SurveyData to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? taskResult = null,
-    Object? scoreDefinitions = null,
-    Object? calculatedScores = null,
-  }) {
-    return _then(_value.copyWith(
-      taskResult: null == taskResult
-          ? _value.taskResult
-          : taskResult // ignore: cast_nullable_to_non_nullable
-              as RPTaskResult,
-      scoreDefinitions: null == scoreDefinitions
-          ? _value.scoreDefinitions
-          : scoreDefinitions // ignore: cast_nullable_to_non_nullable
-              as Map<String, Set<String>>,
-      calculatedScores: null == calculatedScores
-          ? _value.calculatedScores
-          : calculatedScores // ignore: cast_nullable_to_non_nullable
-              as Map<String, int>,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is SurveyData &&
+            (identical(other.taskResult, taskResult) ||
+                other.taskResult == taskResult) &&
+            const DeepCollectionEquality()
+                .equals(other.scoreDefinitions, scoreDefinitions) &&
+            const DeepCollectionEquality()
+                .equals(other.calculatedScores, calculatedScores));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      taskResult,
+      const DeepCollectionEquality().hash(scoreDefinitions),
+      const DeepCollectionEquality().hash(calculatedScores));
+
+  @override
+  String toString() {
+    return 'SurveyData(taskResult: $taskResult, scoreDefinitions: $scoreDefinitions, calculatedScores: $calculatedScores)';
   }
 }
 
 /// @nodoc
-abstract class _$$SurveyDataImplCopyWith<$Res>
-    implements $SurveyDataCopyWith<$Res> {
-  factory _$$SurveyDataImplCopyWith(
-          _$SurveyDataImpl value, $Res Function(_$SurveyDataImpl) then) =
-      __$$SurveyDataImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $SurveyDataCopyWith<$Res> {
+  factory $SurveyDataCopyWith(
+          SurveyData value, $Res Function(SurveyData) _then) =
+      _$SurveyDataCopyWithImpl;
   @useResult
   $Res call(
       {RPTaskResult taskResult,
@@ -1404,12 +2148,11 @@ abstract class _$$SurveyDataImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SurveyDataImplCopyWithImpl<$Res>
-    extends _$SurveyDataCopyWithImpl<$Res, _$SurveyDataImpl>
-    implements _$$SurveyDataImplCopyWith<$Res> {
-  __$$SurveyDataImplCopyWithImpl(
-      _$SurveyDataImpl _value, $Res Function(_$SurveyDataImpl) _then)
-      : super(_value, _then);
+class _$SurveyDataCopyWithImpl<$Res> implements $SurveyDataCopyWith<$Res> {
+  _$SurveyDataCopyWithImpl(this._self, this._then);
+
+  final SurveyData _self;
+  final $Res Function(SurveyData) _then;
 
   /// Create a copy of SurveyData
   /// with the given fields replaced by the non-null parameter values.
@@ -1420,35 +2163,206 @@ class __$$SurveyDataImplCopyWithImpl<$Res>
     Object? scoreDefinitions = null,
     Object? calculatedScores = null,
   }) {
-    return _then(_$SurveyDataImpl(
+    return _then(_self.copyWith(
       taskResult: null == taskResult
-          ? _value.taskResult
+          ? _self.taskResult
           : taskResult // ignore: cast_nullable_to_non_nullable
               as RPTaskResult,
       scoreDefinitions: null == scoreDefinitions
-          ? _value._scoreDefinitions
+          ? _self.scoreDefinitions
           : scoreDefinitions // ignore: cast_nullable_to_non_nullable
               as Map<String, Set<String>>,
       calculatedScores: null == calculatedScores
-          ? _value._calculatedScores
+          ? _self.calculatedScores
           : calculatedScores // ignore: cast_nullable_to_non_nullable
               as Map<String, int>,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [SurveyData].
+extension SurveyDataPatterns on SurveyData {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_SurveyData value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _SurveyData() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_SurveyData value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _SurveyData():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_SurveyData value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _SurveyData() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            RPTaskResult taskResult,
+            Map<String, Set<String>> scoreDefinitions,
+            Map<String, int> calculatedScores)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _SurveyData() when $default != null:
+        return $default(
+            _that.taskResult, _that.scoreDefinitions, _that.calculatedScores);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            RPTaskResult taskResult,
+            Map<String, Set<String>> scoreDefinitions,
+            Map<String, int> calculatedScores)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _SurveyData():
+        return $default(
+            _that.taskResult, _that.scoreDefinitions, _that.calculatedScores);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            RPTaskResult taskResult,
+            Map<String, Set<String>> scoreDefinitions,
+            Map<String, int> calculatedScores)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _SurveyData() when $default != null:
+        return $default(
+            _that.taskResult, _that.scoreDefinitions, _that.calculatedScores);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$SurveyDataImpl implements _SurveyData {
-  const _$SurveyDataImpl(
+class _SurveyData implements SurveyData {
+  const _SurveyData(
       {required this.taskResult,
       required final Map<String, Set<String>> scoreDefinitions,
       required final Map<String, int> calculatedScores})
       : _scoreDefinitions = scoreDefinitions,
         _calculatedScores = calculatedScores;
-
-  factory _$SurveyDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$SurveyDataImplFromJson(json);
+  factory _SurveyData.fromJson(Map<String, dynamic> json) =>
+      _$SurveyDataFromJson(json);
 
   @override
   final RPTaskResult taskResult;
@@ -1468,16 +2382,26 @@ class _$SurveyDataImpl implements _SurveyData {
     return EqualUnmodifiableMapView(_calculatedScores);
   }
 
+  /// Create a copy of SurveyData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'SurveyData(taskResult: $taskResult, scoreDefinitions: $scoreDefinitions, calculatedScores: $calculatedScores)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$SurveyDataCopyWith<_SurveyData> get copyWith =>
+      __$SurveyDataCopyWithImpl<_SurveyData>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$SurveyDataToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$SurveyDataImpl &&
+            other is _SurveyData &&
             (identical(other.taskResult, taskResult) ||
                 other.taskResult == taskResult) &&
             const DeepCollectionEquality()
@@ -1494,44 +2418,57 @@ class _$SurveyDataImpl implements _SurveyData {
       const DeepCollectionEquality().hash(_scoreDefinitions),
       const DeepCollectionEquality().hash(_calculatedScores));
 
-  /// Create a copy of SurveyData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$SurveyDataImplCopyWith<_$SurveyDataImpl> get copyWith =>
-      __$$SurveyDataImplCopyWithImpl<_$SurveyDataImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$SurveyDataImplToJson(
-      this,
-    );
+  String toString() {
+    return 'SurveyData(taskResult: $taskResult, scoreDefinitions: $scoreDefinitions, calculatedScores: $calculatedScores)';
   }
 }
 
-abstract class _SurveyData implements SurveyData {
-  const factory _SurveyData(
-      {required final RPTaskResult taskResult,
-      required final Map<String, Set<String>> scoreDefinitions,
-      required final Map<String, int> calculatedScores}) = _$SurveyDataImpl;
+/// @nodoc
+abstract mixin class _$SurveyDataCopyWith<$Res>
+    implements $SurveyDataCopyWith<$Res> {
+  factory _$SurveyDataCopyWith(
+          _SurveyData value, $Res Function(_SurveyData) _then) =
+      __$SurveyDataCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {RPTaskResult taskResult,
+      Map<String, Set<String>> scoreDefinitions,
+      Map<String, int> calculatedScores});
+}
 
-  factory _SurveyData.fromJson(Map<String, dynamic> json) =
-      _$SurveyDataImpl.fromJson;
+/// @nodoc
+class __$SurveyDataCopyWithImpl<$Res> implements _$SurveyDataCopyWith<$Res> {
+  __$SurveyDataCopyWithImpl(this._self, this._then);
 
-  @override
-  RPTaskResult get taskResult;
-  @override
-  Map<String, Set<String>> get scoreDefinitions;
-  @override
-  Map<String, int> get calculatedScores;
+  final _SurveyData _self;
+  final $Res Function(_SurveyData) _then;
 
   /// Create a copy of SurveyData
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$SurveyDataImplCopyWith<_$SurveyDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? taskResult = null,
+    Object? scoreDefinitions = null,
+    Object? calculatedScores = null,
+  }) {
+    return _then(_SurveyData(
+      taskResult: null == taskResult
+          ? _self.taskResult
+          : taskResult // ignore: cast_nullable_to_non_nullable
+              as RPTaskResult,
+      scoreDefinitions: null == scoreDefinitions
+          ? _self._scoreDefinitions
+          : scoreDefinitions // ignore: cast_nullable_to_non_nullable
+              as Map<String, Set<String>>,
+      calculatedScores: null == calculatedScores
+          ? _self._calculatedScores
+          : calculatedScores // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>,
+    ));
+  }
 }
 
 JournalEntity _$JournalEntityFromJson(Map<String, dynamic> json) {
@@ -1571,374 +2508,26 @@ JournalEntity _$JournalEntityFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$JournalEntity {
-  Metadata get meta => throw _privateConstructorUsedError;
-  EntryText? get entryText => throw _privateConstructorUsedError;
-  Geolocation? get geolocation => throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-
-  /// Serializes this JournalEntity to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  Metadata get meta;
+  EntryText? get entryText;
+  Geolocation? get geolocation;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
   $JournalEntityCopyWith<JournalEntity> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+      _$JournalEntityCopyWithImpl<JournalEntity>(
+          this as JournalEntity, _$identity);
 
-/// @nodoc
-abstract class $JournalEntityCopyWith<$Res> {
-  factory $JournalEntityCopyWith(
-          JournalEntity value, $Res Function(JournalEntity) then) =
-      _$JournalEntityCopyWithImpl<$Res, JournalEntity>;
-  @useResult
-  $Res call({Metadata meta, EntryText? entryText, Geolocation? geolocation});
-
-  $MetadataCopyWith<$Res> get meta;
-  $EntryTextCopyWith<$Res>? get entryText;
-  $GeolocationCopyWith<$Res>? get geolocation;
-}
-
-/// @nodoc
-class _$JournalEntityCopyWithImpl<$Res, $Val extends JournalEntity>
-    implements $JournalEntityCopyWith<$Res> {
-  _$JournalEntityCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? meta = null,
-    Object? entryText = freezed,
-    Object? geolocation = freezed,
-  }) {
-    return _then(_value.copyWith(
-      meta: null == meta
-          ? _value.meta
-          : meta // ignore: cast_nullable_to_non_nullable
-              as Metadata,
-      entryText: freezed == entryText
-          ? _value.entryText
-          : entryText // ignore: cast_nullable_to_non_nullable
-              as EntryText?,
-      geolocation: freezed == geolocation
-          ? _value.geolocation
-          : geolocation // ignore: cast_nullable_to_non_nullable
-              as Geolocation?,
-    ) as $Val);
-  }
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $MetadataCopyWith<$Res> get meta {
-    return $MetadataCopyWith<$Res>(_value.meta, (value) {
-      return _then(_value.copyWith(meta: value) as $Val);
-    });
-  }
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $EntryTextCopyWith<$Res>? get entryText {
-    if (_value.entryText == null) {
-      return null;
-    }
-
-    return $EntryTextCopyWith<$Res>(_value.entryText!, (value) {
-      return _then(_value.copyWith(entryText: value) as $Val);
-    });
-  }
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $GeolocationCopyWith<$Res>? get geolocation {
-    if (_value.geolocation == null) {
-      return null;
-    }
-
-    return $GeolocationCopyWith<$Res>(_value.geolocation!, (value) {
-      return _then(_value.copyWith(geolocation: value) as $Val);
-    });
-  }
-}
-
-/// @nodoc
-abstract class _$$JournalEntryImplCopyWith<$Res>
-    implements $JournalEntityCopyWith<$Res> {
-  factory _$$JournalEntryImplCopyWith(
-          _$JournalEntryImpl value, $Res Function(_$JournalEntryImpl) then) =
-      __$$JournalEntryImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({Metadata meta, EntryText? entryText, Geolocation? geolocation});
-
-  @override
-  $MetadataCopyWith<$Res> get meta;
-  @override
-  $EntryTextCopyWith<$Res>? get entryText;
-  @override
-  $GeolocationCopyWith<$Res>? get geolocation;
-}
-
-/// @nodoc
-class __$$JournalEntryImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$JournalEntryImpl>
-    implements _$$JournalEntryImplCopyWith<$Res> {
-  __$$JournalEntryImplCopyWithImpl(
-      _$JournalEntryImpl _value, $Res Function(_$JournalEntryImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? meta = null,
-    Object? entryText = freezed,
-    Object? geolocation = freezed,
-  }) {
-    return _then(_$JournalEntryImpl(
-      meta: null == meta
-          ? _value.meta
-          : meta // ignore: cast_nullable_to_non_nullable
-              as Metadata,
-      entryText: freezed == entryText
-          ? _value.entryText
-          : entryText // ignore: cast_nullable_to_non_nullable
-              as EntryText?,
-      geolocation: freezed == geolocation
-          ? _value.geolocation
-          : geolocation // ignore: cast_nullable_to_non_nullable
-              as Geolocation?,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$JournalEntryImpl implements JournalEntry {
-  const _$JournalEntryImpl(
-      {required this.meta,
-      this.entryText,
-      this.geolocation,
-      final String? $type})
-      : $type = $type ?? 'journalEntry';
-
-  factory _$JournalEntryImpl.fromJson(Map<String, dynamic> json) =>
-      _$$JournalEntryImplFromJson(json);
-
-  @override
-  final Metadata meta;
-  @override
-  final EntryText? entryText;
-  @override
-  final Geolocation? geolocation;
-
-  @JsonKey(name: 'runtimeType')
-  final String $type;
-
-  @override
-  String toString() {
-    return 'JournalEntity.journalEntry(meta: $meta, entryText: $entryText, geolocation: $geolocation)';
-  }
+  /// Serializes this JournalEntity to a JSON map.
+  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$JournalEntryImpl &&
+            other is JournalEntity &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.entryText, entryText) ||
                 other.entryText == entryText) &&
@@ -1950,107 +2539,296 @@ class _$JournalEntryImpl implements JournalEntry {
   @override
   int get hashCode => Object.hash(runtimeType, meta, entryText, geolocation);
 
+  @override
+  String toString() {
+    return 'JournalEntity(meta: $meta, entryText: $entryText, geolocation: $geolocation)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $JournalEntityCopyWith<$Res> {
+  factory $JournalEntityCopyWith(
+          JournalEntity value, $Res Function(JournalEntity) _then) =
+      _$JournalEntityCopyWithImpl;
+  @useResult
+  $Res call({Metadata meta, EntryText? entryText, Geolocation? geolocation});
+
+  $MetadataCopyWith<$Res> get meta;
+  $EntryTextCopyWith<$Res>? get entryText;
+  $GeolocationCopyWith<$Res>? get geolocation;
+}
+
+/// @nodoc
+class _$JournalEntityCopyWithImpl<$Res>
+    implements $JournalEntityCopyWith<$Res> {
+  _$JournalEntityCopyWithImpl(this._self, this._then);
+
+  final JournalEntity _self;
+  final $Res Function(JournalEntity) _then;
+
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? meta = null,
+    Object? entryText = freezed,
+    Object? geolocation = freezed,
+  }) {
+    return _then(_self.copyWith(
+      meta: null == meta
+          ? _self.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Metadata,
+      entryText: freezed == entryText
+          ? _self.entryText
+          : entryText // ignore: cast_nullable_to_non_nullable
+              as EntryText?,
+      geolocation: freezed == geolocation
+          ? _self.geolocation
+          : geolocation // ignore: cast_nullable_to_non_nullable
+              as Geolocation?,
+    ));
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  _$$JournalEntryImplCopyWith<_$JournalEntryImpl> get copyWith =>
-      __$$JournalEntryImplCopyWithImpl<_$JournalEntryImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return journalEntry(meta, entryText, geolocation);
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
   }
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return journalEntry?.call(meta, entryText, geolocation);
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
   }
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
+  }
+}
+
+/// Adds pattern-matching-related methods to [JournalEntity].
+extension JournalEntityPatterns on JournalEntity {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(JournalEntry value)? journalEntry,
+    TResult Function(JournalImage value)? journalImage,
+    TResult Function(JournalAudio value)? journalAudio,
+    TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
+    TResult Function(ChecklistItem value)? checklistItem,
+    TResult Function(Checklist value)? checklist,
+    TResult Function(QuantitativeEntry value)? quantitative,
+    TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
+    TResult Function(WorkoutEntry value)? workout,
+    TResult Function(HabitCompletionEntry value)? habitCompletion,
+    TResult Function(SurveyEntry value)? survey,
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case JournalEntry() when journalEntry != null:
+        return journalEntry(_that);
+      case JournalImage() when journalImage != null:
+        return journalImage(_that);
+      case JournalAudio() when journalAudio != null:
+        return journalAudio(_that);
+      case Task() when task != null:
+        return task(_that);
+      case JournalEvent() when event != null:
+        return event(_that);
+      case ChecklistItem() when checklistItem != null:
+        return checklistItem(_that);
+      case Checklist() when checklist != null:
+        return checklist(_that);
+      case QuantitativeEntry() when quantitative != null:
+        return quantitative(_that);
+      case MeasurementEntry() when measurement != null:
+        return measurement(_that);
+      case AiResponseEntry() when aiResponse != null:
+        return aiResponse(_that);
+      case WorkoutEntry() when workout != null:
+        return workout(_that);
+      case HabitCompletionEntry() when habitCompletion != null:
+        return habitCompletion(_that);
+      case SurveyEntry() when survey != null:
+        return survey(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(JournalEntry value) journalEntry,
+    required TResult Function(JournalImage value) journalImage,
+    required TResult Function(JournalAudio value) journalAudio,
+    required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
+    required TResult Function(ChecklistItem value) checklistItem,
+    required TResult Function(Checklist value) checklist,
+    required TResult Function(QuantitativeEntry value) quantitative,
+    required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
+    required TResult Function(WorkoutEntry value) workout,
+    required TResult Function(HabitCompletionEntry value) habitCompletion,
+    required TResult Function(SurveyEntry value) survey,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case JournalEntry():
+        return journalEntry(_that);
+      case JournalImage():
+        return journalImage(_that);
+      case JournalAudio():
+        return journalAudio(_that);
+      case Task():
+        return task(_that);
+      case JournalEvent():
+        return event(_that);
+      case ChecklistItem():
+        return checklistItem(_that);
+      case Checklist():
+        return checklist(_that);
+      case QuantitativeEntry():
+        return quantitative(_that);
+      case MeasurementEntry():
+        return measurement(_that);
+      case AiResponseEntry():
+        return aiResponse(_that);
+      case WorkoutEntry():
+        return workout(_that);
+      case HabitCompletionEntry():
+        return habitCompletion(_that);
+      case SurveyEntry():
+        return survey(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(JournalEntry value)? journalEntry,
+    TResult? Function(JournalImage value)? journalImage,
+    TResult? Function(JournalAudio value)? journalAudio,
+    TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
+    TResult? Function(ChecklistItem value)? checklistItem,
+    TResult? Function(Checklist value)? checklist,
+    TResult? Function(QuantitativeEntry value)? quantitative,
+    TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
+    TResult? Function(WorkoutEntry value)? workout,
+    TResult? Function(HabitCompletionEntry value)? habitCompletion,
+    TResult? Function(SurveyEntry value)? survey,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case JournalEntry() when journalEntry != null:
+        return journalEntry(_that);
+      case JournalImage() when journalImage != null:
+        return journalImage(_that);
+      case JournalAudio() when journalAudio != null:
+        return journalAudio(_that);
+      case Task() when task != null:
+        return task(_that);
+      case JournalEvent() when event != null:
+        return event(_that);
+      case ChecklistItem() when checklistItem != null:
+        return checklistItem(_that);
+      case Checklist() when checklist != null:
+        return checklist(_that);
+      case QuantitativeEntry() when quantitative != null:
+        return quantitative(_that);
+      case MeasurementEntry() when measurement != null:
+        return measurement(_that);
+      case AiResponseEntry() when aiResponse != null:
+        return aiResponse(_that);
+      case WorkoutEntry() when workout != null:
+        return workout(_that);
+      case HabitCompletionEntry() when habitCompletion != null:
+        return habitCompletion(_that);
+      case SurveyEntry() when survey != null:
+        return survey(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(
@@ -2094,114 +2872,465 @@ class _$JournalEntryImpl implements JournalEntry {
         survey,
     required TResult orElse(),
   }) {
-    if (journalEntry != null) {
-      return journalEntry(meta, entryText, geolocation);
+    final _that = this;
+    switch (_that) {
+      case JournalEntry() when journalEntry != null:
+        return journalEntry(_that.meta, _that.entryText, _that.geolocation);
+      case JournalImage() when journalImage != null:
+        return journalImage(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case JournalAudio() when journalAudio != null:
+        return journalAudio(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case Task() when task != null:
+        return task(_that.meta, _that.data, _that.entryText, _that.geolocation);
+      case JournalEvent() when event != null:
+        return event(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case ChecklistItem() when checklistItem != null:
+        return checklistItem(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case Checklist() when checklist != null:
+        return checklist(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case QuantitativeEntry() when quantitative != null:
+        return quantitative(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case MeasurementEntry() when measurement != null:
+        return measurement(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case AiResponseEntry() when aiResponse != null:
+        return aiResponse(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case WorkoutEntry() when workout != null:
+        return workout(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case HabitCompletionEntry() when habitCompletion != null:
+        return habitCompletion(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case SurveyEntry() when survey != null:
+        return survey(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case _:
+        return orElse();
     }
-    return orElse();
   }
 
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return journalEntry(this);
-  }
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
 
-  @override
   @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
+  TResult when<TResult extends Object?>({
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
+        journalEntry,
+    required TResult Function(Metadata meta, ImageData data,
+            EntryText? entryText, Geolocation? geolocation)
+        journalImage,
+    required TResult Function(Metadata meta, AudioData data,
+            EntryText? entryText, Geolocation? geolocation)
+        journalAudio,
+    required TResult Function(Metadata meta, TaskData data,
+            EntryText? entryText, Geolocation? geolocation)
+        task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
+    required TResult Function(Metadata meta, ChecklistItemData data,
+            EntryText? entryText, Geolocation? geolocation)
+        checklistItem,
+    required TResult Function(Metadata meta, ChecklistData data,
+            EntryText? entryText, Geolocation? geolocation)
+        checklist,
+    required TResult Function(Metadata meta, QuantitativeData data,
+            EntryText? entryText, Geolocation? geolocation)
+        quantitative,
+    required TResult Function(Metadata meta, MeasurementData data,
+            EntryText? entryText, Geolocation? geolocation)
+        measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
+        workout,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
-    return journalEntry?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (journalEntry != null) {
-      return journalEntry(this);
+    final _that = this;
+    switch (_that) {
+      case JournalEntry():
+        return journalEntry(_that.meta, _that.entryText, _that.geolocation);
+      case JournalImage():
+        return journalImage(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case JournalAudio():
+        return journalAudio(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case Task():
+        return task(_that.meta, _that.data, _that.entryText, _that.geolocation);
+      case JournalEvent():
+        return event(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case ChecklistItem():
+        return checklistItem(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case Checklist():
+        return checklist(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case QuantitativeEntry():
+        return quantitative(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case MeasurementEntry():
+        return measurement(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case AiResponseEntry():
+        return aiResponse(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case WorkoutEntry():
+        return workout(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case HabitCompletionEntry():
+        return habitCompletion(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case SurveyEntry():
+        return survey(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case _:
+        throw StateError('Unexpected subclass');
     }
-    return orElse();
   }
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$JournalEntryImplToJson(
-      this,
-    );
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+        journalEntry,
+    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalImage,
+    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalAudio,
+    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
+    TResult? Function(Metadata meta, ChecklistItemData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        checklistItem,
+    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        checklist,
+    TResult? Function(Metadata meta, QuantitativeData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        quantitative,
+    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        workout,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case JournalEntry() when journalEntry != null:
+        return journalEntry(_that.meta, _that.entryText, _that.geolocation);
+      case JournalImage() when journalImage != null:
+        return journalImage(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case JournalAudio() when journalAudio != null:
+        return journalAudio(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case Task() when task != null:
+        return task(_that.meta, _that.data, _that.entryText, _that.geolocation);
+      case JournalEvent() when event != null:
+        return event(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case ChecklistItem() when checklistItem != null:
+        return checklistItem(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case Checklist() when checklist != null:
+        return checklist(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case QuantitativeEntry() when quantitative != null:
+        return quantitative(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case MeasurementEntry() when measurement != null:
+        return measurement(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case AiResponseEntry() when aiResponse != null:
+        return aiResponse(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case WorkoutEntry() when workout != null:
+        return workout(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case HabitCompletionEntry() when habitCompletion != null:
+        return habitCompletion(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case SurveyEntry() when survey != null:
+        return survey(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case _:
+        return null;
+    }
   }
 }
 
-abstract class JournalEntry implements JournalEntity {
-  const factory JournalEntry(
-      {required final Metadata meta,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$JournalEntryImpl;
+/// @nodoc
+@JsonSerializable()
+class JournalEntry implements JournalEntity {
+  const JournalEntry(
+      {required this.meta,
+      this.entryText,
+      this.geolocation,
+      final String? $type})
+      : $type = $type ?? 'journalEntry';
+  factory JournalEntry.fromJson(Map<String, dynamic> json) =>
+      _$JournalEntryFromJson(json);
 
-  factory JournalEntry.fromJson(Map<String, dynamic> json) =
-      _$JournalEntryImpl.fromJson;
+  @override
+  final Metadata meta;
+  @override
+  final EntryText? entryText;
+  @override
+  final Geolocation? geolocation;
 
-  @override
-  Metadata get meta;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
+  @JsonKey(name: 'runtimeType')
+  final String $type;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$JournalEntryImplCopyWith<_$JournalEntryImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $JournalEntryCopyWith<JournalEntry> get copyWith =>
+      _$JournalEntryCopyWithImpl<JournalEntry>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$JournalEntryToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is JournalEntry &&
+            (identical(other.meta, meta) || other.meta == meta) &&
+            (identical(other.entryText, entryText) ||
+                other.entryText == entryText) &&
+            (identical(other.geolocation, geolocation) ||
+                other.geolocation == geolocation));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, meta, entryText, geolocation);
+
+  @override
+  String toString() {
+    return 'JournalEntity.journalEntry(meta: $meta, entryText: $entryText, geolocation: $geolocation)';
+  }
 }
 
 /// @nodoc
-abstract class _$$JournalImageImplCopyWith<$Res>
+abstract mixin class $JournalEntryCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$JournalImageImplCopyWith(
-          _$JournalImageImpl value, $Res Function(_$JournalImageImpl) then) =
-      __$$JournalImageImplCopyWithImpl<$Res>;
+  factory $JournalEntryCopyWith(
+          JournalEntry value, $Res Function(JournalEntry) _then) =
+      _$JournalEntryCopyWithImpl;
+  @override
+  @useResult
+  $Res call({Metadata meta, EntryText? entryText, Geolocation? geolocation});
+
+  @override
+  $MetadataCopyWith<$Res> get meta;
+  @override
+  $EntryTextCopyWith<$Res>? get entryText;
+  @override
+  $GeolocationCopyWith<$Res>? get geolocation;
+}
+
+/// @nodoc
+class _$JournalEntryCopyWithImpl<$Res> implements $JournalEntryCopyWith<$Res> {
+  _$JournalEntryCopyWithImpl(this._self, this._then);
+
+  final JournalEntry _self;
+  final $Res Function(JournalEntry) _then;
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? meta = null,
+    Object? entryText = freezed,
+    Object? geolocation = freezed,
+  }) {
+    return _then(JournalEntry(
+      meta: null == meta
+          ? _self.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Metadata,
+      entryText: freezed == entryText
+          ? _self.entryText
+          : entryText // ignore: cast_nullable_to_non_nullable
+              as EntryText?,
+      geolocation: freezed == geolocation
+          ? _self.geolocation
+          : geolocation // ignore: cast_nullable_to_non_nullable
+              as Geolocation?,
+    ));
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class JournalImage implements JournalEntity {
+  const JournalImage(
+      {required this.meta,
+      required this.data,
+      this.entryText,
+      this.geolocation,
+      final String? $type})
+      : $type = $type ?? 'journalImage';
+  factory JournalImage.fromJson(Map<String, dynamic> json) =>
+      _$JournalImageFromJson(json);
+
+  @override
+  final Metadata meta;
+  final ImageData data;
+  @override
+  final EntryText? entryText;
+  @override
+  final Geolocation? geolocation;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $JournalImageCopyWith<JournalImage> get copyWith =>
+      _$JournalImageCopyWithImpl<JournalImage>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$JournalImageToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is JournalImage &&
+            (identical(other.meta, meta) || other.meta == meta) &&
+            (identical(other.data, data) || other.data == data) &&
+            (identical(other.entryText, entryText) ||
+                other.entryText == entryText) &&
+            (identical(other.geolocation, geolocation) ||
+                other.geolocation == geolocation));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, meta, data, entryText, geolocation);
+
+  @override
+  String toString() {
+    return 'JournalEntity.journalImage(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $JournalImageCopyWith<$Res>
+    implements $JournalEntityCopyWith<$Res> {
+  factory $JournalImageCopyWith(
+          JournalImage value, $Res Function(JournalImage) _then) =
+      _$JournalImageCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -2220,38 +3349,37 @@ abstract class _$$JournalImageImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$JournalImageImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$JournalImageImpl>
-    implements _$$JournalImageImplCopyWith<$Res> {
-  __$$JournalImageImplCopyWithImpl(
-      _$JournalImageImpl _value, $Res Function(_$JournalImageImpl) _then)
-      : super(_value, _then);
+class _$JournalImageCopyWithImpl<$Res> implements $JournalImageCopyWith<$Res> {
+  _$JournalImageCopyWithImpl(this._self, this._then);
+
+  final JournalImage _self;
+  final $Res Function(JournalImage) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$JournalImageImpl(
+    return _then(JournalImage(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as ImageData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -2261,31 +3389,67 @@ class __$$JournalImageImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $ImageDataCopyWith<$Res> get data {
-    return $ImageDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $ImageDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$JournalImageImpl implements JournalImage {
-  const _$JournalImageImpl(
+class JournalAudio implements JournalEntity {
+  const JournalAudio(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'journalImage';
-
-  factory _$JournalImageImpl.fromJson(Map<String, dynamic> json) =>
-      _$$JournalImageImplFromJson(json);
+      : $type = $type ?? 'journalAudio';
+  factory JournalAudio.fromJson(Map<String, dynamic> json) =>
+      _$JournalAudioFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final ImageData data;
+  final AudioData data;
   @override
   final EntryText? entryText;
   @override
@@ -2294,16 +3458,26 @@ class _$JournalImageImpl implements JournalImage {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.journalImage(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $JournalAudioCopyWith<JournalAudio> get copyWith =>
+      _$JournalAudioCopyWithImpl<JournalAudio>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$JournalAudioToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$JournalImageImpl &&
+            other is JournalAudio &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -2317,260 +3491,18 @@ class _$JournalImageImpl implements JournalImage {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$JournalImageImplCopyWith<_$JournalImageImpl> get copyWith =>
-      __$$JournalImageImplCopyWithImpl<_$JournalImageImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return journalImage(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.journalAudio(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return journalImage?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (journalImage != null) {
-      return journalImage(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return journalImage(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return journalImage?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (journalImage != null) {
-      return journalImage(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$JournalImageImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class JournalImage implements JournalEntity {
-  const factory JournalImage(
-      {required final Metadata meta,
-      required final ImageData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$JournalImageImpl;
-
-  factory JournalImage.fromJson(Map<String, dynamic> json) =
-      _$JournalImageImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  ImageData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$JournalImageImplCopyWith<_$JournalImageImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$JournalAudioImplCopyWith<$Res>
+abstract mixin class $JournalAudioCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$JournalAudioImplCopyWith(
-          _$JournalAudioImpl value, $Res Function(_$JournalAudioImpl) then) =
-      __$$JournalAudioImplCopyWithImpl<$Res>;
+  factory $JournalAudioCopyWith(
+          JournalAudio value, $Res Function(JournalAudio) _then) =
+      _$JournalAudioCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -2589,38 +3521,37 @@ abstract class _$$JournalAudioImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$JournalAudioImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$JournalAudioImpl>
-    implements _$$JournalAudioImplCopyWith<$Res> {
-  __$$JournalAudioImplCopyWithImpl(
-      _$JournalAudioImpl _value, $Res Function(_$JournalAudioImpl) _then)
-      : super(_value, _then);
+class _$JournalAudioCopyWithImpl<$Res> implements $JournalAudioCopyWith<$Res> {
+  _$JournalAudioCopyWithImpl(this._self, this._then);
+
+  final JournalAudio _self;
+  final $Res Function(JournalAudio) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$JournalAudioImpl(
+    return _then(JournalAudio(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as AudioData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -2630,31 +3561,66 @@ class __$$JournalAudioImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $AudioDataCopyWith<$Res> get data {
-    return $AudioDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $AudioDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$JournalAudioImpl implements JournalAudio {
-  const _$JournalAudioImpl(
+class Task implements JournalEntity {
+  const Task(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'journalAudio';
-
-  factory _$JournalAudioImpl.fromJson(Map<String, dynamic> json) =>
-      _$$JournalAudioImplFromJson(json);
+      : $type = $type ?? 'task';
+  factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final AudioData data;
+  final TaskData data;
   @override
   final EntryText? entryText;
   @override
@@ -2663,16 +3629,26 @@ class _$JournalAudioImpl implements JournalAudio {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.journalAudio(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TaskCopyWith<Task> get copyWith =>
+      _$TaskCopyWithImpl<Task>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$JournalAudioImpl &&
+            other is Task &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -2686,260 +3662,17 @@ class _$JournalAudioImpl implements JournalAudio {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$JournalAudioImplCopyWith<_$JournalAudioImpl> get copyWith =>
-      __$$JournalAudioImplCopyWithImpl<_$JournalAudioImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return journalAudio(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.task(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return journalAudio?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (journalAudio != null) {
-      return journalAudio(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return journalAudio(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return journalAudio?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (journalAudio != null) {
-      return journalAudio(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$JournalAudioImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class JournalAudio implements JournalEntity {
-  const factory JournalAudio(
-      {required final Metadata meta,
-      required final AudioData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$JournalAudioImpl;
-
-  factory JournalAudio.fromJson(Map<String, dynamic> json) =
-      _$JournalAudioImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  AudioData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$JournalAudioImplCopyWith<_$JournalAudioImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$TaskImplCopyWith<$Res>
+abstract mixin class $TaskCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$TaskImplCopyWith(
-          _$TaskImpl value, $Res Function(_$TaskImpl) then) =
-      __$$TaskImplCopyWithImpl<$Res>;
+  factory $TaskCopyWith(Task value, $Res Function(Task) _then) =
+      _$TaskCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -2958,37 +3691,37 @@ abstract class _$$TaskImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TaskImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$TaskImpl>
-    implements _$$TaskImplCopyWith<$Res> {
-  __$$TaskImplCopyWithImpl(_$TaskImpl _value, $Res Function(_$TaskImpl) _then)
-      : super(_value, _then);
+class _$TaskCopyWithImpl<$Res> implements $TaskCopyWith<$Res> {
+  _$TaskCopyWithImpl(this._self, this._then);
+
+  final Task _self;
+  final $Res Function(Task) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$TaskImpl(
+    return _then(Task(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as TaskData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -2998,31 +3731,67 @@ class __$$TaskImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $TaskDataCopyWith<$Res> get data {
-    return $TaskDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $TaskDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$TaskImpl implements Task {
-  const _$TaskImpl(
+class JournalEvent implements JournalEntity {
+  const JournalEvent(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'task';
-
-  factory _$TaskImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskImplFromJson(json);
+      : $type = $type ?? 'event';
+  factory JournalEvent.fromJson(Map<String, dynamic> json) =>
+      _$JournalEventFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final TaskData data;
+  final EventData data;
   @override
   final EntryText? entryText;
   @override
@@ -3031,16 +3800,26 @@ class _$TaskImpl implements Task {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.task(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $JournalEventCopyWith<JournalEvent> get copyWith =>
+      _$JournalEventCopyWithImpl<JournalEvent>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$JournalEventToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskImpl &&
+            other is JournalEvent &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -3054,259 +3833,18 @@ class _$TaskImpl implements Task {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskImplCopyWith<_$TaskImpl> get copyWith =>
-      __$$TaskImplCopyWithImpl<_$TaskImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return task(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.event(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return task?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (task != null) {
-      return task(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return task(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return task?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (task != null) {
-      return task(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class Task implements JournalEntity {
-  const factory Task(
-      {required final Metadata meta,
-      required final TaskData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$TaskImpl;
-
-  factory Task.fromJson(Map<String, dynamic> json) = _$TaskImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  TaskData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskImplCopyWith<_$TaskImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$JournalEventImplCopyWith<$Res>
+abstract mixin class $JournalEventCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$JournalEventImplCopyWith(
-          _$JournalEventImpl value, $Res Function(_$JournalEventImpl) then) =
-      __$$JournalEventImplCopyWithImpl<$Res>;
+  factory $JournalEventCopyWith(
+          JournalEvent value, $Res Function(JournalEvent) _then) =
+      _$JournalEventCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -3325,38 +3863,37 @@ abstract class _$$JournalEventImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$JournalEventImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$JournalEventImpl>
-    implements _$$JournalEventImplCopyWith<$Res> {
-  __$$JournalEventImplCopyWithImpl(
-      _$JournalEventImpl _value, $Res Function(_$JournalEventImpl) _then)
-      : super(_value, _then);
+class _$JournalEventCopyWithImpl<$Res> implements $JournalEventCopyWith<$Res> {
+  _$JournalEventCopyWithImpl(this._self, this._then);
+
+  final JournalEvent _self;
+  final $Res Function(JournalEvent) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$JournalEventImpl(
+    return _then(JournalEvent(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as EventData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -3366,31 +3903,67 @@ class __$$JournalEventImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $EventDataCopyWith<$Res> get data {
-    return $EventDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $EventDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$JournalEventImpl implements JournalEvent {
-  const _$JournalEventImpl(
+class ChecklistItem implements JournalEntity {
+  const ChecklistItem(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'event';
-
-  factory _$JournalEventImpl.fromJson(Map<String, dynamic> json) =>
-      _$$JournalEventImplFromJson(json);
+      : $type = $type ?? 'checklistItem';
+  factory ChecklistItem.fromJson(Map<String, dynamic> json) =>
+      _$ChecklistItemFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final EventData data;
+  final ChecklistItemData data;
   @override
   final EntryText? entryText;
   @override
@@ -3399,16 +3972,26 @@ class _$JournalEventImpl implements JournalEvent {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.event(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $ChecklistItemCopyWith<ChecklistItem> get copyWith =>
+      _$ChecklistItemCopyWithImpl<ChecklistItem>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$ChecklistItemToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$JournalEventImpl &&
+            other is ChecklistItem &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -3422,260 +4005,18 @@ class _$JournalEventImpl implements JournalEvent {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$JournalEventImplCopyWith<_$JournalEventImpl> get copyWith =>
-      __$$JournalEventImplCopyWithImpl<_$JournalEventImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return event(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.checklistItem(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return event?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (event != null) {
-      return event(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return event(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return event?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (event != null) {
-      return event(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$JournalEventImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class JournalEvent implements JournalEntity {
-  const factory JournalEvent(
-      {required final Metadata meta,
-      required final EventData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$JournalEventImpl;
-
-  factory JournalEvent.fromJson(Map<String, dynamic> json) =
-      _$JournalEventImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  EventData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$JournalEventImplCopyWith<_$JournalEventImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$ChecklistItemImplCopyWith<$Res>
+abstract mixin class $ChecklistItemCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$ChecklistItemImplCopyWith(
-          _$ChecklistItemImpl value, $Res Function(_$ChecklistItemImpl) then) =
-      __$$ChecklistItemImplCopyWithImpl<$Res>;
+  factory $ChecklistItemCopyWith(
+          ChecklistItem value, $Res Function(ChecklistItem) _then) =
+      _$ChecklistItemCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -3694,38 +4035,38 @@ abstract class _$$ChecklistItemImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$ChecklistItemImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$ChecklistItemImpl>
-    implements _$$ChecklistItemImplCopyWith<$Res> {
-  __$$ChecklistItemImplCopyWithImpl(
-      _$ChecklistItemImpl _value, $Res Function(_$ChecklistItemImpl) _then)
-      : super(_value, _then);
+class _$ChecklistItemCopyWithImpl<$Res>
+    implements $ChecklistItemCopyWith<$Res> {
+  _$ChecklistItemCopyWithImpl(this._self, this._then);
+
+  final ChecklistItem _self;
+  final $Res Function(ChecklistItem) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$ChecklistItemImpl(
+    return _then(ChecklistItem(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as ChecklistItemData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -3735,31 +4076,67 @@ class __$$ChecklistItemImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $ChecklistItemDataCopyWith<$Res> get data {
-    return $ChecklistItemDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $ChecklistItemDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$ChecklistItemImpl implements ChecklistItem {
-  const _$ChecklistItemImpl(
+class Checklist implements JournalEntity {
+  const Checklist(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'checklistItem';
-
-  factory _$ChecklistItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$ChecklistItemImplFromJson(json);
+      : $type = $type ?? 'checklist';
+  factory Checklist.fromJson(Map<String, dynamic> json) =>
+      _$ChecklistFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final ChecklistItemData data;
+  final ChecklistData data;
   @override
   final EntryText? entryText;
   @override
@@ -3768,16 +4145,26 @@ class _$ChecklistItemImpl implements ChecklistItem {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.checklistItem(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $ChecklistCopyWith<Checklist> get copyWith =>
+      _$ChecklistCopyWithImpl<Checklist>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$ChecklistToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$ChecklistItemImpl &&
+            other is Checklist &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -3791,260 +4178,17 @@ class _$ChecklistItemImpl implements ChecklistItem {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$ChecklistItemImplCopyWith<_$ChecklistItemImpl> get copyWith =>
-      __$$ChecklistItemImplCopyWithImpl<_$ChecklistItemImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return checklistItem(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.checklist(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return checklistItem?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (checklistItem != null) {
-      return checklistItem(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return checklistItem(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return checklistItem?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (checklistItem != null) {
-      return checklistItem(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$ChecklistItemImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class ChecklistItem implements JournalEntity {
-  const factory ChecklistItem(
-      {required final Metadata meta,
-      required final ChecklistItemData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$ChecklistItemImpl;
-
-  factory ChecklistItem.fromJson(Map<String, dynamic> json) =
-      _$ChecklistItemImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  ChecklistItemData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$ChecklistItemImplCopyWith<_$ChecklistItemImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$ChecklistImplCopyWith<$Res>
+abstract mixin class $ChecklistCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$ChecklistImplCopyWith(
-          _$ChecklistImpl value, $Res Function(_$ChecklistImpl) then) =
-      __$$ChecklistImplCopyWithImpl<$Res>;
+  factory $ChecklistCopyWith(Checklist value, $Res Function(Checklist) _then) =
+      _$ChecklistCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -4063,38 +4207,37 @@ abstract class _$$ChecklistImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$ChecklistImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$ChecklistImpl>
-    implements _$$ChecklistImplCopyWith<$Res> {
-  __$$ChecklistImplCopyWithImpl(
-      _$ChecklistImpl _value, $Res Function(_$ChecklistImpl) _then)
-      : super(_value, _then);
+class _$ChecklistCopyWithImpl<$Res> implements $ChecklistCopyWith<$Res> {
+  _$ChecklistCopyWithImpl(this._self, this._then);
+
+  final Checklist _self;
+  final $Res Function(Checklist) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$ChecklistImpl(
+    return _then(Checklist(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as ChecklistData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -4104,31 +4247,67 @@ class __$$ChecklistImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $ChecklistDataCopyWith<$Res> get data {
-    return $ChecklistDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $ChecklistDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$ChecklistImpl implements Checklist {
-  const _$ChecklistImpl(
+class QuantitativeEntry implements JournalEntity {
+  const QuantitativeEntry(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'checklist';
-
-  factory _$ChecklistImpl.fromJson(Map<String, dynamic> json) =>
-      _$$ChecklistImplFromJson(json);
+      : $type = $type ?? 'quantitative';
+  factory QuantitativeEntry.fromJson(Map<String, dynamic> json) =>
+      _$QuantitativeEntryFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final ChecklistData data;
+  final QuantitativeData data;
   @override
   final EntryText? entryText;
   @override
@@ -4137,16 +4316,26 @@ class _$ChecklistImpl implements Checklist {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.checklist(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $QuantitativeEntryCopyWith<QuantitativeEntry> get copyWith =>
+      _$QuantitativeEntryCopyWithImpl<QuantitativeEntry>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$QuantitativeEntryToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$ChecklistImpl &&
+            other is QuantitativeEntry &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -4160,260 +4349,18 @@ class _$ChecklistImpl implements Checklist {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$ChecklistImplCopyWith<_$ChecklistImpl> get copyWith =>
-      __$$ChecklistImplCopyWithImpl<_$ChecklistImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return checklist(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.quantitative(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return checklist?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (checklist != null) {
-      return checklist(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return checklist(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return checklist?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (checklist != null) {
-      return checklist(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$ChecklistImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class Checklist implements JournalEntity {
-  const factory Checklist(
-      {required final Metadata meta,
-      required final ChecklistData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$ChecklistImpl;
-
-  factory Checklist.fromJson(Map<String, dynamic> json) =
-      _$ChecklistImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  ChecklistData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$ChecklistImplCopyWith<_$ChecklistImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$QuantitativeEntryImplCopyWith<$Res>
+abstract mixin class $QuantitativeEntryCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$QuantitativeEntryImplCopyWith(_$QuantitativeEntryImpl value,
-          $Res Function(_$QuantitativeEntryImpl) then) =
-      __$$QuantitativeEntryImplCopyWithImpl<$Res>;
+  factory $QuantitativeEntryCopyWith(
+          QuantitativeEntry value, $Res Function(QuantitativeEntry) _then) =
+      _$QuantitativeEntryCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -4432,38 +4379,38 @@ abstract class _$$QuantitativeEntryImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$QuantitativeEntryImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$QuantitativeEntryImpl>
-    implements _$$QuantitativeEntryImplCopyWith<$Res> {
-  __$$QuantitativeEntryImplCopyWithImpl(_$QuantitativeEntryImpl _value,
-      $Res Function(_$QuantitativeEntryImpl) _then)
-      : super(_value, _then);
+class _$QuantitativeEntryCopyWithImpl<$Res>
+    implements $QuantitativeEntryCopyWith<$Res> {
+  _$QuantitativeEntryCopyWithImpl(this._self, this._then);
+
+  final QuantitativeEntry _self;
+  final $Res Function(QuantitativeEntry) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$QuantitativeEntryImpl(
+    return _then(QuantitativeEntry(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as QuantitativeData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -4473,31 +4420,67 @@ class __$$QuantitativeEntryImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $QuantitativeDataCopyWith<$Res> get data {
-    return $QuantitativeDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $QuantitativeDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$QuantitativeEntryImpl implements QuantitativeEntry {
-  const _$QuantitativeEntryImpl(
+class MeasurementEntry implements JournalEntity {
+  const MeasurementEntry(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'quantitative';
-
-  factory _$QuantitativeEntryImpl.fromJson(Map<String, dynamic> json) =>
-      _$$QuantitativeEntryImplFromJson(json);
+      : $type = $type ?? 'measurement';
+  factory MeasurementEntry.fromJson(Map<String, dynamic> json) =>
+      _$MeasurementEntryFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final QuantitativeData data;
+  final MeasurementData data;
   @override
   final EntryText? entryText;
   @override
@@ -4506,16 +4489,26 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.quantitative(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $MeasurementEntryCopyWith<MeasurementEntry> get copyWith =>
+      _$MeasurementEntryCopyWithImpl<MeasurementEntry>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$MeasurementEntryToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$QuantitativeEntryImpl &&
+            other is MeasurementEntry &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -4529,261 +4522,18 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$QuantitativeEntryImplCopyWith<_$QuantitativeEntryImpl> get copyWith =>
-      __$$QuantitativeEntryImplCopyWithImpl<_$QuantitativeEntryImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return quantitative(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.measurement(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return quantitative?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (quantitative != null) {
-      return quantitative(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return quantitative(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return quantitative?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (quantitative != null) {
-      return quantitative(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$QuantitativeEntryImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class QuantitativeEntry implements JournalEntity {
-  const factory QuantitativeEntry(
-      {required final Metadata meta,
-      required final QuantitativeData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$QuantitativeEntryImpl;
-
-  factory QuantitativeEntry.fromJson(Map<String, dynamic> json) =
-      _$QuantitativeEntryImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  QuantitativeData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$QuantitativeEntryImplCopyWith<_$QuantitativeEntryImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$MeasurementEntryImplCopyWith<$Res>
+abstract mixin class $MeasurementEntryCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$MeasurementEntryImplCopyWith(_$MeasurementEntryImpl value,
-          $Res Function(_$MeasurementEntryImpl) then) =
-      __$$MeasurementEntryImplCopyWithImpl<$Res>;
+  factory $MeasurementEntryCopyWith(
+          MeasurementEntry value, $Res Function(MeasurementEntry) _then) =
+      _$MeasurementEntryCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -4802,38 +4552,38 @@ abstract class _$$MeasurementEntryImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$MeasurementEntryImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$MeasurementEntryImpl>
-    implements _$$MeasurementEntryImplCopyWith<$Res> {
-  __$$MeasurementEntryImplCopyWithImpl(_$MeasurementEntryImpl _value,
-      $Res Function(_$MeasurementEntryImpl) _then)
-      : super(_value, _then);
+class _$MeasurementEntryCopyWithImpl<$Res>
+    implements $MeasurementEntryCopyWith<$Res> {
+  _$MeasurementEntryCopyWithImpl(this._self, this._then);
+
+  final MeasurementEntry _self;
+  final $Res Function(MeasurementEntry) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$MeasurementEntryImpl(
+    return _then(MeasurementEntry(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as MeasurementData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -4843,31 +4593,67 @@ class __$$MeasurementEntryImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $MeasurementDataCopyWith<$Res> get data {
-    return $MeasurementDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $MeasurementDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$MeasurementEntryImpl implements MeasurementEntry {
-  const _$MeasurementEntryImpl(
+class AiResponseEntry implements JournalEntity {
+  const AiResponseEntry(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'measurement';
-
-  factory _$MeasurementEntryImpl.fromJson(Map<String, dynamic> json) =>
-      _$$MeasurementEntryImplFromJson(json);
+      : $type = $type ?? 'aiResponse';
+  factory AiResponseEntry.fromJson(Map<String, dynamic> json) =>
+      _$AiResponseEntryFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final MeasurementData data;
+  final AiResponseData data;
   @override
   final EntryText? entryText;
   @override
@@ -4876,16 +4662,26 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.measurement(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AiResponseEntryCopyWith<AiResponseEntry> get copyWith =>
+      _$AiResponseEntryCopyWithImpl<AiResponseEntry>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiResponseEntryToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MeasurementEntryImpl &&
+            other is AiResponseEntry &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -4899,261 +4695,18 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$MeasurementEntryImplCopyWith<_$MeasurementEntryImpl> get copyWith =>
-      __$$MeasurementEntryImplCopyWithImpl<_$MeasurementEntryImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return measurement(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.aiResponse(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return measurement?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (measurement != null) {
-      return measurement(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return measurement(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return measurement?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (measurement != null) {
-      return measurement(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$MeasurementEntryImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class MeasurementEntry implements JournalEntity {
-  const factory MeasurementEntry(
-      {required final Metadata meta,
-      required final MeasurementData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$MeasurementEntryImpl;
-
-  factory MeasurementEntry.fromJson(Map<String, dynamic> json) =
-      _$MeasurementEntryImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  MeasurementData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$MeasurementEntryImplCopyWith<_$MeasurementEntryImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AiResponseEntryImplCopyWith<$Res>
+abstract mixin class $AiResponseEntryCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$AiResponseEntryImplCopyWith(_$AiResponseEntryImpl value,
-          $Res Function(_$AiResponseEntryImpl) then) =
-      __$$AiResponseEntryImplCopyWithImpl<$Res>;
+  factory $AiResponseEntryCopyWith(
+          AiResponseEntry value, $Res Function(AiResponseEntry) _then) =
+      _$AiResponseEntryCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -5172,38 +4725,38 @@ abstract class _$$AiResponseEntryImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AiResponseEntryImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$AiResponseEntryImpl>
-    implements _$$AiResponseEntryImplCopyWith<$Res> {
-  __$$AiResponseEntryImplCopyWithImpl(
-      _$AiResponseEntryImpl _value, $Res Function(_$AiResponseEntryImpl) _then)
-      : super(_value, _then);
+class _$AiResponseEntryCopyWithImpl<$Res>
+    implements $AiResponseEntryCopyWith<$Res> {
+  _$AiResponseEntryCopyWithImpl(this._self, this._then);
+
+  final AiResponseEntry _self;
+  final $Res Function(AiResponseEntry) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$AiResponseEntryImpl(
+    return _then(AiResponseEntry(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as AiResponseData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -5213,31 +4766,67 @@ class __$$AiResponseEntryImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $AiResponseDataCopyWith<$Res> get data {
-    return $AiResponseDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $AiResponseDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$AiResponseEntryImpl implements AiResponseEntry {
-  const _$AiResponseEntryImpl(
+class WorkoutEntry implements JournalEntity {
+  const WorkoutEntry(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'aiResponse';
-
-  factory _$AiResponseEntryImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiResponseEntryImplFromJson(json);
+      : $type = $type ?? 'workout';
+  factory WorkoutEntry.fromJson(Map<String, dynamic> json) =>
+      _$WorkoutEntryFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final AiResponseData data;
+  final WorkoutData data;
   @override
   final EntryText? entryText;
   @override
@@ -5246,16 +4835,26 @@ class _$AiResponseEntryImpl implements AiResponseEntry {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.aiResponse(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $WorkoutEntryCopyWith<WorkoutEntry> get copyWith =>
+      _$WorkoutEntryCopyWithImpl<WorkoutEntry>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$WorkoutEntryToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiResponseEntryImpl &&
+            other is WorkoutEntry &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -5269,261 +4868,18 @@ class _$AiResponseEntryImpl implements AiResponseEntry {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AiResponseEntryImplCopyWith<_$AiResponseEntryImpl> get copyWith =>
-      __$$AiResponseEntryImplCopyWithImpl<_$AiResponseEntryImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return aiResponse(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.workout(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return aiResponse?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (aiResponse != null) {
-      return aiResponse(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return aiResponse(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return aiResponse?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (aiResponse != null) {
-      return aiResponse(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AiResponseEntryImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class AiResponseEntry implements JournalEntity {
-  const factory AiResponseEntry(
-      {required final Metadata meta,
-      required final AiResponseData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$AiResponseEntryImpl;
-
-  factory AiResponseEntry.fromJson(Map<String, dynamic> json) =
-      _$AiResponseEntryImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  AiResponseData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiResponseEntryImplCopyWith<_$AiResponseEntryImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$WorkoutEntryImplCopyWith<$Res>
+abstract mixin class $WorkoutEntryCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$WorkoutEntryImplCopyWith(
-          _$WorkoutEntryImpl value, $Res Function(_$WorkoutEntryImpl) then) =
-      __$$WorkoutEntryImplCopyWithImpl<$Res>;
+  factory $WorkoutEntryCopyWith(
+          WorkoutEntry value, $Res Function(WorkoutEntry) _then) =
+      _$WorkoutEntryCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -5542,38 +4898,37 @@ abstract class _$$WorkoutEntryImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$WorkoutEntryImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$WorkoutEntryImpl>
-    implements _$$WorkoutEntryImplCopyWith<$Res> {
-  __$$WorkoutEntryImplCopyWithImpl(
-      _$WorkoutEntryImpl _value, $Res Function(_$WorkoutEntryImpl) _then)
-      : super(_value, _then);
+class _$WorkoutEntryCopyWithImpl<$Res> implements $WorkoutEntryCopyWith<$Res> {
+  _$WorkoutEntryCopyWithImpl(this._self, this._then);
+
+  final WorkoutEntry _self;
+  final $Res Function(WorkoutEntry) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$WorkoutEntryImpl(
+    return _then(WorkoutEntry(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as WorkoutData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -5583,31 +4938,67 @@ class __$$WorkoutEntryImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $WorkoutDataCopyWith<$Res> get data {
-    return $WorkoutDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $WorkoutDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$WorkoutEntryImpl implements WorkoutEntry {
-  const _$WorkoutEntryImpl(
+class HabitCompletionEntry implements JournalEntity {
+  const HabitCompletionEntry(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'workout';
-
-  factory _$WorkoutEntryImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WorkoutEntryImplFromJson(json);
+      : $type = $type ?? 'habitCompletion';
+  factory HabitCompletionEntry.fromJson(Map<String, dynamic> json) =>
+      _$HabitCompletionEntryFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final WorkoutData data;
+  final HabitCompletionData data;
   @override
   final EntryText? entryText;
   @override
@@ -5616,16 +5007,27 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.workout(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $HabitCompletionEntryCopyWith<HabitCompletionEntry> get copyWith =>
+      _$HabitCompletionEntryCopyWithImpl<HabitCompletionEntry>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$HabitCompletionEntryToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$WorkoutEntryImpl &&
+            other is HabitCompletionEntry &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -5639,260 +5041,18 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$WorkoutEntryImplCopyWith<_$WorkoutEntryImpl> get copyWith =>
-      __$$WorkoutEntryImplCopyWithImpl<_$WorkoutEntryImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return workout(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.habitCompletion(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return workout?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (workout != null) {
-      return workout(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return workout(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return workout?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (workout != null) {
-      return workout(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WorkoutEntryImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class WorkoutEntry implements JournalEntity {
-  const factory WorkoutEntry(
-      {required final Metadata meta,
-      required final WorkoutData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$WorkoutEntryImpl;
-
-  factory WorkoutEntry.fromJson(Map<String, dynamic> json) =
-      _$WorkoutEntryImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  WorkoutData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$WorkoutEntryImplCopyWith<_$WorkoutEntryImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$HabitCompletionEntryImplCopyWith<$Res>
+abstract mixin class $HabitCompletionEntryCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$HabitCompletionEntryImplCopyWith(_$HabitCompletionEntryImpl value,
-          $Res Function(_$HabitCompletionEntryImpl) then) =
-      __$$HabitCompletionEntryImplCopyWithImpl<$Res>;
+  factory $HabitCompletionEntryCopyWith(HabitCompletionEntry value,
+          $Res Function(HabitCompletionEntry) _then) =
+      _$HabitCompletionEntryCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -5911,38 +5071,38 @@ abstract class _$$HabitCompletionEntryImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$HabitCompletionEntryImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$HabitCompletionEntryImpl>
-    implements _$$HabitCompletionEntryImplCopyWith<$Res> {
-  __$$HabitCompletionEntryImplCopyWithImpl(_$HabitCompletionEntryImpl _value,
-      $Res Function(_$HabitCompletionEntryImpl) _then)
-      : super(_value, _then);
+class _$HabitCompletionEntryCopyWithImpl<$Res>
+    implements $HabitCompletionEntryCopyWith<$Res> {
+  _$HabitCompletionEntryCopyWithImpl(this._self, this._then);
+
+  final HabitCompletionEntry _self;
+  final $Res Function(HabitCompletionEntry) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$HabitCompletionEntryImpl(
+    return _then(HabitCompletionEntry(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as HabitCompletionData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -5952,31 +5112,67 @@ class __$$HabitCompletionEntryImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $HabitCompletionDataCopyWith<$Res> get data {
-    return $HabitCompletionDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $HabitCompletionDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
-  const _$HabitCompletionEntryImpl(
+class SurveyEntry implements JournalEntity {
+  const SurveyEntry(
       {required this.meta,
       required this.data,
       this.entryText,
       this.geolocation,
       final String? $type})
-      : $type = $type ?? 'habitCompletion';
-
-  factory _$HabitCompletionEntryImpl.fromJson(Map<String, dynamic> json) =>
-      _$$HabitCompletionEntryImplFromJson(json);
+      : $type = $type ?? 'survey';
+  factory SurveyEntry.fromJson(Map<String, dynamic> json) =>
+      _$SurveyEntryFromJson(json);
 
   @override
   final Metadata meta;
-  @override
-  final HabitCompletionData data;
+  final SurveyData data;
   @override
   final EntryText? entryText;
   @override
@@ -5985,16 +5181,26 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalEntity.habitCompletion(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $SurveyEntryCopyWith<SurveyEntry> get copyWith =>
+      _$SurveyEntryCopyWithImpl<SurveyEntry>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$SurveyEntryToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$HabitCompletionEntryImpl &&
+            other is SurveyEntry &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -6008,262 +5214,18 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
   int get hashCode =>
       Object.hash(runtimeType, meta, data, entryText, geolocation);
 
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$HabitCompletionEntryImplCopyWith<_$HabitCompletionEntryImpl>
-      get copyWith =>
-          __$$HabitCompletionEntryImplCopyWithImpl<_$HabitCompletionEntryImpl>(
-              this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return habitCompletion(meta, data, entryText, geolocation);
+  String toString() {
+    return 'JournalEntity.survey(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return habitCompletion?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (habitCompletion != null) {
-      return habitCompletion(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return habitCompletion(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return habitCompletion?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (habitCompletion != null) {
-      return habitCompletion(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$HabitCompletionEntryImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class HabitCompletionEntry implements JournalEntity {
-  const factory HabitCompletionEntry(
-      {required final Metadata meta,
-      required final HabitCompletionData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$HabitCompletionEntryImpl;
-
-  factory HabitCompletionEntry.fromJson(Map<String, dynamic> json) =
-      _$HabitCompletionEntryImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  HabitCompletionData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$HabitCompletionEntryImplCopyWith<_$HabitCompletionEntryImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$SurveyEntryImplCopyWith<$Res>
+abstract mixin class $SurveyEntryCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$SurveyEntryImplCopyWith(
-          _$SurveyEntryImpl value, $Res Function(_$SurveyEntryImpl) then) =
-      __$$SurveyEntryImplCopyWithImpl<$Res>;
+  factory $SurveyEntryCopyWith(
+          SurveyEntry value, $Res Function(SurveyEntry) _then) =
+      _$SurveyEntryCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -6282,38 +5244,37 @@ abstract class _$$SurveyEntryImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SurveyEntryImplCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$SurveyEntryImpl>
-    implements _$$SurveyEntryImplCopyWith<$Res> {
-  __$$SurveyEntryImplCopyWithImpl(
-      _$SurveyEntryImpl _value, $Res Function(_$SurveyEntryImpl) _then)
-      : super(_value, _then);
+class _$SurveyEntryCopyWithImpl<$Res> implements $SurveyEntryCopyWith<$Res> {
+  _$SurveyEntryCopyWithImpl(this._self, this._then);
+
+  final SurveyEntry _self;
+  final $Res Function(SurveyEntry) _then;
 
   /// Create a copy of JournalEntity
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? meta = null,
     Object? data = null,
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$SurveyEntryImpl(
+    return _then(SurveyEntry(
       meta: null == meta
-          ? _value.meta
+          ? _self.meta
           : meta // ignore: cast_nullable_to_non_nullable
               as Metadata,
       data: null == data
-          ? _value.data
+          ? _self.data
           : data // ignore: cast_nullable_to_non_nullable
               as SurveyData,
       entryText: freezed == entryText
-          ? _value.entryText
+          ? _self.entryText
           : entryText // ignore: cast_nullable_to_non_nullable
               as EntryText?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
@@ -6323,306 +5284,49 @@ class __$$SurveyEntryImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $SurveyDataCopyWith<$Res> get data {
-    return $SurveyDataCopyWith<$Res>(_value.data, (value) {
-      return _then(_value.copyWith(data: value));
+    return $SurveyDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
-/// @nodoc
-@JsonSerializable()
-class _$SurveyEntryImpl implements SurveyEntry {
-  const _$SurveyEntryImpl(
-      {required this.meta,
-      required this.data,
-      this.entryText,
-      this.geolocation,
-      final String? $type})
-      : $type = $type ?? 'survey';
-
-  factory _$SurveyEntryImpl.fromJson(Map<String, dynamic> json) =>
-      _$$SurveyEntryImplFromJson(json);
-
-  @override
-  final Metadata meta;
-  @override
-  final SurveyData data;
-  @override
-  final EntryText? entryText;
-  @override
-  final Geolocation? geolocation;
-
-  @JsonKey(name: 'runtimeType')
-  final String $type;
-
-  @override
-  String toString() {
-    return 'JournalEntity.survey(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$SurveyEntryImpl &&
-            (identical(other.meta, meta) || other.meta == meta) &&
-            (identical(other.data, data) || other.data == data) &&
-            (identical(other.entryText, entryText) ||
-                other.entryText == entryText) &&
-            (identical(other.geolocation, geolocation) ||
-                other.geolocation == geolocation));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, meta, data, entryText, geolocation);
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$SurveyEntryImplCopyWith<_$SurveyEntryImpl> get copyWith =>
-      __$$SurveyEntryImplCopyWithImpl<_$SurveyEntryImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)
-        journalEntry,
-    required TResult Function(Metadata meta, ImageData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalImage,
-    required TResult Function(Metadata meta, AudioData data,
-            EntryText? entryText, Geolocation? geolocation)
-        journalAudio,
-    required TResult Function(Metadata meta, TaskData data,
-            EntryText? entryText, Geolocation? geolocation)
-        task,
-    required TResult Function(Metadata meta, EventData data,
-            EntryText? entryText, Geolocation? geolocation)
-        event,
-    required TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklistItem,
-    required TResult Function(Metadata meta, ChecklistData data,
-            EntryText? entryText, Geolocation? geolocation)
-        checklist,
-    required TResult Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)
-        quantitative,
-    required TResult Function(Metadata meta, MeasurementData data,
-            EntryText? entryText, Geolocation? geolocation)
-        measurement,
-    required TResult Function(Metadata meta, AiResponseData data,
-            EntryText? entryText, Geolocation? geolocation)
-        aiResponse,
-    required TResult Function(Metadata meta, WorkoutData data,
-            EntryText? entryText, Geolocation? geolocation)
-        workout,
-    required TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)
-        habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data,
-            EntryText? entryText, Geolocation? geolocation)
-        survey,
-  }) {
-    return survey(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult? Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult? Function(Metadata meta, QuantitativeData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        quantitative,
-    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult? Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-  }) {
-    return survey?.call(meta, data, entryText, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
-        journalEntry,
-    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalImage,
-    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        journalAudio,
-    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        task,
-    TResult Function(Metadata meta, EventData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        event,
-    TResult Function(Metadata meta, ChecklistItemData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        checklistItem,
-    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        checklist,
-    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        quantitative,
-    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        measurement,
-    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        aiResponse,
-    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        workout,
-    TResult Function(Metadata meta, HabitCompletionData data,
-            EntryText? entryText, Geolocation? geolocation)?
-        habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
-            Geolocation? geolocation)?
-        survey,
-    required TResult orElse(),
-  }) {
-    if (survey != null) {
-      return survey(meta, data, entryText, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(JournalEntry value) journalEntry,
-    required TResult Function(JournalImage value) journalImage,
-    required TResult Function(JournalAudio value) journalAudio,
-    required TResult Function(Task value) task,
-    required TResult Function(JournalEvent value) event,
-    required TResult Function(ChecklistItem value) checklistItem,
-    required TResult Function(Checklist value) checklist,
-    required TResult Function(QuantitativeEntry value) quantitative,
-    required TResult Function(MeasurementEntry value) measurement,
-    required TResult Function(AiResponseEntry value) aiResponse,
-    required TResult Function(WorkoutEntry value) workout,
-    required TResult Function(HabitCompletionEntry value) habitCompletion,
-    required TResult Function(SurveyEntry value) survey,
-  }) {
-    return survey(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntry value)? journalEntry,
-    TResult? Function(JournalImage value)? journalImage,
-    TResult? Function(JournalAudio value)? journalAudio,
-    TResult? Function(Task value)? task,
-    TResult? Function(JournalEvent value)? event,
-    TResult? Function(ChecklistItem value)? checklistItem,
-    TResult? Function(Checklist value)? checklist,
-    TResult? Function(QuantitativeEntry value)? quantitative,
-    TResult? Function(MeasurementEntry value)? measurement,
-    TResult? Function(AiResponseEntry value)? aiResponse,
-    TResult? Function(WorkoutEntry value)? workout,
-    TResult? Function(HabitCompletionEntry value)? habitCompletion,
-    TResult? Function(SurveyEntry value)? survey,
-  }) {
-    return survey?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(JournalEntry value)? journalEntry,
-    TResult Function(JournalImage value)? journalImage,
-    TResult Function(JournalAudio value)? journalAudio,
-    TResult Function(Task value)? task,
-    TResult Function(JournalEvent value)? event,
-    TResult Function(ChecklistItem value)? checklistItem,
-    TResult Function(Checklist value)? checklist,
-    TResult Function(QuantitativeEntry value)? quantitative,
-    TResult Function(MeasurementEntry value)? measurement,
-    TResult Function(AiResponseEntry value)? aiResponse,
-    TResult Function(WorkoutEntry value)? workout,
-    TResult Function(HabitCompletionEntry value)? habitCompletion,
-    TResult Function(SurveyEntry value)? survey,
-    required TResult orElse(),
-  }) {
-    if (survey != null) {
-      return survey(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$SurveyEntryImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class SurveyEntry implements JournalEntity {
-  const factory SurveyEntry(
-      {required final Metadata meta,
-      required final SurveyData data,
-      final EntryText? entryText,
-      final Geolocation? geolocation}) = _$SurveyEntryImpl;
-
-  factory SurveyEntry.fromJson(Map<String, dynamic> json) =
-      _$SurveyEntryImpl.fromJson;
-
-  @override
-  Metadata get meta;
-  SurveyData get data;
-  @override
-  EntryText? get entryText;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of JournalEntity
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$SurveyEntryImplCopyWith<_$SurveyEntryImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// dart format on

@@ -5,7 +5,7 @@ part 'tag_type_definitions.freezed.dart';
 part 'tag_type_definitions.g.dart';
 
 @freezed
-class TagEntity with _$TagEntity {
+abstract class TagEntity with _$TagEntity {
   const factory TagEntity.genericTag({
     required String id,
     required String tag,

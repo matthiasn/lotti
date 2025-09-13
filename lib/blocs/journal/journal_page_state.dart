@@ -12,7 +12,7 @@ enum DisplayFilter {
 }
 
 @freezed
-class JournalPageState with _$JournalPageState {
+abstract class JournalPageState with _$JournalPageState {
   factory JournalPageState({
     required String match,
     required Set<String> tagIds,
@@ -29,7 +29,7 @@ class JournalPageState with _$JournalPageState {
 }
 
 @freezed
-class TasksFilter with _$TasksFilter {
+abstract class TasksFilter with _$TasksFilter {
   factory TasksFilter({
     required Set<String> selectedCategoryIds,
     required Set<String> selectedTaskStatuses,

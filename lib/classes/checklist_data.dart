@@ -4,7 +4,7 @@ part 'checklist_data.freezed.dart';
 part 'checklist_data.g.dart';
 
 @freezed
-class ChecklistData with _$ChecklistData {
+abstract class ChecklistData with _$ChecklistData {
   const factory ChecklistData({
     required String title,
     required List<String> linkedChecklistItems,

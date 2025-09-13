@@ -178,23 +178,23 @@ class _TagEditPageState extends State<TagEditPage> {
                         inputSpacerSmall,
                         FormBuilderChoiceChips<String>(
                           name: 'type',
-                          initialValue: widget.tagEntity.map(
-                            genericTag: (_) =>
+                          initialValue: () {
+                            final t = widget.tagEntity;
+                            return switch (t) {
+                              GenericTag() =>
                                 context.messages.settingsTagsTypeTag,
-                            personTag: (_) =>
+                              PersonTag() =>
                                 context.messages.settingsTagsTypePerson,
-                            storyTag: (_) =>
+                              StoryTag() =>
                                 context.messages.settingsTagsTypeStory,
-                          ),
+                              _ => context.messages.settingsTagsTypeTag,
+                            };
+                          }(),
                           decoration: inputDecoration(
                             labelText: context.messages.settingsTagsTypeLabel,
                             themeData: Theme.of(context),
                           ),
-                          selectedColor: widget.tagEntity.map(
-                            genericTag: getTagColor,
-                            personTag: getTagColor,
-                            storyTag: getTagColor,
-                          ),
+                          selectedColor: getTagColor(widget.tagEntity),
                           runSpacing: 4,
                           spacing: 4,
                           options: [

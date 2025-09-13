@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'outbox_state.freezed.dart';
 
 @freezed
-class OutboxState with _$OutboxState {
+sealed class OutboxState with _$OutboxState {
   factory OutboxState.initial() = _Initial;
   factory OutboxState.online() = _Online;
   factory OutboxState.disabled() = OutboxDisabled;

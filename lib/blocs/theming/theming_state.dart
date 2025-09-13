@@ -29,7 +29,7 @@ final Map<String, FlexScheme> themes = {
 };
 
 @freezed
-class ThemingState with _$ThemingState {
+abstract class ThemingState with _$ThemingState {
   factory ThemingState({
     required bool enableTooltips,
     ThemeData? darkTheme,

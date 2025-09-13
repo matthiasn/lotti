@@ -24,7 +24,7 @@ part 'ai_settings_filter_state.freezed.dart';
 /// );
 /// ```
 @freezed
-class AiSettingsFilterState with _$AiSettingsFilterState {
+abstract class AiSettingsFilterState with _$AiSettingsFilterState {
   const factory AiSettingsFilterState({
     /// Text query for searching across all AI configuration names and descriptions
     @Default('') String searchQuery,

@@ -6,9 +6,8 @@ part of 'sync_message.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$SyncJournalEntityImpl _$$SyncJournalEntityImplFromJson(
-        Map<String, dynamic> json) =>
-    _$SyncJournalEntityImpl(
+SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
+    SyncJournalEntity(
       id: json['id'] as String,
       jsonPath: json['jsonPath'] as String,
       vectorClock: json['vectorClock'] == null
@@ -18,8 +17,7 @@ _$SyncJournalEntityImpl _$$SyncJournalEntityImplFromJson(
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncJournalEntityImplToJson(
-        _$SyncJournalEntityImpl instance) =>
+Map<String, dynamic> _$SyncJournalEntityToJson(SyncJournalEntity instance) =>
     <String, dynamic>{
       'id': instance.id,
       'jsonPath': instance.jsonPath,
@@ -33,74 +31,71 @@ const _$SyncEntryStatusEnumMap = {
   SyncEntryStatus.update: 'update',
 };
 
-_$SyncEntityDefinitionImpl _$$SyncEntityDefinitionImplFromJson(
+SyncEntityDefinition _$SyncEntityDefinitionFromJson(
         Map<String, dynamic> json) =>
-    _$SyncEntityDefinitionImpl(
+    SyncEntityDefinition(
       entityDefinition: EntityDefinition.fromJson(
           json['entityDefinition'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncEntityDefinitionImplToJson(
-        _$SyncEntityDefinitionImpl instance) =>
+Map<String, dynamic> _$SyncEntityDefinitionToJson(
+        SyncEntityDefinition instance) =>
     <String, dynamic>{
       'entityDefinition': instance.entityDefinition,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'runtimeType': instance.$type,
     };
 
-_$SyncTagEntityImpl _$$SyncTagEntityImplFromJson(Map<String, dynamic> json) =>
-    _$SyncTagEntityImpl(
+SyncTagEntity _$SyncTagEntityFromJson(Map<String, dynamic> json) =>
+    SyncTagEntity(
       tagEntity: TagEntity.fromJson(json['tagEntity'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncTagEntityImplToJson(_$SyncTagEntityImpl instance) =>
+Map<String, dynamic> _$SyncTagEntityToJson(SyncTagEntity instance) =>
     <String, dynamic>{
       'tagEntity': instance.tagEntity,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'runtimeType': instance.$type,
     };
 
-_$SyncEntryLinkImpl _$$SyncEntryLinkImplFromJson(Map<String, dynamic> json) =>
-    _$SyncEntryLinkImpl(
+SyncEntryLink _$SyncEntryLinkFromJson(Map<String, dynamic> json) =>
+    SyncEntryLink(
       entryLink: EntryLink.fromJson(json['entryLink'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncEntryLinkImplToJson(_$SyncEntryLinkImpl instance) =>
+Map<String, dynamic> _$SyncEntryLinkToJson(SyncEntryLink instance) =>
     <String, dynamic>{
       'entryLink': instance.entryLink,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'runtimeType': instance.$type,
     };
 
-_$SyncAiConfigImpl _$$SyncAiConfigImplFromJson(Map<String, dynamic> json) =>
-    _$SyncAiConfigImpl(
+SyncAiConfig _$SyncAiConfigFromJson(Map<String, dynamic> json) => SyncAiConfig(
       aiConfig: AiConfig.fromJson(json['aiConfig'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncAiConfigImplToJson(_$SyncAiConfigImpl instance) =>
+Map<String, dynamic> _$SyncAiConfigToJson(SyncAiConfig instance) =>
     <String, dynamic>{
       'aiConfig': instance.aiConfig,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'runtimeType': instance.$type,
     };
 
-_$SyncAiConfigDeleteImpl _$$SyncAiConfigDeleteImplFromJson(
-        Map<String, dynamic> json) =>
-    _$SyncAiConfigDeleteImpl(
+SyncAiConfigDelete _$SyncAiConfigDeleteFromJson(Map<String, dynamic> json) =>
+    SyncAiConfigDelete(
       id: json['id'] as String,
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncAiConfigDeleteImplToJson(
-        _$SyncAiConfigDeleteImpl instance) =>
+Map<String, dynamic> _$SyncAiConfigDeleteToJson(SyncAiConfigDelete instance) =>
     <String, dynamic>{
       'id': instance.id,
       'runtimeType': instance.$type,

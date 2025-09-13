@@ -5,7 +5,7 @@ part 'event_data.freezed.dart';
 part 'event_data.g.dart';
 
 @freezed
-class EventData with _$EventData {
+abstract class EventData with _$EventData {
   const factory EventData({
     required String title,
     required double stars,

@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 part 'entry_state.freezed.dart';
 
 @freezed
-class EntryState with _$EntryState {
+abstract class EntryState with _$EntryState {
   factory EntryState.saved({
     required String entryId,
     required JournalEntity? entry,

@@ -69,7 +69,7 @@ dependencies:
   flutter_vodozemac: ^0.2.2
   form_builder_validators: ^11.0.0
   formz: ^0.8.0
-  freezed_annotation: ^2.0.3
+  freezed_annotation: ^3.1.0
   geoclue: ^0.1.0
   get_it: ^8.0.2
   glass_kit: ^4.0.1
@@ -162,7 +162,7 @@ dev_dependencies:
   flutter_native_splash: ^2.2.16
   flutter_test:
     sdk: flutter
-  freezed: ^2.5.2
+  freezed: ^3.1.0
   glados: ^1.1.1
   integration_test:
     sdk: flutter

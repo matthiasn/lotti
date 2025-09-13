@@ -130,80 +130,88 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
               ],
             ),
             if (widget.autoCompleteRule != null)
-              widget.autoCompleteRule!.map(
-                health: (health) {
-                  return Container(
+              switch (widget.autoCompleteRule!) {
+                AutoCompleteRuleHealth(
+                  :final title,
+                  :final dataType,
+                  :final minimum,
+                  :final maximum
+                ) =>
+                  Container(
                     color: Colors.blue.withAlpha(127),
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        RuleTitleWidget(health.title, bottomPadding: 4),
+                        RuleTitleWidget(title, bottomPadding: 4),
                         RuleInfoWidget(
-                          '${health.dataType}'
-                          '${health.minimum != null ? ', min: ${health.minimum}' : ''}'
-                          '${health.maximum != null ? ', max: ${health.maximum}' : ''}',
+                          '$dataType'
+                          '${minimum != null ? ', min: $minimum' : ''}'
+                          '${maximum != null ? ', max: $maximum' : ''}',
                         ),
                       ],
                     ),
-                  );
-                },
-                habit: (habit) {
-                  return Container(
+                  ),
+                AutoCompleteRuleHabit(:final title, :final habitId) =>
+                  Container(
                     color: Colors.blue.withAlpha(127),
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        RuleTitleWidget(habit.title, bottomPadding: 4),
-                        RuleInfoWidget(
-                          habit.habitId,
-                        ),
+                        RuleTitleWidget(title, bottomPadding: 4),
+                        RuleInfoWidget(habitId),
                       ],
                     ),
-                  );
-                },
-                workout: (workout) {
-                  return Container(
+                  ),
+                AutoCompleteRuleWorkout(
+                  :final title,
+                  :final dataType,
+                  :final minimum,
+                  :final maximum
+                ) =>
+                  Container(
                     color: Colors.blue.withAlpha(127),
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        RuleTitleWidget(workout.title, bottomPadding: 4),
+                        RuleTitleWidget(title, bottomPadding: 4),
                         RuleInfoWidget(
-                          '${workout.dataType}'
-                          '${workout.minimum != null ? ', min: ${workout.minimum}' : ''}'
-                          '${workout.maximum != null ? ', max: ${workout.maximum}' : ''}',
+                          '$dataType'
+                          '${minimum != null ? ', min: $minimum' : ''}'
+                          '${maximum != null ? ', max: $maximum' : ''}',
                         ),
                       ],
                     ),
-                  );
-                },
-                measurable: (measurable) {
-                  return Container(
+                  ),
+                AutoCompleteRuleMeasurable(
+                  :final title,
+                  :final dataTypeId,
+                  :final minimum,
+                  :final maximum
+                ) =>
+                  Container(
                     color: Colors.green.withAlpha(127),
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        RuleTitleWidget(measurable.title, bottomPadding: 4),
+                        RuleTitleWidget(title, bottomPadding: 4),
                         RuleInfoWidget(
-                          '${measurable.dataTypeId}'
-                          '${measurable.minimum != null ? ', min: ${measurable.minimum}' : ''}'
-                          '${measurable.maximum != null ? ', max: ${measurable.maximum}' : ''}',
+                          '$dataTypeId'
+                          '${minimum != null ? ', min: $minimum' : ''}'
+                          '${maximum != null ? ', max: $maximum' : ''}',
                         ),
                       ],
                     ),
-                  );
-                },
-                and: (and) {
-                  return Padding(
+                  ),
+                AutoCompleteRuleAnd(:final title, :final rules) => Padding(
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        RuleTitleWidget(and.title),
+                        RuleTitleWidget(title),
                         Row(
                           children: [
                             const Padding(
@@ -216,7 +224,7 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
                                 spacer,
                                 ...intersperse(
                                   spacer,
-                                  and.rules.mapIndexed(indexedChild),
+                                  rules.mapIndexed(indexedChild),
                                 ),
                                 spacer,
                               ],
@@ -226,15 +234,13 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
                         ),
                       ],
                     ),
-                  );
-                },
-                or: (or) {
-                  return Padding(
+                  ),
+                AutoCompleteRuleOr(:final title, :final rules) => Padding(
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        RuleTitleWidget(or.title),
+                        RuleTitleWidget(title),
                         Row(
                           children: [
                             const Padding(
@@ -247,7 +253,7 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
                                 spacer,
                                 ...intersperse(
                                   spacer,
-                                  or.rules.mapIndexed(indexedChild),
+                                  rules.mapIndexed(indexedChild),
                                 ),
                                 spacer,
                               ],
@@ -257,44 +263,47 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
                         ),
                       ],
                     ),
-                  );
-                },
-                multiple: (multiple) {
-                  final n = multiple.rules.length;
-
-                  return Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RuleTitleWidget(multiple.title),
-                        Row(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: RuleListInfoWidget(
-                                '${multiple.successes}/$n',
+                  ),
+                AutoCompleteRuleMultiple(
+                  :final rules,
+                  :final successes,
+                  :final title
+                ) =>
+                  () {
+                    final n = rules.length;
+                    return Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RuleTitleWidget(title),
+                          Row(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: RuleListInfoWidget(
+                                  '$successes/$n',
+                                ),
                               ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                spacer,
-                                ...intersperse(
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   spacer,
-                                  multiple.rules.mapIndexed(indexedChild),
-                                ),
-                                spacer,
-                              ],
-                            ),
-                            spacer,
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                                  ...intersperse(
+                                    spacer,
+                                    rules.mapIndexed(indexedChild),
+                                  ),
+                                  spacer,
+                                ],
+                              ),
+                              spacer,
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }(),
+              }
           ],
         ),
       ),

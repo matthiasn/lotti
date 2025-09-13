@@ -437,18 +437,18 @@ packages:
     dependency: transitive
     description:
       name: custom_lint
-      sha256: "021897cce2b6c783b2521543e362e7fe1a2eaab17bf80514d8de37f99942ed9e"
+      sha256: "3a9fcbcba1d141d8084a17e57a787993d8d409b294e6d781069a7d627963ebe0"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.3"
+    version: "0.7.4"
   custom_lint_builder:
     dependency: transitive
     description:
       name: custom_lint_builder
-      sha256: e4235b9d8cef59afe621eba086d245205c8a0a6c70cd470be7cb17494d6df32d
+      sha256: "009b4b69dbab67201bd445175daaa333ebde1a759a8898b0438e26ad0642eb7b"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.3"
+    version: "0.7.4"
   custom_lint_core:
     dependency: transitive
     description:
@@ -1184,18 +1184,18 @@ packages:
     dependency: "direct dev"
     description:
       name: freezed
-      sha256: "59a584c24b3acdc5250bb856d0d3e9c0b798ed14a4af1ddb7dc1c7b41df91c9c"
+      sha256: "2d399f823b8849663744d2a9ddcce01c49268fb4170d0442a655bf6a2f47be22"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.8"
+    version: "3.1.0"
   freezed_annotation:
     dependency: "direct main"
     description:
       name: freezed_annotation
-      sha256: c2e2d632dd9b8a2b7751117abcfc2b4888ecfe181bd9fca7170d9ef02e595fe2
+      sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.4"
+    version: "3.1.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -1930,10 +1930,10 @@ packages:
     dependency: "direct main"
     description:
       name: openai_dart
-      sha256: "947b4b1cd1f0eb8fe8d706d22becd0fcf1647f96a0a4062c70b30bb5e10dce2b"
+      sha256: "0b0b4c3d452d0369465fb5e23bb8ef33edb845496a2864660191df6f8096c323"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.4+1"
+    version: "0.5.5"
   package_config:
     dependency: transitive
     description:
@@ -2427,10 +2427,10 @@ packages:
     dependency: transitive
     description:
       name: riverpod_analyzer_utils
-      sha256: "837a6dc33f490706c7f4632c516bcd10804ee4d9ccc8046124ca56388715fdf3"
+      sha256: "03a17170088c63aab6c54c44456f5ab78876a1ddb6032ffde1662ddab4959611"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.9"
+    version: "0.5.10"
   riverpod_annotation:
     dependency: "direct main"
     description:
@@ -2443,18 +2443,18 @@ packages:
     dependency: "direct dev"
     description:
       name: riverpod_generator
-      sha256: "120d3310f687f43e7011bb213b90a436f1bbc300f0e4b251a72c39bccb017a4f"
+      sha256: "44a0992d54473eb199ede00e2260bd3c262a86560e3c6f6374503d86d0580e36"
       url: "https://pub.dev"
     source: hosted
-    version: "2.6.4"
+    version: "2.6.5"
   riverpod_lint:
     dependency: "direct main"
     description:
       name: riverpod_lint
-      sha256: b05408412b0f75dec954e032c855bc28349eeed2d2187f94519e1ddfdf8b3693
+      sha256: "89a52b7334210dbff8605c3edf26cfe69b15062beed5cbfeff2c3812c33c9e35"
       url: "https://pub.dev"
     source: hosted
-    version: "2.6.4"
+    version: "2.6.5"
   rxdart:
     dependency: "direct main"
     description:

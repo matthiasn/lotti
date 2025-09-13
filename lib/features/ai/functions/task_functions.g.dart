@@ -6,17 +6,17 @@ part of 'task_functions.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$SetTaskLanguageResultImpl _$$SetTaskLanguageResultImplFromJson(
+_SetTaskLanguageResult _$SetTaskLanguageResultFromJson(
         Map<String, dynamic> json) =>
-    _$SetTaskLanguageResultImpl(
+    _SetTaskLanguageResult(
       languageCode: json['languageCode'] as String,
       confidence:
           $enumDecode(_$LanguageDetectionConfidenceEnumMap, json['confidence']),
       reason: json['reason'] as String,
     );
 
-Map<String, dynamic> _$$SetTaskLanguageResultImplToJson(
-        _$SetTaskLanguageResultImpl instance) =>
+Map<String, dynamic> _$SetTaskLanguageResultToJson(
+        _SetTaskLanguageResult instance) =>
     <String, dynamic>{
       'languageCode': instance.languageCode,
       'confidence': _$LanguageDetectionConfidenceEnumMap[instance.confidence]!,

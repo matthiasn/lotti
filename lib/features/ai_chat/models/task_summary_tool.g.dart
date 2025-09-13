@@ -6,25 +6,22 @@ part of 'task_summary_tool.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$TaskSummaryRequestImpl _$$TaskSummaryRequestImplFromJson(
-        Map<String, dynamic> json) =>
-    _$TaskSummaryRequestImpl(
+_TaskSummaryRequest _$TaskSummaryRequestFromJson(Map<String, dynamic> json) =>
+    _TaskSummaryRequest(
       startDate: json['start_date'] as String,
       endDate: json['end_date'] as String,
       limit: (json['limit'] as num?)?.toInt() ?? 100,
     );
 
-Map<String, dynamic> _$$TaskSummaryRequestImplToJson(
-        _$TaskSummaryRequestImpl instance) =>
+Map<String, dynamic> _$TaskSummaryRequestToJson(_TaskSummaryRequest instance) =>
     <String, dynamic>{
       'start_date': instance.startDate,
       'end_date': instance.endDate,
       'limit': instance.limit,
     };
 
-_$TaskSummaryResultImpl _$$TaskSummaryResultImplFromJson(
-        Map<String, dynamic> json) =>
-    _$TaskSummaryResultImpl(
+_TaskSummaryResult _$TaskSummaryResultFromJson(Map<String, dynamic> json) =>
+    _TaskSummaryResult(
       taskId: json['taskId'] as String,
       taskTitle: json['taskTitle'] as String,
       summary: json['summary'] as String,
@@ -33,8 +30,7 @@ _$TaskSummaryResultImpl _$$TaskSummaryResultImplFromJson(
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
 
-Map<String, dynamic> _$$TaskSummaryResultImplToJson(
-        _$TaskSummaryResultImpl instance) =>
+Map<String, dynamic> _$TaskSummaryResultToJson(_TaskSummaryResult instance) =>
     <String, dynamic>{
       'taskId': instance.taskId,
       'taskTitle': instance.taskTitle,

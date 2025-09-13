@@ -6,9 +6,8 @@ part of 'checklist_item_data.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$ChecklistItemDataImpl _$$ChecklistItemDataImplFromJson(
-        Map<String, dynamic> json) =>
-    _$ChecklistItemDataImpl(
+_ChecklistItemData _$ChecklistItemDataFromJson(Map<String, dynamic> json) =>
+    _ChecklistItemData(
       title: json['title'] as String,
       isChecked: json['isChecked'] as bool,
       linkedChecklists: (json['linkedChecklists'] as List<dynamic>)
@@ -17,8 +16,7 @@ _$ChecklistItemDataImpl _$$ChecklistItemDataImplFromJson(
       id: json['id'] as String?,
     );
 
-Map<String, dynamic> _$$ChecklistItemDataImplToJson(
-        _$ChecklistItemDataImpl instance) =>
+Map<String, dynamic> _$ChecklistItemDataToJson(_ChecklistItemData instance) =>
     <String, dynamic>{
       'title': instance.title,
       'isChecked': instance.isChecked,

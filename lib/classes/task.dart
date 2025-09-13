@@ -8,14 +8,14 @@ part 'task.freezed.dart';
 part 'task.g.dart';
 
 @freezed
-class TaskStatus with _$TaskStatus {
+sealed class TaskStatus with _$TaskStatus {
   const factory TaskStatus.open({
     required String id,
     required DateTime createdAt,
     required int utcOffset,
     String? timezone,
     Geolocation? geolocation,
-  }) = _TaskOpen;
+  }) = TaskOpen;
 
   const factory TaskStatus.inProgress({
     required String id,
@@ -23,7 +23,7 @@ class TaskStatus with _$TaskStatus {
     required int utcOffset,
     String? timezone,
     Geolocation? geolocation,
-  }) = _TaskInProgress;
+  }) = TaskInProgress;
 
   const factory TaskStatus.groomed({
     required String id,
@@ -31,7 +31,7 @@ class TaskStatus with _$TaskStatus {
     required int utcOffset,
     String? timezone,
     Geolocation? geolocation,
-  }) = _TaskGroomed;
+  }) = TaskGroomed;
 
   const factory TaskStatus.blocked({
     required String id,
@@ -40,7 +40,7 @@ class TaskStatus with _$TaskStatus {
     required String reason,
     String? timezone,
     Geolocation? geolocation,
-  }) = _TaskBlocked;
+  }) = TaskBlocked;
 
   const factory TaskStatus.onHold({
     required String id,
@@ -49,7 +49,7 @@ class TaskStatus with _$TaskStatus {
     required String reason,
     String? timezone,
     Geolocation? geolocation,
-  }) = _TaskOnHold;
+  }) = TaskOnHold;
 
   const factory TaskStatus.done({
     required String id,
@@ -57,7 +57,7 @@ class TaskStatus with _$TaskStatus {
     required int utcOffset,
     String? timezone,
     Geolocation? geolocation,
-  }) = _TaskDone;
+  }) = TaskDone;
 
   const factory TaskStatus.rejected({
     required String id,
@@ -65,14 +65,14 @@ class TaskStatus with _$TaskStatus {
     required int utcOffset,
     String? timezone,
     Geolocation? geolocation,
-  }) = _TaskRejected;
+  }) = TaskRejected;
 
   factory TaskStatus.fromJson(Map<String, dynamic> json) =>
       _$TaskStatusFromJson(json);
 }
 
 @freezed
-class TaskData with _$TaskData {
+abstract class TaskData with _$TaskData {
   const factory TaskData({
     required TaskStatus status,
     required DateTime dateFrom,
@@ -144,36 +144,35 @@ TaskStatus taskStatusFromString(String status) {
 extension TaskStatusExtension on TaskStatus {
   String localizedLabel(BuildContext context) {
     return switch (this) {
-      _TaskOpen() => context.messages.taskStatusOpen,
-      _TaskGroomed() => context.messages.taskStatusGroomed,
-      _TaskInProgress() => context.messages.taskStatusInProgress,
-      _TaskBlocked() => context.messages.taskStatusBlocked,
-      _TaskOnHold() => context.messages.taskStatusOnHold,
-      _TaskDone() => context.messages.taskStatusDone,
-      _TaskRejected() => context.messages.taskStatusRejected,
-      _ => 'Unknown',
+      TaskOpen() => context.messages.taskStatusOpen,
+      TaskGroomed() => context.messages.taskStatusGroomed,
+      TaskInProgress() => context.messages.taskStatusInProgress,
+      TaskBlocked() => context.messages.taskStatusBlocked,
+      TaskOnHold() => context.messages.taskStatusOnHold,
+      TaskDone() => context.messages.taskStatusDone,
+      TaskRejected() => context.messages.taskStatusRejected,
     };
   }
 
-  String get toDbString => map(
-        open: (_) => 'OPEN',
-        groomed: (_) => 'GROOMED',
-        inProgress: (_) => 'IN PROGRESS',
-        blocked: (_) => 'BLOCKED',
-        onHold: (_) => 'ON HOLD',
-        done: (_) => 'DONE',
-        rejected: (_) => 'REJECTED',
-      );
+  String get toDbString => switch (this) {
+        TaskOpen() => 'OPEN',
+        TaskGroomed() => 'GROOMED',
+        TaskInProgress() => 'IN PROGRESS',
+        TaskBlocked() => 'BLOCKED',
+        TaskOnHold() => 'ON HOLD',
+        TaskDone() => 'DONE',
+        TaskRejected() => 'REJECTED',
+      };
 
   Color get color {
-    return map(
-      open: (_) => Colors.orange,
-      groomed: (_) => Colors.lightGreenAccent,
-      inProgress: (_) => Colors.blue,
-      blocked: (_) => Colors.red,
-      onHold: (_) => Colors.red,
-      done: (_) => Colors.green,
-      rejected: (_) => Colors.red,
-    );
+    return switch (this) {
+      TaskOpen() => Colors.orange,
+      TaskGroomed() => Colors.lightGreenAccent,
+      TaskInProgress() => Colors.blue,
+      TaskBlocked() => Colors.red,
+      TaskOnHold() => Colors.red,
+      TaskDone() => Colors.green,
+      TaskRejected() => Colors.red,
+    };
   }
 }

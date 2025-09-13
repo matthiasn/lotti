@@ -4,7 +4,7 @@ part 'config.freezed.dart';
 part 'config.g.dart';
 
 @freezed
-class ImapConfig with _$ImapConfig {
+abstract class ImapConfig with _$ImapConfig {
   const factory ImapConfig({
     required String host,
     required String folder,
@@ -18,7 +18,7 @@ class ImapConfig with _$ImapConfig {
 }
 
 @freezed
-class MatrixConfig with _$MatrixConfig {
+abstract class MatrixConfig with _$MatrixConfig {
   const factory MatrixConfig({
     required String homeServer,
     required String user,
@@ -30,7 +30,7 @@ class MatrixConfig with _$MatrixConfig {
 }
 
 @freezed
-class SyncConfig with _$SyncConfig {
+abstract class SyncConfig with _$SyncConfig {
   const factory SyncConfig({
     required ImapConfig imapConfig,
     required String sharedSecret,

@@ -7,9 +7,9 @@ Color getTagColor(TagEntity tagEntity) {
     return alarm;
   }
 
-  return tagEntity.maybeMap(
-    personTag: (_) => personTagColor,
-    storyTag: (_) => storyTagColor,
-    orElse: () => tagColor,
-  );
+  return switch (tagEntity) {
+    PersonTag() => personTagColor,
+    StoryTag() => storyTagColor,
+    _ => tagColor,
+  };
 }

@@ -6,8 +6,7 @@ part of 'journal_page_state.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$TasksFilterImpl _$$TasksFilterImplFromJson(Map<String, dynamic> json) =>
-    _$TasksFilterImpl(
+_TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
       selectedCategoryIds: (json['selectedCategoryIds'] as List<dynamic>)
           .map((e) => e as String)
           .toSet(),
@@ -16,7 +15,7 @@ _$TasksFilterImpl _$$TasksFilterImplFromJson(Map<String, dynamic> json) =>
           .toSet(),
     );
 
-Map<String, dynamic> _$$TasksFilterImplToJson(_$TasksFilterImpl instance) =>
+Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
     <String, dynamic>{
       'selectedCategoryIds': instance.selectedCategoryIds.toList(),
       'selectedTaskStatuses': instance.selectedTaskStatuses.toList(),

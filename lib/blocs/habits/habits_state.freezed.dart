@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,259 +9,149 @@ part of 'habits_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$HabitsState {
-  List<HabitDefinition> get habitDefinitions =>
-      throw _privateConstructorUsedError;
-  List<HabitDefinition> get openHabits => throw _privateConstructorUsedError;
-  List<HabitDefinition> get openNow => throw _privateConstructorUsedError;
-  List<HabitDefinition> get pendingLater => throw _privateConstructorUsedError;
-  List<HabitDefinition> get completed => throw _privateConstructorUsedError;
-  List<JournalEntity> get habitCompletions =>
-      throw _privateConstructorUsedError;
-  Set<String> get completedToday => throw _privateConstructorUsedError;
-  Set<String> get successfulToday => throw _privateConstructorUsedError;
-  Set<String> get selectedCategoryIds => throw _privateConstructorUsedError;
-  List<String> get days => throw _privateConstructorUsedError;
-  Map<String, Set<String>> get successfulByDay =>
-      throw _privateConstructorUsedError;
-  Map<String, Set<String>> get skippedByDay =>
-      throw _privateConstructorUsedError;
-  Map<String, Set<String>> get failedByDay =>
-      throw _privateConstructorUsedError;
-  Map<String, Set<String>> get allByDay => throw _privateConstructorUsedError;
-  int get successPercentage => throw _privateConstructorUsedError;
-  int get skippedPercentage => throw _privateConstructorUsedError;
-  int get failedPercentage => throw _privateConstructorUsedError;
-  String get selectedInfoYmd => throw _privateConstructorUsedError;
-  int get shortStreakCount => throw _privateConstructorUsedError;
-  int get longStreakCount => throw _privateConstructorUsedError;
-  int get timeSpanDays => throw _privateConstructorUsedError;
-  double get minY => throw _privateConstructorUsedError;
-  bool get zeroBased => throw _privateConstructorUsedError;
-  bool get isVisible => throw _privateConstructorUsedError;
-  bool get showTimeSpan => throw _privateConstructorUsedError;
-  bool get showSearch => throw _privateConstructorUsedError;
-  String get searchString => throw _privateConstructorUsedError;
-  HabitDisplayFilter get displayFilter => throw _privateConstructorUsedError;
+  List<HabitDefinition> get habitDefinitions;
+  List<HabitDefinition> get openHabits;
+  List<HabitDefinition> get openNow;
+  List<HabitDefinition> get pendingLater;
+  List<HabitDefinition> get completed;
+  List<JournalEntity> get habitCompletions;
+  Set<String> get completedToday;
+  Set<String> get successfulToday;
+  Set<String> get selectedCategoryIds;
+  List<String> get days;
+  Map<String, Set<String>> get successfulByDay;
+  Map<String, Set<String>> get skippedByDay;
+  Map<String, Set<String>> get failedByDay;
+  Map<String, Set<String>> get allByDay;
+  int get successPercentage;
+  int get skippedPercentage;
+  int get failedPercentage;
+  String get selectedInfoYmd;
+  int get shortStreakCount;
+  int get longStreakCount;
+  int get timeSpanDays;
+  double get minY;
+  bool get zeroBased;
+  bool get isVisible;
+  bool get showTimeSpan;
+  bool get showSearch;
+  String get searchString;
+  HabitDisplayFilter get displayFilter;
 
   /// Create a copy of HabitsState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $HabitsStateCopyWith<HabitsState> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $HabitsStateCopyWith<$Res> {
-  factory $HabitsStateCopyWith(
-          HabitsState value, $Res Function(HabitsState) then) =
-      _$HabitsStateCopyWithImpl<$Res, HabitsState>;
-  @useResult
-  $Res call(
-      {List<HabitDefinition> habitDefinitions,
-      List<HabitDefinition> openHabits,
-      List<HabitDefinition> openNow,
-      List<HabitDefinition> pendingLater,
-      List<HabitDefinition> completed,
-      List<JournalEntity> habitCompletions,
-      Set<String> completedToday,
-      Set<String> successfulToday,
-      Set<String> selectedCategoryIds,
-      List<String> days,
-      Map<String, Set<String>> successfulByDay,
-      Map<String, Set<String>> skippedByDay,
-      Map<String, Set<String>> failedByDay,
-      Map<String, Set<String>> allByDay,
-      int successPercentage,
-      int skippedPercentage,
-      int failedPercentage,
-      String selectedInfoYmd,
-      int shortStreakCount,
-      int longStreakCount,
-      int timeSpanDays,
-      double minY,
-      bool zeroBased,
-      bool isVisible,
-      bool showTimeSpan,
-      bool showSearch,
-      String searchString,
-      HabitDisplayFilter displayFilter});
-}
-
-/// @nodoc
-class _$HabitsStateCopyWithImpl<$Res, $Val extends HabitsState>
-    implements $HabitsStateCopyWith<$Res> {
-  _$HabitsStateCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of HabitsState
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $HabitsStateCopyWith<HabitsState> get copyWith =>
+      _$HabitsStateCopyWithImpl<HabitsState>(this as HabitsState, _$identity);
+
   @override
-  $Res call({
-    Object? habitDefinitions = null,
-    Object? openHabits = null,
-    Object? openNow = null,
-    Object? pendingLater = null,
-    Object? completed = null,
-    Object? habitCompletions = null,
-    Object? completedToday = null,
-    Object? successfulToday = null,
-    Object? selectedCategoryIds = null,
-    Object? days = null,
-    Object? successfulByDay = null,
-    Object? skippedByDay = null,
-    Object? failedByDay = null,
-    Object? allByDay = null,
-    Object? successPercentage = null,
-    Object? skippedPercentage = null,
-    Object? failedPercentage = null,
-    Object? selectedInfoYmd = null,
-    Object? shortStreakCount = null,
-    Object? longStreakCount = null,
-    Object? timeSpanDays = null,
-    Object? minY = null,
-    Object? zeroBased = null,
-    Object? isVisible = null,
-    Object? showTimeSpan = null,
-    Object? showSearch = null,
-    Object? searchString = null,
-    Object? displayFilter = null,
-  }) {
-    return _then(_value.copyWith(
-      habitDefinitions: null == habitDefinitions
-          ? _value.habitDefinitions
-          : habitDefinitions // ignore: cast_nullable_to_non_nullable
-              as List<HabitDefinition>,
-      openHabits: null == openHabits
-          ? _value.openHabits
-          : openHabits // ignore: cast_nullable_to_non_nullable
-              as List<HabitDefinition>,
-      openNow: null == openNow
-          ? _value.openNow
-          : openNow // ignore: cast_nullable_to_non_nullable
-              as List<HabitDefinition>,
-      pendingLater: null == pendingLater
-          ? _value.pendingLater
-          : pendingLater // ignore: cast_nullable_to_non_nullable
-              as List<HabitDefinition>,
-      completed: null == completed
-          ? _value.completed
-          : completed // ignore: cast_nullable_to_non_nullable
-              as List<HabitDefinition>,
-      habitCompletions: null == habitCompletions
-          ? _value.habitCompletions
-          : habitCompletions // ignore: cast_nullable_to_non_nullable
-              as List<JournalEntity>,
-      completedToday: null == completedToday
-          ? _value.completedToday
-          : completedToday // ignore: cast_nullable_to_non_nullable
-              as Set<String>,
-      successfulToday: null == successfulToday
-          ? _value.successfulToday
-          : successfulToday // ignore: cast_nullable_to_non_nullable
-              as Set<String>,
-      selectedCategoryIds: null == selectedCategoryIds
-          ? _value.selectedCategoryIds
-          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
-              as Set<String>,
-      days: null == days
-          ? _value.days
-          : days // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      successfulByDay: null == successfulByDay
-          ? _value.successfulByDay
-          : successfulByDay // ignore: cast_nullable_to_non_nullable
-              as Map<String, Set<String>>,
-      skippedByDay: null == skippedByDay
-          ? _value.skippedByDay
-          : skippedByDay // ignore: cast_nullable_to_non_nullable
-              as Map<String, Set<String>>,
-      failedByDay: null == failedByDay
-          ? _value.failedByDay
-          : failedByDay // ignore: cast_nullable_to_non_nullable
-              as Map<String, Set<String>>,
-      allByDay: null == allByDay
-          ? _value.allByDay
-          : allByDay // ignore: cast_nullable_to_non_nullable
-              as Map<String, Set<String>>,
-      successPercentage: null == successPercentage
-          ? _value.successPercentage
-          : successPercentage // ignore: cast_nullable_to_non_nullable
-              as int,
-      skippedPercentage: null == skippedPercentage
-          ? _value.skippedPercentage
-          : skippedPercentage // ignore: cast_nullable_to_non_nullable
-              as int,
-      failedPercentage: null == failedPercentage
-          ? _value.failedPercentage
-          : failedPercentage // ignore: cast_nullable_to_non_nullable
-              as int,
-      selectedInfoYmd: null == selectedInfoYmd
-          ? _value.selectedInfoYmd
-          : selectedInfoYmd // ignore: cast_nullable_to_non_nullable
-              as String,
-      shortStreakCount: null == shortStreakCount
-          ? _value.shortStreakCount
-          : shortStreakCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      longStreakCount: null == longStreakCount
-          ? _value.longStreakCount
-          : longStreakCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      timeSpanDays: null == timeSpanDays
-          ? _value.timeSpanDays
-          : timeSpanDays // ignore: cast_nullable_to_non_nullable
-              as int,
-      minY: null == minY
-          ? _value.minY
-          : minY // ignore: cast_nullable_to_non_nullable
-              as double,
-      zeroBased: null == zeroBased
-          ? _value.zeroBased
-          : zeroBased // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isVisible: null == isVisible
-          ? _value.isVisible
-          : isVisible // ignore: cast_nullable_to_non_nullable
-              as bool,
-      showTimeSpan: null == showTimeSpan
-          ? _value.showTimeSpan
-          : showTimeSpan // ignore: cast_nullable_to_non_nullable
-              as bool,
-      showSearch: null == showSearch
-          ? _value.showSearch
-          : showSearch // ignore: cast_nullable_to_non_nullable
-              as bool,
-      searchString: null == searchString
-          ? _value.searchString
-          : searchString // ignore: cast_nullable_to_non_nullable
-              as String,
-      displayFilter: null == displayFilter
-          ? _value.displayFilter
-          : displayFilter // ignore: cast_nullable_to_non_nullable
-              as HabitDisplayFilter,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is HabitsState &&
+            const DeepCollectionEquality()
+                .equals(other.habitDefinitions, habitDefinitions) &&
+            const DeepCollectionEquality()
+                .equals(other.openHabits, openHabits) &&
+            const DeepCollectionEquality().equals(other.openNow, openNow) &&
+            const DeepCollectionEquality()
+                .equals(other.pendingLater, pendingLater) &&
+            const DeepCollectionEquality().equals(other.completed, completed) &&
+            const DeepCollectionEquality()
+                .equals(other.habitCompletions, habitCompletions) &&
+            const DeepCollectionEquality()
+                .equals(other.completedToday, completedToday) &&
+            const DeepCollectionEquality()
+                .equals(other.successfulToday, successfulToday) &&
+            const DeepCollectionEquality()
+                .equals(other.selectedCategoryIds, selectedCategoryIds) &&
+            const DeepCollectionEquality().equals(other.days, days) &&
+            const DeepCollectionEquality()
+                .equals(other.successfulByDay, successfulByDay) &&
+            const DeepCollectionEquality()
+                .equals(other.skippedByDay, skippedByDay) &&
+            const DeepCollectionEquality()
+                .equals(other.failedByDay, failedByDay) &&
+            const DeepCollectionEquality().equals(other.allByDay, allByDay) &&
+            (identical(other.successPercentage, successPercentage) ||
+                other.successPercentage == successPercentage) &&
+            (identical(other.skippedPercentage, skippedPercentage) ||
+                other.skippedPercentage == skippedPercentage) &&
+            (identical(other.failedPercentage, failedPercentage) ||
+                other.failedPercentage == failedPercentage) &&
+            (identical(other.selectedInfoYmd, selectedInfoYmd) ||
+                other.selectedInfoYmd == selectedInfoYmd) &&
+            (identical(other.shortStreakCount, shortStreakCount) ||
+                other.shortStreakCount == shortStreakCount) &&
+            (identical(other.longStreakCount, longStreakCount) ||
+                other.longStreakCount == longStreakCount) &&
+            (identical(other.timeSpanDays, timeSpanDays) ||
+                other.timeSpanDays == timeSpanDays) &&
+            (identical(other.minY, minY) || other.minY == minY) &&
+            (identical(other.zeroBased, zeroBased) ||
+                other.zeroBased == zeroBased) &&
+            (identical(other.isVisible, isVisible) ||
+                other.isVisible == isVisible) &&
+            (identical(other.showTimeSpan, showTimeSpan) ||
+                other.showTimeSpan == showTimeSpan) &&
+            (identical(other.showSearch, showSearch) ||
+                other.showSearch == showSearch) &&
+            (identical(other.searchString, searchString) ||
+                other.searchString == searchString) &&
+            (identical(other.displayFilter, displayFilter) ||
+                other.displayFilter == displayFilter));
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        const DeepCollectionEquality().hash(habitDefinitions),
+        const DeepCollectionEquality().hash(openHabits),
+        const DeepCollectionEquality().hash(openNow),
+        const DeepCollectionEquality().hash(pendingLater),
+        const DeepCollectionEquality().hash(completed),
+        const DeepCollectionEquality().hash(habitCompletions),
+        const DeepCollectionEquality().hash(completedToday),
+        const DeepCollectionEquality().hash(successfulToday),
+        const DeepCollectionEquality().hash(selectedCategoryIds),
+        const DeepCollectionEquality().hash(days),
+        const DeepCollectionEquality().hash(successfulByDay),
+        const DeepCollectionEquality().hash(skippedByDay),
+        const DeepCollectionEquality().hash(failedByDay),
+        const DeepCollectionEquality().hash(allByDay),
+        successPercentage,
+        skippedPercentage,
+        failedPercentage,
+        selectedInfoYmd,
+        shortStreakCount,
+        longStreakCount,
+        timeSpanDays,
+        minY,
+        zeroBased,
+        isVisible,
+        showTimeSpan,
+        showSearch,
+        searchString,
+        displayFilter
+      ]);
+
+  @override
+  String toString() {
+    return 'HabitsState(habitDefinitions: $habitDefinitions, openHabits: $openHabits, openNow: $openNow, pendingLater: $pendingLater, completed: $completed, habitCompletions: $habitCompletions, completedToday: $completedToday, successfulToday: $successfulToday, selectedCategoryIds: $selectedCategoryIds, days: $days, successfulByDay: $successfulByDay, skippedByDay: $skippedByDay, failedByDay: $failedByDay, allByDay: $allByDay, successPercentage: $successPercentage, skippedPercentage: $skippedPercentage, failedPercentage: $failedPercentage, selectedInfoYmd: $selectedInfoYmd, shortStreakCount: $shortStreakCount, longStreakCount: $longStreakCount, timeSpanDays: $timeSpanDays, minY: $minY, zeroBased: $zeroBased, isVisible: $isVisible, showTimeSpan: $showTimeSpan, showSearch: $showSearch, searchString: $searchString, displayFilter: $displayFilter)';
   }
 }
 
 /// @nodoc
-abstract class _$$HabitsStateSavedImplCopyWith<$Res>
-    implements $HabitsStateCopyWith<$Res> {
-  factory _$$HabitsStateSavedImplCopyWith(_$HabitsStateSavedImpl value,
-          $Res Function(_$HabitsStateSavedImpl) then) =
-      __$$HabitsStateSavedImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $HabitsStateCopyWith<$Res> {
+  factory $HabitsStateCopyWith(
+          HabitsState value, $Res Function(HabitsState) _then) =
+      _$HabitsStateCopyWithImpl;
   @useResult
   $Res call(
       {List<HabitDefinition> habitDefinitions,
@@ -295,12 +185,11 @@ abstract class _$$HabitsStateSavedImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$HabitsStateSavedImplCopyWithImpl<$Res>
-    extends _$HabitsStateCopyWithImpl<$Res, _$HabitsStateSavedImpl>
-    implements _$$HabitsStateSavedImplCopyWith<$Res> {
-  __$$HabitsStateSavedImplCopyWithImpl(_$HabitsStateSavedImpl _value,
-      $Res Function(_$HabitsStateSavedImpl) _then)
-      : super(_value, _then);
+class _$HabitsStateCopyWithImpl<$Res> implements $HabitsStateCopyWith<$Res> {
+  _$HabitsStateCopyWithImpl(this._self, this._then);
+
+  final HabitsState _self;
+  final $Res Function(HabitsState) _then;
 
   /// Create a copy of HabitsState
   /// with the given fields replaced by the non-null parameter values.
@@ -336,127 +225,455 @@ class __$$HabitsStateSavedImplCopyWithImpl<$Res>
     Object? searchString = null,
     Object? displayFilter = null,
   }) {
-    return _then(_$HabitsStateSavedImpl(
+    return _then(_self.copyWith(
       habitDefinitions: null == habitDefinitions
-          ? _value._habitDefinitions
+          ? _self.habitDefinitions
           : habitDefinitions // ignore: cast_nullable_to_non_nullable
               as List<HabitDefinition>,
       openHabits: null == openHabits
-          ? _value._openHabits
+          ? _self.openHabits
           : openHabits // ignore: cast_nullable_to_non_nullable
               as List<HabitDefinition>,
       openNow: null == openNow
-          ? _value._openNow
+          ? _self.openNow
           : openNow // ignore: cast_nullable_to_non_nullable
               as List<HabitDefinition>,
       pendingLater: null == pendingLater
-          ? _value._pendingLater
+          ? _self.pendingLater
           : pendingLater // ignore: cast_nullable_to_non_nullable
               as List<HabitDefinition>,
       completed: null == completed
-          ? _value._completed
+          ? _self.completed
           : completed // ignore: cast_nullable_to_non_nullable
               as List<HabitDefinition>,
       habitCompletions: null == habitCompletions
-          ? _value._habitCompletions
+          ? _self.habitCompletions
           : habitCompletions // ignore: cast_nullable_to_non_nullable
               as List<JournalEntity>,
       completedToday: null == completedToday
-          ? _value._completedToday
+          ? _self.completedToday
           : completedToday // ignore: cast_nullable_to_non_nullable
               as Set<String>,
       successfulToday: null == successfulToday
-          ? _value._successfulToday
+          ? _self.successfulToday
           : successfulToday // ignore: cast_nullable_to_non_nullable
               as Set<String>,
       selectedCategoryIds: null == selectedCategoryIds
-          ? _value._selectedCategoryIds
+          ? _self.selectedCategoryIds
           : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
               as Set<String>,
       days: null == days
-          ? _value._days
+          ? _self.days
           : days // ignore: cast_nullable_to_non_nullable
               as List<String>,
       successfulByDay: null == successfulByDay
-          ? _value._successfulByDay
+          ? _self.successfulByDay
           : successfulByDay // ignore: cast_nullable_to_non_nullable
               as Map<String, Set<String>>,
       skippedByDay: null == skippedByDay
-          ? _value._skippedByDay
+          ? _self.skippedByDay
           : skippedByDay // ignore: cast_nullable_to_non_nullable
               as Map<String, Set<String>>,
       failedByDay: null == failedByDay
-          ? _value._failedByDay
+          ? _self.failedByDay
           : failedByDay // ignore: cast_nullable_to_non_nullable
               as Map<String, Set<String>>,
       allByDay: null == allByDay
-          ? _value._allByDay
+          ? _self.allByDay
           : allByDay // ignore: cast_nullable_to_non_nullable
               as Map<String, Set<String>>,
       successPercentage: null == successPercentage
-          ? _value.successPercentage
+          ? _self.successPercentage
           : successPercentage // ignore: cast_nullable_to_non_nullable
               as int,
       skippedPercentage: null == skippedPercentage
-          ? _value.skippedPercentage
+          ? _self.skippedPercentage
           : skippedPercentage // ignore: cast_nullable_to_non_nullable
               as int,
       failedPercentage: null == failedPercentage
-          ? _value.failedPercentage
+          ? _self.failedPercentage
           : failedPercentage // ignore: cast_nullable_to_non_nullable
               as int,
       selectedInfoYmd: null == selectedInfoYmd
-          ? _value.selectedInfoYmd
+          ? _self.selectedInfoYmd
           : selectedInfoYmd // ignore: cast_nullable_to_non_nullable
               as String,
       shortStreakCount: null == shortStreakCount
-          ? _value.shortStreakCount
+          ? _self.shortStreakCount
           : shortStreakCount // ignore: cast_nullable_to_non_nullable
               as int,
       longStreakCount: null == longStreakCount
-          ? _value.longStreakCount
+          ? _self.longStreakCount
           : longStreakCount // ignore: cast_nullable_to_non_nullable
               as int,
       timeSpanDays: null == timeSpanDays
-          ? _value.timeSpanDays
+          ? _self.timeSpanDays
           : timeSpanDays // ignore: cast_nullable_to_non_nullable
               as int,
       minY: null == minY
-          ? _value.minY
+          ? _self.minY
           : minY // ignore: cast_nullable_to_non_nullable
               as double,
       zeroBased: null == zeroBased
-          ? _value.zeroBased
+          ? _self.zeroBased
           : zeroBased // ignore: cast_nullable_to_non_nullable
               as bool,
       isVisible: null == isVisible
-          ? _value.isVisible
+          ? _self.isVisible
           : isVisible // ignore: cast_nullable_to_non_nullable
               as bool,
       showTimeSpan: null == showTimeSpan
-          ? _value.showTimeSpan
+          ? _self.showTimeSpan
           : showTimeSpan // ignore: cast_nullable_to_non_nullable
               as bool,
       showSearch: null == showSearch
-          ? _value.showSearch
+          ? _self.showSearch
           : showSearch // ignore: cast_nullable_to_non_nullable
               as bool,
       searchString: null == searchString
-          ? _value.searchString
+          ? _self.searchString
           : searchString // ignore: cast_nullable_to_non_nullable
               as String,
       displayFilter: null == displayFilter
-          ? _value.displayFilter
+          ? _self.displayFilter
           : displayFilter // ignore: cast_nullable_to_non_nullable
               as HabitDisplayFilter,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [HabitsState].
+extension HabitsStatePatterns on HabitsState {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_HabitsStateSaved value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _HabitsStateSaved() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_HabitsStateSaved value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _HabitsStateSaved():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_HabitsStateSaved value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _HabitsStateSaved() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            List<HabitDefinition> habitDefinitions,
+            List<HabitDefinition> openHabits,
+            List<HabitDefinition> openNow,
+            List<HabitDefinition> pendingLater,
+            List<HabitDefinition> completed,
+            List<JournalEntity> habitCompletions,
+            Set<String> completedToday,
+            Set<String> successfulToday,
+            Set<String> selectedCategoryIds,
+            List<String> days,
+            Map<String, Set<String>> successfulByDay,
+            Map<String, Set<String>> skippedByDay,
+            Map<String, Set<String>> failedByDay,
+            Map<String, Set<String>> allByDay,
+            int successPercentage,
+            int skippedPercentage,
+            int failedPercentage,
+            String selectedInfoYmd,
+            int shortStreakCount,
+            int longStreakCount,
+            int timeSpanDays,
+            double minY,
+            bool zeroBased,
+            bool isVisible,
+            bool showTimeSpan,
+            bool showSearch,
+            String searchString,
+            HabitDisplayFilter displayFilter)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _HabitsStateSaved() when $default != null:
+        return $default(
+            _that.habitDefinitions,
+            _that.openHabits,
+            _that.openNow,
+            _that.pendingLater,
+            _that.completed,
+            _that.habitCompletions,
+            _that.completedToday,
+            _that.successfulToday,
+            _that.selectedCategoryIds,
+            _that.days,
+            _that.successfulByDay,
+            _that.skippedByDay,
+            _that.failedByDay,
+            _that.allByDay,
+            _that.successPercentage,
+            _that.skippedPercentage,
+            _that.failedPercentage,
+            _that.selectedInfoYmd,
+            _that.shortStreakCount,
+            _that.longStreakCount,
+            _that.timeSpanDays,
+            _that.minY,
+            _that.zeroBased,
+            _that.isVisible,
+            _that.showTimeSpan,
+            _that.showSearch,
+            _that.searchString,
+            _that.displayFilter);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            List<HabitDefinition> habitDefinitions,
+            List<HabitDefinition> openHabits,
+            List<HabitDefinition> openNow,
+            List<HabitDefinition> pendingLater,
+            List<HabitDefinition> completed,
+            List<JournalEntity> habitCompletions,
+            Set<String> completedToday,
+            Set<String> successfulToday,
+            Set<String> selectedCategoryIds,
+            List<String> days,
+            Map<String, Set<String>> successfulByDay,
+            Map<String, Set<String>> skippedByDay,
+            Map<String, Set<String>> failedByDay,
+            Map<String, Set<String>> allByDay,
+            int successPercentage,
+            int skippedPercentage,
+            int failedPercentage,
+            String selectedInfoYmd,
+            int shortStreakCount,
+            int longStreakCount,
+            int timeSpanDays,
+            double minY,
+            bool zeroBased,
+            bool isVisible,
+            bool showTimeSpan,
+            bool showSearch,
+            String searchString,
+            HabitDisplayFilter displayFilter)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _HabitsStateSaved():
+        return $default(
+            _that.habitDefinitions,
+            _that.openHabits,
+            _that.openNow,
+            _that.pendingLater,
+            _that.completed,
+            _that.habitCompletions,
+            _that.completedToday,
+            _that.successfulToday,
+            _that.selectedCategoryIds,
+            _that.days,
+            _that.successfulByDay,
+            _that.skippedByDay,
+            _that.failedByDay,
+            _that.allByDay,
+            _that.successPercentage,
+            _that.skippedPercentage,
+            _that.failedPercentage,
+            _that.selectedInfoYmd,
+            _that.shortStreakCount,
+            _that.longStreakCount,
+            _that.timeSpanDays,
+            _that.minY,
+            _that.zeroBased,
+            _that.isVisible,
+            _that.showTimeSpan,
+            _that.showSearch,
+            _that.searchString,
+            _that.displayFilter);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            List<HabitDefinition> habitDefinitions,
+            List<HabitDefinition> openHabits,
+            List<HabitDefinition> openNow,
+            List<HabitDefinition> pendingLater,
+            List<HabitDefinition> completed,
+            List<JournalEntity> habitCompletions,
+            Set<String> completedToday,
+            Set<String> successfulToday,
+            Set<String> selectedCategoryIds,
+            List<String> days,
+            Map<String, Set<String>> successfulByDay,
+            Map<String, Set<String>> skippedByDay,
+            Map<String, Set<String>> failedByDay,
+            Map<String, Set<String>> allByDay,
+            int successPercentage,
+            int skippedPercentage,
+            int failedPercentage,
+            String selectedInfoYmd,
+            int shortStreakCount,
+            int longStreakCount,
+            int timeSpanDays,
+            double minY,
+            bool zeroBased,
+            bool isVisible,
+            bool showTimeSpan,
+            bool showSearch,
+            String searchString,
+            HabitDisplayFilter displayFilter)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _HabitsStateSaved() when $default != null:
+        return $default(
+            _that.habitDefinitions,
+            _that.openHabits,
+            _that.openNow,
+            _that.pendingLater,
+            _that.completed,
+            _that.habitCompletions,
+            _that.completedToday,
+            _that.successfulToday,
+            _that.selectedCategoryIds,
+            _that.days,
+            _that.successfulByDay,
+            _that.skippedByDay,
+            _that.failedByDay,
+            _that.allByDay,
+            _that.successPercentage,
+            _that.skippedPercentage,
+            _that.failedPercentage,
+            _that.selectedInfoYmd,
+            _that.shortStreakCount,
+            _that.longStreakCount,
+            _that.timeSpanDays,
+            _that.minY,
+            _that.zeroBased,
+            _that.isVisible,
+            _that.showTimeSpan,
+            _that.showSearch,
+            _that.searchString,
+            _that.displayFilter);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 
-class _$HabitsStateSavedImpl implements _HabitsStateSaved {
-  _$HabitsStateSavedImpl(
+class _HabitsStateSaved implements HabitsState {
+  _HabitsStateSaved(
       {required final List<HabitDefinition> habitDefinitions,
       required final List<HabitDefinition> openHabits,
       required final List<HabitDefinition> openNow,
@@ -644,16 +861,19 @@ class _$HabitsStateSavedImpl implements _HabitsStateSaved {
   @override
   final HabitDisplayFilter displayFilter;
 
+  /// Create a copy of HabitsState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'HabitsState(habitDefinitions: $habitDefinitions, openHabits: $openHabits, openNow: $openNow, pendingLater: $pendingLater, completed: $completed, habitCompletions: $habitCompletions, completedToday: $completedToday, successfulToday: $successfulToday, selectedCategoryIds: $selectedCategoryIds, days: $days, successfulByDay: $successfulByDay, skippedByDay: $skippedByDay, failedByDay: $failedByDay, allByDay: $allByDay, successPercentage: $successPercentage, skippedPercentage: $skippedPercentage, failedPercentage: $failedPercentage, selectedInfoYmd: $selectedInfoYmd, shortStreakCount: $shortStreakCount, longStreakCount: $longStreakCount, timeSpanDays: $timeSpanDays, minY: $minY, zeroBased: $zeroBased, isVisible: $isVisible, showTimeSpan: $showTimeSpan, showSearch: $showSearch, searchString: $searchString, displayFilter: $displayFilter)';
-  }
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$HabitsStateSavedCopyWith<_HabitsStateSaved> get copyWith =>
+      __$HabitsStateSavedCopyWithImpl<_HabitsStateSaved>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$HabitsStateSavedImpl &&
+            other is _HabitsStateSaved &&
             const DeepCollectionEquality()
                 .equals(other._habitDefinitions, _habitDefinitions) &&
             const DeepCollectionEquality()
@@ -741,109 +961,208 @@ class _$HabitsStateSavedImpl implements _HabitsStateSaved {
         displayFilter
       ]);
 
+  @override
+  String toString() {
+    return 'HabitsState(habitDefinitions: $habitDefinitions, openHabits: $openHabits, openNow: $openNow, pendingLater: $pendingLater, completed: $completed, habitCompletions: $habitCompletions, completedToday: $completedToday, successfulToday: $successfulToday, selectedCategoryIds: $selectedCategoryIds, days: $days, successfulByDay: $successfulByDay, skippedByDay: $skippedByDay, failedByDay: $failedByDay, allByDay: $allByDay, successPercentage: $successPercentage, skippedPercentage: $skippedPercentage, failedPercentage: $failedPercentage, selectedInfoYmd: $selectedInfoYmd, shortStreakCount: $shortStreakCount, longStreakCount: $longStreakCount, timeSpanDays: $timeSpanDays, minY: $minY, zeroBased: $zeroBased, isVisible: $isVisible, showTimeSpan: $showTimeSpan, showSearch: $showSearch, searchString: $searchString, displayFilter: $displayFilter)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$HabitsStateSavedCopyWith<$Res>
+    implements $HabitsStateCopyWith<$Res> {
+  factory _$HabitsStateSavedCopyWith(
+          _HabitsStateSaved value, $Res Function(_HabitsStateSaved) _then) =
+      __$HabitsStateSavedCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {List<HabitDefinition> habitDefinitions,
+      List<HabitDefinition> openHabits,
+      List<HabitDefinition> openNow,
+      List<HabitDefinition> pendingLater,
+      List<HabitDefinition> completed,
+      List<JournalEntity> habitCompletions,
+      Set<String> completedToday,
+      Set<String> successfulToday,
+      Set<String> selectedCategoryIds,
+      List<String> days,
+      Map<String, Set<String>> successfulByDay,
+      Map<String, Set<String>> skippedByDay,
+      Map<String, Set<String>> failedByDay,
+      Map<String, Set<String>> allByDay,
+      int successPercentage,
+      int skippedPercentage,
+      int failedPercentage,
+      String selectedInfoYmd,
+      int shortStreakCount,
+      int longStreakCount,
+      int timeSpanDays,
+      double minY,
+      bool zeroBased,
+      bool isVisible,
+      bool showTimeSpan,
+      bool showSearch,
+      String searchString,
+      HabitDisplayFilter displayFilter});
+}
+
+/// @nodoc
+class __$HabitsStateSavedCopyWithImpl<$Res>
+    implements _$HabitsStateSavedCopyWith<$Res> {
+  __$HabitsStateSavedCopyWithImpl(this._self, this._then);
+
+  final _HabitsStateSaved _self;
+  final $Res Function(_HabitsStateSaved) _then;
+
   /// Create a copy of HabitsState
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$HabitsStateSavedImplCopyWith<_$HabitsStateSavedImpl> get copyWith =>
-      __$$HabitsStateSavedImplCopyWithImpl<_$HabitsStateSavedImpl>(
-          this, _$identity);
+  $Res call({
+    Object? habitDefinitions = null,
+    Object? openHabits = null,
+    Object? openNow = null,
+    Object? pendingLater = null,
+    Object? completed = null,
+    Object? habitCompletions = null,
+    Object? completedToday = null,
+    Object? successfulToday = null,
+    Object? selectedCategoryIds = null,
+    Object? days = null,
+    Object? successfulByDay = null,
+    Object? skippedByDay = null,
+    Object? failedByDay = null,
+    Object? allByDay = null,
+    Object? successPercentage = null,
+    Object? skippedPercentage = null,
+    Object? failedPercentage = null,
+    Object? selectedInfoYmd = null,
+    Object? shortStreakCount = null,
+    Object? longStreakCount = null,
+    Object? timeSpanDays = null,
+    Object? minY = null,
+    Object? zeroBased = null,
+    Object? isVisible = null,
+    Object? showTimeSpan = null,
+    Object? showSearch = null,
+    Object? searchString = null,
+    Object? displayFilter = null,
+  }) {
+    return _then(_HabitsStateSaved(
+      habitDefinitions: null == habitDefinitions
+          ? _self._habitDefinitions
+          : habitDefinitions // ignore: cast_nullable_to_non_nullable
+              as List<HabitDefinition>,
+      openHabits: null == openHabits
+          ? _self._openHabits
+          : openHabits // ignore: cast_nullable_to_non_nullable
+              as List<HabitDefinition>,
+      openNow: null == openNow
+          ? _self._openNow
+          : openNow // ignore: cast_nullable_to_non_nullable
+              as List<HabitDefinition>,
+      pendingLater: null == pendingLater
+          ? _self._pendingLater
+          : pendingLater // ignore: cast_nullable_to_non_nullable
+              as List<HabitDefinition>,
+      completed: null == completed
+          ? _self._completed
+          : completed // ignore: cast_nullable_to_non_nullable
+              as List<HabitDefinition>,
+      habitCompletions: null == habitCompletions
+          ? _self._habitCompletions
+          : habitCompletions // ignore: cast_nullable_to_non_nullable
+              as List<JournalEntity>,
+      completedToday: null == completedToday
+          ? _self._completedToday
+          : completedToday // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      successfulToday: null == successfulToday
+          ? _self._successfulToday
+          : successfulToday // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      selectedCategoryIds: null == selectedCategoryIds
+          ? _self._selectedCategoryIds
+          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      days: null == days
+          ? _self._days
+          : days // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      successfulByDay: null == successfulByDay
+          ? _self._successfulByDay
+          : successfulByDay // ignore: cast_nullable_to_non_nullable
+              as Map<String, Set<String>>,
+      skippedByDay: null == skippedByDay
+          ? _self._skippedByDay
+          : skippedByDay // ignore: cast_nullable_to_non_nullable
+              as Map<String, Set<String>>,
+      failedByDay: null == failedByDay
+          ? _self._failedByDay
+          : failedByDay // ignore: cast_nullable_to_non_nullable
+              as Map<String, Set<String>>,
+      allByDay: null == allByDay
+          ? _self._allByDay
+          : allByDay // ignore: cast_nullable_to_non_nullable
+              as Map<String, Set<String>>,
+      successPercentage: null == successPercentage
+          ? _self.successPercentage
+          : successPercentage // ignore: cast_nullable_to_non_nullable
+              as int,
+      skippedPercentage: null == skippedPercentage
+          ? _self.skippedPercentage
+          : skippedPercentage // ignore: cast_nullable_to_non_nullable
+              as int,
+      failedPercentage: null == failedPercentage
+          ? _self.failedPercentage
+          : failedPercentage // ignore: cast_nullable_to_non_nullable
+              as int,
+      selectedInfoYmd: null == selectedInfoYmd
+          ? _self.selectedInfoYmd
+          : selectedInfoYmd // ignore: cast_nullable_to_non_nullable
+              as String,
+      shortStreakCount: null == shortStreakCount
+          ? _self.shortStreakCount
+          : shortStreakCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      longStreakCount: null == longStreakCount
+          ? _self.longStreakCount
+          : longStreakCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      timeSpanDays: null == timeSpanDays
+          ? _self.timeSpanDays
+          : timeSpanDays // ignore: cast_nullable_to_non_nullable
+              as int,
+      minY: null == minY
+          ? _self.minY
+          : minY // ignore: cast_nullable_to_non_nullable
+              as double,
+      zeroBased: null == zeroBased
+          ? _self.zeroBased
+          : zeroBased // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isVisible: null == isVisible
+          ? _self.isVisible
+          : isVisible // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showTimeSpan: null == showTimeSpan
+          ? _self.showTimeSpan
+          : showTimeSpan // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showSearch: null == showSearch
+          ? _self.showSearch
+          : showSearch // ignore: cast_nullable_to_non_nullable
+              as bool,
+      searchString: null == searchString
+          ? _self.searchString
+          : searchString // ignore: cast_nullable_to_non_nullable
+              as String,
+      displayFilter: null == displayFilter
+          ? _self.displayFilter
+          : displayFilter // ignore: cast_nullable_to_non_nullable
+              as HabitDisplayFilter,
+    ));
+  }
 }
 
-abstract class _HabitsStateSaved implements HabitsState {
-  factory _HabitsStateSaved(
-          {required final List<HabitDefinition> habitDefinitions,
-          required final List<HabitDefinition> openHabits,
-          required final List<HabitDefinition> openNow,
-          required final List<HabitDefinition> pendingLater,
-          required final List<HabitDefinition> completed,
-          required final List<JournalEntity> habitCompletions,
-          required final Set<String> completedToday,
-          required final Set<String> successfulToday,
-          required final Set<String> selectedCategoryIds,
-          required final List<String> days,
-          required final Map<String, Set<String>> successfulByDay,
-          required final Map<String, Set<String>> skippedByDay,
-          required final Map<String, Set<String>> failedByDay,
-          required final Map<String, Set<String>> allByDay,
-          required final int successPercentage,
-          required final int skippedPercentage,
-          required final int failedPercentage,
-          required final String selectedInfoYmd,
-          required final int shortStreakCount,
-          required final int longStreakCount,
-          required final int timeSpanDays,
-          required final double minY,
-          required final bool zeroBased,
-          required final bool isVisible,
-          required final bool showTimeSpan,
-          required final bool showSearch,
-          required final String searchString,
-          required final HabitDisplayFilter displayFilter}) =
-      _$HabitsStateSavedImpl;
-
-  @override
-  List<HabitDefinition> get habitDefinitions;
-  @override
-  List<HabitDefinition> get openHabits;
-  @override
-  List<HabitDefinition> get openNow;
-  @override
-  List<HabitDefinition> get pendingLater;
-  @override
-  List<HabitDefinition> get completed;
-  @override
-  List<JournalEntity> get habitCompletions;
-  @override
-  Set<String> get completedToday;
-  @override
-  Set<String> get successfulToday;
-  @override
-  Set<String> get selectedCategoryIds;
-  @override
-  List<String> get days;
-  @override
-  Map<String, Set<String>> get successfulByDay;
-  @override
-  Map<String, Set<String>> get skippedByDay;
-  @override
-  Map<String, Set<String>> get failedByDay;
-  @override
-  Map<String, Set<String>> get allByDay;
-  @override
-  int get successPercentage;
-  @override
-  int get skippedPercentage;
-  @override
-  int get failedPercentage;
-  @override
-  String get selectedInfoYmd;
-  @override
-  int get shortStreakCount;
-  @override
-  int get longStreakCount;
-  @override
-  int get timeSpanDays;
-  @override
-  double get minY;
-  @override
-  bool get zeroBased;
-  @override
-  bool get isVisible;
-  @override
-  bool get showTimeSpan;
-  @override
-  bool get showSearch;
-  @override
-  String get searchString;
-  @override
-  HabitDisplayFilter get displayFilter;
-
-  /// Create a copy of HabitsState
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$HabitsStateSavedImplCopyWith<_$HabitsStateSavedImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// dart format on

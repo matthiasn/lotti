@@ -6,15 +6,14 @@ part of 'audio_note.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$AudioNoteImpl _$$AudioNoteImplFromJson(Map<String, dynamic> json) =>
-    _$AudioNoteImpl(
+_AudioNote _$AudioNoteFromJson(Map<String, dynamic> json) => _AudioNote(
       createdAt: DateTime.parse(json['createdAt'] as String),
       audioFile: json['audioFile'] as String,
       audioDirectory: json['audioDirectory'] as String,
       duration: Duration(microseconds: (json['duration'] as num).toInt()),
     );
 
-Map<String, dynamic> _$$AudioNoteImplToJson(_$AudioNoteImpl instance) =>
+Map<String, dynamic> _$AudioNoteToJson(_AudioNote instance) =>
     <String, dynamic>{
       'createdAt': instance.createdAt.toIso8601String(),
       'audioFile': instance.audioFile,

@@ -26,57 +26,48 @@ class DashboardItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return item.map(
-      measurement: (measurement) {
+    switch (item) {
+      case final DashboardMeasurementItem measurement:
         return MeasurableItemCard(
           measurement: measurement,
           updateItemFn: updateItemFn,
           index: index,
         );
-      },
-      healthChart: (healthLineChart) {
-        final type = healthLineChart.healthType;
+      case DashboardHealthItem(:final healthType):
+        final type = healthType;
         final itemName = healthTypes[type]?.displayName ?? type;
         return ItemCard(
           leadingIcon: MdiIcons.stethoscope,
           title: itemName,
         );
-      },
-      workoutChart: (workoutChart) {
-        final workoutKey =
-            '${workoutChart.workoutType}.${workoutChart.valueType.name}';
-        final workoutType = workoutTypes[workoutKey];
-
+      case DashboardWorkoutItem(:final workoutType, :final valueType):
+        final workoutKey = '$workoutType.${valueType.name}';
+        final workout = workoutTypes[workoutKey];
         return ItemCard(
           leadingIcon: Icons.sports_gymnastics,
-          title: workoutType?.displayName ?? workoutChart.displayName,
+          title: workout?.displayName ?? workoutKey,
         );
-      },
-      surveyChart: (surveyChart) {
+      case DashboardSurveyItem(:final surveyName):
         return ItemCard(
           leadingIcon: MdiIcons.clipboardOutline,
-          title: surveyChart.surveyName,
+          title: surveyName,
         );
-      },
-      habitChart: (habitItem) {
+      case final DashboardHabitItem habitItem:
         return HabitItemCard(
           habitItem: habitItem,
         );
-      },
-      storyTimeChart: (item) {
-        final tagEntity = tagsService.getTagById(item.storyTagId);
+      case DashboardStoryTimeItem(:final storyTagId):
+        final tagEntity = tagsService.getTagById(storyTagId);
         return ItemCard(
           leadingIcon: MdiIcons.bookOutline,
-          title: tagEntity?.tag ?? item.storyTagId,
+          title: tagEntity?.tag ?? storyTagId,
         );
-      },
-      wildcardStoryTimeChart: (item) {
+      case WildcardStoryTimeItem(:final storySubstring):
         return ItemCard(
           leadingIcon: MdiIcons.bookshelf,
-          title: item.storySubstring,
+          title: storySubstring,
         );
-      },
-    );
+    }
   }
 }
 

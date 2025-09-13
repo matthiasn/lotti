@@ -30,7 +30,7 @@ enum InputDataType {
 }
 
 @freezed
-class AiConfig with _$AiConfig {
+abstract class AiConfig with _$AiConfig {
   const factory AiConfig.inferenceProvider({
     required String id,
     required String baseUrl,

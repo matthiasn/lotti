@@ -7,7 +7,7 @@ import 'package:lotti/features/sync/model/validation/username.dart';
 part 'config_form_state.freezed.dart';
 
 @freezed
-class LoginFormState with _$LoginFormState {
+abstract class LoginFormState with _$LoginFormState {
   const factory LoginFormState({
     @Default(HomeServer.pure()) HomeServer homeServer,
     @Default(UserName.pure()) UserName userName,
