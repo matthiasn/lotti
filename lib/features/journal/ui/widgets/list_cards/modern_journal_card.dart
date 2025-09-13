@@ -217,34 +217,50 @@ class ModernJournalCard extends StatelessWidget {
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
-      child: item.map(
-        quantitative: (qe) => HealthSummary(qe, showChart: false),
-        journalAudio: (audio) => _buildTextContent(audio.entryText, textColor),
-        journalEntry: (entry) => _buildTextContent(entry.entryText, textColor),
-        journalImage: (image) => _buildTextContent(image.entryText, textColor),
-        survey: (survey) => SurveySummary(survey, showChart: false),
-        measurement: MeasurementSummary.new,
-        task: (task) => _buildTextContent(task.entryText, textColor),
-        event: (event) => _buildTextContent(event.entryText, textColor),
-        aiResponse: (ai) => GptMarkdown(ai.data.response),
-        workout: (workout) => WorkoutSummary(workout, showChart: false),
-        habitCompletion: HabitSummary.new,
-        checklist: (checklist) => Text(
-          checklist.data.title,
-          style: context.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: isCompact
-                ? AppTheme.titleFontSizeCompact
-                : AppTheme.titleFontSize,
-          ),
-        ),
-        checklistItem: (item) => Text(
-          item.data.title,
-          style: context.textTheme.bodyMedium?.copyWith(
-            decoration: item.data.isChecked ? TextDecoration.lineThrough : null,
-          ),
-        ),
-      ),
+      child: () {
+        switch (item) {
+          case final QuantitativeEntry qe:
+            return HealthSummary(qe, showChart: false);
+          case final JournalAudio audio:
+            return _buildTextContent(audio.entryText, textColor);
+          case final JournalEntry entry:
+            return _buildTextContent(entry.entryText, textColor);
+          case final JournalImage image:
+            return _buildTextContent(image.entryText, textColor);
+          case final SurveyEntry survey:
+            return SurveySummary(survey, showChart: false);
+          case final MeasurementEntry measurement:
+            return MeasurementSummary(measurement);
+          case final Task task:
+            return _buildTextContent(task.entryText, textColor);
+          case final JournalEvent event:
+            return _buildTextContent(event.entryText, textColor);
+          case final AiResponseEntry ai:
+            return GptMarkdown(ai.data.response);
+          case final WorkoutEntry workout:
+            return WorkoutSummary(workout, showChart: false);
+          case final HabitCompletionEntry habit:
+            return HabitSummary(habit);
+          case final Checklist checklist:
+            return Text(
+              checklist.data.title,
+              style: context.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: isCompact
+                    ? AppTheme.titleFontSizeCompact
+                    : AppTheme.titleFontSize,
+              ),
+            );
+          case final ChecklistItem ci:
+            return Text(
+              ci.data.title,
+              style: context.textTheme.bodyMedium?.copyWith(
+                decoration:
+                    ci.data.isChecked ? TextDecoration.lineThrough : null,
+              ),
+            );
+        }
+      }(),
     );
   }
 

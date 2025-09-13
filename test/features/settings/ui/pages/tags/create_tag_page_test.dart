@@ -8,6 +8,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../mocks/sync_config_test_mocks.dart';
 import '../../../../../widget_test_utils.dart';
@@ -21,8 +22,8 @@ void main() {
 
   group('CreateTagPage Widget Tests - ', () {
     setUpAll(() {
-      registerFallbackValue(FakeTagEntity());
-      registerFallbackValue(FakeSyncMessage());
+      registerFallbackValue(fallbackTagEntity);
+      registerFallbackValue(fallbackSyncMessage);
     });
 
     setUp(() {

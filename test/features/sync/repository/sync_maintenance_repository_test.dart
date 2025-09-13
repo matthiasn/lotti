@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../../helpers/fallbacks.dart';
 
 // Mock classes
 class MockJournalDb extends Mock implements JournalDb {}
@@ -15,10 +16,6 @@ class MockJournalDb extends Mock implements JournalDb {}
 class MockOutboxService extends Mock implements OutboxService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
-
-class SyncMessageFake extends Fake implements SyncMessage {}
-
-class ExceptionFake extends Fake implements Exception {}
 
 // Fake classes for EntityDefinition parts
 class FakeMeasurableDataType extends Fake implements MeasurableDataType {
@@ -60,9 +57,9 @@ void main() {
   late SyncMaintenanceRepository syncMaintenanceRepository;
 
   setUpAll(() {
-    registerFallbackValue(SyncMessageFake());
     registerFallbackValue(StackTrace.empty);
-    registerFallbackValue(ExceptionFake());
+    registerFallbackValue(fallbackSyncMessage);
+    registerFallbackValue(Exception('fallback'));
   });
 
   setUp(() {

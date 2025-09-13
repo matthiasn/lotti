@@ -8,7 +8,7 @@ part 'chat_message.g.dart';
 const _uuid = Uuid();
 
 @freezed
-class ChatMessage with _$ChatMessage {
+abstract class ChatMessage with _$ChatMessage {
   const factory ChatMessage({
     required String id,
     required String content,

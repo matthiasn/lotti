@@ -4,7 +4,7 @@ part 'geolocation.freezed.dart';
 part 'geolocation.g.dart';
 
 @freezed
-class Geolocation with _$Geolocation {
+abstract class Geolocation with _$Geolocation {
   const factory Geolocation({
     required DateTime createdAt,
     required double latitude,

@@ -3,22 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'config.freezed.dart';
 part 'config.g.dart';
 
-@freezed
-class ImapConfig with _$ImapConfig {
-  const factory ImapConfig({
-    required String host,
-    required String folder,
-    required String userName,
-    required String password,
-    required int port,
-  }) = _ImapConfig;
-
-  factory ImapConfig.fromJson(Map<String, dynamic> json) =>
-      _$ImapConfigFromJson(json);
-}
-
-@freezed
-class MatrixConfig with _$MatrixConfig {
+@Freezed(toStringOverride: false)
+abstract class MatrixConfig with _$MatrixConfig {
   const factory MatrixConfig({
     required String homeServer,
     required String user,
@@ -29,13 +15,7 @@ class MatrixConfig with _$MatrixConfig {
       _$MatrixConfigFromJson(json);
 }
 
-@freezed
-class SyncConfig with _$SyncConfig {
-  const factory SyncConfig({
-    required ImapConfig imapConfig,
-    required String sharedSecret,
-  }) = _SyncConfig;
-
-  factory SyncConfig.fromJson(Map<String, dynamic> json) =>
-      _$SyncConfigFromJson(json);
+extension MatrixConfigLogging on MatrixConfig {
+  String toSafeString() =>
+      'MatrixConfig(homeServer: $homeServer, user: $user, password: ***REDACTED***)';
 }

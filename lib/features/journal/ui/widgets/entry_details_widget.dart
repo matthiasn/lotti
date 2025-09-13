@@ -137,54 +137,71 @@ class EntryDetailsContent extends ConsumerWidget {
           link: link,
         ),
         TagsListWidget(entryId: itemId, parentTags: parentTags),
-        item.maybeMap(
-          journalImage: EntryImageWidget.new,
-          orElse: () => const SizedBox.shrink(),
-        ),
-        item.maybeMap(
-          //task: (_) => const SizedBox.shrink(),
-          event: (_) => const SizedBox.shrink(),
-          quantitative: (_) => const SizedBox.shrink(),
-          workout: (_) => const SizedBox.shrink(),
-          checklist: (_) => const SizedBox.shrink(),
-          checklistItem: (_) => const SizedBox.shrink(),
-          aiResponse: (_) => const SizedBox.shrink(),
-          orElse: () {
-            return EditorWidget(entryId: itemId);
-          },
-        ),
-        item.map(
-          journalAudio: AudioPlayerWidget.new,
-          workout: WorkoutSummary.new,
-          survey: SurveySummary.new,
-          quantitative: HealthSummary.new,
-          measurement: MeasurementSummary.new,
-          task: (task) => const SizedBox.shrink(),
-          event: EventForm.new,
-          habitCompletion: (habit) => HabitSummary(
-            habit,
-            paddingLeft: 10,
-            paddingBottom: 5,
-            showIcon: true,
-            showText: false,
-          ),
-          journalEntry: (_) => const SizedBox.shrink(),
-          journalImage: (_) => const SizedBox.shrink(),
-          aiResponse: (aiResponse) => AiResponseSummary(
-            aiResponse,
-            linkedFromId: linkedFrom?.id,
-            fadeOut: true,
-          ),
-          checklist: (checklist) => ChecklistWrapper(
-            entryId: checklist.meta.id,
-            taskId: checklist.data.linkedTasks.first,
-          ),
-          checklistItem: (checklistItem) => ChecklistItemWrapper(
-            checklistItem.id,
-            checklistId: '',
-            taskId: '',
-          ),
-        ),
+        () {
+          if (item is JournalImage) {
+            return EntryImageWidget(item);
+          }
+          return const SizedBox.shrink();
+        }(),
+        () {
+          switch (item) {
+            //case Task():
+            case JournalEvent():
+            case QuantitativeEntry():
+            case WorkoutEntry():
+            case Checklist():
+            case ChecklistItem():
+            case AiResponseEntry():
+              return const SizedBox.shrink();
+            default:
+              return EditorWidget(entryId: itemId);
+          }
+        }(),
+        () {
+          if (item is JournalAudio) {
+            return AudioPlayerWidget(item);
+          } else if (item is WorkoutEntry) {
+            return WorkoutSummary(item);
+          } else if (item is SurveyEntry) {
+            return SurveySummary(item);
+          } else if (item is QuantitativeEntry) {
+            return HealthSummary(item);
+          } else if (item is MeasurementEntry) {
+            return MeasurementSummary(item);
+          } else if (item is Task) {
+            return const SizedBox.shrink();
+          } else if (item is JournalEvent) {
+            return EventForm(item);
+          } else if (item is HabitCompletionEntry) {
+            return HabitSummary(
+              item,
+              paddingLeft: 10,
+              paddingBottom: 5,
+              showIcon: true,
+              showText: false,
+            );
+          } else if (item is JournalEntry || item is JournalImage) {
+            return const SizedBox.shrink();
+          } else if (item is AiResponseEntry) {
+            return AiResponseSummary(
+              item,
+              linkedFromId: linkedFrom?.id,
+              fadeOut: true,
+            );
+          } else if (item is Checklist) {
+            return ChecklistWrapper(
+              entryId: item.meta.id,
+              taskId: item.data.linkedTasks.first,
+            );
+          } else if (item is ChecklistItem) {
+            return ChecklistItemWrapper(
+              item.id,
+              checklistId: '',
+              taskId: '',
+            );
+          }
+          return const SizedBox.shrink();
+        }(),
         EntryDetailFooter(
           entryId: itemId,
           linkedFrom: linkedFrom,

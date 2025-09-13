@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,27 +9,24 @@ part of 'task.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
 TaskStatus _$TaskStatusFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
     case 'open':
-      return _TaskOpen.fromJson(json);
+      return TaskOpen.fromJson(json);
     case 'inProgress':
-      return _TaskInProgress.fromJson(json);
+      return TaskInProgress.fromJson(json);
     case 'groomed':
-      return _TaskGroomed.fromJson(json);
+      return TaskGroomed.fromJson(json);
     case 'blocked':
-      return _TaskBlocked.fromJson(json);
+      return TaskBlocked.fromJson(json);
     case 'onHold':
-      return _TaskOnHold.fromJson(json);
+      return TaskOnHold.fromJson(json);
     case 'done':
-      return _TaskDone.fromJson(json);
+      return TaskDone.fromJson(json);
     case 'rejected':
-      return _TaskRejected.fromJson(json);
+      return TaskRejected.fromJson(json);
 
     default:
       throw CheckedFromJsonException(json, 'runtimeType', 'TaskStatus',
@@ -39,137 +36,54 @@ TaskStatus _$TaskStatusFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$TaskStatus {
-  String get id => throw _privateConstructorUsedError;
-  DateTime get createdAt => throw _privateConstructorUsedError;
-  int get utcOffset => throw _privateConstructorUsedError;
-  String? get timezone => throw _privateConstructorUsedError;
-  Geolocation? get geolocation => throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        open,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        inProgress,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        groomed,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        blocked,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        onHold,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        done,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        rejected,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskInProgress value) inProgress,
-    required TResult Function(_TaskGroomed value) groomed,
-    required TResult Function(_TaskBlocked value) blocked,
-    required TResult Function(_TaskOnHold value) onHold,
-    required TResult Function(_TaskDone value) done,
-    required TResult Function(_TaskRejected value) rejected,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskInProgress value)? inProgress,
-    TResult? Function(_TaskGroomed value)? groomed,
-    TResult? Function(_TaskBlocked value)? blocked,
-    TResult? Function(_TaskOnHold value)? onHold,
-    TResult? Function(_TaskDone value)? done,
-    TResult? Function(_TaskRejected value)? rejected,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskInProgress value)? inProgress,
-    TResult Function(_TaskGroomed value)? groomed,
-    TResult Function(_TaskBlocked value)? blocked,
-    TResult Function(_TaskOnHold value)? onHold,
-    TResult Function(_TaskDone value)? done,
-    TResult Function(_TaskRejected value)? rejected,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-
-  /// Serializes this TaskStatus to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get id;
+  DateTime get createdAt;
+  int get utcOffset;
+  String? get timezone;
+  Geolocation? get geolocation;
 
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
   $TaskStatusCopyWith<TaskStatus> get copyWith =>
-      throw _privateConstructorUsedError;
+      _$TaskStatusCopyWithImpl<TaskStatus>(this as TaskStatus, _$identity);
+
+  /// Serializes this TaskStatus to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is TaskStatus &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.utcOffset, utcOffset) ||
+                other.utcOffset == utcOffset) &&
+            (identical(other.timezone, timezone) ||
+                other.timezone == timezone) &&
+            (identical(other.geolocation, geolocation) ||
+                other.geolocation == geolocation));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
+
+  @override
+  String toString() {
+    return 'TaskStatus(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
+  }
 }
 
 /// @nodoc
-abstract class $TaskStatusCopyWith<$Res> {
+abstract mixin class $TaskStatusCopyWith<$Res> {
   factory $TaskStatusCopyWith(
-          TaskStatus value, $Res Function(TaskStatus) then) =
-      _$TaskStatusCopyWithImpl<$Res, TaskStatus>;
+          TaskStatus value, $Res Function(TaskStatus) _then) =
+      _$TaskStatusCopyWithImpl;
   @useResult
   $Res call(
       {String id,
@@ -182,14 +96,11 @@ abstract class $TaskStatusCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$TaskStatusCopyWithImpl<$Res, $Val extends TaskStatus>
-    implements $TaskStatusCopyWith<$Res> {
-  _$TaskStatusCopyWithImpl(this._value, this._then);
+class _$TaskStatusCopyWithImpl<$Res> implements $TaskStatusCopyWith<$Res> {
+  _$TaskStatusCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final TaskStatus _self;
+  final $Res Function(TaskStatus) _then;
 
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
@@ -202,28 +113,28 @@ class _$TaskStatusCopyWithImpl<$Res, $Val extends TaskStatus>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_value.copyWith(
+    return _then(_self.copyWith(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       utcOffset: null == utcOffset
-          ? _value.utcOffset
+          ? _self.utcOffset
           : utcOffset // ignore: cast_nullable_to_non_nullable
               as int,
       timezone: freezed == timezone
-          ? _value.timezone
+          ? _self.timezone
           : timezone // ignore: cast_nullable_to_non_nullable
               as String?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
-    ) as $Val);
+    ));
   }
 
   /// Create a copy of TaskStatus
@@ -231,83 +142,344 @@ class _$TaskStatusCopyWithImpl<$Res, $Val extends TaskStatus>
   @override
   @pragma('vm:prefer-inline')
   $GeolocationCopyWith<$Res>? get geolocation {
-    if (_value.geolocation == null) {
+    if (_self.geolocation == null) {
       return null;
     }
 
-    return $GeolocationCopyWith<$Res>(_value.geolocation!, (value) {
-      return _then(_value.copyWith(geolocation: value) as $Val);
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
     });
   }
 }
 
-/// @nodoc
-abstract class _$$TaskOpenImplCopyWith<$Res>
-    implements $TaskStatusCopyWith<$Res> {
-  factory _$$TaskOpenImplCopyWith(
-          _$TaskOpenImpl value, $Res Function(_$TaskOpenImpl) then) =
-      __$$TaskOpenImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {String id,
-      DateTime createdAt,
-      int utcOffset,
-      String? timezone,
-      Geolocation? geolocation});
+/// Adds pattern-matching-related methods to [TaskStatus].
+extension TaskStatusPatterns on TaskStatus {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
 
-  @override
-  $GeolocationCopyWith<$Res>? get geolocation;
-}
-
-/// @nodoc
-class __$$TaskOpenImplCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$TaskOpenImpl>
-    implements _$$TaskOpenImplCopyWith<$Res> {
-  __$$TaskOpenImplCopyWithImpl(
-      _$TaskOpenImpl _value, $Res Function(_$TaskOpenImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? createdAt = null,
-    Object? utcOffset = null,
-    Object? timezone = freezed,
-    Object? geolocation = freezed,
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(TaskOpen value)? open,
+    TResult Function(TaskInProgress value)? inProgress,
+    TResult Function(TaskGroomed value)? groomed,
+    TResult Function(TaskBlocked value)? blocked,
+    TResult Function(TaskOnHold value)? onHold,
+    TResult Function(TaskDone value)? done,
+    TResult Function(TaskRejected value)? rejected,
+    required TResult orElse(),
   }) {
-    return _then(_$TaskOpenImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      utcOffset: null == utcOffset
-          ? _value.utcOffset
-          : utcOffset // ignore: cast_nullable_to_non_nullable
-              as int,
-      timezone: freezed == timezone
-          ? _value.timezone
-          : timezone // ignore: cast_nullable_to_non_nullable
-              as String?,
-      geolocation: freezed == geolocation
-          ? _value.geolocation
-          : geolocation // ignore: cast_nullable_to_non_nullable
-              as Geolocation?,
-    ));
+    final _that = this;
+    switch (_that) {
+      case TaskOpen() when open != null:
+        return open(_that);
+      case TaskInProgress() when inProgress != null:
+        return inProgress(_that);
+      case TaskGroomed() when groomed != null:
+        return groomed(_that);
+      case TaskBlocked() when blocked != null:
+        return blocked(_that);
+      case TaskOnHold() when onHold != null:
+        return onHold(_that);
+      case TaskDone() when done != null:
+        return done(_that);
+      case TaskRejected() when rejected != null:
+        return rejected(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(TaskOpen value) open,
+    required TResult Function(TaskInProgress value) inProgress,
+    required TResult Function(TaskGroomed value) groomed,
+    required TResult Function(TaskBlocked value) blocked,
+    required TResult Function(TaskOnHold value) onHold,
+    required TResult Function(TaskDone value) done,
+    required TResult Function(TaskRejected value) rejected,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case TaskOpen():
+        return open(_that);
+      case TaskInProgress():
+        return inProgress(_that);
+      case TaskGroomed():
+        return groomed(_that);
+      case TaskBlocked():
+        return blocked(_that);
+      case TaskOnHold():
+        return onHold(_that);
+      case TaskDone():
+        return done(_that);
+      case TaskRejected():
+        return rejected(_that);
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(TaskOpen value)? open,
+    TResult? Function(TaskInProgress value)? inProgress,
+    TResult? Function(TaskGroomed value)? groomed,
+    TResult? Function(TaskBlocked value)? blocked,
+    TResult? Function(TaskOnHold value)? onHold,
+    TResult? Function(TaskDone value)? done,
+    TResult? Function(TaskRejected value)? rejected,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case TaskOpen() when open != null:
+        return open(_that);
+      case TaskInProgress() when inProgress != null:
+        return inProgress(_that);
+      case TaskGroomed() when groomed != null:
+        return groomed(_that);
+      case TaskBlocked() when blocked != null:
+        return blocked(_that);
+      case TaskOnHold() when onHold != null:
+        return onHold(_that);
+      case TaskDone() when done != null:
+        return done(_that);
+      case TaskRejected() when rejected != null:
+        return rejected(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        open,
+    TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        inProgress,
+    TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        groomed,
+    TResult Function(String id, DateTime createdAt, int utcOffset,
+            String reason, String? timezone, Geolocation? geolocation)?
+        blocked,
+    TResult Function(String id, DateTime createdAt, int utcOffset,
+            String reason, String? timezone, Geolocation? geolocation)?
+        onHold,
+    TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        done,
+    TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        rejected,
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case TaskOpen() when open != null:
+        return open(_that.id, _that.createdAt, _that.utcOffset, _that.timezone,
+            _that.geolocation);
+      case TaskInProgress() when inProgress != null:
+        return inProgress(_that.id, _that.createdAt, _that.utcOffset,
+            _that.timezone, _that.geolocation);
+      case TaskGroomed() when groomed != null:
+        return groomed(_that.id, _that.createdAt, _that.utcOffset,
+            _that.timezone, _that.geolocation);
+      case TaskBlocked() when blocked != null:
+        return blocked(_that.id, _that.createdAt, _that.utcOffset, _that.reason,
+            _that.timezone, _that.geolocation);
+      case TaskOnHold() when onHold != null:
+        return onHold(_that.id, _that.createdAt, _that.utcOffset, _that.reason,
+            _that.timezone, _that.geolocation);
+      case TaskDone() when done != null:
+        return done(_that.id, _that.createdAt, _that.utcOffset, _that.timezone,
+            _that.geolocation);
+      case TaskRejected() when rejected != null:
+        return rejected(_that.id, _that.createdAt, _that.utcOffset,
+            _that.timezone, _that.geolocation);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)
+        open,
+    required TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)
+        inProgress,
+    required TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)
+        groomed,
+    required TResult Function(String id, DateTime createdAt, int utcOffset,
+            String reason, String? timezone, Geolocation? geolocation)
+        blocked,
+    required TResult Function(String id, DateTime createdAt, int utcOffset,
+            String reason, String? timezone, Geolocation? geolocation)
+        onHold,
+    required TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)
+        done,
+    required TResult Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)
+        rejected,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case TaskOpen():
+        return open(_that.id, _that.createdAt, _that.utcOffset, _that.timezone,
+            _that.geolocation);
+      case TaskInProgress():
+        return inProgress(_that.id, _that.createdAt, _that.utcOffset,
+            _that.timezone, _that.geolocation);
+      case TaskGroomed():
+        return groomed(_that.id, _that.createdAt, _that.utcOffset,
+            _that.timezone, _that.geolocation);
+      case TaskBlocked():
+        return blocked(_that.id, _that.createdAt, _that.utcOffset, _that.reason,
+            _that.timezone, _that.geolocation);
+      case TaskOnHold():
+        return onHold(_that.id, _that.createdAt, _that.utcOffset, _that.reason,
+            _that.timezone, _that.geolocation);
+      case TaskDone():
+        return done(_that.id, _that.createdAt, _that.utcOffset, _that.timezone,
+            _that.geolocation);
+      case TaskRejected():
+        return rejected(_that.id, _that.createdAt, _that.utcOffset,
+            _that.timezone, _that.geolocation);
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        open,
+    TResult? Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        inProgress,
+    TResult? Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        groomed,
+    TResult? Function(String id, DateTime createdAt, int utcOffset,
+            String reason, String? timezone, Geolocation? geolocation)?
+        blocked,
+    TResult? Function(String id, DateTime createdAt, int utcOffset,
+            String reason, String? timezone, Geolocation? geolocation)?
+        onHold,
+    TResult? Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        done,
+    TResult? Function(String id, DateTime createdAt, int utcOffset,
+            String? timezone, Geolocation? geolocation)?
+        rejected,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case TaskOpen() when open != null:
+        return open(_that.id, _that.createdAt, _that.utcOffset, _that.timezone,
+            _that.geolocation);
+      case TaskInProgress() when inProgress != null:
+        return inProgress(_that.id, _that.createdAt, _that.utcOffset,
+            _that.timezone, _that.geolocation);
+      case TaskGroomed() when groomed != null:
+        return groomed(_that.id, _that.createdAt, _that.utcOffset,
+            _that.timezone, _that.geolocation);
+      case TaskBlocked() when blocked != null:
+        return blocked(_that.id, _that.createdAt, _that.utcOffset, _that.reason,
+            _that.timezone, _that.geolocation);
+      case TaskOnHold() when onHold != null:
+        return onHold(_that.id, _that.createdAt, _that.utcOffset, _that.reason,
+            _that.timezone, _that.geolocation);
+      case TaskDone() when done != null:
+        return done(_that.id, _that.createdAt, _that.utcOffset, _that.timezone,
+            _that.geolocation);
+      case TaskRejected() when rejected != null:
+        return rejected(_that.id, _that.createdAt, _that.utcOffset,
+            _that.timezone, _that.geolocation);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$TaskOpenImpl implements _TaskOpen {
-  const _$TaskOpenImpl(
+class TaskOpen implements TaskStatus {
+  const TaskOpen(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -315,9 +487,8 @@ class _$TaskOpenImpl implements _TaskOpen {
       this.geolocation,
       final String? $type})
       : $type = $type ?? 'open';
-
-  factory _$TaskOpenImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskOpenImplFromJson(json);
+  factory TaskOpen.fromJson(Map<String, dynamic> json) =>
+      _$TaskOpenFromJson(json);
 
   @override
   final String id;
@@ -333,16 +504,26 @@ class _$TaskOpenImpl implements _TaskOpen {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskStatus.open(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TaskOpenCopyWith<TaskOpen> get copyWith =>
+      _$TaskOpenCopyWithImpl<TaskOpen>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskOpenToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskOpenImpl &&
+            other is TaskOpen &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -359,192 +540,17 @@ class _$TaskOpenImpl implements _TaskOpen {
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskOpenImplCopyWith<_$TaskOpenImpl> get copyWith =>
-      __$$TaskOpenImplCopyWithImpl<_$TaskOpenImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        open,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        inProgress,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        groomed,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        blocked,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        onHold,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        done,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        rejected,
-  }) {
-    return open(id, createdAt, utcOffset, timezone, geolocation);
+  String toString() {
+    return 'TaskStatus.open(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-  }) {
-    return open?.call(id, createdAt, utcOffset, timezone, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-    required TResult orElse(),
-  }) {
-    if (open != null) {
-      return open(id, createdAt, utcOffset, timezone, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskInProgress value) inProgress,
-    required TResult Function(_TaskGroomed value) groomed,
-    required TResult Function(_TaskBlocked value) blocked,
-    required TResult Function(_TaskOnHold value) onHold,
-    required TResult Function(_TaskDone value) done,
-    required TResult Function(_TaskRejected value) rejected,
-  }) {
-    return open(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskInProgress value)? inProgress,
-    TResult? Function(_TaskGroomed value)? groomed,
-    TResult? Function(_TaskBlocked value)? blocked,
-    TResult? Function(_TaskOnHold value)? onHold,
-    TResult? Function(_TaskDone value)? done,
-    TResult? Function(_TaskRejected value)? rejected,
-  }) {
-    return open?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskInProgress value)? inProgress,
-    TResult Function(_TaskGroomed value)? groomed,
-    TResult Function(_TaskBlocked value)? blocked,
-    TResult Function(_TaskOnHold value)? onHold,
-    TResult Function(_TaskDone value)? done,
-    TResult Function(_TaskRejected value)? rejected,
-    required TResult orElse(),
-  }) {
-    if (open != null) {
-      return open(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskOpenImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _TaskOpen implements TaskStatus {
-  const factory _TaskOpen(
-      {required final String id,
-      required final DateTime createdAt,
-      required final int utcOffset,
-      final String? timezone,
-      final Geolocation? geolocation}) = _$TaskOpenImpl;
-
-  factory _TaskOpen.fromJson(Map<String, dynamic> json) =
-      _$TaskOpenImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  int get utcOffset;
-  @override
-  String? get timezone;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskOpenImplCopyWith<_$TaskOpenImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$TaskInProgressImplCopyWith<$Res>
+abstract mixin class $TaskOpenCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$TaskInProgressImplCopyWith(_$TaskInProgressImpl value,
-          $Res Function(_$TaskInProgressImpl) then) =
-      __$$TaskInProgressImplCopyWithImpl<$Res>;
+  factory $TaskOpenCopyWith(TaskOpen value, $Res Function(TaskOpen) _then) =
+      _$TaskOpenCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -559,17 +565,16 @@ abstract class _$$TaskInProgressImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TaskInProgressImplCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$TaskInProgressImpl>
-    implements _$$TaskInProgressImplCopyWith<$Res> {
-  __$$TaskInProgressImplCopyWithImpl(
-      _$TaskInProgressImpl _value, $Res Function(_$TaskInProgressImpl) _then)
-      : super(_value, _then);
+class _$TaskOpenCopyWithImpl<$Res> implements $TaskOpenCopyWith<$Res> {
+  _$TaskOpenCopyWithImpl(this._self, this._then);
+
+  final TaskOpen _self;
+  final $Res Function(TaskOpen) _then;
 
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? createdAt = null,
@@ -577,35 +582,49 @@ class __$$TaskInProgressImplCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$TaskInProgressImpl(
+    return _then(TaskOpen(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       utcOffset: null == utcOffset
-          ? _value.utcOffset
+          ? _self.utcOffset
           : utcOffset // ignore: cast_nullable_to_non_nullable
               as int,
       timezone: freezed == timezone
-          ? _value.timezone
+          ? _self.timezone
           : timezone // ignore: cast_nullable_to_non_nullable
               as String?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
+  }
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$TaskInProgressImpl implements _TaskInProgress {
-  const _$TaskInProgressImpl(
+class TaskInProgress implements TaskStatus {
+  const TaskInProgress(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -613,9 +632,8 @@ class _$TaskInProgressImpl implements _TaskInProgress {
       this.geolocation,
       final String? $type})
       : $type = $type ?? 'inProgress';
-
-  factory _$TaskInProgressImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskInProgressImplFromJson(json);
+  factory TaskInProgress.fromJson(Map<String, dynamic> json) =>
+      _$TaskInProgressFromJson(json);
 
   @override
   final String id;
@@ -631,16 +649,26 @@ class _$TaskInProgressImpl implements _TaskInProgress {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskStatus.inProgress(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TaskInProgressCopyWith<TaskInProgress> get copyWith =>
+      _$TaskInProgressCopyWithImpl<TaskInProgress>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskInProgressToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskInProgressImpl &&
+            other is TaskInProgress &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -657,193 +685,18 @@ class _$TaskInProgressImpl implements _TaskInProgress {
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskInProgressImplCopyWith<_$TaskInProgressImpl> get copyWith =>
-      __$$TaskInProgressImplCopyWithImpl<_$TaskInProgressImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        open,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        inProgress,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        groomed,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        blocked,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        onHold,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        done,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        rejected,
-  }) {
-    return inProgress(id, createdAt, utcOffset, timezone, geolocation);
+  String toString() {
+    return 'TaskStatus.inProgress(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-  }) {
-    return inProgress?.call(id, createdAt, utcOffset, timezone, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-    required TResult orElse(),
-  }) {
-    if (inProgress != null) {
-      return inProgress(id, createdAt, utcOffset, timezone, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskInProgress value) inProgress,
-    required TResult Function(_TaskGroomed value) groomed,
-    required TResult Function(_TaskBlocked value) blocked,
-    required TResult Function(_TaskOnHold value) onHold,
-    required TResult Function(_TaskDone value) done,
-    required TResult Function(_TaskRejected value) rejected,
-  }) {
-    return inProgress(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskInProgress value)? inProgress,
-    TResult? Function(_TaskGroomed value)? groomed,
-    TResult? Function(_TaskBlocked value)? blocked,
-    TResult? Function(_TaskOnHold value)? onHold,
-    TResult? Function(_TaskDone value)? done,
-    TResult? Function(_TaskRejected value)? rejected,
-  }) {
-    return inProgress?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskInProgress value)? inProgress,
-    TResult Function(_TaskGroomed value)? groomed,
-    TResult Function(_TaskBlocked value)? blocked,
-    TResult Function(_TaskOnHold value)? onHold,
-    TResult Function(_TaskDone value)? done,
-    TResult Function(_TaskRejected value)? rejected,
-    required TResult orElse(),
-  }) {
-    if (inProgress != null) {
-      return inProgress(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskInProgressImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _TaskInProgress implements TaskStatus {
-  const factory _TaskInProgress(
-      {required final String id,
-      required final DateTime createdAt,
-      required final int utcOffset,
-      final String? timezone,
-      final Geolocation? geolocation}) = _$TaskInProgressImpl;
-
-  factory _TaskInProgress.fromJson(Map<String, dynamic> json) =
-      _$TaskInProgressImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  int get utcOffset;
-  @override
-  String? get timezone;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskInProgressImplCopyWith<_$TaskInProgressImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$TaskGroomedImplCopyWith<$Res>
+abstract mixin class $TaskInProgressCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$TaskGroomedImplCopyWith(
-          _$TaskGroomedImpl value, $Res Function(_$TaskGroomedImpl) then) =
-      __$$TaskGroomedImplCopyWithImpl<$Res>;
+  factory $TaskInProgressCopyWith(
+          TaskInProgress value, $Res Function(TaskInProgress) _then) =
+      _$TaskInProgressCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -858,17 +711,17 @@ abstract class _$$TaskGroomedImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TaskGroomedImplCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$TaskGroomedImpl>
-    implements _$$TaskGroomedImplCopyWith<$Res> {
-  __$$TaskGroomedImplCopyWithImpl(
-      _$TaskGroomedImpl _value, $Res Function(_$TaskGroomedImpl) _then)
-      : super(_value, _then);
+class _$TaskInProgressCopyWithImpl<$Res>
+    implements $TaskInProgressCopyWith<$Res> {
+  _$TaskInProgressCopyWithImpl(this._self, this._then);
+
+  final TaskInProgress _self;
+  final $Res Function(TaskInProgress) _then;
 
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? createdAt = null,
@@ -876,35 +729,49 @@ class __$$TaskGroomedImplCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$TaskGroomedImpl(
+    return _then(TaskInProgress(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       utcOffset: null == utcOffset
-          ? _value.utcOffset
+          ? _self.utcOffset
           : utcOffset // ignore: cast_nullable_to_non_nullable
               as int,
       timezone: freezed == timezone
-          ? _value.timezone
+          ? _self.timezone
           : timezone // ignore: cast_nullable_to_non_nullable
               as String?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
+  }
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$TaskGroomedImpl implements _TaskGroomed {
-  const _$TaskGroomedImpl(
+class TaskGroomed implements TaskStatus {
+  const TaskGroomed(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -912,9 +779,8 @@ class _$TaskGroomedImpl implements _TaskGroomed {
       this.geolocation,
       final String? $type})
       : $type = $type ?? 'groomed';
-
-  factory _$TaskGroomedImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskGroomedImplFromJson(json);
+  factory TaskGroomed.fromJson(Map<String, dynamic> json) =>
+      _$TaskGroomedFromJson(json);
 
   @override
   final String id;
@@ -930,16 +796,26 @@ class _$TaskGroomedImpl implements _TaskGroomed {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskStatus.groomed(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TaskGroomedCopyWith<TaskGroomed> get copyWith =>
+      _$TaskGroomedCopyWithImpl<TaskGroomed>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskGroomedToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskGroomedImpl &&
+            other is TaskGroomed &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -956,199 +832,24 @@ class _$TaskGroomedImpl implements _TaskGroomed {
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskGroomedImplCopyWith<_$TaskGroomedImpl> get copyWith =>
-      __$$TaskGroomedImplCopyWithImpl<_$TaskGroomedImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        open,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        inProgress,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        groomed,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        blocked,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        onHold,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        done,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        rejected,
-  }) {
-    return groomed(id, createdAt, utcOffset, timezone, geolocation);
+  String toString() {
+    return 'TaskStatus.groomed(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-  }) {
-    return groomed?.call(id, createdAt, utcOffset, timezone, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-    required TResult orElse(),
-  }) {
-    if (groomed != null) {
-      return groomed(id, createdAt, utcOffset, timezone, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskInProgress value) inProgress,
-    required TResult Function(_TaskGroomed value) groomed,
-    required TResult Function(_TaskBlocked value) blocked,
-    required TResult Function(_TaskOnHold value) onHold,
-    required TResult Function(_TaskDone value) done,
-    required TResult Function(_TaskRejected value) rejected,
-  }) {
-    return groomed(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskInProgress value)? inProgress,
-    TResult? Function(_TaskGroomed value)? groomed,
-    TResult? Function(_TaskBlocked value)? blocked,
-    TResult? Function(_TaskOnHold value)? onHold,
-    TResult? Function(_TaskDone value)? done,
-    TResult? Function(_TaskRejected value)? rejected,
-  }) {
-    return groomed?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskInProgress value)? inProgress,
-    TResult Function(_TaskGroomed value)? groomed,
-    TResult Function(_TaskBlocked value)? blocked,
-    TResult Function(_TaskOnHold value)? onHold,
-    TResult Function(_TaskDone value)? done,
-    TResult Function(_TaskRejected value)? rejected,
-    required TResult orElse(),
-  }) {
-    if (groomed != null) {
-      return groomed(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskGroomedImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _TaskGroomed implements TaskStatus {
-  const factory _TaskGroomed(
-      {required final String id,
-      required final DateTime createdAt,
-      required final int utcOffset,
-      final String? timezone,
-      final Geolocation? geolocation}) = _$TaskGroomedImpl;
-
-  factory _TaskGroomed.fromJson(Map<String, dynamic> json) =
-      _$TaskGroomedImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  int get utcOffset;
-  @override
-  String? get timezone;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskGroomedImplCopyWith<_$TaskGroomedImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$TaskBlockedImplCopyWith<$Res>
+abstract mixin class $TaskGroomedCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$TaskBlockedImplCopyWith(
-          _$TaskBlockedImpl value, $Res Function(_$TaskBlockedImpl) then) =
-      __$$TaskBlockedImplCopyWithImpl<$Res>;
+  factory $TaskGroomedCopyWith(
+          TaskGroomed value, $Res Function(TaskGroomed) _then) =
+      _$TaskGroomedCopyWithImpl;
   @override
   @useResult
   $Res call(
       {String id,
       DateTime createdAt,
       int utcOffset,
-      String reason,
       String? timezone,
       Geolocation? geolocation});
 
@@ -1157,58 +858,66 @@ abstract class _$$TaskBlockedImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TaskBlockedImplCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$TaskBlockedImpl>
-    implements _$$TaskBlockedImplCopyWith<$Res> {
-  __$$TaskBlockedImplCopyWithImpl(
-      _$TaskBlockedImpl _value, $Res Function(_$TaskBlockedImpl) _then)
-      : super(_value, _then);
+class _$TaskGroomedCopyWithImpl<$Res> implements $TaskGroomedCopyWith<$Res> {
+  _$TaskGroomedCopyWithImpl(this._self, this._then);
+
+  final TaskGroomed _self;
+  final $Res Function(TaskGroomed) _then;
 
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? createdAt = null,
     Object? utcOffset = null,
-    Object? reason = null,
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$TaskBlockedImpl(
+    return _then(TaskGroomed(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       utcOffset: null == utcOffset
-          ? _value.utcOffset
+          ? _self.utcOffset
           : utcOffset // ignore: cast_nullable_to_non_nullable
               as int,
-      reason: null == reason
-          ? _value.reason
-          : reason // ignore: cast_nullable_to_non_nullable
-              as String,
       timezone: freezed == timezone
-          ? _value.timezone
+          ? _self.timezone
           : timezone // ignore: cast_nullable_to_non_nullable
               as String?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
+  }
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$TaskBlockedImpl implements _TaskBlocked {
-  const _$TaskBlockedImpl(
+class TaskBlocked implements TaskStatus {
+  const TaskBlocked(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -1217,9 +926,8 @@ class _$TaskBlockedImpl implements _TaskBlocked {
       this.geolocation,
       final String? $type})
       : $type = $type ?? 'blocked';
-
-  factory _$TaskBlockedImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskBlockedImplFromJson(json);
+  factory TaskBlocked.fromJson(Map<String, dynamic> json) =>
+      _$TaskBlockedFromJson(json);
 
   @override
   final String id;
@@ -1227,7 +935,6 @@ class _$TaskBlockedImpl implements _TaskBlocked {
   final DateTime createdAt;
   @override
   final int utcOffset;
-  @override
   final String reason;
   @override
   final String? timezone;
@@ -1237,16 +944,26 @@ class _$TaskBlockedImpl implements _TaskBlocked {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskStatus.blocked(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, reason: $reason, timezone: $timezone, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TaskBlockedCopyWith<TaskBlocked> get copyWith =>
+      _$TaskBlockedCopyWithImpl<TaskBlocked>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskBlockedToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskBlockedImpl &&
+            other is TaskBlocked &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -1264,195 +981,18 @@ class _$TaskBlockedImpl implements _TaskBlocked {
   int get hashCode => Object.hash(
       runtimeType, id, createdAt, utcOffset, reason, timezone, geolocation);
 
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskBlockedImplCopyWith<_$TaskBlockedImpl> get copyWith =>
-      __$$TaskBlockedImplCopyWithImpl<_$TaskBlockedImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        open,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        inProgress,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        groomed,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        blocked,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        onHold,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        done,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        rejected,
-  }) {
-    return blocked(id, createdAt, utcOffset, reason, timezone, geolocation);
+  String toString() {
+    return 'TaskStatus.blocked(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, reason: $reason, timezone: $timezone, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-  }) {
-    return blocked?.call(
-        id, createdAt, utcOffset, reason, timezone, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-    required TResult orElse(),
-  }) {
-    if (blocked != null) {
-      return blocked(id, createdAt, utcOffset, reason, timezone, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskInProgress value) inProgress,
-    required TResult Function(_TaskGroomed value) groomed,
-    required TResult Function(_TaskBlocked value) blocked,
-    required TResult Function(_TaskOnHold value) onHold,
-    required TResult Function(_TaskDone value) done,
-    required TResult Function(_TaskRejected value) rejected,
-  }) {
-    return blocked(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskInProgress value)? inProgress,
-    TResult? Function(_TaskGroomed value)? groomed,
-    TResult? Function(_TaskBlocked value)? blocked,
-    TResult? Function(_TaskOnHold value)? onHold,
-    TResult? Function(_TaskDone value)? done,
-    TResult? Function(_TaskRejected value)? rejected,
-  }) {
-    return blocked?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskInProgress value)? inProgress,
-    TResult Function(_TaskGroomed value)? groomed,
-    TResult Function(_TaskBlocked value)? blocked,
-    TResult Function(_TaskOnHold value)? onHold,
-    TResult Function(_TaskDone value)? done,
-    TResult Function(_TaskRejected value)? rejected,
-    required TResult orElse(),
-  }) {
-    if (blocked != null) {
-      return blocked(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskBlockedImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _TaskBlocked implements TaskStatus {
-  const factory _TaskBlocked(
-      {required final String id,
-      required final DateTime createdAt,
-      required final int utcOffset,
-      required final String reason,
-      final String? timezone,
-      final Geolocation? geolocation}) = _$TaskBlockedImpl;
-
-  factory _TaskBlocked.fromJson(Map<String, dynamic> json) =
-      _$TaskBlockedImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  int get utcOffset;
-  String get reason;
-  @override
-  String? get timezone;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskBlockedImplCopyWith<_$TaskBlockedImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$TaskOnHoldImplCopyWith<$Res>
+abstract mixin class $TaskBlockedCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$TaskOnHoldImplCopyWith(
-          _$TaskOnHoldImpl value, $Res Function(_$TaskOnHoldImpl) then) =
-      __$$TaskOnHoldImplCopyWithImpl<$Res>;
+  factory $TaskBlockedCopyWith(
+          TaskBlocked value, $Res Function(TaskBlocked) _then) =
+      _$TaskBlockedCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -1468,17 +1008,16 @@ abstract class _$$TaskOnHoldImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TaskOnHoldImplCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$TaskOnHoldImpl>
-    implements _$$TaskOnHoldImplCopyWith<$Res> {
-  __$$TaskOnHoldImplCopyWithImpl(
-      _$TaskOnHoldImpl _value, $Res Function(_$TaskOnHoldImpl) _then)
-      : super(_value, _then);
+class _$TaskBlockedCopyWithImpl<$Res> implements $TaskBlockedCopyWith<$Res> {
+  _$TaskBlockedCopyWithImpl(this._self, this._then);
+
+  final TaskBlocked _self;
+  final $Res Function(TaskBlocked) _then;
 
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? createdAt = null,
@@ -1487,39 +1026,53 @@ class __$$TaskOnHoldImplCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$TaskOnHoldImpl(
+    return _then(TaskBlocked(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       utcOffset: null == utcOffset
-          ? _value.utcOffset
+          ? _self.utcOffset
           : utcOffset // ignore: cast_nullable_to_non_nullable
               as int,
       reason: null == reason
-          ? _value.reason
+          ? _self.reason
           : reason // ignore: cast_nullable_to_non_nullable
               as String,
       timezone: freezed == timezone
-          ? _value.timezone
+          ? _self.timezone
           : timezone // ignore: cast_nullable_to_non_nullable
               as String?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
+  }
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$TaskOnHoldImpl implements _TaskOnHold {
-  const _$TaskOnHoldImpl(
+class TaskOnHold implements TaskStatus {
+  const TaskOnHold(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -1528,9 +1081,8 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
       this.geolocation,
       final String? $type})
       : $type = $type ?? 'onHold';
-
-  factory _$TaskOnHoldImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskOnHoldImplFromJson(json);
+  factory TaskOnHold.fromJson(Map<String, dynamic> json) =>
+      _$TaskOnHoldFromJson(json);
 
   @override
   final String id;
@@ -1538,7 +1090,6 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
   final DateTime createdAt;
   @override
   final int utcOffset;
-  @override
   final String reason;
   @override
   final String? timezone;
@@ -1548,16 +1099,26 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskStatus.onHold(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, reason: $reason, timezone: $timezone, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TaskOnHoldCopyWith<TaskOnHold> get copyWith =>
+      _$TaskOnHoldCopyWithImpl<TaskOnHold>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskOnHoldToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskOnHoldImpl &&
+            other is TaskOnHold &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -1575,201 +1136,25 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
   int get hashCode => Object.hash(
       runtimeType, id, createdAt, utcOffset, reason, timezone, geolocation);
 
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskOnHoldImplCopyWith<_$TaskOnHoldImpl> get copyWith =>
-      __$$TaskOnHoldImplCopyWithImpl<_$TaskOnHoldImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        open,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        inProgress,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        groomed,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        blocked,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        onHold,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        done,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        rejected,
-  }) {
-    return onHold(id, createdAt, utcOffset, reason, timezone, geolocation);
+  String toString() {
+    return 'TaskStatus.onHold(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, reason: $reason, timezone: $timezone, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-  }) {
-    return onHold?.call(
-        id, createdAt, utcOffset, reason, timezone, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-    required TResult orElse(),
-  }) {
-    if (onHold != null) {
-      return onHold(id, createdAt, utcOffset, reason, timezone, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskInProgress value) inProgress,
-    required TResult Function(_TaskGroomed value) groomed,
-    required TResult Function(_TaskBlocked value) blocked,
-    required TResult Function(_TaskOnHold value) onHold,
-    required TResult Function(_TaskDone value) done,
-    required TResult Function(_TaskRejected value) rejected,
-  }) {
-    return onHold(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskInProgress value)? inProgress,
-    TResult? Function(_TaskGroomed value)? groomed,
-    TResult? Function(_TaskBlocked value)? blocked,
-    TResult? Function(_TaskOnHold value)? onHold,
-    TResult? Function(_TaskDone value)? done,
-    TResult? Function(_TaskRejected value)? rejected,
-  }) {
-    return onHold?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskInProgress value)? inProgress,
-    TResult Function(_TaskGroomed value)? groomed,
-    TResult Function(_TaskBlocked value)? blocked,
-    TResult Function(_TaskOnHold value)? onHold,
-    TResult Function(_TaskDone value)? done,
-    TResult Function(_TaskRejected value)? rejected,
-    required TResult orElse(),
-  }) {
-    if (onHold != null) {
-      return onHold(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskOnHoldImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _TaskOnHold implements TaskStatus {
-  const factory _TaskOnHold(
-      {required final String id,
-      required final DateTime createdAt,
-      required final int utcOffset,
-      required final String reason,
-      final String? timezone,
-      final Geolocation? geolocation}) = _$TaskOnHoldImpl;
-
-  factory _TaskOnHold.fromJson(Map<String, dynamic> json) =
-      _$TaskOnHoldImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  int get utcOffset;
-  String get reason;
-  @override
-  String? get timezone;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskOnHoldImplCopyWith<_$TaskOnHoldImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$TaskDoneImplCopyWith<$Res>
+abstract mixin class $TaskOnHoldCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$TaskDoneImplCopyWith(
-          _$TaskDoneImpl value, $Res Function(_$TaskDoneImpl) then) =
-      __$$TaskDoneImplCopyWithImpl<$Res>;
+  factory $TaskOnHoldCopyWith(
+          TaskOnHold value, $Res Function(TaskOnHold) _then) =
+      _$TaskOnHoldCopyWithImpl;
   @override
   @useResult
   $Res call(
       {String id,
       DateTime createdAt,
       int utcOffset,
+      String reason,
       String? timezone,
       Geolocation? geolocation});
 
@@ -1778,53 +1163,71 @@ abstract class _$$TaskDoneImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TaskDoneImplCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$TaskDoneImpl>
-    implements _$$TaskDoneImplCopyWith<$Res> {
-  __$$TaskDoneImplCopyWithImpl(
-      _$TaskDoneImpl _value, $Res Function(_$TaskDoneImpl) _then)
-      : super(_value, _then);
+class _$TaskOnHoldCopyWithImpl<$Res> implements $TaskOnHoldCopyWith<$Res> {
+  _$TaskOnHoldCopyWithImpl(this._self, this._then);
+
+  final TaskOnHold _self;
+  final $Res Function(TaskOnHold) _then;
 
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? createdAt = null,
     Object? utcOffset = null,
+    Object? reason = null,
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$TaskDoneImpl(
+    return _then(TaskOnHold(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       utcOffset: null == utcOffset
-          ? _value.utcOffset
+          ? _self.utcOffset
           : utcOffset // ignore: cast_nullable_to_non_nullable
               as int,
+      reason: null == reason
+          ? _self.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String,
       timezone: freezed == timezone
-          ? _value.timezone
+          ? _self.timezone
           : timezone // ignore: cast_nullable_to_non_nullable
               as String?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
+  }
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$TaskDoneImpl implements _TaskDone {
-  const _$TaskDoneImpl(
+class TaskDone implements TaskStatus {
+  const TaskDone(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -1832,9 +1235,8 @@ class _$TaskDoneImpl implements _TaskDone {
       this.geolocation,
       final String? $type})
       : $type = $type ?? 'done';
-
-  factory _$TaskDoneImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskDoneImplFromJson(json);
+  factory TaskDone.fromJson(Map<String, dynamic> json) =>
+      _$TaskDoneFromJson(json);
 
   @override
   final String id;
@@ -1850,16 +1252,26 @@ class _$TaskDoneImpl implements _TaskDone {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskStatus.done(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TaskDoneCopyWith<TaskDone> get copyWith =>
+      _$TaskDoneCopyWithImpl<TaskDone>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskDoneToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskDoneImpl &&
+            other is TaskDone &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -1876,192 +1288,17 @@ class _$TaskDoneImpl implements _TaskDone {
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskDoneImplCopyWith<_$TaskDoneImpl> get copyWith =>
-      __$$TaskDoneImplCopyWithImpl<_$TaskDoneImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        open,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        inProgress,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        groomed,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        blocked,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        onHold,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        done,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        rejected,
-  }) {
-    return done(id, createdAt, utcOffset, timezone, geolocation);
+  String toString() {
+    return 'TaskStatus.done(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-  }) {
-    return done?.call(id, createdAt, utcOffset, timezone, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-    required TResult orElse(),
-  }) {
-    if (done != null) {
-      return done(id, createdAt, utcOffset, timezone, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskInProgress value) inProgress,
-    required TResult Function(_TaskGroomed value) groomed,
-    required TResult Function(_TaskBlocked value) blocked,
-    required TResult Function(_TaskOnHold value) onHold,
-    required TResult Function(_TaskDone value) done,
-    required TResult Function(_TaskRejected value) rejected,
-  }) {
-    return done(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskInProgress value)? inProgress,
-    TResult? Function(_TaskGroomed value)? groomed,
-    TResult? Function(_TaskBlocked value)? blocked,
-    TResult? Function(_TaskOnHold value)? onHold,
-    TResult? Function(_TaskDone value)? done,
-    TResult? Function(_TaskRejected value)? rejected,
-  }) {
-    return done?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskInProgress value)? inProgress,
-    TResult Function(_TaskGroomed value)? groomed,
-    TResult Function(_TaskBlocked value)? blocked,
-    TResult Function(_TaskOnHold value)? onHold,
-    TResult Function(_TaskDone value)? done,
-    TResult Function(_TaskRejected value)? rejected,
-    required TResult orElse(),
-  }) {
-    if (done != null) {
-      return done(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskDoneImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _TaskDone implements TaskStatus {
-  const factory _TaskDone(
-      {required final String id,
-      required final DateTime createdAt,
-      required final int utcOffset,
-      final String? timezone,
-      final Geolocation? geolocation}) = _$TaskDoneImpl;
-
-  factory _TaskDone.fromJson(Map<String, dynamic> json) =
-      _$TaskDoneImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  int get utcOffset;
-  @override
-  String? get timezone;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskDoneImplCopyWith<_$TaskDoneImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$TaskRejectedImplCopyWith<$Res>
+abstract mixin class $TaskDoneCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$TaskRejectedImplCopyWith(
-          _$TaskRejectedImpl value, $Res Function(_$TaskRejectedImpl) then) =
-      __$$TaskRejectedImplCopyWithImpl<$Res>;
+  factory $TaskDoneCopyWith(TaskDone value, $Res Function(TaskDone) _then) =
+      _$TaskDoneCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -2076,17 +1313,16 @@ abstract class _$$TaskRejectedImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TaskRejectedImplCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$TaskRejectedImpl>
-    implements _$$TaskRejectedImplCopyWith<$Res> {
-  __$$TaskRejectedImplCopyWithImpl(
-      _$TaskRejectedImpl _value, $Res Function(_$TaskRejectedImpl) _then)
-      : super(_value, _then);
+class _$TaskDoneCopyWithImpl<$Res> implements $TaskDoneCopyWith<$Res> {
+  _$TaskDoneCopyWithImpl(this._self, this._then);
+
+  final TaskDone _self;
+  final $Res Function(TaskDone) _then;
 
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? createdAt = null,
@@ -2094,35 +1330,49 @@ class __$$TaskRejectedImplCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$TaskRejectedImpl(
+    return _then(TaskDone(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       utcOffset: null == utcOffset
-          ? _value.utcOffset
+          ? _self.utcOffset
           : utcOffset // ignore: cast_nullable_to_non_nullable
               as int,
       timezone: freezed == timezone
-          ? _value.timezone
+          ? _self.timezone
           : timezone // ignore: cast_nullable_to_non_nullable
               as String?,
       geolocation: freezed == geolocation
-          ? _value.geolocation
+          ? _self.geolocation
           : geolocation // ignore: cast_nullable_to_non_nullable
               as Geolocation?,
     ));
+  }
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$TaskRejectedImpl implements _TaskRejected {
-  const _$TaskRejectedImpl(
+class TaskRejected implements TaskStatus {
+  const TaskRejected(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -2130,9 +1380,8 @@ class _$TaskRejectedImpl implements _TaskRejected {
       this.geolocation,
       final String? $type})
       : $type = $type ?? 'rejected';
-
-  factory _$TaskRejectedImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskRejectedImplFromJson(json);
+  factory TaskRejected.fromJson(Map<String, dynamic> json) =>
+      _$TaskRejectedFromJson(json);
 
   @override
   final String id;
@@ -2148,16 +1397,26 @@ class _$TaskRejectedImpl implements _TaskRejected {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskStatus.rejected(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TaskRejectedCopyWith<TaskRejected> get copyWith =>
+      _$TaskRejectedCopyWithImpl<TaskRejected>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskRejectedToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskRejectedImpl &&
+            other is TaskRejected &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -2174,216 +1433,155 @@ class _$TaskRejectedImpl implements _TaskRejected {
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
+  @override
+  String toString() {
+    return 'TaskStatus.rejected(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $TaskRejectedCopyWith<$Res>
+    implements $TaskStatusCopyWith<$Res> {
+  factory $TaskRejectedCopyWith(
+          TaskRejected value, $Res Function(TaskRejected) _then) =
+      _$TaskRejectedCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      DateTime createdAt,
+      int utcOffset,
+      String? timezone,
+      Geolocation? geolocation});
+
+  @override
+  $GeolocationCopyWith<$Res>? get geolocation;
+}
+
+/// @nodoc
+class _$TaskRejectedCopyWithImpl<$Res> implements $TaskRejectedCopyWith<$Res> {
+  _$TaskRejectedCopyWithImpl(this._self, this._then);
+
+  final TaskRejected _self;
+  final $Res Function(TaskRejected) _then;
+
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$TaskRejectedImplCopyWith<_$TaskRejectedImpl> get copyWith =>
-      __$$TaskRejectedImplCopyWithImpl<_$TaskRejectedImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        open,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        inProgress,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        groomed,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        blocked,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        onHold,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        done,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        rejected,
+  $Res call({
+    Object? id = null,
+    Object? createdAt = null,
+    Object? utcOffset = null,
+    Object? timezone = freezed,
+    Object? geolocation = freezed,
   }) {
-    return rejected(id, createdAt, utcOffset, timezone, geolocation);
+    return _then(TaskRejected(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      utcOffset: null == utcOffset
+          ? _self.utcOffset
+          : utcOffset // ignore: cast_nullable_to_non_nullable
+              as int,
+      timezone: freezed == timezone
+          ? _self.timezone
+          : timezone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      geolocation: freezed == geolocation
+          ? _self.geolocation
+          : geolocation // ignore: cast_nullable_to_non_nullable
+              as Geolocation?,
+    ));
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-  }) {
-    return rejected?.call(id, createdAt, utcOffset, timezone, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-    required TResult orElse(),
-  }) {
-    if (rejected != null) {
-      return rejected(id, createdAt, utcOffset, timezone, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskInProgress value) inProgress,
-    required TResult Function(_TaskGroomed value) groomed,
-    required TResult Function(_TaskBlocked value) blocked,
-    required TResult Function(_TaskOnHold value) onHold,
-    required TResult Function(_TaskDone value) done,
-    required TResult Function(_TaskRejected value) rejected,
-  }) {
-    return rejected(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskInProgress value)? inProgress,
-    TResult? Function(_TaskGroomed value)? groomed,
-    TResult? Function(_TaskBlocked value)? blocked,
-    TResult? Function(_TaskOnHold value)? onHold,
-    TResult? Function(_TaskDone value)? done,
-    TResult? Function(_TaskRejected value)? rejected,
-  }) {
-    return rejected?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskInProgress value)? inProgress,
-    TResult Function(_TaskGroomed value)? groomed,
-    TResult Function(_TaskBlocked value)? blocked,
-    TResult Function(_TaskOnHold value)? onHold,
-    TResult Function(_TaskDone value)? done,
-    TResult Function(_TaskRejected value)? rejected,
-    required TResult orElse(),
-  }) {
-    if (rejected != null) {
-      return rejected(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskRejectedImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _TaskRejected implements TaskStatus {
-  const factory _TaskRejected(
-      {required final String id,
-      required final DateTime createdAt,
-      required final int utcOffset,
-      final String? timezone,
-      final Geolocation? geolocation}) = _$TaskRejectedImpl;
-
-  factory _TaskRejected.fromJson(Map<String, dynamic> json) =
-      _$TaskRejectedImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  int get utcOffset;
-  @override
-  String? get timezone;
-  @override
-  Geolocation? get geolocation;
 
   /// Create a copy of TaskStatus
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskRejectedImplCopyWith<_$TaskRejectedImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
 
-TaskData _$TaskDataFromJson(Map<String, dynamic> json) {
-  return _TaskData.fromJson(json);
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
+  }
 }
 
 /// @nodoc
 mixin _$TaskData {
-  TaskStatus get status => throw _privateConstructorUsedError;
-  DateTime get dateFrom => throw _privateConstructorUsedError;
-  DateTime get dateTo => throw _privateConstructorUsedError;
-  List<TaskStatus> get statusHistory => throw _privateConstructorUsedError;
-  String get title => throw _privateConstructorUsedError;
-  DateTime? get due => throw _privateConstructorUsedError;
-  Duration? get estimate => throw _privateConstructorUsedError;
-  List<String>? get checklistIds => throw _privateConstructorUsedError;
-  String? get languageCode => throw _privateConstructorUsedError;
-
-  /// Serializes this TaskData to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  TaskStatus get status;
+  DateTime get dateFrom;
+  DateTime get dateTo;
+  List<TaskStatus> get statusHistory;
+  String get title;
+  DateTime? get due;
+  Duration? get estimate;
+  List<String>? get checklistIds;
+  String? get languageCode;
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
   $TaskDataCopyWith<TaskData> get copyWith =>
-      throw _privateConstructorUsedError;
+      _$TaskDataCopyWithImpl<TaskData>(this as TaskData, _$identity);
+
+  /// Serializes this TaskData to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is TaskData &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.dateFrom, dateFrom) ||
+                other.dateFrom == dateFrom) &&
+            (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
+            const DeepCollectionEquality()
+                .equals(other.statusHistory, statusHistory) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.due, due) || other.due == due) &&
+            (identical(other.estimate, estimate) ||
+                other.estimate == estimate) &&
+            const DeepCollectionEquality()
+                .equals(other.checklistIds, checklistIds) &&
+            (identical(other.languageCode, languageCode) ||
+                other.languageCode == languageCode));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      status,
+      dateFrom,
+      dateTo,
+      const DeepCollectionEquality().hash(statusHistory),
+      title,
+      due,
+      estimate,
+      const DeepCollectionEquality().hash(checklistIds),
+      languageCode);
+
+  @override
+  String toString() {
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode)';
+  }
 }
 
 /// @nodoc
-abstract class $TaskDataCopyWith<$Res> {
-  factory $TaskDataCopyWith(TaskData value, $Res Function(TaskData) then) =
-      _$TaskDataCopyWithImpl<$Res, TaskData>;
+abstract mixin class $TaskDataCopyWith<$Res> {
+  factory $TaskDataCopyWith(TaskData value, $Res Function(TaskData) _then) =
+      _$TaskDataCopyWithImpl;
   @useResult
   $Res call(
       {TaskStatus status,
@@ -2400,14 +1598,11 @@ abstract class $TaskDataCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
-    implements $TaskDataCopyWith<$Res> {
-  _$TaskDataCopyWithImpl(this._value, this._then);
+class _$TaskDataCopyWithImpl<$Res> implements $TaskDataCopyWith<$Res> {
+  _$TaskDataCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final TaskData _self;
+  final $Res Function(TaskData) _then;
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
@@ -2424,44 +1619,44 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
     Object? checklistIds = freezed,
     Object? languageCode = freezed,
   }) {
-    return _then(_value.copyWith(
+    return _then(_self.copyWith(
       status: null == status
-          ? _value.status
+          ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
               as TaskStatus,
       dateFrom: null == dateFrom
-          ? _value.dateFrom
+          ? _self.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
               as DateTime,
       dateTo: null == dateTo
-          ? _value.dateTo
+          ? _self.dateTo
           : dateTo // ignore: cast_nullable_to_non_nullable
               as DateTime,
       statusHistory: null == statusHistory
-          ? _value.statusHistory
+          ? _self.statusHistory
           : statusHistory // ignore: cast_nullable_to_non_nullable
               as List<TaskStatus>,
       title: null == title
-          ? _value.title
+          ? _self.title
           : title // ignore: cast_nullable_to_non_nullable
               as String,
       due: freezed == due
-          ? _value.due
+          ? _self.due
           : due // ignore: cast_nullable_to_non_nullable
               as DateTime?,
       estimate: freezed == estimate
-          ? _value.estimate
+          ? _self.estimate
           : estimate // ignore: cast_nullable_to_non_nullable
               as Duration?,
       checklistIds: freezed == checklistIds
-          ? _value.checklistIds
+          ? _self.checklistIds
           : checklistIds // ignore: cast_nullable_to_non_nullable
               as List<String>?,
       languageCode: freezed == languageCode
-          ? _value.languageCode
+          ? _self.languageCode
           : languageCode // ignore: cast_nullable_to_non_nullable
               as String?,
-    ) as $Val);
+    ));
   }
 
   /// Create a copy of TaskData
@@ -2469,103 +1664,230 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
   @override
   @pragma('vm:prefer-inline')
   $TaskStatusCopyWith<$Res> get status {
-    return $TaskStatusCopyWith<$Res>(_value.status, (value) {
-      return _then(_value.copyWith(status: value) as $Val);
+    return $TaskStatusCopyWith<$Res>(_self.status, (value) {
+      return _then(_self.copyWith(status: value));
     });
   }
 }
 
-/// @nodoc
-abstract class _$$TaskDataImplCopyWith<$Res>
-    implements $TaskDataCopyWith<$Res> {
-  factory _$$TaskDataImplCopyWith(
-          _$TaskDataImpl value, $Res Function(_$TaskDataImpl) then) =
-      __$$TaskDataImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {TaskStatus status,
-      DateTime dateFrom,
-      DateTime dateTo,
-      List<TaskStatus> statusHistory,
-      String title,
-      DateTime? due,
-      Duration? estimate,
-      List<String>? checklistIds,
-      String? languageCode});
+/// Adds pattern-matching-related methods to [TaskData].
+extension TaskDataPatterns on TaskData {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
 
-  @override
-  $TaskStatusCopyWith<$Res> get status;
-}
-
-/// @nodoc
-class __$$TaskDataImplCopyWithImpl<$Res>
-    extends _$TaskDataCopyWithImpl<$Res, _$TaskDataImpl>
-    implements _$$TaskDataImplCopyWith<$Res> {
-  __$$TaskDataImplCopyWithImpl(
-      _$TaskDataImpl _value, $Res Function(_$TaskDataImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of TaskData
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? status = null,
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? statusHistory = null,
-    Object? title = null,
-    Object? due = freezed,
-    Object? estimate = freezed,
-    Object? checklistIds = freezed,
-    Object? languageCode = freezed,
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_TaskData value)? $default, {
+    required TResult orElse(),
   }) {
-    return _then(_$TaskDataImpl(
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as TaskStatus,
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      statusHistory: null == statusHistory
-          ? _value._statusHistory
-          : statusHistory // ignore: cast_nullable_to_non_nullable
-              as List<TaskStatus>,
-      title: null == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String,
-      due: freezed == due
-          ? _value.due
-          : due // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      estimate: freezed == estimate
-          ? _value.estimate
-          : estimate // ignore: cast_nullable_to_non_nullable
-              as Duration?,
-      checklistIds: freezed == checklistIds
-          ? _value._checklistIds
-          : checklistIds // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      languageCode: freezed == languageCode
-          ? _value.languageCode
-          : languageCode // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
+    final _that = this;
+    switch (_that) {
+      case _TaskData() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_TaskData value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskData():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_TaskData value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskData() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            TaskStatus status,
+            DateTime dateFrom,
+            DateTime dateTo,
+            List<TaskStatus> statusHistory,
+            String title,
+            DateTime? due,
+            Duration? estimate,
+            List<String>? checklistIds,
+            String? languageCode)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _TaskData() when $default != null:
+        return $default(
+            _that.status,
+            _that.dateFrom,
+            _that.dateTo,
+            _that.statusHistory,
+            _that.title,
+            _that.due,
+            _that.estimate,
+            _that.checklistIds,
+            _that.languageCode);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            TaskStatus status,
+            DateTime dateFrom,
+            DateTime dateTo,
+            List<TaskStatus> statusHistory,
+            String title,
+            DateTime? due,
+            Duration? estimate,
+            List<String>? checklistIds,
+            String? languageCode)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskData():
+        return $default(
+            _that.status,
+            _that.dateFrom,
+            _that.dateTo,
+            _that.statusHistory,
+            _that.title,
+            _that.due,
+            _that.estimate,
+            _that.checklistIds,
+            _that.languageCode);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            TaskStatus status,
+            DateTime dateFrom,
+            DateTime dateTo,
+            List<TaskStatus> statusHistory,
+            String title,
+            DateTime? due,
+            Duration? estimate,
+            List<String>? checklistIds,
+            String? languageCode)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TaskData() when $default != null:
+        return $default(
+            _that.status,
+            _that.dateFrom,
+            _that.dateTo,
+            _that.statusHistory,
+            _that.title,
+            _that.due,
+            _that.estimate,
+            _that.checklistIds,
+            _that.languageCode);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$TaskDataImpl implements _TaskData {
-  const _$TaskDataImpl(
+class _TaskData implements TaskData {
+  const _TaskData(
       {required this.status,
       required this.dateFrom,
       required this.dateTo,
@@ -2577,9 +1899,8 @@ class _$TaskDataImpl implements _TaskData {
       this.languageCode})
       : _statusHistory = statusHistory,
         _checklistIds = checklistIds;
-
-  factory _$TaskDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskDataImplFromJson(json);
+  factory _TaskData.fromJson(Map<String, dynamic> json) =>
+      _$TaskDataFromJson(json);
 
   @override
   final TaskStatus status;
@@ -2614,16 +1935,26 @@ class _$TaskDataImpl implements _TaskData {
   @override
   final String? languageCode;
 
+  /// Create a copy of TaskData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$TaskDataCopyWith<_TaskData> get copyWith =>
+      __$TaskDataCopyWithImpl<_TaskData>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TaskDataToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TaskDataImpl &&
+            other is _TaskData &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
@@ -2654,60 +1985,105 @@ class _$TaskDataImpl implements _TaskData {
       const DeepCollectionEquality().hash(_checklistIds),
       languageCode);
 
-  /// Create a copy of TaskData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TaskDataImplCopyWith<_$TaskDataImpl> get copyWith =>
-      __$$TaskDataImplCopyWithImpl<_$TaskDataImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskDataImplToJson(
-      this,
-    );
+  String toString() {
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode)';
   }
 }
 
-abstract class _TaskData implements TaskData {
-  const factory _TaskData(
-      {required final TaskStatus status,
-      required final DateTime dateFrom,
-      required final DateTime dateTo,
-      required final List<TaskStatus> statusHistory,
-      required final String title,
-      final DateTime? due,
-      final Duration? estimate,
-      final List<String>? checklistIds,
-      final String? languageCode}) = _$TaskDataImpl;
+/// @nodoc
+abstract mixin class _$TaskDataCopyWith<$Res>
+    implements $TaskDataCopyWith<$Res> {
+  factory _$TaskDataCopyWith(_TaskData value, $Res Function(_TaskData) _then) =
+      __$TaskDataCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {TaskStatus status,
+      DateTime dateFrom,
+      DateTime dateTo,
+      List<TaskStatus> statusHistory,
+      String title,
+      DateTime? due,
+      Duration? estimate,
+      List<String>? checklistIds,
+      String? languageCode});
 
-  factory _TaskData.fromJson(Map<String, dynamic> json) =
-      _$TaskDataImpl.fromJson;
+  @override
+  $TaskStatusCopyWith<$Res> get status;
+}
 
-  @override
-  TaskStatus get status;
-  @override
-  DateTime get dateFrom;
-  @override
-  DateTime get dateTo;
-  @override
-  List<TaskStatus> get statusHistory;
-  @override
-  String get title;
-  @override
-  DateTime? get due;
-  @override
-  Duration? get estimate;
-  @override
-  List<String>? get checklistIds;
-  @override
-  String? get languageCode;
+/// @nodoc
+class __$TaskDataCopyWithImpl<$Res> implements _$TaskDataCopyWith<$Res> {
+  __$TaskDataCopyWithImpl(this._self, this._then);
+
+  final _TaskData _self;
+  final $Res Function(_TaskData) _then;
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskDataImplCopyWith<_$TaskDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? status = null,
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? statusHistory = null,
+    Object? title = null,
+    Object? due = freezed,
+    Object? estimate = freezed,
+    Object? checklistIds = freezed,
+    Object? languageCode = freezed,
+  }) {
+    return _then(_TaskData(
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as TaskStatus,
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      statusHistory: null == statusHistory
+          ? _self._statusHistory
+          : statusHistory // ignore: cast_nullable_to_non_nullable
+              as List<TaskStatus>,
+      title: null == title
+          ? _self.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      due: freezed == due
+          ? _self.due
+          : due // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      estimate: freezed == estimate
+          ? _self.estimate
+          : estimate // ignore: cast_nullable_to_non_nullable
+              as Duration?,
+      checklistIds: freezed == checklistIds
+          ? _self._checklistIds
+          : checklistIds // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      languageCode: freezed == languageCode
+          ? _self.languageCode
+          : languageCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+
+  /// Create a copy of TaskData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $TaskStatusCopyWith<$Res> get status {
+    return $TaskStatusCopyWith<$Res>(_self.status, (value) {
+      return _then(_self.copyWith(status: value));
+    });
+  }
 }
+
+// dart format on

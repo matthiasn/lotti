@@ -47,7 +47,7 @@ class TaskFunctions {
 
 /// Response from the set task language function
 @freezed
-class SetTaskLanguageResult with _$SetTaskLanguageResult {
+abstract class SetTaskLanguageResult with _$SetTaskLanguageResult {
   const factory SetTaskLanguageResult({
     required String languageCode,
     required LanguageDetectionConfidence confidence,

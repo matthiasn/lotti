@@ -18,6 +18,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../mocks/sync_config_test_mocks.dart';
 import '../../../../../test_data/test_data.dart';
@@ -84,9 +85,9 @@ void main() {
         .thenAnswer((_) async => [testTag1]);
 
     setUpAll(() {
-      registerFallbackValue(FakeTagEntity());
-      registerFallbackValue(FakeSyncMessage());
-      registerFallbackValue(FakeJournalEntity());
+      registerFallbackValue(fallbackTagEntity);
+      registerFallbackValue(fallbackSyncMessage);
+      registerFallbackValue(fallbackJournalEntity);
 
       final mockOutboxService = MockOutboxService();
       final mockVectorClockService = MockVectorClockService();

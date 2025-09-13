@@ -26,7 +26,7 @@ enum AggregationType { none, dailySum, dailyMax, dailyAvg, hourlySum }
 enum HabitCompletionType { success, skip, fail, open }
 
 @freezed
-class HabitSchedule with _$HabitSchedule {
+sealed class HabitSchedule with _$HabitSchedule {
   const factory HabitSchedule.daily({
     required int requiredCompletions,
     DateTime? showFrom,
@@ -46,7 +46,7 @@ class HabitSchedule with _$HabitSchedule {
 }
 
 @freezed
-class AutoCompleteRule with _$AutoCompleteRule {
+sealed class AutoCompleteRule with _$AutoCompleteRule {
   const factory AutoCompleteRule.health({
     required String dataType,
     num? minimum,
@@ -94,7 +94,7 @@ class AutoCompleteRule with _$AutoCompleteRule {
 }
 
 @freezed
-class EntityDefinition with _$EntityDefinition {
+sealed class EntityDefinition with _$EntityDefinition {
   const factory EntityDefinition.measurableDataType({
     required String id,
     required DateTime createdAt,
@@ -173,7 +173,7 @@ class EntityDefinition with _$EntityDefinition {
 }
 
 @freezed
-class MeasurementData with _$MeasurementData {
+abstract class MeasurementData with _$MeasurementData {
   const factory MeasurementData({
     required DateTime dateFrom,
     required DateTime dateTo,
@@ -186,7 +186,7 @@ class MeasurementData with _$MeasurementData {
 }
 
 @freezed
-class AiResponseData with _$AiResponseData {
+abstract class AiResponseData with _$AiResponseData {
   const factory AiResponseData({
     required String model,
     required String systemMessage,
@@ -204,7 +204,7 @@ class AiResponseData with _$AiResponseData {
 }
 
 @freezed
-class WorkoutData with _$WorkoutData {
+abstract class WorkoutData with _$WorkoutData {
   const factory WorkoutData({
     required DateTime dateFrom,
     required DateTime dateTo,
@@ -220,7 +220,7 @@ class WorkoutData with _$WorkoutData {
 }
 
 @freezed
-class HabitCompletionData with _$HabitCompletionData {
+abstract class HabitCompletionData with _$HabitCompletionData {
   const factory HabitCompletionData({
     required DateTime dateFrom,
     required DateTime dateTo,
@@ -239,7 +239,7 @@ enum WorkoutValueType {
 }
 
 @freezed
-class DashboardItem with _$DashboardItem {
+sealed class DashboardItem with _$DashboardItem {
   const factory DashboardItem.measurement({
     required String id,
     AggregationType? aggregationType,

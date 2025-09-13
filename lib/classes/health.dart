@@ -4,7 +4,7 @@ part 'health.freezed.dart';
 part 'health.g.dart';
 
 @freezed
-class QuantitativeData with _$QuantitativeData {
+sealed class QuantitativeData with _$QuantitativeData {
   const factory QuantitativeData.cumulativeQuantityData({
     required DateTime dateFrom,
     required DateTime dateTo,

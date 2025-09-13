@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -64,12 +65,13 @@ class InfoText extends StatelessWidget {
 }
 
 String entryTextForQuant(QuantitativeEntry qe) {
-  return qe.data.map(
-    cumulativeQuantityData: (qd) => '${formatType(qd.dataType)}: '
-        '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-    discreteQuantityData: (qd) => '${formatType(qd.dataType)}: '
-        '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-  );
+  final qd = qe.data;
+  return switch (qd) {
+    CumulativeQuantityData(:final dataType, :final value, :final unit) =>
+      '${formatType(dataType)}: ${nf.format(value)} ${formatUnit(unit)}',
+    DiscreteQuantityData(:final dataType, :final value, :final unit) =>
+      '${formatType(dataType)}: ${nf.format(value)} ${formatUnit(unit)}',
+  };
 }
 
 String entryTextForWorkout(

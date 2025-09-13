@@ -10,7 +10,7 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 part 'category_details_controller.freezed.dart';
 
 @freezed
-class CategoryDetailsState with _$CategoryDetailsState {
+abstract class CategoryDetailsState with _$CategoryDetailsState {
   const factory CategoryDetailsState({
     required CategoryDefinition? category,
     required bool isLoading,

@@ -248,22 +248,21 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               final entityDefinitions = <EntityDefinition>[dashboard];
 
               for (final item in dashboard.items) {
-                await item.map(
-                  measurement:
-                      (DashboardMeasurementItem measurementItem) async {
-                    final dataType =
-                        await _db.getMeasurableDataTypeById(measurementItem.id);
+                switch (item) {
+                  case DashboardMeasurementItem(:final id):
+                    final dataType = await _db.getMeasurableDataTypeById(id);
                     if (dataType != null) {
                       entityDefinitions.add(dataType);
                     }
-                  },
-                  healthChart: (_) {},
-                  workoutChart: (_) {},
-                  surveyChart: (_) {},
-                  storyTimeChart: (_) {},
-                  habitChart: (_) {},
-                  wildcardStoryTimeChart: (_) {},
-                );
+                  case DashboardHealthItem():
+                  case DashboardWorkoutItem():
+                  case DashboardSurveyItem():
+                  case DashboardStoryTimeItem():
+                  case DashboardHabitItem():
+                  case WildcardStoryTimeItem():
+                    // No additional entities to collect
+                    break;
+                }
               }
               await Clipboard.setData(
                 ClipboardData(

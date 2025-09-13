@@ -12,7 +12,6 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -155,13 +154,9 @@ class FakeHabitDefinition extends Fake implements HabitDefinition {}
 
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
 
-class FakeTagEntity extends Fake implements TagEntity {}
-
 class FakeEntryText extends Fake implements EntryText {}
 
 class FakeTaskData extends Fake implements TaskData {}
-
-class FakeJournalEntity extends Fake implements JournalEntity {}
 
 class FakeMetadata extends Fake implements Metadata {}
 
@@ -176,5 +171,3 @@ class FakeHabitCompletionData extends Fake implements HabitCompletionData {}
 class MockMaintenance extends Mock implements Maintenance {}
 
 class MockMatrixService extends Mock implements MatrixService {}
-
-class FakeSyncMessage extends Fake implements SyncMessage {}

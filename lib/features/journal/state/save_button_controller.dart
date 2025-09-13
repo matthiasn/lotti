@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

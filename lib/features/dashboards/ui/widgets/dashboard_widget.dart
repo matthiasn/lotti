@@ -37,8 +37,8 @@ class DashboardWidget extends StatelessWidget {
     }
 
     final items = dashboard.items.map((DashboardItem dashboardItem) {
-      return dashboardItem.map(
-        measurement: (DashboardMeasurementItem measurement) {
+      switch (dashboardItem) {
+        case final DashboardMeasurementItem measurement:
           return MeasurablesBarChart(
             measurableDataTypeId: measurement.id,
             dashboardId: dashboardId,
@@ -48,45 +48,38 @@ class DashboardWidget extends StatelessWidget {
             enableCreate: true,
             transformationController: transformationController,
           );
-        },
-        healthChart: (DashboardHealthItem healthChart) {
+        case final DashboardHealthItem health:
           return DashboardHealthChart(
-            chartConfig: healthChart,
+            chartConfig: health,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             transformationController: transformationController,
           );
-        },
-        workoutChart: (DashboardWorkoutItem workoutChart) {
+        case final DashboardWorkoutItem workout:
           return DashboardWorkoutChart(
-            chartConfig: workoutChart,
+            chartConfig: workout,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             transformationController: transformationController,
           );
-        },
-        storyTimeChart: (DashboardStoryTimeItem storyChart) {
+        case final DashboardStoryTimeItem _:
           return const Text('Story Time Chart currently not implemented');
-        },
-        wildcardStoryTimeChart: (WildcardStoryTimeItem storyChart) {
+        case final WildcardStoryTimeItem _:
           return const SizedBox.shrink();
-        },
-        surveyChart: (DashboardSurveyItem surveyChart) {
+        case final DashboardSurveyItem survey:
           return DashboardSurveyChart(
-            chartConfig: surveyChart,
+            chartConfig: survey,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             transformationController: transformationController,
           );
-        },
-        habitChart: (DashboardHabitItem habitItem) {
+        case final DashboardHabitItem habit:
           return DashboardHabitsChart(
-            habitId: habitItem.habitId,
+            habitId: habit.habitId,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
           );
-        },
-      );
+      }
     });
 
     return Padding(
@@ -98,7 +91,7 @@ class DashboardWidget extends StatelessWidget {
               dashboard.name,
               style: taskTitleStyle,
             ),
-          ...intersperse(const SizedBox(height: 16), items),
+          ...intersperse(const SizedBox(height: 16), items.whereType<Widget>()),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

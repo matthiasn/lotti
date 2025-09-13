@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,11 +9,8 @@ part of 'entity_definitions.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
 HabitSchedule _$HabitScheduleFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
     case 'daily':
@@ -31,25 +28,178 @@ HabitSchedule _$HabitScheduleFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$HabitSchedule {
-  int get requiredCompletions => throw _privateConstructorUsedError;
+  int get requiredCompletions;
+
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $HabitScheduleCopyWith<HabitSchedule> get copyWith =>
+      _$HabitScheduleCopyWithImpl<HabitSchedule>(
+          this as HabitSchedule, _$identity);
+
+  /// Serializes this HabitSchedule to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is HabitSchedule &&
+            (identical(other.requiredCompletions, requiredCompletions) ||
+                other.requiredCompletions == requiredCompletions));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, requiredCompletions);
+
+  @override
+  String toString() {
+    return 'HabitSchedule(requiredCompletions: $requiredCompletions)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $HabitScheduleCopyWith<$Res> {
+  factory $HabitScheduleCopyWith(
+          HabitSchedule value, $Res Function(HabitSchedule) _then) =
+      _$HabitScheduleCopyWithImpl;
+  @useResult
+  $Res call({int requiredCompletions});
+}
+
+/// @nodoc
+class _$HabitScheduleCopyWithImpl<$Res>
+    implements $HabitScheduleCopyWith<$Res> {
+  _$HabitScheduleCopyWithImpl(this._self, this._then);
+
+  final HabitSchedule _self;
+  final $Res Function(HabitSchedule) _then;
+
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? requiredCompletions = null,
+  }) {
+    return _then(_self.copyWith(
+      requiredCompletions: null == requiredCompletions
+          ? _self.requiredCompletions
+          : requiredCompletions // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [HabitSchedule].
+extension HabitSchedulePatterns on HabitSchedule {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)
-        daily,
-    required TResult Function(int requiredCompletions) weekly,
-    required TResult Function(int requiredCompletions) monthly,
-  }) =>
-      throw _privateConstructorUsedError;
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(DailyHabitSchedule value)? daily,
+    TResult Function(WeeklyHabitSchedule value)? weekly,
+    TResult Function(MonthlyHabitSchedule value)? monthly,
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case DailyHabitSchedule() when daily != null:
+        return daily(_that);
+      case WeeklyHabitSchedule() when weekly != null:
+        return weekly(_that);
+      case MonthlyHabitSchedule() when monthly != null:
+        return monthly(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
-        daily,
-    TResult? Function(int requiredCompletions)? weekly,
-    TResult? Function(int requiredCompletions)? monthly,
-  }) =>
-      throw _privateConstructorUsedError;
+  TResult map<TResult extends Object?>({
+    required TResult Function(DailyHabitSchedule value) daily,
+    required TResult Function(WeeklyHabitSchedule value) weekly,
+    required TResult Function(MonthlyHabitSchedule value) monthly,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case DailyHabitSchedule():
+        return daily(_that);
+      case WeeklyHabitSchedule():
+        return weekly(_that);
+      case MonthlyHabitSchedule():
+        return monthly(_that);
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(DailyHabitSchedule value)? daily,
+    TResult? Function(WeeklyHabitSchedule value)? weekly,
+    TResult? Function(MonthlyHabitSchedule value)? monthly,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case DailyHabitSchedule() when daily != null:
+        return daily(_that);
+      case WeeklyHabitSchedule() when weekly != null:
+        return weekly(_that);
+      case MonthlyHabitSchedule() when monthly != null:
+        return monthly(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(
@@ -58,155 +208,129 @@ mixin _$HabitSchedule {
     TResult Function(int requiredCompletions)? weekly,
     TResult Function(int requiredCompletions)? monthly,
     required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DailyHabitSchedule value) daily,
-    required TResult Function(WeeklyHabitSchedule value) weekly,
-    required TResult Function(MonthlyHabitSchedule value) monthly,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DailyHabitSchedule value)? daily,
-    TResult? Function(WeeklyHabitSchedule value)? weekly,
-    TResult? Function(MonthlyHabitSchedule value)? monthly,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DailyHabitSchedule value)? daily,
-    TResult Function(WeeklyHabitSchedule value)? weekly,
-    TResult Function(MonthlyHabitSchedule value)? monthly,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-
-  /// Serializes this HabitSchedule to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of HabitSchedule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $HabitScheduleCopyWith<HabitSchedule> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $HabitScheduleCopyWith<$Res> {
-  factory $HabitScheduleCopyWith(
-          HabitSchedule value, $Res Function(HabitSchedule) then) =
-      _$HabitScheduleCopyWithImpl<$Res, HabitSchedule>;
-  @useResult
-  $Res call({int requiredCompletions});
-}
-
-/// @nodoc
-class _$HabitScheduleCopyWithImpl<$Res, $Val extends HabitSchedule>
-    implements $HabitScheduleCopyWith<$Res> {
-  _$HabitScheduleCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of HabitSchedule
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? requiredCompletions = null,
   }) {
-    return _then(_value.copyWith(
-      requiredCompletions: null == requiredCompletions
-          ? _value.requiredCompletions
-          : requiredCompletions // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
+    final _that = this;
+    switch (_that) {
+      case DailyHabitSchedule() when daily != null:
+        return daily(
+            _that.requiredCompletions, _that.showFrom, _that.alertAtTime);
+      case WeeklyHabitSchedule() when weekly != null:
+        return weekly(_that.requiredCompletions);
+      case MonthlyHabitSchedule() when monthly != null:
+        return monthly(_that.requiredCompletions);
+      case _:
+        return orElse();
+    }
   }
-}
 
-/// @nodoc
-abstract class _$$DailyHabitScheduleImplCopyWith<$Res>
-    implements $HabitScheduleCopyWith<$Res> {
-  factory _$$DailyHabitScheduleImplCopyWith(_$DailyHabitScheduleImpl value,
-          $Res Function(_$DailyHabitScheduleImpl) then) =
-      __$$DailyHabitScheduleImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime});
-}
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
 
-/// @nodoc
-class __$$DailyHabitScheduleImplCopyWithImpl<$Res>
-    extends _$HabitScheduleCopyWithImpl<$Res, _$DailyHabitScheduleImpl>
-    implements _$$DailyHabitScheduleImplCopyWith<$Res> {
-  __$$DailyHabitScheduleImplCopyWithImpl(_$DailyHabitScheduleImpl _value,
-      $Res Function(_$DailyHabitScheduleImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of HabitSchedule
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? requiredCompletions = null,
-    Object? showFrom = freezed,
-    Object? alertAtTime = freezed,
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)
+        daily,
+    required TResult Function(int requiredCompletions) weekly,
+    required TResult Function(int requiredCompletions) monthly,
   }) {
-    return _then(_$DailyHabitScheduleImpl(
-      requiredCompletions: null == requiredCompletions
-          ? _value.requiredCompletions
-          : requiredCompletions // ignore: cast_nullable_to_non_nullable
-              as int,
-      showFrom: freezed == showFrom
-          ? _value.showFrom
-          : showFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      alertAtTime: freezed == alertAtTime
-          ? _value.alertAtTime
-          : alertAtTime // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ));
+    final _that = this;
+    switch (_that) {
+      case DailyHabitSchedule():
+        return daily(
+            _that.requiredCompletions, _that.showFrom, _that.alertAtTime);
+      case WeeklyHabitSchedule():
+        return weekly(_that.requiredCompletions);
+      case MonthlyHabitSchedule():
+        return monthly(_that.requiredCompletions);
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
+        daily,
+    TResult? Function(int requiredCompletions)? weekly,
+    TResult? Function(int requiredCompletions)? monthly,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case DailyHabitSchedule() when daily != null:
+        return daily(
+            _that.requiredCompletions, _that.showFrom, _that.alertAtTime);
+      case WeeklyHabitSchedule() when weekly != null:
+        return weekly(_that.requiredCompletions);
+      case MonthlyHabitSchedule() when monthly != null:
+        return monthly(_that.requiredCompletions);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$DailyHabitScheduleImpl implements DailyHabitSchedule {
-  const _$DailyHabitScheduleImpl(
+class DailyHabitSchedule implements HabitSchedule {
+  const DailyHabitSchedule(
       {required this.requiredCompletions,
       this.showFrom,
       this.alertAtTime,
       final String? $type})
       : $type = $type ?? 'daily';
-
-  factory _$DailyHabitScheduleImpl.fromJson(Map<String, dynamic> json) =>
-      _$$DailyHabitScheduleImplFromJson(json);
+  factory DailyHabitSchedule.fromJson(Map<String, dynamic> json) =>
+      _$DailyHabitScheduleFromJson(json);
 
   @override
   final int requiredCompletions;
-  @override
   final DateTime? showFrom;
-  @override
   final DateTime? alertAtTime;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'HabitSchedule.daily(requiredCompletions: $requiredCompletions, showFrom: $showFrom, alertAtTime: $alertAtTime)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DailyHabitScheduleCopyWith<DailyHabitSchedule> get copyWith =>
+      _$DailyHabitScheduleCopyWithImpl<DailyHabitSchedule>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$DailyHabitScheduleToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DailyHabitScheduleImpl &&
+            other is DailyHabitSchedule &&
             (identical(other.requiredCompletions, requiredCompletions) ||
                 other.requiredCompletions == requiredCompletions) &&
             (identical(other.showFrom, showFrom) ||
@@ -220,326 +344,136 @@ class _$DailyHabitScheduleImpl implements DailyHabitSchedule {
   int get hashCode =>
       Object.hash(runtimeType, requiredCompletions, showFrom, alertAtTime);
 
-  /// Create a copy of HabitSchedule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$DailyHabitScheduleImplCopyWith<_$DailyHabitScheduleImpl> get copyWith =>
-      __$$DailyHabitScheduleImplCopyWithImpl<_$DailyHabitScheduleImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)
-        daily,
-    required TResult Function(int requiredCompletions) weekly,
-    required TResult Function(int requiredCompletions) monthly,
-  }) {
-    return daily(requiredCompletions, showFrom, alertAtTime);
+  String toString() {
+    return 'HabitSchedule.daily(requiredCompletions: $requiredCompletions, showFrom: $showFrom, alertAtTime: $alertAtTime)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
-        daily,
-    TResult? Function(int requiredCompletions)? weekly,
-    TResult? Function(int requiredCompletions)? monthly,
-  }) {
-    return daily?.call(requiredCompletions, showFrom, alertAtTime);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
-        daily,
-    TResult Function(int requiredCompletions)? weekly,
-    TResult Function(int requiredCompletions)? monthly,
-    required TResult orElse(),
-  }) {
-    if (daily != null) {
-      return daily(requiredCompletions, showFrom, alertAtTime);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DailyHabitSchedule value) daily,
-    required TResult Function(WeeklyHabitSchedule value) weekly,
-    required TResult Function(MonthlyHabitSchedule value) monthly,
-  }) {
-    return daily(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DailyHabitSchedule value)? daily,
-    TResult? Function(WeeklyHabitSchedule value)? weekly,
-    TResult? Function(MonthlyHabitSchedule value)? monthly,
-  }) {
-    return daily?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DailyHabitSchedule value)? daily,
-    TResult Function(WeeklyHabitSchedule value)? weekly,
-    TResult Function(MonthlyHabitSchedule value)? monthly,
-    required TResult orElse(),
-  }) {
-    if (daily != null) {
-      return daily(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$DailyHabitScheduleImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class DailyHabitSchedule implements HabitSchedule {
-  const factory DailyHabitSchedule(
-      {required final int requiredCompletions,
-      final DateTime? showFrom,
-      final DateTime? alertAtTime}) = _$DailyHabitScheduleImpl;
-
-  factory DailyHabitSchedule.fromJson(Map<String, dynamic> json) =
-      _$DailyHabitScheduleImpl.fromJson;
-
-  @override
-  int get requiredCompletions;
-  DateTime? get showFrom;
-  DateTime? get alertAtTime;
-
-  /// Create a copy of HabitSchedule
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DailyHabitScheduleImplCopyWith<_$DailyHabitScheduleImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$WeeklyHabitScheduleImplCopyWith<$Res>
+abstract mixin class $DailyHabitScheduleCopyWith<$Res>
     implements $HabitScheduleCopyWith<$Res> {
-  factory _$$WeeklyHabitScheduleImplCopyWith(_$WeeklyHabitScheduleImpl value,
-          $Res Function(_$WeeklyHabitScheduleImpl) then) =
-      __$$WeeklyHabitScheduleImplCopyWithImpl<$Res>;
+  factory $DailyHabitScheduleCopyWith(
+          DailyHabitSchedule value, $Res Function(DailyHabitSchedule) _then) =
+      _$DailyHabitScheduleCopyWithImpl;
   @override
   @useResult
-  $Res call({int requiredCompletions});
+  $Res call(
+      {int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime});
 }
 
 /// @nodoc
-class __$$WeeklyHabitScheduleImplCopyWithImpl<$Res>
-    extends _$HabitScheduleCopyWithImpl<$Res, _$WeeklyHabitScheduleImpl>
-    implements _$$WeeklyHabitScheduleImplCopyWith<$Res> {
-  __$$WeeklyHabitScheduleImplCopyWithImpl(_$WeeklyHabitScheduleImpl _value,
-      $Res Function(_$WeeklyHabitScheduleImpl) _then)
-      : super(_value, _then);
+class _$DailyHabitScheduleCopyWithImpl<$Res>
+    implements $DailyHabitScheduleCopyWith<$Res> {
+  _$DailyHabitScheduleCopyWithImpl(this._self, this._then);
+
+  final DailyHabitSchedule _self;
+  final $Res Function(DailyHabitSchedule) _then;
 
   /// Create a copy of HabitSchedule
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? requiredCompletions = null,
+    Object? showFrom = freezed,
+    Object? alertAtTime = freezed,
   }) {
-    return _then(_$WeeklyHabitScheduleImpl(
+    return _then(DailyHabitSchedule(
       requiredCompletions: null == requiredCompletions
-          ? _value.requiredCompletions
+          ? _self.requiredCompletions
           : requiredCompletions // ignore: cast_nullable_to_non_nullable
               as int,
+      showFrom: freezed == showFrom
+          ? _self.showFrom
+          : showFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      alertAtTime: freezed == alertAtTime
+          ? _self.alertAtTime
+          : alertAtTime // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$WeeklyHabitScheduleImpl implements WeeklyHabitSchedule {
-  const _$WeeklyHabitScheduleImpl(
+class WeeklyHabitSchedule implements HabitSchedule {
+  const WeeklyHabitSchedule(
       {required this.requiredCompletions, final String? $type})
       : $type = $type ?? 'weekly';
-
-  factory _$WeeklyHabitScheduleImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WeeklyHabitScheduleImplFromJson(json);
+  factory WeeklyHabitSchedule.fromJson(Map<String, dynamic> json) =>
+      _$WeeklyHabitScheduleFromJson(json);
 
   @override
   final int requiredCompletions;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
+
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $WeeklyHabitScheduleCopyWith<WeeklyHabitSchedule> get copyWith =>
+      _$WeeklyHabitScheduleCopyWithImpl<WeeklyHabitSchedule>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$WeeklyHabitScheduleToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is WeeklyHabitSchedule &&
+            (identical(other.requiredCompletions, requiredCompletions) ||
+                other.requiredCompletions == requiredCompletions));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, requiredCompletions);
 
   @override
   String toString() {
     return 'HabitSchedule.weekly(requiredCompletions: $requiredCompletions)';
   }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$WeeklyHabitScheduleImpl &&
-            (identical(other.requiredCompletions, requiredCompletions) ||
-                other.requiredCompletions == requiredCompletions));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, requiredCompletions);
-
-  /// Create a copy of HabitSchedule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$WeeklyHabitScheduleImplCopyWith<_$WeeklyHabitScheduleImpl> get copyWith =>
-      __$$WeeklyHabitScheduleImplCopyWithImpl<_$WeeklyHabitScheduleImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)
-        daily,
-    required TResult Function(int requiredCompletions) weekly,
-    required TResult Function(int requiredCompletions) monthly,
-  }) {
-    return weekly(requiredCompletions);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
-        daily,
-    TResult? Function(int requiredCompletions)? weekly,
-    TResult? Function(int requiredCompletions)? monthly,
-  }) {
-    return weekly?.call(requiredCompletions);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
-        daily,
-    TResult Function(int requiredCompletions)? weekly,
-    TResult Function(int requiredCompletions)? monthly,
-    required TResult orElse(),
-  }) {
-    if (weekly != null) {
-      return weekly(requiredCompletions);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DailyHabitSchedule value) daily,
-    required TResult Function(WeeklyHabitSchedule value) weekly,
-    required TResult Function(MonthlyHabitSchedule value) monthly,
-  }) {
-    return weekly(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DailyHabitSchedule value)? daily,
-    TResult? Function(WeeklyHabitSchedule value)? weekly,
-    TResult? Function(MonthlyHabitSchedule value)? monthly,
-  }) {
-    return weekly?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DailyHabitSchedule value)? daily,
-    TResult Function(WeeklyHabitSchedule value)? weekly,
-    TResult Function(MonthlyHabitSchedule value)? monthly,
-    required TResult orElse(),
-  }) {
-    if (weekly != null) {
-      return weekly(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WeeklyHabitScheduleImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class WeeklyHabitSchedule implements HabitSchedule {
-  const factory WeeklyHabitSchedule({required final int requiredCompletions}) =
-      _$WeeklyHabitScheduleImpl;
-
-  factory WeeklyHabitSchedule.fromJson(Map<String, dynamic> json) =
-      _$WeeklyHabitScheduleImpl.fromJson;
-
-  @override
-  int get requiredCompletions;
-
-  /// Create a copy of HabitSchedule
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$WeeklyHabitScheduleImplCopyWith<_$WeeklyHabitScheduleImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$MonthlyHabitScheduleImplCopyWith<$Res>
+abstract mixin class $WeeklyHabitScheduleCopyWith<$Res>
     implements $HabitScheduleCopyWith<$Res> {
-  factory _$$MonthlyHabitScheduleImplCopyWith(_$MonthlyHabitScheduleImpl value,
-          $Res Function(_$MonthlyHabitScheduleImpl) then) =
-      __$$MonthlyHabitScheduleImplCopyWithImpl<$Res>;
+  factory $WeeklyHabitScheduleCopyWith(
+          WeeklyHabitSchedule value, $Res Function(WeeklyHabitSchedule) _then) =
+      _$WeeklyHabitScheduleCopyWithImpl;
   @override
   @useResult
   $Res call({int requiredCompletions});
 }
 
 /// @nodoc
-class __$$MonthlyHabitScheduleImplCopyWithImpl<$Res>
-    extends _$HabitScheduleCopyWithImpl<$Res, _$MonthlyHabitScheduleImpl>
-    implements _$$MonthlyHabitScheduleImplCopyWith<$Res> {
-  __$$MonthlyHabitScheduleImplCopyWithImpl(_$MonthlyHabitScheduleImpl _value,
-      $Res Function(_$MonthlyHabitScheduleImpl) _then)
-      : super(_value, _then);
+class _$WeeklyHabitScheduleCopyWithImpl<$Res>
+    implements $WeeklyHabitScheduleCopyWith<$Res> {
+  _$WeeklyHabitScheduleCopyWithImpl(this._self, this._then);
+
+  final WeeklyHabitSchedule _self;
+  final $Res Function(WeeklyHabitSchedule) _then;
 
   /// Create a copy of HabitSchedule
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? requiredCompletions = null,
   }) {
-    return _then(_$MonthlyHabitScheduleImpl(
+    return _then(WeeklyHabitSchedule(
       requiredCompletions: null == requiredCompletions
-          ? _value.requiredCompletions
+          ? _self.requiredCompletions
           : requiredCompletions // ignore: cast_nullable_to_non_nullable
               as int,
     ));
@@ -548,13 +482,12 @@ class __$$MonthlyHabitScheduleImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$MonthlyHabitScheduleImpl implements MonthlyHabitSchedule {
-  const _$MonthlyHabitScheduleImpl(
+class MonthlyHabitSchedule implements HabitSchedule {
+  const MonthlyHabitSchedule(
       {required this.requiredCompletions, final String? $type})
       : $type = $type ?? 'monthly';
-
-  factory _$MonthlyHabitScheduleImpl.fromJson(Map<String, dynamic> json) =>
-      _$$MonthlyHabitScheduleImplFromJson(json);
+  factory MonthlyHabitSchedule.fromJson(Map<String, dynamic> json) =>
+      _$MonthlyHabitScheduleFromJson(json);
 
   @override
   final int requiredCompletions;
@@ -562,16 +495,27 @@ class _$MonthlyHabitScheduleImpl implements MonthlyHabitSchedule {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'HabitSchedule.monthly(requiredCompletions: $requiredCompletions)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $MonthlyHabitScheduleCopyWith<MonthlyHabitSchedule> get copyWith =>
+      _$MonthlyHabitScheduleCopyWithImpl<MonthlyHabitSchedule>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$MonthlyHabitScheduleToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MonthlyHabitScheduleImpl &&
+            other is MonthlyHabitSchedule &&
             (identical(other.requiredCompletions, requiredCompletions) ||
                 other.requiredCompletions == requiredCompletions));
   }
@@ -580,114 +524,45 @@ class _$MonthlyHabitScheduleImpl implements MonthlyHabitSchedule {
   @override
   int get hashCode => Object.hash(runtimeType, requiredCompletions);
 
-  /// Create a copy of HabitSchedule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$MonthlyHabitScheduleImplCopyWith<_$MonthlyHabitScheduleImpl>
-      get copyWith =>
-          __$$MonthlyHabitScheduleImplCopyWithImpl<_$MonthlyHabitScheduleImpl>(
-              this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)
-        daily,
-    required TResult Function(int requiredCompletions) weekly,
-    required TResult Function(int requiredCompletions) monthly,
-  }) {
-    return monthly(requiredCompletions);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
-        daily,
-    TResult? Function(int requiredCompletions)? weekly,
-    TResult? Function(int requiredCompletions)? monthly,
-  }) {
-    return monthly?.call(requiredCompletions);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
-        daily,
-    TResult Function(int requiredCompletions)? weekly,
-    TResult Function(int requiredCompletions)? monthly,
-    required TResult orElse(),
-  }) {
-    if (monthly != null) {
-      return monthly(requiredCompletions);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DailyHabitSchedule value) daily,
-    required TResult Function(WeeklyHabitSchedule value) weekly,
-    required TResult Function(MonthlyHabitSchedule value) monthly,
-  }) {
-    return monthly(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DailyHabitSchedule value)? daily,
-    TResult? Function(WeeklyHabitSchedule value)? weekly,
-    TResult? Function(MonthlyHabitSchedule value)? monthly,
-  }) {
-    return monthly?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DailyHabitSchedule value)? daily,
-    TResult Function(WeeklyHabitSchedule value)? weekly,
-    TResult Function(MonthlyHabitSchedule value)? monthly,
-    required TResult orElse(),
-  }) {
-    if (monthly != null) {
-      return monthly(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$MonthlyHabitScheduleImplToJson(
-      this,
-    );
+  String toString() {
+    return 'HabitSchedule.monthly(requiredCompletions: $requiredCompletions)';
   }
 }
 
-abstract class MonthlyHabitSchedule implements HabitSchedule {
-  const factory MonthlyHabitSchedule({required final int requiredCompletions}) =
-      _$MonthlyHabitScheduleImpl;
-
-  factory MonthlyHabitSchedule.fromJson(Map<String, dynamic> json) =
-      _$MonthlyHabitScheduleImpl.fromJson;
-
+/// @nodoc
+abstract mixin class $MonthlyHabitScheduleCopyWith<$Res>
+    implements $HabitScheduleCopyWith<$Res> {
+  factory $MonthlyHabitScheduleCopyWith(MonthlyHabitSchedule value,
+          $Res Function(MonthlyHabitSchedule) _then) =
+      _$MonthlyHabitScheduleCopyWithImpl;
   @override
-  int get requiredCompletions;
+  @useResult
+  $Res call({int requiredCompletions});
+}
+
+/// @nodoc
+class _$MonthlyHabitScheduleCopyWithImpl<$Res>
+    implements $MonthlyHabitScheduleCopyWith<$Res> {
+  _$MonthlyHabitScheduleCopyWithImpl(this._self, this._then);
+
+  final MonthlyHabitSchedule _self;
+  final $Res Function(MonthlyHabitSchedule) _then;
 
   /// Create a copy of HabitSchedule
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$MonthlyHabitScheduleImplCopyWith<_$MonthlyHabitScheduleImpl>
-      get copyWith => throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? requiredCompletions = null,
+  }) {
+    return _then(MonthlyHabitSchedule(
+      requiredCompletions: null == requiredCompletions
+          ? _self.requiredCompletions
+          : requiredCompletions // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
 }
 
 AutoCompleteRule _$AutoCompleteRuleFromJson(Map<String, dynamic> json) {
@@ -715,45 +590,213 @@ AutoCompleteRule _$AutoCompleteRuleFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$AutoCompleteRule {
-  String? get title => throw _privateConstructorUsedError;
+  String? get title;
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AutoCompleteRuleCopyWith<AutoCompleteRule> get copyWith =>
+      _$AutoCompleteRuleCopyWithImpl<AutoCompleteRule>(
+          this as AutoCompleteRule, _$identity);
+
+  /// Serializes this AutoCompleteRule to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AutoCompleteRule &&
+            (identical(other.title, title) || other.title == title));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, title);
+
+  @override
+  String toString() {
+    return 'AutoCompleteRule(title: $title)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $AutoCompleteRuleCopyWith<$Res> {
+  factory $AutoCompleteRuleCopyWith(
+          AutoCompleteRule value, $Res Function(AutoCompleteRule) _then) =
+      _$AutoCompleteRuleCopyWithImpl;
+  @useResult
+  $Res call({String? title});
+}
+
+/// @nodoc
+class _$AutoCompleteRuleCopyWithImpl<$Res>
+    implements $AutoCompleteRuleCopyWith<$Res> {
+  _$AutoCompleteRuleCopyWithImpl(this._self, this._then);
+
+  final AutoCompleteRule _self;
+  final $Res Function(AutoCompleteRule) _then;
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? title = freezed,
+  }) {
+    return _then(_self.copyWith(
+      title: freezed == title
+          ? _self.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [AutoCompleteRule].
+extension AutoCompleteRulePatterns on AutoCompleteRule {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        health,
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        workout,
-    required TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)
-        measurable,
-    required TResult Function(String habitId, String? title) habit,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) and,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) or,
-    required TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)
-        multiple,
-  }) =>
-      throw _privateConstructorUsedError;
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(AutoCompleteRuleHealth value)? health,
+    TResult Function(AutoCompleteRuleWorkout value)? workout,
+    TResult Function(AutoCompleteRuleMeasurable value)? measurable,
+    TResult Function(AutoCompleteRuleHabit value)? habit,
+    TResult Function(AutoCompleteRuleAnd value)? and,
+    TResult Function(AutoCompleteRuleOr value)? or,
+    TResult Function(AutoCompleteRuleMultiple value)? multiple,
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case AutoCompleteRuleHealth() when health != null:
+        return health(_that);
+      case AutoCompleteRuleWorkout() when workout != null:
+        return workout(_that);
+      case AutoCompleteRuleMeasurable() when measurable != null:
+        return measurable(_that);
+      case AutoCompleteRuleHabit() when habit != null:
+        return habit(_that);
+      case AutoCompleteRuleAnd() when and != null:
+        return and(_that);
+      case AutoCompleteRuleOr() when or != null:
+        return or(_that);
+      case AutoCompleteRuleMultiple() when multiple != null:
+        return multiple(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult? Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult? Function(String habitId, String? title)? habit,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult? Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-  }) =>
-      throw _privateConstructorUsedError;
+  TResult map<TResult extends Object?>({
+    required TResult Function(AutoCompleteRuleHealth value) health,
+    required TResult Function(AutoCompleteRuleWorkout value) workout,
+    required TResult Function(AutoCompleteRuleMeasurable value) measurable,
+    required TResult Function(AutoCompleteRuleHabit value) habit,
+    required TResult Function(AutoCompleteRuleAnd value) and,
+    required TResult Function(AutoCompleteRuleOr value) or,
+    required TResult Function(AutoCompleteRuleMultiple value) multiple,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case AutoCompleteRuleHealth():
+        return health(_that);
+      case AutoCompleteRuleWorkout():
+        return workout(_that);
+      case AutoCompleteRuleMeasurable():
+        return measurable(_that);
+      case AutoCompleteRuleHabit():
+        return habit(_that);
+      case AutoCompleteRuleAnd():
+        return and(_that);
+      case AutoCompleteRuleOr():
+        return or(_that);
+      case AutoCompleteRuleMultiple():
+        return multiple(_that);
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(AutoCompleteRuleHealth value)? health,
+    TResult? Function(AutoCompleteRuleWorkout value)? workout,
+    TResult? Function(AutoCompleteRuleMeasurable value)? measurable,
+    TResult? Function(AutoCompleteRuleHabit value)? habit,
+    TResult? Function(AutoCompleteRuleAnd value)? and,
+    TResult? Function(AutoCompleteRuleOr value)? or,
+    TResult? Function(AutoCompleteRuleMultiple value)? multiple,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case AutoCompleteRuleHealth() when health != null:
+        return health(_that);
+      case AutoCompleteRuleWorkout() when workout != null:
+        return workout(_that);
+      case AutoCompleteRuleMeasurable() when measurable != null:
+        return measurable(_that);
+      case AutoCompleteRuleHabit() when habit != null:
+        return habit(_that);
+      case AutoCompleteRuleAnd() when and != null:
+        return and(_that);
+      case AutoCompleteRuleOr() when or != null:
+        return or(_that);
+      case AutoCompleteRuleMultiple() when multiple != null:
+        return multiple(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(
@@ -772,159 +815,154 @@ mixin _$AutoCompleteRule {
             List<AutoCompleteRule> rules, int successes, String? title)?
         multiple,
     required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AutoCompleteRuleHealth value) health,
-    required TResult Function(AutoCompleteRuleWorkout value) workout,
-    required TResult Function(AutoCompleteRuleMeasurable value) measurable,
-    required TResult Function(AutoCompleteRuleHabit value) habit,
-    required TResult Function(AutoCompleteRuleAnd value) and,
-    required TResult Function(AutoCompleteRuleOr value) or,
-    required TResult Function(AutoCompleteRuleMultiple value) multiple,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AutoCompleteRuleHealth value)? health,
-    TResult? Function(AutoCompleteRuleWorkout value)? workout,
-    TResult? Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult? Function(AutoCompleteRuleHabit value)? habit,
-    TResult? Function(AutoCompleteRuleAnd value)? and,
-    TResult? Function(AutoCompleteRuleOr value)? or,
-    TResult? Function(AutoCompleteRuleMultiple value)? multiple,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AutoCompleteRuleHealth value)? health,
-    TResult Function(AutoCompleteRuleWorkout value)? workout,
-    TResult Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult Function(AutoCompleteRuleHabit value)? habit,
-    TResult Function(AutoCompleteRuleAnd value)? and,
-    TResult Function(AutoCompleteRuleOr value)? or,
-    TResult Function(AutoCompleteRuleMultiple value)? multiple,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-
-  /// Serializes this AutoCompleteRule to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $AutoCompleteRuleCopyWith<AutoCompleteRule> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AutoCompleteRuleCopyWith<$Res> {
-  factory $AutoCompleteRuleCopyWith(
-          AutoCompleteRule value, $Res Function(AutoCompleteRule) then) =
-      _$AutoCompleteRuleCopyWithImpl<$Res, AutoCompleteRule>;
-  @useResult
-  $Res call({String? title});
-}
-
-/// @nodoc
-class _$AutoCompleteRuleCopyWithImpl<$Res, $Val extends AutoCompleteRule>
-    implements $AutoCompleteRuleCopyWith<$Res> {
-  _$AutoCompleteRuleCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? title = freezed,
   }) {
-    return _then(_value.copyWith(
-      title: freezed == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+    final _that = this;
+    switch (_that) {
+      case AutoCompleteRuleHealth() when health != null:
+        return health(
+            _that.dataType, _that.minimum, _that.maximum, _that.title);
+      case AutoCompleteRuleWorkout() when workout != null:
+        return workout(
+            _that.dataType, _that.minimum, _that.maximum, _that.title);
+      case AutoCompleteRuleMeasurable() when measurable != null:
+        return measurable(
+            _that.dataTypeId, _that.minimum, _that.maximum, _that.title);
+      case AutoCompleteRuleHabit() when habit != null:
+        return habit(_that.habitId, _that.title);
+      case AutoCompleteRuleAnd() when and != null:
+        return and(_that.rules, _that.title);
+      case AutoCompleteRuleOr() when or != null:
+        return or(_that.rules, _that.title);
+      case AutoCompleteRuleMultiple() when multiple != null:
+        return multiple(_that.rules, _that.successes, _that.title);
+      case _:
+        return orElse();
+    }
   }
-}
 
-/// @nodoc
-abstract class _$$AutoCompleteRuleHealthImplCopyWith<$Res>
-    implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleHealthImplCopyWith(
-          _$AutoCompleteRuleHealthImpl value,
-          $Res Function(_$AutoCompleteRuleHealthImpl) then) =
-      __$$AutoCompleteRuleHealthImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({String dataType, num? minimum, num? maximum, String? title});
-}
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
 
-/// @nodoc
-class __$$AutoCompleteRuleHealthImplCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleHealthImpl>
-    implements _$$AutoCompleteRuleHealthImplCopyWith<$Res> {
-  __$$AutoCompleteRuleHealthImplCopyWithImpl(
-      _$AutoCompleteRuleHealthImpl _value,
-      $Res Function(_$AutoCompleteRuleHealthImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? dataType = null,
-    Object? minimum = freezed,
-    Object? maximum = freezed,
-    Object? title = freezed,
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(
+            String dataType, num? minimum, num? maximum, String? title)
+        health,
+    required TResult Function(
+            String dataType, num? minimum, num? maximum, String? title)
+        workout,
+    required TResult Function(
+            String dataTypeId, num? minimum, num? maximum, String? title)
+        measurable,
+    required TResult Function(String habitId, String? title) habit,
+    required TResult Function(List<AutoCompleteRule> rules, String? title) and,
+    required TResult Function(List<AutoCompleteRule> rules, String? title) or,
+    required TResult Function(
+            List<AutoCompleteRule> rules, int successes, String? title)
+        multiple,
   }) {
-    return _then(_$AutoCompleteRuleHealthImpl(
-      dataType: null == dataType
-          ? _value.dataType
-          : dataType // ignore: cast_nullable_to_non_nullable
-              as String,
-      minimum: freezed == minimum
-          ? _value.minimum
-          : minimum // ignore: cast_nullable_to_non_nullable
-              as num?,
-      maximum: freezed == maximum
-          ? _value.maximum
-          : maximum // ignore: cast_nullable_to_non_nullable
-              as num?,
-      title: freezed == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
+    final _that = this;
+    switch (_that) {
+      case AutoCompleteRuleHealth():
+        return health(
+            _that.dataType, _that.minimum, _that.maximum, _that.title);
+      case AutoCompleteRuleWorkout():
+        return workout(
+            _that.dataType, _that.minimum, _that.maximum, _that.title);
+      case AutoCompleteRuleMeasurable():
+        return measurable(
+            _that.dataTypeId, _that.minimum, _that.maximum, _that.title);
+      case AutoCompleteRuleHabit():
+        return habit(_that.habitId, _that.title);
+      case AutoCompleteRuleAnd():
+        return and(_that.rules, _that.title);
+      case AutoCompleteRuleOr():
+        return or(_that.rules, _that.title);
+      case AutoCompleteRuleMultiple():
+        return multiple(_that.rules, _that.successes, _that.title);
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(
+            String dataType, num? minimum, num? maximum, String? title)?
+        health,
+    TResult? Function(
+            String dataType, num? minimum, num? maximum, String? title)?
+        workout,
+    TResult? Function(
+            String dataTypeId, num? minimum, num? maximum, String? title)?
+        measurable,
+    TResult? Function(String habitId, String? title)? habit,
+    TResult? Function(List<AutoCompleteRule> rules, String? title)? and,
+    TResult? Function(List<AutoCompleteRule> rules, String? title)? or,
+    TResult? Function(
+            List<AutoCompleteRule> rules, int successes, String? title)?
+        multiple,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case AutoCompleteRuleHealth() when health != null:
+        return health(
+            _that.dataType, _that.minimum, _that.maximum, _that.title);
+      case AutoCompleteRuleWorkout() when workout != null:
+        return workout(
+            _that.dataType, _that.minimum, _that.maximum, _that.title);
+      case AutoCompleteRuleMeasurable() when measurable != null:
+        return measurable(
+            _that.dataTypeId, _that.minimum, _that.maximum, _that.title);
+      case AutoCompleteRuleHabit() when habit != null:
+        return habit(_that.habitId, _that.title);
+      case AutoCompleteRuleAnd() when and != null:
+        return and(_that.rules, _that.title);
+      case AutoCompleteRuleOr() when or != null:
+        return or(_that.rules, _that.title);
+      case AutoCompleteRuleMultiple() when multiple != null:
+        return multiple(_that.rules, _that.successes, _that.title);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleHealthImpl implements AutoCompleteRuleHealth {
-  const _$AutoCompleteRuleHealthImpl(
+class AutoCompleteRuleHealth implements AutoCompleteRule {
+  const AutoCompleteRuleHealth(
       {required this.dataType,
       this.minimum,
       this.maximum,
       this.title,
       final String? $type})
       : $type = $type ?? 'health';
+  factory AutoCompleteRuleHealth.fromJson(Map<String, dynamic> json) =>
+      _$AutoCompleteRuleHealthFromJson(json);
 
-  factory _$AutoCompleteRuleHealthImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleHealthImplFromJson(json);
-
-  @override
   final String dataType;
-  @override
   final num? minimum;
-  @override
   final num? maximum;
   @override
   final String? title;
@@ -932,16 +970,27 @@ class _$AutoCompleteRuleHealthImpl implements AutoCompleteRuleHealth {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AutoCompleteRule.health(dataType: $dataType, minimum: $minimum, maximum: $maximum, title: $title)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AutoCompleteRuleHealthCopyWith<AutoCompleteRuleHealth> get copyWith =>
+      _$AutoCompleteRuleHealthCopyWithImpl<AutoCompleteRuleHealth>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AutoCompleteRuleHealthToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleHealthImpl &&
+            other is AutoCompleteRuleHealth &&
             (identical(other.dataType, dataType) ||
                 other.dataType == dataType) &&
             (identical(other.minimum, minimum) || other.minimum == minimum) &&
@@ -954,209 +1003,56 @@ class _$AutoCompleteRuleHealthImpl implements AutoCompleteRuleHealth {
   int get hashCode =>
       Object.hash(runtimeType, dataType, minimum, maximum, title);
 
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleHealthImplCopyWith<_$AutoCompleteRuleHealthImpl>
-      get copyWith => __$$AutoCompleteRuleHealthImplCopyWithImpl<
-          _$AutoCompleteRuleHealthImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        health,
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        workout,
-    required TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)
-        measurable,
-    required TResult Function(String habitId, String? title) habit,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) and,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) or,
-    required TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)
-        multiple,
-  }) {
-    return health(dataType, minimum, maximum, title);
+  String toString() {
+    return 'AutoCompleteRule.health(dataType: $dataType, minimum: $minimum, maximum: $maximum, title: $title)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult? Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult? Function(String habitId, String? title)? habit,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult? Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-  }) {
-    return health?.call(dataType, minimum, maximum, title);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult Function(String habitId, String? title)? habit,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-    required TResult orElse(),
-  }) {
-    if (health != null) {
-      return health(dataType, minimum, maximum, title);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AutoCompleteRuleHealth value) health,
-    required TResult Function(AutoCompleteRuleWorkout value) workout,
-    required TResult Function(AutoCompleteRuleMeasurable value) measurable,
-    required TResult Function(AutoCompleteRuleHabit value) habit,
-    required TResult Function(AutoCompleteRuleAnd value) and,
-    required TResult Function(AutoCompleteRuleOr value) or,
-    required TResult Function(AutoCompleteRuleMultiple value) multiple,
-  }) {
-    return health(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AutoCompleteRuleHealth value)? health,
-    TResult? Function(AutoCompleteRuleWorkout value)? workout,
-    TResult? Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult? Function(AutoCompleteRuleHabit value)? habit,
-    TResult? Function(AutoCompleteRuleAnd value)? and,
-    TResult? Function(AutoCompleteRuleOr value)? or,
-    TResult? Function(AutoCompleteRuleMultiple value)? multiple,
-  }) {
-    return health?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AutoCompleteRuleHealth value)? health,
-    TResult Function(AutoCompleteRuleWorkout value)? workout,
-    TResult Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult Function(AutoCompleteRuleHabit value)? habit,
-    TResult Function(AutoCompleteRuleAnd value)? and,
-    TResult Function(AutoCompleteRuleOr value)? or,
-    TResult Function(AutoCompleteRuleMultiple value)? multiple,
-    required TResult orElse(),
-  }) {
-    if (health != null) {
-      return health(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleHealthImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class AutoCompleteRuleHealth implements AutoCompleteRule {
-  const factory AutoCompleteRuleHealth(
-      {required final String dataType,
-      final num? minimum,
-      final num? maximum,
-      final String? title}) = _$AutoCompleteRuleHealthImpl;
-
-  factory AutoCompleteRuleHealth.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleHealthImpl.fromJson;
-
-  String get dataType;
-  num? get minimum;
-  num? get maximum;
-  @override
-  String? get title;
-
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AutoCompleteRuleHealthImplCopyWith<_$AutoCompleteRuleHealthImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleWorkoutImplCopyWith<$Res>
+abstract mixin class $AutoCompleteRuleHealthCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleWorkoutImplCopyWith(
-          _$AutoCompleteRuleWorkoutImpl value,
-          $Res Function(_$AutoCompleteRuleWorkoutImpl) then) =
-      __$$AutoCompleteRuleWorkoutImplCopyWithImpl<$Res>;
+  factory $AutoCompleteRuleHealthCopyWith(AutoCompleteRuleHealth value,
+          $Res Function(AutoCompleteRuleHealth) _then) =
+      _$AutoCompleteRuleHealthCopyWithImpl;
   @override
   @useResult
   $Res call({String dataType, num? minimum, num? maximum, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleWorkoutImplCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleWorkoutImpl>
-    implements _$$AutoCompleteRuleWorkoutImplCopyWith<$Res> {
-  __$$AutoCompleteRuleWorkoutImplCopyWithImpl(
-      _$AutoCompleteRuleWorkoutImpl _value,
-      $Res Function(_$AutoCompleteRuleWorkoutImpl) _then)
-      : super(_value, _then);
+class _$AutoCompleteRuleHealthCopyWithImpl<$Res>
+    implements $AutoCompleteRuleHealthCopyWith<$Res> {
+  _$AutoCompleteRuleHealthCopyWithImpl(this._self, this._then);
+
+  final AutoCompleteRuleHealth _self;
+  final $Res Function(AutoCompleteRuleHealth) _then;
 
   /// Create a copy of AutoCompleteRule
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? dataType = null,
     Object? minimum = freezed,
     Object? maximum = freezed,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleWorkoutImpl(
+    return _then(AutoCompleteRuleHealth(
       dataType: null == dataType
-          ? _value.dataType
+          ? _self.dataType
           : dataType // ignore: cast_nullable_to_non_nullable
               as String,
       minimum: freezed == minimum
-          ? _value.minimum
+          ? _self.minimum
           : minimum // ignore: cast_nullable_to_non_nullable
               as num?,
       maximum: freezed == maximum
-          ? _value.maximum
+          ? _self.maximum
           : maximum // ignore: cast_nullable_to_non_nullable
               as num?,
       title: freezed == title
-          ? _value.title
+          ? _self.title
           : title // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
@@ -1165,23 +1061,19 @@ class __$$AutoCompleteRuleWorkoutImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleWorkoutImpl implements AutoCompleteRuleWorkout {
-  const _$AutoCompleteRuleWorkoutImpl(
+class AutoCompleteRuleWorkout implements AutoCompleteRule {
+  const AutoCompleteRuleWorkout(
       {required this.dataType,
       this.minimum,
       this.maximum,
       this.title,
       final String? $type})
       : $type = $type ?? 'workout';
+  factory AutoCompleteRuleWorkout.fromJson(Map<String, dynamic> json) =>
+      _$AutoCompleteRuleWorkoutFromJson(json);
 
-  factory _$AutoCompleteRuleWorkoutImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleWorkoutImplFromJson(json);
-
-  @override
   final String dataType;
-  @override
   final num? minimum;
-  @override
   final num? maximum;
   @override
   final String? title;
@@ -1189,16 +1081,27 @@ class _$AutoCompleteRuleWorkoutImpl implements AutoCompleteRuleWorkout {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AutoCompleteRule.workout(dataType: $dataType, minimum: $minimum, maximum: $maximum, title: $title)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AutoCompleteRuleWorkoutCopyWith<AutoCompleteRuleWorkout> get copyWith =>
+      _$AutoCompleteRuleWorkoutCopyWithImpl<AutoCompleteRuleWorkout>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AutoCompleteRuleWorkoutToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleWorkoutImpl &&
+            other is AutoCompleteRuleWorkout &&
             (identical(other.dataType, dataType) ||
                 other.dataType == dataType) &&
             (identical(other.minimum, minimum) || other.minimum == minimum) &&
@@ -1211,210 +1114,56 @@ class _$AutoCompleteRuleWorkoutImpl implements AutoCompleteRuleWorkout {
   int get hashCode =>
       Object.hash(runtimeType, dataType, minimum, maximum, title);
 
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleWorkoutImplCopyWith<_$AutoCompleteRuleWorkoutImpl>
-      get copyWith => __$$AutoCompleteRuleWorkoutImplCopyWithImpl<
-          _$AutoCompleteRuleWorkoutImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        health,
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        workout,
-    required TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)
-        measurable,
-    required TResult Function(String habitId, String? title) habit,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) and,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) or,
-    required TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)
-        multiple,
-  }) {
-    return workout(dataType, minimum, maximum, title);
+  String toString() {
+    return 'AutoCompleteRule.workout(dataType: $dataType, minimum: $minimum, maximum: $maximum, title: $title)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult? Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult? Function(String habitId, String? title)? habit,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult? Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-  }) {
-    return workout?.call(dataType, minimum, maximum, title);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult Function(String habitId, String? title)? habit,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-    required TResult orElse(),
-  }) {
-    if (workout != null) {
-      return workout(dataType, minimum, maximum, title);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AutoCompleteRuleHealth value) health,
-    required TResult Function(AutoCompleteRuleWorkout value) workout,
-    required TResult Function(AutoCompleteRuleMeasurable value) measurable,
-    required TResult Function(AutoCompleteRuleHabit value) habit,
-    required TResult Function(AutoCompleteRuleAnd value) and,
-    required TResult Function(AutoCompleteRuleOr value) or,
-    required TResult Function(AutoCompleteRuleMultiple value) multiple,
-  }) {
-    return workout(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AutoCompleteRuleHealth value)? health,
-    TResult? Function(AutoCompleteRuleWorkout value)? workout,
-    TResult? Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult? Function(AutoCompleteRuleHabit value)? habit,
-    TResult? Function(AutoCompleteRuleAnd value)? and,
-    TResult? Function(AutoCompleteRuleOr value)? or,
-    TResult? Function(AutoCompleteRuleMultiple value)? multiple,
-  }) {
-    return workout?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AutoCompleteRuleHealth value)? health,
-    TResult Function(AutoCompleteRuleWorkout value)? workout,
-    TResult Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult Function(AutoCompleteRuleHabit value)? habit,
-    TResult Function(AutoCompleteRuleAnd value)? and,
-    TResult Function(AutoCompleteRuleOr value)? or,
-    TResult Function(AutoCompleteRuleMultiple value)? multiple,
-    required TResult orElse(),
-  }) {
-    if (workout != null) {
-      return workout(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleWorkoutImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class AutoCompleteRuleWorkout implements AutoCompleteRule {
-  const factory AutoCompleteRuleWorkout(
-      {required final String dataType,
-      final num? minimum,
-      final num? maximum,
-      final String? title}) = _$AutoCompleteRuleWorkoutImpl;
-
-  factory AutoCompleteRuleWorkout.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleWorkoutImpl.fromJson;
-
-  String get dataType;
-  num? get minimum;
-  num? get maximum;
-  @override
-  String? get title;
-
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AutoCompleteRuleWorkoutImplCopyWith<_$AutoCompleteRuleWorkoutImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleMeasurableImplCopyWith<$Res>
+abstract mixin class $AutoCompleteRuleWorkoutCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleMeasurableImplCopyWith(
-          _$AutoCompleteRuleMeasurableImpl value,
-          $Res Function(_$AutoCompleteRuleMeasurableImpl) then) =
-      __$$AutoCompleteRuleMeasurableImplCopyWithImpl<$Res>;
+  factory $AutoCompleteRuleWorkoutCopyWith(AutoCompleteRuleWorkout value,
+          $Res Function(AutoCompleteRuleWorkout) _then) =
+      _$AutoCompleteRuleWorkoutCopyWithImpl;
   @override
   @useResult
-  $Res call({String dataTypeId, num? minimum, num? maximum, String? title});
+  $Res call({String dataType, num? minimum, num? maximum, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleMeasurableImplCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res,
-        _$AutoCompleteRuleMeasurableImpl>
-    implements _$$AutoCompleteRuleMeasurableImplCopyWith<$Res> {
-  __$$AutoCompleteRuleMeasurableImplCopyWithImpl(
-      _$AutoCompleteRuleMeasurableImpl _value,
-      $Res Function(_$AutoCompleteRuleMeasurableImpl) _then)
-      : super(_value, _then);
+class _$AutoCompleteRuleWorkoutCopyWithImpl<$Res>
+    implements $AutoCompleteRuleWorkoutCopyWith<$Res> {
+  _$AutoCompleteRuleWorkoutCopyWithImpl(this._self, this._then);
+
+  final AutoCompleteRuleWorkout _self;
+  final $Res Function(AutoCompleteRuleWorkout) _then;
 
   /// Create a copy of AutoCompleteRule
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
-    Object? dataTypeId = null,
+    Object? dataType = null,
     Object? minimum = freezed,
     Object? maximum = freezed,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleMeasurableImpl(
-      dataTypeId: null == dataTypeId
-          ? _value.dataTypeId
-          : dataTypeId // ignore: cast_nullable_to_non_nullable
+    return _then(AutoCompleteRuleWorkout(
+      dataType: null == dataType
+          ? _self.dataType
+          : dataType // ignore: cast_nullable_to_non_nullable
               as String,
       minimum: freezed == minimum
-          ? _value.minimum
+          ? _self.minimum
           : minimum // ignore: cast_nullable_to_non_nullable
               as num?,
       maximum: freezed == maximum
-          ? _value.maximum
+          ? _self.maximum
           : maximum // ignore: cast_nullable_to_non_nullable
               as num?,
       title: freezed == title
-          ? _value.title
+          ? _self.title
           : title // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
@@ -1423,24 +1172,19 @@ class __$$AutoCompleteRuleMeasurableImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleMeasurableImpl implements AutoCompleteRuleMeasurable {
-  const _$AutoCompleteRuleMeasurableImpl(
+class AutoCompleteRuleMeasurable implements AutoCompleteRule {
+  const AutoCompleteRuleMeasurable(
       {required this.dataTypeId,
       this.minimum,
       this.maximum,
       this.title,
       final String? $type})
       : $type = $type ?? 'measurable';
+  factory AutoCompleteRuleMeasurable.fromJson(Map<String, dynamic> json) =>
+      _$AutoCompleteRuleMeasurableFromJson(json);
 
-  factory _$AutoCompleteRuleMeasurableImpl.fromJson(
-          Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleMeasurableImplFromJson(json);
-
-  @override
   final String dataTypeId;
-  @override
   final num? minimum;
-  @override
   final num? maximum;
   @override
   final String? title;
@@ -1448,16 +1192,28 @@ class _$AutoCompleteRuleMeasurableImpl implements AutoCompleteRuleMeasurable {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AutoCompleteRule.measurable(dataTypeId: $dataTypeId, minimum: $minimum, maximum: $maximum, title: $title)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AutoCompleteRuleMeasurableCopyWith<AutoCompleteRuleMeasurable>
+      get copyWith =>
+          _$AutoCompleteRuleMeasurableCopyWithImpl<AutoCompleteRuleMeasurable>(
+              this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AutoCompleteRuleMeasurableToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleMeasurableImpl &&
+            other is AutoCompleteRuleMeasurable &&
             (identical(other.dataTypeId, dataTypeId) ||
                 other.dataTypeId == dataTypeId) &&
             (identical(other.minimum, minimum) || other.minimum == minimum) &&
@@ -1470,198 +1226,56 @@ class _$AutoCompleteRuleMeasurableImpl implements AutoCompleteRuleMeasurable {
   int get hashCode =>
       Object.hash(runtimeType, dataTypeId, minimum, maximum, title);
 
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleMeasurableImplCopyWith<_$AutoCompleteRuleMeasurableImpl>
-      get copyWith => __$$AutoCompleteRuleMeasurableImplCopyWithImpl<
-          _$AutoCompleteRuleMeasurableImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        health,
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        workout,
-    required TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)
-        measurable,
-    required TResult Function(String habitId, String? title) habit,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) and,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) or,
-    required TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)
-        multiple,
-  }) {
-    return measurable(dataTypeId, minimum, maximum, title);
+  String toString() {
+    return 'AutoCompleteRule.measurable(dataTypeId: $dataTypeId, minimum: $minimum, maximum: $maximum, title: $title)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult? Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult? Function(String habitId, String? title)? habit,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult? Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-  }) {
-    return measurable?.call(dataTypeId, minimum, maximum, title);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult Function(String habitId, String? title)? habit,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-    required TResult orElse(),
-  }) {
-    if (measurable != null) {
-      return measurable(dataTypeId, minimum, maximum, title);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AutoCompleteRuleHealth value) health,
-    required TResult Function(AutoCompleteRuleWorkout value) workout,
-    required TResult Function(AutoCompleteRuleMeasurable value) measurable,
-    required TResult Function(AutoCompleteRuleHabit value) habit,
-    required TResult Function(AutoCompleteRuleAnd value) and,
-    required TResult Function(AutoCompleteRuleOr value) or,
-    required TResult Function(AutoCompleteRuleMultiple value) multiple,
-  }) {
-    return measurable(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AutoCompleteRuleHealth value)? health,
-    TResult? Function(AutoCompleteRuleWorkout value)? workout,
-    TResult? Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult? Function(AutoCompleteRuleHabit value)? habit,
-    TResult? Function(AutoCompleteRuleAnd value)? and,
-    TResult? Function(AutoCompleteRuleOr value)? or,
-    TResult? Function(AutoCompleteRuleMultiple value)? multiple,
-  }) {
-    return measurable?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AutoCompleteRuleHealth value)? health,
-    TResult Function(AutoCompleteRuleWorkout value)? workout,
-    TResult Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult Function(AutoCompleteRuleHabit value)? habit,
-    TResult Function(AutoCompleteRuleAnd value)? and,
-    TResult Function(AutoCompleteRuleOr value)? or,
-    TResult Function(AutoCompleteRuleMultiple value)? multiple,
-    required TResult orElse(),
-  }) {
-    if (measurable != null) {
-      return measurable(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleMeasurableImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class AutoCompleteRuleMeasurable implements AutoCompleteRule {
-  const factory AutoCompleteRuleMeasurable(
-      {required final String dataTypeId,
-      final num? minimum,
-      final num? maximum,
-      final String? title}) = _$AutoCompleteRuleMeasurableImpl;
-
-  factory AutoCompleteRuleMeasurable.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleMeasurableImpl.fromJson;
-
-  String get dataTypeId;
-  num? get minimum;
-  num? get maximum;
-  @override
-  String? get title;
-
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AutoCompleteRuleMeasurableImplCopyWith<_$AutoCompleteRuleMeasurableImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleHabitImplCopyWith<$Res>
+abstract mixin class $AutoCompleteRuleMeasurableCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleHabitImplCopyWith(
-          _$AutoCompleteRuleHabitImpl value,
-          $Res Function(_$AutoCompleteRuleHabitImpl) then) =
-      __$$AutoCompleteRuleHabitImplCopyWithImpl<$Res>;
+  factory $AutoCompleteRuleMeasurableCopyWith(AutoCompleteRuleMeasurable value,
+          $Res Function(AutoCompleteRuleMeasurable) _then) =
+      _$AutoCompleteRuleMeasurableCopyWithImpl;
   @override
   @useResult
-  $Res call({String habitId, String? title});
+  $Res call({String dataTypeId, num? minimum, num? maximum, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleHabitImplCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleHabitImpl>
-    implements _$$AutoCompleteRuleHabitImplCopyWith<$Res> {
-  __$$AutoCompleteRuleHabitImplCopyWithImpl(_$AutoCompleteRuleHabitImpl _value,
-      $Res Function(_$AutoCompleteRuleHabitImpl) _then)
-      : super(_value, _then);
+class _$AutoCompleteRuleMeasurableCopyWithImpl<$Res>
+    implements $AutoCompleteRuleMeasurableCopyWith<$Res> {
+  _$AutoCompleteRuleMeasurableCopyWithImpl(this._self, this._then);
+
+  final AutoCompleteRuleMeasurable _self;
+  final $Res Function(AutoCompleteRuleMeasurable) _then;
 
   /// Create a copy of AutoCompleteRule
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
-    Object? habitId = null,
+    Object? dataTypeId = null,
+    Object? minimum = freezed,
+    Object? maximum = freezed,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleHabitImpl(
-      habitId: null == habitId
-          ? _value.habitId
-          : habitId // ignore: cast_nullable_to_non_nullable
+    return _then(AutoCompleteRuleMeasurable(
+      dataTypeId: null == dataTypeId
+          ? _self.dataTypeId
+          : dataTypeId // ignore: cast_nullable_to_non_nullable
               as String,
+      minimum: freezed == minimum
+          ? _self.minimum
+          : minimum // ignore: cast_nullable_to_non_nullable
+              as num?,
+      maximum: freezed == maximum
+          ? _self.maximum
+          : maximum // ignore: cast_nullable_to_non_nullable
+              as num?,
       title: freezed == title
-          ? _value.title
+          ? _self.title
           : title // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
@@ -1670,15 +1284,13 @@ class __$$AutoCompleteRuleHabitImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleHabitImpl implements AutoCompleteRuleHabit {
-  const _$AutoCompleteRuleHabitImpl(
+class AutoCompleteRuleHabit implements AutoCompleteRule {
+  const AutoCompleteRuleHabit(
       {required this.habitId, this.title, final String? $type})
       : $type = $type ?? 'habit';
+  factory AutoCompleteRuleHabit.fromJson(Map<String, dynamic> json) =>
+      _$AutoCompleteRuleHabitFromJson(json);
 
-  factory _$AutoCompleteRuleHabitImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleHabitImplFromJson(json);
-
-  @override
   final String habitId;
   @override
   final String? title;
@@ -1686,16 +1298,27 @@ class _$AutoCompleteRuleHabitImpl implements AutoCompleteRuleHabit {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AutoCompleteRule.habit(habitId: $habitId, title: $title)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AutoCompleteRuleHabitCopyWith<AutoCompleteRuleHabit> get copyWith =>
+      _$AutoCompleteRuleHabitCopyWithImpl<AutoCompleteRuleHabit>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AutoCompleteRuleHabitToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleHabitImpl &&
+            other is AutoCompleteRuleHabit &&
             (identical(other.habitId, habitId) || other.habitId == habitId) &&
             (identical(other.title, title) || other.title == title));
   }
@@ -1704,193 +1327,46 @@ class _$AutoCompleteRuleHabitImpl implements AutoCompleteRuleHabit {
   @override
   int get hashCode => Object.hash(runtimeType, habitId, title);
 
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleHabitImplCopyWith<_$AutoCompleteRuleHabitImpl>
-      get copyWith => __$$AutoCompleteRuleHabitImplCopyWithImpl<
-          _$AutoCompleteRuleHabitImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        health,
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        workout,
-    required TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)
-        measurable,
-    required TResult Function(String habitId, String? title) habit,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) and,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) or,
-    required TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)
-        multiple,
-  }) {
-    return habit(habitId, title);
+  String toString() {
+    return 'AutoCompleteRule.habit(habitId: $habitId, title: $title)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult? Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult? Function(String habitId, String? title)? habit,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult? Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-  }) {
-    return habit?.call(habitId, title);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult Function(String habitId, String? title)? habit,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-    required TResult orElse(),
-  }) {
-    if (habit != null) {
-      return habit(habitId, title);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AutoCompleteRuleHealth value) health,
-    required TResult Function(AutoCompleteRuleWorkout value) workout,
-    required TResult Function(AutoCompleteRuleMeasurable value) measurable,
-    required TResult Function(AutoCompleteRuleHabit value) habit,
-    required TResult Function(AutoCompleteRuleAnd value) and,
-    required TResult Function(AutoCompleteRuleOr value) or,
-    required TResult Function(AutoCompleteRuleMultiple value) multiple,
-  }) {
-    return habit(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AutoCompleteRuleHealth value)? health,
-    TResult? Function(AutoCompleteRuleWorkout value)? workout,
-    TResult? Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult? Function(AutoCompleteRuleHabit value)? habit,
-    TResult? Function(AutoCompleteRuleAnd value)? and,
-    TResult? Function(AutoCompleteRuleOr value)? or,
-    TResult? Function(AutoCompleteRuleMultiple value)? multiple,
-  }) {
-    return habit?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AutoCompleteRuleHealth value)? health,
-    TResult Function(AutoCompleteRuleWorkout value)? workout,
-    TResult Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult Function(AutoCompleteRuleHabit value)? habit,
-    TResult Function(AutoCompleteRuleAnd value)? and,
-    TResult Function(AutoCompleteRuleOr value)? or,
-    TResult Function(AutoCompleteRuleMultiple value)? multiple,
-    required TResult orElse(),
-  }) {
-    if (habit != null) {
-      return habit(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleHabitImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class AutoCompleteRuleHabit implements AutoCompleteRule {
-  const factory AutoCompleteRuleHabit(
-      {required final String habitId,
-      final String? title}) = _$AutoCompleteRuleHabitImpl;
-
-  factory AutoCompleteRuleHabit.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleHabitImpl.fromJson;
-
-  String get habitId;
-  @override
-  String? get title;
-
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AutoCompleteRuleHabitImplCopyWith<_$AutoCompleteRuleHabitImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleAndImplCopyWith<$Res>
+abstract mixin class $AutoCompleteRuleHabitCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleAndImplCopyWith(_$AutoCompleteRuleAndImpl value,
-          $Res Function(_$AutoCompleteRuleAndImpl) then) =
-      __$$AutoCompleteRuleAndImplCopyWithImpl<$Res>;
+  factory $AutoCompleteRuleHabitCopyWith(AutoCompleteRuleHabit value,
+          $Res Function(AutoCompleteRuleHabit) _then) =
+      _$AutoCompleteRuleHabitCopyWithImpl;
   @override
   @useResult
-  $Res call({List<AutoCompleteRule> rules, String? title});
+  $Res call({String habitId, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleAndImplCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleAndImpl>
-    implements _$$AutoCompleteRuleAndImplCopyWith<$Res> {
-  __$$AutoCompleteRuleAndImplCopyWithImpl(_$AutoCompleteRuleAndImpl _value,
-      $Res Function(_$AutoCompleteRuleAndImpl) _then)
-      : super(_value, _then);
+class _$AutoCompleteRuleHabitCopyWithImpl<$Res>
+    implements $AutoCompleteRuleHabitCopyWith<$Res> {
+  _$AutoCompleteRuleHabitCopyWithImpl(this._self, this._then);
+
+  final AutoCompleteRuleHabit _self;
+  final $Res Function(AutoCompleteRuleHabit) _then;
 
   /// Create a copy of AutoCompleteRule
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
-    Object? rules = null,
+    Object? habitId = null,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleAndImpl(
-      rules: null == rules
-          ? _value._rules
-          : rules // ignore: cast_nullable_to_non_nullable
-              as List<AutoCompleteRule>,
+    return _then(AutoCompleteRuleHabit(
+      habitId: null == habitId
+          ? _self.habitId
+          : habitId // ignore: cast_nullable_to_non_nullable
+              as String,
       title: freezed == title
-          ? _value.title
+          ? _self.title
           : title // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
@@ -1899,19 +1375,17 @@ class __$$AutoCompleteRuleAndImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleAndImpl implements AutoCompleteRuleAnd {
-  const _$AutoCompleteRuleAndImpl(
+class AutoCompleteRuleAnd implements AutoCompleteRule {
+  const AutoCompleteRuleAnd(
       {required final List<AutoCompleteRule> rules,
       this.title,
       final String? $type})
       : _rules = rules,
         $type = $type ?? 'and';
-
-  factory _$AutoCompleteRuleAndImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleAndImplFromJson(json);
+  factory AutoCompleteRuleAnd.fromJson(Map<String, dynamic> json) =>
+      _$AutoCompleteRuleAndFromJson(json);
 
   final List<AutoCompleteRule> _rules;
-  @override
   List<AutoCompleteRule> get rules {
     if (_rules is EqualUnmodifiableListView) return _rules;
     // ignore: implicit_dynamic_type
@@ -1924,16 +1398,26 @@ class _$AutoCompleteRuleAndImpl implements AutoCompleteRuleAnd {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AutoCompleteRule.and(rules: $rules, title: $title)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AutoCompleteRuleAndCopyWith<AutoCompleteRuleAnd> get copyWith =>
+      _$AutoCompleteRuleAndCopyWithImpl<AutoCompleteRuleAnd>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AutoCompleteRuleAndToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleAndImpl &&
+            other is AutoCompleteRuleAnd &&
             const DeepCollectionEquality().equals(other._rules, _rules) &&
             (identical(other.title, title) || other.title == title));
   }
@@ -1943,193 +1427,46 @@ class _$AutoCompleteRuleAndImpl implements AutoCompleteRuleAnd {
   int get hashCode => Object.hash(
       runtimeType, const DeepCollectionEquality().hash(_rules), title);
 
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleAndImplCopyWith<_$AutoCompleteRuleAndImpl> get copyWith =>
-      __$$AutoCompleteRuleAndImplCopyWithImpl<_$AutoCompleteRuleAndImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        health,
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        workout,
-    required TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)
-        measurable,
-    required TResult Function(String habitId, String? title) habit,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) and,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) or,
-    required TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)
-        multiple,
-  }) {
-    return and(rules, title);
+  String toString() {
+    return 'AutoCompleteRule.and(rules: $rules, title: $title)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult? Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult? Function(String habitId, String? title)? habit,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult? Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-  }) {
-    return and?.call(rules, title);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult Function(String habitId, String? title)? habit,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-    required TResult orElse(),
-  }) {
-    if (and != null) {
-      return and(rules, title);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AutoCompleteRuleHealth value) health,
-    required TResult Function(AutoCompleteRuleWorkout value) workout,
-    required TResult Function(AutoCompleteRuleMeasurable value) measurable,
-    required TResult Function(AutoCompleteRuleHabit value) habit,
-    required TResult Function(AutoCompleteRuleAnd value) and,
-    required TResult Function(AutoCompleteRuleOr value) or,
-    required TResult Function(AutoCompleteRuleMultiple value) multiple,
-  }) {
-    return and(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AutoCompleteRuleHealth value)? health,
-    TResult? Function(AutoCompleteRuleWorkout value)? workout,
-    TResult? Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult? Function(AutoCompleteRuleHabit value)? habit,
-    TResult? Function(AutoCompleteRuleAnd value)? and,
-    TResult? Function(AutoCompleteRuleOr value)? or,
-    TResult? Function(AutoCompleteRuleMultiple value)? multiple,
-  }) {
-    return and?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AutoCompleteRuleHealth value)? health,
-    TResult Function(AutoCompleteRuleWorkout value)? workout,
-    TResult Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult Function(AutoCompleteRuleHabit value)? habit,
-    TResult Function(AutoCompleteRuleAnd value)? and,
-    TResult Function(AutoCompleteRuleOr value)? or,
-    TResult Function(AutoCompleteRuleMultiple value)? multiple,
-    required TResult orElse(),
-  }) {
-    if (and != null) {
-      return and(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleAndImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class AutoCompleteRuleAnd implements AutoCompleteRule {
-  const factory AutoCompleteRuleAnd(
-      {required final List<AutoCompleteRule> rules,
-      final String? title}) = _$AutoCompleteRuleAndImpl;
-
-  factory AutoCompleteRuleAnd.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleAndImpl.fromJson;
-
-  List<AutoCompleteRule> get rules;
-  @override
-  String? get title;
-
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AutoCompleteRuleAndImplCopyWith<_$AutoCompleteRuleAndImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleOrImplCopyWith<$Res>
+abstract mixin class $AutoCompleteRuleAndCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleOrImplCopyWith(_$AutoCompleteRuleOrImpl value,
-          $Res Function(_$AutoCompleteRuleOrImpl) then) =
-      __$$AutoCompleteRuleOrImplCopyWithImpl<$Res>;
+  factory $AutoCompleteRuleAndCopyWith(
+          AutoCompleteRuleAnd value, $Res Function(AutoCompleteRuleAnd) _then) =
+      _$AutoCompleteRuleAndCopyWithImpl;
   @override
   @useResult
   $Res call({List<AutoCompleteRule> rules, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleOrImplCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleOrImpl>
-    implements _$$AutoCompleteRuleOrImplCopyWith<$Res> {
-  __$$AutoCompleteRuleOrImplCopyWithImpl(_$AutoCompleteRuleOrImpl _value,
-      $Res Function(_$AutoCompleteRuleOrImpl) _then)
-      : super(_value, _then);
+class _$AutoCompleteRuleAndCopyWithImpl<$Res>
+    implements $AutoCompleteRuleAndCopyWith<$Res> {
+  _$AutoCompleteRuleAndCopyWithImpl(this._self, this._then);
+
+  final AutoCompleteRuleAnd _self;
+  final $Res Function(AutoCompleteRuleAnd) _then;
 
   /// Create a copy of AutoCompleteRule
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? rules = null,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleOrImpl(
+    return _then(AutoCompleteRuleAnd(
       rules: null == rules
-          ? _value._rules
+          ? _self._rules
           : rules // ignore: cast_nullable_to_non_nullable
               as List<AutoCompleteRule>,
       title: freezed == title
-          ? _value.title
+          ? _self.title
           : title // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
@@ -2138,19 +1475,17 @@ class __$$AutoCompleteRuleOrImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleOrImpl implements AutoCompleteRuleOr {
-  const _$AutoCompleteRuleOrImpl(
+class AutoCompleteRuleOr implements AutoCompleteRule {
+  const AutoCompleteRuleOr(
       {required final List<AutoCompleteRule> rules,
       this.title,
       final String? $type})
       : _rules = rules,
         $type = $type ?? 'or';
-
-  factory _$AutoCompleteRuleOrImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleOrImplFromJson(json);
+  factory AutoCompleteRuleOr.fromJson(Map<String, dynamic> json) =>
+      _$AutoCompleteRuleOrFromJson(json);
 
   final List<AutoCompleteRule> _rules;
-  @override
   List<AutoCompleteRule> get rules {
     if (_rules is EqualUnmodifiableListView) return _rules;
     // ignore: implicit_dynamic_type
@@ -2163,16 +1498,26 @@ class _$AutoCompleteRuleOrImpl implements AutoCompleteRuleOr {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AutoCompleteRule.or(rules: $rules, title: $title)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AutoCompleteRuleOrCopyWith<AutoCompleteRuleOr> get copyWith =>
+      _$AutoCompleteRuleOrCopyWithImpl<AutoCompleteRuleOr>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AutoCompleteRuleOrToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleOrImpl &&
+            other is AutoCompleteRuleOr &&
             const DeepCollectionEquality().equals(other._rules, _rules) &&
             (identical(other.title, title) || other.title == title));
   }
@@ -2182,200 +1527,46 @@ class _$AutoCompleteRuleOrImpl implements AutoCompleteRuleOr {
   int get hashCode => Object.hash(
       runtimeType, const DeepCollectionEquality().hash(_rules), title);
 
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleOrImplCopyWith<_$AutoCompleteRuleOrImpl> get copyWith =>
-      __$$AutoCompleteRuleOrImplCopyWithImpl<_$AutoCompleteRuleOrImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        health,
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        workout,
-    required TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)
-        measurable,
-    required TResult Function(String habitId, String? title) habit,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) and,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) or,
-    required TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)
-        multiple,
-  }) {
-    return or(rules, title);
+  String toString() {
+    return 'AutoCompleteRule.or(rules: $rules, title: $title)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult? Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult? Function(String habitId, String? title)? habit,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult? Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-  }) {
-    return or?.call(rules, title);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult Function(String habitId, String? title)? habit,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-    required TResult orElse(),
-  }) {
-    if (or != null) {
-      return or(rules, title);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AutoCompleteRuleHealth value) health,
-    required TResult Function(AutoCompleteRuleWorkout value) workout,
-    required TResult Function(AutoCompleteRuleMeasurable value) measurable,
-    required TResult Function(AutoCompleteRuleHabit value) habit,
-    required TResult Function(AutoCompleteRuleAnd value) and,
-    required TResult Function(AutoCompleteRuleOr value) or,
-    required TResult Function(AutoCompleteRuleMultiple value) multiple,
-  }) {
-    return or(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AutoCompleteRuleHealth value)? health,
-    TResult? Function(AutoCompleteRuleWorkout value)? workout,
-    TResult? Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult? Function(AutoCompleteRuleHabit value)? habit,
-    TResult? Function(AutoCompleteRuleAnd value)? and,
-    TResult? Function(AutoCompleteRuleOr value)? or,
-    TResult? Function(AutoCompleteRuleMultiple value)? multiple,
-  }) {
-    return or?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AutoCompleteRuleHealth value)? health,
-    TResult Function(AutoCompleteRuleWorkout value)? workout,
-    TResult Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult Function(AutoCompleteRuleHabit value)? habit,
-    TResult Function(AutoCompleteRuleAnd value)? and,
-    TResult Function(AutoCompleteRuleOr value)? or,
-    TResult Function(AutoCompleteRuleMultiple value)? multiple,
-    required TResult orElse(),
-  }) {
-    if (or != null) {
-      return or(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleOrImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class AutoCompleteRuleOr implements AutoCompleteRule {
-  const factory AutoCompleteRuleOr(
-      {required final List<AutoCompleteRule> rules,
-      final String? title}) = _$AutoCompleteRuleOrImpl;
-
-  factory AutoCompleteRuleOr.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleOrImpl.fromJson;
-
-  List<AutoCompleteRule> get rules;
-  @override
-  String? get title;
-
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AutoCompleteRuleOrImplCopyWith<_$AutoCompleteRuleOrImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleMultipleImplCopyWith<$Res>
+abstract mixin class $AutoCompleteRuleOrCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleMultipleImplCopyWith(
-          _$AutoCompleteRuleMultipleImpl value,
-          $Res Function(_$AutoCompleteRuleMultipleImpl) then) =
-      __$$AutoCompleteRuleMultipleImplCopyWithImpl<$Res>;
+  factory $AutoCompleteRuleOrCopyWith(
+          AutoCompleteRuleOr value, $Res Function(AutoCompleteRuleOr) _then) =
+      _$AutoCompleteRuleOrCopyWithImpl;
   @override
   @useResult
-  $Res call({List<AutoCompleteRule> rules, int successes, String? title});
+  $Res call({List<AutoCompleteRule> rules, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleMultipleImplCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleMultipleImpl>
-    implements _$$AutoCompleteRuleMultipleImplCopyWith<$Res> {
-  __$$AutoCompleteRuleMultipleImplCopyWithImpl(
-      _$AutoCompleteRuleMultipleImpl _value,
-      $Res Function(_$AutoCompleteRuleMultipleImpl) _then)
-      : super(_value, _then);
+class _$AutoCompleteRuleOrCopyWithImpl<$Res>
+    implements $AutoCompleteRuleOrCopyWith<$Res> {
+  _$AutoCompleteRuleOrCopyWithImpl(this._self, this._then);
+
+  final AutoCompleteRuleOr _self;
+  final $Res Function(AutoCompleteRuleOr) _then;
 
   /// Create a copy of AutoCompleteRule
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? rules = null,
-    Object? successes = null,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleMultipleImpl(
+    return _then(AutoCompleteRuleOr(
       rules: null == rules
-          ? _value._rules
+          ? _self._rules
           : rules // ignore: cast_nullable_to_non_nullable
               as List<AutoCompleteRule>,
-      successes: null == successes
-          ? _value.successes
-          : successes // ignore: cast_nullable_to_non_nullable
-              as int,
       title: freezed == title
-          ? _value.title
+          ? _self.title
           : title // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
@@ -2384,27 +1575,24 @@ class __$$AutoCompleteRuleMultipleImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleMultipleImpl implements AutoCompleteRuleMultiple {
-  const _$AutoCompleteRuleMultipleImpl(
+class AutoCompleteRuleMultiple implements AutoCompleteRule {
+  const AutoCompleteRuleMultiple(
       {required final List<AutoCompleteRule> rules,
       required this.successes,
       this.title,
       final String? $type})
       : _rules = rules,
         $type = $type ?? 'multiple';
-
-  factory _$AutoCompleteRuleMultipleImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleMultipleImplFromJson(json);
+  factory AutoCompleteRuleMultiple.fromJson(Map<String, dynamic> json) =>
+      _$AutoCompleteRuleMultipleFromJson(json);
 
   final List<AutoCompleteRule> _rules;
-  @override
   List<AutoCompleteRule> get rules {
     if (_rules is EqualUnmodifiableListView) return _rules;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_rules);
   }
 
-  @override
   final int successes;
   @override
   final String? title;
@@ -2412,16 +1600,27 @@ class _$AutoCompleteRuleMultipleImpl implements AutoCompleteRuleMultiple {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AutoCompleteRule.multiple(rules: $rules, successes: $successes, title: $title)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AutoCompleteRuleMultipleCopyWith<AutoCompleteRuleMultiple> get copyWith =>
+      _$AutoCompleteRuleMultipleCopyWithImpl<AutoCompleteRuleMultiple>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AutoCompleteRuleMultipleToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleMultipleImpl &&
+            other is AutoCompleteRuleMultiple &&
             const DeepCollectionEquality().equals(other._rules, _rules) &&
             (identical(other.successes, successes) ||
                 other.successes == successes) &&
@@ -2433,159 +1632,55 @@ class _$AutoCompleteRuleMultipleImpl implements AutoCompleteRuleMultiple {
   int get hashCode => Object.hash(runtimeType,
       const DeepCollectionEquality().hash(_rules), successes, title);
 
-  /// Create a copy of AutoCompleteRule
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleMultipleImplCopyWith<_$AutoCompleteRuleMultipleImpl>
-      get copyWith => __$$AutoCompleteRuleMultipleImplCopyWithImpl<
-          _$AutoCompleteRuleMultipleImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        health,
-    required TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)
-        workout,
-    required TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)
-        measurable,
-    required TResult Function(String habitId, String? title) habit,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) and,
-    required TResult Function(List<AutoCompleteRule> rules, String? title) or,
-    required TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)
-        multiple,
-  }) {
-    return multiple(rules, successes, title);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult? Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult? Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult? Function(String habitId, String? title)? habit,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult? Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult? Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-  }) {
-    return multiple?.call(rules, successes, title);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        health,
-    TResult Function(
-            String dataType, num? minimum, num? maximum, String? title)?
-        workout,
-    TResult Function(
-            String dataTypeId, num? minimum, num? maximum, String? title)?
-        measurable,
-    TResult Function(String habitId, String? title)? habit,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? and,
-    TResult Function(List<AutoCompleteRule> rules, String? title)? or,
-    TResult Function(
-            List<AutoCompleteRule> rules, int successes, String? title)?
-        multiple,
-    required TResult orElse(),
-  }) {
-    if (multiple != null) {
-      return multiple(rules, successes, title);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(AutoCompleteRuleHealth value) health,
-    required TResult Function(AutoCompleteRuleWorkout value) workout,
-    required TResult Function(AutoCompleteRuleMeasurable value) measurable,
-    required TResult Function(AutoCompleteRuleHabit value) habit,
-    required TResult Function(AutoCompleteRuleAnd value) and,
-    required TResult Function(AutoCompleteRuleOr value) or,
-    required TResult Function(AutoCompleteRuleMultiple value) multiple,
-  }) {
-    return multiple(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AutoCompleteRuleHealth value)? health,
-    TResult? Function(AutoCompleteRuleWorkout value)? workout,
-    TResult? Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult? Function(AutoCompleteRuleHabit value)? habit,
-    TResult? Function(AutoCompleteRuleAnd value)? and,
-    TResult? Function(AutoCompleteRuleOr value)? or,
-    TResult? Function(AutoCompleteRuleMultiple value)? multiple,
-  }) {
-    return multiple?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(AutoCompleteRuleHealth value)? health,
-    TResult Function(AutoCompleteRuleWorkout value)? workout,
-    TResult Function(AutoCompleteRuleMeasurable value)? measurable,
-    TResult Function(AutoCompleteRuleHabit value)? habit,
-    TResult Function(AutoCompleteRuleAnd value)? and,
-    TResult Function(AutoCompleteRuleOr value)? or,
-    TResult Function(AutoCompleteRuleMultiple value)? multiple,
-    required TResult orElse(),
-  }) {
-    if (multiple != null) {
-      return multiple(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleMultipleImplToJson(
-      this,
-    );
+  String toString() {
+    return 'AutoCompleteRule.multiple(rules: $rules, successes: $successes, title: $title)';
   }
 }
 
-abstract class AutoCompleteRuleMultiple implements AutoCompleteRule {
-  const factory AutoCompleteRuleMultiple(
-      {required final List<AutoCompleteRule> rules,
-      required final int successes,
-      final String? title}) = _$AutoCompleteRuleMultipleImpl;
-
-  factory AutoCompleteRuleMultiple.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleMultipleImpl.fromJson;
-
-  List<AutoCompleteRule> get rules;
-  int get successes;
+/// @nodoc
+abstract mixin class $AutoCompleteRuleMultipleCopyWith<$Res>
+    implements $AutoCompleteRuleCopyWith<$Res> {
+  factory $AutoCompleteRuleMultipleCopyWith(AutoCompleteRuleMultiple value,
+          $Res Function(AutoCompleteRuleMultiple) _then) =
+      _$AutoCompleteRuleMultipleCopyWithImpl;
   @override
-  String? get title;
+  @useResult
+  $Res call({List<AutoCompleteRule> rules, int successes, String? title});
+}
+
+/// @nodoc
+class _$AutoCompleteRuleMultipleCopyWithImpl<$Res>
+    implements $AutoCompleteRuleMultipleCopyWith<$Res> {
+  _$AutoCompleteRuleMultipleCopyWithImpl(this._self, this._then);
+
+  final AutoCompleteRuleMultiple _self;
+  final $Res Function(AutoCompleteRuleMultiple) _then;
 
   /// Create a copy of AutoCompleteRule
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AutoCompleteRuleMultipleImplCopyWith<_$AutoCompleteRuleMultipleImpl>
-      get copyWith => throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? rules = null,
+    Object? successes = null,
+    Object? title = freezed,
+  }) {
+    return _then(AutoCompleteRuleMultiple(
+      rules: null == rules
+          ? _self._rules
+          : rules // ignore: cast_nullable_to_non_nullable
+              as List<AutoCompleteRule>,
+      successes: null == successes
+          ? _self.successes
+          : successes // ignore: cast_nullable_to_non_nullable
+              as int,
+      title: freezed == title
+          ? _self.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
 }
 
 EntityDefinition _$EntityDefinitionFromJson(Map<String, dynamic> json) {
@@ -2607,13 +1702,403 @@ EntityDefinition _$EntityDefinitionFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$EntityDefinition {
-  String get id => throw _privateConstructorUsedError;
-  DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime get updatedAt => throw _privateConstructorUsedError;
-  VectorClock? get vectorClock => throw _privateConstructorUsedError;
-  DateTime? get deletedAt => throw _privateConstructorUsedError;
-  bool? get private => throw _privateConstructorUsedError;
-  String? get categoryId => throw _privateConstructorUsedError;
+  String get id;
+  DateTime get createdAt;
+  DateTime get updatedAt;
+  VectorClock? get vectorClock;
+  DateTime? get deletedAt;
+  bool? get private;
+  String? get categoryId;
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $EntityDefinitionCopyWith<EntityDefinition> get copyWith =>
+      _$EntityDefinitionCopyWithImpl<EntityDefinition>(
+          this as EntityDefinition, _$identity);
+
+  /// Serializes this EntityDefinition to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is EntityDefinition &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt) &&
+            (identical(other.private, private) || other.private == private) &&
+            (identical(other.categoryId, categoryId) ||
+                other.categoryId == categoryId));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt,
+      vectorClock, deletedAt, private, categoryId);
+
+  @override
+  String toString() {
+    return 'EntityDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt, private: $private, categoryId: $categoryId)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $EntityDefinitionCopyWith<$Res> {
+  factory $EntityDefinitionCopyWith(
+          EntityDefinition value, $Res Function(EntityDefinition) _then) =
+      _$EntityDefinitionCopyWithImpl;
+  @useResult
+  $Res call(
+      {String id,
+      DateTime createdAt,
+      DateTime updatedAt,
+      VectorClock? vectorClock,
+      DateTime? deletedAt,
+      bool private,
+      String? categoryId});
+}
+
+/// @nodoc
+class _$EntityDefinitionCopyWithImpl<$Res>
+    implements $EntityDefinitionCopyWith<$Res> {
+  _$EntityDefinitionCopyWithImpl(this._self, this._then);
+
+  final EntityDefinition _self;
+  final $Res Function(EntityDefinition) _then;
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? vectorClock = freezed,
+    Object? deletedAt = freezed,
+    Object? private = null,
+    Object? categoryId = freezed,
+  }) {
+    return _then(_self.copyWith(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      private: null == private
+          ? _self.private!
+          : private // ignore: cast_nullable_to_non_nullable
+              as bool,
+      categoryId: freezed == categoryId
+          ? _self.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [EntityDefinition].
+extension EntityDefinitionPatterns on EntityDefinition {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(MeasurableDataType value)? measurableDataType,
+    TResult Function(CategoryDefinition value)? categoryDefinition,
+    TResult Function(HabitDefinition value)? habit,
+    TResult Function(DashboardDefinition value)? dashboard,
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case MeasurableDataType() when measurableDataType != null:
+        return measurableDataType(_that);
+      case CategoryDefinition() when categoryDefinition != null:
+        return categoryDefinition(_that);
+      case HabitDefinition() when habit != null:
+        return habit(_that);
+      case DashboardDefinition() when dashboard != null:
+        return dashboard(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(MeasurableDataType value) measurableDataType,
+    required TResult Function(CategoryDefinition value) categoryDefinition,
+    required TResult Function(HabitDefinition value) habit,
+    required TResult Function(DashboardDefinition value) dashboard,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case MeasurableDataType():
+        return measurableDataType(_that);
+      case CategoryDefinition():
+        return categoryDefinition(_that);
+      case HabitDefinition():
+        return habit(_that);
+      case DashboardDefinition():
+        return dashboard(_that);
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(MeasurableDataType value)? measurableDataType,
+    TResult? Function(CategoryDefinition value)? categoryDefinition,
+    TResult? Function(HabitDefinition value)? habit,
+    TResult? Function(DashboardDefinition value)? dashboard,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case MeasurableDataType() when measurableDataType != null:
+        return measurableDataType(_that);
+      case CategoryDefinition() when categoryDefinition != null:
+        return categoryDefinition(_that);
+      case HabitDefinition() when habit != null:
+        return habit(_that);
+      case DashboardDefinition() when dashboard != null:
+        return dashboard(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            String displayName,
+            String description,
+            String unitName,
+            int version,
+            VectorClock? vectorClock,
+            DateTime? deletedAt,
+            bool? private,
+            bool? favorite,
+            String? categoryId,
+            AggregationType? aggregationType)?
+        measurableDataType,
+    TResult Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            String name,
+            VectorClock? vectorClock,
+            bool private,
+            bool active,
+            bool? favorite,
+            String? color,
+            String? categoryId,
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
+        categoryDefinition,
+    TResult Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            String name,
+            String description,
+            HabitSchedule habitSchedule,
+            VectorClock? vectorClock,
+            bool active,
+            bool private,
+            AutoCompleteRule? autoCompleteRule,
+            String? version,
+            DateTime? activeFrom,
+            DateTime? activeUntil,
+            DateTime? deletedAt,
+            String? defaultStoryId,
+            String? categoryId,
+            String? dashboardId,
+            bool? priority)?
+        habit,
+    TResult Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            DateTime lastReviewed,
+            String name,
+            String description,
+            List<DashboardItem> items,
+            String version,
+            VectorClock? vectorClock,
+            bool active,
+            bool private,
+            DateTime? reviewAt,
+            int days,
+            DateTime? deletedAt,
+            String? categoryId)?
+        dashboard,
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case MeasurableDataType() when measurableDataType != null:
+        return measurableDataType(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.displayName,
+            _that.description,
+            _that.unitName,
+            _that.version,
+            _that.vectorClock,
+            _that.deletedAt,
+            _that.private,
+            _that.favorite,
+            _that.categoryId,
+            _that.aggregationType);
+      case CategoryDefinition() when categoryDefinition != null:
+        return categoryDefinition(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.name,
+            _that.vectorClock,
+            _that.private,
+            _that.active,
+            _that.favorite,
+            _that.color,
+            _that.categoryId,
+            _that.deletedAt,
+            _that.defaultLanguageCode,
+            _that.allowedPromptIds,
+            _that.automaticPrompts,
+            _that.icon);
+      case HabitDefinition() when habit != null:
+        return habit(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.name,
+            _that.description,
+            _that.habitSchedule,
+            _that.vectorClock,
+            _that.active,
+            _that.private,
+            _that.autoCompleteRule,
+            _that.version,
+            _that.activeFrom,
+            _that.activeUntil,
+            _that.deletedAt,
+            _that.defaultStoryId,
+            _that.categoryId,
+            _that.dashboardId,
+            _that.priority);
+      case DashboardDefinition() when dashboard != null:
+        return dashboard(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.lastReviewed,
+            _that.name,
+            _that.description,
+            _that.items,
+            _that.version,
+            _that.vectorClock,
+            _that.active,
+            _that.private,
+            _that.reviewAt,
+            _that.days,
+            _that.deletedAt,
+            _that.categoryId);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(
@@ -2685,8 +2170,93 @@ mixin _$EntityDefinition {
             DateTime? deletedAt,
             String? categoryId)
         dashboard,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) {
+    final _that = this;
+    switch (_that) {
+      case MeasurableDataType():
+        return measurableDataType(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.displayName,
+            _that.description,
+            _that.unitName,
+            _that.version,
+            _that.vectorClock,
+            _that.deletedAt,
+            _that.private,
+            _that.favorite,
+            _that.categoryId,
+            _that.aggregationType);
+      case CategoryDefinition():
+        return categoryDefinition(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.name,
+            _that.vectorClock,
+            _that.private,
+            _that.active,
+            _that.favorite,
+            _that.color,
+            _that.categoryId,
+            _that.deletedAt,
+            _that.defaultLanguageCode,
+            _that.allowedPromptIds,
+            _that.automaticPrompts,
+            _that.icon);
+      case HabitDefinition():
+        return habit(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.name,
+            _that.description,
+            _that.habitSchedule,
+            _that.vectorClock,
+            _that.active,
+            _that.private,
+            _that.autoCompleteRule,
+            _that.version,
+            _that.activeFrom,
+            _that.activeUntil,
+            _that.deletedAt,
+            _that.defaultStoryId,
+            _that.categoryId,
+            _that.dashboardId,
+            _that.priority);
+      case DashboardDefinition():
+        return dashboard(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.lastReviewed,
+            _that.name,
+            _that.description,
+            _that.items,
+            _that.version,
+            _that.vectorClock,
+            _that.active,
+            _that.private,
+            _that.reviewAt,
+            _that.days,
+            _that.deletedAt,
+            _that.categoryId);
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(
@@ -2758,302 +2328,88 @@ mixin _$EntityDefinition {
             DateTime? deletedAt,
             String? categoryId)?
         dashboard,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)?
-        measurableDataType,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
-        categoryDefinition,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)?
-        habit,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)?
-        dashboard,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(MeasurableDataType value) measurableDataType,
-    required TResult Function(CategoryDefinition value) categoryDefinition,
-    required TResult Function(HabitDefinition value) habit,
-    required TResult Function(DashboardDefinition value) dashboard,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(MeasurableDataType value)? measurableDataType,
-    TResult? Function(CategoryDefinition value)? categoryDefinition,
-    TResult? Function(HabitDefinition value)? habit,
-    TResult? Function(DashboardDefinition value)? dashboard,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(MeasurableDataType value)? measurableDataType,
-    TResult Function(CategoryDefinition value)? categoryDefinition,
-    TResult Function(HabitDefinition value)? habit,
-    TResult Function(DashboardDefinition value)? dashboard,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-
-  /// Serializes this EntityDefinition to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $EntityDefinitionCopyWith<EntityDefinition> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $EntityDefinitionCopyWith<$Res> {
-  factory $EntityDefinitionCopyWith(
-          EntityDefinition value, $Res Function(EntityDefinition) then) =
-      _$EntityDefinitionCopyWithImpl<$Res, EntityDefinition>;
-  @useResult
-  $Res call(
-      {String id,
-      DateTime createdAt,
-      DateTime updatedAt,
-      VectorClock? vectorClock,
-      DateTime? deletedAt,
-      bool private,
-      String? categoryId});
-}
-
-/// @nodoc
-class _$EntityDefinitionCopyWithImpl<$Res, $Val extends EntityDefinition>
-    implements $EntityDefinitionCopyWith<$Res> {
-  _$EntityDefinitionCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? createdAt = null,
-    Object? updatedAt = null,
-    Object? vectorClock = freezed,
-    Object? deletedAt = freezed,
-    Object? private = null,
-    Object? categoryId = freezed,
   }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      updatedAt: null == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      vectorClock: freezed == vectorClock
-          ? _value.vectorClock
-          : vectorClock // ignore: cast_nullable_to_non_nullable
-              as VectorClock?,
-      deletedAt: freezed == deletedAt
-          ? _value.deletedAt
-          : deletedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      private: null == private
-          ? _value.private!
-          : private // ignore: cast_nullable_to_non_nullable
-              as bool,
-      categoryId: freezed == categoryId
-          ? _value.categoryId
-          : categoryId // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$MeasurableDataTypeImplCopyWith<$Res>
-    implements $EntityDefinitionCopyWith<$Res> {
-  factory _$$MeasurableDataTypeImplCopyWith(_$MeasurableDataTypeImpl value,
-          $Res Function(_$MeasurableDataTypeImpl) then) =
-      __$$MeasurableDataTypeImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {String id,
-      DateTime createdAt,
-      DateTime updatedAt,
-      String displayName,
-      String description,
-      String unitName,
-      int version,
-      VectorClock? vectorClock,
-      DateTime? deletedAt,
-      bool? private,
-      bool? favorite,
-      String? categoryId,
-      AggregationType? aggregationType});
-}
-
-/// @nodoc
-class __$$MeasurableDataTypeImplCopyWithImpl<$Res>
-    extends _$EntityDefinitionCopyWithImpl<$Res, _$MeasurableDataTypeImpl>
-    implements _$$MeasurableDataTypeImplCopyWith<$Res> {
-  __$$MeasurableDataTypeImplCopyWithImpl(_$MeasurableDataTypeImpl _value,
-      $Res Function(_$MeasurableDataTypeImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? createdAt = null,
-    Object? updatedAt = null,
-    Object? displayName = null,
-    Object? description = null,
-    Object? unitName = null,
-    Object? version = null,
-    Object? vectorClock = freezed,
-    Object? deletedAt = freezed,
-    Object? private = freezed,
-    Object? favorite = freezed,
-    Object? categoryId = freezed,
-    Object? aggregationType = freezed,
-  }) {
-    return _then(_$MeasurableDataTypeImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      updatedAt: null == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      displayName: null == displayName
-          ? _value.displayName
-          : displayName // ignore: cast_nullable_to_non_nullable
-              as String,
-      description: null == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String,
-      unitName: null == unitName
-          ? _value.unitName
-          : unitName // ignore: cast_nullable_to_non_nullable
-              as String,
-      version: null == version
-          ? _value.version
-          : version // ignore: cast_nullable_to_non_nullable
-              as int,
-      vectorClock: freezed == vectorClock
-          ? _value.vectorClock
-          : vectorClock // ignore: cast_nullable_to_non_nullable
-              as VectorClock?,
-      deletedAt: freezed == deletedAt
-          ? _value.deletedAt
-          : deletedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      private: freezed == private
-          ? _value.private
-          : private // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      favorite: freezed == favorite
-          ? _value.favorite
-          : favorite // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      categoryId: freezed == categoryId
-          ? _value.categoryId
-          : categoryId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      aggregationType: freezed == aggregationType
-          ? _value.aggregationType
-          : aggregationType // ignore: cast_nullable_to_non_nullable
-              as AggregationType?,
-    ));
+    final _that = this;
+    switch (_that) {
+      case MeasurableDataType() when measurableDataType != null:
+        return measurableDataType(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.displayName,
+            _that.description,
+            _that.unitName,
+            _that.version,
+            _that.vectorClock,
+            _that.deletedAt,
+            _that.private,
+            _that.favorite,
+            _that.categoryId,
+            _that.aggregationType);
+      case CategoryDefinition() when categoryDefinition != null:
+        return categoryDefinition(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.name,
+            _that.vectorClock,
+            _that.private,
+            _that.active,
+            _that.favorite,
+            _that.color,
+            _that.categoryId,
+            _that.deletedAt,
+            _that.defaultLanguageCode,
+            _that.allowedPromptIds,
+            _that.automaticPrompts,
+            _that.icon);
+      case HabitDefinition() when habit != null:
+        return habit(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.name,
+            _that.description,
+            _that.habitSchedule,
+            _that.vectorClock,
+            _that.active,
+            _that.private,
+            _that.autoCompleteRule,
+            _that.version,
+            _that.activeFrom,
+            _that.activeUntil,
+            _that.deletedAt,
+            _that.defaultStoryId,
+            _that.categoryId,
+            _that.dashboardId,
+            _that.priority);
+      case DashboardDefinition() when dashboard != null:
+        return dashboard(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.lastReviewed,
+            _that.name,
+            _that.description,
+            _that.items,
+            _that.version,
+            _that.vectorClock,
+            _that.active,
+            _that.private,
+            _that.reviewAt,
+            _that.days,
+            _that.deletedAt,
+            _that.categoryId);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$MeasurableDataTypeImpl implements MeasurableDataType {
-  const _$MeasurableDataTypeImpl(
+class MeasurableDataType implements EntityDefinition {
+  const MeasurableDataType(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -3069,9 +2425,8 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
       this.aggregationType,
       final String? $type})
       : $type = $type ?? 'measurableDataType';
-
-  factory _$MeasurableDataTypeImpl.fromJson(Map<String, dynamic> json) =>
-      _$$MeasurableDataTypeImplFromJson(json);
+  factory MeasurableDataType.fromJson(Map<String, dynamic> json) =>
+      _$MeasurableDataTypeFromJson(json);
 
   @override
   final String id;
@@ -3079,13 +2434,9 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
-  @override
   final String displayName;
-  @override
   final String description;
-  @override
   final String unitName;
-  @override
   final int version;
   @override
   final VectorClock? vectorClock;
@@ -3093,26 +2444,34 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
   final DateTime? deletedAt;
   @override
   final bool? private;
-  @override
   final bool? favorite;
   @override
   final String? categoryId;
-  @override
   final AggregationType? aggregationType;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'EntityDefinition.measurableDataType(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, displayName: $displayName, description: $description, unitName: $unitName, version: $version, vectorClock: $vectorClock, deletedAt: $deletedAt, private: $private, favorite: $favorite, categoryId: $categoryId, aggregationType: $aggregationType)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $MeasurableDataTypeCopyWith<MeasurableDataType> get copyWith =>
+      _$MeasurableDataTypeCopyWithImpl<MeasurableDataType>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$MeasurableDataTypeToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MeasurableDataTypeImpl &&
+            other is MeasurableDataType &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -3156,503 +2515,124 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
       categoryId,
       aggregationType);
 
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$MeasurableDataTypeImplCopyWith<_$MeasurableDataTypeImpl> get copyWith =>
-      __$$MeasurableDataTypeImplCopyWithImpl<_$MeasurableDataTypeImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)
-        measurableDataType,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)
-        categoryDefinition,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)
-        habit,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)
-        dashboard,
-  }) {
-    return measurableDataType(
-        id,
-        createdAt,
-        updatedAt,
-        displayName,
-        description,
-        unitName,
-        version,
-        vectorClock,
-        deletedAt,
-        private,
-        favorite,
-        categoryId,
-        aggregationType);
+  String toString() {
+    return 'EntityDefinition.measurableDataType(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, displayName: $displayName, description: $description, unitName: $unitName, version: $version, vectorClock: $vectorClock, deletedAt: $deletedAt, private: $private, favorite: $favorite, categoryId: $categoryId, aggregationType: $aggregationType)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)?
-        measurableDataType,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
-        categoryDefinition,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)?
-        habit,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)?
-        dashboard,
-  }) {
-    return measurableDataType?.call(
-        id,
-        createdAt,
-        updatedAt,
-        displayName,
-        description,
-        unitName,
-        version,
-        vectorClock,
-        deletedAt,
-        private,
-        favorite,
-        categoryId,
-        aggregationType);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)?
-        measurableDataType,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
-        categoryDefinition,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)?
-        habit,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)?
-        dashboard,
-    required TResult orElse(),
-  }) {
-    if (measurableDataType != null) {
-      return measurableDataType(
-          id,
-          createdAt,
-          updatedAt,
-          displayName,
-          description,
-          unitName,
-          version,
-          vectorClock,
-          deletedAt,
-          private,
-          favorite,
-          categoryId,
-          aggregationType);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(MeasurableDataType value) measurableDataType,
-    required TResult Function(CategoryDefinition value) categoryDefinition,
-    required TResult Function(HabitDefinition value) habit,
-    required TResult Function(DashboardDefinition value) dashboard,
-  }) {
-    return measurableDataType(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(MeasurableDataType value)? measurableDataType,
-    TResult? Function(CategoryDefinition value)? categoryDefinition,
-    TResult? Function(HabitDefinition value)? habit,
-    TResult? Function(DashboardDefinition value)? dashboard,
-  }) {
-    return measurableDataType?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(MeasurableDataType value)? measurableDataType,
-    TResult Function(CategoryDefinition value)? categoryDefinition,
-    TResult Function(HabitDefinition value)? habit,
-    TResult Function(DashboardDefinition value)? dashboard,
-    required TResult orElse(),
-  }) {
-    if (measurableDataType != null) {
-      return measurableDataType(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$MeasurableDataTypeImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class MeasurableDataType implements EntityDefinition {
-  const factory MeasurableDataType(
-      {required final String id,
-      required final DateTime createdAt,
-      required final DateTime updatedAt,
-      required final String displayName,
-      required final String description,
-      required final String unitName,
-      required final int version,
-      required final VectorClock? vectorClock,
-      final DateTime? deletedAt,
-      final bool? private,
-      final bool? favorite,
-      final String? categoryId,
-      final AggregationType? aggregationType}) = _$MeasurableDataTypeImpl;
-
-  factory MeasurableDataType.fromJson(Map<String, dynamic> json) =
-      _$MeasurableDataTypeImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  DateTime get updatedAt;
-  String get displayName;
-  String get description;
-  String get unitName;
-  int get version;
-  @override
-  VectorClock? get vectorClock;
-  @override
-  DateTime? get deletedAt;
-  @override
-  bool? get private;
-  bool? get favorite;
-  @override
-  String? get categoryId;
-  AggregationType? get aggregationType;
-
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$MeasurableDataTypeImplCopyWith<_$MeasurableDataTypeImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$CategoryDefinitionImplCopyWith<$Res>
+abstract mixin class $MeasurableDataTypeCopyWith<$Res>
     implements $EntityDefinitionCopyWith<$Res> {
-  factory _$$CategoryDefinitionImplCopyWith(_$CategoryDefinitionImpl value,
-          $Res Function(_$CategoryDefinitionImpl) then) =
-      __$$CategoryDefinitionImplCopyWithImpl<$Res>;
+  factory $MeasurableDataTypeCopyWith(
+          MeasurableDataType value, $Res Function(MeasurableDataType) _then) =
+      _$MeasurableDataTypeCopyWithImpl;
   @override
   @useResult
   $Res call(
       {String id,
       DateTime createdAt,
       DateTime updatedAt,
-      String name,
+      String displayName,
+      String description,
+      String unitName,
+      int version,
       VectorClock? vectorClock,
-      bool private,
-      bool active,
-      bool? favorite,
-      String? color,
-      String? categoryId,
       DateTime? deletedAt,
-      String? defaultLanguageCode,
-      List<String>? allowedPromptIds,
-      Map<AiResponseType, List<String>>? automaticPrompts,
-      @CategoryIconConverter() CategoryIcon? icon});
+      bool? private,
+      bool? favorite,
+      String? categoryId,
+      AggregationType? aggregationType});
 }
 
 /// @nodoc
-class __$$CategoryDefinitionImplCopyWithImpl<$Res>
-    extends _$EntityDefinitionCopyWithImpl<$Res, _$CategoryDefinitionImpl>
-    implements _$$CategoryDefinitionImplCopyWith<$Res> {
-  __$$CategoryDefinitionImplCopyWithImpl(_$CategoryDefinitionImpl _value,
-      $Res Function(_$CategoryDefinitionImpl) _then)
-      : super(_value, _then);
+class _$MeasurableDataTypeCopyWithImpl<$Res>
+    implements $MeasurableDataTypeCopyWith<$Res> {
+  _$MeasurableDataTypeCopyWithImpl(this._self, this._then);
+
+  final MeasurableDataType _self;
+  final $Res Function(MeasurableDataType) _then;
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? createdAt = null,
     Object? updatedAt = null,
-    Object? name = null,
+    Object? displayName = null,
+    Object? description = null,
+    Object? unitName = null,
+    Object? version = null,
     Object? vectorClock = freezed,
-    Object? private = null,
-    Object? active = null,
-    Object? favorite = freezed,
-    Object? color = freezed,
-    Object? categoryId = freezed,
     Object? deletedAt = freezed,
-    Object? defaultLanguageCode = freezed,
-    Object? allowedPromptIds = freezed,
-    Object? automaticPrompts = freezed,
-    Object? icon = freezed,
+    Object? private = freezed,
+    Object? favorite = freezed,
+    Object? categoryId = freezed,
+    Object? aggregationType = freezed,
   }) {
-    return _then(_$CategoryDefinitionImpl(
+    return _then(MeasurableDataType(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       updatedAt: null == updatedAt
-          ? _value.updatedAt
+          ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
+      displayName: null == displayName
+          ? _self.displayName
+          : displayName // ignore: cast_nullable_to_non_nullable
               as String,
+      description: null == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      unitName: null == unitName
+          ? _self.unitName
+          : unitName // ignore: cast_nullable_to_non_nullable
+              as String,
+      version: null == version
+          ? _self.version
+          : version // ignore: cast_nullable_to_non_nullable
+              as int,
       vectorClock: freezed == vectorClock
-          ? _value.vectorClock
+          ? _self.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
-      private: null == private
-          ? _value.private
-          : private // ignore: cast_nullable_to_non_nullable
-              as bool,
-      active: null == active
-          ? _value.active
-          : active // ignore: cast_nullable_to_non_nullable
-              as bool,
-      favorite: freezed == favorite
-          ? _value.favorite
-          : favorite // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      color: freezed == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as String?,
-      categoryId: freezed == categoryId
-          ? _value.categoryId
-          : categoryId // ignore: cast_nullable_to_non_nullable
-              as String?,
       deletedAt: freezed == deletedAt
-          ? _value.deletedAt
+          ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      defaultLanguageCode: freezed == defaultLanguageCode
-          ? _value.defaultLanguageCode
-          : defaultLanguageCode // ignore: cast_nullable_to_non_nullable
+      private: freezed == private
+          ? _self.private
+          : private // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      favorite: freezed == favorite
+          ? _self.favorite
+          : favorite // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      categoryId: freezed == categoryId
+          ? _self.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
               as String?,
-      allowedPromptIds: freezed == allowedPromptIds
-          ? _value._allowedPromptIds
-          : allowedPromptIds // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      automaticPrompts: freezed == automaticPrompts
-          ? _value._automaticPrompts
-          : automaticPrompts // ignore: cast_nullable_to_non_nullable
-              as Map<AiResponseType, List<String>>?,
-      icon: freezed == icon
-          ? _value.icon
-          : icon // ignore: cast_nullable_to_non_nullable
-              as CategoryIcon?,
+      aggregationType: freezed == aggregationType
+          ? _self.aggregationType
+          : aggregationType // ignore: cast_nullable_to_non_nullable
+              as AggregationType?,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$CategoryDefinitionImpl implements CategoryDefinition {
-  const _$CategoryDefinitionImpl(
+class CategoryDefinition implements EntityDefinition {
+  const CategoryDefinition(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -3672,9 +2652,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
       : _allowedPromptIds = allowedPromptIds,
         _automaticPrompts = automaticPrompts,
         $type = $type ?? 'categoryDefinition';
-
-  factory _$CategoryDefinitionImpl.fromJson(Map<String, dynamic> json) =>
-      _$$CategoryDefinitionImplFromJson(json);
+  factory CategoryDefinition.fromJson(Map<String, dynamic> json) =>
+      _$CategoryDefinitionFromJson(json);
 
   @override
   final String id;
@@ -3682,26 +2661,20 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
-  @override
   final String name;
   @override
   final VectorClock? vectorClock;
   @override
   final bool private;
-  @override
   final bool active;
-  @override
   final bool? favorite;
-  @override
   final String? color;
   @override
   final String? categoryId;
   @override
   final DateTime? deletedAt;
-  @override
   final String? defaultLanguageCode;
   final List<String>? _allowedPromptIds;
-  @override
   List<String>? get allowedPromptIds {
     final value = _allowedPromptIds;
     if (value == null) return null;
@@ -3712,7 +2685,6 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
   }
 
   final Map<AiResponseType, List<String>>? _automaticPrompts;
-  @override
   Map<AiResponseType, List<String>>? get automaticPrompts {
     final value = _automaticPrompts;
     if (value == null) return null;
@@ -3721,23 +2693,32 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
     return EqualUnmodifiableMapView(value);
   }
 
-  @override
   @CategoryIconConverter()
   final CategoryIcon? icon;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt, defaultLanguageCode: $defaultLanguageCode, allowedPromptIds: $allowedPromptIds, automaticPrompts: $automaticPrompts, icon: $icon)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $CategoryDefinitionCopyWith<CategoryDefinition> get copyWith =>
+      _$CategoryDefinitionCopyWithImpl<CategoryDefinition>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$CategoryDefinitionToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$CategoryDefinitionImpl &&
+            other is CategoryDefinition &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -3784,397 +2765,18 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
       const DeepCollectionEquality().hash(_automaticPrompts),
       icon);
 
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$CategoryDefinitionImplCopyWith<_$CategoryDefinitionImpl> get copyWith =>
-      __$$CategoryDefinitionImplCopyWithImpl<_$CategoryDefinitionImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)
-        measurableDataType,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)
-        categoryDefinition,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)
-        habit,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)
-        dashboard,
-  }) {
-    return categoryDefinition(
-        id,
-        createdAt,
-        updatedAt,
-        name,
-        vectorClock,
-        private,
-        active,
-        favorite,
-        color,
-        categoryId,
-        deletedAt,
-        defaultLanguageCode,
-        allowedPromptIds,
-        automaticPrompts,
-        icon);
+  String toString() {
+    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt, defaultLanguageCode: $defaultLanguageCode, allowedPromptIds: $allowedPromptIds, automaticPrompts: $automaticPrompts, icon: $icon)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)?
-        measurableDataType,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
-        categoryDefinition,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)?
-        habit,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)?
-        dashboard,
-  }) {
-    return categoryDefinition?.call(
-        id,
-        createdAt,
-        updatedAt,
-        name,
-        vectorClock,
-        private,
-        active,
-        favorite,
-        color,
-        categoryId,
-        deletedAt,
-        defaultLanguageCode,
-        allowedPromptIds,
-        automaticPrompts,
-        icon);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)?
-        measurableDataType,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
-        categoryDefinition,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)?
-        habit,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)?
-        dashboard,
-    required TResult orElse(),
-  }) {
-    if (categoryDefinition != null) {
-      return categoryDefinition(
-          id,
-          createdAt,
-          updatedAt,
-          name,
-          vectorClock,
-          private,
-          active,
-          favorite,
-          color,
-          categoryId,
-          deletedAt,
-          defaultLanguageCode,
-          allowedPromptIds,
-          automaticPrompts,
-          icon);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(MeasurableDataType value) measurableDataType,
-    required TResult Function(CategoryDefinition value) categoryDefinition,
-    required TResult Function(HabitDefinition value) habit,
-    required TResult Function(DashboardDefinition value) dashboard,
-  }) {
-    return categoryDefinition(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(MeasurableDataType value)? measurableDataType,
-    TResult? Function(CategoryDefinition value)? categoryDefinition,
-    TResult? Function(HabitDefinition value)? habit,
-    TResult? Function(DashboardDefinition value)? dashboard,
-  }) {
-    return categoryDefinition?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(MeasurableDataType value)? measurableDataType,
-    TResult Function(CategoryDefinition value)? categoryDefinition,
-    TResult Function(HabitDefinition value)? habit,
-    TResult Function(DashboardDefinition value)? dashboard,
-    required TResult orElse(),
-  }) {
-    if (categoryDefinition != null) {
-      return categoryDefinition(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$CategoryDefinitionImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class CategoryDefinition implements EntityDefinition {
-  const factory CategoryDefinition(
-          {required final String id,
-          required final DateTime createdAt,
-          required final DateTime updatedAt,
-          required final String name,
-          required final VectorClock? vectorClock,
-          required final bool private,
-          required final bool active,
-          final bool? favorite,
-          final String? color,
-          final String? categoryId,
-          final DateTime? deletedAt,
-          final String? defaultLanguageCode,
-          final List<String>? allowedPromptIds,
-          final Map<AiResponseType, List<String>>? automaticPrompts,
-          @CategoryIconConverter() final CategoryIcon? icon}) =
-      _$CategoryDefinitionImpl;
-
-  factory CategoryDefinition.fromJson(Map<String, dynamic> json) =
-      _$CategoryDefinitionImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  DateTime get updatedAt;
-  String get name;
-  @override
-  VectorClock? get vectorClock;
-  @override
-  bool get private;
-  bool get active;
-  bool? get favorite;
-  String? get color;
-  @override
-  String? get categoryId;
-  @override
-  DateTime? get deletedAt;
-  String? get defaultLanguageCode;
-  List<String>? get allowedPromptIds;
-  Map<AiResponseType, List<String>>? get automaticPrompts;
-  @CategoryIconConverter()
-  CategoryIcon? get icon;
-
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$CategoryDefinitionImplCopyWith<_$CategoryDefinitionImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$HabitDefinitionImplCopyWith<$Res>
+abstract mixin class $CategoryDefinitionCopyWith<$Res>
     implements $EntityDefinitionCopyWith<$Res> {
-  factory _$$HabitDefinitionImplCopyWith(_$HabitDefinitionImpl value,
-          $Res Function(_$HabitDefinitionImpl) then) =
-      __$$HabitDefinitionImplCopyWithImpl<$Res>;
+  factory $CategoryDefinitionCopyWith(
+          CategoryDefinition value, $Res Function(CategoryDefinition) _then) =
+      _$CategoryDefinitionCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -4182,162 +2784,117 @@ abstract class _$$HabitDefinitionImplCopyWith<$Res>
       DateTime createdAt,
       DateTime updatedAt,
       String name,
-      String description,
-      HabitSchedule habitSchedule,
       VectorClock? vectorClock,
-      bool active,
       bool private,
-      AutoCompleteRule? autoCompleteRule,
-      String? version,
-      DateTime? activeFrom,
-      DateTime? activeUntil,
-      DateTime? deletedAt,
-      String? defaultStoryId,
+      bool active,
+      bool? favorite,
+      String? color,
       String? categoryId,
-      String? dashboardId,
-      bool? priority});
-
-  $HabitScheduleCopyWith<$Res> get habitSchedule;
-  $AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule;
+      DateTime? deletedAt,
+      String? defaultLanguageCode,
+      List<String>? allowedPromptIds,
+      Map<AiResponseType, List<String>>? automaticPrompts,
+      @CategoryIconConverter() CategoryIcon? icon});
 }
 
 /// @nodoc
-class __$$HabitDefinitionImplCopyWithImpl<$Res>
-    extends _$EntityDefinitionCopyWithImpl<$Res, _$HabitDefinitionImpl>
-    implements _$$HabitDefinitionImplCopyWith<$Res> {
-  __$$HabitDefinitionImplCopyWithImpl(
-      _$HabitDefinitionImpl _value, $Res Function(_$HabitDefinitionImpl) _then)
-      : super(_value, _then);
+class _$CategoryDefinitionCopyWithImpl<$Res>
+    implements $CategoryDefinitionCopyWith<$Res> {
+  _$CategoryDefinitionCopyWithImpl(this._self, this._then);
+
+  final CategoryDefinition _self;
+  final $Res Function(CategoryDefinition) _then;
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? name = null,
-    Object? description = null,
-    Object? habitSchedule = null,
     Object? vectorClock = freezed,
-    Object? active = null,
     Object? private = null,
-    Object? autoCompleteRule = freezed,
-    Object? version = freezed,
-    Object? activeFrom = freezed,
-    Object? activeUntil = freezed,
-    Object? deletedAt = freezed,
-    Object? defaultStoryId = freezed,
+    Object? active = null,
+    Object? favorite = freezed,
+    Object? color = freezed,
     Object? categoryId = freezed,
-    Object? dashboardId = freezed,
-    Object? priority = freezed,
+    Object? deletedAt = freezed,
+    Object? defaultLanguageCode = freezed,
+    Object? allowedPromptIds = freezed,
+    Object? automaticPrompts = freezed,
+    Object? icon = freezed,
   }) {
-    return _then(_$HabitDefinitionImpl(
+    return _then(CategoryDefinition(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       updatedAt: null == updatedAt
-          ? _value.updatedAt
+          ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      description: null == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String,
-      habitSchedule: null == habitSchedule
-          ? _value.habitSchedule
-          : habitSchedule // ignore: cast_nullable_to_non_nullable
-              as HabitSchedule,
       vectorClock: freezed == vectorClock
-          ? _value.vectorClock
+          ? _self.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
-      active: null == active
-          ? _value.active
-          : active // ignore: cast_nullable_to_non_nullable
-              as bool,
       private: null == private
-          ? _value.private
+          ? _self.private
           : private // ignore: cast_nullable_to_non_nullable
               as bool,
-      autoCompleteRule: freezed == autoCompleteRule
-          ? _value.autoCompleteRule
-          : autoCompleteRule // ignore: cast_nullable_to_non_nullable
-              as AutoCompleteRule?,
-      version: freezed == version
-          ? _value.version
-          : version // ignore: cast_nullable_to_non_nullable
-              as String?,
-      activeFrom: freezed == activeFrom
-          ? _value.activeFrom
-          : activeFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      activeUntil: freezed == activeUntil
-          ? _value.activeUntil
-          : activeUntil // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      deletedAt: freezed == deletedAt
-          ? _value.deletedAt
-          : deletedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      defaultStoryId: freezed == defaultStoryId
-          ? _value.defaultStoryId
-          : defaultStoryId // ignore: cast_nullable_to_non_nullable
+      active: null == active
+          ? _self.active
+          : active // ignore: cast_nullable_to_non_nullable
+              as bool,
+      favorite: freezed == favorite
+          ? _self.favorite
+          : favorite // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      color: freezed == color
+          ? _self.color
+          : color // ignore: cast_nullable_to_non_nullable
               as String?,
       categoryId: freezed == categoryId
-          ? _value.categoryId
+          ? _self.categoryId
           : categoryId // ignore: cast_nullable_to_non_nullable
               as String?,
-      dashboardId: freezed == dashboardId
-          ? _value.dashboardId
-          : dashboardId // ignore: cast_nullable_to_non_nullable
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      defaultLanguageCode: freezed == defaultLanguageCode
+          ? _self.defaultLanguageCode
+          : defaultLanguageCode // ignore: cast_nullable_to_non_nullable
               as String?,
-      priority: freezed == priority
-          ? _value.priority
-          : priority // ignore: cast_nullable_to_non_nullable
-              as bool?,
+      allowedPromptIds: freezed == allowedPromptIds
+          ? _self._allowedPromptIds
+          : allowedPromptIds // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      automaticPrompts: freezed == automaticPrompts
+          ? _self._automaticPrompts
+          : automaticPrompts // ignore: cast_nullable_to_non_nullable
+              as Map<AiResponseType, List<String>>?,
+      icon: freezed == icon
+          ? _self.icon
+          : icon // ignore: cast_nullable_to_non_nullable
+              as CategoryIcon?,
     ));
-  }
-
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $HabitScheduleCopyWith<$Res> get habitSchedule {
-    return $HabitScheduleCopyWith<$Res>(_value.habitSchedule, (value) {
-      return _then(_value.copyWith(habitSchedule: value));
-    });
-  }
-
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule {
-    if (_value.autoCompleteRule == null) {
-      return null;
-    }
-
-    return $AutoCompleteRuleCopyWith<$Res>(_value.autoCompleteRule!, (value) {
-      return _then(_value.copyWith(autoCompleteRule: value));
-    });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$HabitDefinitionImpl implements HabitDefinition {
-  const _$HabitDefinitionImpl(
+class HabitDefinition implements EntityDefinition {
+  const HabitDefinition(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -4358,9 +2915,8 @@ class _$HabitDefinitionImpl implements HabitDefinition {
       this.priority,
       final String? $type})
       : $type = $type ?? 'habit';
-
-  factory _$HabitDefinitionImpl.fromJson(Map<String, dynamic> json) =>
-      _$$HabitDefinitionImplFromJson(json);
+  factory HabitDefinition.fromJson(Map<String, dynamic> json) =>
+      _$HabitDefinitionFromJson(json);
 
   @override
   final String id;
@@ -4368,50 +2924,49 @@ class _$HabitDefinitionImpl implements HabitDefinition {
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
-  @override
   final String name;
-  @override
   final String description;
-  @override
   final HabitSchedule habitSchedule;
   @override
   final VectorClock? vectorClock;
-  @override
   final bool active;
   @override
   final bool private;
-  @override
   final AutoCompleteRule? autoCompleteRule;
-  @override
   final String? version;
-  @override
   final DateTime? activeFrom;
-  @override
   final DateTime? activeUntil;
   @override
   final DateTime? deletedAt;
-  @override
   final String? defaultStoryId;
   @override
   final String? categoryId;
-  @override
   final String? dashboardId;
-  @override
   final bool? priority;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'EntityDefinition.habit(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, description: $description, habitSchedule: $habitSchedule, vectorClock: $vectorClock, active: $active, private: $private, autoCompleteRule: $autoCompleteRule, version: $version, activeFrom: $activeFrom, activeUntil: $activeUntil, deletedAt: $deletedAt, defaultStoryId: $defaultStoryId, categoryId: $categoryId, dashboardId: $dashboardId, priority: $priority)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $HabitDefinitionCopyWith<HabitDefinition> get copyWith =>
+      _$HabitDefinitionCopyWithImpl<HabitDefinition>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$HabitDefinitionToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$HabitDefinitionImpl &&
+            other is HabitDefinition &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -4468,528 +3023,181 @@ class _$HabitDefinitionImpl implements HabitDefinition {
       dashboardId,
       priority);
 
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$HabitDefinitionImplCopyWith<_$HabitDefinitionImpl> get copyWith =>
-      __$$HabitDefinitionImplCopyWithImpl<_$HabitDefinitionImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)
-        measurableDataType,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)
-        categoryDefinition,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)
-        habit,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)
-        dashboard,
-  }) {
-    return habit(
-        id,
-        createdAt,
-        updatedAt,
-        name,
-        description,
-        habitSchedule,
-        vectorClock,
-        active,
-        private,
-        autoCompleteRule,
-        version,
-        activeFrom,
-        activeUntil,
-        deletedAt,
-        defaultStoryId,
-        categoryId,
-        dashboardId,
-        priority);
+  String toString() {
+    return 'EntityDefinition.habit(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, description: $description, habitSchedule: $habitSchedule, vectorClock: $vectorClock, active: $active, private: $private, autoCompleteRule: $autoCompleteRule, version: $version, activeFrom: $activeFrom, activeUntil: $activeUntil, deletedAt: $deletedAt, defaultStoryId: $defaultStoryId, categoryId: $categoryId, dashboardId: $dashboardId, priority: $priority)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)?
-        measurableDataType,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
-        categoryDefinition,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)?
-        habit,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)?
-        dashboard,
-  }) {
-    return habit?.call(
-        id,
-        createdAt,
-        updatedAt,
-        name,
-        description,
-        habitSchedule,
-        vectorClock,
-        active,
-        private,
-        autoCompleteRule,
-        version,
-        activeFrom,
-        activeUntil,
-        deletedAt,
-        defaultStoryId,
-        categoryId,
-        dashboardId,
-        priority);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)?
-        measurableDataType,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
-        categoryDefinition,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)?
-        habit,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)?
-        dashboard,
-    required TResult orElse(),
-  }) {
-    if (habit != null) {
-      return habit(
-          id,
-          createdAt,
-          updatedAt,
-          name,
-          description,
-          habitSchedule,
-          vectorClock,
-          active,
-          private,
-          autoCompleteRule,
-          version,
-          activeFrom,
-          activeUntil,
-          deletedAt,
-          defaultStoryId,
-          categoryId,
-          dashboardId,
-          priority);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(MeasurableDataType value) measurableDataType,
-    required TResult Function(CategoryDefinition value) categoryDefinition,
-    required TResult Function(HabitDefinition value) habit,
-    required TResult Function(DashboardDefinition value) dashboard,
-  }) {
-    return habit(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(MeasurableDataType value)? measurableDataType,
-    TResult? Function(CategoryDefinition value)? categoryDefinition,
-    TResult? Function(HabitDefinition value)? habit,
-    TResult? Function(DashboardDefinition value)? dashboard,
-  }) {
-    return habit?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(MeasurableDataType value)? measurableDataType,
-    TResult Function(CategoryDefinition value)? categoryDefinition,
-    TResult Function(HabitDefinition value)? habit,
-    TResult Function(DashboardDefinition value)? dashboard,
-    required TResult orElse(),
-  }) {
-    if (habit != null) {
-      return habit(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$HabitDefinitionImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class HabitDefinition implements EntityDefinition {
-  const factory HabitDefinition(
-      {required final String id,
-      required final DateTime createdAt,
-      required final DateTime updatedAt,
-      required final String name,
-      required final String description,
-      required final HabitSchedule habitSchedule,
-      required final VectorClock? vectorClock,
-      required final bool active,
-      required final bool private,
-      final AutoCompleteRule? autoCompleteRule,
-      final String? version,
-      final DateTime? activeFrom,
-      final DateTime? activeUntil,
-      final DateTime? deletedAt,
-      final String? defaultStoryId,
-      final String? categoryId,
-      final String? dashboardId,
-      final bool? priority}) = _$HabitDefinitionImpl;
-
-  factory HabitDefinition.fromJson(Map<String, dynamic> json) =
-      _$HabitDefinitionImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  DateTime get updatedAt;
-  String get name;
-  String get description;
-  HabitSchedule get habitSchedule;
-  @override
-  VectorClock? get vectorClock;
-  bool get active;
-  @override
-  bool get private;
-  AutoCompleteRule? get autoCompleteRule;
-  String? get version;
-  DateTime? get activeFrom;
-  DateTime? get activeUntil;
-  @override
-  DateTime? get deletedAt;
-  String? get defaultStoryId;
-  @override
-  String? get categoryId;
-  String? get dashboardId;
-  bool? get priority;
-
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$HabitDefinitionImplCopyWith<_$HabitDefinitionImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardDefinitionImplCopyWith<$Res>
+abstract mixin class $HabitDefinitionCopyWith<$Res>
     implements $EntityDefinitionCopyWith<$Res> {
-  factory _$$DashboardDefinitionImplCopyWith(_$DashboardDefinitionImpl value,
-          $Res Function(_$DashboardDefinitionImpl) then) =
-      __$$DashboardDefinitionImplCopyWithImpl<$Res>;
+  factory $HabitDefinitionCopyWith(
+          HabitDefinition value, $Res Function(HabitDefinition) _then) =
+      _$HabitDefinitionCopyWithImpl;
   @override
   @useResult
   $Res call(
       {String id,
       DateTime createdAt,
       DateTime updatedAt,
-      DateTime lastReviewed,
       String name,
       String description,
-      List<DashboardItem> items,
-      String version,
+      HabitSchedule habitSchedule,
       VectorClock? vectorClock,
       bool active,
       bool private,
-      DateTime? reviewAt,
-      int days,
+      AutoCompleteRule? autoCompleteRule,
+      String? version,
+      DateTime? activeFrom,
+      DateTime? activeUntil,
       DateTime? deletedAt,
-      String? categoryId});
+      String? defaultStoryId,
+      String? categoryId,
+      String? dashboardId,
+      bool? priority});
+
+  $HabitScheduleCopyWith<$Res> get habitSchedule;
+  $AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule;
 }
 
 /// @nodoc
-class __$$DashboardDefinitionImplCopyWithImpl<$Res>
-    extends _$EntityDefinitionCopyWithImpl<$Res, _$DashboardDefinitionImpl>
-    implements _$$DashboardDefinitionImplCopyWith<$Res> {
-  __$$DashboardDefinitionImplCopyWithImpl(_$DashboardDefinitionImpl _value,
-      $Res Function(_$DashboardDefinitionImpl) _then)
-      : super(_value, _then);
+class _$HabitDefinitionCopyWithImpl<$Res>
+    implements $HabitDefinitionCopyWith<$Res> {
+  _$HabitDefinitionCopyWithImpl(this._self, this._then);
+
+  final HabitDefinition _self;
+  final $Res Function(HabitDefinition) _then;
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
     Object? createdAt = null,
     Object? updatedAt = null,
-    Object? lastReviewed = null,
     Object? name = null,
     Object? description = null,
-    Object? items = null,
-    Object? version = null,
+    Object? habitSchedule = null,
     Object? vectorClock = freezed,
     Object? active = null,
     Object? private = null,
-    Object? reviewAt = freezed,
-    Object? days = null,
+    Object? autoCompleteRule = freezed,
+    Object? version = freezed,
+    Object? activeFrom = freezed,
+    Object? activeUntil = freezed,
     Object? deletedAt = freezed,
+    Object? defaultStoryId = freezed,
     Object? categoryId = freezed,
+    Object? dashboardId = freezed,
+    Object? priority = freezed,
   }) {
-    return _then(_$DashboardDefinitionImpl(
+    return _then(HabitDefinition(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       updatedAt: null == updatedAt
-          ? _value.updatedAt
+          ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      lastReviewed: null == lastReviewed
-          ? _value.lastReviewed
-          : lastReviewed // ignore: cast_nullable_to_non_nullable
-              as DateTime,
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
       description: null == description
-          ? _value.description
+          ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
-      items: null == items
-          ? _value._items
-          : items // ignore: cast_nullable_to_non_nullable
-              as List<DashboardItem>,
-      version: null == version
-          ? _value.version
-          : version // ignore: cast_nullable_to_non_nullable
-              as String,
+      habitSchedule: null == habitSchedule
+          ? _self.habitSchedule
+          : habitSchedule // ignore: cast_nullable_to_non_nullable
+              as HabitSchedule,
       vectorClock: freezed == vectorClock
-          ? _value.vectorClock
+          ? _self.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
       active: null == active
-          ? _value.active
+          ? _self.active
           : active // ignore: cast_nullable_to_non_nullable
               as bool,
       private: null == private
-          ? _value.private
+          ? _self.private
           : private // ignore: cast_nullable_to_non_nullable
               as bool,
-      reviewAt: freezed == reviewAt
-          ? _value.reviewAt
-          : reviewAt // ignore: cast_nullable_to_non_nullable
+      autoCompleteRule: freezed == autoCompleteRule
+          ? _self.autoCompleteRule
+          : autoCompleteRule // ignore: cast_nullable_to_non_nullable
+              as AutoCompleteRule?,
+      version: freezed == version
+          ? _self.version
+          : version // ignore: cast_nullable_to_non_nullable
+              as String?,
+      activeFrom: freezed == activeFrom
+          ? _self.activeFrom
+          : activeFrom // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      days: null == days
-          ? _value.days
-          : days // ignore: cast_nullable_to_non_nullable
-              as int,
+      activeUntil: freezed == activeUntil
+          ? _self.activeUntil
+          : activeUntil // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       deletedAt: freezed == deletedAt
-          ? _value.deletedAt
+          ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      defaultStoryId: freezed == defaultStoryId
+          ? _self.defaultStoryId
+          : defaultStoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
       categoryId: freezed == categoryId
-          ? _value.categoryId
+          ? _self.categoryId
           : categoryId // ignore: cast_nullable_to_non_nullable
               as String?,
+      dashboardId: freezed == dashboardId
+          ? _self.dashboardId
+          : dashboardId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      priority: freezed == priority
+          ? _self.priority
+          : priority // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ));
+  }
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $HabitScheduleCopyWith<$Res> get habitSchedule {
+    return $HabitScheduleCopyWith<$Res>(_self.habitSchedule, (value) {
+      return _then(_self.copyWith(habitSchedule: value));
+    });
+  }
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule {
+    if (_self.autoCompleteRule == null) {
+      return null;
+    }
+
+    return $AutoCompleteRuleCopyWith<$Res>(_self.autoCompleteRule!, (value) {
+      return _then(_self.copyWith(autoCompleteRule: value));
+    });
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardDefinitionImpl implements DashboardDefinition {
-  const _$DashboardDefinitionImpl(
+class DashboardDefinition implements EntityDefinition {
+  const DashboardDefinition(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -5008,9 +3216,8 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
       final String? $type})
       : _items = items,
         $type = $type ?? 'dashboard';
-
-  factory _$DashboardDefinitionImpl.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardDefinitionImplFromJson(json);
+  factory DashboardDefinition.fromJson(Map<String, dynamic> json) =>
+      _$DashboardDefinitionFromJson(json);
 
   @override
   final String id;
@@ -5018,31 +3225,23 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
-  @override
   final DateTime lastReviewed;
-  @override
   final String name;
-  @override
   final String description;
   final List<DashboardItem> _items;
-  @override
   List<DashboardItem> get items {
     if (_items is EqualUnmodifiableListView) return _items;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_items);
   }
 
-  @override
   final String version;
   @override
   final VectorClock? vectorClock;
-  @override
   final bool active;
   @override
   final bool private;
-  @override
   final DateTime? reviewAt;
-  @override
   @JsonKey()
   final int days;
   @override
@@ -5053,16 +3252,26 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'EntityDefinition.dashboard(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, lastReviewed: $lastReviewed, name: $name, description: $description, items: $items, version: $version, vectorClock: $vectorClock, active: $active, private: $private, reviewAt: $reviewAt, days: $days, deletedAt: $deletedAt, categoryId: $categoryId)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DashboardDefinitionCopyWith<DashboardDefinition> get copyWith =>
+      _$DashboardDefinitionCopyWithImpl<DashboardDefinition>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$DashboardDefinitionToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardDefinitionImpl &&
+            other is DashboardDefinition &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -5108,541 +3317,155 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
       deletedAt,
       categoryId);
 
-  /// Create a copy of EntityDefinition
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$DashboardDefinitionImplCopyWith<_$DashboardDefinitionImpl> get copyWith =>
-      __$$DashboardDefinitionImplCopyWithImpl<_$DashboardDefinitionImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)
-        measurableDataType,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)
-        categoryDefinition,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)
-        habit,
-    required TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)
-        dashboard,
-  }) {
-    return dashboard(
-        id,
-        createdAt,
-        updatedAt,
-        lastReviewed,
-        name,
-        description,
-        items,
-        version,
-        vectorClock,
-        active,
-        private,
-        reviewAt,
-        days,
-        deletedAt,
-        categoryId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)?
-        measurableDataType,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
-        categoryDefinition,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)?
-        habit,
-    TResult? Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)?
-        dashboard,
-  }) {
-    return dashboard?.call(
-        id,
-        createdAt,
-        updatedAt,
-        lastReviewed,
-        name,
-        description,
-        items,
-        version,
-        vectorClock,
-        active,
-        private,
-        reviewAt,
-        days,
-        deletedAt,
-        categoryId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String displayName,
-            String description,
-            String unitName,
-            int version,
-            VectorClock? vectorClock,
-            DateTime? deletedAt,
-            bool? private,
-            bool? favorite,
-            String? categoryId,
-            AggregationType? aggregationType)?
-        measurableDataType,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            VectorClock? vectorClock,
-            bool private,
-            bool active,
-            bool? favorite,
-            String? color,
-            String? categoryId,
-            DateTime? deletedAt,
-            String? defaultLanguageCode,
-            List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
-        categoryDefinition,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            String name,
-            String description,
-            HabitSchedule habitSchedule,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            AutoCompleteRule? autoCompleteRule,
-            String? version,
-            DateTime? activeFrom,
-            DateTime? activeUntil,
-            DateTime? deletedAt,
-            String? defaultStoryId,
-            String? categoryId,
-            String? dashboardId,
-            bool? priority)?
-        habit,
-    TResult Function(
-            String id,
-            DateTime createdAt,
-            DateTime updatedAt,
-            DateTime lastReviewed,
-            String name,
-            String description,
-            List<DashboardItem> items,
-            String version,
-            VectorClock? vectorClock,
-            bool active,
-            bool private,
-            DateTime? reviewAt,
-            int days,
-            DateTime? deletedAt,
-            String? categoryId)?
-        dashboard,
-    required TResult orElse(),
-  }) {
-    if (dashboard != null) {
-      return dashboard(
-          id,
-          createdAt,
-          updatedAt,
-          lastReviewed,
-          name,
-          description,
-          items,
-          version,
-          vectorClock,
-          active,
-          private,
-          reviewAt,
-          days,
-          deletedAt,
-          categoryId);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(MeasurableDataType value) measurableDataType,
-    required TResult Function(CategoryDefinition value) categoryDefinition,
-    required TResult Function(HabitDefinition value) habit,
-    required TResult Function(DashboardDefinition value) dashboard,
-  }) {
-    return dashboard(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(MeasurableDataType value)? measurableDataType,
-    TResult? Function(CategoryDefinition value)? categoryDefinition,
-    TResult? Function(HabitDefinition value)? habit,
-    TResult? Function(DashboardDefinition value)? dashboard,
-  }) {
-    return dashboard?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(MeasurableDataType value)? measurableDataType,
-    TResult Function(CategoryDefinition value)? categoryDefinition,
-    TResult Function(HabitDefinition value)? habit,
-    TResult Function(DashboardDefinition value)? dashboard,
-    required TResult orElse(),
-  }) {
-    if (dashboard != null) {
-      return dashboard(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$DashboardDefinitionImplToJson(
-      this,
-    );
+  String toString() {
+    return 'EntityDefinition.dashboard(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, lastReviewed: $lastReviewed, name: $name, description: $description, items: $items, version: $version, vectorClock: $vectorClock, active: $active, private: $private, reviewAt: $reviewAt, days: $days, deletedAt: $deletedAt, categoryId: $categoryId)';
   }
 }
 
-abstract class DashboardDefinition implements EntityDefinition {
-  const factory DashboardDefinition(
-      {required final String id,
-      required final DateTime createdAt,
-      required final DateTime updatedAt,
-      required final DateTime lastReviewed,
-      required final String name,
-      required final String description,
-      required final List<DashboardItem> items,
-      required final String version,
-      required final VectorClock? vectorClock,
-      required final bool active,
-      required final bool private,
-      final DateTime? reviewAt,
-      final int days,
-      final DateTime? deletedAt,
-      final String? categoryId}) = _$DashboardDefinitionImpl;
+/// @nodoc
+abstract mixin class $DashboardDefinitionCopyWith<$Res>
+    implements $EntityDefinitionCopyWith<$Res> {
+  factory $DashboardDefinitionCopyWith(
+          DashboardDefinition value, $Res Function(DashboardDefinition) _then) =
+      _$DashboardDefinitionCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      DateTime createdAt,
+      DateTime updatedAt,
+      DateTime lastReviewed,
+      String name,
+      String description,
+      List<DashboardItem> items,
+      String version,
+      VectorClock? vectorClock,
+      bool active,
+      bool private,
+      DateTime? reviewAt,
+      int days,
+      DateTime? deletedAt,
+      String? categoryId});
+}
 
-  factory DashboardDefinition.fromJson(Map<String, dynamic> json) =
-      _$DashboardDefinitionImpl.fromJson;
+/// @nodoc
+class _$DashboardDefinitionCopyWithImpl<$Res>
+    implements $DashboardDefinitionCopyWith<$Res> {
+  _$DashboardDefinitionCopyWithImpl(this._self, this._then);
 
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  DateTime get updatedAt;
-  DateTime get lastReviewed;
-  String get name;
-  String get description;
-  List<DashboardItem> get items;
-  String get version;
-  @override
-  VectorClock? get vectorClock;
-  bool get active;
-  @override
-  bool get private;
-  DateTime? get reviewAt;
-  int get days;
-  @override
-  DateTime? get deletedAt;
-  @override
-  String? get categoryId;
+  final DashboardDefinition _self;
+  final $Res Function(DashboardDefinition) _then;
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DashboardDefinitionImplCopyWith<_$DashboardDefinitionImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-MeasurementData _$MeasurementDataFromJson(Map<String, dynamic> json) {
-  return _MeasurementData.fromJson(json);
-}
-
-/// @nodoc
-mixin _$MeasurementData {
-  DateTime get dateFrom => throw _privateConstructorUsedError;
-  DateTime get dateTo => throw _privateConstructorUsedError;
-  num get value => throw _privateConstructorUsedError;
-  String get dataTypeId => throw _privateConstructorUsedError;
-
-  /// Serializes this MeasurementData to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of MeasurementData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $MeasurementDataCopyWith<MeasurementData> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $MeasurementDataCopyWith<$Res> {
-  factory $MeasurementDataCopyWith(
-          MeasurementData value, $Res Function(MeasurementData) then) =
-      _$MeasurementDataCopyWithImpl<$Res, MeasurementData>;
-  @useResult
-  $Res call({DateTime dateFrom, DateTime dateTo, num value, String dataTypeId});
-}
-
-/// @nodoc
-class _$MeasurementDataCopyWithImpl<$Res, $Val extends MeasurementData>
-    implements $MeasurementDataCopyWith<$Res> {
-  _$MeasurementDataCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of MeasurementData
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? value = null,
-    Object? dataTypeId = null,
+    Object? id = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? lastReviewed = null,
+    Object? name = null,
+    Object? description = null,
+    Object? items = null,
+    Object? version = null,
+    Object? vectorClock = freezed,
+    Object? active = null,
+    Object? private = null,
+    Object? reviewAt = freezed,
+    Object? days = null,
+    Object? deletedAt = freezed,
+    Object? categoryId = freezed,
   }) {
-    return _then(_value.copyWith(
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      value: null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as num,
-      dataTypeId: null == dataTypeId
-          ? _value.dataTypeId
-          : dataTypeId // ignore: cast_nullable_to_non_nullable
+    return _then(DashboardDefinition(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
               as String,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$MeasurementDataImplCopyWith<$Res>
-    implements $MeasurementDataCopyWith<$Res> {
-  factory _$$MeasurementDataImplCopyWith(_$MeasurementDataImpl value,
-          $Res Function(_$MeasurementDataImpl) then) =
-      __$$MeasurementDataImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({DateTime dateFrom, DateTime dateTo, num value, String dataTypeId});
-}
-
-/// @nodoc
-class __$$MeasurementDataImplCopyWithImpl<$Res>
-    extends _$MeasurementDataCopyWithImpl<$Res, _$MeasurementDataImpl>
-    implements _$$MeasurementDataImplCopyWith<$Res> {
-  __$$MeasurementDataImplCopyWithImpl(
-      _$MeasurementDataImpl _value, $Res Function(_$MeasurementDataImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of MeasurementData
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? value = null,
-    Object? dataTypeId = null,
-  }) {
-    return _then(_$MeasurementDataImpl(
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      value: null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as num,
-      dataTypeId: null == dataTypeId
-          ? _value.dataTypeId
-          : dataTypeId // ignore: cast_nullable_to_non_nullable
+      lastReviewed: null == lastReviewed
+          ? _self.lastReviewed
+          : lastReviewed // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
+      description: null == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      items: null == items
+          ? _self._items
+          : items // ignore: cast_nullable_to_non_nullable
+              as List<DashboardItem>,
+      version: null == version
+          ? _self.version
+          : version // ignore: cast_nullable_to_non_nullable
+              as String,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      active: null == active
+          ? _self.active
+          : active // ignore: cast_nullable_to_non_nullable
+              as bool,
+      private: null == private
+          ? _self.private
+          : private // ignore: cast_nullable_to_non_nullable
+              as bool,
+      reviewAt: freezed == reviewAt
+          ? _self.reviewAt
+          : reviewAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      days: null == days
+          ? _self.days
+          : days // ignore: cast_nullable_to_non_nullable
+              as int,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      categoryId: freezed == categoryId
+          ? _self.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
-class _$MeasurementDataImpl implements _MeasurementData {
-  const _$MeasurementDataImpl(
-      {required this.dateFrom,
-      required this.dateTo,
-      required this.value,
-      required this.dataTypeId});
+mixin _$MeasurementData {
+  DateTime get dateFrom;
+  DateTime get dateTo;
+  num get value;
+  String get dataTypeId;
 
-  factory _$MeasurementDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$MeasurementDataImplFromJson(json);
+  /// Create a copy of MeasurementData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $MeasurementDataCopyWith<MeasurementData> get copyWith =>
+      _$MeasurementDataCopyWithImpl<MeasurementData>(
+          this as MeasurementData, _$identity);
 
-  @override
-  final DateTime dateFrom;
-  @override
-  final DateTime dateTo;
-  @override
-  final num value;
-  @override
-  final String dataTypeId;
-
-  @override
-  String toString() {
-    return 'MeasurementData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataTypeId: $dataTypeId)';
-  }
+  /// Serializes this MeasurementData to a JSON map.
+  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MeasurementDataImpl &&
+            other is MeasurementData &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -5656,168 +3479,405 @@ class _$MeasurementDataImpl implements _MeasurementData {
   int get hashCode =>
       Object.hash(runtimeType, dateFrom, dateTo, value, dataTypeId);
 
-  /// Create a copy of MeasurementData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$MeasurementDataImplCopyWith<_$MeasurementDataImpl> get copyWith =>
-      __$$MeasurementDataImplCopyWithImpl<_$MeasurementDataImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$MeasurementDataImplToJson(
-      this,
-    );
+  String toString() {
+    return 'MeasurementData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataTypeId: $dataTypeId)';
   }
 }
 
-abstract class _MeasurementData implements MeasurementData {
-  const factory _MeasurementData(
-      {required final DateTime dateFrom,
-      required final DateTime dateTo,
-      required final num value,
-      required final String dataTypeId}) = _$MeasurementDataImpl;
+/// @nodoc
+abstract mixin class $MeasurementDataCopyWith<$Res> {
+  factory $MeasurementDataCopyWith(
+          MeasurementData value, $Res Function(MeasurementData) _then) =
+      _$MeasurementDataCopyWithImpl;
+  @useResult
+  $Res call({DateTime dateFrom, DateTime dateTo, num value, String dataTypeId});
+}
 
-  factory _MeasurementData.fromJson(Map<String, dynamic> json) =
-      _$MeasurementDataImpl.fromJson;
+/// @nodoc
+class _$MeasurementDataCopyWithImpl<$Res>
+    implements $MeasurementDataCopyWith<$Res> {
+  _$MeasurementDataCopyWithImpl(this._self, this._then);
+
+  final MeasurementData _self;
+  final $Res Function(MeasurementData) _then;
+
+  /// Create a copy of MeasurementData
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? value = null,
+    Object? dataTypeId = null,
+  }) {
+    return _then(_self.copyWith(
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      value: null == value
+          ? _self.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as num,
+      dataTypeId: null == dataTypeId
+          ? _self.dataTypeId
+          : dataTypeId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [MeasurementData].
+extension MeasurementDataPatterns on MeasurementData {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_MeasurementData value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _MeasurementData() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_MeasurementData value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _MeasurementData():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_MeasurementData value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _MeasurementData() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            DateTime dateFrom, DateTime dateTo, num value, String dataTypeId)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _MeasurementData() when $default != null:
+        return $default(
+            _that.dateFrom, _that.dateTo, _that.value, _that.dataTypeId);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            DateTime dateFrom, DateTime dateTo, num value, String dataTypeId)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _MeasurementData():
+        return $default(
+            _that.dateFrom, _that.dateTo, _that.value, _that.dataTypeId);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            DateTime dateFrom, DateTime dateTo, num value, String dataTypeId)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _MeasurementData() when $default != null:
+        return $default(
+            _that.dateFrom, _that.dateTo, _that.value, _that.dataTypeId);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _MeasurementData implements MeasurementData {
+  const _MeasurementData(
+      {required this.dateFrom,
+      required this.dateTo,
+      required this.value,
+      required this.dataTypeId});
+  factory _MeasurementData.fromJson(Map<String, dynamic> json) =>
+      _$MeasurementDataFromJson(json);
 
   @override
-  DateTime get dateFrom;
+  final DateTime dateFrom;
   @override
-  DateTime get dateTo;
+  final DateTime dateTo;
   @override
-  num get value;
+  final num value;
   @override
-  String get dataTypeId;
+  final String dataTypeId;
 
   /// Create a copy of MeasurementData
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$MeasurementDataImplCopyWith<_$MeasurementDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  _$MeasurementDataCopyWith<_MeasurementData> get copyWith =>
+      __$MeasurementDataCopyWithImpl<_MeasurementData>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$MeasurementDataToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _MeasurementData &&
+            (identical(other.dateFrom, dateFrom) ||
+                other.dateFrom == dateFrom) &&
+            (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
+            (identical(other.value, value) || other.value == value) &&
+            (identical(other.dataTypeId, dataTypeId) ||
+                other.dataTypeId == dataTypeId));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, dateFrom, dateTo, value, dataTypeId);
+
+  @override
+  String toString() {
+    return 'MeasurementData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataTypeId: $dataTypeId)';
+  }
 }
 
-AiResponseData _$AiResponseDataFromJson(Map<String, dynamic> json) {
-  return _AiResponseData.fromJson(json);
+/// @nodoc
+abstract mixin class _$MeasurementDataCopyWith<$Res>
+    implements $MeasurementDataCopyWith<$Res> {
+  factory _$MeasurementDataCopyWith(
+          _MeasurementData value, $Res Function(_MeasurementData) _then) =
+      __$MeasurementDataCopyWithImpl;
+  @override
+  @useResult
+  $Res call({DateTime dateFrom, DateTime dateTo, num value, String dataTypeId});
+}
+
+/// @nodoc
+class __$MeasurementDataCopyWithImpl<$Res>
+    implements _$MeasurementDataCopyWith<$Res> {
+  __$MeasurementDataCopyWithImpl(this._self, this._then);
+
+  final _MeasurementData _self;
+  final $Res Function(_MeasurementData) _then;
+
+  /// Create a copy of MeasurementData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? value = null,
+    Object? dataTypeId = null,
+  }) {
+    return _then(_MeasurementData(
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      value: null == value
+          ? _self.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as num,
+      dataTypeId: null == dataTypeId
+          ? _self.dataTypeId
+          : dataTypeId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
 }
 
 /// @nodoc
 mixin _$AiResponseData {
-  String get model => throw _privateConstructorUsedError;
-  String get systemMessage => throw _privateConstructorUsedError;
-  String get prompt => throw _privateConstructorUsedError;
-  String get thoughts => throw _privateConstructorUsedError;
-  String get response => throw _privateConstructorUsedError;
-  String? get promptId => throw _privateConstructorUsedError;
-  List<AiActionItem>? get suggestedActionItems =>
-      throw _privateConstructorUsedError;
-  AiResponseType? get type => throw _privateConstructorUsedError;
-  double? get temperature => throw _privateConstructorUsedError;
-
-  /// Serializes this AiResponseData to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get model;
+  String get systemMessage;
+  String get prompt;
+  String get thoughts;
+  String get response;
+  String? get promptId;
+  List<AiActionItem>? get suggestedActionItems;
+  AiResponseType? get type;
+  double? get temperature;
 
   /// Create a copy of AiResponseData
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $AiResponseDataCopyWith<AiResponseData> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AiResponseDataCopyWith<$Res> {
-  factory $AiResponseDataCopyWith(
-          AiResponseData value, $Res Function(AiResponseData) then) =
-      _$AiResponseDataCopyWithImpl<$Res, AiResponseData>;
-  @useResult
-  $Res call(
-      {String model,
-      String systemMessage,
-      String prompt,
-      String thoughts,
-      String response,
-      String? promptId,
-      List<AiActionItem>? suggestedActionItems,
-      AiResponseType? type,
-      double? temperature});
-}
-
-/// @nodoc
-class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
-    implements $AiResponseDataCopyWith<$Res> {
-  _$AiResponseDataCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AiResponseData
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $AiResponseDataCopyWith<AiResponseData> get copyWith =>
+      _$AiResponseDataCopyWithImpl<AiResponseData>(
+          this as AiResponseData, _$identity);
+
+  /// Serializes this AiResponseData to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? model = null,
-    Object? systemMessage = null,
-    Object? prompt = null,
-    Object? thoughts = null,
-    Object? response = null,
-    Object? promptId = freezed,
-    Object? suggestedActionItems = freezed,
-    Object? type = freezed,
-    Object? temperature = freezed,
-  }) {
-    return _then(_value.copyWith(
-      model: null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as String,
-      systemMessage: null == systemMessage
-          ? _value.systemMessage
-          : systemMessage // ignore: cast_nullable_to_non_nullable
-              as String,
-      prompt: null == prompt
-          ? _value.prompt
-          : prompt // ignore: cast_nullable_to_non_nullable
-              as String,
-      thoughts: null == thoughts
-          ? _value.thoughts
-          : thoughts // ignore: cast_nullable_to_non_nullable
-              as String,
-      response: null == response
-          ? _value.response
-          : response // ignore: cast_nullable_to_non_nullable
-              as String,
-      promptId: freezed == promptId
-          ? _value.promptId
-          : promptId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      suggestedActionItems: freezed == suggestedActionItems
-          ? _value.suggestedActionItems
-          : suggestedActionItems // ignore: cast_nullable_to_non_nullable
-              as List<AiActionItem>?,
-      type: freezed == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as AiResponseType?,
-      temperature: freezed == temperature
-          ? _value.temperature
-          : temperature // ignore: cast_nullable_to_non_nullable
-              as double?,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AiResponseData &&
+            (identical(other.model, model) || other.model == model) &&
+            (identical(other.systemMessage, systemMessage) ||
+                other.systemMessage == systemMessage) &&
+            (identical(other.prompt, prompt) || other.prompt == prompt) &&
+            (identical(other.thoughts, thoughts) ||
+                other.thoughts == thoughts) &&
+            (identical(other.response, response) ||
+                other.response == response) &&
+            (identical(other.promptId, promptId) ||
+                other.promptId == promptId) &&
+            const DeepCollectionEquality()
+                .equals(other.suggestedActionItems, suggestedActionItems) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.temperature, temperature) ||
+                other.temperature == temperature));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      model,
+      systemMessage,
+      prompt,
+      thoughts,
+      response,
+      promptId,
+      const DeepCollectionEquality().hash(suggestedActionItems),
+      type,
+      temperature);
+
+  @override
+  String toString() {
+    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature)';
   }
 }
 
 /// @nodoc
-abstract class _$$AiResponseDataImplCopyWith<$Res>
-    implements $AiResponseDataCopyWith<$Res> {
-  factory _$$AiResponseDataImplCopyWith(_$AiResponseDataImpl value,
-          $Res Function(_$AiResponseDataImpl) then) =
-      __$$AiResponseDataImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $AiResponseDataCopyWith<$Res> {
+  factory $AiResponseDataCopyWith(
+          AiResponseData value, $Res Function(AiResponseData) _then) =
+      _$AiResponseDataCopyWithImpl;
   @useResult
   $Res call(
       {String model,
@@ -5832,12 +3892,12 @@ abstract class _$$AiResponseDataImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AiResponseDataImplCopyWithImpl<$Res>
-    extends _$AiResponseDataCopyWithImpl<$Res, _$AiResponseDataImpl>
-    implements _$$AiResponseDataImplCopyWith<$Res> {
-  __$$AiResponseDataImplCopyWithImpl(
-      _$AiResponseDataImpl _value, $Res Function(_$AiResponseDataImpl) _then)
-      : super(_value, _then);
+class _$AiResponseDataCopyWithImpl<$Res>
+    implements $AiResponseDataCopyWith<$Res> {
+  _$AiResponseDataCopyWithImpl(this._self, this._then);
+
+  final AiResponseData _self;
+  final $Res Function(AiResponseData) _then;
 
   /// Create a copy of AiResponseData
   /// with the given fields replaced by the non-null parameter values.
@@ -5854,51 +3914,265 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
     Object? type = freezed,
     Object? temperature = freezed,
   }) {
-    return _then(_$AiResponseDataImpl(
+    return _then(_self.copyWith(
       model: null == model
-          ? _value.model
+          ? _self.model
           : model // ignore: cast_nullable_to_non_nullable
               as String,
       systemMessage: null == systemMessage
-          ? _value.systemMessage
+          ? _self.systemMessage
           : systemMessage // ignore: cast_nullable_to_non_nullable
               as String,
       prompt: null == prompt
-          ? _value.prompt
+          ? _self.prompt
           : prompt // ignore: cast_nullable_to_non_nullable
               as String,
       thoughts: null == thoughts
-          ? _value.thoughts
+          ? _self.thoughts
           : thoughts // ignore: cast_nullable_to_non_nullable
               as String,
       response: null == response
-          ? _value.response
+          ? _self.response
           : response // ignore: cast_nullable_to_non_nullable
               as String,
       promptId: freezed == promptId
-          ? _value.promptId
+          ? _self.promptId
           : promptId // ignore: cast_nullable_to_non_nullable
               as String?,
       suggestedActionItems: freezed == suggestedActionItems
-          ? _value._suggestedActionItems
+          ? _self.suggestedActionItems
           : suggestedActionItems // ignore: cast_nullable_to_non_nullable
               as List<AiActionItem>?,
       type: freezed == type
-          ? _value.type
+          ? _self.type
           : type // ignore: cast_nullable_to_non_nullable
               as AiResponseType?,
       temperature: freezed == temperature
-          ? _value.temperature
+          ? _self.temperature
           : temperature // ignore: cast_nullable_to_non_nullable
               as double?,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [AiResponseData].
+extension AiResponseDataPatterns on AiResponseData {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_AiResponseData value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiResponseData() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_AiResponseData value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiResponseData():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_AiResponseData value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiResponseData() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            String model,
+            String systemMessage,
+            String prompt,
+            String thoughts,
+            String response,
+            String? promptId,
+            List<AiActionItem>? suggestedActionItems,
+            AiResponseType? type,
+            double? temperature)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiResponseData() when $default != null:
+        return $default(
+            _that.model,
+            _that.systemMessage,
+            _that.prompt,
+            _that.thoughts,
+            _that.response,
+            _that.promptId,
+            _that.suggestedActionItems,
+            _that.type,
+            _that.temperature);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            String model,
+            String systemMessage,
+            String prompt,
+            String thoughts,
+            String response,
+            String? promptId,
+            List<AiActionItem>? suggestedActionItems,
+            AiResponseType? type,
+            double? temperature)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiResponseData():
+        return $default(
+            _that.model,
+            _that.systemMessage,
+            _that.prompt,
+            _that.thoughts,
+            _that.response,
+            _that.promptId,
+            _that.suggestedActionItems,
+            _that.type,
+            _that.temperature);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            String model,
+            String systemMessage,
+            String prompt,
+            String thoughts,
+            String response,
+            String? promptId,
+            List<AiActionItem>? suggestedActionItems,
+            AiResponseType? type,
+            double? temperature)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiResponseData() when $default != null:
+        return $default(
+            _that.model,
+            _that.systemMessage,
+            _that.prompt,
+            _that.thoughts,
+            _that.response,
+            _that.promptId,
+            _that.suggestedActionItems,
+            _that.type,
+            _that.temperature);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$AiResponseDataImpl implements _AiResponseData {
-  const _$AiResponseDataImpl(
+class _AiResponseData implements AiResponseData {
+  const _AiResponseData(
       {required this.model,
       required this.systemMessage,
       required this.prompt,
@@ -5909,9 +4183,8 @@ class _$AiResponseDataImpl implements _AiResponseData {
       this.type,
       this.temperature})
       : _suggestedActionItems = suggestedActionItems;
-
-  factory _$AiResponseDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiResponseDataImplFromJson(json);
+  factory _AiResponseData.fromJson(Map<String, dynamic> json) =>
+      _$AiResponseDataFromJson(json);
 
   @override
   final String model;
@@ -5941,16 +4214,26 @@ class _$AiResponseDataImpl implements _AiResponseData {
   @override
   final double? temperature;
 
+  /// Create a copy of AiResponseData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AiResponseDataCopyWith<_AiResponseData> get copyWith =>
+      __$AiResponseDataCopyWithImpl<_AiResponseData>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiResponseDataToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiResponseDataImpl &&
+            other is _AiResponseData &&
             (identical(other.model, model) || other.model == model) &&
             (identical(other.systemMessage, systemMessage) ||
                 other.systemMessage == systemMessage) &&
@@ -5982,273 +4265,121 @@ class _$AiResponseDataImpl implements _AiResponseData {
       type,
       temperature);
 
-  /// Create a copy of AiResponseData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AiResponseDataImplCopyWith<_$AiResponseDataImpl> get copyWith =>
-      __$$AiResponseDataImplCopyWithImpl<_$AiResponseDataImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AiResponseDataImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _AiResponseData implements AiResponseData {
-  const factory _AiResponseData(
-      {required final String model,
-      required final String systemMessage,
-      required final String prompt,
-      required final String thoughts,
-      required final String response,
-      final String? promptId,
-      final List<AiActionItem>? suggestedActionItems,
-      final AiResponseType? type,
-      final double? temperature}) = _$AiResponseDataImpl;
-
-  factory _AiResponseData.fromJson(Map<String, dynamic> json) =
-      _$AiResponseDataImpl.fromJson;
-
-  @override
-  String get model;
-  @override
-  String get systemMessage;
-  @override
-  String get prompt;
-  @override
-  String get thoughts;
-  @override
-  String get response;
-  @override
-  String? get promptId;
-  @override
-  List<AiActionItem>? get suggestedActionItems;
-  @override
-  AiResponseType? get type;
-  @override
-  double? get temperature;
-
-  /// Create a copy of AiResponseData
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiResponseDataImplCopyWith<_$AiResponseDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-WorkoutData _$WorkoutDataFromJson(Map<String, dynamic> json) {
-  return _WorkoutData.fromJson(json);
-}
-
-/// @nodoc
-mixin _$WorkoutData {
-  DateTime get dateFrom => throw _privateConstructorUsedError;
-  DateTime get dateTo => throw _privateConstructorUsedError;
-  String get id => throw _privateConstructorUsedError;
-  String get workoutType => throw _privateConstructorUsedError;
-  num? get energy => throw _privateConstructorUsedError;
-  num? get distance => throw _privateConstructorUsedError;
-  String? get source => throw _privateConstructorUsedError;
-
-  /// Serializes this WorkoutData to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of WorkoutData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $WorkoutDataCopyWith<WorkoutData> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $WorkoutDataCopyWith<$Res> {
-  factory $WorkoutDataCopyWith(
-          WorkoutData value, $Res Function(WorkoutData) then) =
-      _$WorkoutDataCopyWithImpl<$Res, WorkoutData>;
-  @useResult
-  $Res call(
-      {DateTime dateFrom,
-      DateTime dateTo,
-      String id,
-      String workoutType,
-      num? energy,
-      num? distance,
-      String? source});
-}
-
-/// @nodoc
-class _$WorkoutDataCopyWithImpl<$Res, $Val extends WorkoutData>
-    implements $WorkoutDataCopyWith<$Res> {
-  _$WorkoutDataCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of WorkoutData
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? id = null,
-    Object? workoutType = null,
-    Object? energy = freezed,
-    Object? distance = freezed,
-    Object? source = freezed,
-  }) {
-    return _then(_value.copyWith(
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      workoutType: null == workoutType
-          ? _value.workoutType
-          : workoutType // ignore: cast_nullable_to_non_nullable
-              as String,
-      energy: freezed == energy
-          ? _value.energy
-          : energy // ignore: cast_nullable_to_non_nullable
-              as num?,
-      distance: freezed == distance
-          ? _value.distance
-          : distance // ignore: cast_nullable_to_non_nullable
-              as num?,
-      source: freezed == source
-          ? _value.source
-          : source // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+  String toString() {
+    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature)';
   }
 }
 
 /// @nodoc
-abstract class _$$WorkoutDataImplCopyWith<$Res>
-    implements $WorkoutDataCopyWith<$Res> {
-  factory _$$WorkoutDataImplCopyWith(
-          _$WorkoutDataImpl value, $Res Function(_$WorkoutDataImpl) then) =
-      __$$WorkoutDataImplCopyWithImpl<$Res>;
+abstract mixin class _$AiResponseDataCopyWith<$Res>
+    implements $AiResponseDataCopyWith<$Res> {
+  factory _$AiResponseDataCopyWith(
+          _AiResponseData value, $Res Function(_AiResponseData) _then) =
+      __$AiResponseDataCopyWithImpl;
   @override
   @useResult
   $Res call(
-      {DateTime dateFrom,
-      DateTime dateTo,
-      String id,
-      String workoutType,
-      num? energy,
-      num? distance,
-      String? source});
+      {String model,
+      String systemMessage,
+      String prompt,
+      String thoughts,
+      String response,
+      String? promptId,
+      List<AiActionItem>? suggestedActionItems,
+      AiResponseType? type,
+      double? temperature});
 }
 
 /// @nodoc
-class __$$WorkoutDataImplCopyWithImpl<$Res>
-    extends _$WorkoutDataCopyWithImpl<$Res, _$WorkoutDataImpl>
-    implements _$$WorkoutDataImplCopyWith<$Res> {
-  __$$WorkoutDataImplCopyWithImpl(
-      _$WorkoutDataImpl _value, $Res Function(_$WorkoutDataImpl) _then)
-      : super(_value, _then);
+class __$AiResponseDataCopyWithImpl<$Res>
+    implements _$AiResponseDataCopyWith<$Res> {
+  __$AiResponseDataCopyWithImpl(this._self, this._then);
 
-  /// Create a copy of WorkoutData
+  final _AiResponseData _self;
+  final $Res Function(_AiResponseData) _then;
+
+  /// Create a copy of AiResponseData
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
   @override
+  @pragma('vm:prefer-inline')
   $Res call({
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? id = null,
-    Object? workoutType = null,
-    Object? energy = freezed,
-    Object? distance = freezed,
-    Object? source = freezed,
+    Object? model = null,
+    Object? systemMessage = null,
+    Object? prompt = null,
+    Object? thoughts = null,
+    Object? response = null,
+    Object? promptId = freezed,
+    Object? suggestedActionItems = freezed,
+    Object? type = freezed,
+    Object? temperature = freezed,
   }) {
-    return _then(_$WorkoutDataImpl(
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
+    return _then(_AiResponseData(
+      model: null == model
+          ? _self.model
+          : model // ignore: cast_nullable_to_non_nullable
               as String,
-      workoutType: null == workoutType
-          ? _value.workoutType
-          : workoutType // ignore: cast_nullable_to_non_nullable
+      systemMessage: null == systemMessage
+          ? _self.systemMessage
+          : systemMessage // ignore: cast_nullable_to_non_nullable
               as String,
-      energy: freezed == energy
-          ? _value.energy
-          : energy // ignore: cast_nullable_to_non_nullable
-              as num?,
-      distance: freezed == distance
-          ? _value.distance
-          : distance // ignore: cast_nullable_to_non_nullable
-              as num?,
-      source: freezed == source
-          ? _value.source
-          : source // ignore: cast_nullable_to_non_nullable
+      prompt: null == prompt
+          ? _self.prompt
+          : prompt // ignore: cast_nullable_to_non_nullable
+              as String,
+      thoughts: null == thoughts
+          ? _self.thoughts
+          : thoughts // ignore: cast_nullable_to_non_nullable
+              as String,
+      response: null == response
+          ? _self.response
+          : response // ignore: cast_nullable_to_non_nullable
+              as String,
+      promptId: freezed == promptId
+          ? _self.promptId
+          : promptId // ignore: cast_nullable_to_non_nullable
               as String?,
+      suggestedActionItems: freezed == suggestedActionItems
+          ? _self._suggestedActionItems
+          : suggestedActionItems // ignore: cast_nullable_to_non_nullable
+              as List<AiActionItem>?,
+      type: freezed == type
+          ? _self.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as AiResponseType?,
+      temperature: freezed == temperature
+          ? _self.temperature
+          : temperature // ignore: cast_nullable_to_non_nullable
+              as double?,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
-class _$WorkoutDataImpl implements _WorkoutData {
-  const _$WorkoutDataImpl(
-      {required this.dateFrom,
-      required this.dateTo,
-      required this.id,
-      required this.workoutType,
-      required this.energy,
-      required this.distance,
-      required this.source});
+mixin _$WorkoutData {
+  DateTime get dateFrom;
+  DateTime get dateTo;
+  String get id;
+  String get workoutType;
+  num? get energy;
+  num? get distance;
+  String? get source;
 
-  factory _$WorkoutDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WorkoutDataImplFromJson(json);
+  /// Create a copy of WorkoutData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $WorkoutDataCopyWith<WorkoutData> get copyWith =>
+      _$WorkoutDataCopyWithImpl<WorkoutData>(this as WorkoutData, _$identity);
 
-  @override
-  final DateTime dateFrom;
-  @override
-  final DateTime dateTo;
-  @override
-  final String id;
-  @override
-  final String workoutType;
-  @override
-  final num? energy;
-  @override
-  final num? distance;
-  @override
-  final String? source;
-
-  @override
-  String toString() {
-    return 'WorkoutData(dateFrom: $dateFrom, dateTo: $dateTo, id: $id, workoutType: $workoutType, energy: $energy, distance: $distance, source: $source)';
-  }
+  /// Serializes this WorkoutData to a JSON map.
+  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$WorkoutDataImpl &&
+            other is WorkoutData &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -6266,218 +4397,413 @@ class _$WorkoutDataImpl implements _WorkoutData {
   int get hashCode => Object.hash(
       runtimeType, dateFrom, dateTo, id, workoutType, energy, distance, source);
 
-  /// Create a copy of WorkoutData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$WorkoutDataImplCopyWith<_$WorkoutDataImpl> get copyWith =>
-      __$$WorkoutDataImplCopyWithImpl<_$WorkoutDataImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WorkoutDataImplToJson(
-      this,
-    );
+  String toString() {
+    return 'WorkoutData(dateFrom: $dateFrom, dateTo: $dateTo, id: $id, workoutType: $workoutType, energy: $energy, distance: $distance, source: $source)';
   }
 }
 
-abstract class _WorkoutData implements WorkoutData {
-  const factory _WorkoutData(
-      {required final DateTime dateFrom,
-      required final DateTime dateTo,
-      required final String id,
-      required final String workoutType,
-      required final num? energy,
-      required final num? distance,
-      required final String? source}) = _$WorkoutDataImpl;
-
-  factory _WorkoutData.fromJson(Map<String, dynamic> json) =
-      _$WorkoutDataImpl.fromJson;
-
-  @override
-  DateTime get dateFrom;
-  @override
-  DateTime get dateTo;
-  @override
-  String get id;
-  @override
-  String get workoutType;
-  @override
-  num? get energy;
-  @override
-  num? get distance;
-  @override
-  String? get source;
-
-  /// Create a copy of WorkoutData
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$WorkoutDataImplCopyWith<_$WorkoutDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-HabitCompletionData _$HabitCompletionDataFromJson(Map<String, dynamic> json) {
-  return _HabitCompletionData.fromJson(json);
-}
-
 /// @nodoc
-mixin _$HabitCompletionData {
-  DateTime get dateFrom => throw _privateConstructorUsedError;
-  DateTime get dateTo => throw _privateConstructorUsedError;
-  String get habitId => throw _privateConstructorUsedError;
-  HabitCompletionType? get completionType => throw _privateConstructorUsedError;
-
-  /// Serializes this HabitCompletionData to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of HabitCompletionData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $HabitCompletionDataCopyWith<HabitCompletionData> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $HabitCompletionDataCopyWith<$Res> {
-  factory $HabitCompletionDataCopyWith(
-          HabitCompletionData value, $Res Function(HabitCompletionData) then) =
-      _$HabitCompletionDataCopyWithImpl<$Res, HabitCompletionData>;
+abstract mixin class $WorkoutDataCopyWith<$Res> {
+  factory $WorkoutDataCopyWith(
+          WorkoutData value, $Res Function(WorkoutData) _then) =
+      _$WorkoutDataCopyWithImpl;
   @useResult
   $Res call(
       {DateTime dateFrom,
       DateTime dateTo,
-      String habitId,
-      HabitCompletionType? completionType});
+      String id,
+      String workoutType,
+      num? energy,
+      num? distance,
+      String? source});
 }
 
 /// @nodoc
-class _$HabitCompletionDataCopyWithImpl<$Res, $Val extends HabitCompletionData>
-    implements $HabitCompletionDataCopyWith<$Res> {
-  _$HabitCompletionDataCopyWithImpl(this._value, this._then);
+class _$WorkoutDataCopyWithImpl<$Res> implements $WorkoutDataCopyWith<$Res> {
+  _$WorkoutDataCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final WorkoutData _self;
+  final $Res Function(WorkoutData) _then;
 
-  /// Create a copy of HabitCompletionData
+  /// Create a copy of WorkoutData
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
     Object? dateFrom = null,
     Object? dateTo = null,
-    Object? habitId = null,
-    Object? completionType = freezed,
+    Object? id = null,
+    Object? workoutType = null,
+    Object? energy = freezed,
+    Object? distance = freezed,
+    Object? source = freezed,
   }) {
-    return _then(_value.copyWith(
+    return _then(_self.copyWith(
       dateFrom: null == dateFrom
-          ? _value.dateFrom
+          ? _self.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
               as DateTime,
       dateTo: null == dateTo
-          ? _value.dateTo
+          ? _self.dateTo
           : dateTo // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      habitId: null == habitId
-          ? _value.habitId
-          : habitId // ignore: cast_nullable_to_non_nullable
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
               as String,
-      completionType: freezed == completionType
-          ? _value.completionType
-          : completionType // ignore: cast_nullable_to_non_nullable
-              as HabitCompletionType?,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$HabitCompletionDataImplCopyWith<$Res>
-    implements $HabitCompletionDataCopyWith<$Res> {
-  factory _$$HabitCompletionDataImplCopyWith(_$HabitCompletionDataImpl value,
-          $Res Function(_$HabitCompletionDataImpl) then) =
-      __$$HabitCompletionDataImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {DateTime dateFrom,
-      DateTime dateTo,
-      String habitId,
-      HabitCompletionType? completionType});
-}
-
-/// @nodoc
-class __$$HabitCompletionDataImplCopyWithImpl<$Res>
-    extends _$HabitCompletionDataCopyWithImpl<$Res, _$HabitCompletionDataImpl>
-    implements _$$HabitCompletionDataImplCopyWith<$Res> {
-  __$$HabitCompletionDataImplCopyWithImpl(_$HabitCompletionDataImpl _value,
-      $Res Function(_$HabitCompletionDataImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of HabitCompletionData
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? dateFrom = null,
-    Object? dateTo = null,
-    Object? habitId = null,
-    Object? completionType = freezed,
-  }) {
-    return _then(_$HabitCompletionDataImpl(
-      dateFrom: null == dateFrom
-          ? _value.dateFrom
-          : dateFrom // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      dateTo: null == dateTo
-          ? _value.dateTo
-          : dateTo // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      habitId: null == habitId
-          ? _value.habitId
-          : habitId // ignore: cast_nullable_to_non_nullable
+      workoutType: null == workoutType
+          ? _self.workoutType
+          : workoutType // ignore: cast_nullable_to_non_nullable
               as String,
-      completionType: freezed == completionType
-          ? _value.completionType
-          : completionType // ignore: cast_nullable_to_non_nullable
-              as HabitCompletionType?,
+      energy: freezed == energy
+          ? _self.energy
+          : energy // ignore: cast_nullable_to_non_nullable
+              as num?,
+      distance: freezed == distance
+          ? _self.distance
+          : distance // ignore: cast_nullable_to_non_nullable
+              as num?,
+      source: freezed == source
+          ? _self.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [WorkoutData].
+extension WorkoutDataPatterns on WorkoutData {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_WorkoutData value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutData() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_WorkoutData value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutData():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_WorkoutData value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutData() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(DateTime dateFrom, DateTime dateTo, String id,
+            String workoutType, num? energy, num? distance, String? source)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutData() when $default != null:
+        return $default(_that.dateFrom, _that.dateTo, _that.id,
+            _that.workoutType, _that.energy, _that.distance, _that.source);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(DateTime dateFrom, DateTime dateTo, String id,
+            String workoutType, num? energy, num? distance, String? source)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutData():
+        return $default(_that.dateFrom, _that.dateTo, _that.id,
+            _that.workoutType, _that.energy, _that.distance, _that.source);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(DateTime dateFrom, DateTime dateTo, String id,
+            String workoutType, num? energy, num? distance, String? source)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _WorkoutData() when $default != null:
+        return $default(_that.dateFrom, _that.dateTo, _that.id,
+            _that.workoutType, _that.energy, _that.distance, _that.source);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$HabitCompletionDataImpl implements _HabitCompletionData {
-  const _$HabitCompletionDataImpl(
+class _WorkoutData implements WorkoutData {
+  const _WorkoutData(
       {required this.dateFrom,
       required this.dateTo,
-      required this.habitId,
-      this.completionType});
-
-  factory _$HabitCompletionDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$HabitCompletionDataImplFromJson(json);
+      required this.id,
+      required this.workoutType,
+      required this.energy,
+      required this.distance,
+      required this.source});
+  factory _WorkoutData.fromJson(Map<String, dynamic> json) =>
+      _$WorkoutDataFromJson(json);
 
   @override
   final DateTime dateFrom;
   @override
   final DateTime dateTo;
   @override
-  final String habitId;
+  final String id;
   @override
-  final HabitCompletionType? completionType;
+  final String workoutType;
+  @override
+  final num? energy;
+  @override
+  final num? distance;
+  @override
+  final String? source;
+
+  /// Create a copy of WorkoutData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$WorkoutDataCopyWith<_WorkoutData> get copyWith =>
+      __$WorkoutDataCopyWithImpl<_WorkoutData>(this, _$identity);
 
   @override
-  String toString() {
-    return 'HabitCompletionData(dateFrom: $dateFrom, dateTo: $dateTo, habitId: $habitId, completionType: $completionType)';
+  Map<String, dynamic> toJson() {
+    return _$WorkoutDataToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$HabitCompletionDataImpl &&
+            other is _WorkoutData &&
+            (identical(other.dateFrom, dateFrom) ||
+                other.dateFrom == dateFrom) &&
+            (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.workoutType, workoutType) ||
+                other.workoutType == workoutType) &&
+            (identical(other.energy, energy) || other.energy == energy) &&
+            (identical(other.distance, distance) ||
+                other.distance == distance) &&
+            (identical(other.source, source) || other.source == source));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, dateFrom, dateTo, id, workoutType, energy, distance, source);
+
+  @override
+  String toString() {
+    return 'WorkoutData(dateFrom: $dateFrom, dateTo: $dateTo, id: $id, workoutType: $workoutType, energy: $energy, distance: $distance, source: $source)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$WorkoutDataCopyWith<$Res>
+    implements $WorkoutDataCopyWith<$Res> {
+  factory _$WorkoutDataCopyWith(
+          _WorkoutData value, $Res Function(_WorkoutData) _then) =
+      __$WorkoutDataCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {DateTime dateFrom,
+      DateTime dateTo,
+      String id,
+      String workoutType,
+      num? energy,
+      num? distance,
+      String? source});
+}
+
+/// @nodoc
+class __$WorkoutDataCopyWithImpl<$Res> implements _$WorkoutDataCopyWith<$Res> {
+  __$WorkoutDataCopyWithImpl(this._self, this._then);
+
+  final _WorkoutData _self;
+  final $Res Function(_WorkoutData) _then;
+
+  /// Create a copy of WorkoutData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? id = null,
+    Object? workoutType = null,
+    Object? energy = freezed,
+    Object? distance = freezed,
+    Object? source = freezed,
+  }) {
+    return _then(_WorkoutData(
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      workoutType: null == workoutType
+          ? _self.workoutType
+          : workoutType // ignore: cast_nullable_to_non_nullable
+              as String,
+      energy: freezed == energy
+          ? _self.energy
+          : energy // ignore: cast_nullable_to_non_nullable
+              as num?,
+      distance: freezed == distance
+          ? _self.distance
+          : distance // ignore: cast_nullable_to_non_nullable
+              as num?,
+      source: freezed == source
+          ? _self.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+mixin _$HabitCompletionData {
+  DateTime get dateFrom;
+  DateTime get dateTo;
+  String get habitId;
+  HabitCompletionType? get completionType;
+
+  /// Create a copy of HabitCompletionData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $HabitCompletionDataCopyWith<HabitCompletionData> get copyWith =>
+      _$HabitCompletionDataCopyWithImpl<HabitCompletionData>(
+          this as HabitCompletionData, _$identity);
+
+  /// Serializes this HabitCompletionData to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is HabitCompletionData &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -6491,48 +4817,342 @@ class _$HabitCompletionDataImpl implements _HabitCompletionData {
   int get hashCode =>
       Object.hash(runtimeType, dateFrom, dateTo, habitId, completionType);
 
+  @override
+  String toString() {
+    return 'HabitCompletionData(dateFrom: $dateFrom, dateTo: $dateTo, habitId: $habitId, completionType: $completionType)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $HabitCompletionDataCopyWith<$Res> {
+  factory $HabitCompletionDataCopyWith(
+          HabitCompletionData value, $Res Function(HabitCompletionData) _then) =
+      _$HabitCompletionDataCopyWithImpl;
+  @useResult
+  $Res call(
+      {DateTime dateFrom,
+      DateTime dateTo,
+      String habitId,
+      HabitCompletionType? completionType});
+}
+
+/// @nodoc
+class _$HabitCompletionDataCopyWithImpl<$Res>
+    implements $HabitCompletionDataCopyWith<$Res> {
+  _$HabitCompletionDataCopyWithImpl(this._self, this._then);
+
+  final HabitCompletionData _self;
+  final $Res Function(HabitCompletionData) _then;
+
   /// Create a copy of HabitCompletionData
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
   @pragma('vm:prefer-inline')
-  _$$HabitCompletionDataImplCopyWith<_$HabitCompletionDataImpl> get copyWith =>
-      __$$HabitCompletionDataImplCopyWithImpl<_$HabitCompletionDataImpl>(
+  @override
+  $Res call({
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? habitId = null,
+    Object? completionType = freezed,
+  }) {
+    return _then(_self.copyWith(
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      habitId: null == habitId
+          ? _self.habitId
+          : habitId // ignore: cast_nullable_to_non_nullable
+              as String,
+      completionType: freezed == completionType
+          ? _self.completionType
+          : completionType // ignore: cast_nullable_to_non_nullable
+              as HabitCompletionType?,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [HabitCompletionData].
+extension HabitCompletionDataPatterns on HabitCompletionData {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_HabitCompletionData value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _HabitCompletionData() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_HabitCompletionData value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _HabitCompletionData():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_HabitCompletionData value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _HabitCompletionData() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(DateTime dateFrom, DateTime dateTo, String habitId,
+            HabitCompletionType? completionType)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _HabitCompletionData() when $default != null:
+        return $default(
+            _that.dateFrom, _that.dateTo, _that.habitId, _that.completionType);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(DateTime dateFrom, DateTime dateTo, String habitId,
+            HabitCompletionType? completionType)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _HabitCompletionData():
+        return $default(
+            _that.dateFrom, _that.dateTo, _that.habitId, _that.completionType);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(DateTime dateFrom, DateTime dateTo, String habitId,
+            HabitCompletionType? completionType)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _HabitCompletionData() when $default != null:
+        return $default(
+            _that.dateFrom, _that.dateTo, _that.habitId, _that.completionType);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _HabitCompletionData implements HabitCompletionData {
+  const _HabitCompletionData(
+      {required this.dateFrom,
+      required this.dateTo,
+      required this.habitId,
+      this.completionType});
+  factory _HabitCompletionData.fromJson(Map<String, dynamic> json) =>
+      _$HabitCompletionDataFromJson(json);
+
+  @override
+  final DateTime dateFrom;
+  @override
+  final DateTime dateTo;
+  @override
+  final String habitId;
+  @override
+  final HabitCompletionType? completionType;
+
+  /// Create a copy of HabitCompletionData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$HabitCompletionDataCopyWith<_HabitCompletionData> get copyWith =>
+      __$HabitCompletionDataCopyWithImpl<_HabitCompletionData>(
           this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$HabitCompletionDataImplToJson(
+    return _$HabitCompletionDataToJson(
       this,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _HabitCompletionData &&
+            (identical(other.dateFrom, dateFrom) ||
+                other.dateFrom == dateFrom) &&
+            (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
+            (identical(other.habitId, habitId) || other.habitId == habitId) &&
+            (identical(other.completionType, completionType) ||
+                other.completionType == completionType));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, dateFrom, dateTo, habitId, completionType);
+
+  @override
+  String toString() {
+    return 'HabitCompletionData(dateFrom: $dateFrom, dateTo: $dateTo, habitId: $habitId, completionType: $completionType)';
+  }
 }
 
-abstract class _HabitCompletionData implements HabitCompletionData {
-  const factory _HabitCompletionData(
-      {required final DateTime dateFrom,
-      required final DateTime dateTo,
-      required final String habitId,
-      final HabitCompletionType? completionType}) = _$HabitCompletionDataImpl;
+/// @nodoc
+abstract mixin class _$HabitCompletionDataCopyWith<$Res>
+    implements $HabitCompletionDataCopyWith<$Res> {
+  factory _$HabitCompletionDataCopyWith(_HabitCompletionData value,
+          $Res Function(_HabitCompletionData) _then) =
+      __$HabitCompletionDataCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {DateTime dateFrom,
+      DateTime dateTo,
+      String habitId,
+      HabitCompletionType? completionType});
+}
 
-  factory _HabitCompletionData.fromJson(Map<String, dynamic> json) =
-      _$HabitCompletionDataImpl.fromJson;
+/// @nodoc
+class __$HabitCompletionDataCopyWithImpl<$Res>
+    implements _$HabitCompletionDataCopyWith<$Res> {
+  __$HabitCompletionDataCopyWithImpl(this._self, this._then);
 
-  @override
-  DateTime get dateFrom;
-  @override
-  DateTime get dateTo;
-  @override
-  String get habitId;
-  @override
-  HabitCompletionType? get completionType;
+  final _HabitCompletionData _self;
+  final $Res Function(_HabitCompletionData) _then;
 
   /// Create a copy of HabitCompletionData
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$HabitCompletionDataImplCopyWith<_$HabitCompletionDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? dateFrom = null,
+    Object? dateTo = null,
+    Object? habitId = null,
+    Object? completionType = freezed,
+  }) {
+    return _then(_HabitCompletionData(
+      dateFrom: null == dateFrom
+          ? _self.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      dateTo: null == dateTo
+          ? _self.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      habitId: null == habitId
+          ? _self.habitId
+          : habitId // ignore: cast_nullable_to_non_nullable
+              as String,
+      completionType: freezed == completionType
+          ? _self.completionType
+          : completionType // ignore: cast_nullable_to_non_nullable
+              as HabitCompletionType?,
+    ));
+  }
 }
 
 DashboardItem _$DashboardItemFromJson(Map<String, dynamic> json) {
@@ -6560,39 +5180,174 @@ DashboardItem _$DashboardItemFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$DashboardItem {
+  /// Serializes this DashboardItem to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is DashboardItem);
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  String toString() {
+    return 'DashboardItem()';
+  }
+}
+
+/// @nodoc
+class $DashboardItemCopyWith<$Res> {
+  $DashboardItemCopyWith(DashboardItem _, $Res Function(DashboardItem) __);
+}
+
+/// Adds pattern-matching-related methods to [DashboardItem].
+extension DashboardItemPatterns on DashboardItem {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, AggregationType? aggregationType)
-        measurement,
-    required TResult Function(String color, String healthType) healthChart,
-    required TResult Function(String workoutType, String displayName,
-            String color, WorkoutValueType valueType)
-        workoutChart,
-    required TResult Function(String habitId) habitChart,
-    required TResult Function(Map<String, String> colorsByScoreKey,
-            String surveyType, String surveyName)
-        surveyChart,
-    required TResult Function(String storyTagId, String color) storyTimeChart,
-    required TResult Function(String storySubstring, String color)
-        wildcardStoryTimeChart,
-  }) =>
-      throw _privateConstructorUsedError;
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(DashboardMeasurementItem value)? measurement,
+    TResult Function(DashboardHealthItem value)? healthChart,
+    TResult Function(DashboardWorkoutItem value)? workoutChart,
+    TResult Function(DashboardHabitItem value)? habitChart,
+    TResult Function(DashboardSurveyItem value)? surveyChart,
+    TResult Function(DashboardStoryTimeItem value)? storyTimeChart,
+    TResult Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case DashboardMeasurementItem() when measurement != null:
+        return measurement(_that);
+      case DashboardHealthItem() when healthChart != null:
+        return healthChart(_that);
+      case DashboardWorkoutItem() when workoutChart != null:
+        return workoutChart(_that);
+      case DashboardHabitItem() when habitChart != null:
+        return habitChart(_that);
+      case DashboardSurveyItem() when surveyChart != null:
+        return surveyChart(_that);
+      case DashboardStoryTimeItem() when storyTimeChart != null:
+        return storyTimeChart(_that);
+      case WildcardStoryTimeItem() when wildcardStoryTimeChart != null:
+        return wildcardStoryTimeChart(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
   @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, AggregationType? aggregationType)? measurement,
-    TResult? Function(String color, String healthType)? healthChart,
-    TResult? Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult? Function(String habitId)? habitChart,
-    TResult? Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult? Function(String storyTagId, String color)? storyTimeChart,
-    TResult? Function(String storySubstring, String color)?
+  TResult map<TResult extends Object?>({
+    required TResult Function(DashboardMeasurementItem value) measurement,
+    required TResult Function(DashboardHealthItem value) healthChart,
+    required TResult Function(DashboardWorkoutItem value) workoutChart,
+    required TResult Function(DashboardHabitItem value) habitChart,
+    required TResult Function(DashboardSurveyItem value) surveyChart,
+    required TResult Function(DashboardStoryTimeItem value) storyTimeChart,
+    required TResult Function(WildcardStoryTimeItem value)
         wildcardStoryTimeChart,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) {
+    final _that = this;
+    switch (_that) {
+      case DashboardMeasurementItem():
+        return measurement(_that);
+      case DashboardHealthItem():
+        return healthChart(_that);
+      case DashboardWorkoutItem():
+        return workoutChart(_that);
+      case DashboardHabitItem():
+        return habitChart(_that);
+      case DashboardSurveyItem():
+        return surveyChart(_that);
+      case DashboardStoryTimeItem():
+        return storyTimeChart(_that);
+      case WildcardStoryTimeItem():
+        return wildcardStoryTimeChart(_that);
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(DashboardMeasurementItem value)? measurement,
+    TResult? Function(DashboardHealthItem value)? healthChart,
+    TResult? Function(DashboardWorkoutItem value)? workoutChart,
+    TResult? Function(DashboardHabitItem value)? habitChart,
+    TResult? Function(DashboardSurveyItem value)? surveyChart,
+    TResult? Function(DashboardStoryTimeItem value)? storyTimeChart,
+    TResult? Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case DashboardMeasurementItem() when measurement != null:
+        return measurement(_that);
+      case DashboardHealthItem() when healthChart != null:
+        return healthChart(_that);
+      case DashboardWorkoutItem() when workoutChart != null:
+        return workoutChart(_that);
+      case DashboardHabitItem() when habitChart != null:
+        return habitChart(_that);
+      case DashboardSurveyItem() when surveyChart != null:
+        return surveyChart(_that);
+      case DashboardStoryTimeItem() when storyTimeChart != null:
+        return storyTimeChart(_that);
+      case WildcardStoryTimeItem() when wildcardStoryTimeChart != null:
+        return wildcardStoryTimeChart(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String id, AggregationType? aggregationType)? measurement,
@@ -6608,137 +5363,166 @@ mixin _$DashboardItem {
     TResult Function(String storySubstring, String color)?
         wildcardStoryTimeChart,
     required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DashboardMeasurementItem value) measurement,
-    required TResult Function(DashboardHealthItem value) healthChart,
-    required TResult Function(DashboardWorkoutItem value) workoutChart,
-    required TResult Function(DashboardHabitItem value) habitChart,
-    required TResult Function(DashboardSurveyItem value) surveyChart,
-    required TResult Function(DashboardStoryTimeItem value) storyTimeChart,
-    required TResult Function(WildcardStoryTimeItem value)
-        wildcardStoryTimeChart,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DashboardMeasurementItem value)? measurement,
-    TResult? Function(DashboardHealthItem value)? healthChart,
-    TResult? Function(DashboardWorkoutItem value)? workoutChart,
-    TResult? Function(DashboardHabitItem value)? habitChart,
-    TResult? Function(DashboardSurveyItem value)? surveyChart,
-    TResult? Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult? Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DashboardMeasurementItem value)? measurement,
-    TResult Function(DashboardHealthItem value)? healthChart,
-    TResult Function(DashboardWorkoutItem value)? workoutChart,
-    TResult Function(DashboardHabitItem value)? habitChart,
-    TResult Function(DashboardSurveyItem value)? surveyChart,
-    TResult Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-
-  /// Serializes this DashboardItem to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $DashboardItemCopyWith<$Res> {
-  factory $DashboardItemCopyWith(
-          DashboardItem value, $Res Function(DashboardItem) then) =
-      _$DashboardItemCopyWithImpl<$Res, DashboardItem>;
-}
-
-/// @nodoc
-class _$DashboardItemCopyWithImpl<$Res, $Val extends DashboardItem>
-    implements $DashboardItemCopyWith<$Res> {
-  _$DashboardItemCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-abstract class _$$DashboardMeasurementItemImplCopyWith<$Res> {
-  factory _$$DashboardMeasurementItemImplCopyWith(
-          _$DashboardMeasurementItemImpl value,
-          $Res Function(_$DashboardMeasurementItemImpl) then) =
-      __$$DashboardMeasurementItemImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call({String id, AggregationType? aggregationType});
-}
-
-/// @nodoc
-class __$$DashboardMeasurementItemImplCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardMeasurementItemImpl>
-    implements _$$DashboardMeasurementItemImplCopyWith<$Res> {
-  __$$DashboardMeasurementItemImplCopyWithImpl(
-      _$DashboardMeasurementItemImpl _value,
-      $Res Function(_$DashboardMeasurementItemImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? aggregationType = freezed,
   }) {
-    return _then(_$DashboardMeasurementItemImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      aggregationType: freezed == aggregationType
-          ? _value.aggregationType
-          : aggregationType // ignore: cast_nullable_to_non_nullable
-              as AggregationType?,
-    ));
+    final _that = this;
+    switch (_that) {
+      case DashboardMeasurementItem() when measurement != null:
+        return measurement(_that.id, _that.aggregationType);
+      case DashboardHealthItem() when healthChart != null:
+        return healthChart(_that.color, _that.healthType);
+      case DashboardWorkoutItem() when workoutChart != null:
+        return workoutChart(
+            _that.workoutType, _that.displayName, _that.color, _that.valueType);
+      case DashboardHabitItem() when habitChart != null:
+        return habitChart(_that.habitId);
+      case DashboardSurveyItem() when surveyChart != null:
+        return surveyChart(
+            _that.colorsByScoreKey, _that.surveyType, _that.surveyName);
+      case DashboardStoryTimeItem() when storyTimeChart != null:
+        return storyTimeChart(_that.storyTagId, _that.color);
+      case WildcardStoryTimeItem() when wildcardStoryTimeChart != null:
+        return wildcardStoryTimeChart(_that.storySubstring, _that.color);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String id, AggregationType? aggregationType)
+        measurement,
+    required TResult Function(String color, String healthType) healthChart,
+    required TResult Function(String workoutType, String displayName,
+            String color, WorkoutValueType valueType)
+        workoutChart,
+    required TResult Function(String habitId) habitChart,
+    required TResult Function(Map<String, String> colorsByScoreKey,
+            String surveyType, String surveyName)
+        surveyChart,
+    required TResult Function(String storyTagId, String color) storyTimeChart,
+    required TResult Function(String storySubstring, String color)
+        wildcardStoryTimeChart,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case DashboardMeasurementItem():
+        return measurement(_that.id, _that.aggregationType);
+      case DashboardHealthItem():
+        return healthChart(_that.color, _that.healthType);
+      case DashboardWorkoutItem():
+        return workoutChart(
+            _that.workoutType, _that.displayName, _that.color, _that.valueType);
+      case DashboardHabitItem():
+        return habitChart(_that.habitId);
+      case DashboardSurveyItem():
+        return surveyChart(
+            _that.colorsByScoreKey, _that.surveyType, _that.surveyName);
+      case DashboardStoryTimeItem():
+        return storyTimeChart(_that.storyTagId, _that.color);
+      case WildcardStoryTimeItem():
+        return wildcardStoryTimeChart(_that.storySubstring, _that.color);
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String id, AggregationType? aggregationType)? measurement,
+    TResult? Function(String color, String healthType)? healthChart,
+    TResult? Function(String workoutType, String displayName, String color,
+            WorkoutValueType valueType)?
+        workoutChart,
+    TResult? Function(String habitId)? habitChart,
+    TResult? Function(Map<String, String> colorsByScoreKey, String surveyType,
+            String surveyName)?
+        surveyChart,
+    TResult? Function(String storyTagId, String color)? storyTimeChart,
+    TResult? Function(String storySubstring, String color)?
+        wildcardStoryTimeChart,
+  }) {
+    final _that = this;
+    switch (_that) {
+      case DashboardMeasurementItem() when measurement != null:
+        return measurement(_that.id, _that.aggregationType);
+      case DashboardHealthItem() when healthChart != null:
+        return healthChart(_that.color, _that.healthType);
+      case DashboardWorkoutItem() when workoutChart != null:
+        return workoutChart(
+            _that.workoutType, _that.displayName, _that.color, _that.valueType);
+      case DashboardHabitItem() when habitChart != null:
+        return habitChart(_that.habitId);
+      case DashboardSurveyItem() when surveyChart != null:
+        return surveyChart(
+            _that.colorsByScoreKey, _that.surveyType, _that.surveyName);
+      case DashboardStoryTimeItem() when storyTimeChart != null:
+        return storyTimeChart(_that.storyTagId, _that.color);
+      case WildcardStoryTimeItem() when wildcardStoryTimeChart != null:
+        return wildcardStoryTimeChart(_that.storySubstring, _that.color);
+      case _:
+        return null;
+    }
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardMeasurementItemImpl implements DashboardMeasurementItem {
-  const _$DashboardMeasurementItemImpl(
+class DashboardMeasurementItem implements DashboardItem {
+  const DashboardMeasurementItem(
       {required this.id, this.aggregationType, final String? $type})
       : $type = $type ?? 'measurement';
+  factory DashboardMeasurementItem.fromJson(Map<String, dynamic> json) =>
+      _$DashboardMeasurementItemFromJson(json);
 
-  factory _$DashboardMeasurementItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardMeasurementItemImplFromJson(json);
-
-  @override
   final String id;
-  @override
   final AggregationType? aggregationType;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DashboardMeasurementItemCopyWith<DashboardMeasurementItem> get copyWith =>
+      _$DashboardMeasurementItemCopyWithImpl<DashboardMeasurementItem>(
+          this, _$identity);
+
   @override
-  String toString() {
-    return 'DashboardItem.measurement(id: $id, aggregationType: $aggregationType)';
+  Map<String, dynamic> toJson() {
+    return _$DashboardMeasurementItemToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardMeasurementItemImpl &&
+            other is DashboardMeasurementItem &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.aggregationType, aggregationType) ||
                 other.aggregationType == aggregationType));
@@ -6748,216 +5532,84 @@ class _$DashboardMeasurementItemImpl implements DashboardMeasurementItem {
   @override
   int get hashCode => Object.hash(runtimeType, id, aggregationType);
 
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$DashboardMeasurementItemImplCopyWith<_$DashboardMeasurementItemImpl>
-      get copyWith => __$$DashboardMeasurementItemImplCopyWithImpl<
-          _$DashboardMeasurementItemImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, AggregationType? aggregationType)
-        measurement,
-    required TResult Function(String color, String healthType) healthChart,
-    required TResult Function(String workoutType, String displayName,
-            String color, WorkoutValueType valueType)
-        workoutChart,
-    required TResult Function(String habitId) habitChart,
-    required TResult Function(Map<String, String> colorsByScoreKey,
-            String surveyType, String surveyName)
-        surveyChart,
-    required TResult Function(String storyTagId, String color) storyTimeChart,
-    required TResult Function(String storySubstring, String color)
-        wildcardStoryTimeChart,
-  }) {
-    return measurement(id, aggregationType);
+  String toString() {
+    return 'DashboardItem.measurement(id: $id, aggregationType: $aggregationType)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, AggregationType? aggregationType)? measurement,
-    TResult? Function(String color, String healthType)? healthChart,
-    TResult? Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult? Function(String habitId)? habitChart,
-    TResult? Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult? Function(String storyTagId, String color)? storyTimeChart,
-    TResult? Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-  }) {
-    return measurement?.call(id, aggregationType);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, AggregationType? aggregationType)? measurement,
-    TResult Function(String color, String healthType)? healthChart,
-    TResult Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult Function(String habitId)? habitChart,
-    TResult Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult Function(String storyTagId, String color)? storyTimeChart,
-    TResult Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (measurement != null) {
-      return measurement(id, aggregationType);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DashboardMeasurementItem value) measurement,
-    required TResult Function(DashboardHealthItem value) healthChart,
-    required TResult Function(DashboardWorkoutItem value) workoutChart,
-    required TResult Function(DashboardHabitItem value) habitChart,
-    required TResult Function(DashboardSurveyItem value) surveyChart,
-    required TResult Function(DashboardStoryTimeItem value) storyTimeChart,
-    required TResult Function(WildcardStoryTimeItem value)
-        wildcardStoryTimeChart,
-  }) {
-    return measurement(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DashboardMeasurementItem value)? measurement,
-    TResult? Function(DashboardHealthItem value)? healthChart,
-    TResult? Function(DashboardWorkoutItem value)? workoutChart,
-    TResult? Function(DashboardHabitItem value)? habitChart,
-    TResult? Function(DashboardSurveyItem value)? surveyChart,
-    TResult? Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult? Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-  }) {
-    return measurement?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DashboardMeasurementItem value)? measurement,
-    TResult Function(DashboardHealthItem value)? healthChart,
-    TResult Function(DashboardWorkoutItem value)? workoutChart,
-    TResult Function(DashboardHabitItem value)? habitChart,
-    TResult Function(DashboardSurveyItem value)? surveyChart,
-    TResult Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (measurement != null) {
-      return measurement(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$DashboardMeasurementItemImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class DashboardMeasurementItem implements DashboardItem {
-  const factory DashboardMeasurementItem(
-      {required final String id,
-      final AggregationType? aggregationType}) = _$DashboardMeasurementItemImpl;
-
-  factory DashboardMeasurementItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardMeasurementItemImpl.fromJson;
-
-  String get id;
-  AggregationType? get aggregationType;
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DashboardMeasurementItemImplCopyWith<_$DashboardMeasurementItemImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardHealthItemImplCopyWith<$Res> {
-  factory _$$DashboardHealthItemImplCopyWith(_$DashboardHealthItemImpl value,
-          $Res Function(_$DashboardHealthItemImpl) then) =
-      __$$DashboardHealthItemImplCopyWithImpl<$Res>;
+abstract mixin class $DashboardMeasurementItemCopyWith<$Res>
+    implements $DashboardItemCopyWith<$Res> {
+  factory $DashboardMeasurementItemCopyWith(DashboardMeasurementItem value,
+          $Res Function(DashboardMeasurementItem) _then) =
+      _$DashboardMeasurementItemCopyWithImpl;
   @useResult
-  $Res call({String color, String healthType});
+  $Res call({String id, AggregationType? aggregationType});
 }
 
 /// @nodoc
-class __$$DashboardHealthItemImplCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardHealthItemImpl>
-    implements _$$DashboardHealthItemImplCopyWith<$Res> {
-  __$$DashboardHealthItemImplCopyWithImpl(_$DashboardHealthItemImpl _value,
-      $Res Function(_$DashboardHealthItemImpl) _then)
-      : super(_value, _then);
+class _$DashboardMeasurementItemCopyWithImpl<$Res>
+    implements $DashboardMeasurementItemCopyWith<$Res> {
+  _$DashboardMeasurementItemCopyWithImpl(this._self, this._then);
+
+  final DashboardMeasurementItem _self;
+  final $Res Function(DashboardMeasurementItem) _then;
 
   /// Create a copy of DashboardItem
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? color = null,
-    Object? healthType = null,
+    Object? id = null,
+    Object? aggregationType = freezed,
   }) {
-    return _then(_$DashboardHealthItemImpl(
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
+    return _then(DashboardMeasurementItem(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
               as String,
-      healthType: null == healthType
-          ? _value.healthType
-          : healthType // ignore: cast_nullable_to_non_nullable
-              as String,
+      aggregationType: freezed == aggregationType
+          ? _self.aggregationType
+          : aggregationType // ignore: cast_nullable_to_non_nullable
+              as AggregationType?,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardHealthItemImpl implements DashboardHealthItem {
-  const _$DashboardHealthItemImpl(
+class DashboardHealthItem implements DashboardItem {
+  const DashboardHealthItem(
       {required this.color, required this.healthType, final String? $type})
       : $type = $type ?? 'healthChart';
+  factory DashboardHealthItem.fromJson(Map<String, dynamic> json) =>
+      _$DashboardHealthItemFromJson(json);
 
-  factory _$DashboardHealthItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardHealthItemImplFromJson(json);
-
-  @override
   final String color;
-  @override
   final String healthType;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DashboardHealthItemCopyWith<DashboardHealthItem> get copyWith =>
+      _$DashboardHealthItemCopyWithImpl<DashboardHealthItem>(this, _$identity);
+
   @override
-  String toString() {
-    return 'DashboardItem.healthChart(color: $color, healthType: $healthType)';
+  Map<String, dynamic> toJson() {
+    return _$DashboardHealthItemToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardHealthItemImpl &&
+            other is DashboardHealthItem &&
             (identical(other.color, color) || other.color == color) &&
             (identical(other.healthType, healthType) ||
                 other.healthType == healthType));
@@ -6967,238 +5619,91 @@ class _$DashboardHealthItemImpl implements DashboardHealthItem {
   @override
   int get hashCode => Object.hash(runtimeType, color, healthType);
 
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$DashboardHealthItemImplCopyWith<_$DashboardHealthItemImpl> get copyWith =>
-      __$$DashboardHealthItemImplCopyWithImpl<_$DashboardHealthItemImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, AggregationType? aggregationType)
-        measurement,
-    required TResult Function(String color, String healthType) healthChart,
-    required TResult Function(String workoutType, String displayName,
-            String color, WorkoutValueType valueType)
-        workoutChart,
-    required TResult Function(String habitId) habitChart,
-    required TResult Function(Map<String, String> colorsByScoreKey,
-            String surveyType, String surveyName)
-        surveyChart,
-    required TResult Function(String storyTagId, String color) storyTimeChart,
-    required TResult Function(String storySubstring, String color)
-        wildcardStoryTimeChart,
-  }) {
-    return healthChart(color, healthType);
+  String toString() {
+    return 'DashboardItem.healthChart(color: $color, healthType: $healthType)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, AggregationType? aggregationType)? measurement,
-    TResult? Function(String color, String healthType)? healthChart,
-    TResult? Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult? Function(String habitId)? habitChart,
-    TResult? Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult? Function(String storyTagId, String color)? storyTimeChart,
-    TResult? Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-  }) {
-    return healthChart?.call(color, healthType);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, AggregationType? aggregationType)? measurement,
-    TResult Function(String color, String healthType)? healthChart,
-    TResult Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult Function(String habitId)? habitChart,
-    TResult Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult Function(String storyTagId, String color)? storyTimeChart,
-    TResult Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (healthChart != null) {
-      return healthChart(color, healthType);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DashboardMeasurementItem value) measurement,
-    required TResult Function(DashboardHealthItem value) healthChart,
-    required TResult Function(DashboardWorkoutItem value) workoutChart,
-    required TResult Function(DashboardHabitItem value) habitChart,
-    required TResult Function(DashboardSurveyItem value) surveyChart,
-    required TResult Function(DashboardStoryTimeItem value) storyTimeChart,
-    required TResult Function(WildcardStoryTimeItem value)
-        wildcardStoryTimeChart,
-  }) {
-    return healthChart(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DashboardMeasurementItem value)? measurement,
-    TResult? Function(DashboardHealthItem value)? healthChart,
-    TResult? Function(DashboardWorkoutItem value)? workoutChart,
-    TResult? Function(DashboardHabitItem value)? habitChart,
-    TResult? Function(DashboardSurveyItem value)? surveyChart,
-    TResult? Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult? Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-  }) {
-    return healthChart?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DashboardMeasurementItem value)? measurement,
-    TResult Function(DashboardHealthItem value)? healthChart,
-    TResult Function(DashboardWorkoutItem value)? workoutChart,
-    TResult Function(DashboardHabitItem value)? habitChart,
-    TResult Function(DashboardSurveyItem value)? surveyChart,
-    TResult Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (healthChart != null) {
-      return healthChart(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$DashboardHealthItemImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class DashboardHealthItem implements DashboardItem {
-  const factory DashboardHealthItem(
-      {required final String color,
-      required final String healthType}) = _$DashboardHealthItemImpl;
-
-  factory DashboardHealthItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardHealthItemImpl.fromJson;
-
-  String get color;
-  String get healthType;
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DashboardHealthItemImplCopyWith<_$DashboardHealthItemImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardWorkoutItemImplCopyWith<$Res> {
-  factory _$$DashboardWorkoutItemImplCopyWith(_$DashboardWorkoutItemImpl value,
-          $Res Function(_$DashboardWorkoutItemImpl) then) =
-      __$$DashboardWorkoutItemImplCopyWithImpl<$Res>;
+abstract mixin class $DashboardHealthItemCopyWith<$Res>
+    implements $DashboardItemCopyWith<$Res> {
+  factory $DashboardHealthItemCopyWith(
+          DashboardHealthItem value, $Res Function(DashboardHealthItem) _then) =
+      _$DashboardHealthItemCopyWithImpl;
   @useResult
-  $Res call(
-      {String workoutType,
-      String displayName,
-      String color,
-      WorkoutValueType valueType});
+  $Res call({String color, String healthType});
 }
 
 /// @nodoc
-class __$$DashboardWorkoutItemImplCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardWorkoutItemImpl>
-    implements _$$DashboardWorkoutItemImplCopyWith<$Res> {
-  __$$DashboardWorkoutItemImplCopyWithImpl(_$DashboardWorkoutItemImpl _value,
-      $Res Function(_$DashboardWorkoutItemImpl) _then)
-      : super(_value, _then);
+class _$DashboardHealthItemCopyWithImpl<$Res>
+    implements $DashboardHealthItemCopyWith<$Res> {
+  _$DashboardHealthItemCopyWithImpl(this._self, this._then);
+
+  final DashboardHealthItem _self;
+  final $Res Function(DashboardHealthItem) _then;
 
   /// Create a copy of DashboardItem
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? workoutType = null,
-    Object? displayName = null,
     Object? color = null,
-    Object? valueType = null,
+    Object? healthType = null,
   }) {
-    return _then(_$DashboardWorkoutItemImpl(
-      workoutType: null == workoutType
-          ? _value.workoutType
-          : workoutType // ignore: cast_nullable_to_non_nullable
-              as String,
-      displayName: null == displayName
-          ? _value.displayName
-          : displayName // ignore: cast_nullable_to_non_nullable
-              as String,
+    return _then(DashboardHealthItem(
       color: null == color
-          ? _value.color
+          ? _self.color
           : color // ignore: cast_nullable_to_non_nullable
               as String,
-      valueType: null == valueType
-          ? _value.valueType
-          : valueType // ignore: cast_nullable_to_non_nullable
-              as WorkoutValueType,
+      healthType: null == healthType
+          ? _self.healthType
+          : healthType // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardWorkoutItemImpl implements DashboardWorkoutItem {
-  const _$DashboardWorkoutItemImpl(
+class DashboardWorkoutItem implements DashboardItem {
+  const DashboardWorkoutItem(
       {required this.workoutType,
       required this.displayName,
       required this.color,
       required this.valueType,
       final String? $type})
       : $type = $type ?? 'workoutChart';
+  factory DashboardWorkoutItem.fromJson(Map<String, dynamic> json) =>
+      _$DashboardWorkoutItemFromJson(json);
 
-  factory _$DashboardWorkoutItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardWorkoutItemImplFromJson(json);
-
-  @override
   final String workoutType;
-  @override
   final String displayName;
-  @override
   final String color;
-  @override
   final WorkoutValueType valueType;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DashboardWorkoutItemCopyWith<DashboardWorkoutItem> get copyWith =>
+      _$DashboardWorkoutItemCopyWithImpl<DashboardWorkoutItem>(
+          this, _$identity);
+
   @override
-  String toString() {
-    return 'DashboardItem.workoutChart(workoutType: $workoutType, displayName: $displayName, color: $color, valueType: $valueType)';
+  Map<String, dynamic> toJson() {
+    return _$DashboardWorkoutItemToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardWorkoutItemImpl &&
+            other is DashboardWorkoutItem &&
             (identical(other.workoutType, workoutType) ||
                 other.workoutType == workoutType) &&
             (identical(other.displayName, displayName) ||
@@ -7213,182 +5718,136 @@ class _$DashboardWorkoutItemImpl implements DashboardWorkoutItem {
   int get hashCode =>
       Object.hash(runtimeType, workoutType, displayName, color, valueType);
 
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$DashboardWorkoutItemImplCopyWith<_$DashboardWorkoutItemImpl>
-      get copyWith =>
-          __$$DashboardWorkoutItemImplCopyWithImpl<_$DashboardWorkoutItemImpl>(
-              this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, AggregationType? aggregationType)
-        measurement,
-    required TResult Function(String color, String healthType) healthChart,
-    required TResult Function(String workoutType, String displayName,
-            String color, WorkoutValueType valueType)
-        workoutChart,
-    required TResult Function(String habitId) habitChart,
-    required TResult Function(Map<String, String> colorsByScoreKey,
-            String surveyType, String surveyName)
-        surveyChart,
-    required TResult Function(String storyTagId, String color) storyTimeChart,
-    required TResult Function(String storySubstring, String color)
-        wildcardStoryTimeChart,
-  }) {
-    return workoutChart(workoutType, displayName, color, valueType);
+  String toString() {
+    return 'DashboardItem.workoutChart(workoutType: $workoutType, displayName: $displayName, color: $color, valueType: $valueType)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, AggregationType? aggregationType)? measurement,
-    TResult? Function(String color, String healthType)? healthChart,
-    TResult? Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult? Function(String habitId)? habitChart,
-    TResult? Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult? Function(String storyTagId, String color)? storyTimeChart,
-    TResult? Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-  }) {
-    return workoutChart?.call(workoutType, displayName, color, valueType);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, AggregationType? aggregationType)? measurement,
-    TResult Function(String color, String healthType)? healthChart,
-    TResult Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult Function(String habitId)? habitChart,
-    TResult Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult Function(String storyTagId, String color)? storyTimeChart,
-    TResult Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (workoutChart != null) {
-      return workoutChart(workoutType, displayName, color, valueType);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DashboardMeasurementItem value) measurement,
-    required TResult Function(DashboardHealthItem value) healthChart,
-    required TResult Function(DashboardWorkoutItem value) workoutChart,
-    required TResult Function(DashboardHabitItem value) habitChart,
-    required TResult Function(DashboardSurveyItem value) surveyChart,
-    required TResult Function(DashboardStoryTimeItem value) storyTimeChart,
-    required TResult Function(WildcardStoryTimeItem value)
-        wildcardStoryTimeChart,
-  }) {
-    return workoutChart(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DashboardMeasurementItem value)? measurement,
-    TResult? Function(DashboardHealthItem value)? healthChart,
-    TResult? Function(DashboardWorkoutItem value)? workoutChart,
-    TResult? Function(DashboardHabitItem value)? habitChart,
-    TResult? Function(DashboardSurveyItem value)? surveyChart,
-    TResult? Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult? Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-  }) {
-    return workoutChart?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DashboardMeasurementItem value)? measurement,
-    TResult Function(DashboardHealthItem value)? healthChart,
-    TResult Function(DashboardWorkoutItem value)? workoutChart,
-    TResult Function(DashboardHabitItem value)? habitChart,
-    TResult Function(DashboardSurveyItem value)? surveyChart,
-    TResult Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (workoutChart != null) {
-      return workoutChart(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$DashboardWorkoutItemImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class DashboardWorkoutItem implements DashboardItem {
-  const factory DashboardWorkoutItem(
-      {required final String workoutType,
-      required final String displayName,
-      required final String color,
-      required final WorkoutValueType valueType}) = _$DashboardWorkoutItemImpl;
-
-  factory DashboardWorkoutItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardWorkoutItemImpl.fromJson;
-
-  String get workoutType;
-  String get displayName;
-  String get color;
-  WorkoutValueType get valueType;
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DashboardWorkoutItemImplCopyWith<_$DashboardWorkoutItemImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardHabitItemImplCopyWith<$Res> {
-  factory _$$DashboardHabitItemImplCopyWith(_$DashboardHabitItemImpl value,
-          $Res Function(_$DashboardHabitItemImpl) then) =
-      __$$DashboardHabitItemImplCopyWithImpl<$Res>;
+abstract mixin class $DashboardWorkoutItemCopyWith<$Res>
+    implements $DashboardItemCopyWith<$Res> {
+  factory $DashboardWorkoutItemCopyWith(DashboardWorkoutItem value,
+          $Res Function(DashboardWorkoutItem) _then) =
+      _$DashboardWorkoutItemCopyWithImpl;
+  @useResult
+  $Res call(
+      {String workoutType,
+      String displayName,
+      String color,
+      WorkoutValueType valueType});
+}
+
+/// @nodoc
+class _$DashboardWorkoutItemCopyWithImpl<$Res>
+    implements $DashboardWorkoutItemCopyWith<$Res> {
+  _$DashboardWorkoutItemCopyWithImpl(this._self, this._then);
+
+  final DashboardWorkoutItem _self;
+  final $Res Function(DashboardWorkoutItem) _then;
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? workoutType = null,
+    Object? displayName = null,
+    Object? color = null,
+    Object? valueType = null,
+  }) {
+    return _then(DashboardWorkoutItem(
+      workoutType: null == workoutType
+          ? _self.workoutType
+          : workoutType // ignore: cast_nullable_to_non_nullable
+              as String,
+      displayName: null == displayName
+          ? _self.displayName
+          : displayName // ignore: cast_nullable_to_non_nullable
+              as String,
+      color: null == color
+          ? _self.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String,
+      valueType: null == valueType
+          ? _self.valueType
+          : valueType // ignore: cast_nullable_to_non_nullable
+              as WorkoutValueType,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class DashboardHabitItem implements DashboardItem {
+  const DashboardHabitItem({required this.habitId, final String? $type})
+      : $type = $type ?? 'habitChart';
+  factory DashboardHabitItem.fromJson(Map<String, dynamic> json) =>
+      _$DashboardHabitItemFromJson(json);
+
+  final String habitId;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DashboardHabitItemCopyWith<DashboardHabitItem> get copyWith =>
+      _$DashboardHabitItemCopyWithImpl<DashboardHabitItem>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$DashboardHabitItemToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is DashboardHabitItem &&
+            (identical(other.habitId, habitId) || other.habitId == habitId));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, habitId);
+
+  @override
+  String toString() {
+    return 'DashboardItem.habitChart(habitId: $habitId)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $DashboardHabitItemCopyWith<$Res>
+    implements $DashboardItemCopyWith<$Res> {
+  factory $DashboardHabitItemCopyWith(
+          DashboardHabitItem value, $Res Function(DashboardHabitItem) _then) =
+      _$DashboardHabitItemCopyWithImpl;
   @useResult
   $Res call({String habitId});
 }
 
 /// @nodoc
-class __$$DashboardHabitItemImplCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardHabitItemImpl>
-    implements _$$DashboardHabitItemImplCopyWith<$Res> {
-  __$$DashboardHabitItemImplCopyWithImpl(_$DashboardHabitItemImpl _value,
-      $Res Function(_$DashboardHabitItemImpl) _then)
-      : super(_value, _then);
+class _$DashboardHabitItemCopyWithImpl<$Res>
+    implements $DashboardHabitItemCopyWith<$Res> {
+  _$DashboardHabitItemCopyWithImpl(this._self, this._then);
+
+  final DashboardHabitItem _self;
+  final $Res Function(DashboardHabitItem) _then;
 
   /// Create a copy of DashboardItem
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
     Object? habitId = null,
   }) {
-    return _then(_$DashboardHabitItemImpl(
+    return _then(DashboardHabitItem(
       habitId: null == habitId
-          ? _value.habitId
+          ? _self.habitId
           : habitId // ignore: cast_nullable_to_non_nullable
               as String,
     ));
@@ -7397,264 +5856,49 @@ class __$$DashboardHabitItemImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardHabitItemImpl implements DashboardHabitItem {
-  const _$DashboardHabitItemImpl({required this.habitId, final String? $type})
-      : $type = $type ?? 'habitChart';
-
-  factory _$DashboardHabitItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardHabitItemImplFromJson(json);
-
-  @override
-  final String habitId;
-
-  @JsonKey(name: 'runtimeType')
-  final String $type;
-
-  @override
-  String toString() {
-    return 'DashboardItem.habitChart(habitId: $habitId)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$DashboardHabitItemImpl &&
-            (identical(other.habitId, habitId) || other.habitId == habitId));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, habitId);
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$DashboardHabitItemImplCopyWith<_$DashboardHabitItemImpl> get copyWith =>
-      __$$DashboardHabitItemImplCopyWithImpl<_$DashboardHabitItemImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, AggregationType? aggregationType)
-        measurement,
-    required TResult Function(String color, String healthType) healthChart,
-    required TResult Function(String workoutType, String displayName,
-            String color, WorkoutValueType valueType)
-        workoutChart,
-    required TResult Function(String habitId) habitChart,
-    required TResult Function(Map<String, String> colorsByScoreKey,
-            String surveyType, String surveyName)
-        surveyChart,
-    required TResult Function(String storyTagId, String color) storyTimeChart,
-    required TResult Function(String storySubstring, String color)
-        wildcardStoryTimeChart,
-  }) {
-    return habitChart(habitId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, AggregationType? aggregationType)? measurement,
-    TResult? Function(String color, String healthType)? healthChart,
-    TResult? Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult? Function(String habitId)? habitChart,
-    TResult? Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult? Function(String storyTagId, String color)? storyTimeChart,
-    TResult? Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-  }) {
-    return habitChart?.call(habitId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, AggregationType? aggregationType)? measurement,
-    TResult Function(String color, String healthType)? healthChart,
-    TResult Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult Function(String habitId)? habitChart,
-    TResult Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult Function(String storyTagId, String color)? storyTimeChart,
-    TResult Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (habitChart != null) {
-      return habitChart(habitId);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DashboardMeasurementItem value) measurement,
-    required TResult Function(DashboardHealthItem value) healthChart,
-    required TResult Function(DashboardWorkoutItem value) workoutChart,
-    required TResult Function(DashboardHabitItem value) habitChart,
-    required TResult Function(DashboardSurveyItem value) surveyChart,
-    required TResult Function(DashboardStoryTimeItem value) storyTimeChart,
-    required TResult Function(WildcardStoryTimeItem value)
-        wildcardStoryTimeChart,
-  }) {
-    return habitChart(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DashboardMeasurementItem value)? measurement,
-    TResult? Function(DashboardHealthItem value)? healthChart,
-    TResult? Function(DashboardWorkoutItem value)? workoutChart,
-    TResult? Function(DashboardHabitItem value)? habitChart,
-    TResult? Function(DashboardSurveyItem value)? surveyChart,
-    TResult? Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult? Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-  }) {
-    return habitChart?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DashboardMeasurementItem value)? measurement,
-    TResult Function(DashboardHealthItem value)? healthChart,
-    TResult Function(DashboardWorkoutItem value)? workoutChart,
-    TResult Function(DashboardHabitItem value)? habitChart,
-    TResult Function(DashboardSurveyItem value)? surveyChart,
-    TResult Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (habitChart != null) {
-      return habitChart(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$DashboardHabitItemImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class DashboardHabitItem implements DashboardItem {
-  const factory DashboardHabitItem({required final String habitId}) =
-      _$DashboardHabitItemImpl;
-
-  factory DashboardHabitItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardHabitItemImpl.fromJson;
-
-  String get habitId;
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DashboardHabitItemImplCopyWith<_$DashboardHabitItemImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class _$$DashboardSurveyItemImplCopyWith<$Res> {
-  factory _$$DashboardSurveyItemImplCopyWith(_$DashboardSurveyItemImpl value,
-          $Res Function(_$DashboardSurveyItemImpl) then) =
-      __$$DashboardSurveyItemImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call(
-      {Map<String, String> colorsByScoreKey,
-      String surveyType,
-      String surveyName});
-}
-
-/// @nodoc
-class __$$DashboardSurveyItemImplCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardSurveyItemImpl>
-    implements _$$DashboardSurveyItemImplCopyWith<$Res> {
-  __$$DashboardSurveyItemImplCopyWithImpl(_$DashboardSurveyItemImpl _value,
-      $Res Function(_$DashboardSurveyItemImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? colorsByScoreKey = null,
-    Object? surveyType = null,
-    Object? surveyName = null,
-  }) {
-    return _then(_$DashboardSurveyItemImpl(
-      colorsByScoreKey: null == colorsByScoreKey
-          ? _value._colorsByScoreKey
-          : colorsByScoreKey // ignore: cast_nullable_to_non_nullable
-              as Map<String, String>,
-      surveyType: null == surveyType
-          ? _value.surveyType
-          : surveyType // ignore: cast_nullable_to_non_nullable
-              as String,
-      surveyName: null == surveyName
-          ? _value.surveyName
-          : surveyName // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$DashboardSurveyItemImpl implements DashboardSurveyItem {
-  const _$DashboardSurveyItemImpl(
+class DashboardSurveyItem implements DashboardItem {
+  const DashboardSurveyItem(
       {required final Map<String, String> colorsByScoreKey,
       required this.surveyType,
       required this.surveyName,
       final String? $type})
       : _colorsByScoreKey = colorsByScoreKey,
         $type = $type ?? 'surveyChart';
-
-  factory _$DashboardSurveyItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardSurveyItemImplFromJson(json);
+  factory DashboardSurveyItem.fromJson(Map<String, dynamic> json) =>
+      _$DashboardSurveyItemFromJson(json);
 
   final Map<String, String> _colorsByScoreKey;
-  @override
   Map<String, String> get colorsByScoreKey {
     if (_colorsByScoreKey is EqualUnmodifiableMapView) return _colorsByScoreKey;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableMapView(_colorsByScoreKey);
   }
 
-  @override
   final String surveyType;
-  @override
   final String surveyName;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DashboardSurveyItemCopyWith<DashboardSurveyItem> get copyWith =>
+      _$DashboardSurveyItemCopyWithImpl<DashboardSurveyItem>(this, _$identity);
+
   @override
-  String toString() {
-    return 'DashboardItem.surveyChart(colorsByScoreKey: $colorsByScoreKey, surveyType: $surveyType, surveyName: $surveyName)';
+  Map<String, dynamic> toJson() {
+    return _$DashboardSurveyItemToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardSurveyItemImpl &&
+            other is DashboardSurveyItem &&
             const DeepCollectionEquality()
                 .equals(other._colorsByScoreKey, _colorsByScoreKey) &&
             (identical(other.surveyType, surveyType) ||
@@ -7671,187 +5915,53 @@ class _$DashboardSurveyItemImpl implements DashboardSurveyItem {
       surveyType,
       surveyName);
 
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$DashboardSurveyItemImplCopyWith<_$DashboardSurveyItemImpl> get copyWith =>
-      __$$DashboardSurveyItemImplCopyWithImpl<_$DashboardSurveyItemImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, AggregationType? aggregationType)
-        measurement,
-    required TResult Function(String color, String healthType) healthChart,
-    required TResult Function(String workoutType, String displayName,
-            String color, WorkoutValueType valueType)
-        workoutChart,
-    required TResult Function(String habitId) habitChart,
-    required TResult Function(Map<String, String> colorsByScoreKey,
-            String surveyType, String surveyName)
-        surveyChart,
-    required TResult Function(String storyTagId, String color) storyTimeChart,
-    required TResult Function(String storySubstring, String color)
-        wildcardStoryTimeChart,
-  }) {
-    return surveyChart(colorsByScoreKey, surveyType, surveyName);
+  String toString() {
+    return 'DashboardItem.surveyChart(colorsByScoreKey: $colorsByScoreKey, surveyType: $surveyType, surveyName: $surveyName)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, AggregationType? aggregationType)? measurement,
-    TResult? Function(String color, String healthType)? healthChart,
-    TResult? Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult? Function(String habitId)? habitChart,
-    TResult? Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult? Function(String storyTagId, String color)? storyTimeChart,
-    TResult? Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-  }) {
-    return surveyChart?.call(colorsByScoreKey, surveyType, surveyName);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, AggregationType? aggregationType)? measurement,
-    TResult Function(String color, String healthType)? healthChart,
-    TResult Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult Function(String habitId)? habitChart,
-    TResult Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult Function(String storyTagId, String color)? storyTimeChart,
-    TResult Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (surveyChart != null) {
-      return surveyChart(colorsByScoreKey, surveyType, surveyName);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DashboardMeasurementItem value) measurement,
-    required TResult Function(DashboardHealthItem value) healthChart,
-    required TResult Function(DashboardWorkoutItem value) workoutChart,
-    required TResult Function(DashboardHabitItem value) habitChart,
-    required TResult Function(DashboardSurveyItem value) surveyChart,
-    required TResult Function(DashboardStoryTimeItem value) storyTimeChart,
-    required TResult Function(WildcardStoryTimeItem value)
-        wildcardStoryTimeChart,
-  }) {
-    return surveyChart(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DashboardMeasurementItem value)? measurement,
-    TResult? Function(DashboardHealthItem value)? healthChart,
-    TResult? Function(DashboardWorkoutItem value)? workoutChart,
-    TResult? Function(DashboardHabitItem value)? habitChart,
-    TResult? Function(DashboardSurveyItem value)? surveyChart,
-    TResult? Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult? Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-  }) {
-    return surveyChart?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DashboardMeasurementItem value)? measurement,
-    TResult Function(DashboardHealthItem value)? healthChart,
-    TResult Function(DashboardWorkoutItem value)? workoutChart,
-    TResult Function(DashboardHabitItem value)? habitChart,
-    TResult Function(DashboardSurveyItem value)? surveyChart,
-    TResult Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (surveyChart != null) {
-      return surveyChart(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$DashboardSurveyItemImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class DashboardSurveyItem implements DashboardItem {
-  const factory DashboardSurveyItem(
-      {required final Map<String, String> colorsByScoreKey,
-      required final String surveyType,
-      required final String surveyName}) = _$DashboardSurveyItemImpl;
-
-  factory DashboardSurveyItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardSurveyItemImpl.fromJson;
-
-  Map<String, String> get colorsByScoreKey;
-  String get surveyType;
-  String get surveyName;
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DashboardSurveyItemImplCopyWith<_$DashboardSurveyItemImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardStoryTimeItemImplCopyWith<$Res> {
-  factory _$$DashboardStoryTimeItemImplCopyWith(
-          _$DashboardStoryTimeItemImpl value,
-          $Res Function(_$DashboardStoryTimeItemImpl) then) =
-      __$$DashboardStoryTimeItemImplCopyWithImpl<$Res>;
+abstract mixin class $DashboardSurveyItemCopyWith<$Res>
+    implements $DashboardItemCopyWith<$Res> {
+  factory $DashboardSurveyItemCopyWith(
+          DashboardSurveyItem value, $Res Function(DashboardSurveyItem) _then) =
+      _$DashboardSurveyItemCopyWithImpl;
   @useResult
-  $Res call({String storyTagId, String color});
+  $Res call(
+      {Map<String, String> colorsByScoreKey,
+      String surveyType,
+      String surveyName});
 }
 
 /// @nodoc
-class __$$DashboardStoryTimeItemImplCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardStoryTimeItemImpl>
-    implements _$$DashboardStoryTimeItemImplCopyWith<$Res> {
-  __$$DashboardStoryTimeItemImplCopyWithImpl(
-      _$DashboardStoryTimeItemImpl _value,
-      $Res Function(_$DashboardStoryTimeItemImpl) _then)
-      : super(_value, _then);
+class _$DashboardSurveyItemCopyWithImpl<$Res>
+    implements $DashboardSurveyItemCopyWith<$Res> {
+  _$DashboardSurveyItemCopyWithImpl(this._self, this._then);
+
+  final DashboardSurveyItem _self;
+  final $Res Function(DashboardSurveyItem) _then;
 
   /// Create a copy of DashboardItem
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? storyTagId = null,
-    Object? color = null,
+    Object? colorsByScoreKey = null,
+    Object? surveyType = null,
+    Object? surveyName = null,
   }) {
-    return _then(_$DashboardStoryTimeItemImpl(
-      storyTagId: null == storyTagId
-          ? _value.storyTagId
-          : storyTagId // ignore: cast_nullable_to_non_nullable
+    return _then(DashboardSurveyItem(
+      colorsByScoreKey: null == colorsByScoreKey
+          ? _self._colorsByScoreKey
+          : colorsByScoreKey // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
+      surveyType: null == surveyType
+          ? _self.surveyType
+          : surveyType // ignore: cast_nullable_to_non_nullable
               as String,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
+      surveyName: null == surveyName
+          ? _self.surveyName
+          : surveyName // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -7859,32 +5969,39 @@ class __$$DashboardStoryTimeItemImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardStoryTimeItemImpl implements DashboardStoryTimeItem {
-  const _$DashboardStoryTimeItemImpl(
+class DashboardStoryTimeItem implements DashboardItem {
+  const DashboardStoryTimeItem(
       {required this.storyTagId, required this.color, final String? $type})
       : $type = $type ?? 'storyTimeChart';
+  factory DashboardStoryTimeItem.fromJson(Map<String, dynamic> json) =>
+      _$DashboardStoryTimeItemFromJson(json);
 
-  factory _$DashboardStoryTimeItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardStoryTimeItemImplFromJson(json);
-
-  @override
   final String storyTagId;
-  @override
   final String color;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DashboardStoryTimeItemCopyWith<DashboardStoryTimeItem> get copyWith =>
+      _$DashboardStoryTimeItemCopyWithImpl<DashboardStoryTimeItem>(
+          this, _$identity);
+
   @override
-  String toString() {
-    return 'DashboardItem.storyTimeChart(storyTagId: $storyTagId, color: $color)';
+  Map<String, dynamic> toJson() {
+    return _$DashboardStoryTimeItemToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardStoryTimeItemImpl &&
+            other is DashboardStoryTimeItem &&
             (identical(other.storyTagId, storyTagId) ||
                 other.storyTagId == storyTagId) &&
             (identical(other.color, color) || other.color == color));
@@ -7894,183 +6011,44 @@ class _$DashboardStoryTimeItemImpl implements DashboardStoryTimeItem {
   @override
   int get hashCode => Object.hash(runtimeType, storyTagId, color);
 
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$DashboardStoryTimeItemImplCopyWith<_$DashboardStoryTimeItemImpl>
-      get copyWith => __$$DashboardStoryTimeItemImplCopyWithImpl<
-          _$DashboardStoryTimeItemImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, AggregationType? aggregationType)
-        measurement,
-    required TResult Function(String color, String healthType) healthChart,
-    required TResult Function(String workoutType, String displayName,
-            String color, WorkoutValueType valueType)
-        workoutChart,
-    required TResult Function(String habitId) habitChart,
-    required TResult Function(Map<String, String> colorsByScoreKey,
-            String surveyType, String surveyName)
-        surveyChart,
-    required TResult Function(String storyTagId, String color) storyTimeChart,
-    required TResult Function(String storySubstring, String color)
-        wildcardStoryTimeChart,
-  }) {
-    return storyTimeChart(storyTagId, color);
+  String toString() {
+    return 'DashboardItem.storyTimeChart(storyTagId: $storyTagId, color: $color)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, AggregationType? aggregationType)? measurement,
-    TResult? Function(String color, String healthType)? healthChart,
-    TResult? Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult? Function(String habitId)? habitChart,
-    TResult? Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult? Function(String storyTagId, String color)? storyTimeChart,
-    TResult? Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-  }) {
-    return storyTimeChart?.call(storyTagId, color);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, AggregationType? aggregationType)? measurement,
-    TResult Function(String color, String healthType)? healthChart,
-    TResult Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult Function(String habitId)? habitChart,
-    TResult Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult Function(String storyTagId, String color)? storyTimeChart,
-    TResult Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (storyTimeChart != null) {
-      return storyTimeChart(storyTagId, color);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DashboardMeasurementItem value) measurement,
-    required TResult Function(DashboardHealthItem value) healthChart,
-    required TResult Function(DashboardWorkoutItem value) workoutChart,
-    required TResult Function(DashboardHabitItem value) habitChart,
-    required TResult Function(DashboardSurveyItem value) surveyChart,
-    required TResult Function(DashboardStoryTimeItem value) storyTimeChart,
-    required TResult Function(WildcardStoryTimeItem value)
-        wildcardStoryTimeChart,
-  }) {
-    return storyTimeChart(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DashboardMeasurementItem value)? measurement,
-    TResult? Function(DashboardHealthItem value)? healthChart,
-    TResult? Function(DashboardWorkoutItem value)? workoutChart,
-    TResult? Function(DashboardHabitItem value)? habitChart,
-    TResult? Function(DashboardSurveyItem value)? surveyChart,
-    TResult? Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult? Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-  }) {
-    return storyTimeChart?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DashboardMeasurementItem value)? measurement,
-    TResult Function(DashboardHealthItem value)? healthChart,
-    TResult Function(DashboardWorkoutItem value)? workoutChart,
-    TResult Function(DashboardHabitItem value)? habitChart,
-    TResult Function(DashboardSurveyItem value)? surveyChart,
-    TResult Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (storyTimeChart != null) {
-      return storyTimeChart(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$DashboardStoryTimeItemImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class DashboardStoryTimeItem implements DashboardItem {
-  const factory DashboardStoryTimeItem(
-      {required final String storyTagId,
-      required final String color}) = _$DashboardStoryTimeItemImpl;
-
-  factory DashboardStoryTimeItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardStoryTimeItemImpl.fromJson;
-
-  String get storyTagId;
-  String get color;
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DashboardStoryTimeItemImplCopyWith<_$DashboardStoryTimeItemImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$WildcardStoryTimeItemImplCopyWith<$Res> {
-  factory _$$WildcardStoryTimeItemImplCopyWith(
-          _$WildcardStoryTimeItemImpl value,
-          $Res Function(_$WildcardStoryTimeItemImpl) then) =
-      __$$WildcardStoryTimeItemImplCopyWithImpl<$Res>;
+abstract mixin class $DashboardStoryTimeItemCopyWith<$Res>
+    implements $DashboardItemCopyWith<$Res> {
+  factory $DashboardStoryTimeItemCopyWith(DashboardStoryTimeItem value,
+          $Res Function(DashboardStoryTimeItem) _then) =
+      _$DashboardStoryTimeItemCopyWithImpl;
   @useResult
-  $Res call({String storySubstring, String color});
+  $Res call({String storyTagId, String color});
 }
 
 /// @nodoc
-class __$$WildcardStoryTimeItemImplCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$WildcardStoryTimeItemImpl>
-    implements _$$WildcardStoryTimeItemImplCopyWith<$Res> {
-  __$$WildcardStoryTimeItemImplCopyWithImpl(_$WildcardStoryTimeItemImpl _value,
-      $Res Function(_$WildcardStoryTimeItemImpl) _then)
-      : super(_value, _then);
+class _$DashboardStoryTimeItemCopyWithImpl<$Res>
+    implements $DashboardStoryTimeItemCopyWith<$Res> {
+  _$DashboardStoryTimeItemCopyWithImpl(this._self, this._then);
+
+  final DashboardStoryTimeItem _self;
+  final $Res Function(DashboardStoryTimeItem) _then;
 
   /// Create a copy of DashboardItem
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? storySubstring = null,
+    Object? storyTagId = null,
     Object? color = null,
   }) {
-    return _then(_$WildcardStoryTimeItemImpl(
-      storySubstring: null == storySubstring
-          ? _value.storySubstring
-          : storySubstring // ignore: cast_nullable_to_non_nullable
+    return _then(DashboardStoryTimeItem(
+      storyTagId: null == storyTagId
+          ? _self.storyTagId
+          : storyTagId // ignore: cast_nullable_to_non_nullable
               as String,
       color: null == color
-          ? _value.color
+          ? _self.color
           : color // ignore: cast_nullable_to_non_nullable
               as String,
     ));
@@ -8079,32 +6057,39 @@ class __$$WildcardStoryTimeItemImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$WildcardStoryTimeItemImpl implements WildcardStoryTimeItem {
-  const _$WildcardStoryTimeItemImpl(
+class WildcardStoryTimeItem implements DashboardItem {
+  const WildcardStoryTimeItem(
       {required this.storySubstring, required this.color, final String? $type})
       : $type = $type ?? 'wildcardStoryTimeChart';
+  factory WildcardStoryTimeItem.fromJson(Map<String, dynamic> json) =>
+      _$WildcardStoryTimeItemFromJson(json);
 
-  factory _$WildcardStoryTimeItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WildcardStoryTimeItemImplFromJson(json);
-
-  @override
   final String storySubstring;
-  @override
   final String color;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $WildcardStoryTimeItemCopyWith<WildcardStoryTimeItem> get copyWith =>
+      _$WildcardStoryTimeItemCopyWithImpl<WildcardStoryTimeItem>(
+          this, _$identity);
+
   @override
-  String toString() {
-    return 'DashboardItem.wildcardStoryTimeChart(storySubstring: $storySubstring, color: $color)';
+  Map<String, dynamic> toJson() {
+    return _$WildcardStoryTimeItemToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$WildcardStoryTimeItemImpl &&
+            other is WildcardStoryTimeItem &&
             (identical(other.storySubstring, storySubstring) ||
                 other.storySubstring == storySubstring) &&
             (identical(other.color, color) || other.color == color));
@@ -8114,146 +6099,48 @@ class _$WildcardStoryTimeItemImpl implements WildcardStoryTimeItem {
   @override
   int get hashCode => Object.hash(runtimeType, storySubstring, color);
 
+  @override
+  String toString() {
+    return 'DashboardItem.wildcardStoryTimeChart(storySubstring: $storySubstring, color: $color)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $WildcardStoryTimeItemCopyWith<$Res>
+    implements $DashboardItemCopyWith<$Res> {
+  factory $WildcardStoryTimeItemCopyWith(WildcardStoryTimeItem value,
+          $Res Function(WildcardStoryTimeItem) _then) =
+      _$WildcardStoryTimeItemCopyWithImpl;
+  @useResult
+  $Res call({String storySubstring, String color});
+}
+
+/// @nodoc
+class _$WildcardStoryTimeItemCopyWithImpl<$Res>
+    implements $WildcardStoryTimeItemCopyWith<$Res> {
+  _$WildcardStoryTimeItemCopyWithImpl(this._self, this._then);
+
+  final WildcardStoryTimeItem _self;
+  final $Res Function(WildcardStoryTimeItem) _then;
+
   /// Create a copy of DashboardItem
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
   @pragma('vm:prefer-inline')
-  _$$WildcardStoryTimeItemImplCopyWith<_$WildcardStoryTimeItemImpl>
-      get copyWith => __$$WildcardStoryTimeItemImplCopyWithImpl<
-          _$WildcardStoryTimeItemImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, AggregationType? aggregationType)
-        measurement,
-    required TResult Function(String color, String healthType) healthChart,
-    required TResult Function(String workoutType, String displayName,
-            String color, WorkoutValueType valueType)
-        workoutChart,
-    required TResult Function(String habitId) habitChart,
-    required TResult Function(Map<String, String> colorsByScoreKey,
-            String surveyType, String surveyName)
-        surveyChart,
-    required TResult Function(String storyTagId, String color) storyTimeChart,
-    required TResult Function(String storySubstring, String color)
-        wildcardStoryTimeChart,
+  $Res call({
+    Object? storySubstring = null,
+    Object? color = null,
   }) {
-    return wildcardStoryTimeChart(storySubstring, color);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, AggregationType? aggregationType)? measurement,
-    TResult? Function(String color, String healthType)? healthChart,
-    TResult? Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult? Function(String habitId)? habitChart,
-    TResult? Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult? Function(String storyTagId, String color)? storyTimeChart,
-    TResult? Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-  }) {
-    return wildcardStoryTimeChart?.call(storySubstring, color);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, AggregationType? aggregationType)? measurement,
-    TResult Function(String color, String healthType)? healthChart,
-    TResult Function(String workoutType, String displayName, String color,
-            WorkoutValueType valueType)?
-        workoutChart,
-    TResult Function(String habitId)? habitChart,
-    TResult Function(Map<String, String> colorsByScoreKey, String surveyType,
-            String surveyName)?
-        surveyChart,
-    TResult Function(String storyTagId, String color)? storyTimeChart,
-    TResult Function(String storySubstring, String color)?
-        wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (wildcardStoryTimeChart != null) {
-      return wildcardStoryTimeChart(storySubstring, color);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DashboardMeasurementItem value) measurement,
-    required TResult Function(DashboardHealthItem value) healthChart,
-    required TResult Function(DashboardWorkoutItem value) workoutChart,
-    required TResult Function(DashboardHabitItem value) habitChart,
-    required TResult Function(DashboardSurveyItem value) surveyChart,
-    required TResult Function(DashboardStoryTimeItem value) storyTimeChart,
-    required TResult Function(WildcardStoryTimeItem value)
-        wildcardStoryTimeChart,
-  }) {
-    return wildcardStoryTimeChart(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DashboardMeasurementItem value)? measurement,
-    TResult? Function(DashboardHealthItem value)? healthChart,
-    TResult? Function(DashboardWorkoutItem value)? workoutChart,
-    TResult? Function(DashboardHabitItem value)? habitChart,
-    TResult? Function(DashboardSurveyItem value)? surveyChart,
-    TResult? Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult? Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-  }) {
-    return wildcardStoryTimeChart?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DashboardMeasurementItem value)? measurement,
-    TResult Function(DashboardHealthItem value)? healthChart,
-    TResult Function(DashboardWorkoutItem value)? workoutChart,
-    TResult Function(DashboardHabitItem value)? habitChart,
-    TResult Function(DashboardSurveyItem value)? surveyChart,
-    TResult Function(DashboardStoryTimeItem value)? storyTimeChart,
-    TResult Function(WildcardStoryTimeItem value)? wildcardStoryTimeChart,
-    required TResult orElse(),
-  }) {
-    if (wildcardStoryTimeChart != null) {
-      return wildcardStoryTimeChart(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WildcardStoryTimeItemImplToJson(
-      this,
-    );
+    return _then(WildcardStoryTimeItem(
+      storySubstring: null == storySubstring
+          ? _self.storySubstring
+          : storySubstring // ignore: cast_nullable_to_non_nullable
+              as String,
+      color: null == color
+          ? _self.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
   }
 }
 
-abstract class WildcardStoryTimeItem implements DashboardItem {
-  const factory WildcardStoryTimeItem(
-      {required final String storySubstring,
-      required final String color}) = _$WildcardStoryTimeItemImpl;
-
-  factory WildcardStoryTimeItem.fromJson(Map<String, dynamic> json) =
-      _$WildcardStoryTimeItemImpl.fromJson;
-
-  String get storySubstring;
-  String get color;
-
-  /// Create a copy of DashboardItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$WildcardStoryTimeItemImplCopyWith<_$WildcardStoryTimeItemImpl>
-      get copyWith => throw _privateConstructorUsedError;
-}
+// dart format on

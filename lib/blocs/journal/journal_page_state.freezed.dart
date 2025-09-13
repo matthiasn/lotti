@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,136 +9,83 @@ part of 'journal_page_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$JournalPageState {
-  String get match => throw _privateConstructorUsedError;
-  Set<String> get tagIds => throw _privateConstructorUsedError;
-  Set<DisplayFilter> get filters => throw _privateConstructorUsedError;
-  bool get showPrivateEntries => throw _privateConstructorUsedError;
-  bool get showTasks => throw _privateConstructorUsedError;
-  List<String> get selectedEntryTypes => throw _privateConstructorUsedError;
-  Set<String> get fullTextMatches => throw _privateConstructorUsedError;
-  PagingController<int, JournalEntity>? get pagingController =>
-      throw _privateConstructorUsedError;
-  List<String> get taskStatuses => throw _privateConstructorUsedError;
-  Set<String> get selectedTaskStatuses => throw _privateConstructorUsedError;
-  Set<String?> get selectedCategoryIds => throw _privateConstructorUsedError;
+  String get match;
+  Set<String> get tagIds;
+  Set<DisplayFilter> get filters;
+  bool get showPrivateEntries;
+  bool get showTasks;
+  List<String> get selectedEntryTypes;
+  Set<String> get fullTextMatches;
+  PagingController<int, JournalEntity>? get pagingController;
+  List<String> get taskStatuses;
+  Set<String> get selectedTaskStatuses;
+  Set<String?> get selectedCategoryIds;
 
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $JournalPageStateCopyWith<JournalPageState> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $JournalPageStateCopyWith<$Res> {
-  factory $JournalPageStateCopyWith(
-          JournalPageState value, $Res Function(JournalPageState) then) =
-      _$JournalPageStateCopyWithImpl<$Res, JournalPageState>;
-  @useResult
-  $Res call(
-      {String match,
-      Set<String> tagIds,
-      Set<DisplayFilter> filters,
-      bool showPrivateEntries,
-      bool showTasks,
-      List<String> selectedEntryTypes,
-      Set<String> fullTextMatches,
-      PagingController<int, JournalEntity>? pagingController,
-      List<String> taskStatuses,
-      Set<String> selectedTaskStatuses,
-      Set<String?> selectedCategoryIds});
-}
-
-/// @nodoc
-class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
-    implements $JournalPageStateCopyWith<$Res> {
-  _$JournalPageStateCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of JournalPageState
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $JournalPageStateCopyWith<JournalPageState> get copyWith =>
+      _$JournalPageStateCopyWithImpl<JournalPageState>(
+          this as JournalPageState, _$identity);
+
   @override
-  $Res call({
-    Object? match = null,
-    Object? tagIds = null,
-    Object? filters = null,
-    Object? showPrivateEntries = null,
-    Object? showTasks = null,
-    Object? selectedEntryTypes = null,
-    Object? fullTextMatches = null,
-    Object? pagingController = freezed,
-    Object? taskStatuses = null,
-    Object? selectedTaskStatuses = null,
-    Object? selectedCategoryIds = null,
-  }) {
-    return _then(_value.copyWith(
-      match: null == match
-          ? _value.match
-          : match // ignore: cast_nullable_to_non_nullable
-              as String,
-      tagIds: null == tagIds
-          ? _value.tagIds
-          : tagIds // ignore: cast_nullable_to_non_nullable
-              as Set<String>,
-      filters: null == filters
-          ? _value.filters
-          : filters // ignore: cast_nullable_to_non_nullable
-              as Set<DisplayFilter>,
-      showPrivateEntries: null == showPrivateEntries
-          ? _value.showPrivateEntries
-          : showPrivateEntries // ignore: cast_nullable_to_non_nullable
-              as bool,
-      showTasks: null == showTasks
-          ? _value.showTasks
-          : showTasks // ignore: cast_nullable_to_non_nullable
-              as bool,
-      selectedEntryTypes: null == selectedEntryTypes
-          ? _value.selectedEntryTypes
-          : selectedEntryTypes // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      fullTextMatches: null == fullTextMatches
-          ? _value.fullTextMatches
-          : fullTextMatches // ignore: cast_nullable_to_non_nullable
-              as Set<String>,
-      pagingController: freezed == pagingController
-          ? _value.pagingController
-          : pagingController // ignore: cast_nullable_to_non_nullable
-              as PagingController<int, JournalEntity>?,
-      taskStatuses: null == taskStatuses
-          ? _value.taskStatuses
-          : taskStatuses // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      selectedTaskStatuses: null == selectedTaskStatuses
-          ? _value.selectedTaskStatuses
-          : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
-              as Set<String>,
-      selectedCategoryIds: null == selectedCategoryIds
-          ? _value.selectedCategoryIds
-          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
-              as Set<String?>,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is JournalPageState &&
+            (identical(other.match, match) || other.match == match) &&
+            const DeepCollectionEquality().equals(other.tagIds, tagIds) &&
+            const DeepCollectionEquality().equals(other.filters, filters) &&
+            (identical(other.showPrivateEntries, showPrivateEntries) ||
+                other.showPrivateEntries == showPrivateEntries) &&
+            (identical(other.showTasks, showTasks) ||
+                other.showTasks == showTasks) &&
+            const DeepCollectionEquality()
+                .equals(other.selectedEntryTypes, selectedEntryTypes) &&
+            const DeepCollectionEquality()
+                .equals(other.fullTextMatches, fullTextMatches) &&
+            (identical(other.pagingController, pagingController) ||
+                other.pagingController == pagingController) &&
+            const DeepCollectionEquality()
+                .equals(other.taskStatuses, taskStatuses) &&
+            const DeepCollectionEquality()
+                .equals(other.selectedTaskStatuses, selectedTaskStatuses) &&
+            const DeepCollectionEquality()
+                .equals(other.selectedCategoryIds, selectedCategoryIds));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      match,
+      const DeepCollectionEquality().hash(tagIds),
+      const DeepCollectionEquality().hash(filters),
+      showPrivateEntries,
+      showTasks,
+      const DeepCollectionEquality().hash(selectedEntryTypes),
+      const DeepCollectionEquality().hash(fullTextMatches),
+      pagingController,
+      const DeepCollectionEquality().hash(taskStatuses),
+      const DeepCollectionEquality().hash(selectedTaskStatuses),
+      const DeepCollectionEquality().hash(selectedCategoryIds));
+
+  @override
+  String toString() {
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds)';
   }
 }
 
 /// @nodoc
-abstract class _$$JournalPageStateImplCopyWith<$Res>
-    implements $JournalPageStateCopyWith<$Res> {
-  factory _$$JournalPageStateImplCopyWith(_$JournalPageStateImpl value,
-          $Res Function(_$JournalPageStateImpl) then) =
-      __$$JournalPageStateImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $JournalPageStateCopyWith<$Res> {
+  factory $JournalPageStateCopyWith(
+          JournalPageState value, $Res Function(JournalPageState) _then) =
+      _$JournalPageStateCopyWithImpl;
   @useResult
   $Res call(
       {String match,
@@ -155,12 +102,12 @@ abstract class _$$JournalPageStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$JournalPageStateImplCopyWithImpl<$Res>
-    extends _$JournalPageStateCopyWithImpl<$Res, _$JournalPageStateImpl>
-    implements _$$JournalPageStateImplCopyWith<$Res> {
-  __$$JournalPageStateImplCopyWithImpl(_$JournalPageStateImpl _value,
-      $Res Function(_$JournalPageStateImpl) _then)
-      : super(_value, _then);
+class _$JournalPageStateCopyWithImpl<$Res>
+    implements $JournalPageStateCopyWith<$Res> {
+  _$JournalPageStateCopyWithImpl(this._self, this._then);
+
+  final JournalPageState _self;
+  final $Res Function(JournalPageState) _then;
 
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
@@ -179,59 +126,285 @@ class __$$JournalPageStateImplCopyWithImpl<$Res>
     Object? selectedTaskStatuses = null,
     Object? selectedCategoryIds = null,
   }) {
-    return _then(_$JournalPageStateImpl(
+    return _then(_self.copyWith(
       match: null == match
-          ? _value.match
+          ? _self.match
           : match // ignore: cast_nullable_to_non_nullable
               as String,
       tagIds: null == tagIds
-          ? _value._tagIds
+          ? _self.tagIds
           : tagIds // ignore: cast_nullable_to_non_nullable
               as Set<String>,
       filters: null == filters
-          ? _value._filters
+          ? _self.filters
           : filters // ignore: cast_nullable_to_non_nullable
               as Set<DisplayFilter>,
       showPrivateEntries: null == showPrivateEntries
-          ? _value.showPrivateEntries
+          ? _self.showPrivateEntries
           : showPrivateEntries // ignore: cast_nullable_to_non_nullable
               as bool,
       showTasks: null == showTasks
-          ? _value.showTasks
+          ? _self.showTasks
           : showTasks // ignore: cast_nullable_to_non_nullable
               as bool,
       selectedEntryTypes: null == selectedEntryTypes
-          ? _value._selectedEntryTypes
+          ? _self.selectedEntryTypes
           : selectedEntryTypes // ignore: cast_nullable_to_non_nullable
               as List<String>,
       fullTextMatches: null == fullTextMatches
-          ? _value._fullTextMatches
+          ? _self.fullTextMatches
           : fullTextMatches // ignore: cast_nullable_to_non_nullable
               as Set<String>,
       pagingController: freezed == pagingController
-          ? _value.pagingController
+          ? _self.pagingController
           : pagingController // ignore: cast_nullable_to_non_nullable
               as PagingController<int, JournalEntity>?,
       taskStatuses: null == taskStatuses
-          ? _value._taskStatuses
+          ? _self.taskStatuses
           : taskStatuses // ignore: cast_nullable_to_non_nullable
               as List<String>,
       selectedTaskStatuses: null == selectedTaskStatuses
-          ? _value._selectedTaskStatuses
+          ? _self.selectedTaskStatuses
           : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
               as Set<String>,
       selectedCategoryIds: null == selectedCategoryIds
-          ? _value._selectedCategoryIds
+          ? _self.selectedCategoryIds
           : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
               as Set<String?>,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [JournalPageState].
+extension JournalPageStatePatterns on JournalPageState {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_JournalPageState value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _JournalPageState() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_JournalPageState value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _JournalPageState():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_JournalPageState value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _JournalPageState() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            String match,
+            Set<String> tagIds,
+            Set<DisplayFilter> filters,
+            bool showPrivateEntries,
+            bool showTasks,
+            List<String> selectedEntryTypes,
+            Set<String> fullTextMatches,
+            PagingController<int, JournalEntity>? pagingController,
+            List<String> taskStatuses,
+            Set<String> selectedTaskStatuses,
+            Set<String?> selectedCategoryIds)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _JournalPageState() when $default != null:
+        return $default(
+            _that.match,
+            _that.tagIds,
+            _that.filters,
+            _that.showPrivateEntries,
+            _that.showTasks,
+            _that.selectedEntryTypes,
+            _that.fullTextMatches,
+            _that.pagingController,
+            _that.taskStatuses,
+            _that.selectedTaskStatuses,
+            _that.selectedCategoryIds);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            String match,
+            Set<String> tagIds,
+            Set<DisplayFilter> filters,
+            bool showPrivateEntries,
+            bool showTasks,
+            List<String> selectedEntryTypes,
+            Set<String> fullTextMatches,
+            PagingController<int, JournalEntity>? pagingController,
+            List<String> taskStatuses,
+            Set<String> selectedTaskStatuses,
+            Set<String?> selectedCategoryIds)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _JournalPageState():
+        return $default(
+            _that.match,
+            _that.tagIds,
+            _that.filters,
+            _that.showPrivateEntries,
+            _that.showTasks,
+            _that.selectedEntryTypes,
+            _that.fullTextMatches,
+            _that.pagingController,
+            _that.taskStatuses,
+            _that.selectedTaskStatuses,
+            _that.selectedCategoryIds);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            String match,
+            Set<String> tagIds,
+            Set<DisplayFilter> filters,
+            bool showPrivateEntries,
+            bool showTasks,
+            List<String> selectedEntryTypes,
+            Set<String> fullTextMatches,
+            PagingController<int, JournalEntity>? pagingController,
+            List<String> taskStatuses,
+            Set<String> selectedTaskStatuses,
+            Set<String?> selectedCategoryIds)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _JournalPageState() when $default != null:
+        return $default(
+            _that.match,
+            _that.tagIds,
+            _that.filters,
+            _that.showPrivateEntries,
+            _that.showTasks,
+            _that.selectedEntryTypes,
+            _that.fullTextMatches,
+            _that.pagingController,
+            _that.taskStatuses,
+            _that.selectedTaskStatuses,
+            _that.selectedCategoryIds);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 
-class _$JournalPageStateImpl implements _JournalPageState {
-  _$JournalPageStateImpl(
+class _JournalPageState implements JournalPageState {
+  _JournalPageState(
       {required this.match,
       required final Set<String> tagIds,
       required final Set<DisplayFilter> filters,
@@ -318,16 +491,19 @@ class _$JournalPageStateImpl implements _JournalPageState {
     return EqualUnmodifiableSetView(_selectedCategoryIds);
   }
 
+  /// Create a copy of JournalPageState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds)';
-  }
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$JournalPageStateCopyWith<_JournalPageState> get copyWith =>
+      __$JournalPageStateCopyWithImpl<_JournalPageState>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$JournalPageStateImpl &&
+            other is _JournalPageState &&
             (identical(other.match, match) || other.match == match) &&
             const DeepCollectionEquality().equals(other._tagIds, _tagIds) &&
             const DeepCollectionEquality().equals(other._filters, _filters) &&
@@ -364,141 +540,163 @@ class _$JournalPageStateImpl implements _JournalPageState {
       const DeepCollectionEquality().hash(_selectedTaskStatuses),
       const DeepCollectionEquality().hash(_selectedCategoryIds));
 
-  /// Create a copy of JournalPageState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$JournalPageStateImplCopyWith<_$JournalPageStateImpl> get copyWith =>
-      __$$JournalPageStateImplCopyWithImpl<_$JournalPageStateImpl>(
-          this, _$identity);
-}
-
-abstract class _JournalPageState implements JournalPageState {
-  factory _JournalPageState(
-          {required final String match,
-          required final Set<String> tagIds,
-          required final Set<DisplayFilter> filters,
-          required final bool showPrivateEntries,
-          required final bool showTasks,
-          required final List<String> selectedEntryTypes,
-          required final Set<String> fullTextMatches,
-          required final PagingController<int, JournalEntity>? pagingController,
-          required final List<String> taskStatuses,
-          required final Set<String> selectedTaskStatuses,
-          required final Set<String?> selectedCategoryIds}) =
-      _$JournalPageStateImpl;
-
-  @override
-  String get match;
-  @override
-  Set<String> get tagIds;
-  @override
-  Set<DisplayFilter> get filters;
-  @override
-  bool get showPrivateEntries;
-  @override
-  bool get showTasks;
-  @override
-  List<String> get selectedEntryTypes;
-  @override
-  Set<String> get fullTextMatches;
-  @override
-  PagingController<int, JournalEntity>? get pagingController;
-  @override
-  List<String> get taskStatuses;
-  @override
-  Set<String> get selectedTaskStatuses;
-  @override
-  Set<String?> get selectedCategoryIds;
-
-  /// Create a copy of JournalPageState
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$JournalPageStateImplCopyWith<_$JournalPageStateImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) {
-  return _TasksFilter.fromJson(json);
-}
-
-/// @nodoc
-mixin _$TasksFilter {
-  Set<String> get selectedCategoryIds => throw _privateConstructorUsedError;
-  Set<String> get selectedTaskStatuses => throw _privateConstructorUsedError;
-
-  /// Serializes this TasksFilter to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of TasksFilter
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $TasksFilterCopyWith<TasksFilter> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $TasksFilterCopyWith<$Res> {
-  factory $TasksFilterCopyWith(
-          TasksFilter value, $Res Function(TasksFilter) then) =
-      _$TasksFilterCopyWithImpl<$Res, TasksFilter>;
-  @useResult
-  $Res call(
-      {Set<String> selectedCategoryIds, Set<String> selectedTaskStatuses});
-}
-
-/// @nodoc
-class _$TasksFilterCopyWithImpl<$Res, $Val extends TasksFilter>
-    implements $TasksFilterCopyWith<$Res> {
-  _$TasksFilterCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of TasksFilter
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? selectedCategoryIds = null,
-    Object? selectedTaskStatuses = null,
-  }) {
-    return _then(_value.copyWith(
-      selectedCategoryIds: null == selectedCategoryIds
-          ? _value.selectedCategoryIds
-          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
-              as Set<String>,
-      selectedTaskStatuses: null == selectedTaskStatuses
-          ? _value.selectedTaskStatuses
-          : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
-              as Set<String>,
-    ) as $Val);
+  String toString() {
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds)';
   }
 }
 
 /// @nodoc
-abstract class _$$TasksFilterImplCopyWith<$Res>
-    implements $TasksFilterCopyWith<$Res> {
-  factory _$$TasksFilterImplCopyWith(
-          _$TasksFilterImpl value, $Res Function(_$TasksFilterImpl) then) =
-      __$$TasksFilterImplCopyWithImpl<$Res>;
+abstract mixin class _$JournalPageStateCopyWith<$Res>
+    implements $JournalPageStateCopyWith<$Res> {
+  factory _$JournalPageStateCopyWith(
+          _JournalPageState value, $Res Function(_JournalPageState) _then) =
+      __$JournalPageStateCopyWithImpl;
   @override
+  @useResult
+  $Res call(
+      {String match,
+      Set<String> tagIds,
+      Set<DisplayFilter> filters,
+      bool showPrivateEntries,
+      bool showTasks,
+      List<String> selectedEntryTypes,
+      Set<String> fullTextMatches,
+      PagingController<int, JournalEntity>? pagingController,
+      List<String> taskStatuses,
+      Set<String> selectedTaskStatuses,
+      Set<String?> selectedCategoryIds});
+}
+
+/// @nodoc
+class __$JournalPageStateCopyWithImpl<$Res>
+    implements _$JournalPageStateCopyWith<$Res> {
+  __$JournalPageStateCopyWithImpl(this._self, this._then);
+
+  final _JournalPageState _self;
+  final $Res Function(_JournalPageState) _then;
+
+  /// Create a copy of JournalPageState
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? match = null,
+    Object? tagIds = null,
+    Object? filters = null,
+    Object? showPrivateEntries = null,
+    Object? showTasks = null,
+    Object? selectedEntryTypes = null,
+    Object? fullTextMatches = null,
+    Object? pagingController = freezed,
+    Object? taskStatuses = null,
+    Object? selectedTaskStatuses = null,
+    Object? selectedCategoryIds = null,
+  }) {
+    return _then(_JournalPageState(
+      match: null == match
+          ? _self.match
+          : match // ignore: cast_nullable_to_non_nullable
+              as String,
+      tagIds: null == tagIds
+          ? _self._tagIds
+          : tagIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      filters: null == filters
+          ? _self._filters
+          : filters // ignore: cast_nullable_to_non_nullable
+              as Set<DisplayFilter>,
+      showPrivateEntries: null == showPrivateEntries
+          ? _self.showPrivateEntries
+          : showPrivateEntries // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showTasks: null == showTasks
+          ? _self.showTasks
+          : showTasks // ignore: cast_nullable_to_non_nullable
+              as bool,
+      selectedEntryTypes: null == selectedEntryTypes
+          ? _self._selectedEntryTypes
+          : selectedEntryTypes // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      fullTextMatches: null == fullTextMatches
+          ? _self._fullTextMatches
+          : fullTextMatches // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      pagingController: freezed == pagingController
+          ? _self.pagingController
+          : pagingController // ignore: cast_nullable_to_non_nullable
+              as PagingController<int, JournalEntity>?,
+      taskStatuses: null == taskStatuses
+          ? _self._taskStatuses
+          : taskStatuses // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      selectedTaskStatuses: null == selectedTaskStatuses
+          ? _self._selectedTaskStatuses
+          : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      selectedCategoryIds: null == selectedCategoryIds
+          ? _self._selectedCategoryIds
+          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String?>,
+    ));
+  }
+}
+
+/// @nodoc
+mixin _$TasksFilter {
+  Set<String> get selectedCategoryIds;
+  Set<String> get selectedTaskStatuses;
+
+  /// Create a copy of TasksFilter
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TasksFilterCopyWith<TasksFilter> get copyWith =>
+      _$TasksFilterCopyWithImpl<TasksFilter>(this as TasksFilter, _$identity);
+
+  /// Serializes this TasksFilter to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is TasksFilter &&
+            const DeepCollectionEquality()
+                .equals(other.selectedCategoryIds, selectedCategoryIds) &&
+            const DeepCollectionEquality()
+                .equals(other.selectedTaskStatuses, selectedTaskStatuses));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(selectedCategoryIds),
+      const DeepCollectionEquality().hash(selectedTaskStatuses));
+
+  @override
+  String toString() {
+    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $TasksFilterCopyWith<$Res> {
+  factory $TasksFilterCopyWith(
+          TasksFilter value, $Res Function(TasksFilter) _then) =
+      _$TasksFilterCopyWithImpl;
   @useResult
   $Res call(
       {Set<String> selectedCategoryIds, Set<String> selectedTaskStatuses});
 }
 
 /// @nodoc
-class __$$TasksFilterImplCopyWithImpl<$Res>
-    extends _$TasksFilterCopyWithImpl<$Res, _$TasksFilterImpl>
-    implements _$$TasksFilterImplCopyWith<$Res> {
-  __$$TasksFilterImplCopyWithImpl(
-      _$TasksFilterImpl _value, $Res Function(_$TasksFilterImpl) _then)
-      : super(_value, _then);
+class _$TasksFilterCopyWithImpl<$Res> implements $TasksFilterCopyWith<$Res> {
+  _$TasksFilterCopyWithImpl(this._self, this._then);
+
+  final TasksFilter _self;
+  final $Res Function(TasksFilter) _then;
 
   /// Create a copy of TasksFilter
   /// with the given fields replaced by the non-null parameter values.
@@ -508,30 +706,192 @@ class __$$TasksFilterImplCopyWithImpl<$Res>
     Object? selectedCategoryIds = null,
     Object? selectedTaskStatuses = null,
   }) {
-    return _then(_$TasksFilterImpl(
+    return _then(_self.copyWith(
       selectedCategoryIds: null == selectedCategoryIds
-          ? _value._selectedCategoryIds
+          ? _self.selectedCategoryIds
           : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
               as Set<String>,
       selectedTaskStatuses: null == selectedTaskStatuses
-          ? _value._selectedTaskStatuses
+          ? _self.selectedTaskStatuses
           : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
               as Set<String>,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [TasksFilter].
+extension TasksFilterPatterns on TasksFilter {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_TasksFilter value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _TasksFilter() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_TasksFilter value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TasksFilter():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_TasksFilter value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TasksFilter() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            Set<String> selectedCategoryIds, Set<String> selectedTaskStatuses)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _TasksFilter() when $default != null:
+        return $default(_that.selectedCategoryIds, _that.selectedTaskStatuses);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            Set<String> selectedCategoryIds, Set<String> selectedTaskStatuses)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TasksFilter():
+        return $default(_that.selectedCategoryIds, _that.selectedTaskStatuses);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            Set<String> selectedCategoryIds, Set<String> selectedTaskStatuses)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TasksFilter() when $default != null:
+        return $default(_that.selectedCategoryIds, _that.selectedTaskStatuses);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 @JsonSerializable()
-class _$TasksFilterImpl implements _TasksFilter {
-  _$TasksFilterImpl(
+class _TasksFilter implements TasksFilter {
+  _TasksFilter(
       {required final Set<String> selectedCategoryIds,
       required final Set<String> selectedTaskStatuses})
       : _selectedCategoryIds = selectedCategoryIds,
         _selectedTaskStatuses = selectedTaskStatuses;
-
-  factory _$TasksFilterImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TasksFilterImplFromJson(json);
+  factory _TasksFilter.fromJson(Map<String, dynamic> json) =>
+      _$TasksFilterFromJson(json);
 
   final Set<String> _selectedCategoryIds;
   @override
@@ -551,16 +911,26 @@ class _$TasksFilterImpl implements _TasksFilter {
     return EqualUnmodifiableSetView(_selectedTaskStatuses);
   }
 
+  /// Create a copy of TasksFilter
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$TasksFilterCopyWith<_TasksFilter> get copyWith =>
+      __$TasksFilterCopyWithImpl<_TasksFilter>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TasksFilterToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TasksFilterImpl &&
+            other is _TasksFilter &&
             const DeepCollectionEquality()
                 .equals(other._selectedCategoryIds, _selectedCategoryIds) &&
             const DeepCollectionEquality()
@@ -574,39 +944,50 @@ class _$TasksFilterImpl implements _TasksFilter {
       const DeepCollectionEquality().hash(_selectedCategoryIds),
       const DeepCollectionEquality().hash(_selectedTaskStatuses));
 
-  /// Create a copy of TasksFilter
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TasksFilterImplCopyWith<_$TasksFilterImpl> get copyWith =>
-      __$$TasksFilterImplCopyWithImpl<_$TasksFilterImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TasksFilterImplToJson(
-      this,
-    );
+  String toString() {
+    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses)';
   }
 }
 
-abstract class _TasksFilter implements TasksFilter {
-  factory _TasksFilter(
-      {required final Set<String> selectedCategoryIds,
-      required final Set<String> selectedTaskStatuses}) = _$TasksFilterImpl;
-
-  factory _TasksFilter.fromJson(Map<String, dynamic> json) =
-      _$TasksFilterImpl.fromJson;
-
+/// @nodoc
+abstract mixin class _$TasksFilterCopyWith<$Res>
+    implements $TasksFilterCopyWith<$Res> {
+  factory _$TasksFilterCopyWith(
+          _TasksFilter value, $Res Function(_TasksFilter) _then) =
+      __$TasksFilterCopyWithImpl;
   @override
-  Set<String> get selectedCategoryIds;
-  @override
-  Set<String> get selectedTaskStatuses;
+  @useResult
+  $Res call(
+      {Set<String> selectedCategoryIds, Set<String> selectedTaskStatuses});
+}
+
+/// @nodoc
+class __$TasksFilterCopyWithImpl<$Res> implements _$TasksFilterCopyWith<$Res> {
+  __$TasksFilterCopyWithImpl(this._self, this._then);
+
+  final _TasksFilter _self;
+  final $Res Function(_TasksFilter) _then;
 
   /// Create a copy of TasksFilter
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TasksFilterImplCopyWith<_$TasksFilterImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? selectedCategoryIds = null,
+    Object? selectedTaskStatuses = null,
+  }) {
+    return _then(_TasksFilter(
+      selectedCategoryIds: null == selectedCategoryIds
+          ? _self._selectedCategoryIds
+          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      selectedTaskStatuses: null == selectedTaskStatuses
+          ? _self._selectedTaskStatuses
+          : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+    ));
+  }
 }
+
+// dart format on

@@ -6,9 +6,9 @@ part of 'ai_config.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$AiConfigInferenceProviderImpl _$$AiConfigInferenceProviderImplFromJson(
+AiConfigInferenceProvider _$AiConfigInferenceProviderFromJson(
         Map<String, dynamic> json) =>
-    _$AiConfigInferenceProviderImpl(
+    AiConfigInferenceProvider(
       id: json['id'] as String,
       baseUrl: json['baseUrl'] as String,
       apiKey: json['apiKey'] as String,
@@ -23,8 +23,8 @@ _$AiConfigInferenceProviderImpl _$$AiConfigInferenceProviderImplFromJson(
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$AiConfigInferenceProviderImplToJson(
-        _$AiConfigInferenceProviderImpl instance) =>
+Map<String, dynamic> _$AiConfigInferenceProviderToJson(
+        AiConfigInferenceProvider instance) =>
     <String, dynamic>{
       'id': instance.id,
       'baseUrl': instance.baseUrl,
@@ -49,8 +49,8 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.whisper: 'whisper',
 };
 
-_$AiConfigModelImpl _$$AiConfigModelImplFromJson(Map<String, dynamic> json) =>
-    _$AiConfigModelImpl(
+AiConfigModel _$AiConfigModelFromJson(Map<String, dynamic> json) =>
+    AiConfigModel(
       id: json['id'] as String,
       name: json['name'] as String,
       providerModelId: json['providerModelId'] as String,
@@ -73,7 +73,7 @@ _$AiConfigModelImpl _$$AiConfigModelImplFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$AiConfigModelImplToJson(_$AiConfigModelImpl instance) =>
+Map<String, dynamic> _$AiConfigModelToJson(AiConfigModel instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
@@ -98,8 +98,8 @@ const _$ModalityEnumMap = {
   Modality.image: 'image',
 };
 
-_$AiConfigPromptImpl _$$AiConfigPromptImplFromJson(Map<String, dynamic> json) =>
-    _$AiConfigPromptImpl(
+AiConfigPrompt _$AiConfigPromptFromJson(Map<String, dynamic> json) =>
+    AiConfigPrompt(
       id: json['id'] as String,
       name: json['name'] as String,
       systemMessage: json['systemMessage'] as String,
@@ -130,8 +130,7 @@ _$AiConfigPromptImpl _$$AiConfigPromptImplFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$AiConfigPromptImplToJson(
-        _$AiConfigPromptImpl instance) =>
+Map<String, dynamic> _$AiConfigPromptToJson(AiConfigPrompt instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,

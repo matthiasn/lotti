@@ -1,15 +1,11 @@
 import 'dart:convert';
 
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+// import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -43,13 +39,8 @@ Future<void> processMatrixMessage({
       subDomain: 'processMessage',
     );
 
-    await syncMessage.when(
-      journalEntity: (
-        String id,
-        String jsonPath,
-        VectorClock? vectorClock,
-        SyncEntryStatus status,
-      ) async {
+    switch (syncMessage) {
+      case SyncJournalEntity(jsonPath: final jsonPath):
         final docDir = getDocumentsDirectory();
         final fullPath = '${docDir.path}$jsonPath';
         final journalEntity = await readEntityFromJson(fullPath);
@@ -58,42 +49,31 @@ Future<void> processMatrixMessage({
           journalEntity.affectedIds,
           fromSync: true,
         );
-      },
-      entryLink: (EntryLink entryLink, SyncEntryStatus _) {
-        journalDb.upsertEntryLink(entryLink);
+      case SyncEntryLink(entryLink: final entryLink):
+        await journalDb.upsertEntryLink(entryLink);
         updateNotifications.notify(
           {entryLink.fromId, entryLink.toId},
           fromSync: true,
         );
-      },
-      entityDefinition: (
-        EntityDefinition entityDefinition,
-        SyncEntryStatus status,
-      ) {
-        journalDb.upsertEntityDefinition(entityDefinition);
-      },
-      tagEntity: (
-        TagEntity tagEntity,
-        SyncEntryStatus status,
-      ) {
-        journalDb.upsertTagEntity(tagEntity);
-      },
-      aiConfig: (
-        AiConfig aiConfig,
-        SyncEntryStatus status,
-      ) {
-        getIt<AiConfigRepository>().saveConfig(
+
+      case SyncEntityDefinition(entityDefinition: final entityDefinition):
+        await journalDb.upsertEntityDefinition(entityDefinition);
+
+      case SyncTagEntity(tagEntity: final tagEntity):
+        await journalDb.upsertTagEntity(tagEntity);
+
+      case SyncAiConfig(aiConfig: final aiConfig):
+        await getIt<AiConfigRepository>().saveConfig(
           aiConfig,
           fromSync: true,
         );
-      },
-      aiConfigDelete: (String id) {
-        getIt<AiConfigRepository>().deleteConfig(
+
+      case SyncAiConfigDelete(id: final id):
+        await getIt<AiConfigRepository>().deleteConfig(
           id,
           fromSync: true,
         );
-      },
-    );
+    }
   } catch (e, stackTrace) {
     getIt<LoggingService>().captureException(
       e,

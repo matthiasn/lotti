@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
@@ -18,6 +17,8 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
@@ -30,8 +31,6 @@ class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
-class FakeJournalEntity extends Fake implements JournalEntity {}
-
 void main() {
   late AiConfigPrompt testPromptConfig;
   late MockUnifiedAiInferenceRepository mockRepository;
@@ -43,7 +42,7 @@ void main() {
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(StackTrace.current);
     registerFallbackValue(FakeAiConfigPrompt());
-    registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(fallbackJournalEntity);
   });
 
   setUp(() {

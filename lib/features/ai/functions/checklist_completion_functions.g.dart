@@ -6,17 +6,18 @@ part of 'checklist_completion_functions.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$ChecklistCompletionSuggestionImpl
-    _$$ChecklistCompletionSuggestionImplFromJson(Map<String, dynamic> json) =>
-        _$ChecklistCompletionSuggestionImpl(
-          checklistItemId: json['checklistItemId'] as String,
-          reason: json['reason'] as String,
-          confidence: $enumDecode(
-              _$ChecklistCompletionConfidenceEnumMap, json['confidence']),
-        );
+_ChecklistCompletionSuggestion _$ChecklistCompletionSuggestionFromJson(
+        Map<String, dynamic> json) =>
+    _ChecklistCompletionSuggestion(
+      checklistItemId: json['checklistItemId'] as String,
+      reason: json['reason'] as String,
+      confidence: $enumDecode(
+          _$ChecklistCompletionConfidenceEnumMap, json['confidence'],
+          unknownValue: ChecklistCompletionConfidence.low),
+    );
 
-Map<String, dynamic> _$$ChecklistCompletionSuggestionImplToJson(
-        _$ChecklistCompletionSuggestionImpl instance) =>
+Map<String, dynamic> _$ChecklistCompletionSuggestionToJson(
+        _ChecklistCompletionSuggestion instance) =>
     <String, dynamic>{
       'checklistItemId': instance.checklistItemId,
       'reason': instance.reason,
@@ -30,16 +31,16 @@ const _$ChecklistCompletionConfidenceEnumMap = {
   ChecklistCompletionConfidence.low: 'low',
 };
 
-_$AddChecklistItemResultImpl _$$AddChecklistItemResultImplFromJson(
+_AddChecklistItemResult _$AddChecklistItemResultFromJson(
         Map<String, dynamic> json) =>
-    _$AddChecklistItemResultImpl(
+    _AddChecklistItemResult(
       checklistId: json['checklistId'] as String,
       checklistItemId: json['checklistItemId'] as String,
       checklistCreated: json['checklistCreated'] as bool,
     );
 
-Map<String, dynamic> _$$AddChecklistItemResultImplToJson(
-        _$AddChecklistItemResultImpl instance) =>
+Map<String, dynamic> _$AddChecklistItemResultToJson(
+        _AddChecklistItemResult instance) =>
     <String, dynamic>{
       'checklistId': instance.checklistId,
       'checklistItemId': instance.checklistItemId,
