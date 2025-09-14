@@ -1,7 +1,7 @@
 # Lotti
 
-[![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti) [![Flutter Test](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml/badge.svg)](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml)
-
+[![codecov](https://codecov.io/gh/matthiasn/lotti/graph/badge.svg?token=VB6FWvA1yW)](https://codecov.io/gh/matthiasn/lotti) 
+[![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti)
 **Your AI-powered context manager with complete privacy control**
 
 Lotti is an open-source personal assistant that helps you capture, organize, and understand your work and life through AI-enhanced task management, audio recordings, and intelligent summaries—all while keeping your data entirely under your control.
@@ -115,7 +115,7 @@ We welcome contributions! Lotti is built by and for people who value privacy and
 ### How You Can Help
 
 - 🐛 Report bugs and suggest features via [Issues](https://github.com/matthiasn/lotti/issues)
-- 🧪 Improve test coverage (currently ~76%)
+- 🧪 Improve test coverage: [![codecov](https://codecov.io/gh/matthiasn/lotti/graph/badge.svg?token=VB6FWvA1yW)](https://codecov.io/gh/matthiasn/lotti)
 - 🌍 Add or improve translations
 - 💻 Submit pull requests
 - 💬 Join discussions on [GitHub Discussions](https://github.com/matthiasn/lotti/discussions)
