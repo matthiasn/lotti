@@ -46,7 +46,30 @@ class _DeviceCardState extends State<DeviceCard> {
                 label: 'Delete device',
                 child: Icon(MdiIcons.trashCanOutline),
               ),
-              onPressed: () => _matrixService.deleteDevice(widget.deviceKeys),
+              onPressed: () async {
+                try {
+                  await _matrixService.deleteDevice(widget.deviceKeys);
+                  widget.refreshListCallback();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Device ${widget.deviceKeys.deviceDisplayName ?? widget.deviceKeys.deviceId ?? 'unknown'} deleted successfully',
+                        ),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to delete device: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
             ),
           ],
         ),

@@ -5,8 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.9.663] - 2025-09-14
 ### Changed:
 - const factories
+- Upgraded Matrix SDK to version 2.0.1
+- Improved `deleteDevice` method with proper validation and error handling
+
+### Fixed:
+- Replaced deprecated `loginState` with `client.isLogged()` method
+- Added proper password authentication for device deletion
+- Added user feedback for device deletion operations with success/error messages
+
+### Added:
+- Validation for device ownership before deletion attempts
+- Clear error messages when device deletion fails
+- TODO for future SSO/token authentication support in device deletion
 
 ## [0.8.393] - 2023-06-29
 ### Changed:
