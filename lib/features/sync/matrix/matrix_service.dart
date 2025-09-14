@@ -124,9 +124,7 @@ class MatrixService {
       );
 
   bool isLoggedIn() {
-    // TODO(unassigned): find non-deprecated solution
-    // ignore: deprecated_member_use
-    return client.loginState == LoginState.loggedIn;
+    return client.isLogged();
   }
 
   Future<void> listenToTimeline() async {
@@ -174,8 +172,14 @@ class MatrixService {
 
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
-    if (deviceId != null) {
-      await client.deleteDevice(deviceId, auth: AuthenticationData());
+    if (deviceId != null && matrixConfig != null) {
+      await client.deleteDevice(
+        deviceId,
+        auth: AuthenticationPassword(
+          password: matrixConfig!.password,
+          identifier: AuthenticationUserIdentifier(user: matrixConfig!.user),
+        ),
+      );
     }
   }
 
