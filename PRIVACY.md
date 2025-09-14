@@ -2,6 +2,11 @@
 
 *Last updated: September 14th, 2025*
 
+Trust at a glance:
+- No telemetry or analytics
+- Local‑only by default; no Lotti cloud service
+- End‑to‑end encrypted sync via Matrix (optional)
+
 ## Core Privacy Commitment
 
 Lotti is built on a fundamental principle: **your data belongs to you**. All information you record in Lotti—tasks, audio recordings, journal entries, health data, and personal reflections—is stored exclusively on your own devices. There is no Lotti cloud service, no centralized data collection, and no analytics tracking your usage.
@@ -99,8 +104,8 @@ For privacy-related questions or concerns:
 As Lotti evolves, this privacy policy may be updated. Changes will be:
 - Announced on the GitHub repository
 - Included in release notes
-- Never retroactively reducing your privacy rights
-- There might come a cloud based service for making access to providers simpler without requiring individual API keys, but this would be entirely opt-in and would follow the privacy goals outlined here, with an explicit no data retention policy
+- Never retroactively reduce your privacy rights
+- There might come a cloud‑based service for making access to providers simpler without requiring individual API keys, but this would be entirely opt-in and would follow the privacy goals outlined here, with an explicit no data retention policy
 
 ---
 

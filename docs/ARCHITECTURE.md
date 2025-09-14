@@ -1,5 +1,20 @@
 # Lotti Architecture
 
+## Table of Contents
+- [Overview](#overview)
+- [Core Principles](#core-principles)
+- [High-Level Architecture](#high-level-architecture)
+- [Feature Modules](#feature-modules)
+- [Data Flow](#data-flow)
+- [AI Provider Architecture](#ai-provider-architecture)
+- [Security Architecture](#security-architecture)
+- [Testing Strategy](#testing-strategy)
+- [Build & Deployment](#build--deployment)
+- [Performance Considerations](#performance-considerations)
+- [Future Architecture Plans](#future-architecture-plans)
+- [Development Guidelines](#development-guidelines)
+- [Related Documentation](#related-documentation)
+
 ## Overview
 
 Lotti is a privacy-first personal assistant built with Flutter, featuring local-first data storage, AI integration, and end-to-end encrypted synchronization. The architecture prioritizes data ownership, privacy, and extensibility while providing powerful AI capabilities.
@@ -98,7 +113,9 @@ Local Changes → Encryption → Matrix Protocol → Other Devices
 ## AI Provider Architecture
 
 ### Provider Abstraction
-The system supports multiple AI providers through a unified interface:
+The system supports multiple AI providers through a unified interface.
+
+Note: The interface below is conceptual to illustrate the design. The production code uses configuration models such as `AiConfigInferenceProvider` and repositories (for example `lib/features/ai/conversation/conversation_repository.dart`) to orchestrate requests and streaming.
 
 ```dart
 abstract class AiProvider {
@@ -108,6 +125,11 @@ abstract class AiProvider {
   bool get supportsAudio;
 }
 ```
+
+#### Error handling and retries
+- Provider‑specific error parsing (e.g., model not found, rate limits) with user‑friendly messages
+- Exponential backoff for transient errors; fail fast for configuration issues
+- Optional fallbacks between configured providers when applicable
 
 ### Supported Providers
 1. **OpenAI**: GPT-4, GPT-3.5, Whisper
@@ -125,10 +147,35 @@ abstract class AiProvider {
 ## Security Architecture
 
 ### Data Protection
-- **At Rest**: Device-level encryption recommended
+- **At Rest (today)**: Local databases are stored as plain SQLite. We recommend enabling full‑disk/device encryption (e.g., FileVault on macOS, BitLocker on Windows, File‑based encryption on Android, LUKS on Linux)
 - **In Transit**: TLS for all network communication
 - **Sync**: End-to-end encryption via Matrix
 - **AI Calls**: HTTPS with API key authentication
+
+### Key Storage (API keys and secrets)
+Lotti uses OS‑backed secure storage via `flutter_secure_storage`:
+- iOS: Keychain Services
+- macOS: Keychain Services
+- Android: Android Keystore (keys) with encrypted SharedPreferences
+- Windows: Credential Locker (DPAPI)
+- Linux: Secret Service (libsecret; via GNOME Keyring/KWallet depending on environment)
+
+Secrets stored in secure storage include AI provider API keys and tokens, and sync credentials (e.g., Matrix access tokens).
+
+### Data at Rest (Databases)
+- Current state: SQLite databases (Drift) are stored unencrypted
+- Recommended mitigation: rely on OS/device full‑disk encryption and user account protections
+- Roadmap: optional database‑level encryption for SQLite (SQLCipher)
+
+### Backups
+- Secret backup/restore is handled by the OS keystore. Where available (e.g., iCloud Keychain), secrets may sync via the OS.
+
+### References (platform APIs/libraries)
+- Flutter secure storage: https://pub.dev/packages/flutter_secure_storage
+- Apple Keychain Services (iOS/macOS)
+- Android Keystore System + EncryptedSharedPreferences
+- Windows Data Protection API (Credential Locker)
+- Linux Secret Service (libsecret)
 
 ### Privacy Controls
 - No telemetry or analytics
@@ -143,7 +190,7 @@ abstract class AiProvider {
 - Core business logic
 - Data models and serialization
 - Service layer functionality
-- ~76% code coverage
+- See repository Codecov badge for current coverage
 
 ### Integration Tests
 - Database operations
@@ -208,6 +255,12 @@ make build_runner  # Generate code for serialization, routing, etc.
 
 ## Development Guidelines
 
+### Implementation Notes
+- State management and dependency injection use Riverpod
+- Persistence via Drift over SQLite; schemas live under `lib/database` and feature‑specific `*.drift` files
+- Localization with Flutter gen‑l10n; ARB files in `lib/l10n/` and generation via `make l10n`
+- Code generation via build_runner; run `make build_runner`
+
 ### Code Organization
 ```
 lib/
@@ -239,6 +292,7 @@ For development environment setup, see [DEVELOPMENT.md](DEVELOPMENT.md).
 ## Related Documentation
 
 - [Development Setup](DEVELOPMENT.md)
+- [Contributing](../CONTRIBUTING.md)
 - [Privacy Policy](../PRIVACY.md)
 - [User Manual](MANUAL.md)
 - [Background & History](BACKGROUND.md)

@@ -287,7 +287,7 @@ A: Starred entries are user favorites for quick access. Flagged entries use the 
 ## Security & Privacy
 
 - **Local first**: All data stored locally by default
-- **Encryption**: Database encrypted on device
+- **At rest (today)**: SQLite stored unencrypted; enable device encryption (e.g., FileVault, BitLocker) for protection
 - **Private entries**: Flag for sensitive content
 - **Selective sync**: Private entries can be excluded from sync
 - **Audit trail**: Vector clocks track all modifications
