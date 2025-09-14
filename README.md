@@ -1,264 +1,176 @@
 # Lotti
 
-[![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti) [![Flutter Test](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml/badge.svg)](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml)
+[![codecov](https://codecov.io/gh/matthiasn/lotti/graph/badge.svg?token=VB6FWvA1yW)](https://codecov.io/gh/matthiasn/lotti)
+[![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti)
+**Your AI‑powered context manager — a private, local‑first assistant for your tasks, notes, and audio.**
 
-Lotti helps you track habits, behavior, any data about yourself, in complete privacy.
+Lotti is an open-source personal assistant that helps you capture, organize, and understand your work and life through AI-enhanced task management, audio recordings, and intelligent summaries—all while keeping your data entirely under your control.
 
-![Habits Tab](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.312+1968/habits_screen.png)
+![AI Assistant](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.662+3261/tasks_category_summary.png)
 
-Read more on [**Substack**](https://matthiasnehlsen.substack.com).
+Read more on [**Substack**](https://matthiasnehlsen.substack.com) | [**Project Background**](docs/BACKGROUND.md)
 
-**New in 06/2023:** Lotti can now transcribe audio recordings in 99 languages using
-[`whisper.cpp`](https://github.com/ggerganov/whisper.cpp).
+## Table of Contents
+- [Why Lotti?](#why-lotti)
+  - [Example Use Cases](#example-use-cases)
+- [Core Features](#core-features)
+  - [AI-Powered Intelligence](#ai-powered-intelligence)
+  - [Comprehensive Tracking](#comprehensive-tracking)
+  - [Privacy & Control](#privacy--control)
+- [AI Provider Configuration](#ai-provider-configuration)
+- [Getting Started](#getting-started)
+  - [Installation](#installation)
+  - [Beta Testing](#beta-testing)
+  - [Development](#development)
+- [Documentation](#documentation)
+- [Use Cases](#use-cases)
+  - [For Developers](#for-developers)
+  - [For Knowledge Workers](#for-knowledge-workers)
+  - [For Personal Growth](#for-personal-growth)
+- [Contributing](#contributing)
+- [Technical Stack](#technical-stack)
+- [Philosophy](#philosophy)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
 
-## How to use Lotti
-Check out the [MANUAL](https://github.com/matthiasn/lotti/blob/main/docs/MANUAL.md). The images in
-there are updated automatically in CI using [`Fluttium`](https://fluttium.dev).
+## Why Lotti?
 
-## Core beliefs / the WHY
+Most AI-powered tools require you to upload and store your personal data on their servers, creating privacy risks and vendor lock-in. Lotti takes a different approach:
 
-Lotti is a tool for self-improvement centered around these core beliefs:
+- **Complete data ownership**: Your information stays on your devices. When you opt into cloud inference, European‑hosted, no‑retention providers are available
+- **Configurable AI providers per category**: Choose between OpenAI, Anthropic, Gemini, Ollama (local), or any OpenAI-compatible provider on a per-category basis
+- **Privacy-first design**: You control exactly what data gets shared with AI providers—only for specific inference calls via your API keys
+- **No vendor lock-in**: Your data remains portable and accessible, independent of any subscription
 
-1. Long-term outcomes in life can be improved by following good routines and establishing good 
-   habits, such as healthy sleep, mindfulness and improved self-awareness, healthy eating, 
-   enough physical activity and the like. Technology is essential when trying to establish and 
-   monitor good habits. Paper-based checklists are undesirable.
-2. Habits need to be monitored long-term. The 21-day habit theory, stating that it takes three 
-   weeks to form a new habit and then subsequently sticking with it automatically is 
-   questionable at best, and the only way to ensure that habits identified as important are 
-   actually followed is to monitor them.
-3. Any comprehensive attempt at tracking and monitoring the aforementioned areas of life 
-   will result in collecting far more data than anyone should be willing to share with anyone 
-   else.
+### Example Use Cases
 
-Lotti is a tool for improving life via establishing good habits and monitoring their outcome.
-All collected data stays on your devices. Encrypted and entirely private synchronisation
-between your devices can be set up (instructions will follow).
+- Pick up a task from last week — see your last notes, time spent, and a one‑paragraph recap
+- Record a quick voice note — later it’s transcribed and turned into a checklist
+- Ask “What did I finish in June?” — get a dated list with brief summaries
 
-Lotti currently supports recording the following data types:
+## Core Features
 
-* Habits, which can be defined and tracked. Habit tracking then involves recording daily 
-  completions, which can be successes, failures, and also skipping the completion in case a habit 
-  could not be completed due to external circumstances.
-* Health-related data which can be imported automatically, such as steps, weight, sleep, blood 
-  pressure, resting heart rate, and whatever else can be recorded in Apple Health (or the 
-  Android equivalent).
-* Custom data types, such as the intake of water, food, alcohol, coffee, but also exercises such 
-  as pull-ups, you name (and define) it.
-* Text journal entries.
-* Tasks, with different statuses to track their lifecycle: open, groomed, in progress, blocked, 
-  on hold, done, rejected.
-* Audio recordings, as spoken journal entries, and also audio notes, for example when working on 
-  a task and documenting progress and doing a quick brain dump that can be useful when picking 
-  up a task again later.
-* Time, as in recording time spent on a tasks, and also a related story.
-* Tags for better organization and discoverability of journal entries.
-* Stories, a special tag type that is useful for reporting time spent on tasks related to their 
-  respective stories.
-* People, a special tag type with no additional functionality yet, only a different tag color.
+*Currently, Lotti's AI capabilities are focused on task management and productivity. Habit tracking is fully functional but will receive AI enhancements in future updates.*
 
+### 🤖 AI-Powered Intelligence
 
-## Planned improvements:
+- **Smart Summaries**: Automatically generate summaries of tasks, capturing key points and progress
+- **Audio Transcription**: Transcribe recordings using either local Whisper (OpenAI's open weights model, 99 languages supported) or cloud providers with audio capabilities like Gemini Flash/Pro
+- **Context Recap**: Resume a task with a one‑screen recap of your latest notes, time, and progress
+- **Intelligent Checklists**: Transform rambling audio notes into actionable checklists
+- **Chat with Your Data**: Ask questions about your tasks, learnings, and achievements across any time period
 
-* **Experiment/Intervention lifecycle.** The app is already useful for monitoring experiments or 
-  interventions but those themselves currently remain implicit. For example, an experiment could be
-  taking Vitamin D and see how that affects health parameters, or have a hypothesis what will happen,
-  and then prove or disprove that, where a dashboard help monitor all relevant parameters. In 
-  future versions, the lifecycle of interventions shall be made explicit, by defining them in 
-  the first place, and then reviewing and refining them.
-* Better **Reporting** how time is spent.
-* **Upfront planning** of time budgets. 
+### 📝 Comprehensive Tracking
 
-Please check out [HISTORY.md](https://github.com/matthiasn/lotti/blob/main/docs/HISTORY.md) for all
-the information on the project's history and back-story. You can find the previous version (written
-in Clojure and ClojureScript) in this repo: [meins](https://github.com/matthiasn/meins).
+- **Tasks**: Full lifecycle management (open, groomed, in progress, blocked, done, rejected)
+- **Audio Recording**: Capture thoughts, progress notes, and brain dumps
+- **Time Tracking**: Record time spent on tasks and projects
+- **Journal Entries**: Written reflections and documentation
+- **Habits**: Define and monitor daily habits and routines
+- **Health Data**: Import from Apple Health and other sources
+- **Custom Metrics**: Track anything that matters to you
 
+### 🔐 Privacy & Control
 
-## Principles
+- **Local-Only Storage**: All data is permanently stored only on your devices and never in the cloud
+- **Encrypted Sync**: End-to-end encrypted synchronization between your devices (desktop/laptop and mobile) using **[Matrix](https://matrix.org)** (requires a Matrix account — self-hosted or public homeserver)
+- **Selective AI Usage**: Configure AI providers per category—keep sensitive data completely local with Ollama but use state‑of‑the‑art (frontier) cloud models when appropriate
+- **Your API Keys**: When you choose cloud AI, data is shared only for that specific inference call. Please review the respective provider's terms and privacy policy to understand how they handle your data
+- **GDPR-Compliant Options**: European-hosted AI providers with no data retention policies available for enhanced privacy
+- **Built for on‑device**: Designed for the era when local AI inference becomes standard 
 
-- Lotti is **private** and does not share any information with anyone - see the
-  [Privacy Policy](https://github.com/matthiasn/lotti/blob/main/PRIVACY.md).
-- Lotti is **open-source** and everyone is encouraged to contribute, be it via contributing to 
-  code, providing feedback, testing, identifying bugs, etc.
-- Lotti strives to be as **inclusive** as possible and any request for improved accessibility 
-  will be addressed.
-- Lotti is supposed to become a **friendly and welcoming community** of people who are 
-  interested in data, improving their lives, and not or only very selectively sharing their data 
-  in the process. Please head over to [Discussions](https://github.com/matthiasn/lotti/discussions) and say Hi.
-- **Localization**. Lotti is multilingual and should be available in as many different languages as 
-  possible. English is the primary language, and there are French, German, and Romanian translations. 
-  Those need some update love, as the are many new UI labels that didn't exist when translations
-  were last looked at. Please help, and also create [issues](https://github.com/matthiasn/lotti/issues)
-  and PRs for languages you would like to see. Thanks!
+## AI Provider Configuration
 
-## Beta testing
+Lotti supports multiple AI providers, configurable per category:
 
-Lotti is currently available for beta testing for these platforms:
+- **Cloud Providers**: OpenAI, Anthropic Claude, Google Gemini
+- **Local Inference**: Ollama for complete privacy (requires capable hardware)
+  - Full functionality available with local models like Qwen3 (8B), GPT-OSS (20B/120B), Gemma3 (12B/27B)
+  - Combined with local Whisper for speech recognition, enables 100% offline AI capabilities
+- **OpenAI-Compatible**: Any provider with OpenAI-compatible APIs
+- **European Options**: GDPR-compliant hosted alternatives
 
-- **iOS** and **macOS** versions are available via a [Public Beta on TestFlight](https://testflight.apple.com/join/ZPgbDLGY).
-  Development is primarily done on macOS and both the iOS and macOS versions are in constant use by
-  the author. You can expect Lotti to work on these two platforms.
-- The **Android** app is available as both `aab` and `apk` files on [GitHub Releases](https://github.com/matthiasn/lotti/releases).
-  Both appeared to be working fine in some limited testing on both an Android phone and an Android
-  tablet.
-- **Windows** there's an installer named `lotti.msix` in [GitHub Releases](https://github.com/matthiasn/lotti/releases).
-  That's not signed though. There's also a (currently hidden) release on the Microsoft Store which 
-  appears to be working fine on Windows. However, some issues in the Microsoft Partner Center need
-  to be resolved before making Lotti available on the Microsoft Store.
-- **Linux**: the simplest way to release would be on the [Snap Store](https://snapcraft.io/snap-store),
-  with automatic updates, but that's blocked by this [issue](https://github.com/matthiasn/lotti/issues/941).
-  There's a file named `linux.x64.tar.gz` [GitHub Releases](https://github.com/matthiasn/lotti/releases)
-  that contains the app. From limited testing, the app works fine on Linux, but is missing an app
-  icon (could be a nice small PR).
-
-## Install on Linux
-
-```
-$ sudo apt install pulseaudio-utils
-```
-
-### Building with Flatpak (Recommended for Distribution)
-
-Lotti now includes complete Flatpak support for easy distribution and installation. The Flatpak configuration is located in the `flatpak/` directory.
-
-**Quick Start with Build Script:**
-```bash
-cd flatpak
-./flatpak_lotti_build.sh        # Automatically builds and runs Lotti
-```
-
-The script handles everything: prerequisites, Flutter build, bundle preparation, Flatpak build, and running the app.
-
-**Manual Build:**
-```bash
-# Install prerequisites
-sudo apt install flatpak flatpak-builder
-flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-flatpak install flathub org.freedesktop.Sdk//24.08 org.freedesktop.Platform//24.08
-
-# Build the Flutter Linux release bundle
-flutter build linux --release
-
-# Create flutter-bundle directory with all necessary files
-mkdir -p flatpak/flutter-bundle && cp -r build/linux/x64/release/bundle/. flatpak/flutter-bundle/
-
-# Build Flatpak using the local manifest
-flatpak-builder --repo=repo --force-clean build-dir flatpak/com.matthiasnehlsen.lotti.local.yml
-
-# Test the app directly from build directory
-flatpak-builder --run build-dir flatpak/com.matthiasnehlsen.lotti.local.yml /app/lotti
-```
-
-**For detailed instructions, see [flatpak/README.md](flatpak/README.md).**
-
-The Flatpak includes:
-- Proper desktop integration with icons
-- Screenshot functionality support
-- All necessary permissions for full functionality
-- AppStream metadata for store distribution
-
-### Traditional Build (Development)
-
-For development and testing, you can build Lotti traditionally:
-
-```
-$ sudo apt-get install libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
-$ flutter packages get
-$ make build_runner
-```
-
-In case the network in the virtual machine is not connecting after resuming: `$ sudo dhclient ens33`
-
-## Blog posts
-
-- [Introducing Lotti or how I learned to love Flutter and Buildkite](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/)
-- [How I switched to Flutter and lost 10 kilos](https://matthiasnehlsen.com/blog/2022/05/15/switched-to-flutter-lost-10-kilos/)
+Configure different providers for different aspects of your life—use cutting-edge models for work projects while keeping personal reflections completely private with local inference. With sufficient hardware, you can run everything locally without any cloud dependency.
 
 ## Getting Started
 
-1. Install Flutter, see [instructions](https://docs.flutter.dev/get-started/install).
-2. Clone repository and go to `./lotti`
-3. Run `flutter pub get`
-4. Run `make watch` or `make build_runner` for code generation
-5. Open in your favorite IDE, e.g. [Android Studio](https://developer.android.com/studio) 
-6. Run, either from the IDE or using e.g. `flutter run -d macos`
+### Installation
 
-### AI Chat Architecture (Overview)
+See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup and development workflow.
 
-The AI chat feature is structured for modularity and testability:
+### Beta Testing
 
-- `ChatSessionController` (UI state):
-  - Manages chat state and streaming updates.
-  - Caps streaming content (`maxStreamingContentSize = 1,000,000`) and adds an ellipsis when truncated.
-  - Persists sessions via the repository and reverts model changes if persistence fails.
+- **Build it yourself**: for iOS, macOS, Android, Linux, Windows
+- **iOS/macOS**: TestFlight builds are available for select users, will be available more broadly in due course
+- **Linux**: See `tar.gz` files on **[GitHub releases](https://github.com/matthiasn/lotti/releases)** - will also be available via Flatpak soon
 
-- `ChatRepository` (domain + integration):
-  - Orchestrates sending messages, streams model deltas, accumulates tool-call deltas, runs tools, and streams a final response.
-  - Uses `SystemMessageService` to build the system prompt and `ChatMessageProcessor` for testable logic.
-  - In-memory session store (replaceable with durable storage).
+### Development
 
-- `ChatMessageProcessor` (pure, testable helpers):
-  - Resolves AI configuration (provider + model) with cache (`configCacheDuration = 5 minutes`).
-  - Converts conversation history, builds prompts, processes streaming frames and tool calls, and generates final responses.
-  - Uses an injectable clock (`typedef Now = DateTime Function()`) for deterministic tests.
+- Install Flutter ([instructions](https://docs.flutter.dev/get-started/install)) — FVM recommended; repo includes `.fvmrc`
+- Install dependencies: `make deps`
+- Static analysis: `make analyze`
+- Tests: `make test` • Coverage report: `make coverage`
+- Code generation: `make build_runner` • Localization: `make l10n`
+- Run locally: macOS `fvm flutter run -d macos` • others `flutter run -d <device>`
 
-- `SystemMessageService` (prompt template):
-  - Central place to compose the system prompt (includes today’s date and guidance for time ranges and tool usage).
-  - Easy to extend for localization or per-category prompts.
+See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed development setup.
 
-Testing and Analyzer
-- Tests focus on controllers, repository streaming, services, and processors (including edge cases).
-- Analyzer must report zero warnings/infos before PR; test-only ignores are acceptable when justified.
+## Documentation
 
-## widgetbook
+- [Manual](docs/MANUAL.md) - How to use Lotti
+- [Background Story](docs/BACKGROUND.md) - The inspiration and evolution of Lotti
+- [Architecture](docs/ARCHITECTURE.md) - Technical design and AI integration
+- [Privacy Policy](PRIVACY.md) - Our commitment to your privacy
+- [Contributing](CONTRIBUTING.md) - How to help and our standards
 
-Lotti uses [widgetbook](https://pub.dev/packages/widgetbook) for developing and documenting widgets, for now only 
-for select widgets. To run the widgetbook, run e.g. `fvm flutter run -d macos -t lib/widgetbook.dart`.
+## Use Cases
 
-## Platform-specific setup
+### For Developers
+- Track project progress with automatic context recovery
+- Document decisions and learnings with searchable audio notes
+- Generate sprint summaries and retrospectives from your task data
 
-### Mac
+### For Knowledge Workers
+- Maintain focus with AI-powered context switching
+- Build a searchable knowledge base from daily work
+- Track time and generate reports across projects
 
-Tested on `macOS 13.3`: no additional steps necessary. You only need to have Xcode installed.
+### For Personal Growth
+- Monitor habits and health metrics
+- Reflect on achievements and learnings over time
+- Keep a multilingual audio journal
 
-### Linux
+## Contributing
 
-Tested on `Ubuntu 20.04.3 LTS` inside a virtual machine on VMWare Fusion In addition to the common
-steps above, install missing dependencies:
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-```
-$ sudo apt-get install libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
-$ flutter packages get
-$ make build_runner
-``` 
+## Technical Stack
 
-In case the network in the virtual machine is not connecting after resuming: `$ sudo dhclient ens33`
+- **Frontend**: Flutter (iOS, macOS, Android, Windows, Linux)
+- **AI Integration**: Multiple providers with streaming support, including Ollama for 100% private local inference
+- **Audio**: Local Whisper (OpenAI's open weights model) or cloud providers with multimodal audio support
+- **Storage**: Local SQLite, no cloud storage
+- **Synchronization**: End-to-end encrypted sync using **[Matrix](https://matrix.org)** infrastructure (requires a Matrix account)
+- **Testing**: Comprehensive unit and integration tests
 
-### Windows
 
-If your system is set up to run the Flutter counter example app, you should be good to go.
+## Philosophy
 
-## Continuous Integration
+Lotti represents a different approach to AI-powered productivity:
 
-This project uses [Buildkite](https://buildkite.com/docs/agent/v3/macos) on macOS for releasing to
-TestFlight on iOS and macOS, and GitHub Actions for publishing to GitHub Releases for all other
-platforms. 
+1. **Your data stays yours**: No company should own your thoughts and experiences
+2. **AI as a tool, not a service**: Use AI capabilities without subscription lock-in
+3. **Privacy by design**: Choose exactly what to share, when, and with whom
+4. **Future-focused**: Built for the coming era of powerful local AI
 
-## TODO
+## License
 
-- **Audio Transcription Model Selection**: The audio transcription in `lib/features/ai_chat/services/audio_transcription_service.dart` needs improvements:
-  - Allow users to select from available audio-capable models or configure a preferred model (currently defaults to 'gemini-2.5-flash')
-  - ~~Support any audio-capable provider, not just Gemini~~ (Fixed: now supports any provider with audio-capable models)
+Lotti is open source under [LICENSE](LICENSE).
 
-## Contributions
+## Acknowledgments
 
-Contributions to this project are very welcome. How can you help?
+Special thanks to the Flutter team, OpenAI for the Whisper model, and all contributors who believe in privacy-respecting AI tools.
 
-1. Please check under issues if there is anything specific that needs helping
-   hands, or features to be discussed or implemented.
-2. Improve the test coverage (currently at around 71%). Any additional tests are welcome,
-   including code changes to make the code easier to test.
-3. Create issues for feedback and ideas.
-4. Help translate into more languages, and improve the existing translations.
+---
 
-Thanks!
+**Building in public** • Follow development here on [GitHub](https://github.com/matthiasn/lotti) • Read updates on [Substack](https://matthiasnehlsen.substack.com)

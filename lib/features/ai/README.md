@@ -764,7 +764,7 @@ Comprehensive test coverage includes:
 
 ## Security Considerations
 
-- API keys stored in encrypted local database
+- API keys stored via OS secure storage (`flutter_secure_storage`): Keychain (iOS/macOS), Android Keystore, Windows Credential Locker (DPAPI), Linux Secret Service (libsecret)
 - Keys never logged or exposed in UI
 - HTTPS for all network requests
 - Sensitive data excluded from error messages
