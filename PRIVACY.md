@@ -100,7 +100,7 @@ As Lotti evolves, this privacy policy may be updated. Changes will be:
 - Announced on the GitHub repository
 - Included in release notes
 - Never retroactively reducing your privacy rights
-- There might come a cloud based service for making access to providers simpler without requiring individual API keys, but this would be entirely opt-in and would follow the the privacy goals outlined here, with an explicit no data retention policy
+- There might come a cloud based service for making access to providers simpler without requiring individual API keys, but this would be entirely opt-in and would follow the privacy goals outlined here, with an explicit no data retention policy
 
 ---
 
