@@ -12,7 +12,7 @@ services:
       # Mount logs
       - gemma-logs:/root/.logs/gemma-local
     environment:
-      - GEMMA_MODEL_ID=${GEMMA_MODEL_ID:-google/gemma-2-2b-it}
+      - GEMMA_MODEL_ID=${GEMMA_MODEL_ID:-google/gemma-3n-E2B-it}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - MAX_AUDIO_SIZE_MB=${MAX_AUDIO_SIZE_MB:-100}
       - MAX_CONCURRENT_REQUESTS=${MAX_CONCURRENT_REQUESTS:-4}
