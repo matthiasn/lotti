@@ -26,7 +26,7 @@ async def test_model_download():
     """Test model download with progress tracking."""
     async with httpx.AsyncClient(timeout=600.0) as client:
         request_data = {
-            "model_name": "gemma-2b",
+            "model_name": "gemma-3n-E2B-it",
             "stream": True
         }
         
@@ -75,18 +75,19 @@ async def test_transcription():
     
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
-            "http://localhost:11343/v1/audio/transcriptions",
-            data={
+            "http://localhost:11343/v1/chat/completions",
+            json={
+                "model": "gemma-3n-E2B-it",
+                "messages": [{"role": "user", "content": "Context: This is a test audio file containing a tone.\n\nTranscribe this audio"}],
                 "audio": audio_base64,
-                "model": "gemma-2b",
-                "prompt": "This is a test audio file containing a tone",
-                "response_format": "json"
+                "temperature": 0.1
             }
         )
         
         if response.status_code == 200:
             result = response.json()
-            print("Transcription:", result["text"])
+            transcription = result["choices"][0]["message"]["content"]
+            print("Transcription:", transcription)
         else:
             print("Error:", response.status_code, response.text)
     
@@ -100,7 +101,7 @@ async def test_chat():
         response = await client.post(
             "http://localhost:11343/v1/chat/completions",
             json={
-                "model": "gemma-2b",
+                "model": "gemma-3n-E2B-it",
                 "messages": [
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": "What is the capital of France?"}
@@ -122,7 +123,7 @@ async def test_streaming_chat():
     """Test streaming chat completion."""
     async with httpx.AsyncClient() as client:
         request_data = {
-            "model": "gemma-2b",
+            "model": "gemma-3n-E2B-it",
             "messages": [
                 {"role": "user", "content": "Tell me a short joke"}
             ],
