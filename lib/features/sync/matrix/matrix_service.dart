@@ -124,9 +124,7 @@ class MatrixService {
       );
 
   bool isLoggedIn() {
-    // TODO(unassigned): find non-deprecated solution
-    // ignore: deprecated_member_use
-    return client.loginState == LoginState.loggedIn;
+    return client.isLogged();
   }
 
   Future<void> listenToTimeline() async {
@@ -174,8 +172,48 @@ class MatrixService {
 
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
-    if (deviceId != null) {
-      await client.deleteDevice(deviceId, auth: AuthenticationData());
+
+    // Validate deviceId
+    if (deviceId == null) {
+      throw ArgumentError(
+        'Cannot delete device: deviceId is null for device '
+        '${deviceKeys.deviceDisplayName ?? 'unknown'}',
+      );
+    }
+
+    // Validate that we have credentials
+    if (matrixConfig == null) {
+      throw StateError(
+        'Cannot delete device $deviceId: No Matrix configuration available. '
+        'User must be logged in to delete devices.',
+      );
+    }
+
+    // Validate that the device belongs to the current user
+    if (deviceKeys.userId != client.userID) {
+      throw StateError(
+        'Cannot delete device $deviceId: Device belongs to user '
+        '${deviceKeys.userId} but current user is ${client.userID}',
+      );
+    }
+
+    // Check if we have a password for authentication
+    if (matrixConfig!.password.isNotEmpty) {
+      await client.deleteDevice(
+        deviceId,
+        auth: AuthenticationPassword(
+          password: matrixConfig!.password,
+          identifier: AuthenticationUserIdentifier(user: matrixConfig!.user),
+        ),
+      );
+    } else {
+      // TODO: Implement non-password UIA flows (SSO/token) to support
+      // device deletion when password is not available
+      throw UnsupportedError(
+        'Cannot delete device $deviceId: Password authentication required '
+        'but no password is available. SSO/token authentication not yet '
+        'implemented.',
+      );
     }
   }
 
