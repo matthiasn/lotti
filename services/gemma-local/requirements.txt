@@ -1,0 +1,39 @@
+# Core ML dependencies
+torch>=2.2.0,<3.0.0
+torchaudio>=2.2.0
+transformers>=4.46.0,<5.0.0
+accelerate>=0.27.0,<1.0.0
+huggingface-hub>=0.20.0
+timm>=1.0.0  # Required for TimmWrapperModel in Gemma
+
+# Web framework
+fastapi>=0.104.0,<1.0.0
+uvicorn[standard]>=0.24.0,<1.0.0
+pydantic>=2.0,<3.0.0
+python-multipart>=0.0.9
+sse-starlette>=1.8.0
+
+# Audio processing
+soundfile>=0.12.1
+librosa>=0.10.1
+pydub>=0.25.1
+numpy>=1.24.0,<2.0.0
+ffmpeg-python>=0.2.0
+
+# Utilities
+python-dotenv>=1.0.0
+httpx>=0.25.0
+python-jose[cryptography]>=3.3.0
+pillow>=10.0.0
+
+# Optional optimizations
+bitsandbytes>=0.41.0  # For quantization
+
+# Development and testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0
+black>=23.0.0
+ruff>=0.1.0
+mypy>=1.7.0
+types-requests>=2.31.0
