@@ -30,8 +30,9 @@ Lotti offers AI capabilities through various providers, but you control exactly 
 - **Cloud Providers**: When you choose cloud AI (OpenAI, Anthropic, Gemini), data is:
     - Sent only for specific inference requests you initiate
     - Transmitted using your own API keys
-    - Never stored by the AI provider (inference-only)
-    - Subject to the provider's privacy policy for the duration of the API call
+    - Request/response data is transmitted only for inference but may be logged temporarily by the provider according to their retention policy
+    - Subject to the provider's privacy policy and data retention practices
+    - **Important**: Review your provider's retention policies and privacy settings. Consider requesting zero-retention or enterprise plans if available for enhanced privacy
 
 ### GDPR-Compliant Options
 - European-hosted AI providers with no-retention policies are available

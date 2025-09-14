@@ -46,7 +46,7 @@ Most AI-powered tools require you to upload and store your personal data on thei
 - **Local-Only Storage**: All data is permanently stored only on your devices and never in the cloud
 - **Encrypted Sync**: End-to-end encrypted synchronization between your devices (desktop/laptop and mobile) using **[matrix](https://matrix.org)**
 - **Selective AI Usage**: Configure AI providers per category—keep sensitive data completely local with Ollama but use state-of-the-art cloud models when appropriate
-- **Your API Keys**: When you choose cloud AI, data is shared only for that specific inference call (check the cloud providers terms what they do with the data)
+- **Your API Keys**: When you choose cloud AI, data is shared only for that specific inference call. Please review the respective provider's terms and privacy policy to understand how they handle your data
 - **GDPR-Compliant Options**: European-hosted AI providers with no data retention policies available for enhanced privacy
 - **Future-Proof**: Designed for the era when local AI inference becomes standard 
 
