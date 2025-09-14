@@ -348,19 +348,29 @@ docker run --gpus all -p 11343:11343 \
 version: '3.8'
 
 services:
-  gemma-transcription:
+  gemma-local:
     build: .
+    container_name: gemma-local-service
     ports:
       - "11343:11343"
-    environment:
-      - GEMMA_MODEL_VARIANT=E2B
-      - LOG_LEVEL=INFO
     volumes:
-      - ~/.cache/gemma-local:/root/.cache/gemma-local
-    deploy:
-      resources:
-        limits:
-          memory: 8G
+      # Mount model cache to persist downloads
+      - gemma-models:/root/.cache/gemma-local/models
+      # Mount logs
+      - gemma-logs:/root/.logs/gemma-local
+    environment:
+      - GEMMA_MODEL_ID=${GEMMA_MODEL_ID:-google/gemma-3n-E2B-it}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAX_AUDIO_SIZE_MB=${MAX_AUDIO_SIZE_MB:-100}
+      - MAX_CONCURRENT_REQUESTS=${MAX_CONCURRENT_REQUESTS:-4}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-300}
+    restart: unless-stopped
+
+volumes:
+  gemma-models:
+    driver: local
+  gemma-logs:
+    driver: local
 ```
 
 ## Performance Optimization
