@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.664] - 2025-09-17
+### Changed:
+- Upgraded Flutter to version 3.35.4
+- Upgraded dependencies (minor versions)
+
 ## [0.9.663] - 2025-09-14
 ### Changed:
 - const factories
