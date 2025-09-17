@@ -27,6 +27,59 @@ finish-args:
   # Secret service access for keyring
   - --talk-name=org.freedesktop.secrets
 modules:
+  - name: python3-jinja2
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "MarkupSafe" "jinja2" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/31/80/3a54838c3fb461f6fec263ebf3a3a41771bd05190238de3486aae8540c36/jinja2-3.1.4-py3-none-any.whl
+        sha256: bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d
+      - type: file
+        url: https://files.pythonhosted.org/packages/87/5b/aae44c6655f3801e81aa3eef09dbbf012431987ba564d7231722f68df02d/MarkupSafe-2.1.5.tar.gz
+        sha256: d283d37a890ba4c1ae73ffadf8046435c76e7bc2247bbb63c00bd1a709c6544b
+  - name: libplacebo
+    buildsystem: meson
+    config-opts:
+      - -Dglslang=disabled
+      - -Dshaderc=disabled
+      - -Dvulkan=disabled
+      - -Dd3d11=disabled
+      - -Ddemos=false
+      - -Dopengl=disabled
+      - -Dtests=false
+    sources:
+      - type: archive
+        url: https://github.com/haasn/libplacebo/archive/refs/tags/v6.338.2.tar.gz
+        sha256: 2f1e624e09d72a8c9db70f910f7560e764a1c126dae42acc5b3bcef836a7aec6
+  - name: libass
+    buildsystem: autotools
+    config-opts:
+      - --disable-static
+    sources:
+      - type: archive
+        url: https://github.com/libass/libass/releases/download/0.17.1/libass-0.17.1.tar.xz
+        sha256: f0da0bbfba476c16ae3e1cfd862256d30915911f7abaa1b16ce62ee653192784
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+  - name: libmpv
+    buildsystem: meson
+    build-options:
+      env:
+        PKG_CONFIG_PATH: /app/lib64/pkgconfig:/app/lib/pkgconfig
+    config-opts:
+      - -Dlibmpv=true
+      - -Dlua=disabled
+      - -Ddebug=false
+      - -Dbuild-date=false
+      - -Dmanpage-build=disabled
+      - -Dsdl2=disabled
+      - -Dvulkan=disabled
+    sources:
+      - type: archive
+        url: https://github.com/mpv-player/mpv/archive/v0.38.0.tar.gz
+        sha256: 86d9ef40b6058732f67b46d0bbda24a074fae860b3eaae05bab3145041303066
   - name: libsecret
     buildsystem: meson
     config-opts:

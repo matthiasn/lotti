@@ -3,6 +3,8 @@
 # Automated Flatpak build script with proper template substitution
 set -euo pipefail
 
+source .env
+
 # Default values - can be overridden by environment variables
 readonly LOTTI_VERSION=${LOTTI_VERSION:-"v0.9.645"}
 readonly LOTTI_RELEASE_DATE=${LOTTI_RELEASE_DATE:-"2025-01-26"}
