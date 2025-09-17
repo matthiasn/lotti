@@ -750,10 +750,10 @@ packages:
     dependency: "direct main"
     description:
       name: fl_chart
-      sha256: d3f82f4a38e33ba23d05a08ff304d7d8b22d2a59a5503f20bd802966e915db89
+      sha256: "7ca9a40f4eb85949190e54087be8b4d6ac09dc4c54238d782a34cf1f7c011de9"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "1.1.1"
   flex_color_scheme:
     dependency: "direct main"
     description:
@@ -1421,10 +1421,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_android
-      sha256: a45bef33deb24839a51fb85a4d9e504ead2b1ad1c4779d02d09bf6a8857cdd52
+      sha256: "8dfe08ea7fcf7467dbaf6889e72eebd5e0d6711caae201fdac780eb45232cd02"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.13+2"
+    version: "0.8.13+3"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1570,10 +1570,10 @@ packages:
     dependency: transitive
     description:
       name: jovial_svg
-      sha256: "6791b1435547bdc0793081a166d41a8a313ebc61e4e5136fb7a3218781fb9e50"
+      sha256: "08dd24b800d48796c9c0227acb96eb00c6cacccb1d7de58d79fc924090049868"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.27"
+    version: "1.1.28"
   js:
     dependency: transitive
     description:
@@ -2242,10 +2242,10 @@ packages:
     dependency: transitive
     description:
       name: quill_native_bridge
-      sha256: "00752aca7d67cbd3254709a47558be78427750cb81aa42cfbed354d4a079bcfa"
+      sha256: "76a16512e398e84216f3f659f7cb18a89ec1e141ea908e954652b4ce6cf15b18"
       url: "https://pub.dev"
     source: hosted
-    version: "11.0.1"
+    version: "11.1.0"
   quill_native_bridge_android:
     dependency: transitive
     description:
@@ -2262,14 +2262,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.0.1"
-  quill_native_bridge_linux:
-    dependency: transitive
-    description:
-      name: quill_native_bridge_linux
-      sha256: "388aaa62017dbd746742ce0bfae99f4ffe1dda2462e8a866df630c67b63c54fe"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.2"
   quill_native_bridge_macos:
     dependency: transitive
     description:
@@ -3032,10 +3024,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_android
-      sha256: "07cffecb7d68cbc6437cd803d5f11a86fe06736735c3dfe46ff73bcb0f958eed"
+      sha256: "199bc33e746088546a39cc5f36bac5a278c5e53b40cb3196f99e7345fdcfae6b"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.21"
+    version: "6.3.22"
   url_launcher_ios:
     dependency: transitive
     description:
@@ -3280,10 +3272,10 @@ packages:
     dependency: "direct main"
     description:
       name: widgetbook
-      sha256: "2d0e649fd73f092afc373272bf46d12e7637a540baa549562393fecf3a387eeb"
+      sha256: "881ff2a83d8575375fc16104fd9cff4e804eb0bdbdda9e86340fb9b25c0839c8"
       url: "https://pub.dev"
     source: hosted
-    version: "3.16.0"
+    version: "3.17.0"
   widgetbook_annotation:
     dependency: transitive
     description:
