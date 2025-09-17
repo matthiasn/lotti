@@ -36,7 +36,7 @@ modules:
     sources:
       - type: archive
         url: https://github.com/haasn/libplacebo/archive/refs/tags/v6.338.2.tar.gz
-        sha256: 34973841e406e236b53347f10250b90b28a8a4a4b43333324c13b28c2a5d428c
+        sha256: 2f1e624e09d72a8c9db70f910f7560e764a1c126dae42acc5b3bcef836a7aec6
   - name: libass
     buildsystem: autotools
     config-opts:
