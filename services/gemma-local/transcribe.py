@@ -1,45 +1,83 @@
 #!/usr/bin/env python3
-"""Direct transcription script that actually works."""
+"""Direct transcription script with automatic server startup."""
 
 import subprocess
 import time
-import requests
 import base64
 import sys
-from pydub import AudioSegment
+import os
+import json
+from transcribe_utils import prepare_audio_for_transcription, transcribe_audio
 
-def transcribe_audio(audio_path: str):
-    print(f"Loading {audio_path}...")
-    
-    # Load and convert audio to WAV (avoids M4A issues)
-    audio = AudioSegment.from_file(audio_path)
-    duration_seconds = len(audio) / 1000
-    print(f"Original duration: {duration_seconds:.1f} seconds")
-    
-    # Trim to 4 minutes if longer than 5 minutes (service limit)
-    if duration_seconds > 300:
-        print(f"Trimming to 240 seconds (service limit is 300s)...")
-        audio = audio[:240000]  # 4 minutes
-        duration_seconds = 240
-    
-    # Convert to WAV
-    wav_bytes = audio.export(format='wav').read()
+
+def download_model_if_needed(server_url: str):
+    """Check if model is available and download if needed."""
+    import requests
+
+    # Check model status
+    try:
+        response = requests.get(f'{server_url}/health', timeout=5)
+        if response.status_code == 200:
+            health = response.json()
+            if not health.get('model_available', False):
+                print("\n📥 Model not found locally. Downloading Gemma 3N model...")
+                print("This is a one-time download of ~2.6GB and may take several minutes...")
+
+                # Pull the model
+                pull_response = requests.post(
+                    f'{server_url}/v1/models/pull',
+                    json={'model_name': 'gemma-3n-E2B-it', 'stream': False},
+                    timeout=1800  # 30 minutes for download
+                )
+
+                if pull_response.status_code == 200:
+                    result = pull_response.json()
+                    if result.get('status') == 'success':
+                        print("✅ Model downloaded successfully!")
+                        return True
+                    else:
+                        print(f"❌ Download failed: {result}")
+                        return False
+                else:
+                    print(f"❌ Download request failed: {pull_response.status_code}")
+                    print(f"Response: {pull_response.text}")
+                    return False
+            else:
+                print("✅ Model already available locally")
+                return True
+    except Exception as e:
+        print(f"❌ Error checking model status: {e}")
+        return False
+
+
+def transcribe_with_auto_server(audio_path: str):
+    """Transcribe audio, starting server if needed."""
+
+    # Prepare audio
+    wav_bytes, duration_seconds = prepare_audio_for_transcription(audio_path, max_duration_seconds=240)
     audio_base64 = base64.b64encode(wav_bytes).decode('utf-8')
-    print(f"Converted to WAV: {len(wav_bytes)} bytes")
-    
+
     # Start server
-    print("Starting Gemma service...")
+    print("\nStarting Gemma service on port 11350...")
+    env = os.environ.copy()
+    env['PORT'] = '11350'
+    # Ensure HF_TOKEN is passed through
+    if 'HF_TOKEN' in os.environ:
+        env['HF_TOKEN'] = os.environ['HF_TOKEN']
+        print(f"✅ Using HF_TOKEN from environment (length: {len(os.environ['HF_TOKEN'])})")
     server = subprocess.Popen(
         [sys.executable, 'main.py'],
-        env={'PORT': '11350'},
+        env=env,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
+        stderr=subprocess.DEVNULL,
+        cwd=os.path.dirname(os.path.abspath(__file__))
     )
-    
+
     # Wait for server
+    server_url = 'http://localhost:11350'
     for i in range(30):
         try:
-            r = requests.get('http://localhost:11350/health', timeout=1)
+            r = requests.get(f'{server_url}/health', timeout=1)
             if r.status_code == 200:
                 print("Server ready!")
                 break
@@ -48,43 +86,39 @@ def transcribe_audio(audio_path: str):
         time.sleep(1)
     
     try:
-        print("Sending transcription request...")
-        print("This will take 7-10 minutes on CPU...")
-        
-        start = time.time()
-        response = requests.post(
-            'http://localhost:11350/v1/chat/completions',
-            json={
-                'model': 'gemma-3n-E2B-it',
-                'messages': [{'role': 'user', 'content': 'Transcribe this audio'}],
-                'audio': audio_base64,
-                'temperature': 0.1
-            },
-            timeout=1200  # 20 minutes
+        # Check and download model if needed
+        if not download_model_if_needed(server_url):
+            print("❌ Failed to download model. Cannot proceed with transcription.")
+            return
+
+        # Transcribe
+        print(f"\n🎯 Transcribing {duration_seconds:.1f}s audio...")
+        print("This may take 5-15 minutes on CPU...")
+
+        text = transcribe_audio(
+            audio_base64,
+            base_url=server_url,
+            timeout=1200
         )
         
-        elapsed = time.time() - start
-        
-        if response.status_code == 200:
-            result = response.json()
-            transcription = result['choices'][0]['message']['content']
-            print("\n" + "="*60)
-            print("✅ SUCCESS!")
-            print("="*60)
-            print(f"Duration: {duration_seconds:.1f}s")
-            print(f"Processing time: {elapsed:.1f}s")
-            print(f"\nTRANSCRIPTION:\n{transcription}")
-            print("="*60)
-            return transcription
+        if text:
+            print("\n✅ Transcription complete!")
+            print("-" * 50)
+            print(text)
+            print("-" * 50)
         else:
-            print(f"❌ FAILED: {response.status_code}")
-            print(f"Error: {response.text}")
-            return None
+            print("❌ Transcription failed")
             
     finally:
+        print("\nStopping server...")
         server.terminate()
         server.wait()
 
-if __name__ == "__main__":
-    audio_file = sys.argv[1] if len(sys.argv) > 1 else "/tmp/night_watch.m4a"
-    transcribe_audio(audio_file)
+
+if __name__ == '__main__':
+    import requests
+    if len(sys.argv) != 2:
+        print("Usage: python transcribe.py <audio_file>")
+        sys.exit(1)
+    
+    transcribe_with_auto_server(sys.argv[1])

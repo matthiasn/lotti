@@ -222,11 +222,16 @@ Environment variables for service configuration:
 | `GEMMA_MODEL_VARIANT` | `E2B` | Model variant (`E2B` or `E4B`) |
 | `GEMMA_MODEL_ID` | Auto | Override full model ID |
 | `PORT` | `11343` | Service port |
-| `HOST` | `0.0.0.0` | Service host |
+| `HOST` | `127.0.0.1` | Service host |
 | `LOG_LEVEL` | `INFO` | Logging level |
 | `MAX_AUDIO_SIZE_MB` | `50` | Maximum audio file size |
 | `MAX_CONCURRENT_REQUESTS` | `2` | Maximum concurrent requests |
 | `REQUEST_TIMEOUT` | `600` | Request timeout in seconds |
+| `AUDIO_CHUNK_SIZE_SECONDS` | `30` | Audio chunk size (30s max for Gemma 3N) |
+| `AUDIO_OVERLAP_SECONDS` | `2` | Overlap between chunks in seconds |
+| `MAX_TOKENS` | `2000` | Maximum tokens for generation |
+| `MAX_TOKENS_TRANSCRIPTION` | `2000` | Maximum tokens for transcription |
+| `CPU_MAX_NEW_TOKENS` | `2000` | Maximum new tokens for CPU mode |
 | `GEMMA_DEVICE` | `auto` | Device selection (`auto`, `cuda`, `cpu`, `mps`) |
 | `LOW_MEMORY_MODE` | `true` | Enable memory optimizations |
 | `MAX_MEMORY_GB` | `8` | Maximum memory usage |

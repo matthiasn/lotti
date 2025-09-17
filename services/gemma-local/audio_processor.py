@@ -326,9 +326,8 @@ class AudioProcessor:
         chunk_duration = chunk_duration or self.chunk_duration
         overlap = overlap or self.overlap
         
-        # Use smaller chunks for CPU processing
-        if self.device == "cpu":
-            chunk_duration = min(chunk_duration, 15)  # Max 15s chunks for CPU
+        # Respect the model's 30s limit for Gemma 3N
+        chunk_duration = min(chunk_duration, 30)  # Max 30s chunks for Gemma 3N
             
         chunk_samples = int(chunk_duration * self.sample_rate)
         overlap_samples = int(overlap * self.sample_rate)
