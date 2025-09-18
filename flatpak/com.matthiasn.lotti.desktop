@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Lotti
 Comment=A smart journal and life management app
-Exec=lotti
+Exec=lotti-wrapper
 Icon=com.matthiasn.lotti
 Terminal=false
 Type=Application

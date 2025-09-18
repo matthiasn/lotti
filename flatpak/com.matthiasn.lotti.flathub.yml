@@ -1,0 +1,183 @@
+# Generated from flatpak/com.matthiasn.lotti.source.yml, do not edit
+# Visit the flatpak-flutter project at https://github.com/TheAppgineer/flatpak-flutter
+app-id: com.matthiasn.lotti
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.llvm20
+  - org.freedesktop.Sdk.Extension.rust-stable
+add-extensions:
+  org.freedesktop.Platform.ffmpeg-full:
+    directory: lib/ffmpeg
+    version: '24.08'
+    add-ld-path: .
+command: /app/lotti-wrapper
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  - --filesystem=xdg-documents/Lotti:create
+  - --filesystem=xdg-pictures:ro
+  - --filesystem=xdg-download/Lotti:create
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --talk-name=org.freedesktop.portal.Screenshot
+modules:
+  - name: python3-jinja2
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "MarkupSafe" "jinja2" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/31/80/3a54838c3fb461f6fec263ebf3a3a41771bd05190238de3486aae8540c36/jinja2-3.1.4-py3-none-any.whl
+        sha256: bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d
+      - type: file
+        url: https://files.pythonhosted.org/packages/87/5b/aae44c6655f3801e81aa3eef09dbbf012431987ba564d7231722f68df02d/MarkupSafe-2.1.5.tar.gz
+        sha256: d283d37a890ba4c1ae73ffadf8046435c76e7bc2247bbb63c00bd1a709c6544b
+  - name: libplacebo
+    buildsystem: meson
+    config-opts:
+      - -Dglslang=disabled
+      - -Dshaderc=disabled
+      - -Dvulkan=disabled
+      - -Dd3d11=disabled
+      - -Ddemos=false
+      - -Dopengl=disabled
+      - -Dtests=false
+    sources:
+      - type: archive
+        url: https://github.com/haasn/libplacebo/archive/refs/tags/v6.338.2.tar.gz
+        sha256: 2f1e624e09d72a8c9db70f910f7560e764a1c126dae42acc5b3bcef836a7aec6
+  - name: libass
+    buildsystem: autotools
+    config-opts:
+      - --disable-static
+    sources:
+      - type: archive
+        url: https://github.com/libass/libass/releases/download/0.17.1/libass-0.17.1.tar.xz
+        sha256: f0da0bbfba476c16ae3e1cfd862256d30915911f7abaa1b16ce62ee653192784
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+  - name: libmpv
+    buildsystem: meson
+    build-options:
+      env:
+        PKG_CONFIG_PATH: /app/lib64/pkgconfig:/app/lib/pkgconfig
+    config-opts:
+      - -Dlibmpv=true
+      - -Dlua=disabled
+      - -Ddebug=false
+      - -Dbuild-date=false
+      - -Dmanpage-build=disabled
+      - -Dsdl2=disabled
+      - -Dvulkan=disabled
+    sources:
+      - type: archive
+        url: https://github.com/mpv-player/mpv/archive/v0.38.0.tar.gz
+        sha256: 86d9ef40b6058732f67b46d0bbda24a074fae860b3eaae05bab3145041303066
+  - name: libsecret
+    buildsystem: meson
+    config-opts:
+      - -Dmanpage=false
+      - -Dvapi=false
+      - -Dgcrypt=false
+      - -Dgtk_doc=false
+      - -Dintrospection=false
+    sources:
+      - type: archive
+        url: https://gitlab.gnome.org/GNOME/libsecret/-/archive/0.20.5/libsecret-0.20.5.tar.gz
+        sha256: b33b9542222ea8866f6ff2d31c0ad373877c2277db546ca00cc7fdda9cbab1c3
+  - name: libkeybinder
+    buildsystem: autotools
+    sources:
+      - type: archive
+        url: https://github.com/kupferlauncher/keybinder/releases/download/keybinder-3.0-v0.3.2/keybinder-3.0-0.3.2.tar.gz
+        sha256: e6e3de4e1f3b201814a956ab8f16dfc8a262db1937ff1eee4d855365398c6020
+  - name: lotti
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/llvm20/bin:/usr/lib/sdk/rust-stable/bin:/var/lib/flutter/bin
+      prepend-ld-library-path: /usr/lib/sdk/llvm20/lib
+      env:
+        PUB_CACHE: /run/build/lotti/.pub-cache
+        FLUTTER_ROOT: /var/lib/flutter
+        PKG_CONFIG_PATH: /app/lib/pkgconfig:/app/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/lib64/pkgconfig
+        CARGO_HOME: /run/build/lotti/.cargo
+        CARGO_NET_OFFLINE: 'true'
+        PUB_OFFLINE: 'true'
+    build-commands:
+      - echo "Building Lotti from source..."
+      - flutter config --no-analytics --no-cli-animations
+      - setup-flutter.sh -C .
+      - flutter build linux --release --no-pub
+      - echo "Installing Flutter bundle..."
+      - cp -r build/linux/x64/release/bundle/* /app/
+      - find /app -name "*1024*" -type f -delete
+      - chmod +x /app/lotti
+      - mkdir -p /app/lib/ffmpeg
+      - "cat > /app/lotti-wrapper << 'EOF'\n#!/bin/bash\nexport LD_LIBRARY_PATH=/app/lib:/app/lib64:$LD_LIBRARY_PATH\n\
+        \n# Set GDK_BACKEND conditionally\nif [ -z \"$WAYLAND_DISPLAY\" ] && [ \"\
+        $XDG_SESSION_TYPE\" != \"wayland\" ]; then\n  export GDK_BACKEND=x11\nfi\n\
+        \ncd /app\nexec ./lotti \"$@\"\nEOF\n"
+      - chmod +x /app/lotti-wrapper
+    sources:
+      - pubspec-sources.json
+      - type: git
+        url: https://github.com/matthiasn/lotti
+        tag: v0.9.645
+      - type: file
+        only-arches:
+          - x86_64
+        url: https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz
+        sha256: 2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb
+        dest: ./build/linux/x64/release
+        dest-filename: mimalloc-2.1.2.tar.gz
+      - type: file
+        only-arches:
+          - aarch64
+        url: https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz
+        sha256: 2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb
+        dest: ./build/linux/arm64/release
+        dest-filename: mimalloc-2.1.2.tar.gz
+      - type: file
+        only-arches:
+          - x86_64
+        url: https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz
+        sha256: a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18
+        dest: ./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src
+      - type: file
+        only-arches:
+          - aarch64
+        url: https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz
+        sha256: a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18
+        dest: ./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src
+      - type: patch
+        path: sqlite3_flutter_libs/0.5.39-CMakeLists.txt.patch
+        dest: .pub-cache/hosted/pub.dev/sqlite3_flutter_libs-0.5.39
+      - type: patch
+        path: cargokit/run_build_tool.sh.patch
+        dest: .pub-cache/hosted/pub.dev/super_native_extensions-0.9.1/cargokit
+      - type: patch
+        path: super_native_extensions/cargokit.yaml.patch
+        dest: .pub-cache/hosted/pub.dev/super_native_extensions-0.9.1
+      - cargo-sources.json
+    modules:
+      - flutter-sdk-3.35.4.json
+  - name: flutter-common
+    buildsystem: simple
+    build-commands:
+      - install -D flatpak/com.matthiasn.lotti.desktop /app/share/applications/com.matthiasn.lotti.desktop
+      - install -D flatpak/com.matthiasn.lotti.metainfo.xml /app/share/metainfo/com.matthiasn.lotti.metainfo.xml
+      - install -D flatpak/app_icon_512.png /app/share/icons/hicolor/512x512/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_256.png /app/share/icons/hicolor/256x256/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_128.png /app/share/icons/hicolor/128x128/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_64.png /app/share/icons/hicolor/64x64/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_48.png /app/share/icons/hicolor/48x48/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_32.png /app/share/icons/hicolor/32x32/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_16.png /app/share/icons/hicolor/16x16/apps/com.matthiasn.lotti.png
+    sources: []
