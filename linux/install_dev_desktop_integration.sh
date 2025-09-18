@@ -45,7 +45,7 @@ mkdir -p ~/.kde/share/applications 2>/dev/null || true
 
 # Copy desktop file to user applications directory
 echo "Installing desktop file..."
-DESKTOP_FILE="$SCRIPT_DIR/com.matthiasnehlsen.lotti.desktop"
+DESKTOP_FILE="$SCRIPT_DIR/com.matthiasn.lotti.desktop"
 if [ -f "$DESKTOP_FILE" ]; then
     # Create a development version of the desktop file with absolute paths
     # Use mktemp for secure temporary file creation
@@ -64,13 +64,13 @@ if [ -f "$DESKTOP_FILE" ]; then
         rm -f "$TEMP_DESKTOP"
         exit 1
     }
-    sed -i "s|Icon=com.matthiasnehlsen.lotti|Icon=${ESCAPED_ICON_PATH}|g" "$TEMP_DESKTOP" || {
+    sed -i "s|Icon=com.matthiasn.lotti|Icon=${ESCAPED_ICON_PATH}|g" "$TEMP_DESKTOP" || {
         echo "Error: Failed to update icon path"
         rm -f "$TEMP_DESKTOP"
         exit 1
     }
     
-    cp "$TEMP_DESKTOP" ~/.local/share/applications/com.matthiasnehlsen.lotti.desktop || {
+    cp "$TEMP_DESKTOP" ~/.local/share/applications/com.matthiasn.lotti.desktop || {
         echo "Error: Failed to install desktop file"
         rm -f "$TEMP_DESKTOP"
         exit 1
@@ -78,7 +78,7 @@ if [ -f "$DESKTOP_FILE" ]; then
     
     # Also copy to KDE-specific locations for better compatibility
     if [ -d ~/.kde/share/applications ]; then
-        if cp "$TEMP_DESKTOP" ~/.kde/share/applications/com.matthiasnehlsen.lotti.desktop 2>/dev/null; then
+        if cp "$TEMP_DESKTOP" ~/.kde/share/applications/com.matthiasn.lotti.desktop 2>/dev/null; then
             echo "Desktop file also copied to ~/.kde/share/applications/"
         fi
     fi

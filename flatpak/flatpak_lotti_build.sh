@@ -183,13 +183,13 @@ build_flatpak() {
     cleanup_mounts
     
     # Build using manifest
-    if ! flatpak-builder --repo=repo --force-clean build-dir com.matthiasnehlsen.lotti.yml; then
+    if ! flatpak-builder --repo=repo --force-clean build-dir com.matthiasn.lotti.yml; then
         print_error "Flatpak build failed!"
         # Try to clean up and retry once
         print_warning "Attempting to clean up and retry..."
         cleanup_mounts
         sleep 2
-        if ! flatpak-builder --repo=repo --force-clean build-dir com.matthiasnehlsen.lotti.yml; then
+        if ! flatpak-builder --repo=repo --force-clean build-dir com.matthiasn.lotti.yml; then
             print_error "Flatpak build failed after retry!"
             popd > /dev/null
             exit 1
@@ -228,11 +228,11 @@ run_app() {
     fi
     
     # Run lotti app from build directory
-    if ! flatpak-builder --run build-dir com.matthiasnehlsen.lotti.yml /app/lotti; then
+    if ! flatpak-builder --run build-dir com.matthiasn.lotti.yml /app/lotti; then
         print_warning "App failed to start. Trying cleanup and retry..."
         cleanup_mounts
         sleep 2
-        flatpak-builder --run build-dir com.matthiasnehlsen.lotti.yml /app/lotti
+        flatpak-builder --run build-dir com.matthiasn.lotti.yml /app/lotti
     fi
     
     popd > /dev/null
@@ -247,11 +247,11 @@ install_flatpak() {
     
     # Install from repo
     flatpak --user remote-add --no-gpg-verify lotti-repo repo
-    flatpak --user install -y lotti-repo com.matthiasnehlsen.lotti
+    flatpak --user install -y lotti-repo com.matthiasn.lotti
     
     popd > /dev/null
     
-    print_status "Installation complete! You can now run: flatpak run com.matthiasnehlsen.lotti"
+    print_status "Installation complete! You can now run: flatpak run com.matthiasn.lotti"
 }
 
 # Main script

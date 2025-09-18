@@ -63,7 +63,7 @@ Before building the Flatpak, you need to prepare the Flutter bundle:
 3. Build and install:
    ```bash
    cd flatpak
-   flatpak-builder --user --install --force-clean build-dir com.matthiasnehlsen.lotti.yml
+   flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
    ```
 
 ## Directory Structure
@@ -92,7 +92,7 @@ This eliminates the need to manually maintain lists of individual files and make
 
 ### Create Bundle
 ```bash
-flatpak build-bundle repo lotti.flatpak com.matthiasnehlsen.lotti
+flatpak build-bundle repo lotti.flatpak com.matthiasn.lotti
 ```
 
 ## Distribution
@@ -100,7 +100,7 @@ flatpak build-bundle repo lotti.flatpak com.matthiasnehlsen.lotti
 ### Flathub
 To submit to Flathub:
 1. Fork the [Flathub repository](https://github.com/flathub/flathub)
-2. Add the manifest to `com.matthiasnehlsen.lotti.yml` (filename must match app-id)
+2. Add the manifest to `com.matthiasn.lotti.yml` (filename must match app-id)
 3. Submit a pull request
 
 ### Direct Distribution
@@ -124,7 +124,7 @@ The app follows the **principle of least privilege** and requests only necessary
 - `--filesystem=xdg-documents:rw` - Read/write access to Documents folder for importing/exporting journal data
 - `--filesystem=xdg-pictures:ro` - Read-only access to Pictures for importing images
 - `--filesystem=xdg-download:rw` - Read/write access to Downloads for saving exports
-- **App data**: Automatically stored in `~/.var/app/com.matthiasnehlsen.lotti/` (secure default)
+- **App data**: Automatically stored in `~/.var/app/com.matthiasn.lotti/` (secure default)
 
 ### Security Notes
 - ❌ **No `--filesystem=home`** - Removed broad home directory access for security

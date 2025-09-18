@@ -47,7 +47,7 @@ if [ "${SKIP_CLEAN:-}" != "true" ] && [ "${SKIP_CLEAN:-}" != "1" ]; then
     rm -rf build-dir
     rm -rf repo
     rm -rf .flatpak-builder
-    rm -f com.matthiasnehlsen.lotti.generated.metainfo.xml
+    rm -f com.matthiasn.lotti.generated.metainfo.xml
     
     # Clean Flutter build in parent directory
     print_status "Cleaning Flutter build artifacts..."
@@ -62,7 +62,7 @@ fi
 print_status "Generating metainfo file from template..."
 if ! sed -e "s|{{LOTTI_VERSION}}|${LOTTI_VERSION}|g" \
         -e "s|{{LOTTI_RELEASE_DATE}}|${LOTTI_RELEASE_DATE}|g" \
-        com.matthiasnehlsen.lotti.metainfo.xml > com.matthiasnehlsen.lotti.generated.metainfo.xml; then
+        com.matthiasn.lotti.metainfo.xml > com.matthiasn.lotti.generated.metainfo.xml; then
     print_error "Failed to generate metainfo file"
     exit 1
 fi
@@ -99,7 +99,7 @@ fi
 
 # Build Flatpak using local manifest (which doesn't need template substitution)
 print_status "Building Flatpak package..."
-if ! flatpak-builder --repo=repo --force-clean build-dir com.matthiasnehlsen.lotti.local.yml; then
+if ! flatpak-builder --repo=repo --force-clean build-dir com.matthiasn.lotti.local.yml; then
     print_error "Flatpak build failed!"
     exit 1
 fi
@@ -114,22 +114,22 @@ if [ "${1:-}" = "install" ] || [ "${1:-}" = "run" ] || [ "${2:-}" = "run" ]; the
     flatpak --user remote-add --no-gpg-verify --if-not-exists lotti-repo repo
     
     # Install
-    flatpak --user install -y lotti-repo com.matthiasnehlsen.lotti
+    flatpak --user install -y lotti-repo com.matthiasn.lotti
     
     print_status "Installation complete!"
-    print_status "You can now run: flatpak run com.matthiasnehlsen.lotti"
+    print_status "You can now run: flatpak run com.matthiasn.lotti"
 fi
 
 # Run if requested
 if [ "${1:-}" = "run" ] || [ "${2:-}" = "run" ]; then
     print_status "Running Lotti app..."
-    flatpak run com.matthiasnehlsen.lotti &
+    flatpak run com.matthiasn.lotti &
 fi
 
 # Auto-run if AUTORUN environment variable is set
 if [ "${AUTORUN:-}" = "true" ] || [ "${AUTORUN:-}" = "1" ]; then
     print_status "Auto-launching Lotti app..."
-    flatpak run com.matthiasnehlsen.lotti &
+    flatpak run com.matthiasn.lotti &
 fi
 
 print_status "Build completed successfully!"
