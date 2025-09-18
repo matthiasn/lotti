@@ -58,15 +58,19 @@ def transcribe_with_auto_server(audio_path: str):
     audio_base64 = base64.b64encode(wav_bytes).decode('utf-8')
 
     # Start server
-    print("\nStarting Gemma service on port 11350...")
+    print("\nStarting Gemma service on port 11343...")
     env = os.environ.copy()
-    env['PORT'] = '11350'
+    env['PORT'] = '11343'
     # Ensure HF_TOKEN is passed through
     if 'HF_TOKEN' in os.environ:
         env['HF_TOKEN'] = os.environ['HF_TOKEN']
         print(f"✅ Using HF_TOKEN from environment (length: {len(os.environ['HF_TOKEN'])})")
+    # Use virtual environment Python if available
+    venv_python = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'venv', 'bin', 'python')
+    python_executable = venv_python if os.path.exists(venv_python) else sys.executable
+
     server = subprocess.Popen(
-        [sys.executable, 'main.py'],
+        [python_executable, 'main.py'],
         env=env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -74,7 +78,7 @@ def transcribe_with_auto_server(audio_path: str):
     )
 
     # Wait for server
-    server_url = 'http://localhost:11350'
+    server_url = 'http://localhost:11343'
     for i in range(30):
         try:
             r = requests.get(f'{server_url}/health', timeout=1)

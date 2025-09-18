@@ -9,7 +9,7 @@ import json
 
 import torch
 from transformers import (
-    AutoModelForCausalLM,
+    AutoModelForImageTextToText,
     AutoTokenizer,
     AutoProcessor,
     BitsAndBytesConfig,
@@ -41,7 +41,7 @@ class GemmaModelManager:
     """Manages Gemma model downloading, loading, and inference."""
     
     def __init__(self):
-        self.model: Optional[AutoModelForCausalLM] = None
+        self.model: Optional[AutoModelForImageTextToText] = None
         self.processor: Optional[AutoProcessor] = None
         self.tokenizer: Optional[AutoTokenizer] = None
         self.device = ServiceConfig.DEFAULT_DEVICE
@@ -273,7 +273,7 @@ class GemmaModelManager:
                     for attempt_num, config in enumerate(load_attempts, 1):
                         try:
                             logger.info(f"Model load attempt {attempt_num}/{len(load_attempts)}...")
-                            self.model = AutoModelForCausalLM.from_pretrained(
+                            self.model = AutoModelForImageTextToText.from_pretrained(
                                 model_path,
                                 local_files_only=True,
                                 trust_remote_code=True,

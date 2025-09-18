@@ -621,13 +621,6 @@ async def generate_transcription_with_chat_context(
             if not model_manager.is_model_loaded():
                 raise Exception("Failed to load model for chunk processing")
 
-        # For audio transcription, we must include the full audio token sequence
-        # Gemma 3N expects exactly 188 audio_soft_token placeholders
-        # The processor has this pre-built as full_audio_sequence
-        audio_placeholder = model_manager.processor.full_audio_sequence if hasattr(model_manager.processor, 'full_audio_sequence') else ""
-        chat_prompt = f"{audio_placeholder}Transcribe the above audio:"
-
-        logger.info(f"Chat-based transcription prompt: {chat_prompt[:200]}...")
         logger.info(f"Audio array shape: {audio_array.shape}, dtype: {audio_array.dtype}")
 
         # Convert audio to float32 and ensure it's in the correct format
@@ -664,69 +657,43 @@ async def generate_transcription_with_chat_context(
 
         logger.info(f"Processed audio shape: {audio_array.shape}, dtype: {audio_array.dtype}, range: [{audio_array.min():.2f}, {audio_array.max():.2f}]")
 
-        # Process audio and text through the unified processor
-        # For Gemma 3N, the processor should automatically insert audio tokens
+        # Use Lotti-style structured prompting for better transcription
+        # Create message structure with audio content matching Lotti's approach
+        formatted_messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "audio", "audio": audio_array},  # Pass numpy array directly
+                    {"type": "text", "text": "Transcribe the audio."}
+                ]
+            }
+        ]
+
+        logger.info("Using apply_chat_template with structured messages")
+
+        # Apply chat template to get proper inputs
         try:
-            logger.info(f"Calling processor with audio shape: {audio_array.shape}, text length: {len(chat_prompt)}")
+            inputs = model_manager.processor.apply_chat_template(
+                formatted_messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_dict=True,
+                return_tensors="pt"
+            )
+            logger.info(f"✅ Chat template applied successfully")
+            logger.info(f"Input keys: {inputs.keys()}")
+
+        except Exception as template_error:
+            logger.error(f"Chat template error: {template_error}")
+            # Fallback to direct processor call if apply_chat_template fails
+            logger.info("Falling back to direct processor call")
 
             inputs = model_manager.processor(
-                text=chat_prompt,
+                text="Transcribe this audio",
                 audio=audio_array,
                 sampling_rate=ServiceConfig.AUDIO_SAMPLE_RATE,
                 return_tensors="pt"
             )
-            logger.info(f"✅ Processor completed successfully")
-            logger.info(f"Processor inputs keys: {inputs.keys()}")
-            if 'input_ids' in inputs:
-                logger.info(f"Input IDs shape: {inputs['input_ids'].shape}")
-            if 'audio_features' in inputs:
-                logger.info(f"Audio features shape: {inputs['audio_features'].shape}")
-
-        except ValueError as ve:
-            if "squeeze" in str(ve).lower():
-                logger.error(f"❌ Squeeze error detected: {ve}")
-                logger.error(f"Audio array info before processor:")
-                logger.error(f"  - Shape: {audio_array.shape}")
-                logger.error(f"  - Dtype: {audio_array.dtype}")
-                logger.error(f"  - Min/Max: [{audio_array.min():.6f}, {audio_array.max():.6f}]")
-                logger.error(f"  - Sample rate: {ServiceConfig.AUDIO_SAMPLE_RATE}")
-
-                # Try different preprocessing approach
-                logger.info("🔄 Attempting alternative audio preprocessing...")
-
-                # Create a copy to avoid modifying original
-                alt_audio = audio_array.copy()
-
-                # Ensure exact sample rate (resample if needed)
-                if hasattr(model_manager.processor, 'feature_extractor'):
-                    target_rate = model_manager.processor.feature_extractor.sampling_rate
-                    if target_rate != ServiceConfig.AUDIO_SAMPLE_RATE:
-                        logger.info(f"Resampling from {ServiceConfig.AUDIO_SAMPLE_RATE} to {target_rate}")
-                        import librosa
-                        alt_audio = librosa.resample(alt_audio,
-                                                   orig_sr=ServiceConfig.AUDIO_SAMPLE_RATE,
-                                                   target_sr=target_rate)
-
-                # Try processor again with resampled audio
-                try:
-                    inputs = model_manager.processor(
-                        text=chat_prompt,
-                        audio=alt_audio,
-                        sampling_rate=target_rate if 'target_rate' in locals() else ServiceConfig.AUDIO_SAMPLE_RATE,
-                        return_tensors="pt"
-                    )
-                    logger.info("✅ Alternative preprocessing succeeded!")
-                except Exception as alt_error:
-                    logger.error(f"❌ Alternative preprocessing also failed: {alt_error}")
-                    raise ve  # Re-raise original error
-            else:
-                logger.error(f"Processor ValueError (non-squeeze): {ve}")
-                raise
-
-        except Exception as proc_error:
-            logger.error(f"Processor error: {proc_error}")
-            logger.error(f"Processor error details:", exc_info=True)
-            raise
         
         # Move inputs to device
         inputs = {k: v.to(model_manager.device) if hasattr(v, 'to') else v for k, v in inputs.items()}
@@ -763,11 +730,60 @@ async def generate_transcription_with_chat_context(
             outputs[0][input_length:],
             skip_special_tokens=True
         )
-        
+
         transcription = response.strip()
-        logger.info(f"Chat-based transcription result length: {len(transcription)} chars")
-        logger.info(f"Chat-based transcription preview: {transcription[:200]}...")
-        
+
+        # Whisper-like output cleaning - remove redundancy but keep full content
+        def clean_whisper_style(text: str) -> str:
+            """Clean transcription output to remove redundancy but preserve all content."""
+            # If text contains "Transcription:" markers, it means multiple attempts
+            if 'Transcription:' in text:
+                parts = text.split('Transcription:')
+                if len(parts) > 1:
+                    # Take the first actual transcription part
+                    text = parts[1].split('Text Transcription:')[0]
+                    text = text.split('\n')[0]  # Take first line of that part
+
+            # Stop at indicators that the model is adding meta-commentary
+            stop_indicators = [
+                'Speaker change',
+                'No fillers present',
+                'Clear formatting',
+                'This is a transcription',
+                'The transcription is',
+                'Here is the transcription',
+                "I'm sorry",
+                "I apologize",
+                "Please provide"
+            ]
+
+            for indicator in stop_indicators:
+                if indicator in text:
+                    text = text.split(indicator)[0]
+
+            # Remove common prefixes only if they exist
+            prefixes_to_remove = [
+                "Transcription: ",
+                "Text: ",
+                "Audio: "
+            ]
+            for prefix in prefixes_to_remove:
+                if text.startswith(prefix):
+                    text = text[len(prefix):]
+
+            return text.strip()
+
+        transcription = clean_whisper_style(transcription)
+
+        # Final safety check for reasonable length
+        max_reasonable_length = 2000  # ~1000 words max for 2-minute audio
+        if len(transcription) > max_reasonable_length:
+            transcription = transcription[:max_reasonable_length].strip()
+            logger.info(f"Truncated to reasonable length: {max_reasonable_length} chars")
+
+        logger.info(f"Final transcription result length: {len(transcription)} chars")
+        logger.info(f"Final transcription preview: {transcription[:200]}...")
+
         return transcription
     
     except Exception as e:

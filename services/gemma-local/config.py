@@ -118,11 +118,13 @@ class ServiceConfig:
         
         if task_type == "transcription":
             base_config.update({
-                "max_new_tokens": cls.MAX_TOKENS_TRANSCRIPTION,
-                "temperature": 0.1,
-                "top_p": 0.8,
-                "top_k": 10,
-                "repetition_penalty": 1.1,
+                "max_new_tokens": 400,      # Enough for full audio content
+                "temperature": 0.0,         # Completely deterministic like Whisper
+                "do_sample": False,         # No sampling - greedy decoding like Whisper
+                "num_beams": 1,            # Greedy decoding like Whisper
+                "repetition_penalty": 1.0,  # No repetition penalty conflicts
+                "early_stopping": True,
+                "use_cache": True,
             })
         elif task_type == "cpu_optimized":
             base_config.update({
