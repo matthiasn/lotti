@@ -23,11 +23,11 @@ def _get_device():
             except:
                 pass
         
-        # Check for MPS (Apple Silicon) - but avoid for large models
+        # Check for MPS (Apple Silicon) - enable by default for better performance
         if torch.backends.mps.is_available() and platform.system() == "Darwin":
-            # MPS often has memory issues with large models, use CPU instead
-            # Unless explicitly requested via environment variable
-            if os.getenv("FORCE_MPS", "false").lower() == "true":
+            # Use MPS by default on Apple Silicon for better performance
+            # Can be disabled with DISABLE_MPS=true if needed
+            if os.getenv("DISABLE_MPS", "false").lower() != "true":
                 return "mps"
         
         # Default to CPU for reliability
@@ -56,25 +56,25 @@ class ServiceConfig:
     MAX_AUDIO_SIZE_MB = int(os.getenv("MAX_AUDIO_SIZE_MB", "50"))
     AUDIO_SAMPLE_RATE = 16000
     SUPPORTED_AUDIO_FORMATS = ["wav", "mp3", "m4a", "flac", "ogg", "webm"]
-    AUDIO_CHUNK_SIZE_SECONDS = 30
-    AUDIO_OVERLAP_SECONDS = 2
+    AUDIO_CHUNK_SIZE_SECONDS = int(os.getenv("AUDIO_CHUNK_SIZE_SECONDS", "30"))  # Model limit is 30s
+    AUDIO_OVERLAP_SECONDS = int(os.getenv("AUDIO_OVERLAP_SECONDS", "2"))
     MAX_AUDIO_DURATION_SECONDS = 300
     
     # API settings - conservative for CPU
     MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "2"))
     REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "600"))
     DEFAULT_PORT = int(os.getenv("PORT", "11343"))
-    DEFAULT_HOST = os.getenv("HOST", "0.0.0.0")
+    DEFAULT_HOST = os.getenv("HOST", "127.0.0.1")
     
     # Generation settings - optimized for audio transcription
-    DEFAULT_MAX_TOKENS = 1000
-    MAX_TOKENS_TRANSCRIPTION = 200
+    DEFAULT_MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2000"))  # Increased for longer transcriptions
+    MAX_TOKENS_TRANSCRIPTION = int(os.getenv("MAX_TOKENS_TRANSCRIPTION", "2000"))  # Support full transcriptions
     DEFAULT_TEMPERATURE = 0.1
     DEFAULT_TOP_P = 0.8
     DEFAULT_TOP_K = 20
     
     # CPU-specific generation settings
-    CPU_MAX_NEW_TOKENS = 300  # Balanced for longer audio transcriptions
+    CPU_MAX_NEW_TOKENS = int(os.getenv("CPU_MAX_NEW_TOKENS", "2000"))  # Support full audio transcriptions
     CPU_BATCH_SIZE = 1
     USE_CACHE = True
     
@@ -118,11 +118,13 @@ class ServiceConfig:
         
         if task_type == "transcription":
             base_config.update({
-                "max_new_tokens": cls.MAX_TOKENS_TRANSCRIPTION,
-                "temperature": 0.1,
-                "top_p": 0.8,
-                "top_k": 10,
-                "repetition_penalty": 1.1,
+                "max_new_tokens": 400,      # Enough for full audio content
+                "temperature": 0.0,         # Completely deterministic like Whisper
+                "do_sample": False,         # No sampling - greedy decoding like Whisper
+                "num_beams": 1,            # Greedy decoding like Whisper
+                "repetition_penalty": 1.0,  # No repetition penalty conflicts
+                "early_stopping": True,
+                "use_cache": True,
             })
         elif task_type == "cpu_optimized":
             base_config.update({

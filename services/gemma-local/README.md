@@ -4,14 +4,17 @@ A high-performance, production-ready audio transcription service powered by Goog
 
 ## Features
 
+- **Gemma 3N Multimodal Model**: Powered by Google's Gemma 3N models with native audio support
 - **OpenAI-Compatible API**: Drop-in replacement for OpenAI's transcription endpoints
-- **Multiple Model Variants**: Support for both E2B and E4B Gemma variants
+- **Multiple Model Variants**: Support for both E2B (2B) and E4B (4B) Gemma variants
 - **Context-Aware Transcription**: Improve accuracy with contextual prompts
 - **Multi-Format Support**: WAV, MP3, M4A, FLAC, OGG, and WebM audio formats
+- **Automatic Chunking**: Handles audio longer than 30 seconds with intelligent chunking
 - **Automatic Model Management**: Auto-download models on first use
 - **Production Ready**: Comprehensive error handling, logging, and resource management
 - **Streaming Support**: Real-time streaming responses for chat completions
 - **Docker Support**: Containerized deployment option
+- **MPS Support**: Optimized for Apple Silicon acceleration
 
 ## Quick Start
 
@@ -57,16 +60,51 @@ PORT=8080 python main.py
 
 ### Quick Start - Transcribe Audio
 
-For immediate transcription use the simple script:
+#### Method 1: All-in-One Script (Recommended)
+
+Use the automated script that handles everything:
+```bash
+# Make the script executable (first time only)
+chmod +x run_transcription.sh
+
+# Transcribe any audio file
+./run_transcription.sh /path/to/audio.m4a
+
+# Example:
+./run_transcription.sh ~/Desktop/recording.m4a
+```
+
+The `run_transcription.sh` script automatically:
+- Cleans up any existing servers
+- Starts the Gemma 3N service
+- Waits for server initialization
+- Processes your audio file
+- Shows the transcription result
+- Stops the server when complete
+
+#### Method 2: Python Script
+
+For more control, use the Python script directly:
 ```bash
 # Transcribe any audio file (auto-converts M4A/MP3/etc to WAV)
 python transcribe.py /path/to/audio.m4a
 
 # The script will:
 # - Install dependencies if needed
-# - Convert audio format automatically  
-# - Trim to 4 minutes if longer (service limit: 5 minutes)
+# - Convert audio format automatically
+# - Handle audio chunking for files > 30 seconds
 # - Start server, transcribe, show results
+```
+
+#### Method 3: Standalone Utility
+
+For running with an already-started server:
+```bash
+# Start the server first
+python main.py
+
+# In another terminal, run transcription
+python transcribe_utils_standalone.py /path/to/audio.m4a
 ```
 
 ### Testing
@@ -222,28 +260,55 @@ Environment variables for service configuration:
 | `GEMMA_MODEL_VARIANT` | `E2B` | Model variant (`E2B` or `E4B`) |
 | `GEMMA_MODEL_ID` | Auto | Override full model ID |
 | `PORT` | `11343` | Service port |
-| `HOST` | `0.0.0.0` | Service host |
+| `HOST` | `127.0.0.1` | Service host |
 | `LOG_LEVEL` | `INFO` | Logging level |
 | `MAX_AUDIO_SIZE_MB` | `50` | Maximum audio file size |
 | `MAX_CONCURRENT_REQUESTS` | `2` | Maximum concurrent requests |
 | `REQUEST_TIMEOUT` | `600` | Request timeout in seconds |
+| `AUDIO_CHUNK_SIZE_SECONDS` | `30` | Audio chunk size (30s max for Gemma 3N) |
+| `AUDIO_OVERLAP_SECONDS` | `2` | Overlap between chunks in seconds |
+| `MAX_TOKENS` | `2000` | Maximum tokens for generation |
+| `MAX_TOKENS_TRANSCRIPTION` | `2000` | Maximum tokens for transcription |
+| `CPU_MAX_NEW_TOKENS` | `2000` | Maximum new tokens for CPU mode |
 | `GEMMA_DEVICE` | `auto` | Device selection (`auto`, `cuda`, `cpu`, `mps`) |
 | `LOW_MEMORY_MODE` | `true` | Enable memory optimizations |
 | `MAX_MEMORY_GB` | `8` | Maximum memory usage |
 
-## Model Variants
+## Model Variants and Requirements
 
-### E2B (2 Billion Parameters)
+### E2B (2 Billion Parameters) - Default
 - **Size**: ~5.4 GB
-- **Speed**: Faster inference
+- **Speed**: Faster inference (~3-4 minutes per 30-second chunk)
 - **Memory**: Lower requirements (~6GB RAM)
 - **Use Case**: Real-time transcription, resource-constrained environments
+- **Accuracy**: Good for most use cases
 
 ### E4B (4 Billion Parameters)
 - **Size**: ~10.8 GB
-- **Speed**: Slower inference
+- **Speed**: Slower inference (~5-6 minutes per 30-second chunk)
 - **Memory**: Higher requirements (~12GB RAM)
 - **Use Case**: Maximum accuracy, batch processing
+- **Accuracy**: Higher quality transcription
+
+## Audio Limitations and Specifications
+
+### Gemma 3N Audio Constraints
+- **Maximum chunk size**: 30 seconds (model limitation)
+- **Automatic chunking**: Files longer than 30s are split automatically
+- **Sample rate**: 16kHz (auto-converted)
+- **Format**: Mono audio (stereo converted automatically)
+- **Maximum file size**: 50MB (configurable)
+- **Supported formats**: WAV, MP3, M4A, FLAC, OGG, WebM
+
+### Processing Times
+- **E2B Model**: ~3-4 minutes per 30-second audio chunk
+- **E4B Model**: ~5-6 minutes per 30-second audio chunk
+- **Total time**: Depends on audio length (e.g., 2-minute audio = ~8-16 minutes with E2B)
+
+### Device Compatibility
+- **Apple Silicon (MPS)**: Recommended for best performance
+- **CUDA GPU**: Supported with sufficient VRAM
+- **CPU**: Fallback option, slower but works
 
 ## Client Examples
 
@@ -417,16 +482,81 @@ rm -rf ~/.cache/gemma-local/models
 python main.py
 ```
 
+#### HuggingFace Authentication Required
+Gemma models require authentication. Set up your token:
+```bash
+# Get token from https://huggingface.co/settings/tokens
+export HF_TOKEN=your_token_here
+
+# Or set in environment permanently
+echo 'export HF_TOKEN=your_token_here' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### Permission Denied on Script
+```bash
+# Make script executable
+chmod +x run_transcription.sh
+
+# Or run with bash directly
+bash run_transcription.sh /path/to/audio.m4a
+```
+
+#### Virtual Environment Not Found
+```bash
+# Create virtual environment first
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Then run the script
+./run_transcription.sh /path/to/audio.m4a
+```
+
+#### Audio File Not Found
+```bash
+# Use absolute path
+./run_transcription.sh /full/path/to/audio.m4a
+
+# Or check current directory
+ls -la ~/Desktop/audio.m4a
+```
+
+#### Server Startup Fails
+```bash
+# Check if port is in use
+lsof -i :11343
+
+# Kill existing processes
+lsof -i :11343 | grep LISTEN | awk '{print $2}' | xargs kill -9
+
+# Check logs for errors
+tail -f /tmp/gemma_server.log
+```
+
+#### Transcription Takes Too Long
+```bash
+# Use E2B model for faster processing
+GEMMA_MODEL_VARIANT=E2B ./run_transcription.sh /path/to/audio.m4a
+
+# Or reduce audio length
+ffmpeg -i input.m4a -t 30 -c copy short_audio.m4a
+```
+
 #### Out of Memory
 ```bash
 # Enable low memory mode
 LOW_MEMORY_MODE=true MAX_MEMORY_GB=4 python main.py
+
+# Use CPU instead of GPU
+GEMMA_DEVICE=cpu python main.py
 ```
 
-#### Slow Inference
+#### Audio Format Not Supported
 ```bash
-# Use E2B model for faster processing
-GEMMA_MODEL_VARIANT=E2B python main.py
+# Convert to supported format first
+ffmpeg -i input.mp4 -vn -acodec pcm_s16le -ar 16000 -ac 1 output.wav
+./run_transcription.sh output.wav
 ```
 
 ### Logging

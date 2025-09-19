@@ -2,13 +2,14 @@
 
 import asyncio
 import logging
+import os
 from pathlib import Path
 from typing import Optional, AsyncGenerator, Dict, Any
 import json
 
 import torch
 from transformers import (
-    AutoModelForCausalLM,
+    AutoModelForImageTextToText,
     AutoTokenizer,
     AutoProcessor,
     BitsAndBytesConfig,
@@ -40,7 +41,7 @@ class GemmaModelManager:
     """Manages Gemma model downloading, loading, and inference."""
     
     def __init__(self):
-        self.model: Optional[AutoModelForCausalLM] = None
+        self.model: Optional[AutoModelForImageTextToText] = None
         self.processor: Optional[AutoProcessor] = None
         self.tokenizer: Optional[AutoTokenizer] = None
         self.device = ServiceConfig.DEFAULT_DEVICE
@@ -115,6 +116,17 @@ class GemmaModelManager:
                 
                 # Download in a thread to avoid blocking
                 loop = asyncio.get_event_loop()
+
+                # Get HuggingFace token from environment
+                hf_token = os.environ.get('HF_TOKEN') or os.environ.get('HUGGING_FACE_HUB_TOKEN')
+                if not hf_token:
+                    logger.warning("No HuggingFace token found. Set HF_TOKEN environment variable.")
+                    logger.warning("Gemma models require authentication. Please:")
+                    logger.warning("1. Create a HuggingFace account at https://huggingface.co")
+                    logger.warning("2. Accept the license at https://huggingface.co/google/gemma-3n-E2B-it")
+                    logger.warning("3. Create an access token at https://huggingface.co/settings/tokens")
+                    logger.warning("4. Set: export HF_TOKEN=your_token_here")
+
                 await loop.run_in_executor(
                     None,
                     lambda: snapshot_download(
@@ -123,6 +135,7 @@ class GemmaModelManager:
                         local_dir=ServiceConfig.get_model_path(),
                         local_dir_use_symlinks=False,
                         resume_download=True,
+                        token=hf_token,
                     )
                 )
                 
@@ -260,7 +273,7 @@ class GemmaModelManager:
                     for attempt_num, config in enumerate(load_attempts, 1):
                         try:
                             logger.info(f"Model load attempt {attempt_num}/{len(load_attempts)}...")
-                            self.model = AutoModelForCausalLM.from_pretrained(
+                            self.model = AutoModelForImageTextToText.from_pretrained(
                                 model_path,
                                 local_files_only=True,
                                 trust_remote_code=True,

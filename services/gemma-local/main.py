@@ -4,6 +4,7 @@ import asyncio
 import base64
 import json
 import logging
+import os
 import time
 import uuid
 from typing import Optional, List, Dict, Any, AsyncGenerator, Union, cast
@@ -29,12 +30,14 @@ from model_manager import model_manager
 from audio_processor import audio_processor
 from streaming import StreamGenerator
 
+
 # Configure logging
 logging.basicConfig(
     level=getattr(logging, ServiceConfig.LOG_LEVEL),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
 
 # Create FastAPI app
 app = FastAPI(
@@ -61,7 +64,7 @@ class ChatCompletionRequest(BaseModel):
     model: str
     messages: List[Dict[str, Any]]
     temperature: float = 0.7
-    max_tokens: Optional[int] = 1000
+    max_tokens: Optional[int] = 2000
     top_p: float = 0.95
     stream: bool = False
     presence_penalty: float = 0.0
@@ -174,7 +177,7 @@ async def chat_completion(request: ChatCompletionRequest):
             result = await audio_processor.process_audio_base64(
                 request.audio,
                 context_prompt,
-                use_chunking=False  # Disabled for better coherence
+                use_chunking=True  # Enable chunking for audio > 30s
             )
             
             # Handle both single audio and chunked audio
@@ -205,9 +208,9 @@ async def chat_completion(request: ChatCompletionRequest):
                 )
             else:
                 # Multi-chunk processing with context
-                transcription = await process_audio_chunks_with_context(
+                transcription = await process_audio_chunks_with_continuation(
                     chunks=audio_chunks,
-                    messages=messages,
+                    initial_messages=messages,
                     temperature=request.temperature
                 )
             
@@ -297,105 +300,168 @@ async def chat_completion(request: ChatCompletionRequest):
 async def pull_model(request: ModelPullRequest):
     """
     Download and prepare model with progress streaming.
-    
-    Similar to Ollama's model pull endpoint.
     """
-    try:
-        if request.stream:
-            # Streaming progress updates
-            async def generate():
-                async for progress in model_manager.download_model():
-                    # Sanitize error information before sending to client
-                    sanitized_progress = progress.copy()
-                    if "error" in sanitized_progress:
-                        sanitized_progress["error"] = "Model download failed."
-                    if sanitized_progress.get("status", "").startswith("Error:"):
-                        sanitized_progress["status"] = "Error: Model download failed."
-                    yield f"data: {json.dumps(sanitized_progress)}\n\n"
-                yield "data: [DONE]\n\n"
+    async def generate():
+        """Generator that yields SSE-formatted download progress."""
+        try:
+            # Send initial status
+            progress_event = {
+                "status": "pulling",
+                "digest": ServiceConfig.MODEL_ID,
+                "total": None,
+                "completed": 0
+            }
+            yield f"data: {json.dumps(progress_event)}\n\n"
             
-            return StreamingResponse(
-                generate(),
-                media_type="text/event-stream"
-            )
-        else:
-            # Non-streaming (wait for completion)
-            final_status = None
-            async for progress in model_manager.download_model():
-                final_status = progress
+            # Check if already cached
+            if model_manager.is_model_available():
+                progress_event = {
+                    "status": "success",
+                    "digest": ServiceConfig.MODEL_ID,
+                    "message": "Model already downloaded"
+                }
+                yield f"data: {json.dumps(progress_event)}\n\n"
+                return
             
-            # Sanitize final status before returning to client
-            if final_status and "error" in final_status:
-                final_status = final_status.copy()
-                final_status["error"] = "Model download failed."
-                if final_status.get("status", "").startswith("Error:"):
-                    final_status["status"] = "Error: Model download failed."
+            # Download model files
+            logger.info(f"Starting model download: {ServiceConfig.MODEL_ID}")
             
-            return final_status
+            try:
+                # Simulate download progress
+                from huggingface_hub import snapshot_download
+                
+                def progress_callback(downloaded, total):
+                    if total > 0:
+                        progress = int((downloaded / total) * 100)
+                        progress_event = {
+                            "status": "pulling",
+                            "digest": ServiceConfig.MODEL_ID,
+                            "total": total,
+                            "completed": downloaded,
+                            "percent": progress
+                        }
+                        # Note: This is simplified - actual implementation would need async handling
+                
+                # Get HuggingFace token
+                hf_token = os.environ.get('HF_TOKEN') or os.environ.get('HUGGING_FACE_HUB_TOKEN')
+
+                # Download model to the correct location
+                model_path = snapshot_download(
+                    repo_id=ServiceConfig.MODEL_ID,
+                    cache_dir=ServiceConfig.CACHE_DIR / "models",
+                    local_dir=ServiceConfig.get_model_path(),
+                    local_dir_use_symlinks=False,
+                    resume_download=True,
+                    token=hf_token
+                )
+                
+                # Send success message
+                progress_event = {
+                    "status": "success", 
+                    "digest": ServiceConfig.MODEL_ID,
+                    "message": f"Model downloaded successfully to {model_path}"
+                }
+                yield f"data: {json.dumps(progress_event)}\n\n"
+                
+            except Exception as e:
+                error_event = {
+                    "status": "error",
+                    "error": str(e)
+                }
+                yield f"data: {json.dumps(error_event)}\n\n"
+                
+        except Exception as e:
+            logger.error(f"Model pull error: {e}")
+            error_event = {
+                "status": "error",
+                "error": str(e)
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
     
-    except Exception as e:
-        logger.error(f"Model pull error: {e}")
-        logger.error(f"Full traceback:", exc_info=True)
-        raise HTTPException(status_code=500, detail="Model download failed.")
+    if request.stream:
+        return StreamingResponse(generate(), media_type="text/event-stream")
+    else:
+        # Non-streaming download
+        try:
+            if model_manager.is_model_available():
+                return {"status": "success", "message": "Model already downloaded"}
+            
+            from huggingface_hub import snapshot_download
+
+            # Get HuggingFace token
+            hf_token = os.environ.get('HF_TOKEN') or os.environ.get('HUGGING_FACE_HUB_TOKEN')
+
+            model_path = snapshot_download(
+                repo_id=ServiceConfig.MODEL_ID,
+                cache_dir=ServiceConfig.CACHE_DIR / "models",
+                local_dir=ServiceConfig.get_model_path(),
+                local_dir_use_symlinks=False,
+                resume_download=True,
+                token=hf_token
+            )
+            
+            return {
+                "status": "success",
+                "message": f"Model downloaded to {model_path}"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/v1/models")
-async def list_models() -> Dict[str, Any]:
-    """List available models and their status."""
-    model_info = await model_manager.get_model_info()
+@app.get("/v1/models", response_model=None)
+async def list_models():
+    """List available models (OpenAI-compatible)."""
+    models = []
+    
+    # Add current model if available
+    if model_manager.is_model_available():
+        models.append(ModelInfo(
+            id=ServiceConfig.MODEL_ID,
+            object="model",
+            created=int(time.time()),
+            owned_by="local",
+            capabilities={
+                "chat": True,
+                "audio": True,
+                "transcription": True,
+                "streaming": True
+            },
+            size_gb=ServiceConfig.MODEL_SIZE_GB.get(ServiceConfig.MODEL_VARIANT, None)
+        ).dict())
     
     return {
         "object": "list",
-        "data": [
-            ModelInfo(
-                id=model_info["model_id"],
-                created=int(time.time()),
-                capabilities={
-                    "transcription": True,
-                    "chat": True,
-                    "multimodal": model_info.get("supports_multimodal", False),
-                    "streaming": True
-                },
-                size_gb=model_info.get("size_gb")
-            )
-        ]
+        "data": models
     }
 
 
-@app.delete("/v1/models/{model_name}")
-async def delete_model(model_name: str) -> Dict[str, str]:
-    """Remove model from local storage."""
-    try:
-        # Unload model from memory
-        await model_manager.unload_model()
-        
-        # TODO: Implement file deletion
-        # For now, just unload from memory
-        
-        return {"message": f"Model {model_name} unloaded from memory"}
-    
-    except Exception as e:
-        logger.error(f"Model deletion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.post("/v1/models/load")
-async def load_model(background_tasks: BackgroundTasks) -> Dict[str, str]:
-    """Load model into memory (warm-up)."""
+async def load_model(background_tasks: BackgroundTasks):
+    """
+    Explicitly load model into memory.
+    """
     try:
         if model_manager.is_model_loaded():
-            return {"message": "Model already loaded"}
+            return {
+                "status": "already_loaded",
+                "message": f"Model {ServiceConfig.MODEL_ID} is already loaded",
+                "device": model_manager.device
+            }
         
         if not model_manager.is_model_available():
             raise HTTPException(
                 status_code=404,
-                detail="Model not downloaded. Use /v1/models/pull to download."
+                detail="Model not downloaded. Use /v1/models/pull to download first."
             )
         
         # Load model in background
         background_tasks.add_task(model_manager.load_model)
         
-        return {"message": "Model loading started"}
+        return {
+            "status": "loading",
+            "message": f"Loading model {ServiceConfig.MODEL_ID}...",
+            "device": model_manager.device
+        }
     
     except HTTPException:
         raise
@@ -415,24 +481,29 @@ async def generate_transcription(
 
 
 # Helper functions
-def build_chat_prompt(messages: List[Dict[str, Any]]) -> str:
-    """Build a prompt from chat messages."""
+def build_chat_prompt(messages: List[Dict[str, Any]], include_audio_token: bool = True) -> str:
+    """Build a prompt from chat messages with audio token support."""
     prompt_parts = []
-    
+
     for message in messages:
         role = message.get("role", "user")
         content = message.get("content", "")
-        
+
         if role == "system":
             prompt_parts.append(f"System: {content}")
         elif role == "user":
-            prompt_parts.append(f"User: {content}")
+            # Add audio token placeholder for Gemma 3N
+            if include_audio_token and "audio" in content.lower():
+                # Insert special audio token that Gemma 3N expects
+                prompt_parts.append(f"User: <audio>\n{content}")
+            else:
+                prompt_parts.append(f"User: {content}")
         elif role == "assistant":
             prompt_parts.append(f"Assistant: {content}")
-    
+
     # Add final prompt for assistant
     prompt_parts.append("Assistant:")
-    
+
     return "\n\n".join(prompt_parts)
 
 
@@ -543,41 +614,115 @@ async def generate_transcription_with_chat_context(
 ) -> str:
     """Generate transcription using chat context for better understanding."""
     try:
-        # Build chat prompt from messages
-        chat_prompt = build_chat_prompt(messages)
-        
-        logger.info(f"Chat-based transcription prompt: {chat_prompt[:200]}...")
-        
-        # Reshape audio to add batch dimension if needed
-        if audio_array.ndim == 1:
-            audio_array = audio_array.reshape(1, -1)
-        
-        # Process audio and text through the unified processor
-        inputs = model_manager.processor(
-            audio=audio_array,
-            text=chat_prompt,
-            sampling_rate=ServiceConfig.AUDIO_SAMPLE_RATE,
-            return_tensors="pt"
-        )
+        # Ensure model is loaded
+        if not model_manager.is_model_loaded():
+            logger.error("Model not loaded for chunk processing!")
+            await model_manager.load_model()
+            if not model_manager.is_model_loaded():
+                raise Exception("Failed to load model for chunk processing")
+
+        logger.info(f"Audio array shape: {audio_array.shape}, dtype: {audio_array.dtype}")
+
+        # Convert audio to float32 and ensure it's in the correct format
+        import numpy as np
+
+        # Ensure audio is float32 (Gemma 3N expects this)
+        if audio_array.dtype != np.float32:
+            audio_array = audio_array.astype(np.float32)
+
+        # Ensure audio is 1D
+        if audio_array.ndim == 2:
+            # If stereo, average both channels to create mono
+            audio_array = np.mean(audio_array, axis=0)
+        elif audio_array.ndim > 2:
+            # Flatten multi-dimensional arrays
+            audio_array = audio_array.flatten()
+
+        # Ensure it's 1D with proper shape
+        audio_array = np.squeeze(audio_array)
+        if audio_array.ndim != 1:
+            audio_array = audio_array.flatten()
+
+        # Normalize audio to [-1, 1] range as expected by Gemma 3N
+        max_val = np.abs(audio_array).max()
+        if max_val > 1.0:
+            audio_array = audio_array / max_val
+        elif max_val == 0:
+            # Handle silent audio
+            logger.warning("Audio appears to be silent (all zeros)")
+
+        # Ensure audio is not empty
+        if len(audio_array) == 0:
+            raise ValueError("Audio array is empty after preprocessing")
+
+        logger.info(f"Processed audio shape: {audio_array.shape}, dtype: {audio_array.dtype}, range: [{audio_array.min():.2f}, {audio_array.max():.2f}]")
+
+        # Use Lotti-style structured prompting for better transcription
+        # Create message structure with audio content matching Lotti's approach
+        formatted_messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "audio", "audio": audio_array},  # Pass numpy array directly
+                    {"type": "text", "text": "Transcribe the audio."}
+                ]
+            }
+        ]
+
+        logger.info("Using apply_chat_template with structured messages")
+
+        # Apply chat template to get proper inputs
+        try:
+            inputs = model_manager.processor.apply_chat_template(
+                formatted_messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_dict=True,
+                return_tensors="pt"
+            )
+            logger.info(f"✅ Chat template applied successfully")
+            logger.info(f"Input keys: {inputs.keys()}")
+
+        except Exception as template_error:
+            logger.error(f"Chat template error: {template_error}")
+            # Fallback to direct processor call if apply_chat_template fails
+            logger.info("Falling back to direct processor call")
+
+            inputs = model_manager.processor(
+                text="Transcribe this audio",
+                audio=audio_array,
+                sampling_rate=ServiceConfig.AUDIO_SAMPLE_RATE,
+                return_tensors="pt"
+            )
         
         # Move inputs to device
         inputs = {k: v.to(model_manager.device) if hasattr(v, 'to') else v for k, v in inputs.items()}
         
-        # Get optimized generation config
-        gen_config = ServiceConfig.get_generation_config("cpu_optimized")
+        # Get optimized generation config for transcription
+        gen_config = ServiceConfig.get_generation_config("transcription")
         gen_config.update({
             'pad_token_id': model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id,
             'eos_token_id': model_manager.tokenizer.eos_token_id,
             'temperature': temperature if temperature > 0 else 0.1,
         })
         
-        # Use inference mode for better performance
-        if model_manager.device == "cpu":
-            with torch.inference_mode():
-                outputs = model_manager.model.generate(**inputs, **gen_config)
-        else:
-            with torch.no_grad():
-                outputs = model_manager.model.generate(**inputs, **gen_config)
+        # Use appropriate inference mode based on device
+        try:
+            if model_manager.device == "cpu":
+                with torch.inference_mode():
+                    outputs = model_manager.model.generate(**inputs, **gen_config)
+            else:  # mps or cuda
+                with torch.no_grad():
+                    outputs = model_manager.model.generate(**inputs, **gen_config)
+        except Exception as e:
+            logger.error(f"Generation failed on {model_manager.device}: {e}")
+            # Fallback to simpler generation
+            outputs = model_manager.model.generate(
+                **inputs,
+                max_new_tokens=200,
+                do_sample=False,
+                pad_token_id=model_manager.tokenizer.eos_token_id
+            )
         
         # Decode the output, skipping the input tokens
         input_length = inputs['input_ids'].shape[1] if 'input_ids' in inputs else 0
@@ -585,10 +730,60 @@ async def generate_transcription_with_chat_context(
             outputs[0][input_length:],
             skip_special_tokens=True
         )
-        
+
         transcription = response.strip()
-        logger.info(f"Chat-based transcription result: {transcription}")
-        
+
+        # Whisper-like output cleaning - remove redundancy but keep full content
+        def clean_whisper_style(text: str) -> str:
+            """Clean transcription output to remove redundancy but preserve all content."""
+            # If text contains "Transcription:" markers, it means multiple attempts
+            if 'Transcription:' in text:
+                parts = text.split('Transcription:')
+                if len(parts) > 1:
+                    # Take the first actual transcription part
+                    text = parts[1].split('Text Transcription:')[0]
+                    text = text.split('\n')[0]  # Take first line of that part
+
+            # Stop at indicators that the model is adding meta-commentary
+            stop_indicators = [
+                'Speaker change',
+                'No fillers present',
+                'Clear formatting',
+                'This is a transcription',
+                'The transcription is',
+                'Here is the transcription',
+                "I'm sorry",
+                "I apologize",
+                "Please provide"
+            ]
+
+            for indicator in stop_indicators:
+                if indicator in text:
+                    text = text.split(indicator)[0]
+
+            # Remove common prefixes only if they exist
+            prefixes_to_remove = [
+                "Transcription: ",
+                "Text: ",
+                "Audio: "
+            ]
+            for prefix in prefixes_to_remove:
+                if text.startswith(prefix):
+                    text = text[len(prefix):]
+
+            return text.strip()
+
+        transcription = clean_whisper_style(transcription)
+
+        # Final safety check for reasonable length
+        max_reasonable_length = 2000  # ~1000 words max for 2-minute audio
+        if len(transcription) > max_reasonable_length:
+            transcription = transcription[:max_reasonable_length].strip()
+            logger.info(f"Truncated to reasonable length: {max_reasonable_length} chars")
+
+        logger.info(f"Final transcription result length: {len(transcription)} chars")
+        logger.info(f"Final transcription preview: {transcription[:200]}...")
+
         return transcription
     
     except Exception as e:
@@ -597,49 +792,94 @@ async def generate_transcription_with_chat_context(
         raise
 
 
-async def process_audio_chunks_with_context(
+async def process_audio_chunks_with_continuation(
     chunks: List[np.ndarray],
-    messages: List[Dict[str, Any]],
+    initial_messages: List[Dict[str, Any]],
     temperature: float
 ) -> str:
-    """Process multiple audio chunks with chat context."""
+    """
+    Process multiple audio chunks with smart continuation.
+    Each chunk gets the previous transcription as context to continue from.
+    """
     transcriptions = []
+    previous_text = ""
     
-    logger.info(f"Processing {len(chunks)} audio chunks with context")
+    logger.info(f"Processing {len(chunks)} audio chunks with continuation context")
+
+    # Process all chunks for full transcription
+    chunks_to_process = chunks
+    logger.info(f"Processing all {len(chunks_to_process)} chunks for complete transcription")
+
+    # Log chunk durations for debugging
+    for i, chunk in enumerate(chunks_to_process):
+        chunk_duration = len(chunk) / 16000  # assuming 16kHz sample rate
+        logger.info(f"Chunk {i+1}: {chunk_duration:.1f}s ({len(chunk)} samples)")
     
-    for i, chunk in enumerate(chunks):
+    for i, chunk in enumerate(chunks_to_process):
         try:
-            logger.info(f"Processing chunk {i+1}/{len(chunks)}")
+            logger.info(f"Processing chunk {i+1}/{len(chunks_to_process)}")
             
-            # For chunks after the first, use simpler prompt
-            if i > 0:
-                # Simpler continuation message without including previous text
-                chunk_messages = [
-                    {"role": "system", "content": "You are a helpful assistant that transcribes audio accurately."},
-                    {"role": "user", "content": "Transcribe this audio segment:"}
-                ]
-            else:
-                chunk_messages = messages
-            
+            # Use simple prompt for all chunks
+            chunk_messages = [
+                {"role": "system", "content": "You are a helpful assistant that transcribes audio accurately."},
+                {"role": "user", "content": "Transcribe this audio:"}
+            ]
+
             transcription = await generate_transcription_with_chat_context(
                 messages=chunk_messages,
                 audio_array=chunk,
                 temperature=temperature
             )
             
-            # Clean up transcription to avoid repetition markers
+            # Clean up transcription
             cleaned = transcription.strip()
-            # Remove repetition markers like ---|---|---
-            cleaned = cleaned.replace('---|', '').replace('|---', '')
             
-            if cleaned and not cleaned.startswith('Previous transcription:'):
+            # Remove any duplicate text from the beginning that might overlap with previous
+            if i > 0 and previous_text:
+                # Check for overlap at the boundary (last 50 chars of previous with first 50 of current)
+                overlap_window = min(50, len(previous_text), len(cleaned))
+                if overlap_window > 10:
+                    last_prev = previous_text[-overlap_window:].lower()
+                    first_curr = cleaned[:overlap_window].lower()
+                    
+                    # Find overlap
+                    for j in range(overlap_window, 10, -1):
+                        if last_prev[-j:] == first_curr[:j]:
+                            # Remove the overlapping part from current
+                            cleaned = cleaned[j:].strip()
+                            logger.info(f"Removed {j} overlapping characters from chunk {i+1}")
+                            break
+            
+            if cleaned:
                 transcriptions.append(cleaned)
+                previous_text = " ".join(transcriptions)  # Update context with all text so far
                 logger.info(f"Chunk {i+1} transcribed: {cleaned[:100]}...")
         
         except Exception as e:
-            logger.warning(f"Failed to process chunk {i+1} with context: {e}")
+            logger.error(f"Failed to process chunk {i+1}: {e}")
+            logger.error(f"Chunk {i+1} error details:", exc_info=True)
+            # Add placeholder to maintain chunk order
+            transcriptions.append(f"[Chunk {i+1} failed to process]")
+            # Continue with other chunks but don't update previous_text
     
-    return " ".join(transcriptions)
+    # Join all transcriptions with proper spacing
+    final_transcription = " ".join(transcriptions)
+    
+    # Final cleanup - remove any remaining artifacts
+    final_transcription = final_transcription.replace('---|', '').replace('|---', '')
+    final_transcription = final_transcription.replace('Previous transcription:', '')
+    final_transcription = final_transcription.replace('Continue transcribing:', '')
+    
+    return final_transcription
+
+
+async def process_audio_chunks_with_context(
+    chunks: List[np.ndarray],
+    messages: List[Dict[str, Any]],
+    temperature: float
+) -> str:
+    """Legacy function - redirects to continuation-based processing."""
+    return await process_audio_chunks_with_continuation(chunks, messages, temperature)
 
 
 async def generate_text(
