@@ -144,11 +144,7 @@ if [ ! -d "$FLATPAK_DIR/flatpak-flutter" ]; then
     git clone https://github.com/TheAppgineer/flatpak-flutter.git
 fi
 
-# Always apply the local patch to flatpak-flutter (safe no-op if already applied)
-if [ -x "$FLATPAK_DIR/flatpak-flutter-patch.sh" ]; then
-    print_status "Applying local flatpak-flutter patch..."
-    bash "$FLATPAK_DIR/flatpak-flutter-patch.sh" "$FLATPAK_DIR/flatpak-flutter" || print_warning "flatpak-flutter patch may already be applied"
-fi
+# Using upstream flatpak-flutter directly; no local patching required
 
 # Step 4: Run flatpak-flutter in work directory
 print_status "Running flatpak-flutter to generate offline sources..."
