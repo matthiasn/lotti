@@ -33,7 +33,11 @@ cd flatpak
 flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.source.yml
 ```
 
-Note: The `update_manifest_commit.sh` script replaces `COMMIT_PLACEHOLDER` in the manifest with the current git HEAD.
+Note:
+- Always run `./update_manifest_commit.sh` before building — it pins the manifest by replacing `commit: COMMIT_PLACEHOLDER` with your current git HEAD (or a commit you pass in).
+- The script includes a guard: if it detects an empty `commit:` field or cannot find `COMMIT_PLACEHOLDER`, it will exit and print a clear message so you get immediate feedback.
+- The build tooling also fails fast if any `COMMIT_PLACEHOLDER` or `branch:` entries remain in the final manifest used for submission.
+
 You can also specify a different commit: `./update_manifest_commit.sh <commit-hash>`
 
 ### Running the App

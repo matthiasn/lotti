@@ -5,6 +5,7 @@ import 'package:dbus/dbus.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/portals/portal_service.dart';
+import 'package:path/path.dart' as p;
 
 class ScreenshotPortalConstants {
   const ScreenshotPortalConstants._();
@@ -137,7 +138,9 @@ class ScreenshotPortalService extends PortalService {
             domain: 'ScreenshotPortalService',
             subDomain: 'signal_error',
           );
-          completer.completeError(e);
+          if (!completer.isCompleted) {
+            completer.completeError(e);
+          }
         }
       });
 
@@ -154,18 +157,23 @@ class ScreenshotPortalService extends PortalService {
         if (screenshotPath != null && directory != null && filename != null) {
           try {
             final sourceFile = File(screenshotPath);
-            final targetPath = '$directory$filename';
+            final targetPath = p.join(directory, filename);
 
-            // Ensure target directory exists
+            // Ensure target directory exists (async)
             final targetDir = Directory(directory);
-            if (!targetDir.existsSync()) {
-              targetDir.createSync(recursive: true);
+            // ignore: avoid_slow_async_io
+            if (!await targetDir.exists()) {
+              await targetDir.create(recursive: true);
             }
 
-            // Copy the file to the expected location
-            await sourceFile.copy(targetPath);
+            // Try fast move first, fall back to copy if rename across devices fails
+            try {
+              await sourceFile.rename(targetPath);
+            } catch (e) {
+              await sourceFile.copy(targetPath);
+            }
 
-            // Return the target path where we copied the file
+            // Return the target path where we moved/copied the file
             return targetPath;
           } catch (e, st) {
             getIt<LoggingService>().captureException(
@@ -174,7 +182,7 @@ class ScreenshotPortalService extends PortalService {
               subDomain: 'file_copy_error',
               stackTrace: st,
             );
-            // If copy fails, return the original path
+            // If move/copy fails, return the original path
             return screenshotPath;
           }
         }

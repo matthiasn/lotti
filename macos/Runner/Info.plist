@@ -45,6 +45,8 @@
 	<string>MainMenu</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record audio notes</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Allow camera access to attach photos to journal entries</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Import photos and videos</string>
 	<key>NSPrincipalClass</key>
