@@ -37,6 +37,11 @@ FLATPAK_DIR="$LOTTI_ROOT/flatpak"
 WORK_DIR="$FLATPAK_DIR/flathub-build"
 OUTPUT_DIR="$WORK_DIR/output"
 
+# Behavior toggles (can be overridden via env)
+: "${CLEAN_AFTER_GEN:=true}"          # Remove .flatpak-builder after generation
+: "${PIN_COMMIT:=true}"               # Pin app source to exact commit in output manifest
+: "${USE_OFFLINE_FLUTTER:=true}"      # Rewrite manifest to consume generated Flutter JSON
+
 # Version configuration
 if [ -z "${LOTTI_VERSION:-}" ]; then
     # Extract version from pubspec.yaml (e.g., "0.9.665+3266" -> "0.9.665")
@@ -263,7 +268,80 @@ if [ -d "$FLATPAK_DIR/patches" ]; then
     cp -r "$FLATPAK_DIR/patches" "$OUTPUT_DIR/"
 fi
 
-# Step 7: Test build (optional)
+# Step 7: Post-process output manifest (pin commit, use offline Flutter JSON)
+print_status "Post-processing output manifest..."
+
+OUT_MANIFEST="$OUTPUT_DIR/com.matthiasn.lotti.yml"
+if [ -f "$OUT_MANIFEST" ]; then
+  # Pin app source to commit
+  if [ "$PIN_COMMIT" = "true" ]; then
+    APP_COMMIT=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
+    print_info "Pinning app source to commit: $APP_COMMIT"
+    awk -v C="$APP_COMMIT" '
+      BEGIN { in_lotti=0; in_src=0; in_git=0 }
+      /^\s*- name: lotti\s*$/ { in_lotti=1 }
+      in_lotti && /^\s*- name: [^l]/ { in_lotti=0 }
+      {
+        if (in_lotti && /^\s{4}sources:\s*$/) { in_src=1 }
+        if (in_src && /^\s{6}- /) { in_git=0 }
+        if (in_src && /^\s{6}-\s+type:\s+git\s*$/) { in_git=1 }
+        if (in_git && /^\s{8}url:\s+https:\/\/github.com\/matthiasn\/lotti\s*$/) { url_ok=1 }
+        if (in_git && url_ok && /^\s{8}branch:/) { sub(/branch:.*/, "commit: " C) }
+        if (in_git && url_ok && /^\s{8}commit:\s*COMMIT_PLACEHOLDER/) { sub(/commit:.*/, "commit: " C) }
+        print $0
+      }
+    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+  fi
+
+  # Use offline Flutter SDK JSON instead of separate module
+  if [ "$USE_OFFLINE_FLUTTER" = "true" ]; then
+    # Remove flutter-sdk module block entirely
+    awk '
+      BEGIN{skip=0}
+      /^\s*- name: flutter-sdk\s*$/ {skip=1}
+      skip && /^\s*- name: / {skip=0}
+      !skip {print}
+    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+
+    # Insert offline JSON includes into lotti module sources
+    # Determine available JSONs relative to output dir
+    FLUTTER_JSON=$(ls "$OUTPUT_DIR"/flutter-sdk-*.json 2>/dev/null | xargs -n1 basename | head -n1)
+    PUBSPEC_JSON=$( [ -f "$OUTPUT_DIR/pubspec-sources.json" ] && echo pubspec-sources.json )
+    CARGO_JSON=$( [ -f "$OUTPUT_DIR/cargo-sources.json" ] && echo cargo-sources.json )
+    RUSTUP_JSON=$(ls "$OUTPUT_DIR"/rustup-*.json 2>/dev/null | xargs -n1 basename | head -n1)
+
+    print_info "Adding offline sources: ${FLUTTER_JSON:-none} ${PUBSPEC_JSON:-} ${CARGO_JSON:-} ${RUSTUP_JSON:-}"
+
+    awk -v FJ="$FLUTTER_JSON" -v PJ="$PUBSPEC_JSON" -v CJ="$CARGO_JSON" -v RJ="$RUSTUP_JSON" '
+      BEGIN { in_lotti=0; inserted=0 }
+      /^\s*- name: lotti\s*$/ { in_lotti=1 }
+      in_lotti && /^\s*- name: [^l]/ { in_lotti=0 }
+      {
+        print $0
+        if (in_lotti && /^\s{4}sources:\s*$/ && !inserted) {
+          if (FJ != "") { print "      - type: file\n        path: " FJ }
+          if (PJ != "") { print "      - type: file\n        path: " PJ }
+          if (CJ != "") { print "      - type: file\n        path: " CJ }
+          if (RJ != "") { print "      - type: file\n        path: " RJ }
+          inserted=1
+        }
+      }
+    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+
+    # Adjust build-commands to use extracted SDK in module dir rather than /app/flutter
+    sed -i 's|cp -r /app/flutter /run/build/lotti/flutter_sdk|cp -r flutter /run/build/lotti/flutter_sdk|' "$OUT_MANIFEST"
+  fi
+else
+  print_warning "Output manifest not found at $OUT_MANIFEST; skipping post-processing"
+fi
+
+# Optionally clean the work .flatpak-builder dir to avoid local build conflicts
+if [ "$CLEAN_AFTER_GEN" = "true" ]; then
+  print_status "Cleaning work build directory (.flatpak-builder)..."
+  rm -rf "$WORK_DIR/.flatpak-builder" || true
+fi
+
+# Step 8: Test build (optional)
 if [ "${TEST_BUILD:-false}" == "true" ]; then
     print_status "Testing build..."
     cd "$OUTPUT_DIR"
@@ -275,7 +353,7 @@ if [ "${TEST_BUILD:-false}" == "true" ]; then
     fi
 fi
 
-# Step 8: Final report
+# Step 9: Final report
 print_status "Preparation complete!"
 echo ""
 print_info "Generated files are in: $OUTPUT_DIR"
