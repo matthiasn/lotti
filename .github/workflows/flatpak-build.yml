@@ -38,10 +38,10 @@ jobs:
       run: |
         # Update the manifest commit placeholder with the current SHA
         cd flatpak
-        ./update_manifest_commit.sh ${{ github.sha }}
+        ./update_manifest_commit.sh
 
         # Show the updated manifest
-        echo "Manifest updated with commit ${{ github.sha }}:"
+        echo "Manifest updated with commit:"
         grep -A2 "url: https://github.com/matthiasn/lotti" com.matthiasn.lotti.source.yml
 
     - name: Build Flatpak
