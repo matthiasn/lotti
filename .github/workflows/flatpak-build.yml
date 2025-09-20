@@ -47,7 +47,7 @@ jobs:
     - name: Build Flatpak
       run: |
         cd flatpak
-        flatpak-builder --force-clean --repo=repo build-dir com.matthiasn.lotti.source.yml
+        flatpak-builder --verbose --force-clean --repo=repo build-dir com.matthiasn.lotti.source.yml
 
     - name: Create Flatpak bundle
       run: |

@@ -126,6 +126,7 @@ modules:
         PATH: /run/build/lotti/flutter_sdk/bin:/run/build/lotti/.cargo/bin:/usr/lib/sdk/llvm20/bin:/usr/bin:/bin
         CARGO_HOME: /run/build/lotti/.cargo
         RUSTUP_HOME: /run/build/lotti/.cargo
+        PKG_CONFIG_PATH: /app/lib/pkgconfig:/app/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/lib64/pkgconfig
     build-commands:
       # Copy Flutter SDK to writable location
       - echo "Setting up Flutter SDK..."
@@ -142,6 +143,11 @@ modules:
       - /run/build/lotti/flutter_sdk/bin/flutter config --no-analytics --no-cli-animations
       # Get dependencies and build
       - /run/build/lotti/flutter_sdk/bin/flutter pub get
+      # Debug: Check if libsecret is available
+      - echo "Checking for libsecret installation..."
+      - pkg-config --modversion libsecret-1 || echo "libsecret-1 not found via pkg-config"
+      - ls -la /app/lib/pkgconfig/ | grep secret || echo "No libsecret pkgconfig files in /app/lib/pkgconfig/"
+      - export CMAKE_PREFIX_PATH=/app:$CMAKE_PREFIX_PATH
       - /run/build/lotti/flutter_sdk/bin/flutter build linux --release --verbose
       # Install the built app
       - echo "Installing Flutter bundle..."
