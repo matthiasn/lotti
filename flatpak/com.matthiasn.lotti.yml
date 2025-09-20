@@ -135,7 +135,7 @@ modules:
       - /run/build/lotti/flutter_sdk/bin/flutter config --no-analytics --no-cli-animations
       # Get dependencies and build
       - /run/build/lotti/flutter_sdk/bin/flutter pub get
-      - /run/build/lotti/flutter_sdk/bin/flutter build linux --release
+      - /run/build/lotti/flutter_sdk/bin/flutter build linux --release --verbose
       # Install the built app
       - echo "Installing Flutter bundle..."
       - cp -r build/linux/x64/release/bundle/* /app/

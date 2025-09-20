@@ -54,7 +54,7 @@ Before building the Flatpak, you need to prepare the Flutter bundle:
    ```bash
    sudo apt install flatpak flatpak-builder
    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-   flatpak install org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
+   flatpak install org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.freedesktop.Sdk.Extension.llvm20 org.freedesktop.Sdk.Extension.rust-stable
    ```
 
 2Build and install:
