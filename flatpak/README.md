@@ -69,12 +69,12 @@ The Flathub build requires all dependencies to be available offline. We use `fla
    git clone https://github.com/TheAppgineer/flatpak-flutter.git
    ```
 
-2. **Ensure commits are pushed**:
+2. **Ensure your branch is pushed**:
    ```bash
    git push origin <your-branch>
    ```
 
-   **Important**: All commits must be pushed to GitHub before running the script, as flatpak-flutter needs to clone from the remote repository.
+   **Important**: Your branch must be pushed to GitHub before running the script, as flatpak-flutter needs to clone from the remote repository.
 
 3. **Run the preparation script**:
    ```bash
@@ -84,7 +84,7 @@ The Flathub build requires all dependencies to be available offline. We use `fla
 
    The script automatically:
    - Extracts version from `pubspec.yaml` (e.g., `0.9.665+3266` → `0.9.665`)
-   - Uses the current git HEAD commit (must be pushed)
+   - Uses the current git branch (must be pushed)
    - Sets release date to today
 
    Or override with custom version/date:

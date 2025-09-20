@@ -55,22 +55,24 @@ if [ -z "${LOTTI_RELEASE_DATE:-}" ]; then
     LOTTI_RELEASE_DATE=$(date +%Y-%m-%d)
 fi
 
-# Get the current HEAD commit
-COMMIT_HASH=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
+# Get the current branch
+CURRENT_BRANCH=$(cd "$LOTTI_ROOT" && git rev-parse --abbrev-ref HEAD)
 
-# Verify commit exists on remote (required for flatpak-flutter)
-if ! git ls-remote origin "$COMMIT_HASH" > /dev/null 2>&1; then
-    print_error "Current commit $COMMIT_HASH not found on remote"
-    print_info "Please push your changes first: git push origin $(git rev-parse --abbrev-ref HEAD)"
+# Verify branch exists on remote (required for flatpak-flutter)
+if ! git ls-remote origin "refs/heads/$CURRENT_BRANCH" > /dev/null 2>&1; then
+    print_error "Branch $CURRENT_BRANCH not found on remote"
+    print_info "Please push your branch first: git push origin $CURRENT_BRANCH"
     exit 1
 fi
+
+print_info "Using branch: $CURRENT_BRANCH"
 
 echo "=========================================="
 echo "   Flathub Submission Preparation Script"
 echo "=========================================="
 echo "Version: ${LOTTI_VERSION}"
 echo "Release Date: ${LOTTI_RELEASE_DATE}"
-echo "Commit: ${COMMIT_HASH}"
+echo "Branch: ${CURRENT_BRANCH}"
 echo ""
 
 # Step 1: Clean and create work directory
@@ -83,8 +85,8 @@ mkdir -p "$OUTPUT_DIR"
 print_status "Preparing source manifest..."
 cp "$FLATPAK_DIR/com.matthiasn.lotti.source.yml" "$WORK_DIR/com.matthiasn.lotti.yml"
 
-# Replace COMMIT_PLACEHOLDER with actual commit
-sed -i "s/COMMIT_PLACEHOLDER/$COMMIT_HASH/" "$WORK_DIR/com.matthiasn.lotti.yml"
+# Replace commit with branch for better flatpak-flutter compatibility
+sed -i "s|commit: COMMIT_PLACEHOLDER|branch: $CURRENT_BRANCH|" "$WORK_DIR/com.matthiasn.lotti.yml"
 
 # Step 3: Check for flatpak-flutter
 if [ ! -d "$FLATPAK_DIR/flatpak-flutter" ]; then
