@@ -111,7 +111,7 @@ modules:
     sources:
       - type: archive
         url: https://github.com/resurrecting-open-source-projects/scrot/releases/download/1.10/scrot-1.10.tar.gz
-        sha256: a84ddb36ab5d88584d8b15e65e6a5bd2447b4ef33e2b6ea5e87e24a5e0f2ce5f
+        sha256: d3fb2fb962c1921030a442448afb1994d77d40192868da1b4cdeade0066bf36f
   - name: flutter-sdk
     buildsystem: simple
     build-options:
