@@ -106,13 +106,17 @@ modules:
       build-args:
         - --share=network
     build-commands:
-      # Clone Flutter SDK from Git (pinned to 3.35.4)
-      - git clone https://github.com/flutter/flutter.git -b 3.35.4 --depth 1 /app/flutter
+      # Move Flutter SDK to correct location
+      - mv flutter /app/flutter
       # Precache Flutter artifacts to ensure all required binaries are downloaded
       - export PATH=/app/flutter/bin:$PATH
       - /app/flutter/bin/flutter --version
       - /app/flutter/bin/flutter precache --linux
-    sources: []
+    sources:
+      - type: git
+        url: https://github.com/flutter/flutter.git
+        tag: 3.35.4
+        dest: flutter
   - name: lotti
     buildsystem: simple
     build-options:

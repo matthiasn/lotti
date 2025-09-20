@@ -55,20 +55,14 @@ if [ -z "${LOTTI_RELEASE_DATE:-}" ]; then
     LOTTI_RELEASE_DATE=$(date +%Y-%m-%d)
 fi
 
-# Get the current HEAD commit (not based on version tag)
+# Get the current HEAD commit
 COMMIT_HASH=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
 
-# Check if commit exists on remote
+# Verify commit exists on remote (required for flatpak-flutter)
 if ! git ls-remote origin "$COMMIT_HASH" > /dev/null 2>&1; then
-    print_warning "Current commit $COMMIT_HASH not found on remote"
-    print_info "Using latest remote commit from current branch instead"
-    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-    COMMIT_HASH=$(git ls-remote origin "refs/heads/$CURRENT_BRANCH" | cut -f1)
-    if [ -z "$COMMIT_HASH" ]; then
-        print_error "Could not find remote commit. Please push your changes first."
-        exit 1
-    fi
-    print_info "Using remote commit: $COMMIT_HASH"
+    print_error "Current commit $COMMIT_HASH not found on remote"
+    print_info "Please push your changes first: git push origin $(git rev-parse --abbrev-ref HEAD)"
+    exit 1
 fi
 
 echo "=========================================="
@@ -89,19 +83,8 @@ mkdir -p "$OUTPUT_DIR"
 print_status "Preparing source manifest..."
 cp "$FLATPAK_DIR/com.matthiasn.lotti.source.yml" "$WORK_DIR/com.matthiasn.lotti.yml"
 
-# For local testing, we can use a directory source instead of git
-if [ "${USE_LOCAL_SOURCE:-false}" == "true" ]; then
-    print_info "Using local directory source instead of git"
-    # Replace the git source with a local directory source
-    sed -i '/- type: git/,/commit: COMMIT_PLACEHOLDER/{
-        s|type: git|type: dir|
-        s|url: https://github.com/matthiasn/lotti|path: '"$LOTTI_ROOT"'|
-        /commit:/d
-    }' "$WORK_DIR/com.matthiasn.lotti.yml"
-else
-    # Replace COMMIT_PLACEHOLDER with actual commit
-    sed -i "s/COMMIT_PLACEHOLDER/$COMMIT_HASH/" "$WORK_DIR/com.matthiasn.lotti.yml"
-fi
+# Replace COMMIT_PLACEHOLDER with actual commit
+sed -i "s/COMMIT_PLACEHOLDER/$COMMIT_HASH/" "$WORK_DIR/com.matthiasn.lotti.yml"
 
 # Step 3: Check for flatpak-flutter
 if [ ! -d "$FLATPAK_DIR/flatpak-flutter" ]; then
