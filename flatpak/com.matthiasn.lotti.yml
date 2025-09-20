@@ -125,11 +125,19 @@ modules:
         FLUTTER_ROOT: /run/build/lotti/flutter_sdk
         PATH: /run/build/lotti/flutter_sdk/bin:/usr/lib/sdk/llvm20/bin:/usr/lib/sdk/rust-stable/bin:/usr/bin:/bin
         CARGO_HOME: /run/build/lotti/.cargo
+        RUSTUP_HOME: /usr/lib/sdk/rust-stable
+        RUST_TARGET: aarch64-unknown-linux-gnu
     build-commands:
       # Copy Flutter SDK to writable location
       - echo "Setting up Flutter SDK..."
       - cp -r /app/flutter /run/build/lotti/flutter_sdk
       - chmod -R u+w /run/build/lotti/flutter_sdk
+      # Setup Rust environment
+      - echo "Setting up Rust environment..."
+      - which cargo || echo "cargo not found"
+      - which rustc || echo "rustc not found"
+      - cargo --version || echo "cargo version check failed"
+      - rustc --version || echo "rustc version check failed"
       # Configure Flutter
       - echo "Building Lotti from source..."
       - /run/build/lotti/flutter_sdk/bin/flutter config --no-analytics --no-cli-animations
