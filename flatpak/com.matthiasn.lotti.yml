@@ -2,6 +2,9 @@ app-id: com.matthiasn.lotti
 runtime: org.freedesktop.Platform
 runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.llvm20
+  - org.freedesktop.Sdk.Extension.rust-stable
 add-extensions:
   org.freedesktop.Platform.ffmpeg-full:
     directory: lib/ffmpeg
@@ -115,10 +118,13 @@ modules:
     build-options:
       build-args:
         - --share=network
+      append-path: /usr/lib/sdk/llvm20/bin:/usr/lib/sdk/rust-stable/bin
+      prepend-ld-library-path: /usr/lib/sdk/llvm20/lib
       env:
         PUB_CACHE: /run/build/lotti/.pub-cache
         FLUTTER_ROOT: /run/build/lotti/flutter_sdk
-        PATH: /run/build/lotti/flutter_sdk/bin:/usr/bin:/bin
+        PATH: /run/build/lotti/flutter_sdk/bin:/usr/lib/sdk/llvm20/bin:/usr/lib/sdk/rust-stable/bin:/usr/bin:/bin
+        CARGO_HOME: /run/build/lotti/.cargo
     build-commands:
       # Copy Flutter SDK to writable location
       - echo "Setting up Flutter SDK..."
