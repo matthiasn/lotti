@@ -118,26 +118,25 @@ modules:
     build-options:
       build-args:
         - --share=network
-      append-path: /usr/lib/sdk/llvm20/bin:/usr/lib/sdk/rust-stable/bin
+      append-path: /usr/lib/sdk/llvm20/bin
       prepend-ld-library-path: /usr/lib/sdk/llvm20/lib
       env:
         PUB_CACHE: /run/build/lotti/.pub-cache
         FLUTTER_ROOT: /run/build/lotti/flutter_sdk
-        PATH: /run/build/lotti/flutter_sdk/bin:/usr/lib/sdk/llvm20/bin:/usr/lib/sdk/rust-stable/bin:/usr/bin:/bin
+        PATH: /run/build/lotti/flutter_sdk/bin:/run/build/lotti/.cargo/bin:/usr/lib/sdk/llvm20/bin:/usr/bin:/bin
         CARGO_HOME: /run/build/lotti/.cargo
-        RUSTUP_HOME: /usr/lib/sdk/rust-stable
-        RUST_TARGET: aarch64-unknown-linux-gnu
+        RUSTUP_HOME: /run/build/lotti/.cargo
     build-commands:
       # Copy Flutter SDK to writable location
       - echo "Setting up Flutter SDK..."
       - cp -r /app/flutter /run/build/lotti/flutter_sdk
       - chmod -R u+w /run/build/lotti/flutter_sdk
-      # Setup Rust environment
-      - echo "Setting up Rust environment..."
-      - which cargo || echo "cargo not found"
-      - which rustc || echo "rustc not found"
-      - cargo --version || echo "cargo version check failed"
-      - rustc --version || echo "rustc version check failed"
+      # Install Rust using rustup
+      - echo "Installing Rust..."
+      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+      - export PATH="$HOME/.cargo/bin:$PATH"
+      - rustc --version
+      - cargo --version
       # Configure Flutter
       - echo "Building Lotti from source..."
       - /run/build/lotti/flutter_sdk/bin/flutter config --no-analytics --no-cli-animations
