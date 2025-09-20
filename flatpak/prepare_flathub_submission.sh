@@ -242,14 +242,19 @@ if [ -f "$FLATPAK_DIR/com.matthiasn.lotti.metainfo.xml" ]; then
     sed -e "s|{{LOTTI_VERSION}}|${LOTTI_VERSION}|g" \
         -e "s|{{LOTTI_RELEASE_DATE}}|${LOTTI_RELEASE_DATE}|g" \
         "$FLATPAK_DIR/com.matthiasn.lotti.metainfo.xml" > "$OUTPUT_DIR/com.matthiasn.lotti.metainfo.xml"
+    # Also place processed metainfo in work dir so local builds from WORK_DIR succeed
+    cp "$OUTPUT_DIR/com.matthiasn.lotti.metainfo.xml" "$WORK_DIR/com.matthiasn.lotti.metainfo.xml"
 fi
 
+# Desktop file to both output and work dir
 cp "$FLATPAK_DIR/com.matthiasn.lotti.desktop" "$OUTPUT_DIR/" 2>/dev/null || print_warning "No desktop file found"
+cp "$FLATPAK_DIR/com.matthiasn.lotti.desktop" "$WORK_DIR/" 2>/dev/null || true
 
 # Copy icon files
 for icon in "$FLATPAK_DIR"/app_icon_*.png; do
     if [ -f "$icon" ]; then
         cp "$icon" "$OUTPUT_DIR/"
+        cp "$icon" "$WORK_DIR/"
     fi
 done
 
