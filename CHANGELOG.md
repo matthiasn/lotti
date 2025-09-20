@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.665] - 2025-09-17
+### Changed:
+- Update app identifier to use with different Apple developer account
+
 ## [0.9.664] - 2025-09-17
 ### Changed:
 - Upgraded Flutter to version 3.35.4

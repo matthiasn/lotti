@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.matthiasnehlsen.lotti</id>
+  <id>com.matthiasn.lotti</id>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <name>Lotti</name>
@@ -22,8 +22,8 @@
   <url type="homepage">https://github.com/matthiasn/lotti</url>
   <url type="bugtracker">https://github.com/matthiasn/lotti/issues</url>
   <url type="help">https://github.com/matthiasn/lotti</url>
-  <launchable type="desktop-id">com.matthiasnehlsen.lotti.desktop</launchable>
-  <icon type="stock">com.matthiasnehlsen.lotti</icon>
+  <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
+  <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
     <release version="{{LOTTI_VERSION}}" date="{{LOTTI_RELEASE_DATE}}">
       <description>

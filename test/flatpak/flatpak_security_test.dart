@@ -68,16 +68,16 @@ void main() {
       });
 
       test('ensures app data is properly isolated', () {
-        // In Flatpak, app data should be in ~/.var/app/com.matthiasnehlsen.lotti/
+        // In Flatpak, app data should be in ~/.var/app/com.matthiasn.lotti/
         if (PortalService.isRunningInFlatpak) {
           final homeDir = Platform.environment['HOME'];
           if (homeDir != null) {
-            final appDataPath = '$homeDir/.var/app/com.matthiasnehlsen.lotti';
+            final appDataPath = '$homeDir/.var/app/com.matthiasn.lotti';
 
             // We can't directly test existence without being in Flatpak,
             // but we can verify the path structure
             expect(appDataPath, contains('.var/app'));
-            expect(appDataPath, contains('com.matthiasnehlsen.lotti'));
+            expect(appDataPath, contains('com.matthiasn.lotti'));
           }
         }
       });

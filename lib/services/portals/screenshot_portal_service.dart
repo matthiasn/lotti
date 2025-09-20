@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dbus/dbus.dart';
 import 'package:lotti/get_it.dart';
@@ -90,9 +91,19 @@ class ScreenshotPortalService extends PortalService {
             if (code == 0) {
               // Success - extract the URI from results
               final uriValue = results[const DBusString('uri')];
-              if (uriValue is DBusString) {
-                final uri = uriValue.asString();
 
+              // The value might be a DBusVariant containing a DBusString
+              String? uri;
+              if (uriValue is DBusVariant) {
+                final innerValue = uriValue.value;
+                if (innerValue is DBusString) {
+                  uri = innerValue.value;
+                }
+              } else if (uriValue is DBusString) {
+                uri = uriValue.value;
+              }
+
+              if (uri != null) {
                 // Convert file:// URI to local file system path
                 if (uri.startsWith('file://')) {
                   final path = Uri.parse(uri).toFilePath();
@@ -105,12 +116,27 @@ class ScreenshotPortalService extends PortalService {
               }
             } else {
               // Non-zero code indicates failure
+              // Code 1 = User cancelled, Code 2 = Other error
+              final errorMessage = code == 1
+                  ? 'Screenshot cancelled by user'
+                  : 'Screenshot portal returned error code: $code';
+
+              getIt<LoggingService>().captureException(
+                errorMessage,
+                domain: 'ScreenshotPortalService',
+                subDomain: 'portal_error',
+              );
               completer.complete(null);
             }
           } else {
             completer.complete(null);
           }
         } catch (e) {
+          getIt<LoggingService>().captureException(
+            e,
+            domain: 'ScreenshotPortalService',
+            subDomain: 'signal_error',
+          );
           completer.completeError(e);
         }
       });
@@ -123,6 +149,35 @@ class ScreenshotPortalService extends PortalService {
             throw Exception('Screenshot portal request timed out');
           },
         );
+
+        // If we have a path and a target directory/filename, copy the file
+        if (screenshotPath != null && directory != null && filename != null) {
+          try {
+            final sourceFile = File(screenshotPath);
+            final targetPath = '$directory$filename';
+
+            // Ensure target directory exists
+            final targetDir = Directory(directory);
+            if (!targetDir.existsSync()) {
+              targetDir.createSync(recursive: true);
+            }
+
+            // Copy the file to the expected location
+            await sourceFile.copy(targetPath);
+
+            // Return the target path where we copied the file
+            return targetPath;
+          } catch (e, st) {
+            getIt<LoggingService>().captureException(
+              e,
+              domain: 'ScreenshotPortalService',
+              subDomain: 'file_copy_error',
+              stackTrace: st,
+            );
+            // If copy fails, return the original path
+            return screenshotPath;
+          }
+        }
 
         return screenshotPath;
       } finally {

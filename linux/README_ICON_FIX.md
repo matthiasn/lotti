@@ -22,7 +22,7 @@ The Lotti Flutter app was showing a generic gear/settings icon in the Ubuntu sid
 - **Icon name fallback**: Sets icon name for desktop integration fallback
 - **Debug logging**: Prints icon loading status for troubleshooting
 
-### 2. Desktop File (`com.matthiasnehlsen.lotti.desktop`)
+### 2. Desktop File (`com.matthiasn.lotti.desktop`)
 
 - Proper Linux desktop entry file with correct APPLICATION_ID
 - Includes all necessary metadata (Name, Comment, Categories, Keywords)
@@ -31,7 +31,7 @@ The Lotti Flutter app was showing a generic gear/settings icon in the Ubuntu sid
 ### 3. Icon System (`icons/` directory)
 
 - Generated icons in all standard Linux sizes (16x16 to 1024x1024)
-- Proper naming convention: `com.matthiasnehlsen.lotti.png`
+- Proper naming convention: `com.matthiasn.lotti.png`
 - Organized in standard hicolor icon theme structure
 
 ### 4. CMake Integration (`CMakeLists.txt`)
@@ -85,7 +85,7 @@ flutter build linux
 
 ```
 linux/
-├── com.matthiasnehlsen.lotti.desktop     # Desktop entry file
+├── com.matthiasn.lotti.desktop     # Desktop entry file
 ├── install_dev_desktop_integration.sh    # Development setup script
 ├── icons/                                # Icon files in standard Linux structure
 │   └── hicolor/
@@ -107,9 +107,9 @@ linux/
 
 ### Window Manager Integration
 
-- **APPLICATION_ID**: `com.matthiasnehlsen.lotti` (defined in CMakeLists.txt)
+- **APPLICATION_ID**: `com.matthiasn.lotti` (defined in CMakeLists.txt)
 - **WM_CLASS**: Set to `"lotti", "Lotti"` for proper window identification
-- **Icon Name**: `com.matthiasnehlsen.lotti` for desktop theme integration
+- **Icon Name**: `com.matthiasn.lotti` for desktop theme integration
 
 ### Icon Loading Strategy
 
@@ -117,7 +117,7 @@ The application tries multiple icon paths in order:
 1. `data/flutter_assets/assets/icon/app_icon_1024.png` (Production)
 2. `assets/icon/app_icon_1024.png` (Development)
 3. `../assets/icon/app_icon_1024.png` (Alternative development)
-4. Falls back to icon name: `com.matthiasnehlsen.lotti`
+4. Falls back to icon name: `com.matthiasn.lotti`
 
 ### Desktop File Standards
 
@@ -138,8 +138,8 @@ The `.desktop` file follows freedesktop.org standards:
 
 2. **Verify files are installed**:
    ```bash
-   ls -la ~/.local/share/applications/com.matthiasnehlsen.lotti.desktop
-   ls -la ~/.local/share/icons/hicolor/*/apps/com.matthiasnehlsen.lotti.png
+   ls -la ~/.local/share/applications/com.matthiasn.lotti.desktop
+   ls -la ~/.local/share/icons/hicolor/*/apps/com.matthiasn.lotti.png
    ```
 
 3. **Update desktop database manually**:

@@ -63,11 +63,11 @@ class _MapWidgetState extends State<MapWidget> {
                 TileLayer(
                   tileProvider: CachedTileProvider(
                     headers: {
-                      'User-Agent': 'com.matthiasnehlsen.lotti',
+                      'User-Agent': 'com.matthiasn.lotti',
                     },
                   ),
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.matthiasnehlsen.lotti',
+                  userAgentPackageName: 'com.matthiasn.lotti',
                 ),
                 MarkerLayer(
                   markers: [

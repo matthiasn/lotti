@@ -15,7 +15,7 @@ class LocationConstants {
   const LocationConstants._();
 
   static const Duration locationTimeout = Duration(seconds: 10);
-  static const String appDesktopId = 'com.matthiasnehlsen.lotti';
+  static const String appDesktopId = 'com.matthiasn.lotti';
 }
 
 class DeviceLocation {
