@@ -163,9 +163,9 @@ If screenshots aren't working in the Flatpak version:
    - XDG runtime directory setup
    - D-Bus session bus configuration
 
-### Fallback Screenshot Tools
+### Screenshot Tools Outside Flatpak
 
-If the portal isn't available, Lotti can fall back to traditional screenshot tools when running outside of Flatpak:
+When running outside of Flatpak, Lotti can use traditional screenshot tools:
 - `spectacle` (KDE)
 - `gnome-screenshot` (GNOME)
 - `scrot` (lightweight)
