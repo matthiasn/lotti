@@ -34,9 +34,22 @@ LOTTI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FLATHUB_ROOT="$(cd "$LOTTI_ROOT/.." && pwd)/flathub"
 FLATPAK_DIR="$LOTTI_ROOT/flatpak"
 
+# Version configuration - can be overridden by environment variables
+# Get latest git tag if not specified
+if [ -z "${LOTTI_VERSION:-}" ]; then
+    LOTTI_VERSION=$(cd "$LOTTI_ROOT" && git describe --tags --abbrev=0 2>/dev/null || echo "v0.9.645")
+fi
+
+# Use today's date if not specified
+if [ -z "${LOTTI_RELEASE_DATE:-}" ]; then
+    LOTTI_RELEASE_DATE=$(date +%Y-%m-%d)
+fi
+
 echo "=========================================="
 echo "   Flathub Submission Preparation Script"
 echo "=========================================="
+echo "Version: ${LOTTI_VERSION}"
+echo "Release Date: ${LOTTI_RELEASE_DATE}"
 echo ""
 print_info "Lotti root: $LOTTI_ROOT"
 print_info "Flathub repo: $FLATHUB_ROOT"
@@ -188,9 +201,20 @@ if [ -f "$FLATPAK_DIR/flutter-shared.sh.patch" ]; then
     cp "$FLATPAK_DIR/flutter-shared.sh.patch" "$APP_DIR/"
 fi
 
-# Copy metadata files
-print_status "Copying metadata files..."
-cp "$FLATPAK_DIR/com.matthiasn.lotti.metainfo.xml" "$APP_DIR/" 2>/dev/null || print_warning "No metainfo.xml found"
+# Copy metadata files with template substitution
+print_status "Processing metadata files..."
+
+# Generate metainfo file with version substitution
+if [ -f "$FLATPAK_DIR/com.matthiasn.lotti.metainfo.xml" ]; then
+    print_info "Substituting version ${LOTTI_VERSION} and date ${LOTTI_RELEASE_DATE} in metainfo.xml..."
+    sed -e "s|{{LOTTI_VERSION}}|${LOTTI_VERSION}|g" \
+        -e "s|{{LOTTI_RELEASE_DATE}}|${LOTTI_RELEASE_DATE}|g" \
+        "$FLATPAK_DIR/com.matthiasn.lotti.metainfo.xml" > "$APP_DIR/com.matthiasn.lotti.metainfo.xml"
+    print_status "Generated metainfo file with version information"
+else
+    print_warning "No metainfo.xml template found"
+fi
+
 cp "$FLATPAK_DIR/com.matthiasn.lotti.desktop" "$APP_DIR/" 2>/dev/null || print_warning "No desktop file found"
 
 # Copy icon files
@@ -215,6 +239,13 @@ rm -f package_config.json
 print_status "Preparation complete!"
 echo ""
 print_info "Files have been copied to: $APP_DIR"
+echo ""
+print_info "Version information used:"
+echo "  LOTTI_VERSION=${LOTTI_VERSION}"
+echo "  LOTTI_RELEASE_DATE=${LOTTI_RELEASE_DATE}"
+echo ""
+print_info "To use different version/date, run with:"
+echo "  LOTTI_VERSION=v1.0.0 LOTTI_RELEASE_DATE=2025-02-01 $0"
 echo ""
 print_info "Next steps:"
 echo "  1. cd $FLATHUB_ROOT"

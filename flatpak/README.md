@@ -2,109 +2,100 @@
 
 This directory contains the Flatpak manifest and related files for building Lotti as a Flatpak application.
 
-## Quick Start with Build Script
-
-The easiest way to build and run Lotti as a Flatpak is using the provided build script:
-
-```bash
-cd flatpak
-./flatpak_lotti_build.sh        # Build and run (default)
-./flatpak_lotti_build.sh build   # Build only
-./flatpak_lotti_build.sh run     # Run already built app
-./flatpak_lotti_build.sh clean   # Clean build artifacts
-./flatpak_lotti_build.sh install # Install to system
-./flatpak_lotti_build.sh help    # Show all options
-```
-
-The script automatically:
-- Checks and installs prerequisites
-- Builds the Flutter app
-- Prepares the bundle correctly
-- Builds the Flatpak package
-- Handles common issues (like stuck mounts)
-- Runs the app
-
-## Manual Build Process
-
-If you prefer to build manually:
+## Building Locally
 
 ### Prerequisites
 
-Before building the Flatpak, you need to prepare the Flutter bundle:
-
-1. Build the Flutter Linux application:
+1. Install flatpak, flatpak-builder, and required runtimes:
    ```bash
-   flutter build linux --release
-   ```
-
-2. Create the `flutter-bundle` directory structure:
-   ```bash
-   mkdir -p flatpak/flutter-bundle
-   cp -r build/linux/x64/release/bundle/. flatpak/flutter-bundle/
-   ```
-
-3. Ensure the MaterialIcons font is included:
-   ```bash
-   cp fonts/MaterialIcons-Regular.otf flatpak/flutter-bundle/data/flutter_assets/fonts/
-   ```
-
-### Building the Flatpak build
-
-1. Install flatpak & flatpak-builder & runtimes:
-   ```bash
+   # Install Flatpak and builder
    sudo apt install flatpak flatpak-builder
+
+   # Install XDG Desktop Portal (required for screenshots)
+   # For GNOME/GTK systems:
+   sudo apt install xdg-desktop-portal xdg-desktop-portal-gtk
+   # For KDE/Plasma systems:
+   sudo apt install xdg-desktop-portal xdg-desktop-portal-kde
+
+   # Add Flathub repository
    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-   flatpak install org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.freedesktop.Sdk.Extension.llvm20 org.freedesktop.Sdk.Extension.rust-stable
+
+   # Install required runtimes and SDK extensions
+   flatpak install org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 \
+                   org.freedesktop.Sdk.Extension.llvm20 org.freedesktop.Sdk.Extension.rust-stable
    ```
 
-2Build and install:
+### Build and Install
+
+```bash
+cd flatpak
+flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
+```
+
+### Running the App
+
+After installation:
+```bash
+flatpak run com.matthiasn.lotti
+```
+
+### Notes for ARM64/Apple Silicon
+
+The manifest automatically handles architecture differences:
+- Flutter SDK is cloned from Git (architecture-independent)
+- Rust toolchain is installed during build
+- All native dependencies are compiled for the target architecture
+
+## Flathub Submission
+
+### Prerequisites
+
+The Flathub build requires all dependencies to be available offline. The `prepare_flathub_submission.sh` script handles this preparation.
+
+### Preparation Process
+
+1. **Run the preparation script**:
    ```bash
    cd flatpak
-   flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
+   ./prepare_flathub_submission.sh
    ```
 
-## Directory Structure
+   Or with custom version:
+   ```bash
+   LOTTI_VERSION=v1.0.0 LOTTI_RELEASE_DATE=2025-02-01 ./prepare_flathub_submission.sh
+   ```
 
-The build expects this structure in `flutter-bundle/`:
-```
-flutter-bundle/
-├── lotti                    # Main executable
-├── lib/                     # Shared libraries (.so files)
-├── data/                    # Flutter runtime data
-│   ├── flutter_assets/      # Flutter assets
-│   │   └── fonts/          # Including MaterialIcons-Regular.otf
-│   └── icudtl.dat          # ICU data
-└── share/                   # Desktop integration files
-```
+   The script will:
+   - Automatically detect version from git tags (or use provided version)
+   - Generate Flutter SDK configuration
+   - Download and prepare all dependencies for offline build
+   - Process the metainfo.xml with version substitution
+   - Copy all necessary files to the flathub repository
 
-## Manifest Improvements
+2. **Submit to Flathub**:
+   - Fork the [Flathub repository](https://github.com/flathub/flathub)
+   - Follow the instructions shown by the preparation script
+   - Create a pull request
 
-The new manifest uses a maintainable approach:
-- **Single source**: `type: dir` pointing to `flutter-bundle/`
-- **Automatic**: Captures all Flutter build outputs without manual listing
-- **Future-proof**: Works with any Flutter build changes
-- **Clean**: Reduced from 200+ lines to ~10 lines for the main module
+### Key Files
 
-This eliminates the need to manually maintain lists of individual files and makes the build process more robust.
+- `com.matthiasn.lotti.yml` - Local build manifest (requires network)
+- `com.matthiasn.lotti.flathub.yml` - Flathub manifest (offline build)
+- `com.matthiasn.lotti.metainfo.xml` - App metadata with version placeholders
+- `prepare_flathub_submission.sh` - Prepares everything for Flathub
 
-### Create Bundle
+## Creating a Bundle
+
+To create a distributable Flatpak bundle:
 ```bash
 flatpak build-bundle repo lotti.flatpak com.matthiasn.lotti
 ```
 
-## Distribution
-
-### Flathub
-To submit to Flathub:
-1. Fork the [Flathub repository](https://github.com/flathub/flathub)
-2. Add the manifest to `com.matthiasn.lotti.yml` (filename must match app-id)
-3. Submit a pull request
-
-### Direct Distribution
-Users can install the bundle with:
+Users can then install with:
 ```bash
 flatpak install lotti.flatpak
 ```
+
 
 ## Permissions
 
@@ -129,15 +120,55 @@ The app follows the **principle of least privilege** and requests only necessary
 - ✅ **Minimal permissions** - Only specific directories needed for functionality
 - ✅ **Read-only where possible** - Pictures access is read-only for security
 
-## Screenshot Tools
+## Screenshot Support
 
-The app includes support for multiple screenshot tools:
-- spectacle (KDE)
-- gnome-screenshot (GNOME)
-- scrot (lightweight)
-- import (ImageMagick)
+### Portal-Based Screenshots (Recommended)
 
-These are handled by the app's internal screenshot functionality.
+When running in Flatpak, Lotti uses the XDG Desktop Portal for screenshots, which provides secure access without requiring additional tools inside the sandbox.
+
+**Requirements on the host system:**
+- `xdg-desktop-portal` - The portal service
+- A backend implementation:
+  - `xdg-desktop-portal-gtk` for GNOME/GTK desktops
+  - `xdg-desktop-portal-kde` for KDE Plasma
+  - `xdg-desktop-portal-wlr` for wlroots-based compositors
+
+### Troubleshooting Screenshot Issues
+
+If screenshots aren't working in the Flatpak version:
+
+1. **Check portal installation:**
+   ```bash
+   # Check if portal service is running
+   systemctl --user status xdg-desktop-portal
+
+   # Restart portal service if needed
+   systemctl --user restart xdg-desktop-portal
+   ```
+
+2. **Verify portal backend:**
+   ```bash
+   # Check which portal backend is installed
+   ls /usr/share/xdg-desktop-portal/portals/
+   ```
+
+3. **Test portal availability:**
+   ```bash
+   # Test if screenshot portal works
+   gdbus call --session \
+     --dest org.freedesktop.portal.Desktop \
+     --object-path /org/freedesktop/portal/desktop \
+     --method org.freedesktop.portal.Screenshot.Screenshot \
+     "" "{}"
+   ```
+
+### Fallback Screenshot Tools
+
+If the portal isn't available, Lotti can fall back to traditional screenshot tools when running outside of Flatpak:
+- `spectacle` (KDE)
+- `gnome-screenshot` (GNOME)
+- `scrot` (lightweight)
+- `import` (ImageMagick)
 
 ## Future Improvements
 
