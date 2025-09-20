@@ -145,7 +145,7 @@ modules:
       - /run/build/lotti/flutter_sdk/bin/flutter build linux --release --verbose
       # Install the built app
       - echo "Installing Flutter bundle..."
-      - cp -r build/linux/x64/release/bundle/* /app/
+      - cp -r build/linux/*/release/bundle/* /app/
       # Remove 1024x1024 icons to comply with Flatpak's maximum icon size limit
       - find /app -name "*1024*" -type f -delete
       - chmod +x /app/lotti
