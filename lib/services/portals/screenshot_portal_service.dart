@@ -120,8 +120,25 @@ class ScreenshotPortalService extends PortalService {
             if (code == 0) {
               // Success - extract the URI from results
               final uriValue = results[const DBusString('uri')];
-              if (uriValue != null && uriValue is DBusString) {
-                final uri = uriValue.asString();
+
+              // The value might be a DBusVariant containing a DBusString
+              String? uri;
+              if (uriValue is DBusVariant) {
+                final innerValue = uriValue.value;
+                if (innerValue is DBusString) {
+                  uri = innerValue.value;
+                }
+              } else if (uriValue is DBusString) {
+                uri = uriValue.value;
+              }
+
+              getIt<LoggingService>().captureException(
+                'DEBUG: uriValue type=${uriValue?.runtimeType}, uri=$uri',
+                domain: 'ScreenshotPortalService',
+                subDomain: 'uri_type',
+              );
+
+              if (uri != null) {
                 getIt<LoggingService>().captureException(
                   'DEBUG: Got URI: $uri',
                   domain: 'ScreenshotPortalService',
@@ -137,7 +154,7 @@ class ScreenshotPortalService extends PortalService {
                 }
               } else {
                 getIt<LoggingService>().captureException(
-                  'DEBUG: No URI in results',
+                  'DEBUG: Could not extract URI from results',
                   domain: 'ScreenshotPortalService',
                   subDomain: 'no_uri',
                 );
