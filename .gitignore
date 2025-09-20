@@ -18,6 +18,8 @@ tmp/
 flatpak/*.generated.*
 flatpak/build-dir/
 flatpak/repo/
+flatpak/flathub-build/
+flatpak/flatpak-flutter/
 *.flatpak
 flatpak/com.matthiasn.lotti.generated.yml
 

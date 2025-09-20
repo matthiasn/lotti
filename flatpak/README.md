@@ -54,31 +54,48 @@ The manifest automatically handles architecture differences:
 
 ### Prerequisites
 
-The Flathub build requires all dependencies to be available offline. The `prepare_flathub_submission.sh` script handles this preparation.
+The Flathub build requires all dependencies to be available offline. We use `flatpak-flutter` to generate the offline manifest and dependencies.
 
 ### Preparation Process
 
-1. **Run the preparation script**:
+1. **Install flatpak-flutter** (if not already installed):
+   ```bash
+   cd flatpak
+   git clone https://github.com/TheAppgineer/flatpak-flutter.git
+   ```
+
+2. **Run the preparation script**:
    ```bash
    cd flatpak
    ./prepare_flathub_submission.sh
    ```
 
-   Or with custom version:
+   The script automatically:
+   - Extracts version from `pubspec.yaml` (e.g., `0.9.665+3266` → `0.9.665`)
+   - Uses the current git HEAD commit
+   - Sets release date to today
+
+   Or override with custom version/date:
    ```bash
-   LOTTI_VERSION=v1.0.0 LOTTI_RELEASE_DATE=2025-02-01 ./prepare_flathub_submission.sh
+   LOTTI_VERSION=1.0.0 LOTTI_RELEASE_DATE=2025-02-01 ./prepare_flathub_submission.sh
+   ```
+
+   To also test the build:
+   ```bash
+   TEST_BUILD=true ./prepare_flathub_submission.sh
    ```
 
    The script will:
-   - Automatically detect version from git tags (or use provided version)
-   - Generate Flutter SDK configuration
-   - Download and prepare all dependencies for offline build
+   - Create a clean work directory at `flatpak/flathub-build/`
+   - Use version from pubspec.yaml (or override)
+   - Use current git HEAD commit
+   - Generate offline manifest and all dependencies using flatpak-flutter
    - Process the metainfo.xml with version substitution
-   - Copy all necessary files to the flathub repository
+   - Output all files to `flatpak/flathub-build/output/`
 
-2. **Submit to Flathub**:
+3. **Submit to Flathub**:
    - Fork the [Flathub repository](https://github.com/flathub/flathub)
-   - Follow the instructions shown by the preparation script
+   - Copy the generated files from `flatpak/flathub-build/output/` to your fork
    - Create a pull request
 
 ### Key Files
