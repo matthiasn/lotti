@@ -105,7 +105,7 @@ modules:
     sources:
       - type: archive
         url: https://downloads.sourceforge.net/enlightenment/imlib2-1.12.1.tar.xz
-        sha256: f15568e698934e6a6c427c909a8fb2e3e5d61e4cad44d354c2df88e96de92c59
+        sha256: 8c24d2d189c4d5ae602dbf2fc0fbb117aa923eab6c883041f0feeca4e8c6774e
   - name: scrot
     buildsystem: autotools
     sources:
