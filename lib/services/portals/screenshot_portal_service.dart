@@ -197,12 +197,11 @@ class ScreenshotPortalService extends PortalService {
           try {
             final sourceFile = File(screenshotPath);
             final targetPath = '$directory$filename';
-            final targetFile = File(targetPath);
 
             // Ensure target directory exists
             final targetDir = Directory(directory);
-            if (!await targetDir.exists()) {
-              await targetDir.create(recursive: true);
+            if (!targetDir.existsSync()) {
+              targetDir.createSync(recursive: true);
             }
 
             // Copy the file to the expected location
@@ -216,12 +215,12 @@ class ScreenshotPortalService extends PortalService {
 
             // Return the target path where we copied the file
             return targetPath;
-          } catch (e) {
+          } catch (e, st) {
             getIt<LoggingService>().captureException(
               'ERROR: Failed to copy screenshot file: $e',
               domain: 'ScreenshotPortalService',
               subDomain: 'file_copy_error',
-              stackTrace: stackTrace,
+              stackTrace: st,
             );
             // If copy fails, return the original path
             return screenshotPath;
