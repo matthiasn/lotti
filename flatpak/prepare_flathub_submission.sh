@@ -173,8 +173,13 @@ mkdir -p "$APP_DIR"
 # Step 4: Copy all required files to flathub repo
 print_status "Copying generated files to flathub repository..."
 
-# Copy the main manifest (rename from generated name)
-cp "$LOTTI_ROOT/com.matthiasn.lotti.yml" "$APP_DIR/com.matthiasn.lotti.yml"
+# Copy the Flathub manifest
+cp "$FLATPAK_DIR/com.matthiasn.lotti.flathub.yml" "$APP_DIR/com.matthiasn.lotti.yml"
+
+# Replace COMMIT_PLACEHOLDER with the actual commit for the version tag
+COMMIT_HASH=$(cd "$LOTTI_ROOT" && git rev-list -n 1 "$LOTTI_VERSION" 2>/dev/null || git rev-parse HEAD)
+sed -i "s/COMMIT_PLACEHOLDER/$COMMIT_HASH/" "$APP_DIR/com.matthiasn.lotti.yml"
+print_info "Updated manifest with commit: $COMMIT_HASH"
 
 # Copy all generated JSON files
 cp "$LOTTI_ROOT/flutter-sdk-"*.json "$APP_DIR/" 2>/dev/null || print_warning "No flutter-sdk JSON found"

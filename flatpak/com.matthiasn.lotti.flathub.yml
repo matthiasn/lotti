@@ -116,7 +116,12 @@ modules:
       - setup-flutter.sh -C .
       - flutter build linux --release --no-pub
       - echo "Installing Flutter bundle..."
-      - cp -r build/linux/x64/release/bundle/* /app/
+      - |
+        arch="x64"
+        if [ "${FLATPAK_ARCH}" = "aarch64" ]; then
+          arch="arm64"
+        fi
+        cp -r build/linux/${arch}/release/bundle/* /app/
       - find /app -name "*1024*" -type f -delete
       - chmod +x /app/lotti
       - mkdir -p /app/lib/ffmpeg
@@ -129,7 +134,7 @@ modules:
       - pubspec-sources.json
       - type: git
         url: https://github.com/matthiasn/lotti
-        tag: v0.9.645
+        commit: COMMIT_PLACEHOLDER
       - type: file
         only-arches:
           - x86_64
