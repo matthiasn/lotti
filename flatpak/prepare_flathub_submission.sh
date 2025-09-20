@@ -105,6 +105,9 @@ cp -r "$LOTTI_ROOT/linux" .
 cp "$LOTTI_ROOT/pubspec.yaml" .
 cp "$LOTTI_ROOT/pubspec.lock" .
 
+# Create build directory that flatpak-flutter expects
+mkdir -p .flatpak-builder/build
+
 # Run flatpak-flutter
 if ! python3 "$FLATPAK_DIR/flatpak-flutter/flatpak-flutter.py" \
     --app-module lotti \
