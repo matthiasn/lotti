@@ -1,0 +1,109 @@
+app-id: com.matthiasn.lotti.portal-test
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: /app/test_portal.sh
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  # Portal access for testing
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --talk-name=org.freedesktop.portal.Screenshot
+
+modules:
+  - name: portal-test
+    buildsystem: simple
+    build-commands:
+      - |
+        cat > /app/test_portal.sh << 'EOF'
+        #!/bin/bash
+
+        echo "=== Screenshot Portal Debug Script ==="
+        echo ""
+
+        # Check if we're in Flatpak
+        echo "1. Checking Flatpak environment:"
+        echo "   FLATPAK_ID: ${FLATPAK_ID:-not set}"
+        echo "   FLATPAK_DEST: ${FLATPAK_DEST:-not set}"
+        echo "   container: ${container:-not set}"
+        echo ""
+
+        # Check if portal service is available on D-Bus
+        echo "2. Checking D-Bus portal service:"
+        if busctl --user list | grep -q org.freedesktop.portal.Desktop; then
+            echo "   ✓ Portal service found on D-Bus"
+        else
+            echo "   ✗ Portal service NOT found on D-Bus"
+        fi
+        echo ""
+
+        # Check portal introspection
+        echo "3. Introspecting portal interfaces:"
+        busctl --user introspect org.freedesktop.portal.Desktop /org/freedesktop/portal/desktop | grep -E "interface|Screenshot" || echo "   Failed to introspect"
+        echo ""
+
+        # Try to call the Screenshot method
+        echo "4. Testing Screenshot portal method:"
+        busctl --user call \
+            org.freedesktop.portal.Desktop \
+            /org/freedesktop/portal/desktop \
+            org.freedesktop.portal.Screenshot \
+            Screenshot \
+            "sa{sv}" \
+            "" 0 2>&1 | head -20
+        echo ""
+
+        # Check for portal implementations on the host
+        echo "5. Checking host portal setup (from inside Flatpak):"
+        if [ -d "/var/run/host" ]; then
+            echo "   Looking for portal backends on host..."
+            ls -la /var/run/host/usr/share/xdg-desktop-portal/portals/ 2>/dev/null || echo "   Cannot access host portal configs"
+        fi
+        echo ""
+
+        # Check XDG runtime directory
+        echo "6. Checking XDG_RUNTIME_DIR:"
+        echo "   XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR:-not set}"
+        if [ -n "$XDG_RUNTIME_DIR" ]; then
+            ls -la "$XDG_RUNTIME_DIR" | grep -E "bus|portal" | head -10 || echo "   No portal-related files found"
+        fi
+        echo ""
+
+        # Check D-Bus session bus
+        echo "7. Checking D-Bus session bus:"
+        echo "   DBUS_SESSION_BUS_ADDRESS: ${DBUS_SESSION_BUS_ADDRESS:-not set}"
+        echo ""
+
+        # List all available portal interfaces
+        echo "8. Available portal interfaces:"
+        busctl --user call \
+            org.freedesktop.DBus \
+            /org/freedesktop/DBus \
+            org.freedesktop.DBus \
+            ListNames | grep portal || echo "   No portal services found"
+        echo ""
+
+        # Try gdbus as well
+        echo "9. Testing with gdbus:"
+        gdbus call --session \
+            --dest org.freedesktop.portal.Desktop \
+            --object-path /org/freedesktop/portal/desktop \
+            --method org.freedesktop.portal.Screenshot.Screenshot \
+            "" "{}" 2>&1 | head -10
+        echo ""
+
+        echo "=== End of debug output ==="
+        EOF
+      - chmod +x /app/test_portal.sh
+      # Also create a shell launcher for interactive debugging
+      - |
+        cat > /app/shell.sh << 'EOF'
+        #!/bin/bash
+        exec /bin/bash
+        EOF
+      - chmod +x /app/shell.sh
+    sources: []
