@@ -165,7 +165,23 @@ for build_dir in \
   mkdir -p "$build_dir"
   cp -f pubspec.yaml "$build_dir/" 2>/dev/null || true
   cp -f pubspec.lock "$build_dir/" 2>/dev/null || true
+  # Provide an empty foreign_deps.json if flatpak-flutter expects it
+  if [ ! -f "$build_dir/foreign_deps.json" ]; then
+    echo '{}' > "$build_dir/foreign_deps.json"
+  fi
 done
+
+# Prime a usable Flutter SDK at the path flatpak-flutter expects for pub get
+if [ ! -x ".flatpak-builder/build/lotti/flutter/bin/flutter" ]; then
+  print_status "Priming Flutter SDK at .flatpak-builder/build/lotti/flutter (tag $FLUTTER_TAG)..."
+  mkdir -p .flatpak-builder/build/lotti
+  git clone --depth 1 --branch "$FLUTTER_TAG" https://github.com/flutter/flutter.git .flatpak-builder/build/lotti/flutter || true
+  if [ -x ".flatpak-builder/build/lotti/flutter/bin/flutter" ]; then
+    (cd .flatpak-builder/build/lotti/flutter && ./bin/flutter --version || true)
+  else
+    print_warning "Failed to clone Flutter SDK to expected path; flatpak-flutter will attempt its own clone."
+  fi
+fi
 
 # Run flatpak-flutter with verbose output
 print_info "Running flatpak-flutter with the following manifest:"
