@@ -137,30 +137,31 @@ When running in Flatpak, Lotti uses the XDG Desktop Portal for screenshots, whic
 
 If screenshots aren't working in the Flatpak version:
 
-1. **Check portal installation:**
+1. **Check host portal installation:**
    ```bash
-   # Check if portal service is running
-   systemctl --user status xdg-desktop-portal
-
-   # Restart portal service if needed
-   systemctl --user restart xdg-desktop-portal
+   # Run the host portal check script
+   ./test_host_portal.sh
    ```
 
-2. **Verify portal backend:**
+2. **Debug from inside Flatpak:**
    ```bash
-   # Check which portal backend is installed
-   ls /usr/share/xdg-desktop-portal/portals/
+   # Method 1: Run debug script inside Flatpak container
+   flatpak run --command=bash com.matthiasn.lotti -c "bash /app/test_portal.sh"
+
+   # Method 2: Interactive shell to debug manually
+   flatpak run --command=bash com.matthiasn.lotti
+   # Then inside the shell:
+   bash /app/test_portal.sh
    ```
 
-3. **Test portal availability:**
-   ```bash
-   # Test if screenshot portal works
-   gdbus call --session \
-     --dest org.freedesktop.portal.Desktop \
-     --object-path /org/freedesktop/portal/desktop \
-     --method org.freedesktop.portal.Screenshot.Screenshot \
-     "" "{}"
-   ```
+3. **Check portal communication:**
+   The debug script will check:
+   - If running inside Flatpak environment
+   - D-Bus portal service availability
+   - Portal interface introspection
+   - Screenshot method functionality
+   - XDG runtime directory setup
+   - D-Bus session bus configuration
 
 ### Fallback Screenshot Tools
 
