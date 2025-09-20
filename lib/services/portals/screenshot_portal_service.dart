@@ -116,8 +116,13 @@ class ScreenshotPortalService extends PortalService {
               }
             } else {
               // Non-zero code indicates failure
+              // Code 1 = User cancelled, Code 2 = Other error
+              final errorMessage = code == 1
+                  ? 'Screenshot cancelled by user'
+                  : 'Screenshot portal returned error code: $code';
+
               getIt<LoggingService>().captureException(
-                'Screenshot portal returned non-zero code: $code',
+                errorMessage,
                 domain: 'ScreenshotPortalService',
                 subDomain: 'portal_error',
               );
