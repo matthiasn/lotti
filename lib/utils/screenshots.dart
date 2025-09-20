@@ -74,16 +74,48 @@ Future<ImageData> takeScreenshot() async {
     final relativePath = '$screenshotDirectoryPath$day/';
     final directory = await createAssetDirectory(relativePath);
 
+    // Debug logging for portal detection
+    getIt<LoggingService>().captureException(
+      'DEBUG: Screenshot portal check - Linux=${Platform.isLinux}, '
+      'FLATPAK_ID=${Platform.environment['FLATPAK_ID']}, '
+      'container=${Platform.environment['container']}, '
+      'shouldUsePortal=${PortalService.shouldUsePortal}',
+      domain: screenshotDomain,
+      subDomain: 'portal_debug',
+    );
+
     // Check if we should use portal (Flatpak environment)
     if (Platform.isLinux && PortalService.shouldUsePortal) {
+      getIt<LoggingService>().captureException(
+        'DEBUG: Attempting to use portal service',
+        domain: screenshotDomain,
+        subDomain: 'portal_attempt',
+      );
       final portalService = ScreenshotPortalService();
 
       // Check if portal is available
-      if (await ScreenshotPortalService.isAvailable()) {
+      final isAvailable = await ScreenshotPortalService.isAvailable();
+      getIt<LoggingService>().captureException(
+        'DEBUG: Portal isAvailable = $isAvailable',
+        domain: screenshotDomain,
+        subDomain: 'portal_available',
+      );
+
+      if (isAvailable) {
+        getIt<LoggingService>().captureException(
+          'DEBUG: Calling portal.takeScreenshot()',
+          domain: screenshotDomain,
+          subDomain: 'portal_call',
+        );
         final screenshotPath = await portalService.takeScreenshot(
           directory: directory,
           filename: filename,
           interactive: true,
+        );
+        getIt<LoggingService>().captureException(
+          'DEBUG: Portal returned path = $screenshotPath',
+          domain: screenshotDomain,
+          subDomain: 'portal_result',
         );
 
         if (screenshotPath != null) {

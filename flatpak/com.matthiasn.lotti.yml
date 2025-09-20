@@ -181,11 +181,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/matthiasn/lotti
-        commit: 07e53c799b6aa43ad361902bad86a27ded4bf5d4
-      # Or use a tarball:
-      # - type: archive
-      #   url: https://github.com/matthiasn/lotti/archive/refs/tags/v0.9.645.tar.gz
-      #   sha256: CHECKSUM_HERE
+        commit: f4a839b6d047e9023970cfac8c614518d20618be
   - name: flutter-common
     buildsystem: simple
     build-commands:
