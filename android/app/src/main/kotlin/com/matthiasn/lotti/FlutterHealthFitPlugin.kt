@@ -1,4 +1,4 @@
-package com.matthiasnehlsen.lotti
+package com.matthiasn.lotti
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodChannel

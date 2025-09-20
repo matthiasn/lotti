@@ -18,8 +18,10 @@ tmp/
 flatpak/*.generated.*
 flatpak/build-dir/
 flatpak/repo/
+flatpak/flathub-build/
+flatpak/flatpak-flutter/
 *.flatpak
-flatpak/com.matthiasnehlsen.lotti.generated.yml
+flatpak/com.matthiasn.lotti.generated.yml
 
 !Podfile.lock
 !pubspec.lock

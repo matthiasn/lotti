@@ -1,0 +1,82 @@
+name: Build Flatpak
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history for git describe
+
+    - name: Debug git information
+      run: |
+        echo "GitHub context information:"
+        echo "Event name: ${{ github.event_name }}"
+        echo "GitHub SHA: ${{ github.sha }}"
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "PR head SHA: ${{ github.event.pull_request.head.sha }}"
+        fi
+        echo ""
+        echo "Git log (last 5 commits):"
+        git log --oneline -5
+        echo ""
+        echo "Current HEAD:"
+        git rev-parse HEAD
+
+    - name: Install Flatpak and dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y flatpak flatpak-builder
+
+        # Add Flathub repository
+        sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+        # Install required runtime and SDK
+        sudo flatpak install -y flathub org.freedesktop.Platform//24.08
+        sudo flatpak install -y flathub org.freedesktop.Sdk//24.08
+        sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.llvm20//24.08
+        sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
+
+    - name: Update manifest with current commit
+      run: |
+        # Always use the actual HEAD commit from the checked out repository
+        # This ensures we use the real commit that exists in the repo, not GitHub's merge commits
+        COMMIT_SHA=$(git rev-parse HEAD)
+        echo "Using repository HEAD commit: $COMMIT_SHA"
+
+        # Update the manifest commit placeholder with the actual commit
+        cd flatpak
+        ./update_manifest_commit.sh "$COMMIT_SHA"
+
+        # Show the updated manifest
+        echo "Manifest updated with commit:"
+        grep -A2 "url: https://github.com/matthiasn/lotti" com.matthiasn.lotti.source.yml
+
+    - name: Build Flatpak
+      run: |
+        cd flatpak
+        flatpak-builder --verbose --force-clean --repo=repo build-dir com.matthiasn.lotti.source.yml
+
+    - name: Create Flatpak bundle
+      run: |
+        cd flatpak
+        flatpak build-bundle repo lotti.flatpak com.matthiasn.lotti
+
+    - name: Upload Flatpak bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: lotti-flatpak-${{ github.run_number }}
+        path: flatpak/lotti.flatpak
+        retention-days: 30

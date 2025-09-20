@@ -21,7 +21,7 @@ static const gchar* const ICON_PRODUCTION_PATH = "data/flutter_assets/assets/ico
 static const gchar* const ICON_DEVELOPMENT_PATH = "assets/icon/app_icon_512.png";
 static const gchar* const ICON_ALTERNATIVE_PATH = "../assets/icon/app_icon_512.png";
 static const gchar* const ICON_RELATIVE_PATH = "../../../assets/icon/app_icon_512.png";
-static const gchar* const ICON_THEME_NAME = "com.matthiasnehlsen.lotti";
+static const gchar* const ICON_THEME_NAME = "com.matthiasn.lotti";
 static const gchar* const APP_TITLE = "Lotti";
 static const gchar* const WINDOW_NAME = "lotti";
 

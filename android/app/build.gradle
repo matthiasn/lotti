@@ -30,7 +30,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.matthiasnehlsen.lotti"
+    namespace "com.matthiasn.lotti"
     compileSdkVersion rootProject.ext.compileSdkVersion
     ndkVersion "27.0.12077973"
 
@@ -49,7 +49,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.matthiasnehlsen.lotti"
+        applicationId "com.matthiasn.lotti"
         minSdkVersion 29
         targetSdkVersion rootProject.ext.compileSdkVersion
         versionCode flutterVersionCode.toInteger()
