@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dbus/dbus.dart';
 import 'package:lotti/get_it.dart';
@@ -190,6 +191,42 @@ class ScreenshotPortalService extends PortalService {
             throw Exception('Screenshot portal request timed out');
           },
         );
+
+        // If we have a path and a target directory/filename, copy the file
+        if (screenshotPath != null && directory != null && filename != null) {
+          try {
+            final sourceFile = File(screenshotPath);
+            final targetPath = '$directory$filename';
+            final targetFile = File(targetPath);
+
+            // Ensure target directory exists
+            final targetDir = Directory(directory);
+            if (!await targetDir.exists()) {
+              await targetDir.create(recursive: true);
+            }
+
+            // Copy the file to the expected location
+            await sourceFile.copy(targetPath);
+
+            getIt<LoggingService>().captureException(
+              'DEBUG: Copied screenshot from $screenshotPath to $targetPath',
+              domain: 'ScreenshotPortalService',
+              subDomain: 'file_copy',
+            );
+
+            // Return the target path where we copied the file
+            return targetPath;
+          } catch (e) {
+            getIt<LoggingService>().captureException(
+              'ERROR: Failed to copy screenshot file: $e',
+              domain: 'ScreenshotPortalService',
+              subDomain: 'file_copy_error',
+              stackTrace: stackTrace,
+            );
+            // If copy fails, return the original path
+            return screenshotPath;
+          }
+        }
 
         return screenshotPath;
       } finally {
