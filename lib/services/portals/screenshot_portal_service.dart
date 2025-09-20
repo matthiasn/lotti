@@ -5,6 +5,7 @@ import 'package:dbus/dbus.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/portals/portal_service.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 class ScreenshotPortalConstants {
@@ -90,31 +91,9 @@ class ScreenshotPortalService extends PortalService {
             final results = signal.values[1].asDict();
 
             if (code == 0) {
-              // Success - extract the URI from results
-              final uriValue = results[const DBusString('uri')];
-
-              // The value might be a DBusVariant containing a DBusString
-              String? uri;
-              if (uriValue is DBusVariant) {
-                final innerValue = uriValue.value;
-                if (innerValue is DBusString) {
-                  uri = innerValue.value;
-                }
-              } else if (uriValue is DBusString) {
-                uri = uriValue.value;
-              }
-
-              if (uri != null) {
-                // Convert file:// URI to local file system path
-                if (uri.startsWith('file://')) {
-                  final path = Uri.parse(uri).toFilePath();
-                  completer.complete(path);
-                } else {
-                  completer.complete(null);
-                }
-              } else {
-                completer.complete(null);
-              }
+              // Success - extract the file path from results
+              final path = ScreenshotPortalService.parseUriFromResults(results);
+              completer.complete(path);
             } else {
               // Non-zero code indicates failure
               // Code 1 = User cancelled, Code 2 = Other error
@@ -153,38 +132,13 @@ class ScreenshotPortalService extends PortalService {
           },
         );
 
-        // If we have a path and a target directory/filename, copy the file
+        // If we have a path and a target directory/filename, copy/move the file
         if (screenshotPath != null && directory != null && filename != null) {
-          try {
-            final sourceFile = File(screenshotPath);
-            final targetPath = p.join(directory, filename);
-
-            // Ensure target directory exists (async)
-            final targetDir = Directory(directory);
-            // ignore: avoid_slow_async_io
-            if (!await targetDir.exists()) {
-              await targetDir.create(recursive: true);
-            }
-
-            // Try fast move first, fall back to copy if rename across devices fails
-            try {
-              await sourceFile.rename(targetPath);
-            } catch (e) {
-              await sourceFile.copy(targetPath);
-            }
-
-            // Return the target path where we moved/copied the file
-            return targetPath;
-          } catch (e, st) {
-            getIt<LoggingService>().captureException(
-              e,
-              domain: 'ScreenshotPortalService',
-              subDomain: 'file_copy_error',
-              stackTrace: st,
-            );
-            // If move/copy fails, return the original path
-            return screenshotPath;
-          }
+          return await ScreenshotPortalService.persistScreenshot(
+            screenshotPath,
+            directory,
+            filename,
+          );
         }
 
         return screenshotPath;
@@ -200,6 +154,73 @@ class ScreenshotPortalService extends PortalService {
         stackTrace: stackTrace,
       );
       rethrow;
+    }
+  }
+
+  /// Extracts and normalizes the file path from a portal response map.
+  ///
+  /// The `results` map is expected to be a DBus dict keyed by `DBusString`.
+  /// The URI value may be either a `DBusVariant(DBusString)` or a `DBusString`.
+  /// Returns a local file system path if the URI uses the `file://` scheme,
+  /// otherwise returns null.
+  @visibleForTesting
+  static String? parseUriFromResults(Map<DBusValue, DBusValue> results) {
+    final uriValue = results[const DBusString('uri')];
+
+    String? uri;
+    if (uriValue is DBusVariant) {
+      final innerValue = uriValue.value;
+      if (innerValue is DBusString) {
+        uri = innerValue.value;
+      }
+    } else if (uriValue is DBusString) {
+      uri = uriValue.value;
+    }
+
+    if (uri == null) return null;
+    if (!uri.startsWith('file://')) return null;
+
+    return Uri.parse(uri).toFilePath();
+  }
+
+  /// Persists a temporary screenshot to the given directory/filename.
+  ///
+  /// Ensures the target directory exists, attempts a fast rename first, and
+  /// falls back to a copy when a cross-device rename fails. Any failure is
+  /// logged and the original `screenshotPath` is returned.
+  @visibleForTesting
+  static Future<String> persistScreenshot(
+    String screenshotPath,
+    String directory,
+    String filename,
+  ) async {
+    try {
+      final sourceFile = File(screenshotPath);
+      final targetPath = p.join(directory, filename);
+
+      // Ensure target directory exists (async)
+      final targetDir = Directory(directory);
+      // ignore: avoid_slow_async_io
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
+      }
+
+      // Try fast move first, fall back to copy if rename across devices fails
+      try {
+        await sourceFile.rename(targetPath);
+      } catch (_) {
+        await sourceFile.copy(targetPath);
+      }
+
+      return targetPath;
+    } catch (e, st) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'ScreenshotPortalService',
+        subDomain: 'file_copy_error',
+        stackTrace: st,
+      );
+      return screenshotPath;
     }
   }
 

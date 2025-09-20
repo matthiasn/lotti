@@ -1823,7 +1823,7 @@ packages:
     source: hosted
     version: "1.0.9"
   meta:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: meta
       sha256: e3641ec5d63ebf0d9b41bd43201a66e3fc79a65db5f61fc181f04cd27aab950c
