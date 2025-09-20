@@ -444,7 +444,7 @@
 					"-O3",
 					"-DNDEBUG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasnehlsen.lotti.profile;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.lotti.profile;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "whisper.cpp/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -626,7 +626,7 @@
 					"-O3",
 					"-DNDEBUG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasnehlsen.lotti;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.lotti;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "Mac AppStore Provisioning 2025-07";
 				SWIFT_OBJC_BRIDGING_HEADER = "whisper.cpp/Runner-Bridging-Header.h";

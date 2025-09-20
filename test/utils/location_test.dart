@@ -6,7 +6,7 @@ void main() {
   group('LocationConstants', () {
     test('has correct constant values', () {
       expect(LocationConstants.locationTimeout, const Duration(seconds: 10));
-      expect(LocationConstants.appDesktopId, 'com.matthiasnehlsen.lotti');
+      expect(LocationConstants.appDesktopId, 'com.matthiasn.lotti');
     });
   });
 

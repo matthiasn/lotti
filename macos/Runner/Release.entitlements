@@ -16,7 +16,7 @@
 	<true/>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)com.matthiasnehlsen.lotti</string>
+		<string>$(AppIdentifierPrefix)com.matthiasn.lotti</string>
 	</array>
 </dict>
 </plist>
