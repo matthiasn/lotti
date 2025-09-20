@@ -97,10 +97,10 @@ print_status "Injecting Flutter SDK source into app module for flatpak-flutter..
 
 # Extract Flutter tag from the flutter-sdk module in the source manifest as the source of truth
 FLUTTER_TAG=$(awk '
-  /^- name: flutter-sdk$/ {in_sdk=1}
-  in_sdk && /^\s*sources:/ {in_sources=1}
-  in_sdk && in_sources && /tag:/ {print $2; exit}
-  in_sdk && /^\s*- name:/ {in_sdk=0}
+  /^[[:space:]]*-[[:space:]]+name:[[:space:]]+flutter-sdk[[:space:]]*$/ {in_sdk=1}
+  in_sdk && /^[[:space:]]*sources:/ {in_sources=1}
+  in_sdk && in_sources && /^[[:space:]]*tag:[[:space:]]/ {print $2; exit}
+  in_sdk && /^[[:space:]]*-[[:space:]]+name:/ {in_sdk=0}
 ' "$WORK_DIR/com.matthiasn.lotti.yml" | tr -d '"' | tr -d "'")
 
 if [ -z "${FLUTTER_TAG}" ]; then
@@ -157,6 +157,15 @@ cp "$LOTTI_ROOT/pubspec.lock" .
 
 # Create build directory that flatpak-flutter expects
 mkdir -p .flatpak-builder/build
+
+# Ensure pubspec files are available where flatpak-flutter expects them
+for build_dir in \
+    .flatpak-builder/build/lotti \
+    .flatpak-builder/build/lotti-1; do
+  mkdir -p "$build_dir"
+  cp -f pubspec.yaml "$build_dir/" 2>/dev/null || true
+  cp -f pubspec.lock "$build_dir/" 2>/dev/null || true
+done
 
 # Run flatpak-flutter with verbose output
 print_info "Running flatpak-flutter with the following manifest:"

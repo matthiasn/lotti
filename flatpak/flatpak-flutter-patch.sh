@@ -15,6 +15,12 @@ fi
 
 echo "Patching flatpak-flutter to fix UnboundLocalError..."
 
+# Skip if already patched (presence of our initialization line)
+if grep -q "tag = None  # Initialize tag" "$FLATPAK_FLUTTER_DIR/flutter_app_fetcher/flutter_app_fetcher.py"; then
+  echo "Patch already applied; skipping."
+  exit 0
+fi
+
 # Create a patch to initialize tag variable
 cat > /tmp/flatpak-flutter.patch << 'EOF'
 --- a/flutter_app_fetcher/flutter_app_fetcher.py
@@ -41,6 +47,7 @@ EOF
 
 # Apply the patch
 cd "$FLATPAK_FLUTTER_DIR"
-patch -p1 < /tmp/flatpak-flutter.patch
+# Apply forward-only to avoid reverse prompts
+patch -p1 --forward < /tmp/flatpak-flutter.patch || echo "Patch may already be applied."
 
 echo "Patch applied successfully!"
