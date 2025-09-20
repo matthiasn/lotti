@@ -36,12 +36,6 @@ class ScreenshotPortalService extends PortalService {
       );
     }
 
-    getIt<LoggingService>().captureException(
-      'DEBUG: takeScreenshot called with directory=$directory, filename=$filename',
-      domain: 'ScreenshotPortalService',
-      subDomain: 'takeScreenshot_start',
-    );
-
     await initialize();
 
     try {
@@ -59,12 +53,6 @@ class ScreenshotPortalService extends PortalService {
       }
 
       // Call the screenshot method
-      getIt<LoggingService>().captureException(
-        'DEBUG: Calling portal Screenshot method',
-        domain: 'ScreenshotPortalService',
-        subDomain: 'calling_method',
-      );
-
       final result = await object.callMethod(
         ScreenshotPortalConstants.interfaceName,
         ScreenshotPortalConstants.screenshotMethod,
@@ -81,12 +69,6 @@ class ScreenshotPortalService extends PortalService {
       // Extract the request handle from the response
       final requestHandle = result.returnValues.first as DBusObjectPath;
 
-      getIt<LoggingService>().captureException(
-        'DEBUG: Got request handle: ${requestHandle.value}',
-        domain: 'ScreenshotPortalService',
-        subDomain: 'request_handle',
-      );
-
       // Create a completer to wait for the response signal
       final completer = Completer<String?>();
 
@@ -101,22 +83,10 @@ class ScreenshotPortalService extends PortalService {
 
       final signalSubscription = signalStream.listen((DBusSignal signal) {
         try {
-          getIt<LoggingService>().captureException(
-            'DEBUG: Received signal with ${signal.values.length} values',
-            domain: 'ScreenshotPortalService',
-            subDomain: 'signal_received',
-          );
-
           // Parse the response signal
           if (signal.values.length >= 2) {
             final code = signal.values[0].asUint32();
             final results = signal.values[1].asDict();
-
-            getIt<LoggingService>().captureException(
-              'DEBUG: Response code=$code, results keys=${results.keys.map((k) => k.asString()).join(", ")}',
-              domain: 'ScreenshotPortalService',
-              subDomain: 'signal_parsed',
-            );
 
             if (code == 0) {
               // Success - extract the URI from results
@@ -133,19 +103,7 @@ class ScreenshotPortalService extends PortalService {
                 uri = uriValue.value;
               }
 
-              getIt<LoggingService>().captureException(
-                'DEBUG: uriValue type=${uriValue?.runtimeType}, uri=$uri',
-                domain: 'ScreenshotPortalService',
-                subDomain: 'uri_type',
-              );
-
               if (uri != null) {
-                getIt<LoggingService>().captureException(
-                  'DEBUG: Got URI: $uri',
-                  domain: 'ScreenshotPortalService',
-                  subDomain: 'uri_received',
-                );
-
                 // Convert file:// URI to local file system path
                 if (uri.startsWith('file://')) {
                   final path = Uri.parse(uri).toFilePath();
@@ -154,19 +112,14 @@ class ScreenshotPortalService extends PortalService {
                   completer.complete(null);
                 }
               } else {
-                getIt<LoggingService>().captureException(
-                  'DEBUG: Could not extract URI from results',
-                  domain: 'ScreenshotPortalService',
-                  subDomain: 'no_uri',
-                );
                 completer.complete(null);
               }
             } else {
               // Non-zero code indicates failure
               getIt<LoggingService>().captureException(
-                'DEBUG: Portal returned non-zero code: $code',
+                'Screenshot portal returned non-zero code: $code',
                 domain: 'ScreenshotPortalService',
-                subDomain: 'non_zero_code',
+                subDomain: 'portal_error',
               );
               completer.complete(null);
             }
@@ -175,7 +128,7 @@ class ScreenshotPortalService extends PortalService {
           }
         } catch (e) {
           getIt<LoggingService>().captureException(
-            'DEBUG: Error in signal handler: $e',
+            e,
             domain: 'ScreenshotPortalService',
             subDomain: 'signal_error',
           );
@@ -207,17 +160,11 @@ class ScreenshotPortalService extends PortalService {
             // Copy the file to the expected location
             await sourceFile.copy(targetPath);
 
-            getIt<LoggingService>().captureException(
-              'DEBUG: Copied screenshot from $screenshotPath to $targetPath',
-              domain: 'ScreenshotPortalService',
-              subDomain: 'file_copy',
-            );
-
             // Return the target path where we copied the file
             return targetPath;
           } catch (e, st) {
             getIt<LoggingService>().captureException(
-              'ERROR: Failed to copy screenshot file: $e',
+              e,
               domain: 'ScreenshotPortalService',
               subDomain: 'file_copy_error',
               stackTrace: st,
