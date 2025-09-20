@@ -56,6 +56,11 @@ The manifest automatically handles architecture differences:
 
 The Flathub build requires all dependencies to be available offline. We use `flatpak-flutter` to generate the offline manifest and dependencies.
 
+1. **Install Python dependencies**:
+   ```bash
+   sudo apt-get install python3-packaging python3-toml python3-yaml python3-requests
+   ```
+
 ### Preparation Process
 
 1. **Install flatpak-flutter** (if not already installed):
@@ -74,6 +79,11 @@ The Flathub build requires all dependencies to be available offline. We use `fla
    - Extracts version from `pubspec.yaml` (e.g., `0.9.665+3266` → `0.9.665`)
    - Uses the current git HEAD commit
    - Sets release date to today
+
+   For local testing with unpushed commits:
+   ```bash
+   USE_LOCAL_SOURCE=true ./prepare_flathub_submission.sh
+   ```
 
    Or override with custom version/date:
    ```bash
