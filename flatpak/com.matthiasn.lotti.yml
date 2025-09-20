@@ -100,14 +100,13 @@ modules:
   - name: flutter-sdk
     buildsystem: simple
     build-commands:
-      - tar -xf flutter_linux_*.tar.xz -C /app/
+      # Clone Flutter SDK from Git
+      - git clone https://github.com/flutter/flutter.git -b stable /app/flutter
+      # Precache Flutter artifacts to ensure all required binaries are downloaded
       - export PATH=/app/flutter/bin:$PATH
       - /app/flutter/bin/flutter --version
-    sources:
-      - type: file
-        url: https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.35.4-stable.tar.xz
-        sha256: 151c75539aa1c01b874954d7b6e0006a622a3f12c76fd7f1fcafad27e6a2d68a
-        dest-filename: flutter_linux_3.35.4-stable.tar.xz
+      - /app/flutter/bin/flutter precache --linux
+    sources: []
   - name: lotti
     buildsystem: simple
     build-options:

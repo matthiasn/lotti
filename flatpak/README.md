@@ -48,19 +48,16 @@ Before building the Flatpak, you need to prepare the Flutter bundle:
    cp fonts/MaterialIcons-Regular.otf flatpak/flutter-bundle/data/flutter_assets/fonts/
    ```
 
-### Building the Flatpak
+### Building the Flatpak build
 
-1. Install flatpak-builder:
+1. Install flatpak & flatpak-builder & runtimes:
    ```bash
-   sudo apt install flatpak-builder
-   ```
-
-2. Add the required runtime:
-   ```bash
+   sudo apt install flatpak flatpak-builder
+   flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
    flatpak install org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
    ```
 
-3. Build and install:
+2Build and install:
    ```bash
    cd flatpak
    flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
