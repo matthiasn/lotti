@@ -67,6 +67,9 @@ The Flathub build requires all dependencies to be available offline. We use `fla
    ```bash
    cd flatpak
    git clone https://github.com/TheAppgineer/flatpak-flutter.git
+
+   # Apply patch to fix UnboundLocalError bug
+   ./flatpak-flutter-patch.sh flatpak-flutter
    ```
 
 2. **Ensure your branch is pushed**:
