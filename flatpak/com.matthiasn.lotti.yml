@@ -181,7 +181,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/matthiasn/lotti
-        commit: 3e68abad2d244af6bab197f30d888bf03a5a7695
+        commit: 82e3f97ed60be47a6534492859839794c1bf1a87
   - name: flutter-common
     buildsystem: simple
     build-commands:
