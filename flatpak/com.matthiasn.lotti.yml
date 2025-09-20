@@ -103,8 +103,8 @@ modules:
       build-args:
         - --share=network
     build-commands:
-      # Clone Flutter SDK from Git
-      - git clone https://github.com/flutter/flutter.git -b stable /app/flutter
+      # Clone Flutter SDK from Git (pinned to 3.35.4)
+      - git clone https://github.com/flutter/flutter.git -b 3.35.4 --depth 1 /app/flutter
       # Precache Flutter artifacts to ensure all required binaries are downloaded
       - export PATH=/app/flutter/bin:$PATH
       - /app/flutter/bin/flutter --version
