@@ -30,7 +30,7 @@ This directory contains the Flatpak manifest and related files for building Lott
 ```bash
 cd flatpak
 ./update_manifest_commit.sh
-flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
+flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.source.yml
 ```
 
 Note: The `update_manifest_commit.sh` script replaces `COMMIT_PLACEHOLDER` in the manifest with the current git HEAD.
@@ -83,11 +83,10 @@ The Flathub build requires all dependencies to be available offline. The `prepar
 
 ### Key Files
 
-- `com.matthiasn.lotti.yml` - Local build manifest (requires network, uses COMMIT_PLACEHOLDER)
-- `com.matthiasn.lotti.flathub.yml` - Flathub manifest (offline build)
+- `com.matthiasn.lotti.source.yml` - Main manifest for local builds (requires network, uses COMMIT_PLACEHOLDER)
 - `com.matthiasn.lotti.metainfo.xml` - App metadata with version placeholders
-- `update_manifest_commit.sh` - Updates COMMIT_PLACEHOLDER with actual commit hash
-- `prepare_flathub_submission.sh` - Prepares everything for Flathub
+- `update_manifest_commit.sh` - Updates COMMIT_PLACEHOLDER with actual commit hash in the manifest
+- `prepare_flathub_submission.sh` - Prepares everything for Flathub (generates offline manifest)
 
 ## Creating a Bundle
 
@@ -97,7 +96,7 @@ To create a distributable Flatpak bundle:
 ./update_manifest_commit.sh
 
 # Build into a repo
-flatpak-builder --repo=repo build-dir com.matthiasn.lotti.yml
+flatpak-builder --repo=repo build-dir com.matthiasn.lotti.source.yml
 
 # Create the bundle
 flatpak build-bundle repo lotti.flatpak com.matthiasn.lotti

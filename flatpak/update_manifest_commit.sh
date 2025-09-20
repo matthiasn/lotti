@@ -7,7 +7,7 @@ set -e
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MANIFEST_FILE="$SCRIPT_DIR/com.matthiasn.lotti.yml"
+MANIFEST_FILE="$SCRIPT_DIR/com.matthiasn.lotti.source.yml"
 
 # Get the commit hash to use (either from argument or current HEAD)
 COMMIT_HASH="${1:-$(git rev-parse HEAD)}"

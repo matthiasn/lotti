@@ -39,12 +39,12 @@ jobs:
 
         # Show the updated manifest
         echo "Manifest updated with commit ${{ github.sha }}:"
-        grep -A2 "url: https://github.com/matthiasn/lotti" com.matthiasn.lotti.yml
+        grep -A2 "url: https://github.com/matthiasn/lotti" com.matthiasn.lotti.source.yml
 
     - name: Build Flatpak
       run: |
         cd flatpak
-        flatpak-builder --force-clean --repo=repo build-dir com.matthiasn.lotti.yml
+        flatpak-builder --force-clean --repo=repo build-dir com.matthiasn.lotti.source.yml
 
     - name: Create Flatpak bundle
       run: |
