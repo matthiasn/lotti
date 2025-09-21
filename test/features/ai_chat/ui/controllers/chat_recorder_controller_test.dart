@@ -26,11 +26,7 @@ class _MockTranscriptionService extends Mock
     implements AudioTranscriptionService {}
 
 class _InMemoryAiConfigRepo extends AiConfigRepository {
-  _InMemoryAiConfigRepo()
-      : super(
-          // ignore: invalid_use_of_visible_for_testing_member
-          AiConfigDb(inMemoryDatabase: true),
-        );
+  _InMemoryAiConfigRepo() : super(AiConfigDb(inMemoryDatabase: true));
 }
 
 class _FakeLoggingService extends LoggingService {

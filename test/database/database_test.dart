@@ -20,8 +20,6 @@ import '../mocks/mocks.dart';
 // Add missing mock classes
 class MockLoggingService extends Mock implements LoggingService {}
 
-class MockFile extends Mock implements File {}
-
 // Setup a temp directory for testing
 Directory setupTestDirectory() {
   final directory = Directory.systemTemp.createTempSync('lotti_test_');

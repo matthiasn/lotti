@@ -699,7 +699,6 @@ class PersistenceLogic {
   }
 
   void addGeolocation(String journalEntityId) {
-    // ignore: unawaited_futures
     addGeolocationAsync(journalEntityId);
   }
 

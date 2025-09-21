@@ -33,7 +33,7 @@ class ChecklistCompletionService extends _$ChecklistCompletionService {
 
     // Filter out already completed items
     final incompleteItems =
-        checklistItems.where((item) => item.data.isChecked == false).toList();
+        checklistItems.where((item) => !item.data.isChecked).toList();
 
     if (incompleteItems.isEmpty) {
       return;

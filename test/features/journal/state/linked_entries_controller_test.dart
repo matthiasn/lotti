@@ -23,14 +23,6 @@ class MockIncludeHiddenController extends IncludeHiddenController {
   bool build({required String id}) => _value;
 }
 
-class MockIncludeAiEntriesController extends IncludeAiEntriesController {
-  MockIncludeAiEntriesController(this._value);
-  final bool _value;
-
-  @override
-  bool build({required String id}) => _value;
-}
-
 void main() {
   late MockJournalRepository mockJournalRepository;
   late MockUpdateNotifications mockUpdateNotifications;

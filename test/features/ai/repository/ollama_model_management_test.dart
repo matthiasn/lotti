@@ -16,9 +16,6 @@ class MockHttpClient extends Mock implements http.Client {}
 
 class MockRef extends Mock implements Ref<Object?> {}
 
-class MockOllamaInferenceRepository extends Mock
-    implements OllamaInferenceRepository {}
-
 // Add this fake for mocktail
 class FakeBaseRequest extends Fake implements http.BaseRequest {}
 

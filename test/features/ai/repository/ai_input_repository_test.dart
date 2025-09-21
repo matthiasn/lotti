@@ -45,10 +45,7 @@ class MockTaskProgressRepository extends Mock
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 // Mock classes for parameters
-class FakeId extends Mock {
-  FakeId(this.value);
-  final String value;
-}
+class FakeId extends Mock {}
 
 // Create real implementations rather than mocks that can cause test issues
 class TestTaskProgressState implements TaskProgressState {
@@ -77,25 +74,6 @@ class TestTaskProgressState implements TaskProgressState {
       'TestTaskProgressState(progress: $_progress, estimate: $_estimate)';
 }
 
-// ignore: subtype_of_sealed_class
-class TestAsyncValue<T> implements AsyncValue<T> {
-  TestAsyncValue(this._value);
-  final T? _value;
-
-  @override
-  bool get hasValue => _value != null;
-
-  @override
-  T get value => _value as T;
-
-  @override
-  String toString() => 'TestAsyncValue<$T>(value: $_value)';
-
-  // We only need to implement the properties used by the repository
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
 class TestRef implements Ref {
   TestRef(this._mockTaskProgressRepository) {
     // Add the mock repository to the values map
@@ -111,7 +89,7 @@ class TestRef implements Ref {
     final progressState =
         progress != null ? TestTaskProgressState(progress) : null;
 
-    _values[provider] = TestAsyncValue<TaskProgressState?>(progressState);
+    _values[provider] = AsyncData<TaskProgressState?>(progressState);
   }
 
   @override
@@ -132,7 +110,7 @@ void main() {
 
   setUpAll(() {
     // Register fallback values for mocktail
-    registerFallbackValue(FakeId(taskId));
+    registerFallbackValue(FakeId());
     registerFallbackValue(<String, Duration>{});
     registerFallbackValue(Duration.zero);
     registerFallbackValue(

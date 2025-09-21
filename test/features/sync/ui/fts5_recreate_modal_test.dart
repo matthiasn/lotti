@@ -17,16 +17,6 @@ class TestFts5Controller extends Fts5Controller {
   Future<void> recreateFts5() async {}
 }
 
-Widget createTestApp(Widget child) {
-  return ProviderScope(
-    child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    ),
-  );
-}
-
 void main() {
   testWidgets('Fts5RecreateModal shows progress and handles states correctly',
       (WidgetTester tester) async {

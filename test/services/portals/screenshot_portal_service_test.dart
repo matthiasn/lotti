@@ -15,12 +15,6 @@ class MockDBusClient extends Mock implements DBusClient {}
 
 class MockDBusRemoteObject extends Mock implements DBusRemoteObject {}
 
-class MockDBusMethodSuccessResponse extends Mock
-    implements DBusMethodSuccessResponse {}
-
-class MockStreamSubscription extends Mock
-    implements StreamSubscription<DBusSignal> {}
-
 class MockDBusSignal extends Mock implements DBusSignal {}
 
 class FakeDBusObjectPath extends Fake implements DBusObjectPath {

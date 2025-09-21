@@ -267,7 +267,7 @@ class ChecklistCompletionController extends _$ChecklistCompletionController {
               .value,
         )
         .nonNulls
-        .where((item) => item.isDeleted == false)
+        .where((item) => !item.isDeleted)
         .toList();
     final totalCount = linkedChecklistItems.length;
     final completedCount =

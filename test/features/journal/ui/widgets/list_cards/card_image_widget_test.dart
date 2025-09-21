@@ -6,13 +6,9 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/get_it.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../../test_helper.dart';
-
-// Mock class for File
-class MockFile extends Mock implements File {}
 
 void main() {
   late JournalImage testImage;

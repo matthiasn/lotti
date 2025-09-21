@@ -31,6 +31,7 @@ class TestSelectionModal extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Text(title),
           Flexible(child: child),
           if (onSave != null) ...[
             const SizedBox(height: 20),
@@ -74,6 +75,7 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
+        expect(find.text('Test Modal'), findsOneWidget);
         expect(find.text('Test Content'), findsOneWidget);
       });
 

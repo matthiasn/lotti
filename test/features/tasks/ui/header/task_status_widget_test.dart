@@ -25,12 +25,6 @@ class MockTask extends Mock implements Task {
       );
 }
 
-class MockCallable<T, R> extends Mock {
-  R call(T? arg) => super.noSuchMethod(
-        Invocation.method(#call, [arg]),
-      ) as R;
-}
-
 void main() {
   late DateTime now;
   late MockTask mockTask;

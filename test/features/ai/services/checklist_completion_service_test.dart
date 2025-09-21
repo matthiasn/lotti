@@ -10,9 +10,6 @@ import 'package:openai_dart/openai_dart.dart';
 
 class MockOpenAIClient extends Mock implements OpenAIClient {}
 
-class MockRef extends Mock
-    implements Ref<AsyncValue<List<ChecklistCompletionSuggestion>>> {}
-
 void main() {
   late ProviderContainer container;
   late MockOpenAIClient mockOpenAIClient;

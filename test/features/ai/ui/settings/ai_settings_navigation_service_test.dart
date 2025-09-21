@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../test_utils.dart';
-
-class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
 void main() {
   group('AiSettingsNavigationService Comprehensive Tests', () {

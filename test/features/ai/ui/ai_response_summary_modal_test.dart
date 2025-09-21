@@ -5,13 +5,8 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:super_clipboard/super_clipboard.dart';
 
 import '../../../test_helper.dart';
-
-// Mock the clipboard for testing
-class MockClipboard extends Mock implements ClipboardReader, ClipboardWriter {}
 
 // Note: We don't need to implement the mocks for clipboard functionality since
 // we're only testing for the presence of UI elements

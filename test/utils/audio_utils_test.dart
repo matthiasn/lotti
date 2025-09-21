@@ -4,15 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../helpers/path_provider.dart';
 import '../test_data/test_data.dart';
-
-class MockDirectory extends Mock implements Directory {}
-
-class MockFile extends Mock implements File {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

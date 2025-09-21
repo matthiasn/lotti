@@ -21,16 +21,6 @@ class TestSyncController extends SyncMaintenanceController {
   void reset() {}
 }
 
-Widget createTestApp(Widget child) {
-  return ProviderScope(
-    child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    ),
-  );
-}
-
 void main() {
   testWidgets('SyncModal shows progress and checkmark (direct widget)',
       (tester) async {

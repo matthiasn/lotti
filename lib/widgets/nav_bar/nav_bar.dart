@@ -1,10 +1,8 @@
 // ignore_for_file: prefer_asserts_with_message
 // ignore_for_file: prefer_int_literals
 // ignore_for_file: omit_local_variable_types
-// ignore_for_file: require_trailing_commas
 // ignore_for_file: always_put_required_named_parameters_first
 // ignore_for_file: parameter_assignments
-// ignore_for_file: depend_on_referenced_packages
 
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be

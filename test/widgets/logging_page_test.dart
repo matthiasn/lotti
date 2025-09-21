@@ -12,25 +12,12 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 class MockLoggingDb extends Mock implements LoggingDb {}
 
-class MockVisibilityDetector extends StatelessWidget {
-  const MockVisibilityDetector({
-    required this.child,
-    required Key key,
-  }) : super(key: key);
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => child;
-}
-
 class MockNavService extends Mock implements NavService {}
 
 /// Test constants to avoid magic numbers and improve maintainability
 class TestConstants {
   static const Duration debounceDelay = Duration(milliseconds: 300);
   static const Duration testBuffer = Duration(milliseconds: 100);
-  static const Duration searchTimeout = Duration(milliseconds: 500);
 
   static const String testQuery = 'test';
   static const String nonMatchingQuery = 'NonMatching';

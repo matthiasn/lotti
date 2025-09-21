@@ -884,7 +884,6 @@ void main() {
           createdAt: testDate,
           inputModalities: const [Modality.text],
           outputModalities: const [Modality.text],
-          // ignore: avoid_redundant_argument_values
           isReasoningModel: false,
           // ignore: avoid_redundant_argument_values
           supportsFunctionCalling: false,

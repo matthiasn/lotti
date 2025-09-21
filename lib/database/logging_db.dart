@@ -30,7 +30,7 @@ class LoggingDb extends _$LoggingDb {
           ),
         );
 
-  LoggingDb.connect(super.connection) : super.connect();
+  LoggingDb.connect(super.c) : super.connect();
 
   bool inMemoryDatabase = false;
 

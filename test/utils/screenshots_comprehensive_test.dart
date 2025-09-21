@@ -20,26 +20,6 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockWindowManager extends Mock implements WindowManager {}
 
-class MockDirectory extends Mock implements Directory {}
-
-class MockProcess extends Mock implements Process {}
-
-// ProcessResult is final, so we can't mock it directly
-
-class MockDBusClient extends Mock implements DBusClient {}
-
-class MockDBusRemoteObject extends Mock implements DBusRemoteObject {}
-
-class MockDBusMethodResponse extends Mock implements DBusMethodResponse {}
-
-class MockDBusSignalStream extends Mock implements DBusSignalStream {}
-
-class MockDBusSignal extends Mock implements DBusSignal {}
-
-class MockFile extends Mock implements File {}
-
-class MockIOSink extends Mock implements IOSink {}
-
 class FakeDBusObjectPath extends Fake implements DBusObjectPath {}
 
 class FakeDBusMethodCall extends Fake implements DBusMethodCall {}

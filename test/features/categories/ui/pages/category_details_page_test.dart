@@ -3,9 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -21,14 +18,7 @@ import '../../test_utils.dart';
 
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
-
-// Stub navigation function
-void beamToNamed(String path, {Object? data}) {
-  // Stub implementation for tests
-}
 
 // Helper method to find an enabled LottiPrimaryButton
 LottiPrimaryButton? findEnabledPrimaryButton(WidgetTester tester) {
@@ -43,65 +33,6 @@ LottiPrimaryButton? findEnabledPrimaryButton(WidgetTester tester) {
   }
 
   return null;
-}
-
-// Helper method to create test AI prompts
-List<AiConfig> createTestPrompts() {
-  return [
-    AiConfig.prompt(
-      id: 'prompt1',
-      name: 'Audio Transcription Prompt',
-      description: 'Transcribe audio recordings',
-      systemMessage: 'System message',
-      userMessage: 'User message',
-      defaultModelId: 'model1',
-      modelIds: ['model1'],
-      createdAt: DateTime.now(),
-      useReasoning: false,
-      requiredInputData: [InputDataType.audioFiles],
-      aiResponseType: AiResponseType.audioTranscription,
-    ),
-    AiConfig.prompt(
-      id: 'prompt2',
-      name: 'Image Analysis Prompt',
-      description: 'Analyze images',
-      systemMessage: 'System message',
-      userMessage: 'User message',
-      defaultModelId: 'model1',
-      modelIds: ['model1'],
-      createdAt: DateTime.now(),
-      useReasoning: false,
-      requiredInputData: [InputDataType.images],
-      aiResponseType: AiResponseType.imageAnalysis,
-    ),
-    AiConfig.prompt(
-      id: 'prompt3',
-      name: 'Task Summary Prompt',
-      description: 'Summarize tasks',
-      systemMessage: 'System message',
-      userMessage: 'User message',
-      defaultModelId: 'model1',
-      modelIds: ['model1'],
-      createdAt: DateTime.now(),
-      useReasoning: false,
-      requiredInputData: [InputDataType.task],
-      aiResponseType: AiResponseType.taskSummary,
-    ),
-    AiConfig.prompt(
-      id: 'prompt4',
-      name: 'General Prompt',
-      description: 'General purpose prompt',
-      systemMessage: 'System message',
-      userMessage: 'User message',
-      defaultModelId: 'model1',
-      modelIds: ['model1'],
-      createdAt: DateTime.now(),
-      useReasoning: false,
-      requiredInputData: [],
-      aiResponseType:
-          AiResponseType.taskSummary, // Using a valid type for testing
-    ),
-  ];
 }
 
 void main() {

@@ -35,7 +35,7 @@ class SyncDatabase extends _$SyncDatabase {
           ),
         );
 
-  SyncDatabase.connect(super.connection) : super.connect();
+  SyncDatabase.connect(super.c) : super.connect();
 
   bool inMemoryDatabase = false;
 
