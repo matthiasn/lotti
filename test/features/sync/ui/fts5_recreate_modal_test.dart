@@ -5,9 +5,13 @@ import 'package:lotti/features/sync/state/fts5_controller.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
-class TestFts5Controller extends StateNotifier<Fts5State>
-    implements Fts5Controller {
-  TestFts5Controller(super.state);
+class TestFts5Controller extends Fts5Controller {
+  TestFts5Controller(this._initialState);
+
+  final Fts5State _initialState;
+
+  @override
+  Fts5State build() => _initialState;
 
   @override
   Future<void> recreateFts5() async {}
@@ -37,7 +41,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          fts5ControllerProvider.overrideWith((ref) => testController),
+          fts5ControllerProvider.overrideWith(() => testController),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -106,7 +110,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          fts5ControllerProvider.overrideWith((ref) => testController),
+          fts5ControllerProvider.overrideWith(() => testController),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

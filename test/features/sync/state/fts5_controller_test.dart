@@ -1,127 +1,147 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/sync/state/fts5_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMaintenance extends Mock implements Maintenance {}
 
 void main() {
   late MockMaintenance mockMaintenance;
+  late ProviderContainer container;
   late Fts5Controller controller;
 
-  setUp(() {
+  setUp(() async {
+    await getIt.reset();
     mockMaintenance = MockMaintenance();
-    controller = Fts5Controller(mockMaintenance);
+    getIt.registerSingleton<Maintenance>(mockMaintenance);
+    container = ProviderContainer();
+    controller = container.read(fts5ControllerProvider.notifier);
+  });
+
+  tearDown(() async {
+    container.dispose();
+    await getIt.reset();
   });
 
   group('Fts5Controller', () {
     test('initial state should be correct', () {
-      expect(controller.state.progress, 0);
-      expect(controller.state.isRecreating, false);
-      expect(controller.state.error, null);
+      final state = container.read(fts5ControllerProvider);
+      expect(state.progress, 0);
+      expect(state.isRecreating, false);
+      expect(state.error, null);
     });
 
     test('recreateFts5 should update state correctly', () async {
-      // Track state changes
       final states = <Fts5State>[];
-      controller.addListener(states.add);
+      final sub = container.listen<Fts5State>(
+        fts5ControllerProvider,
+        (previous, next) => states.add(next),
+        fireImmediately: true,
+      );
 
-      // Setup mock to call onProgress with different values
-      when(
-        () => mockMaintenance.recreateFts5(
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).thenAnswer((invocation) async {
-        final onProgress = invocation.namedArguments[const Symbol('onProgress')]
-            as void Function(double)?;
-        onProgress?.call(0.25);
-        onProgress?.call(0.5);
-        onProgress?.call(0.75);
-        onProgress?.call(1);
-      });
+      try {
+        when(
+          () => mockMaintenance.recreateFts5(
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final onProgress =
+              invocation.namedArguments[const Symbol('onProgress')] as void
+                  Function(double)?;
+          onProgress?.call(0.25);
+          onProgress?.call(0.5);
+          onProgress?.call(0.75);
+          onProgress?.call(1);
+        });
 
-      // Start recreation operation
-      await controller.recreateFts5();
+        await controller.recreateFts5();
 
-      // Verify state progression
-      expect(
-        states.length,
-        7,
-      ); // Initial + 4 progress updates + final + completion
-      expect(states[0].progress, 0);
-      expect(states[0].isRecreating, false);
-      expect(states[1].progress, 0);
-      expect(states[1].isRecreating, true);
-      expect(states[2].progress, 0.25);
-      expect(states[3].progress, 0.5);
-      expect(states[4].progress, 0.75);
-      expect(states[5].progress, 1.0);
-      expect(states[6].isRecreating, false);
+        expect(states.length, 7);
+        expect(states[0].progress, 0);
+        expect(states[0].isRecreating, false);
+        expect(states[1].progress, 0);
+        expect(states[1].isRecreating, true);
+        expect(states[2].progress, 0.25);
+        expect(states[3].progress, 0.5);
+        expect(states[4].progress, 0.75);
+        expect(states[5].progress, 1.0);
+        expect(states[6].isRecreating, false);
+      } finally {
+        sub.close();
+      }
     });
 
     test('recreateFts5 should handle errors gracefully', () async {
       const testError = 'Test error';
 
-      // Track state changes
       final states = <Fts5State>[];
-      controller.addListener(states.add);
+      final sub = container.listen<Fts5State>(
+        fts5ControllerProvider,
+        (previous, next) => states.add(next),
+        fireImmediately: true,
+      );
 
-      // Setup mock to throw error
-      when(
-        () => mockMaintenance.recreateFts5(
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).thenThrow(Exception(testError));
+      try {
+        when(
+          () => mockMaintenance.recreateFts5(
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception(testError));
 
-      // Start recreation operation
-      await controller.recreateFts5();
+        await controller.recreateFts5();
 
-      // Verify state progression
-      expect(states.length, 3); // Initial + error + final
-      expect(states[0].progress, 0);
-      expect(states[0].isRecreating, false);
-      expect(states[1].isRecreating, true);
-      expect(states[2].isRecreating, false);
-      expect(states[2].progress, 0);
-      expect(states[2].error, contains(testError));
+        expect(states.length, 3);
+        expect(states[0].progress, 0);
+        expect(states[0].isRecreating, false);
+        expect(states[1].isRecreating, true);
+        expect(states[2].isRecreating, false);
+        expect(states[2].progress, 0);
+        expect(states[2].error, contains(testError));
+      } finally {
+        sub.close();
+      }
     });
 
     test('recreateFts5 should update progress incrementally', () async {
-      // Track state changes
       final states = <Fts5State>[];
-      controller.addListener(states.add);
+      final sub = container.listen<Fts5State>(
+        fts5ControllerProvider,
+        (previous, next) => states.add(next),
+        fireImmediately: true,
+      );
 
-      // Setup mock to call onProgress with specific values
-      when(
-        () => mockMaintenance.recreateFts5(
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).thenAnswer((invocation) async {
-        final onProgress = invocation.namedArguments[const Symbol('onProgress')]
-            as void Function(double)?;
-        onProgress?.call(0.25);
-        onProgress?.call(0.5);
-        onProgress?.call(0.75);
-        onProgress?.call(1);
-      });
+      try {
+        when(
+          () => mockMaintenance.recreateFts5(
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final onProgress =
+              invocation.namedArguments[const Symbol('onProgress')] as void
+                  Function(double)?;
+          onProgress?.call(0.25);
+          onProgress?.call(0.5);
+          onProgress?.call(0.75);
+          onProgress?.call(1);
+        });
 
-      // Start recreation operation
-      await controller.recreateFts5();
+        await controller.recreateFts5();
 
-      // Verify state progression
-      expect(
-        states.length,
-        7,
-      ); // Initial + 4 progress updates + final + completion
-      expect(states[0].progress, 0);
-      expect(states[0].isRecreating, false);
-      expect(states[1].progress, 0);
-      expect(states[1].isRecreating, true);
-      expect(states[2].progress, 0.25);
-      expect(states[3].progress, 0.5);
-      expect(states[4].progress, 0.75);
-      expect(states[5].progress, 1.0);
-      expect(states[6].isRecreating, false);
+        expect(states.length, 7);
+        expect(states[0].progress, 0);
+        expect(states[0].isRecreating, false);
+        expect(states[1].progress, 0);
+        expect(states[1].isRecreating, true);
+        expect(states[2].progress, 0.25);
+        expect(states[3].progress, 0.5);
+        expect(states[4].progress, 0.75);
+        expect(states[5].progress, 1.0);
+        expect(states[6].isRecreating, false);
+      } finally {
+        sub.close();
+      }
     });
   });
 }

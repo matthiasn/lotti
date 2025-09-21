@@ -172,7 +172,7 @@ dev_dependencies:
   path_provider_platform_interface: any
   plugin_platform_interface: any
   riverpod_generator: ^2.4.0
-  very_good_analysis: ^10.0.0
+  very_good_analysis: ^9.0.0
 
 flutter_launcher_icons:
   android: true
