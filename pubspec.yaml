@@ -27,7 +27,7 @@ dependencies:
   cached_network_image: ^3.2.0
   calendar_view: ^1.2.0
   collection: ^1.18.0
-  connectivity_plus: ^6.1.2
+  connectivity_plus: ^7.0.0
   country_flags: ^3.0.0
   crypto: ^3.0.1
   dart_geohash: ^2.0.1
@@ -101,7 +101,7 @@ dependencies:
   multi_select_flutter: ^4.0.0
   ollama: ^1.0.4
   openai_dart: ^0.5.0
-  package_info_plus: ^8.0.0
+  package_info_plus: ^9.0.0
   path: ^1.8.1
   path_provider: ^2.0.12
   permission_handler: ^12.0.0+1
@@ -120,7 +120,7 @@ dependencies:
   riverpod_annotation: ^2.3.5
   riverpod_lint: ^2.3.10
   rxdart: ^0.28.0
-  share_plus: ^11.0.0
+  share_plus: ^12.0.0
   siri_wave: ^2.3.0
   sqflite: ^2.0.1
   sqflite_common_ffi: ^2.3.3
@@ -172,8 +172,7 @@ dev_dependencies:
   path_provider_platform_interface: any
   plugin_platform_interface: any
   riverpod_generator: ^2.4.0
-  very_good_analysis: ^9.0.0
-
+  very_good_analysis: ^10.0.0
 
 flutter_launcher_icons:
   android: true
