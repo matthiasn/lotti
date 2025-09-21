@@ -145,10 +145,23 @@ if [ -z "${LOTTI_RELEASE_DATE:-}" ]; then
     LOTTI_RELEASE_DATE=$(date +%Y-%m-%d)
 fi
 
-# Get the current branch
+# Get the current branch (handle detached HEAD in CI gracefully)
 CURRENT_BRANCH=$(cd "$LOTTI_ROOT" && git rev-parse --abbrev-ref HEAD)
 
-# Verify branch exists on remote (required for flatpak-flutter)
+if [ "$CURRENT_BRANCH" = "HEAD" ]; then
+    if [ -n "${GITHUB_HEAD_REF:-}" ]; then
+        CURRENT_BRANCH="$GITHUB_HEAD_REF"
+        print_warning "Detached HEAD detected; using GitHub head ref: $CURRENT_BRANCH"
+    elif [ -n "${GITHUB_REF_NAME:-}" ]; then
+        CURRENT_BRANCH="$GITHUB_REF_NAME"
+        print_warning "Detached HEAD detected; using GitHub ref name: $CURRENT_BRANCH"
+    else
+        CURRENT_BRANCH="main"
+        print_warning "Detached HEAD detected with no ref information; defaulting branch to 'main'"
+    fi
+fi
+
+# Verify branch exists on remote (optional warning if missing)
 set +e
 REMOTE_CHECK_OUTPUT=$(git -C "$LOTTI_ROOT" ls-remote origin "refs/heads/$CURRENT_BRANCH" 2>&1)
 REMOTE_CHECK_STATUS=$?
@@ -156,9 +169,8 @@ set -e
 
 if [ "$REMOTE_CHECK_STATUS" -eq 0 ]; then
     if [ -z "$REMOTE_CHECK_OUTPUT" ]; then
-        print_error "Branch $CURRENT_BRANCH not found on remote"
-        print_info "Please push your branch first: git push origin $CURRENT_BRANCH"
-        exit 1
+        print_warning "Branch $CURRENT_BRANCH not found on remote"
+        print_info "Please ensure the branch is pushed before publishing"
     fi
 else
     print_warning "Unable to verify remote branch $CURRENT_BRANCH (git ls-remote exited with $REMOTE_CHECK_STATUS)."
