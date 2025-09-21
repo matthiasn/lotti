@@ -36,8 +36,7 @@ jobs:
 
       - name: Install Python dependencies for flatpak-flutter
         run: |
-          python3 -m ensurepip --upgrade
-          python3 -m pip install --upgrade --user toml pyyaml packaging
+          python3 -m pip install --user --disable-pip-version-check toml pyyaml packaging
 
       - name: Prepare Flathub payload
         env:
