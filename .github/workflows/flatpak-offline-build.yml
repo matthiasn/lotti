@@ -34,6 +34,11 @@ jobs:
           sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.llvm20//24.08
           sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
 
+      - name: Install Python dependencies for flatpak-flutter
+        run: |
+          python3 -m ensurepip --upgrade
+          python3 -m pip install --upgrade --user toml pyyaml packaging
+
       - name: Prepare Flathub payload
         env:
           CLEAN_AFTER_GEN: "false"  # Keep build artifacts for the verification step
