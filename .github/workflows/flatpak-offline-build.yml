@@ -55,4 +55,4 @@ jobs:
           name: flathub-offline-payload-${{ github.run_number }}
           path: |
             flatpak/flathub-build/output
-          retention-days: 14
+          retention-days: 30

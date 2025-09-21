@@ -27,8 +27,8 @@ if grep -qE '^[[:space:]]*commit:[[:space:]]*$' "$MANIFEST_FILE"; then
 fi
 
 if ! grep -q 'commit: COMMIT_PLACEHOLDER' "$MANIFEST_FILE"; then
-  echo "Info: No COMMIT_PLACEHOLDER found; manifest may already be commit-pinned. Nothing to do." >&2
-  exit 0
+  echo "Error: No COMMIT_PLACEHOLDER found in $MANIFEST_FILE; aborting to avoid using stale commit." >&2
+  exit 1
 fi
 
 # Replace the placeholder with the commit hash
