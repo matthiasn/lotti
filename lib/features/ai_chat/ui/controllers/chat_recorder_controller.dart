@@ -63,28 +63,27 @@ class ChatRecorderState {
   }
 }
 
-class ChatRecorderController extends StateNotifier<ChatRecorderState> {
-  ChatRecorderController(
-    this.ref, {
+class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
+  ChatRecorderController({
     record.AudioRecorder Function()? recorderFactory,
     int Function()? nowMillisProvider,
     Future<Directory> Function()? tempDirectoryProvider,
     ChatRecorderConfig? config,
+    AudioTranscriptionService? transcriptionService,
   })  : _recorderFactory = recorderFactory ?? record.AudioRecorder.new,
         _nowMillisProvider =
             nowMillisProvider ?? (() => DateTime.now().millisecondsSinceEpoch),
         _tempDirectoryProvider =
             tempDirectoryProvider ?? (() async => getTemporaryDirectory()),
         _config = config ?? const ChatRecorderConfig(),
-        _transcriptionService = ref.read(audioTranscriptionServiceProvider),
-        super(const ChatRecorderState.initial());
+        _transcriptionServiceOverride = transcriptionService;
 
-  final Ref ref;
   final record.AudioRecorder Function() _recorderFactory;
   final int Function() _nowMillisProvider;
   final Future<Directory> Function() _tempDirectoryProvider;
   final ChatRecorderConfig _config;
-  final AudioTranscriptionService _transcriptionService;
+  final AudioTranscriptionService? _transcriptionServiceOverride;
+  late final AudioTranscriptionService _transcriptionService;
 
   record.AudioRecorder? _recorder;
   StreamSubscription<record.Amplitude>? _ampSub;
@@ -97,6 +96,14 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
   static const int _historyMax = 200; // ~10s at 50ms; UI will sample to fit
   static const int _cleanupTimeoutSeconds = 2;
   static const int _fileDeleteTimeoutSeconds = 2;
+
+  @override
+  ChatRecorderState build() {
+    _transcriptionService = _transcriptionServiceOverride ??
+        ref.read(audioTranscriptionServiceProvider);
+    ref.onDispose(() => unawaited(_cleanupInternal()));
+    return const ChatRecorderState.initial();
+  }
 
   Future<void> start() async {
     if (_isStarting) {
@@ -397,21 +404,13 @@ class ChatRecorderController extends StateNotifier<ChatRecorderState> {
       );
     }
   }
-
-  @override
-  void dispose() {
-    // Best-effort async cleanup, don't await in dispose
-    unawaited(_cleanupInternal());
-    super.dispose();
-  }
 }
 
-final AutoDisposeStateNotifierProvider<ChatRecorderController,
-        ChatRecorderState> chatRecorderControllerProvider =
-    StateNotifierProvider.autoDispose<ChatRecorderController,
-        ChatRecorderState>((ref) {
-  return ChatRecorderController(ref);
-});
+final AutoDisposeNotifierProvider<ChatRecorderController, ChatRecorderState>
+    chatRecorderControllerProvider =
+    AutoDisposeNotifierProvider<ChatRecorderController, ChatRecorderState>(
+  ChatRecorderController.new,
+);
 
 class ChatRecorderConfig {
   const ChatRecorderConfig({

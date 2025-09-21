@@ -301,7 +301,10 @@ void main() {
 }
 
 class _FakeChatRecorderController extends ChatRecorderController {
-  _FakeChatRecorderController(super.ref);
+  _FakeChatRecorderController();
+
+  @override
+  ChatRecorderState build() => const ChatRecorderState.initial();
 
   @override
   Future<void> start() async {
@@ -376,7 +379,10 @@ class _NonSendableChatSessionController extends ChatSessionController {
 }
 
 class _ProcessingChatRecorderController extends ChatRecorderController {
-  _ProcessingChatRecorderController(super.ref);
+  _ProcessingChatRecorderController();
+
+  @override
+  ChatRecorderState build() => const ChatRecorderState.initial();
 
   @override
   Future<void> start() async {

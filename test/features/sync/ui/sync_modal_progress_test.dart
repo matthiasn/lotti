@@ -6,9 +6,13 @@ import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
-class TestSyncController extends StateNotifier<SyncState>
-    implements SyncMaintenanceController {
-  TestSyncController(super.state);
+class TestSyncController extends SyncMaintenanceController {
+  TestSyncController(this._initialState);
+
+  final SyncState _initialState;
+
+  @override
+  SyncState build() => _initialState;
 
   @override
   Future<void> syncAll() async {}
@@ -42,7 +46,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          syncControllerProvider.overrideWith((ref) => testController),
+          syncControllerProvider.overrideWith(() => testController),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -73,7 +77,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          syncControllerProvider.overrideWith((ref) => testController),
+          syncControllerProvider.overrideWith(() => testController),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

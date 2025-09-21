@@ -27,66 +27,61 @@ abstract class CategoryDetailsState with _$CategoryDetailsState {
       );
 }
 
-final AutoDisposeStateNotifierProviderFamily<CategoryDetailsController,
+final AutoDisposeNotifierProviderFamily<CategoryDetailsController,
         CategoryDetailsState, String> categoryDetailsControllerProvider =
-    StateNotifierProvider.autoDispose
-        .family<CategoryDetailsController, CategoryDetailsState, String>(
-  (ref, categoryId) => CategoryDetailsController(
-    ref.watch(categoryRepositoryProvider),
-    categoryId,
-  ),
+    AutoDisposeNotifierProvider.family<CategoryDetailsController,
+        CategoryDetailsState, String>(
+  CategoryDetailsController.new,
 );
 
-class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
-  CategoryDetailsController(
-    this._repository,
-    this._categoryId,
-  ) : super(CategoryDetailsState.initial()) {
-    _loadCategory();
-  }
+class CategoryDetailsController
+    extends AutoDisposeFamilyNotifier<CategoryDetailsState, String> {
+  CategoryDetailsController();
 
-  final CategoryRepository _repository;
-  final String _categoryId;
+  late final CategoryRepository _repository;
+  late String _categoryId;
   StreamSubscription<CategoryDefinition?>? _subscription;
 
-  // Track the original category to detect changes
   CategoryDefinition? _originalCategory;
-
-  // Track all pending changes in a single object
   CategoryDefinition? _pendingCategory;
 
-  void _loadCategory() {
-    _subscription = _repository.watchCategory(_categoryId).listen(
-      (category) {
-        if (mounted) {
-          // Store original category when first loaded
-          if (_originalCategory == null && category != null) {
-            _originalCategory = category;
-            _pendingCategory = category;
-          }
+  @override
+  CategoryDetailsState build(String categoryId) {
+    _repository = ref.watch(categoryRepositoryProvider);
+    _categoryId = categoryId;
 
-          state = state.copyWith(
-            category: state.hasChanges ? _pendingCategory : category,
-            isLoading: false,
-            hasChanges: _hasChanges(_pendingCategory),
-          );
+    _originalCategory = null;
+    _pendingCategory = null;
+
+    _subscription?.cancel();
+    _subscription = _repository.watchCategory(categoryId).listen(
+      (category) {
+        if (_originalCategory == null && category != null) {
+          _originalCategory = category;
+          _pendingCategory = category;
         }
+
+        state = state.copyWith(
+          category: state.hasChanges ? _pendingCategory : category,
+          isLoading: false,
+          hasChanges: _hasChanges(_pendingCategory),
+          errorMessage: null,
+        );
       },
       onError: (Object error) {
-        if (mounted) {
-          state = state.copyWith(
-            isLoading: false,
-            errorMessage: 'Failed to load category data.',
-          );
-        }
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Failed to load category data.',
+        );
       },
     );
-  }
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
+    ref.onDispose(() {
+      _subscription?.cancel();
+      _subscription = null;
+    });
+
+    return CategoryDetailsState.initial();
   }
 
   bool _hasChanges(CategoryDefinition? current) {

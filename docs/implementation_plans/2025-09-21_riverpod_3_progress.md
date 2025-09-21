@@ -12,12 +12,12 @@
 
 ## Migration Checklist
 - [x] `lib/features/sync/state/action_item_suggestions_controller.dart`
-- [ ] `lib/features/categories/state/categories_list_controller.dart`
-- [ ] `lib/features/categories/state/category_details_controller.dart`
-- [ ] `lib/features/ai_chat/ui/controllers/chat_recorder_controller.dart`
+- [x] `lib/features/categories/state/categories_list_controller.dart`
+- [x] `lib/features/categories/state/category_details_controller.dart`
+- [x] `lib/features/ai_chat/ui/controllers/chat_recorder_controller.dart`
 - [x] `lib/features/sync/state/fts5_controller.dart`
-- [ ] `lib/features/sync/state/purge_controller.dart`
-- [ ] `lib/features/sync/state/sync_maintenance_controller.dart`
+- [x] `lib/features/sync/state/purge_controller.dart`
+- [x] `lib/features/sync/state/sync_maintenance_controller.dart`
 
 ## Documentation & Planning
 - Authored implementation plan (`docs/implementation_plans/2025-09-21_riverpod_3_upgrade.md`) outlining phased upgrade strategy, risks, testing, and open questions.
@@ -32,3 +32,11 @@
 - build_runner (user)
 - test/features/sync/state/fts5_controller_test.dart
 - test/features/sync/ui/fts5_recreate_modal_test.dart
+- test/features/categories/state/categories_list_controller_test.dart
+- test/features/categories/state/category_details_controller_test.dart
+- test/features/sync/state/purge_controller_test.dart
+- test/features/sync/state/sync_maintenance_controller_test.dart
+- test/features/sync/ui/sync_modal_progress_test.dart
+- test/features/ai_chat/ui/controllers/chat_recorder_controller_test.dart
+- test/features/ai_chat/ui/widgets/chat_interface/chat_input_voice_test.dart
+- test/features/ai_chat/ui/widgets/chat_interface/chat_voice_controls_test.dart

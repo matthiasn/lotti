@@ -5,9 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 final purgeControllerProvider =
-    StateNotifierProvider<PurgeController, PurgeState>((ref) {
-  return PurgeController(getIt<JournalDb>());
-});
+    NotifierProvider<PurgeController, PurgeState>(PurgeController.new);
 
 class PurgeState {
   const PurgeState({
@@ -34,9 +32,16 @@ class PurgeState {
   }
 }
 
-class PurgeController extends StateNotifier<PurgeState> {
-  PurgeController(this._db) : super(const PurgeState());
-  final JournalDb _db;
+class PurgeController extends Notifier<PurgeState> {
+  PurgeController();
+
+  late final JournalDb _db;
+
+  @override
+  PurgeState build() {
+    _db = getIt<JournalDb>();
+    return const PurgeState();
+  }
 
   Future<void> purgeDeleted() async {
     state = state.copyWith(isPurging: true, progress: 0, clearError: true);

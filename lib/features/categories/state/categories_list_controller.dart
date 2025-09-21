@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 
-final categoriesListControllerProvider = StateNotifierProvider<
+final categoriesListControllerProvider = NotifierProvider<
     CategoriesListController, AsyncValue<List<CategoryDefinition>>>(
-  (ref) => CategoriesListController(ref.watch(categoryRepositoryProvider)),
+  CategoriesListController.new,
 );
 
 final categoriesStreamProvider =
@@ -16,35 +16,29 @@ final categoriesStreamProvider =
 });
 
 class CategoriesListController
-    extends StateNotifier<AsyncValue<List<CategoryDefinition>>> {
-  CategoriesListController(this._repository)
-      : super(const AsyncValue.loading()) {
-    _loadCategories();
-  }
-
-  final CategoryRepository _repository;
+    extends Notifier<AsyncValue<List<CategoryDefinition>>> {
+  late final CategoryRepository _repository;
   StreamSubscription<List<CategoryDefinition>>? _subscription;
 
-  void _loadCategories() {
-    state = const AsyncValue.loading();
+  @override
+  AsyncValue<List<CategoryDefinition>> build() {
+    _repository = ref.watch(categoryRepositoryProvider);
+    _subscription?.cancel();
     _subscription = _repository.watchCategories().listen(
       (categories) {
-        if (mounted) {
-          state = AsyncValue.data(categories);
-        }
+        state = AsyncValue.data(categories);
       },
       onError: (Object error, StackTrace stackTrace) {
-        if (mounted) {
-          state = AsyncValue.error(error, stackTrace);
-        }
+        state = AsyncValue.error(error, stackTrace);
       },
     );
-  }
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
+    ref.onDispose(() {
+      _subscription?.cancel();
+      _subscription = null;
+    });
+
+    return const AsyncValue<List<CategoryDefinition>>.loading();
   }
 
   Future<void> deleteCategory(String id) async {
