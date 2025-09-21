@@ -1,0 +1,54 @@
+name: Build Flatpak Offline Payload
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  offline-flatpak:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed so the prep script can pin the exact commit
+
+      - name: Install Flatpak and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+
+          # Add Flathub repository
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+          # Install required runtime and SDK extensions
+          sudo flatpak install -y flathub org.freedesktop.Platform//24.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk//24.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.llvm20//24.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
+
+      - name: Prepare Flathub payload
+        env:
+          CLEAN_AFTER_GEN: "false"  # Keep build artifacts for the verification step
+        run: |
+          ./flatpak/prepare_flathub_submission.sh
+
+      - name: Build from prepared manifest
+        working-directory: flatpak/flathub-build/output
+        run: |
+          flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
+
+      - name: Upload prepared payload
+        uses: actions/upload-artifact@v4
+        with:
+          name: flathub-offline-payload-${{ github.run_number }}
+          path: |
+            flatpak/flathub-build/output
+          retention-days: 14
