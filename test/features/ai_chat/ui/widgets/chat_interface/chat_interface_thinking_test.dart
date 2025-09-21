@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
@@ -16,8 +15,6 @@ import 'package:mocktail/mocktail.dart';
 class MockChatRepository extends Mock implements ChatRepository {}
 
 class MockLoggingService extends Mock implements LoggingService {}
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class FakeChatSession extends Fake implements ChatSession {}
 

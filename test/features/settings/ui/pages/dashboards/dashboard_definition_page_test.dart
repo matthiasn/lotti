@@ -17,8 +17,6 @@ import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
-class MockBuildContext extends Mock implements BuildContext {}
-
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
   // ignore: deprecated_member_use

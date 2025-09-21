@@ -812,10 +812,9 @@ void main() {
 
       // Call purgeDeleted and collect all progress values
       final progressValues = <double>[];
-      await for (final progress
-          in getIt<JournalDb>().purgeDeleted(backup: false)) {
-        progressValues.add(progress);
-      }
+      await getIt<JournalDb>()
+          .purgeDeleted(backup: false)
+          .forEach(progressValues.add);
 
       // Verify the final progress is 1.0
       expect(progressValues.last, 1.0);

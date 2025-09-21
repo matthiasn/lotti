@@ -20,10 +20,6 @@ class MockTimeService extends Mock implements TimeService {}
 
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
-class Listener<T> extends Mock {
-  void call(T? previous, T next);
-}
-
 // This matches the signature of the getter linkedFrom in TimeService
 class MockTask extends Mock implements Task {
   // Constructor declared first for sort_constructors_first rule
@@ -78,7 +74,6 @@ void main() {
   late MockTaskProgressRepository mockRepository;
   late MockTimeService mockTimeService;
   late MockUpdateNotifications mockUpdateNotifications;
-  late Listener<AsyncValue<TaskProgressState?>> listener;
   late StreamController<Set<String>> updateStreamController;
   late StreamController<JournalEntity?> timeServiceStreamController;
 
@@ -107,7 +102,6 @@ void main() {
     mockRepository = MockTaskProgressRepository();
     mockTimeService = MockTimeService();
     mockUpdateNotifications = MockUpdateNotifications();
-    listener = Listener<AsyncValue<TaskProgressState?>>();
 
     updateStreamController = StreamController<Set<String>>.broadcast();
     timeServiceStreamController = StreamController<JournalEntity?>.broadcast();
@@ -150,7 +144,7 @@ void main() {
     // Add a listener to track state changes
     container.listen(
       taskProgressControllerProvider(id: testTaskId),
-      (previous, next) => listener(previous, next),
+      (_, __) {},
       fireImmediately: true,
     );
 

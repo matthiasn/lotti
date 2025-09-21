@@ -18,6 +18,7 @@ Map<String, int> calculateScores({
       final stepResult = results[questionId] as RPStepResult?;
       final choice = stepResult?.results['answer'];
 
+      // ignore: switch_on_type
       final value = switch (choice) {
         (final RPImageChoice c) => c.value as int,
         (final List<RPChoice> c) => c.firstOrNull?.value ?? 0,

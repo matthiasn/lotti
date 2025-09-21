@@ -154,7 +154,7 @@ class UnifiedAiInferenceRepository {
     if (hasTask) {
       if (entity is Task) {
         // Direct task entity - always valid
-        return hasImages == false && hasAudio == false;
+        return !hasImages && !hasAudio;
       } else if (entity is JournalImage && hasImages) {
         // Image with task requirement - check if linked to task
         final linkedEntities = await ref

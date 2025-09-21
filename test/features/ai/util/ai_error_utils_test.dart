@@ -75,6 +75,18 @@ class _MockRequestException {
 
 void main() {
   group('AiErrorUtils', () {
+    test('test helpers expose dynamic fields', () {
+      final errorWithMessage = TestErrorWithMessage(message: 'message');
+      final errorWithBody = TestErrorWithBody(body: {'key': 'value'});
+      final errorWithBodyAndMessage =
+          TestErrorWithBodyAndMessage(body: 'body', message: 'message');
+
+      expect(errorWithMessage.message, 'message');
+      expect(errorWithBody.body, {'key': 'value'});
+      expect(errorWithBodyAndMessage.body, 'body');
+      expect(errorWithBodyAndMessage.message, 'message');
+    });
+
     group('categorizeError', () {
       test('categorizes SocketException as network connection error', () {
         const error = SocketException('Failed to connect');

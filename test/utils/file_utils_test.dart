@@ -6,15 +6,10 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:research_package/model.dart';
 
 import '../helpers/path_provider.dart';
-
-class MockFile extends Mock implements File {}
-
-class MockDirectory extends Mock implements Directory {}
 
 void main() {
   final dt = DateTime.fromMillisecondsSinceEpoch(1638265606966);

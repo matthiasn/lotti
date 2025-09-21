@@ -10,10 +10,6 @@ import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class _InMemoryAiConfigRepo extends AiConfigRepository {
-  _InMemoryAiConfigRepo(super.db);
-}
-
 class _MockCloudRepo extends Mock implements CloudInferenceRepository {}
 
 void main() {
@@ -21,7 +17,6 @@ void main() {
 
   setUpAll(() {
     // Create a single shared database instance for all tests
-    // ignore: invalid_use_of_visible_for_testing_member
     sharedDb = AiConfigDb(inMemoryDatabase: true);
 
     registerFallbackValue(
@@ -42,7 +37,7 @@ void main() {
 
   test('aggregates stream chunks into a single transcript', () async {
     // Arrange config
-    final aiRepo = _InMemoryAiConfigRepo(sharedDb);
+    final aiRepo = AiConfigRepository(sharedDb);
     await aiRepo.saveConfig(
       AiConfig.inferenceProvider(
         id: 'p1',
@@ -134,7 +129,7 @@ void main() {
   });
 
   test('fallbacks to first audio-capable model when flash not found', () async {
-    final aiRepo = _InMemoryAiConfigRepo(sharedDb);
+    final aiRepo = AiConfigRepository(sharedDb);
     await aiRepo.saveConfig(
       AiConfig.inferenceProvider(
         id: 'p1',
@@ -208,7 +203,7 @@ void main() {
   });
 
   test('throws when no audio-capable model is configured', () async {
-    final aiRepo = _InMemoryAiConfigRepo(sharedDb);
+    final aiRepo = AiConfigRepository(sharedDb);
     await aiRepo.saveConfig(
       AiConfig.inferenceProvider(
         id: 'p1',
@@ -233,7 +228,7 @@ void main() {
   });
 
   test('throws when provider for selected audio model is missing', () async {
-    final aiRepo = _InMemoryAiConfigRepo(sharedDb);
+    final aiRepo = AiConfigRepository(sharedDb);
     // Only a model without its provider
     await aiRepo.saveConfig(
       AiConfig.model(
@@ -262,7 +257,7 @@ void main() {
   });
 
   test('ignores empty content chunks from cloud stream', () async {
-    final aiRepo = _InMemoryAiConfigRepo(sharedDb);
+    final aiRepo = AiConfigRepository(sharedDb);
     await aiRepo.saveConfig(
       AiConfig.inferenceProvider(
         id: 'p1',

@@ -20,19 +20,7 @@ class MockDBusClient extends Mock implements DBusClient {}
 
 class MockDBusRemoteObject extends Mock implements DBusRemoteObject {}
 
-class MockDBusMethodResponse extends Mock implements DBusMethodResponse {}
-
-class MockDBusSignalStream extends Mock implements DBusSignalStream {}
-
 class MockDBusSignal extends Mock implements DBusSignal {}
-
-class MockFile extends Mock implements File {}
-
-class MockStreamSubscription extends Mock
-    implements StreamSubscription<DBusSignal> {}
-
-class MockScreenshotPortalService extends Mock
-    implements ScreenshotPortalService {}
 
 // Fakes
 class FakeDBusObjectPath extends Fake implements DBusObjectPath {
@@ -43,10 +31,6 @@ class FakeDBusObjectPath extends Fake implements DBusObjectPath {
 }
 
 class FakeDBusSignature extends Fake implements DBusSignature {}
-
-// Mock implementation since ScreenshotPortalService is a singleton
-class MockScreenshotPortalServiceExt extends Mock
-    implements ScreenshotPortalService {}
 
 void main() {
   group('Flatpak Portal Screenshot Tests', () {

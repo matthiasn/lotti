@@ -26,11 +26,7 @@ class _MockTranscriptionService extends Mock
     implements AudioTranscriptionService {}
 
 class _InMemoryAiConfigRepo extends AiConfigRepository {
-  _InMemoryAiConfigRepo()
-      : super(
-          // ignore: invalid_use_of_visible_for_testing_member
-          AiConfigDb(inMemoryDatabase: true),
-        );
+  _InMemoryAiConfigRepo() : super(AiConfigDb(inMemoryDatabase: true));
 }
 
 class _FakeLoggingService extends LoggingService {
@@ -134,13 +130,11 @@ void main() {
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
     final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider
-          .overrideWith((ref) => ChatRecorderController(
-                ref,
-                recorderFactory: () => mockRecorder,
-                tempDirectoryProvider: () async => Directory.systemTemp,
-                config: const ChatRecorderConfig(maxSeconds: 2),
-              )),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => Directory.systemTemp,
+            config: const ChatRecorderConfig(maxSeconds: 2),
+          )),
     ]);
     // No need to keep provider alive for this quick path
     final sub1 = container.listen(chatRecorderControllerProvider, (_, __) {});
@@ -168,13 +162,11 @@ void main() {
     );
 
     final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider
-          .overrideWith((ref) => ChatRecorderController(
-                ref,
-                recorderFactory: () => mockRecorder,
-                tempDirectoryProvider: () async => Directory.systemTemp,
-                config: const ChatRecorderConfig(maxSeconds: 2),
-              )),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => Directory.systemTemp,
+            config: const ChatRecorderConfig(maxSeconds: 2),
+          )),
     ]);
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
 
@@ -256,13 +248,11 @@ void main() {
     final container = ProviderContainer(overrides: [
       aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
       cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-      chatRecorderControllerProvider
-          .overrideWith((ref) => ChatRecorderController(
-                ref,
-                recorderFactory: () => mockRecorder,
-                tempDirectoryProvider: () async => Directory.systemTemp,
-                config: const ChatRecorderConfig(maxSeconds: 2),
-              )),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => Directory.systemTemp,
+            config: const ChatRecorderConfig(maxSeconds: 2),
+          )),
     ]);
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
 
@@ -297,14 +287,12 @@ void main() {
 
     const now = 1234567890;
     final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider
-          .overrideWith((ref) => ChatRecorderController(
-                ref,
-                recorderFactory: () => mockRecorder,
-                nowMillisProvider: () => now,
-                tempDirectoryProvider: () async => baseTemp,
-                config: const ChatRecorderConfig(maxSeconds: 1),
-              )),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            nowMillisProvider: () => now,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 1),
+          )),
       audioTranscriptionServiceProvider
           .overrideWithValue(_MockTranscriptionService()),
     ]);
@@ -360,14 +348,12 @@ void main() {
 
     const now = 4242424242;
     final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider
-          .overrideWith((ref) => ChatRecorderController(
-                ref,
-                recorderFactory: () => mockRecorder,
-                nowMillisProvider: () => now,
-                tempDirectoryProvider: () async => baseTemp,
-                config: const ChatRecorderConfig(maxSeconds: 10),
-              )),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            nowMillisProvider: () => now,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 10),
+          )),
       audioTranscriptionServiceProvider
           .overrideWithValue(_MockTranscriptionService()),
     ]);
@@ -423,13 +409,11 @@ void main() {
 
     final container = ProviderContainer(overrides: [
       audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
-      chatRecorderControllerProvider
-          .overrideWith((ref) => ChatRecorderController(
-                ref,
-                recorderFactory: () => mockRecorder,
-                tempDirectoryProvider: () async => baseTemp,
-                config: const ChatRecorderConfig(maxSeconds: 10),
-              )),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 10),
+          )),
     ]);
 
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
@@ -473,13 +457,11 @@ void main() {
 
     final container = ProviderContainer(overrides: [
       audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
-      chatRecorderControllerProvider
-          .overrideWith((ref) => ChatRecorderController(
-                ref,
-                recorderFactory: () => mockRecorder,
-                tempDirectoryProvider: () async => baseTemp,
-                config: const ChatRecorderConfig(maxSeconds: 10),
-              )),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 10),
+          )),
     ]);
 
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
@@ -501,14 +483,12 @@ void main() {
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
     final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider
-          .overrideWith((ref) => ChatRecorderController(
-                ref,
-                recorderFactory: () => mockRecorder,
-                tempDirectoryProvider: () async =>
-                    throw const FileSystemException('No space left on device'),
-                config: const ChatRecorderConfig(maxSeconds: 2),
-              )),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async =>
+                throw const FileSystemException('No space left on device'),
+            config: const ChatRecorderConfig(maxSeconds: 2),
+          )),
     ]);
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
 
@@ -545,10 +525,8 @@ void main() {
     when(() => mockRecorder.stop()).thenThrow(Exception('stop fail'));
 
     final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith((ref) {
-        ref.keepAlive();
+      chatRecorderControllerProvider.overrideWith(() {
         return ChatRecorderController(
-          ref,
           recorderFactory: () => mockRecorder,
           tempDirectoryProvider: () async => baseTemp,
           config: const ChatRecorderConfig(maxSeconds: 2),
@@ -595,10 +573,8 @@ void main() {
     when(() => mockRecorder.stop()).thenThrow(Exception('stop fail'));
 
     final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith((ref) {
-        ref.keepAlive();
+      chatRecorderControllerProvider.overrideWith(() {
         return ChatRecorderController(
-          ref,
           recorderFactory: () => mockRecorder,
           tempDirectoryProvider: () async => baseTemp,
           config: const ChatRecorderConfig(maxSeconds: 2),
@@ -651,10 +627,8 @@ void main() {
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
     final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith((ref) {
-        ref.keepAlive();
+      chatRecorderControllerProvider.overrideWith(() {
         return ChatRecorderController(
-          ref,
           recorderFactory: () => mockRecorder,
           tempDirectoryProvider: () async => baseTemp,
           config: const ChatRecorderConfig(maxSeconds: 2),

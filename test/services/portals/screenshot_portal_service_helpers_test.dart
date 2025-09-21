@@ -75,12 +75,10 @@ void main() {
 
     group('persistScreenshot', () {
       test('moves or copies screenshot to target location', () async {
-        // ignore: avoid_slow_async_io
         final tempDir = await Directory.systemTemp.createTemp('lotti_portal_');
         addTearDown(() async {
           // ignore: avoid_slow_async_io
           if (await tempDir.exists()) {
-            // ignore: avoid_slow_async_io
             await tempDir.delete(recursive: true);
           }
         });
@@ -100,12 +98,10 @@ void main() {
       });
 
       test('returns original path and logs on error', () async {
-        // ignore: avoid_slow_async_io
         final tempDir = await Directory.systemTemp.createTemp('lotti_portal_');
         addTearDown(() async {
           // ignore: avoid_slow_async_io
           if (await tempDir.exists()) {
-            // ignore: avoid_slow_async_io
             await tempDir.delete(recursive: true);
           }
         });
@@ -130,4 +126,3 @@ void main() {
     });
   });
 }
- 

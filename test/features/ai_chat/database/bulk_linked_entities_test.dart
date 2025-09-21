@@ -7,10 +7,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:mocktail/mocktail.dart';
-
-// Mock implementations for focused testing
-class MockJournalDb extends Mock implements JournalDb {}
 
 void main() {
   group('JournalDb getBulkLinkedEntities', () {

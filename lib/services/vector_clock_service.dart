@@ -79,7 +79,6 @@ class VectorClockService {
     return digest.toString();
   }
 
-  // ignore: flutter_style_todos
   // TODO: only increment after successful insertion
   Future<VectorClock> getNextVectorClock({VectorClock? previous}) async {
     final nextAvailableCounter = _nextAvailableCounter;

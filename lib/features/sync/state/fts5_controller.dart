@@ -3,9 +3,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 
 final fts5ControllerProvider =
-    StateNotifierProvider<Fts5Controller, Fts5State>((ref) {
-  return Fts5Controller(getIt<Maintenance>());
-});
+    NotifierProvider<Fts5Controller, Fts5State>(Fts5Controller.new);
 
 class Fts5State {
   const Fts5State({
@@ -32,9 +30,14 @@ class Fts5State {
   }
 }
 
-class Fts5Controller extends StateNotifier<Fts5State> {
-  Fts5Controller(this._maintenance) : super(const Fts5State());
-  final Maintenance _maintenance;
+class Fts5Controller extends Notifier<Fts5State> {
+  late final Maintenance _maintenance;
+
+  @override
+  Fts5State build() {
+    _maintenance = getIt<Maintenance>();
+    return const Fts5State();
+  }
 
   Future<void> recreateFts5() async {
     state = state.copyWith(isRecreating: true, progress: 0, clearError: true);

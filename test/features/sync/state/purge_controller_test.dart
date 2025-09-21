@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -11,122 +12,88 @@ class MockLoggingDb extends Mock implements LoggingDb {}
 
 class FakeLogEntry extends Fake implements LogEntry {}
 
-class LogEntryMatcher extends Matcher {
-  LogEntryMatcher({
-    required this.message,
-    required this.domain,
-    required this.subDomain,
-    required this.level,
-    required this.type,
-  });
-
-  final String message;
-  final String domain;
-  final String subDomain;
-  final String level;
-  final String type;
-
-  @override
-  bool matches(dynamic item, Map<dynamic, dynamic> matchState) {
-    if (item is LogEntry) {
-      return item.message.contains(message) &&
-          item.domain == domain &&
-          item.subDomain == subDomain &&
-          item.level == level &&
-          item.type == type;
-    }
-    return false;
-  }
-
-  @override
-  Description describe(Description description) {
-    return description.add(
-      'LogEntry with message: $message, domain: $domain, subDomain: $subDomain, level: $level, type: $type',
-    );
-  }
-}
-
 void main() {
   late MockJournalDb mockDb;
   late MockLoggingDb mockLoggingDb;
+  late ProviderContainer container;
   late PurgeController controller;
 
   setUpAll(() {
     registerFallbackValue(FakeLogEntry());
   });
 
-  setUp(() {
+  setUp(() async {
     mockDb = MockJournalDb();
     mockLoggingDb = MockLoggingDb();
 
-    // Register mock LoggingDb
-    getIt.registerSingleton<LoggingDb>(mockLoggingDb);
+    await getIt.reset();
 
-    controller = PurgeController(mockDb);
+    getIt
+      ..registerSingleton<JournalDb>(mockDb)
+      ..registerSingleton<LoggingDb>(mockLoggingDb);
+
+    container = ProviderContainer();
+    controller = container.read(purgeControllerProvider.notifier);
   });
 
-  tearDown(() {
-    getIt.unregister<LoggingDb>();
+  tearDown(() async {
+    container.dispose();
+    await getIt.reset();
   });
 
   group('PurgeController', () {
     test('initial state should be correct', () {
-      expect(controller.state.progress, 0);
-      expect(controller.state.isPurging, false);
+      final state = container.read(purgeControllerProvider);
+      expect(state.progress, 0);
+      expect(state.isPurging, false);
+      expect(state.error, isNull);
     });
 
     test('purgeDeleted should update state correctly', () async {
-      // Setup mock stream
       when(() => mockDb.purgeDeleted()).thenAnswer(
         (_) => Stream.fromIterable([0.25, 0.5, 0.75, 1.0]),
       );
 
-      // Start purge operation
       final purgeFuture = controller.purgeDeleted();
 
-      // Verify initial state
-      expect(controller.state.isPurging, true);
-      expect(controller.state.progress, 0);
+      var state = container.read(purgeControllerProvider);
+      expect(state.isPurging, true);
+      expect(state.progress, 0);
 
-      // Wait for operation to complete
       await purgeFuture;
 
-      // Verify final state
-      expect(controller.state.isPurging, false);
-      expect(controller.state.progress, 1.0);
+      state = container.read(purgeControllerProvider);
+      expect(state.isPurging, false);
+      expect(state.progress, 1.0);
+      expect(state.error, isNull);
     });
 
     test('purgeDeleted should handle errors gracefully', () async {
       const testError = 'Test error';
 
-      // Setup mock to throw error
       when(() => mockDb.purgeDeleted()).thenAnswer(
         (_) => Stream.error(Exception(testError)),
       );
 
-      // Capture the log entry for verification
       LogEntry? capturedLogEntry;
       when(() => mockLoggingDb.log(any())).thenAnswer((invocation) {
         capturedLogEntry = invocation.positionalArguments.first as LogEntry;
         return Future.value(1);
       });
 
-      // Start purge operation
       final purgeFuture = controller.purgeDeleted();
 
-      // Verify initial state
-      expect(controller.state.isPurging, true);
-      expect(controller.state.progress, 0);
+      var state = container.read(purgeControllerProvider);
+      expect(state.isPurging, true);
+      expect(state.progress, 0);
 
-      // Wait for operation to complete (should not throw)
       await purgeFuture;
 
-      // Verify final state
-      expect(controller.state.isPurging, false);
-      expect(controller.state.progress, 0);
-      expect(controller.state.error, contains(testError));
+      state = container.read(purgeControllerProvider);
+      expect(state.isPurging, false);
+      expect(state.progress, 0);
+      expect(state.error, contains(testError));
 
-      // Verify logging was called with correct LogEntry
       expect(capturedLogEntry, isNotNull);
       expect(capturedLogEntry!.message, contains(testError));
       expect(capturedLogEntry!.domain, equals('PurgeController'));
@@ -136,19 +103,19 @@ void main() {
     });
 
     test('purgeDeleted should update progress incrementally', () async {
-      // Setup mock stream with specific progress values
       when(() => mockDb.purgeDeleted()).thenAnswer(
         (_) => Stream.fromIterable([0.25, 0.5, 0.75, 1.0]),
       );
 
-      // Track state changes
       final states = <PurgeState>[];
-      controller.addListener(states.add);
+      final sub = container.listen<PurgeState>(
+        purgeControllerProvider,
+        (previous, next) => states.add(next),
+        fireImmediately: true,
+      );
 
-      // Start purge operation
       await controller.purgeDeleted();
 
-      // Verify state progression
       expect(states.length, 7);
       expect(states[0].progress, 0);
       expect(states[0].isPurging, false);
@@ -161,6 +128,8 @@ void main() {
       expect(states[5].isPurging, true);
       expect(states[6].progress, 1.0);
       expect(states[6].isPurging, false);
+
+      sub.close();
     });
   });
 }

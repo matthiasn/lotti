@@ -25,20 +25,6 @@ class TestThemingCubit extends ThemingCubit {
   }
 }
 
-// Helper to wait for a finder to appear
-Future<void> pumpUntilFound(WidgetTester tester, Finder finder,
-    {Duration timeout = const Duration(seconds: 3)}) async {
-  final end = DateTime.now().add(timeout);
-  while (DateTime.now().isBefore(end)) {
-    await tester.pump(const Duration(milliseconds: 50));
-    if (finder.evaluate().isNotEmpty) return;
-  }
-  // Final check
-  if (finder.evaluate().isEmpty) {
-    throw TestFailure('Finder $finder not found after $timeout');
-  }
-}
-
 void main() {
   late MockSettingsDb mockSettingsDb;
   late MockJournalDb mockJournalDb;

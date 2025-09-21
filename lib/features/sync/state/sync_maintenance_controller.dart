@@ -5,11 +5,18 @@ import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
-class SyncMaintenanceController extends StateNotifier<SyncState> {
-  SyncMaintenanceController(this._repository) : super(const SyncState());
+class SyncMaintenanceController extends Notifier<SyncState> {
+  SyncMaintenanceController();
 
-  final SyncMaintenanceRepository _repository;
-  final LoggingService _loggingService = getIt<LoggingService>();
+  late SyncMaintenanceRepository _repository;
+  late LoggingService _loggingService;
+
+  @override
+  SyncState build() {
+    _repository = ref.watch(syncMaintenanceRepositoryProvider);
+    _loggingService = getIt<LoggingService>();
+    return const SyncState();
+  }
 
   Future<void> syncAll() async {
     state = state.copyWith(isSyncing: true, progress: 0);
@@ -87,7 +94,6 @@ class SyncMaintenanceController extends StateNotifier<SyncState> {
 }
 
 final syncControllerProvider =
-    StateNotifierProvider<SyncMaintenanceController, SyncState>((ref) {
-  final repository = ref.watch(syncMaintenanceRepositoryProvider);
-  return SyncMaintenanceController(repository);
-});
+    NotifierProvider<SyncMaintenanceController, SyncState>(
+  SyncMaintenanceController.new,
+);

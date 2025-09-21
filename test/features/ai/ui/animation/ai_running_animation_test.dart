@@ -9,13 +9,6 @@ import 'package:siri_wave/siri_wave.dart';
 
 import '../../../../test_helper.dart';
 
-// Create a simple provider we can use to override the real provider
-final ProviderFamily<bool, ({String id, Set<String> responseTypes})>
-    testBoolProvider =
-    Provider.family<bool, ({String id, Set<String> responseTypes})>(
-  (_, __) => false,
-);
-
 void main() {
   group('AiRunningAnimation', () {
     testWidgets('should render SiriWaveform with correct height',

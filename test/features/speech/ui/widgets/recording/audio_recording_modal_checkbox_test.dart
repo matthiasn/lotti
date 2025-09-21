@@ -37,8 +37,6 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
   @override
   String get name => 'Test Category';
 
-  bool get deleted => false;
-
   @override
   DateTime get createdAt => DateTime.now();
 

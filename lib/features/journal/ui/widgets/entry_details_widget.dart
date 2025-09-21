@@ -52,7 +52,7 @@ class EntryDetailsWidget extends ConsumerWidget {
     final item = entryState?.entry;
     if (item == null ||
         item.meta.deletedAt != null ||
-        (item is AiResponseEntry && showAiEntry == false)) {
+        (item is AiResponseEntry && !showAiEntry)) {
       return const SizedBox.shrink();
     }
 

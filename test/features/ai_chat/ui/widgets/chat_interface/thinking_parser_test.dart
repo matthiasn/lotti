@@ -79,9 +79,7 @@ void main() {
       expect(parsed.visible, 'xyz');
       // thinking is the two blocks joined with hr in between by default parser
       expect(parsed.thinking, isNotNull);
-      // ignore: unnecessary_null_checks
       expect(parsed.thinking!.contains('a'), isTrue);
-      // ignore: unnecessary_null_checks
       expect(parsed.thinking!.contains('b'), isTrue);
     });
 
@@ -90,7 +88,6 @@ void main() {
       final parsed = parseThinking(input);
       expect(parsed.visible.trim(), 'Hello');
       expect(parsed.thinking, isNotNull);
-      // ignore: unnecessary_null_checks
       expect(parsed.thinking!.contains('partial stream'), isTrue);
     });
 
@@ -108,7 +105,6 @@ void main() {
       final parsed = parseThinking(input);
       expect(parsed.visible, 'pre');
       expect(parsed.thinking, isNotNull);
-      // ignore: unnecessary_null_checks
       expect(parsed.thinking!.startsWith('BODY'), isTrue);
     });
 
@@ -118,7 +114,6 @@ void main() {
       final parsed = parseThinking(input);
       expect(parsed.visible, isEmpty);
       expect(parsed.thinking, isNotNull);
-      // ignore: unnecessary_null_checks
       expect(
           parsed.thinking!.endsWith('[Thinking content truncated...]'), isTrue);
     });
@@ -242,7 +237,7 @@ void main() {
       expect(parsed.visible, 'xx');
       expect(parsed.thinking, isNotNull);
       // Expect exactly one horizontal rule separator
-      final t = parsed.thinking!; // ignore: unnecessary_non_null_assertion
+      final t = parsed.thinking!;
       final hrCount = '---'
           .allMatches(t)
           .length; // number of times the HR appears in thinking
@@ -256,7 +251,7 @@ void main() {
       final parsed = parseThinking(input);
       expect(parsed.visible, '');
       expect(parsed.thinking, isNotNull);
-      final t = parsed.thinking!; // ignore: unnecessary_non_null_assertion
+      final t = parsed.thinking!;
       // Should be just 'B' without starting HR
       expect(t, 'B');
     });

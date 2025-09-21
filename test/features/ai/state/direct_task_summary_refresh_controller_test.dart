@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -34,26 +33,6 @@ class MockInferenceStatusController extends InferenceStatusController {
   }
 }
 
-class MutableMockInferenceStatusController extends InferenceStatusController {
-  MutableMockInferenceStatusController(this._status);
-
-  InferenceStatus _status;
-
-  void updateStatus(InferenceStatus newStatus) {
-    _status = newStatus;
-    // Notify listeners by updating state
-    state = newStatus;
-  }
-
-  @override
-  InferenceStatus build({
-    required String id,
-    required AiResponseType aiResponseType,
-  }) {
-    return _status;
-  }
-}
-
 class MockLatestSummaryController extends LatestSummaryController {
   MockLatestSummaryController(this._response);
 
@@ -64,27 +43,6 @@ class MockLatestSummaryController extends LatestSummaryController {
     required String id,
     required AiResponseType aiResponseType,
   }) async {
-    return _response;
-  }
-
-  @override
-  void listen() {
-    // Mock implementation - don't listen to actual updates
-  }
-}
-
-class TestableLatestSummaryController extends LatestSummaryController {
-  TestableLatestSummaryController(this._response, {this.onBuildCalled});
-
-  final AiResponseEntry? _response;
-  final VoidCallback? onBuildCalled;
-
-  @override
-  Future<AiResponseEntry?> build({
-    required String id,
-    required AiResponseType aiResponseType,
-  }) async {
-    onBuildCalled?.call();
     return _response;
   }
 

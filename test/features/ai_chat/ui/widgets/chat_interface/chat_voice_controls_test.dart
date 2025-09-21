@@ -7,7 +7,10 @@ import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/input_area.dart
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
 
 class _FakeRecorderController extends ChatRecorderController {
-  _FakeRecorderController(super.ref);
+  _FakeRecorderController();
+
+  @override
+  ChatRecorderState build() => const ChatRecorderState.initial();
 
   @override
   List<double> getNormalizedAmplitudeHistory() => const [0.2, 0.6, 0.9];

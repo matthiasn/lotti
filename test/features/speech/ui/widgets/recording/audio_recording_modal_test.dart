@@ -701,7 +701,7 @@ void main() {
 
 // Extended TestAudioRecorderController for checkbox tests
 class ExtendedTestAudioRecorderController extends TestAudioRecorderController {
-  ExtendedTestAudioRecorderController(super.testState);
+  ExtendedTestAudioRecorderController(super._testState);
 
   @override
   void setEnableSpeechRecognition({required bool? enable}) {

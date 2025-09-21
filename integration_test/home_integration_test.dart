@@ -40,7 +40,6 @@ void main() {
           final editor = find.byType(QuillEditor);
           debugPrint(editor.toString());
 
-          // ignore: flutter_style_todos
           // TODO: figure out how to enter text in flutter_quill
           // String testText = 'test text: ${DateTime.now()}';
           // await tester.enterText(editor, testText);

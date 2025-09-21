@@ -14,13 +14,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
-import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
@@ -51,9 +49,6 @@ class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
-class MockOllamaInferenceRepository extends Mock
-    implements OllamaInferenceRepository {}
-
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockRef extends Mock implements Ref {}
@@ -61,16 +56,6 @@ class MockRef extends Mock implements Ref {}
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class MockDirectory extends Mock implements Directory {}
-
-class MockFile extends Mock implements File {}
-
-class MockLottiConversationProcessor extends Mock
-    implements LottiConversationProcessor {}
-
-class MockInferenceStatusController extends Mock
-    implements InferenceStatusController {}
-
-class MockCategoriesRepository extends Mock implements CategoryRepository {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 

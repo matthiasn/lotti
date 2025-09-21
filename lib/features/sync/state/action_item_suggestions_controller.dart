@@ -2,10 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 
-final actionItemSuggestionsControllerProvider = StateNotifierProvider<
-    ActionItemSuggestionsController, ActionItemSuggestionsState>((ref) {
-  return ActionItemSuggestionsController(getIt<Maintenance>());
-});
+final actionItemSuggestionsControllerProvider = NotifierProvider<
+    ActionItemSuggestionsController, ActionItemSuggestionsState>(
+  ActionItemSuggestionsController.new,
+);
 
 class ActionItemSuggestionsState {
   const ActionItemSuggestionsState({
@@ -33,10 +33,14 @@ class ActionItemSuggestionsState {
 }
 
 class ActionItemSuggestionsController
-    extends StateNotifier<ActionItemSuggestionsState> {
-  ActionItemSuggestionsController(this._maintenance)
-      : super(const ActionItemSuggestionsState());
-  final Maintenance _maintenance;
+    extends Notifier<ActionItemSuggestionsState> {
+  late final Maintenance _maintenance;
+
+  @override
+  ActionItemSuggestionsState build() {
+    _maintenance = getIt<Maintenance>();
+    return const ActionItemSuggestionsState();
+  }
 
   Future<void> removeActionItemSuggestions() async {
     state = state.copyWith(isRemoving: true, progress: 0, clearError: true);
