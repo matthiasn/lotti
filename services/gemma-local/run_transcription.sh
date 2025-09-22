@@ -55,7 +55,7 @@ done
 
 # Run transcription
 echo -e "${BLUE}🎙️ Starting transcription of: $(basename "$AUDIO_FILE")${NC}"
-echo -e "${BLUE}📊 This may take 5-15 minutes depending on audio length...${NC}"
+echo -e "${BLUE}📊 Processing audio...${NC}"
 echo ""
 
 # Trap to ensure server cleanup on exit

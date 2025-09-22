@@ -25,7 +25,6 @@ def transcribe_file(audio_path: str, server_url: str = "http://localhost:11343")
         print(f"📊 Audio size: {len(wav_bytes):,} bytes")
         print("")
         print("🔄 Sending to Gemma 3N for transcription...")
-        print("   (This will take 3-4 minutes per 30-second chunk)")
         print("")
 
         # Send to server
@@ -38,7 +37,7 @@ def transcribe_file(audio_path: str, server_url: str = "http://localhost:11343")
                 'temperature': 0.1,
                 'max_tokens': 2000
             },
-            timeout=1800  # 30 minute timeout
+            timeout=600  # 10 minute timeout
         )
 
         if response.status_code == 200:
@@ -59,7 +58,7 @@ def transcribe_file(audio_path: str, server_url: str = "http://localhost:11343")
             return None
 
     except requests.exceptions.Timeout:
-        print("❌ Transcription timed out (over 30 minutes)")
+        print("❌ Transcription timed out (over 10 minutes)")
         return None
     except Exception as e:
         print(f"❌ Error: {e}")
