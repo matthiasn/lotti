@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable
 
 try:  # pragma: no cover
     from . import utils
+    from .manifest import ManifestDocument, OperationResult
 except ImportError:  # pragma: no cover
     import utils  # type: ignore
+    from manifest import ManifestDocument, OperationResult  # type: ignore
+
+_LOGGER = utils.get_logger("flutter_ops")
 
 _FALLBACK_COPY_SNIPPET = (
     "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {dst}; "
@@ -19,20 +22,28 @@ _FALLBACK_COPY_SNIPPET = (
 _CANONICAL_FLUTTER_URL = "https://github.com/flutter/flutter.git"
 
 
-def ensure_nested_sdk(manifest_path: str | Path, output_dir: str | Path) -> bool:
+def _split_path(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [entry for entry in value.split(":") if entry]
+
+
+def _discover_flutter_jsons(output_dir: str | Path) -> list[str]:
+    return sorted(candidate.name for candidate in Path(output_dir).glob("flutter-sdk-*.json"))
+
+
+def ensure_nested_sdk(
+    document: ManifestDocument,
+    *,
+    output_dir: str | Path,
+) -> OperationResult:
     """Ensure nested flutter SDK JSON modules are referenced by lotti."""
 
-    json_names = sorted(
-        candidate.name for candidate in Path(output_dir).glob("flutter-sdk-*.json")
-    )
+    json_names = _discover_flutter_jsons(output_dir)
     if not json_names:
-        return False
+        return OperationResult.unchanged()
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
     changed = False
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -48,22 +59,25 @@ def ensure_nested_sdk(manifest_path: str | Path, output_dir: str | Path) -> bool
         break
 
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        message = f"Ensured nested Flutter SDK references: {', '.join(json_names)}"
+        _LOGGER.debug(message)
+        return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
 
 
-def should_remove_flutter_sdk(manifest_path: str | Path, output_dir: str | Path) -> bool:
+def should_remove_flutter_sdk(
+    document: ManifestDocument,
+    *,
+    output_dir: str | Path,
+) -> bool:
     """Return ``True`` when offline flutter JSONs are present and referenced."""
 
-    json_names = [candidate.name for candidate in Path(output_dir).glob("flutter-sdk-*.json")]
+    json_names = _discover_flutter_jsons(output_dir)
     if not json_names:
         return False
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
@@ -72,14 +86,10 @@ def should_remove_flutter_sdk(manifest_path: str | Path, output_dir: str | Path)
     return False
 
 
-def normalize_flutter_sdk_module(manifest_path: str | Path) -> bool:
+def normalize_flutter_sdk_module(document: ManifestDocument) -> OperationResult:
     """Strip Flutter invocations from flutter-sdk build commands."""
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
     changed = False
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "flutter-sdk":
@@ -98,29 +108,22 @@ def normalize_flutter_sdk_module(manifest_path: str | Path) -> bool:
             module["build-commands"] = filtered
             changed = True
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
-
-
-def _split_path(value: str | None) -> list[str]:
-    if not value:
-        return []
-    return [entry for entry in value.split(":") if entry]
+        document.mark_changed()
+        message = "Normalized flutter-sdk build commands"
+        _LOGGER.debug(message)
+        return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
 
 
 def normalize_lotti_env(
-    manifest_path: str | Path,
+    document: ManifestDocument,
     *,
     flutter_bin: str,
     ensure_append_path: bool,
-) -> bool:
+) -> OperationResult:
     """Ensure lotti build-options PATH settings include ``flutter_bin``."""
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
     changed = False
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -141,22 +144,21 @@ def normalize_lotti_env(
             env["PATH"] = ":".join(path_entries)
             changed = True
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        message = f"Normalized lotti PATH for {flutter_bin}"
+        _LOGGER.debug(message)
+        return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
 
 
 def ensure_setup_helper_source(
-    manifest_path: str | Path,
+    document: ManifestDocument,
     *,
     helper_name: str,
-) -> bool:
+) -> OperationResult:
     """Ensure the lotti module sources include the setup helper file."""
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
     changed = False
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -172,16 +174,19 @@ def ensure_setup_helper_source(
             changed = True
         break
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        message = f"Ensured {helper_name} included in lotti sources"
+        _LOGGER.debug(message)
+        return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
 
 
 def ensure_setup_helper_command(
-    manifest_path: str | Path,
+    document: ManifestDocument,
     *,
     helper_name: str,
     working_dir: str,
-) -> bool:
+) -> OperationResult:
     """Ensure lotti build-commands invoke the setup helper with the desired working dir."""
 
     def _desired_command() -> str:
@@ -201,11 +206,7 @@ def ensure_setup_helper_command(
 
     desired_command = _desired_command()
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
     changed = False
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -236,18 +237,17 @@ def ensure_setup_helper_command(
         break
 
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        message = f"Ensured setup helper command ({working_dir})"
+        _LOGGER.debug(message)
+        return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
 
 
-def normalize_sdk_copy(manifest_path: str | Path) -> bool:
+def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
     """Normalize the cp command copying the Flutter SDK."""
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
     changed = False
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -269,23 +269,22 @@ def normalize_sdk_copy(manifest_path: str | Path) -> bool:
             module["build-commands"] = new_commands
             changed = True
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        message = "Normalized Flutter SDK copy command"
+        _LOGGER.debug(message)
+        return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
 
 
 def convert_flutter_git_to_archive(
-    manifest_path: str | Path,
+    document: ManifestDocument,
     *,
     archive_name: str,
     sha256: str,
-) -> bool:
+) -> OperationResult:
     """Convert flutter git sources to archive references."""
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
     changed = False
     for module in modules:
         if not isinstance(module, dict):
@@ -320,18 +319,17 @@ def convert_flutter_git_to_archive(
                 module["sources"] = filtered
                 changed = True
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        message = f"Converted flutter git source to archive {archive_name}"
+        _LOGGER.debug(message)
+        return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
 
 
-def rewrite_flutter_git_url(manifest_path: str | Path) -> bool:
+def rewrite_flutter_git_url(document: ManifestDocument) -> OperationResult:
     """Restore flutter git URLs to the canonical upstream."""
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
     changed = False
     for module in modules:
         if not isinstance(module, dict):
@@ -346,28 +344,29 @@ def rewrite_flutter_git_url(manifest_path: str | Path) -> bool:
                     source["url"] = _CANONICAL_FLUTTER_URL
                     changed = True
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        message = "Rewrote flutter git URLs to canonical origin"
+        _LOGGER.debug(message)
+        return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
 
 
 def bundle_app_archive(
-    manifest_path: str | Path,
+    document: ManifestDocument,
     *,
     archive_name: str,
     sha256: str,
     output_dir: str | Path,
-) -> bool:
+) -> OperationResult:
     """Bundle the app source as an archive and attach offline metadata."""
 
     output_path = Path(output_dir)
-    extra_modules = [candidate.name for candidate in sorted(output_path.glob("flutter-sdk-*.json"))]
+    extra_modules = _discover_flutter_jsons(output_path)
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
-
+    modules = document.ensure_modules()
+    messages: list[str] = []
     changed = False
+
     if extra_modules:
         filtered_modules = [
             module
@@ -375,9 +374,10 @@ def bundle_app_archive(
             if not (isinstance(module, dict) and module.get("name") == "flutter-sdk")
         ]
         if filtered_modules != modules:
-            data["modules"] = filtered_modules
+            document.data["modules"] = filtered_modules
             modules = filtered_modules
             changed = True
+            messages.append("Removed top-level flutter-sdk in favor of nested modules")
 
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -405,8 +405,12 @@ def bundle_app_archive(
         if extra_modules:
             module["modules"] = extra_modules
         changed = True
+        messages.append(f"Bundled app archive {archive_name}")
         break
 
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        for message in messages:
+            _LOGGER.debug(message)
+        return OperationResult(changed=True, messages=messages)
+    return OperationResult.unchanged()

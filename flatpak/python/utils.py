@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shlex
+import logging
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -10,6 +11,25 @@ import yaml
 
 
 _BOOLEAN_VALUES = {"true", "false"}
+_LOGGER_BASENAME = "flatpak_helpers"
+_logger_configured = False
+
+
+def get_logger(name: str | None = None) -> logging.Logger:
+    """Return a module-level logger with default configuration."""
+
+    global _logger_configured  # noqa: PLW0603 - intentional module-level guard
+    base_logger = logging.getLogger(_LOGGER_BASENAME)
+    if not _logger_configured:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        base_logger.addHandler(handler)
+        base_logger.setLevel(logging.INFO)
+        _logger_configured = True
+
+    if name:
+        return base_logger.getChild(name)
+    return base_logger
 
 
 def format_shell_assignments(values: Mapping[str, str]) -> str:

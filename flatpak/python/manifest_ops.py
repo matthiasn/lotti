@@ -2,28 +2,31 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Iterable, Sequence
 
 try:  # pragma: no cover
     from . import utils
+    from .manifest import ManifestDocument, OperationResult
 except ImportError:  # pragma: no cover
     import utils  # type: ignore
+    from manifest import ManifestDocument, OperationResult  # type: ignore
 
 _DEFAULT_REPO_URLS: tuple[str, ...] = (
     "https://github.com/matthiasn/lotti",
     "git@github.com:matthiasn/lotti",
 )
 
+_LOGGER = utils.get_logger("manifest_ops")
 
-def ensure_flutter_setup_helper(manifest_path: str | Path, helper_name: str) -> bool:
-    """Ensure the flutter-sdk module ships ``helper_name`` and PATH includes /app/flutter/bin."""
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
+def ensure_flutter_setup_helper(
+    document: ManifestDocument,
+    *,
+    helper_name: str,
+) -> OperationResult:
+    """Ensure flutter-sdk ships ``helper_name`` and lotti PATH includes /app/flutter/bin."""
 
+    modules = document.ensure_modules()
     changed = False
     for module in modules:
         if not isinstance(module, dict):
@@ -57,16 +60,18 @@ def ensure_flutter_setup_helper(manifest_path: str | Path, helper_name: str) -> 
                 changed = True
 
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        _LOGGER.debug("Ensured setup helper %s is present", helper_name)
+        return OperationResult.changed_result(f"Ensured setup helper {helper_name}")
+    return OperationResult.unchanged()
 
 
 def pin_commit(
-    manifest_path: str | Path,
+    document: ManifestDocument,
     *,
     commit: str,
     repo_urls: Sequence[str] | None = None,
-) -> bool:
+) -> OperationResult:
     """Replace lotti git source commit with ``commit`` and drop branch keys."""
 
     targets: Iterable[str]
@@ -75,10 +80,7 @@ def pin_commit(
     else:
         targets = repo_urls
 
-    data = utils.load_manifest(manifest_path)
-    modules = data.get("modules")
-    if not isinstance(modules, list):
-        return False
+    modules = document.ensure_modules()
 
     changed = False
     for module in modules:
@@ -96,5 +98,7 @@ def pin_commit(
             source.pop("branch", None)
             changed = True
     if changed:
-        utils.dump_manifest(manifest_path, data)
-    return changed
+        document.mark_changed()
+        _LOGGER.debug("Pinned lotti module to commit %s", commit)
+        return OperationResult.changed_result(f"Pinned lotti module to {commit}")
+    return OperationResult.unchanged()

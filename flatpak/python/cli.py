@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
 try:  # pragma: no cover - import fallback for direct execution
     from . import ci_ops, flutter_ops, manifest_ops, sources_ops, utils
+    from .manifest import ManifestDocument, OperationResult, merge_results
 except ImportError:  # pragma: no cover
     PACKAGE_ROOT = Path(__file__).resolve().parent
     if str(PACKAGE_ROOT) not in sys.path:
@@ -19,24 +21,33 @@ except ImportError:  # pragma: no cover
     import manifest_ops  # type: ignore
     import sources_ops  # type: ignore
     import utils  # type: ignore
+    from manifest import ManifestDocument, OperationResult, merge_results  # type: ignore
+
+logger = utils.get_logger("cli")
 
 
-def _add_pr_aware_pin(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    parser = subparsers.add_parser(
-        "pr-aware-pin",
-        help="Emit shell assignments for PR-aware manifest pinning.",
-    )
-    parser.add_argument(
-        "--event-name",
-        default=None,
-        help="GitHub event name (e.g. pull_request).",
-    )
-    parser.add_argument(
-        "--event-path",
-        default=None,
-        help="Path to the GitHub event payload JSON.",
-    )
-    parser.set_defaults(func=_run_pr_aware_pin)
+@dataclass
+class ManifestOperation:
+    manifest: Path
+    executor: Callable[[ManifestDocument], OperationResult]
+
+
+def _emit_messages(result: OperationResult) -> None:
+    for message in result.messages:
+        print(message)
+
+
+def _run_manifest_operation(operation: ManifestOperation) -> int:
+    document = ManifestDocument.load(operation.manifest)
+    try:
+        result = operation.executor(document)
+    except Exception as exc:  # pragma: no cover
+        logger.error("Operation failed: %s", exc)
+        return 1
+    if result.changed:
+        document.save()
+    _emit_messages(result)
+    return 0
 
 
 def _run_pr_aware_pin(namespace: argparse.Namespace) -> int:
@@ -46,374 +57,268 @@ def _run_pr_aware_pin(namespace: argparse.Namespace) -> int:
     )
     if not assignments:
         return 0
-
     sys.stdout.write(utils.format_shell_assignments(assignments))
     sys.stdout.write("\n")
     return 0
 
 
-def _add_replace_url_with_path(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "replace-url-with-path",
-        help="Replace a manifest source url with a local path entry.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument(
-        "--identifier",
-        required=True,
-        help="Identifier to match within the url line.",
-    )
-    parser.add_argument("--path", required=True, dest="path_value", help="Replacement path value.")
-    parser.set_defaults(func=_run_replace_url_with_path)
-
-
 def _run_replace_url_with_path(namespace: argparse.Namespace) -> int:
-    changed = sources_ops.replace_url_with_path(
+    result = sources_ops.replace_url_with_path(
         manifest_path=namespace.manifest,
         identifier=namespace.identifier,
         path_value=namespace.path_value,
     )
-    return 0 if changed is not None else 1
-
-
-def _add_ensure_setup_helper(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "ensure-setup-helper",
-        help="Ensure flutter-sdk module ships the setup helper script.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument(
-        "--helper",
-        default="setup-flutter.sh",
-        help="Helper script basename to embed.",
-    )
-    parser.set_defaults(func=_run_ensure_setup_helper)
+    if result:
+        print(f"Replaced url with path for {namespace.identifier}")
+        return 0
+    return 1 if result is None else 0
 
 
 def _run_ensure_setup_helper(namespace: argparse.Namespace) -> int:
-    manifest_ops.ensure_flutter_setup_helper(
-        manifest_path=namespace.manifest,
-        helper_name=namespace.helper,
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: manifest_ops.ensure_flutter_setup_helper(
+            document,
+            helper_name=namespace.helper,
+        ),
     )
-    return 0
-
-
-def _add_pin_commit(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "pin-commit",
-        help="Pin the lotti source to a specific commit.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument("--commit", required=True, help="Commit SHA to pin.")
-    parser.add_argument(
-        "--repo-url",
-        action="append",
-        default=None,
-        help="Optional repository URL to match (can be repeated).",
-    )
-    parser.set_defaults(func=_run_pin_commit)
+    return _run_manifest_operation(operation)
 
 
 def _run_pin_commit(namespace: argparse.Namespace) -> int:
-    manifest_ops.pin_commit(
-        manifest_path=namespace.manifest,
-        commit=namespace.commit,
-        repo_urls=namespace.repo_url,
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: manifest_ops.pin_commit(
+            document,
+            commit=namespace.commit,
+            repo_urls=namespace.repo_url,
+        ),
     )
-    return 0
-
-
-def _add_ensure_nested_sdk(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "ensure-nested-sdk",
-        help="Attach flutter-sdk JSON modules under lotti.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument("--output-dir", required=True, help="Directory containing flutter jsons.")
-    parser.set_defaults(func=_run_ensure_nested_sdk)
+    return _run_manifest_operation(operation)
 
 
 def _run_ensure_nested_sdk(namespace: argparse.Namespace) -> int:
-    flutter_ops.ensure_nested_sdk(
-        manifest_path=namespace.manifest,
-        output_dir=namespace.output_dir,
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: flutter_ops.ensure_nested_sdk(
+            document,
+            output_dir=namespace.output_dir,
+        ),
     )
-    return 0
-
-
-def _add_normalize_lotti_env(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "normalize-lotti-env",
-        help="Normalize PATH settings for the lotti module.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument(
-        "--layout",
-        choices=("top", "nested"),
-        default="top",
-        help="SDK layout to normalize (top installs under /app, nested under /var/lib).",
-    )
-    parser.add_argument(
-        "--append-path",
-        action="store_true",
-        help="Also ensure append-path includes the Flutter bin directory.",
-    )
-    parser.set_defaults(func=_run_normalize_lotti_env)
+    return _run_manifest_operation(operation)
 
 
 def _run_normalize_lotti_env(namespace: argparse.Namespace) -> int:
     flutter_bin = "/var/lib/flutter/bin" if namespace.layout == "nested" else "/app/flutter/bin"
-    flutter_ops.normalize_lotti_env(
-        manifest_path=namespace.manifest,
-        flutter_bin=flutter_bin,
-        ensure_append_path=namespace.append_path,
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: flutter_ops.normalize_lotti_env(
+            document,
+            flutter_bin=flutter_bin,
+            ensure_append_path=namespace.append_path,
+        ),
     )
-    return 0
-
-
-def _add_ensure_lotti_setup_helper(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "ensure-lotti-setup-helper",
-        help="Ensure the lotti module bundles and invokes setup-flutter.sh.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument(
-        "--layout",
-        choices=("top", "nested"),
-        default="top",
-        help="SDK layout to target for helper invocation.",
-    )
-    parser.add_argument(
-        "--helper",
-        default="setup-flutter.sh",
-        help="Helper script basename.",
-    )
-    parser.set_defaults(func=_run_ensure_lotti_setup_helper)
+    return _run_manifest_operation(operation)
 
 
 def _run_ensure_lotti_setup_helper(namespace: argparse.Namespace) -> int:
     working_dir = "/var/lib" if namespace.layout == "nested" else "/app"
-    flutter_ops.ensure_setup_helper_source(
-        manifest_path=namespace.manifest,
-        helper_name=namespace.helper,
-    )
-    flutter_ops.ensure_setup_helper_command(
-        manifest_path=namespace.manifest,
-        helper_name=namespace.helper,
-        working_dir=working_dir,
-    )
-    return 0
 
+    def executor(document: ManifestDocument) -> OperationResult:
+        source_result = flutter_ops.ensure_setup_helper_source(
+            document,
+            helper_name=namespace.helper,
+        )
+        command_result = flutter_ops.ensure_setup_helper_command(
+            document,
+            helper_name=namespace.helper,
+            working_dir=working_dir,
+        )
+        return merge_results([source_result, command_result])
 
-def _add_should_remove_flutter_sdk(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "should-remove-flutter-sdk",
-        help="Check if the top-level flutter-sdk module can be removed.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument("--output-dir", required=True, help="Directory containing flutter jsons.")
-    parser.set_defaults(func=_run_should_remove_flutter_sdk)
+    operation = ManifestOperation(manifest=Path(namespace.manifest), executor=executor)
+    return _run_manifest_operation(operation)
 
 
 def _run_should_remove_flutter_sdk(namespace: argparse.Namespace) -> int:
-    result = flutter_ops.should_remove_flutter_sdk(
-        manifest_path=namespace.manifest,
-        output_dir=namespace.output_dir,
-    )
+    document = ManifestDocument.load(namespace.manifest)
+    try:
+        result = flutter_ops.should_remove_flutter_sdk(
+            document,
+            output_dir=namespace.output_dir,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.error("Operation failed: %s", exc)
+        return 1
     sys.stdout.write("1\n" if result else "0\n")
     return 0
 
 
-def _add_normalize_flutter_sdk_module(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "normalize-flutter-sdk-module",
-        help="Prune flutter-sdk build commands to safe operations.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.set_defaults(func=_run_normalize_flutter_sdk_module)
-
-
 def _run_normalize_flutter_sdk_module(namespace: argparse.Namespace) -> int:
-    flutter_ops.normalize_flutter_sdk_module(manifest_path=namespace.manifest)
-    return 0
-
-
-def _add_normalize_sdk_copy(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "normalize-sdk-copy",
-        help="Normalize the Flutter SDK copy command with fallbacks.",
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: flutter_ops.normalize_flutter_sdk_module(document),
     )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.set_defaults(func=_run_normalize_sdk_copy)
+    return _run_manifest_operation(operation)
 
 
 def _run_normalize_sdk_copy(namespace: argparse.Namespace) -> int:
-    flutter_ops.normalize_sdk_copy(manifest_path=namespace.manifest)
-    return 0
-
-
-def _add_convert_flutter_git_to_archive(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "convert-flutter-git-to-archive",
-        help="Convert flutter git sources into archive references.",
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: flutter_ops.normalize_sdk_copy(document),
     )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument("--archive", required=True, help="Archive filename.")
-    parser.add_argument("--sha256", required=True, help="Archive SHA256 hash.")
-    parser.set_defaults(func=_run_convert_flutter_git_to_archive)
+    return _run_manifest_operation(operation)
 
 
 def _run_convert_flutter_git_to_archive(namespace: argparse.Namespace) -> int:
-    flutter_ops.convert_flutter_git_to_archive(
-        manifest_path=namespace.manifest,
-        archive_name=namespace.archive,
-        sha256=namespace.sha256,
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: flutter_ops.convert_flutter_git_to_archive(
+            document,
+            archive_name=namespace.archive,
+            sha256=namespace.sha256,
+        ),
     )
-    return 0
-
-
-def _add_rewrite_flutter_git_url(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "rewrite-flutter-git-url",
-        help="Restore flutter git URL to the canonical upstream.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.set_defaults(func=_run_rewrite_flutter_git_url)
+    return _run_manifest_operation(operation)
 
 
 def _run_rewrite_flutter_git_url(namespace: argparse.Namespace) -> int:
-    flutter_ops.rewrite_flutter_git_url(manifest_path=namespace.manifest)
-    return 0
-
-
-def _add_add_offline_sources(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "add-offline-sources",
-        help="Attach offline JSON sources to the lotti module.",
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: flutter_ops.rewrite_flutter_git_url(document),
     )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument("--pubspec", help="pubspec JSON filename to include.")
-    parser.add_argument("--cargo", help="cargo JSON filename to include.")
-    parser.add_argument("--flutter-json", dest="flutter_json", help="Flutter SDK JSON filename.")
-    parser.add_argument(
-        "--rustup",
-        action="append",
-        default=None,
-        help="Additional rustup JSON filenames (repeatable).",
-    )
-    parser.set_defaults(func=_run_add_offline_sources)
+    return _run_manifest_operation(operation)
 
 
 def _run_add_offline_sources(namespace: argparse.Namespace) -> int:
-    sources_ops.add_offline_sources(
-        manifest_path=namespace.manifest,
-        pubspec=namespace.pubspec,
-        cargo=namespace.cargo,
-        rustup=namespace.rustup or [],
-        flutter_file=namespace.flutter_json,
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: sources_ops.add_offline_sources(
+            document,
+            pubspec=namespace.pubspec,
+            cargo=namespace.cargo,
+            rustup=namespace.rustup or [],
+            flutter_file=namespace.flutter_json,
+        ),
     )
-    return 0
-
-
-def _add_bundle_archive_sources(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "bundle-archive-sources",
-        help="Bundle archive/file sources referenced in the manifest.",
-    )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument("--output-dir", required=True, help="Directory for cached artifacts.")
-    parser.add_argument(
-        "--download-missing",
-        action="store_true",
-        help="Download missing sources when cache lookup fails.",
-    )
-    parser.add_argument(
-        "--search-root",
-        action="append",
-        default=None,
-        help="Additional directories to search for cached artifacts.",
-    )
-    parser.set_defaults(func=_run_bundle_archive_sources)
+    return _run_manifest_operation(operation)
 
 
 def _run_bundle_archive_sources(namespace: argparse.Namespace) -> int:
-    sources_ops.bundle_archive_sources(
-        manifest_path=namespace.manifest,
-        output_dir=namespace.output_dir,
+    cache = sources_ops.ArtifactCache(
+        output_dir=Path(namespace.output_dir),
         download_missing=namespace.download_missing,
-        search_roots=namespace.search_root or [],
+        search_roots=[Path(root) for root in namespace.search_root or []],
     )
-    return 0
 
-
-def _add_bundle_app_archive(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> None:
-    parser = subparsers.add_parser(
-        "bundle-app-archive",
-        help="Bundle the application source archive and attach metadata.",
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: sources_ops.bundle_archive_sources(document, cache),
     )
-    parser.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser.add_argument("--archive", required=True, help="Archive filename (relative to output dir).")
-    parser.add_argument("--sha256", required=True, help="Archive SHA256 hash.")
-    parser.add_argument("--output-dir", required=True, help="Directory containing offline artifacts.")
-    parser.set_defaults(func=_run_bundle_app_archive)
+    return _run_manifest_operation(operation)
 
 
 def _run_bundle_app_archive(namespace: argparse.Namespace) -> int:
-    flutter_ops.bundle_app_archive(
-        manifest_path=namespace.manifest,
-        archive_name=namespace.archive,
-        sha256=namespace.sha256,
-        output_dir=namespace.output_dir,
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: flutter_ops.bundle_app_archive(
+            document,
+            archive_name=namespace.archive,
+            sha256=namespace.sha256,
+            output_dir=namespace.output_dir,
+        ),
     )
-    return 0
+    return _run_manifest_operation(operation)
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Flatpak helper CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    _add_pr_aware_pin(subparsers)
-    _add_replace_url_with_path(subparsers)
-    _add_ensure_setup_helper(subparsers)
-    _add_pin_commit(subparsers)
-    _add_ensure_nested_sdk(subparsers)
-    _add_normalize_lotti_env(subparsers)
-    _add_ensure_lotti_setup_helper(subparsers)
-    _add_should_remove_flutter_sdk(subparsers)
-    _add_normalize_flutter_sdk_module(subparsers)
-    _add_normalize_sdk_copy(subparsers)
-    _add_convert_flutter_git_to_archive(subparsers)
-    _add_rewrite_flutter_git_url(subparsers)
-    _add_add_offline_sources(subparsers)
-    _add_bundle_archive_sources(subparsers)
-    _add_bundle_app_archive(subparsers)
+
+    parser_pr = subparsers.add_parser("pr-aware-pin", help="Emit shell assignments for PR-aware manifest pinning.")
+    parser_pr.add_argument("--event-name", default=None, help="GitHub event name (e.g. pull_request).")
+    parser_pr.add_argument("--event-path", default=None, help="Path to the GitHub event payload JSON.")
+    parser_pr.set_defaults(func=_run_pr_aware_pin)
+
+    parser_replace = subparsers.add_parser("replace-url-with-path", help="Replace a manifest source url with a local path entry.")
+    parser_replace.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_replace.add_argument("--identifier", required=True, help="Identifier to match within the url line.")
+    parser_replace.add_argument("--path", required=True, dest="path_value", help="Replacement path value.")
+    parser_replace.set_defaults(func=_run_replace_url_with_path)
+
+    parser_setup = subparsers.add_parser("ensure-setup-helper", help="Ensure flutter-sdk module ships the setup helper script.")
+    parser_setup.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_setup.add_argument("--helper", default="setup-flutter.sh", help="Helper script basename to embed.")
+    parser_setup.set_defaults(func=_run_ensure_setup_helper)
+
+    parser_pin = subparsers.add_parser("pin-commit", help="Pin the lotti source to a specific commit.")
+    parser_pin.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_pin.add_argument("--commit", required=True, help="Commit SHA to pin.")
+    parser_pin.add_argument("--repo-url", action="append", default=None, help="Optional repository URL to match (can be repeated).")
+    parser_pin.set_defaults(func=_run_pin_commit)
+
+    parser_nested = subparsers.add_parser("ensure-nested-sdk", help="Attach flutter-sdk JSON modules under lotti.")
+    parser_nested.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_nested.add_argument("--output-dir", required=True, help="Directory containing flutter jsons.")
+    parser_nested.set_defaults(func=_run_ensure_nested_sdk)
+
+    parser_env = subparsers.add_parser("normalize-lotti-env", help="Normalize PATH settings for the lotti module.")
+    parser_env.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_env.add_argument("--layout", choices=("top", "nested"), default="top", help="SDK layout to normalize.")
+    parser_env.add_argument("--append-path", action="store_true", help="Also ensure append-path includes the Flutter bin directory.")
+    parser_env.set_defaults(func=_run_normalize_lotti_env)
+
+    parser_helper = subparsers.add_parser("ensure-lotti-setup-helper", help="Ensure the lotti module bundles and invokes setup-flutter.sh.")
+    parser_helper.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_helper.add_argument("--layout", choices=("top", "nested"), default="top", help="SDK layout to target.")
+    parser_helper.add_argument("--helper", default="setup-flutter.sh", help="Helper script basename.")
+    parser_helper.set_defaults(func=_run_ensure_lotti_setup_helper)
+
+    parser_remove = subparsers.add_parser("should-remove-flutter-sdk", help="Check if the top-level flutter-sdk module can be removed.")
+    parser_remove.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_remove.add_argument("--output-dir", required=True, help="Directory containing flutter jsons.")
+    parser_remove.set_defaults(func=_run_should_remove_flutter_sdk)
+
+    parser_sdk_module = subparsers.add_parser("normalize-flutter-sdk-module", help="Prune flutter-sdk build commands to safe operations.")
+    parser_sdk_module.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_sdk_module.set_defaults(func=_run_normalize_flutter_sdk_module)
+
+    parser_sdk_copy = subparsers.add_parser("normalize-sdk-copy", help="Normalize the Flutter SDK copy command with fallbacks.")
+    parser_sdk_copy.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_sdk_copy.set_defaults(func=_run_normalize_sdk_copy)
+
+    parser_convert = subparsers.add_parser("convert-flutter-git-to-archive", help="Convert flutter git sources into archive references.")
+    parser_convert.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_convert.add_argument("--archive", required=True, help="Archive filename.")
+    parser_convert.add_argument("--sha256", required=True, help="Archive SHA256 hash.")
+    parser_convert.set_defaults(func=_run_convert_flutter_git_to_archive)
+
+    parser_rewrite = subparsers.add_parser("rewrite-flutter-git-url", help="Restore flutter git URL to the canonical upstream.")
+    parser_rewrite.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_rewrite.set_defaults(func=_run_rewrite_flutter_git_url)
+
+    parser_offline_sources = subparsers.add_parser("add-offline-sources", help="Attach offline JSON sources to the lotti module.")
+    parser_offline_sources.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_offline_sources.add_argument("--pubspec", help="pubspec JSON filename to include.")
+    parser_offline_sources.add_argument("--cargo", help="cargo JSON filename to include.")
+    parser_offline_sources.add_argument("--flutter-json", dest="flutter_json", help="Flutter SDK JSON filename.")
+    parser_offline_sources.add_argument("--rustup", action="append", default=None, help="Additional rustup JSON filenames (repeatable).")
+    parser_offline_sources.set_defaults(func=_run_add_offline_sources)
+
+    parser_bundle = subparsers.add_parser("bundle-archive-sources", help="Bundle archive/file sources referenced in the manifest.")
+    parser_bundle.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_bundle.add_argument("--output-dir", required=True, help="Directory for cached artifacts.")
+    parser_bundle.add_argument("--download-missing", action="store_true", help="Download missing sources when cache lookup fails.")
+    parser_bundle.add_argument("--search-root", action="append", default=None, help="Additional directories to search for cached artifacts.")
+    parser_bundle.set_defaults(func=_run_bundle_archive_sources)
+
+    parser_bundle_app = subparsers.add_parser("bundle-app-archive", help="Bundle the application source archive and attach metadata.")
+    parser_bundle_app.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_bundle_app.add_argument("--archive", required=True, help="Archive filename (relative to output dir).")
+    parser_bundle_app.add_argument("--sha256", required=True, help="Archive SHA256 hash.")
+    parser_bundle_app.add_argument("--output-dir", required=True, help="Directory containing offline artifacts.")
+    parser_bundle_app.set_defaults(func=_run_bundle_app_archive)
+
     return parser
 
 
