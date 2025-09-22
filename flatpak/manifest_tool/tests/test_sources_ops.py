@@ -90,3 +90,62 @@ def test_artifact_cache_reports_missing(tmp_path: Path):
     local_path, messages = cache.ensure_local("missing.dat", "https://example.com/missing.dat")
     assert local_path is None
     assert messages == ["MISSING missing.dat https://example.com/missing.dat"]
+
+
+def test_artifact_cache_rejects_unsupported_scheme(tmp_path: Path):
+    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=True, search_roots=[])
+    local_path, messages = cache.ensure_local("file.dat", "file:///tmp/file.dat")
+    assert local_path is None
+    assert messages == ["UNSUPPORTED file.dat scheme file file:///tmp/file.dat"]
+
+
+def test_bundle_sources_for_module_skips_non_dict(tmp_path: Path):
+    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[])
+    changed, messages = sources_ops._bundle_sources_for_module("not-a-dict", cache)
+    assert not changed
+    assert messages == []
+
+
+def test_bundle_sources_for_module_updates_sources(tmp_path: Path):
+    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[])
+
+    def fake_ensure_local(filename: str, url: str):
+        return tmp_path / filename, [f"MOCK {filename}"]
+
+    cache.ensure_local = fake_ensure_local  # type: ignore[assignment]
+
+    module = {
+        "sources": [
+            {"type": "archive", "url": "https://example.com/archive.tar.gz"},
+            {"type": "file", "url": "https://example.com/helper.dat"},
+        ]
+    }
+
+    changed, messages = sources_ops._bundle_sources_for_module(module, cache)
+    assert changed
+    assert module["sources"][0]["path"] == "archive.tar.gz"
+    assert module["sources"][1]["path"] == "helper.dat"
+    assert all("MOCK" in message for message in messages)
+
+
+def test_bundle_single_source_handles_missing_url(tmp_path: Path):
+    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[])
+    changed, messages = sources_ops._bundle_single_source({"type": "archive"}, cache)
+    assert not changed
+    assert messages == []
+
+
+def test_bundle_single_source_converts_url(tmp_path: Path):
+    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[])
+
+    def fake_ensure_local(filename: str, url: str):
+        return tmp_path / filename, ["FETCH"]
+
+    cache.ensure_local = fake_ensure_local  # type: ignore[assignment]
+
+    source = {"type": "archive", "url": "https://example.com/archive.tar.gz"}
+    changed, messages = sources_ops._bundle_single_source(source, cache)
+    assert changed
+    assert source["path"] == "archive.tar.gz"
+    assert "url" not in source
+    assert messages == ["FETCH"]

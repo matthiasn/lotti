@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import urllib.request
+from urllib.parse import urlparse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Optional
@@ -17,6 +18,7 @@ except ImportError:  # pragma: no cover
     from manifest import ManifestDocument, OperationResult  # type: ignore
 
 _LOGGER = utils.get_logger("sources_ops")
+_ALLOWED_URL_SCHEMES = {"http", "https"}
 
 
 def replace_url_with_path_text(text: str, identifier: str, path_value: str) -> tuple[str, bool]:
@@ -87,6 +89,14 @@ class ArtifactCache:
             message = f"MISSING {filename} {source_url}"
             messages.append(message)
             _LOGGER.debug(message)
+            return None, messages
+
+        parsed = urlparse(source_url)
+        scheme = parsed.scheme or ""
+        if scheme and scheme not in _ALLOWED_URL_SCHEMES:
+            message = f"UNSUPPORTED {filename} scheme {scheme} {source_url}"
+            messages.append(message)
+            _LOGGER.warning(message)
             return None, messages
 
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -179,33 +189,58 @@ def bundle_archive_sources(
     """Replace archive/file URLs with bundled paths in the manifest."""
 
     modules = document.ensure_modules()
-    changed = False
     messages: list[str] = []
+    changed = False
 
     for module in modules:
-        if not isinstance(module, dict):
-            continue
-        sources = module.get("sources")
-        if not isinstance(sources, list):
-            continue
-        for source in sources:
-            if not isinstance(source, dict):
-                continue
-            if source.get("type") not in {"archive", "file"}:
-                continue
-            url = source.get("url")
-            if not url:
-                continue
-            filename = os.path.basename(url)
-            local_path, fetch_messages = cache.ensure_local(filename, url)
-            messages.extend(fetch_messages)
-            if local_path is None:
-                continue
-            source["path"] = local_path.name
-            source.pop("url", None)
+        module_changed, module_messages = _bundle_sources_for_module(module, cache)
+        if module_changed:
             changed = True
+        messages.extend(module_messages)
 
     if changed:
         document.mark_changed()
         return OperationResult(changed=True, messages=messages)
     return OperationResult(messages=messages)
+
+
+def _bundle_sources_for_module(
+    module: object,
+    cache: ArtifactCache,
+) -> tuple[bool, list[str]]:
+    if not isinstance(module, dict):
+        return False, []
+    sources = module.get("sources")
+    if not isinstance(sources, list):
+        return False, []
+
+    module_changed = False
+    messages: list[str] = []
+    for source in sources:
+        source_changed, source_messages = _bundle_single_source(source, cache)
+        if source_changed:
+            module_changed = True
+        messages.extend(source_messages)
+    return module_changed, messages
+
+
+def _bundle_single_source(
+    source: object,
+    cache: ArtifactCache,
+) -> tuple[bool, list[str]]:
+    if not isinstance(source, dict):
+        return False, []
+    if source.get("type") not in {"archive", "file"}:
+        return False, []
+    url = source.get("url")
+    if not url:
+        return False, []
+
+    filename = os.path.basename(url)
+    local_path, fetch_messages = cache.ensure_local(filename, url)
+    if local_path is None:
+        return False, fetch_messages
+
+    source["path"] = local_path.name
+    source.pop("url", None)
+    return True, fetch_messages
