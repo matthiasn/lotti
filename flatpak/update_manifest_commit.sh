@@ -9,6 +9,7 @@ set -euo pipefail
 # Resolve paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MANIFEST_FILE="$SCRIPT_DIR/com.matthiasn.lotti.source.yml"
+PYTHON_CLI="$SCRIPT_DIR/python/cli.py"
 
 if [ ! -f "$MANIFEST_FILE" ]; then
   echo "Error: Manifest not found: $MANIFEST_FILE" >&2
@@ -22,24 +23,9 @@ PR_HEAD_REF=""
 PR_HEAD_URL=""
 if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ] && [ -n "${GITHUB_EVENT_PATH:-}" ] && [ -f "${GITHUB_EVENT_PATH}" ]; then
   echo "Pull request context detected; extracting head repo + SHA from event payload"
-  eval "$(python3 - "$GITHUB_EVENT_PATH" <<'PY'
-import json,sys,shlex
-path=sys.argv[1]
-with open(path,'r',encoding='utf-8') as f:
-    ev=json.load(f)
-head=ev.get('pull_request',{}).get('head',{})
-sha=head.get('sha','')
-ref=head.get('ref','')
-repo=head.get('repo',{})
-url=repo.get('clone_url','')
-def esc(s):
-    return s.replace("'","'\\''")
-print(f"PR_MODE=true")
-print(f"PR_HEAD_SHA='{esc(sha)}'")
-print(f"PR_HEAD_REF='{esc(ref)}'")
-print(f"PR_HEAD_URL='{esc(url)}'")
-PY
-  )"
+  eval "$(python3 "$PYTHON_CLI" pr-aware-pin \
+    --event-name "${GITHUB_EVENT_NAME:-}" \
+    --event-path "$GITHUB_EVENT_PATH")"
 fi
 
 if [ "$PR_MODE" = true ] && [ -n "$PR_HEAD_SHA" ] && [ -n "$PR_HEAD_URL" ]; then

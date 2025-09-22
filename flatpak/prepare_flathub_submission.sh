@@ -86,34 +86,19 @@ replace_source_url_with_path() {
         return 0
     fi
 
-    python3 - "$manifest" "$identifier" "$path_value" <<'PY'
-import sys
-
-manifest, identifier, replacement = sys.argv[1:]
-
-try:
-    with open(manifest, encoding='utf-8') as handle:
-        lines = handle.readlines()
-except FileNotFoundError:
-    sys.exit(0)
-
-changed = False
-for idx, line in enumerate(lines):
-    if 'url:' in line and identifier in line:
-        prefix = line.split('url:')[0]
-        lines[idx] = f"{prefix}path: {replacement}\n"
-        changed = True
-
-if changed:
-    with open(manifest, 'w', encoding='utf-8') as handle:
-        handle.writelines(lines)
-PY
+    if [ -n "${PYTHON_CLI:-}" ] && [ -f "$PYTHON_CLI" ]; then
+        python3 "$PYTHON_CLI" replace-url-with-path \
+            --manifest "$manifest" \
+            --identifier "$identifier" \
+            --path "$path_value"
+    fi
 }
 
 # Get the script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOTTI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FLATPAK_DIR="$LOTTI_ROOT/flatpak"
+PYTHON_CLI="$FLATPAK_DIR/python/cli.py"
 
 # Work directory for generation
 WORK_DIR="$FLATPAK_DIR/flathub-build"
@@ -141,6 +126,7 @@ if [ -z "${LOTTI_VERSION:-}" ]; then
         LOTTI_VERSION=$(cd "$LOTTI_ROOT" && git describe --tags --abbrev=0 2>/dev/null || echo "0.9.645")
         print_warning "Could not extract version from pubspec.yaml, using: $LOTTI_VERSION"
     fi
+fi
 
 
 if [ -z "${LOTTI_RELEASE_DATE:-}" ]; then
@@ -339,38 +325,9 @@ EOF
 chmod +x "$SETUP_HELPER"
 SETUP_HELPER_BASENAME="$(basename "$SETUP_HELPER")"
 
-python3 - "$WORK_DIR/com.matthiasn.lotti.yml" "$SETUP_HELPER" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-helper = Path(sys.argv[2])
-if not manifest_path.exists():
-    sys.exit(0)
-
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8'))
-for module in data.get('modules', []):
-    name = module.get('name')
-    if name == 'flutter-sdk':
-        sources = module.setdefault('sources', [])
-        if not any(isinstance(src, dict) and src.get('dest-filename') == 'setup-flutter.sh' for src in sources):
-            sources.append({
-                'type': 'file',
-                'path': helper.name,
-                'dest': 'flutter/bin',
-                'dest-filename': 'setup-flutter.sh',
-            })
-    if name == 'lotti':
-        build_options = module.setdefault('build-options', {})
-        env = build_options.setdefault('env', {})
-        existing_path = env.get('PATH', '')
-        path_entries = [entry for entry in existing_path.split(':') if entry]
-        if '/app/flutter/bin' not in path_entries:
-            env['PATH'] = '/app/flutter/bin:' + existing_path if existing_path else '/app/flutter/bin'
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
+python3 "$PYTHON_CLI" ensure-setup-helper \
+  --manifest "$WORK_DIR/com.matthiasn.lotti.yml" \
+  --helper "$SETUP_HELPER_BASENAME"
 
 # Create build directory that flatpak-flutter expects
 mkdir -p .flatpak-builder/build
@@ -446,33 +403,9 @@ print_status "Generated offline manifest and dependencies"
 # Pin commit in the working manifest before submission/copy
 APP_COMMIT=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
 print_status "Pinning working manifest to commit: $APP_COMMIT"
-python3 - "$WORK_DIR/com.matthiasn.lotti.yml" "$APP_COMMIT" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-commit = sys.argv[2]
-
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-for module in data.get('modules', []):
-    if module.get('name') == 'lotti':
-        for source in module.get('sources', []):
-            if not isinstance(source, dict):
-                continue
-            url = source.get('url') or ''
-            if url in {
-                'https://github.com/matthiasn/lotti',
-                'git@github.com:matthiasn/lotti'
-            }:
-                source['commit'] = commit
-                source.pop('branch', None)
-                if source.get('commit') == 'COMMIT_PLACEHOLDER':
-                    source['commit'] = commit
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
+python3 "$PYTHON_CLI" pin-commit \
+  --manifest "$WORK_DIR/com.matthiasn.lotti.yml" \
+  --commit "$APP_COMMIT"
 
 # Fast-fail validation on working manifest to prevent submitting branch refs
 print_status "Validating working manifest is commit-pinned..."
@@ -655,90 +588,24 @@ done
 print_status "Post-processing output manifest..."
 
 OUT_MANIFEST="$OUTPUT_DIR/com.matthiasn.lotti.yml"
-  if [ -f "$OUT_MANIFEST" ]; then
-python3 - "$OUT_MANIFEST" <<'PY'
-import sys
-from pathlib import Path
-import yaml
+if [ -f "$OUT_MANIFEST" ]; then
+  python3 "$PYTHON_CLI" normalize-lotti-env \
+    --manifest "$OUT_MANIFEST" \
+    --layout top
 
-manifest_path = Path(sys.argv[1])
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8'))
-
-for module in data.get('modules', []):
-    if module.get('name') == 'lotti':
-        build_options = module.setdefault('build-options', {})
-        env = build_options.setdefault('env', {})
-        existing_path = env.get('PATH', '')
-        path_entries = [entry for entry in existing_path.split(':') if entry]
-        if '/app/flutter/bin' not in path_entries:
-            env['PATH'] = '/app/flutter/bin:' + existing_path if existing_path else '/app/flutter/bin'
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
-  # Pin app source to commit
   if [ "$PIN_COMMIT" = "true" ]; then
     APP_COMMIT=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
     print_info "Pinning app source to commit: $APP_COMMIT"
-    python3 - "$OUT_MANIFEST" "$APP_COMMIT" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-commit = sys.argv[2]
-
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-for module in data.get('modules', []):
-    if module.get('name') == 'lotti':
-        for source in module.get('sources', []):
-            if not isinstance(source, dict):
-                continue
-            url = source.get('url') or ''
-            if url in {
-                'https://github.com/matthiasn/lotti',
-                'git@github.com:matthiasn/lotti'
-            }:
-                source['commit'] = commit
-                source.pop('branch', None)
-                if source.get('commit') == 'COMMIT_PLACEHOLDER':
-                    source['commit'] = commit
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
+    python3 "$PYTHON_CLI" pin-commit \
+      --manifest "$OUT_MANIFEST" \
+      --commit "$APP_COMMIT"
   fi
 
-if [ "$USE_NESTED_FLUTTER" = "true" ]; then
-  # Ensure the Flutter SDK submodule is included under the lotti module so /var/lib/flutter exists
-  python3 - "$OUT_MANIFEST" "$OUTPUT_DIR" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-output_dir = Path(sys.argv[2])
-
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-# Determine available flutter-sdk-*.json files
-flutter_jsons = sorted(p.name for p in output_dir.glob('flutter-sdk-*.json'))
-if not flutter_jsons:
-    # Nothing to do if no offline SDK json exists
-    print('WARN no flutter-sdk-*.json in output; cannot include SDK module')
-else:
-    for module in data.get('modules', []):
-        if module.get('name') == 'lotti':
-            existing = module.get('modules') or []
-            # Ensure all flutter jsons are present (typically one)
-            for fj in flutter_jsons:
-                if fj not in existing:
-                    existing.append(fj)
-            module['modules'] = existing
-            break
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
-fi
+  if [ "$USE_NESTED_FLUTTER" = "true" ]; then
+    python3 "$PYTHON_CLI" ensure-nested-sdk \
+      --manifest "$OUT_MANIFEST" \
+      --output-dir "$OUTPUT_DIR"
+  fi
 
   if [ "$USE_OFFLINE_FLUTTER" = "true" ]; then
     FLUTTER_JSON=""
@@ -749,32 +616,9 @@ fi
       fi
     done
 
-    # Decide whether it's safe to remove the top-level flutter-sdk module:
-    # Only remove it if (a) an offline flutter-sdk-*.json exists in $OUTPUT_DIR
-    # AND (b) the lotti module references it via its 'modules' list.
-    REMOVE_FLUTTER_SDK=$(python3 - "$OUT_MANIFEST" "$OUTPUT_DIR" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-import os, glob
-
-manifest_path = Path(sys.argv[1])
-output_dir = Path(sys.argv[2])
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-lotti = None
-for module in data.get('modules', []):
-    if isinstance(module, dict) and module.get('name') == 'lotti':
-        lotti = module
-        break
-
-present = [p.name for p in output_dir.glob('flutter-sdk-*.json')]
-mods = lotti.get('modules', []) if isinstance(lotti, dict) else []
-referenced = [name for name in present if name in mods]
-
-print('1' if present and referenced else '0')
-PY
-)
+    REMOVE_FLUTTER_SDK=$(python3 "$PYTHON_CLI" should-remove-flutter-sdk \
+      --manifest "$OUT_MANIFEST" \
+      --output-dir "$OUTPUT_DIR")
 
     if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
       print_info "Offline Flutter JSON found and referenced; removing top-level flutter-sdk module."
@@ -788,34 +632,8 @@ PY
       print_info "Keeping top-level flutter-sdk module (offline JSON missing or not referenced)."
     fi
 
-    # If we keep the top-level flutter-sdk (installed at /app/flutter), avoid
-    # executing Flutter in this module to prevent arch-mismatch issues on
-    # non-x86_64 builders. We'll invoke Flutter from the app module instead.
-    python3 - "$OUT_MANIFEST" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-for module in data.get('modules', []):
-    if module.get('name') != 'flutter-sdk':
-        continue
-    cmds = list(module.get('build-commands', []))
-    new_cmds = []
-    for c in cmds:
-        s = str(c)
-        # Keep moving the SDK and PATH export; drop any direct flutter invocations here
-        if s.startswith('mv flutter ') or s.startswith('export PATH=/app/flutter/bin'):
-            new_cmds.append(s)
-    # Ensure we at least move the SDK
-    if not any(cmd.startswith('mv flutter ') for cmd in new_cmds):
-        new_cmds.insert(0, 'mv flutter /app/flutter')
-    module['build-commands'] = new_cmds
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
+    python3 "$PYTHON_CLI" normalize-flutter-sdk-module \
+      --manifest "$OUT_MANIFEST"
 
     PUBSPEC_JSON=""
     if [ -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
@@ -835,248 +653,47 @@ PY
       fi
     done
 
-    SETUP_SRC="$SETUP_HELPER_BASENAME"
     print_info "Adding offline sources: ${FLUTTER_JSON:-none} ${PUBSPEC_JSON:-} ${CARGO_JSON:-} ${RUSTUP_JSON:-}"
-
-    if [ "$USE_NESTED_FLUTTER" = "true" ]; then
-    awk -v FJ="$FLUTTER_JSON" -v PJ="$PUBSPEC_JSON" -v CJ="$CARGO_JSON" -v RJ="$RUSTUP_JSON" '
-      BEGIN { in_lotti=0; inserted=0 }
-      /^\s*- name: lotti\s*$/ { in_lotti=1 }
-      in_lotti && /^\s*- name: [^l]/ { in_lotti=0 }
-      {
-        print $0
-        if (in_lotti && /^\s{4}sources:\s*$/ && !inserted) {
-          if (PJ != "") { print "      - " PJ }
-          if (CJ != "") { print "      - " CJ }
-          if (RJ != "") { print "      - " RJ }
-          if (FJ != "") { print "      - type: file\n        path: " FJ }
-          inserted=1
-        }
-      }
-    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
-    else
-    awk -v PJ="$PUBSPEC_JSON" -v CJ="$CARGO_JSON" -v RJ="$RUSTUP_JSON" '
-      BEGIN { in_lotti=0; inserted=0 }
-      /^\s*- name: lotti\s*$/ { in_lotti=1 }
-      in_lotti && /^\s*- name: [^l]/ { in_lotti=0 }
-      {
-        print $0
-        if (in_lotti && /^\s{4}sources:\s*$/ && !inserted) {
-          if (PJ != "") { print "      - " PJ }
-          if (CJ != "") { print "      - " CJ }
-          if (RJ != "") { print "      - " RJ }
-          inserted=1
-        }
-      }
-    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+    PYTHON_OFFLINE_ARGS=(
+      "$PYTHON_CLI" add-offline-sources
+      --manifest "$OUT_MANIFEST"
+    )
+    if [ -n "$PUBSPEC_JSON" ]; then
+      PYTHON_OFFLINE_ARGS+=(--pubspec "$PUBSPEC_JSON")
     fi
-
-    if [ "$USE_NESTED_FLUTTER" = "true" ]; then
-    awk '
-      BEGIN { in_lotti=0; in_sources=0; in_git=0; saw_dest=0 }
-      /^\s*- name: lotti\s*$/ { in_lotti=1 }
-      in_lotti && /^\s*- name: [^l]/ { in_lotti=0 }
-      {
-        if (in_lotti && /^\s{4}sources:\s*$/) { in_sources=1 }
-        if (in_sources && /^\s{6}- /) { in_git=0; saw_dest=0 }
-        if (in_sources && /^\s{6}-\s+type:\s+git\s*$/) { in_git=1 }
-        if (in_git && /^\s{8}dest:\s+flutter\s*$/) { saw_dest=1 }
-        if (in_git && saw_dest && /^\s{8}url:/) {
-          sub(/url:.*/, "        url: https://github.com/flutter/flutter.git")
-          saw_dest=0
-        }
-        print $0
-      }
-    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+    if [ -n "$CARGO_JSON" ]; then
+      PYTHON_OFFLINE_ARGS+=(--cargo "$CARGO_JSON")
     fi
+    if [ -n "$RUSTUP_JSON" ]; then
+      PYTHON_OFFLINE_ARGS+=(--rustup "$RUSTUP_JSON")
+    fi
+    if [ "$USE_NESTED_FLUTTER" = "true" ] && [ -n "$FLUTTER_JSON" ]; then
+      PYTHON_OFFLINE_ARGS+=(--flutter-json "$FLUTTER_JSON")
+    fi
+    python3 "${PYTHON_OFFLINE_ARGS[@]}"
 
     if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
-    python3 - "$OUT_MANIFEST" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-for module in data.get('modules', []):
-    if module.get('name') == 'lotti':
-        # Ensure PATH contains /var/lib/flutter/bin via build-options.append-path and env.PATH
-        bo = module.setdefault('build-options', {})
-        append = bo.get('append-path', '')
-        parts = [p for p in append.split(':') if p]
-        if '/var/lib/flutter/bin' not in parts:
-            parts.append('/var/lib/flutter/bin')
-        bo['append-path'] = ':'.join(parts) if parts else '/var/lib/flutter/bin'
-        env = bo.setdefault('env', {})
-        env_path = env.get('PATH', '')
-        env_parts = [p for p in env_path.split(':') if p]
-        if '/var/lib/flutter/bin' not in env_parts:
-            env_parts.insert(0, '/var/lib/flutter/bin')
-        env['PATH'] = ':'.join(env_parts)
-
-        commands = module.get('build-commands', [])
-        # Use our local helper and run from /var/lib so ./flutter/... paths resolve when present
-        insert_command = 'bash setup-flutter.sh -C /var/lib'
-        if insert_command not in commands:
-            for idx, command in enumerate(commands):
-                if isinstance(command, str) and 'flutter ' in command:
-                    commands.insert(idx, insert_command)
-                    break
-            else:
-                commands.insert(0, insert_command)
-        module['build-commands'] = commands
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
+      python3 "$PYTHON_CLI" normalize-lotti-env \
+        --manifest "$OUT_MANIFEST" \
+        --layout nested \
+        --append-path
+      python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
+        --manifest "$OUT_MANIFEST" \
+        --layout nested \
+        --helper "$SETUP_HELPER_BASENAME"
     else
-    python3 - "$OUT_MANIFEST" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-for module in data.get('modules', []):
-    if module.get('name') == 'lotti':
-        # Ensure PATH contains /app/flutter/bin via build-options.append-path and env.PATH
-        bo = module.setdefault('build-options', {})
-        append = bo.get('append-path', '')
-        parts = [p for p in append.split(':') if p]
-        if '/app/flutter/bin' not in parts:
-            parts.append('/app/flutter/bin')
-        bo['append-path'] = ':'.join(parts) if parts else '/app/flutter/bin'
-        env = bo.setdefault('env', {})
-        env_path = env.get('PATH', '')
-        env_parts = [p for p in env_path.split(':') if p]
-        if '/app/flutter/bin' not in env_parts:
-            env_parts.insert(0, '/app/flutter/bin')
-        env['PATH'] = ':'.join(env_parts)
-
-        commands = module.get('build-commands', [])
-        # Run helper from /app so ./flutter/... paths resolve to /app/flutter when present
-        insert_command = 'bash setup-flutter.sh -C /app'
-        if insert_command not in commands:
-            for idx, command in enumerate(commands):
-                if isinstance(command, str) and 'flutter ' in command:
-                    commands.insert(idx, insert_command)
-                    break
-            else:
-                commands.insert(0, insert_command)
-        module['build-commands'] = commands
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
+      python3 "$PYTHON_CLI" normalize-lotti-env \
+        --manifest "$OUT_MANIFEST" \
+        --layout top \
+        --append-path
+      python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
+        --manifest "$OUT_MANIFEST" \
+        --layout top \
+        --helper "$SETUP_HELPER_BASENAME"
     fi
 
-    # Normalize cp source for Flutter SDK with a runtime fallback (handles both layouts)
-    python3 - "$OUT_MANIFEST" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-for module in data.get('modules', []):
-    if module.get('name') != 'lotti':
-        continue
-    cmds = module.get('build-commands', [])
-    new_cmds = []
-    for c in cmds:
-        s = str(c)
-        if 'cp -r ' in s and '/run/build/lotti/flutter_sdk' in s:
-            dst = '/run/build/lotti/flutter_sdk'
-            fallback = (
-                'if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter ' + dst +
-                '; elif [ -d /app/flutter ]; then cp -r /app/flutter ' + dst +
-                '; else echo "No Flutter SDK found at /var/lib/flutter or /app/flutter"; exit 1; fi'
-            )
-            new_cmds.append(fallback)
-            continue
-        new_cmds.append(s)
-    module['build-commands'] = new_cmds
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
-
-    # Prefer local robust helper with offline+online fallback; add it to lotti sources
-    python3 - "$OUT_MANIFEST" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-for module in data.get('modules', []):
-    if module.get('name') != 'lotti':
-        continue
-
-    # Ensure setup-flutter.sh is available as a file source in lotti
-    sources = module.setdefault('sources', [])
-    has_helper = False
-    for src in sources:
-        if isinstance(src, dict) and src.get('type') == 'file' and src.get('path') == 'setup-flutter.sh':
-            has_helper = True
-            break
-    if not has_helper:
-        sources.append({'type': 'file', 'path': 'setup-flutter.sh'})
-
-    # Ensure helper call targets our local helper and correct CWD for nested SDK
-    cmds = module.get('build-commands', [])
-    replaced = []
-    for cmd in cmds:
-        if isinstance(cmd, str) and 'setup-flutter.sh' in cmd:
-            replaced.append('bash setup-flutter.sh -C /var/lib')
-        else:
-            replaced.append(cmd)
-    if not any(isinstance(c, str) and c.strip().startswith('bash setup-flutter.sh -C /var/lib') for c in replaced):
-        replaced.insert(1, 'bash setup-flutter.sh -C /var/lib')
-    module['build-commands'] = replaced
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
-    else
-    python3 - "$OUT_MANIFEST" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-for module in data.get('modules', []):
-    if module.get('name') != 'lotti':
-        continue
-
-    # Ensure setup-flutter.sh is available as a file source in lotti
-    sources = module.setdefault('sources', [])
-    has_helper = False
-    for src in sources:
-        if isinstance(src, dict) and src.get('type') == 'file' and src.get('path') == 'setup-flutter.sh':
-            has_helper = True
-            break
-    if not has_helper:
-        sources.append({'type': 'file', 'path': 'setup-flutter.sh'})
-
-    # Ensure helper call targets our local helper and correct CWD for top-level SDK
-    cmds = module.get('build-commands', [])
-    replaced = []
-    for cmd in cmds:
-        if isinstance(cmd, str) and 'setup-flutter.sh' in cmd:
-            replaced.append('bash setup-flutter.sh -C /app')
-        else:
-            replaced.append(cmd)
-    if not any(isinstance(c, str) and c.strip().startswith('bash setup-flutter.sh -C /app') for c in replaced):
-        replaced.insert(1, 'bash setup-flutter.sh -C /app')
-    module['build-commands'] = replaced
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
-    fi
-
+    python3 "$PYTHON_CLI" normalize-sdk-copy \
+      --manifest "$OUT_MANIFEST"
     awk '
       BEGIN { in_patch=0; has_cmake=0; }
       {
@@ -1140,37 +757,10 @@ PY
         fi
         FLUTTER_ARCHIVE_SHA256=$(sha256sum "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" | awk '{print $1}')
 
-        python3 - "$OUT_MANIFEST" "$FLUTTER_ARCHIVE_BASENAME" "$FLUTTER_ARCHIVE_SHA256" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-archive_name = sys.argv[2]
-archive_sha = sys.argv[3]
-
-data = yaml.safe_load(manifest_path.read_text(encoding='utf-8')) or {}
-
-for module in data.get('modules', []):
-    if module.get('name') == 'flutter-sdk':
-        for source in module.setdefault('sources', []):
-            if isinstance(source, dict) and source.get('type') == 'git':
-                source['type'] = 'archive'
-                source['path'] = archive_name
-                source['sha256'] = archive_sha
-                source.pop('url', None)
-                source.pop('branch', None)
-                source.pop('tag', None)
-    elif module.get('name') == 'lotti':
-        filtered = []
-        for source in module.get('sources', []):
-            if isinstance(source, dict) and source.get('type') == 'git' and source.get('dest') == 'flutter':
-                continue
-            filtered.append(source)
-        module['sources'] = filtered
-
-manifest_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding='utf-8')
-PY
+        python3 "$PYTHON_CLI" convert-flutter-git-to-archive \
+          --manifest "$OUT_MANIFEST" \
+          --archive "$FLUTTER_ARCHIVE_BASENAME" \
+          --sha256 "$FLUTTER_ARCHIVE_SHA256"
         print_info "Bundled Flutter archive ${FLUTTER_ARCHIVE_BASENAME} for offline builds"
       else
         print_warning "No cached Flutter archive found; flutter-sdk module will continue to reference upstream git"
@@ -1234,130 +824,26 @@ PY
 
   if [ "$USE_OFFLINE_ARCHIVES" = "true" ]; then
     print_info "Bundling cached archive and file sources referenced by manifest..."
-    python3 - "$OUT_MANIFEST" "$OUTPUT_DIR" "$DOWNLOAD_MISSING_SOURCES" \
-      "$FLATPAK_DIR/.flatpak-builder/downloads" \
-      "$LOTTI_ROOT/.flatpak-builder/downloads" \
-      "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads" <<'PY'
-import os
-import sys
-from pathlib import Path
-import shutil
-import urllib.request
-import yaml
-
-manifest_path = Path(sys.argv[1])
-output_dir = Path(sys.argv[2])
-download_flag = sys.argv[3].lower() in {'1', 'true', 'yes'}
-search_roots = [Path(p) for p in sys.argv[4:] if p and Path(p).exists()]
-
-if not manifest_path.exists():
-    sys.exit(0)
-
-def ensure_local(filename: str, source_url: str):
-    candidate = output_dir / filename
-    if candidate.exists():
-        return candidate
-
-    for root in search_roots:
-        for dirpath, _, filenames in os.walk(root):
-            if filename in filenames:
-                candidate = Path(dirpath) / filename
-                dest = output_dir / filename
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                if candidate.resolve() != dest.resolve():
-                    shutil.copy2(candidate, dest)
-                return dest
-
-    if not download_flag:
-        return None
-
-    dest = output_dir / filename
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        with urllib.request.urlopen(source_url) as response, open(dest, 'wb') as handle:
-            shutil.copyfileobj(response, handle)
-        print(f"DOWNLOAD {filename} {source_url}")
-        return dest
-    except Exception as exc:
-        print(f"ERROR {filename} {exc}")
-        if dest.exists():
-            dest.unlink(missing_ok=True)
-        return None
-
-with open(manifest_path, encoding='utf-8') as handle:
-    manifest = yaml.safe_load(handle)
-
-modified = False
-for module in manifest.get('modules', []):
-    if not isinstance(module, dict):
-        continue
-
-    sources = module.get('sources')
-    if not isinstance(sources, list):
-        continue
-
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-
-        source_type = source.get('type')
-        if source_type not in {'archive', 'file'}:
-            continue
-        url = source.get('url')
-        if not url:
-            continue
-        filename = os.path.basename(url)
-        local_path = ensure_local(filename, url)
-        if local_path is None:
-            print(f"MISSING {filename} {url}")
-            continue
-        source['path'] = filename
-        source.pop('url', None)
-        modified = True
-        print(f"BUNDLE {filename}")
-
-if modified:
-    manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False), encoding='utf-8')
-PY
+    if [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
+      python3 "$PYTHON_CLI" bundle-archive-sources \
+        --manifest "$OUT_MANIFEST" \
+        --output-dir "$OUTPUT_DIR" \
+        --download-missing \
+        --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
+        --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
+        --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
+    else
+      python3 "$PYTHON_CLI" bundle-archive-sources \
+        --manifest "$OUT_MANIFEST" \
+        --output-dir "$OUTPUT_DIR" \
+        --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
+        --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
+        --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
+    fi
   fi
 
-  # Restore any temporary local Flutter git URLs back to upstream origin for submission safety
-  python3 - "$OUT_MANIFEST" <<'PY'
-import sys
-from pathlib import Path
-
-manifest_path = Path(sys.argv[1])
-lines = manifest_path.read_text(encoding='utf-8').splitlines()
-
-current_type = None
-url_index = None
-for idx, line in enumerate(lines):
-    stripped = line.strip()
-    if line.startswith('      - ') and 'type:' in stripped:
-        current_type = stripped.split(':', 1)[1].strip()
-        url_index = None
-        continue
-    if line.startswith('      - '):
-        current_type = None
-        url_index = None
-        continue
-
-    if current_type != 'git':
-        continue
-
-    if line.startswith('        url: '):
-        url_index = idx
-        continue
-
-    if url_index is None:
-        continue
-
-    if line.startswith('        dest: ') and stripped.endswith('flutter'):
-        lines[url_index] = '        url: https://github.com/flutter/flutter.git'
-        url_index = None
-
-manifest_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-PY
+  python3 "$PYTHON_CLI" rewrite-flutter-git-url \
+    --manifest "$OUT_MANIFEST"
 
   if [ "$USE_OFFLINE_APP_SOURCE" = "true" ]; then
     LOTT_ARCHIVE_NAME="lotti-${APP_COMMIT}.tar.xz"
@@ -1370,65 +856,11 @@ PY
 
     LOTT_ARCHIVE_SHA256=$(sha256sum "$LOTT_ARCHIVE_PATH" | awk '{print $1}')
 
-    python3 - "$OUT_MANIFEST" "$LOTT_ARCHIVE_NAME" "$LOTT_ARCHIVE_SHA256" "$OUTPUT_DIR" <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-manifest_path = Path(sys.argv[1])
-archive_name = sys.argv[2]
-archive_sha = sys.argv[3]
-output_dir = Path(sys.argv[4])
-
-if not manifest_path.exists():
-    sys.exit(0)
-
-manifest = yaml.safe_load(manifest_path.read_text()) or {}
-
-# Detect offline flutter jsons available in output dir
-extra_modules = [candidate.name for candidate in sorted(output_dir.glob('flutter-sdk-*.json'))]
-
-# Only remove top-level flutter-sdk if we actually have nested offline SDK jsons to use
-if extra_modules and isinstance(manifest.get('modules'), list):
-    manifest['modules'] = [
-        module for module in manifest['modules']
-        if not (isinstance(module, dict) and module.get('name') == 'flutter-sdk')
-    ]
-
-for module in manifest.get('modules', []):
-    if module.get('name') != 'lotti':
-        continue
-
-    extra_sources = []
-    # Include JSON source lists as bare strings so flatpak-builder loads them
-    for candidate in (
-        output_dir / 'pubspec-sources.json',
-        output_dir / 'cargo-sources.json',
-    ):
-        if candidate.exists():
-            extra_sources.append(candidate.name)
-    for candidate in sorted(output_dir.glob('rustup-*.json')):
-        extra_sources.append(candidate.name)
-
-    # Ensure our local helper is available in the lotti build dir
-    helper = output_dir / 'setup-flutter.sh'
-    if helper.exists():
-        extra_sources.append({'type': 'file', 'path': helper.name})
-
-    module['sources'] = [{
-        'type': 'archive',
-        'path': archive_name,
-        'sha256': archive_sha,
-        'strip-components': 1,
-    }] + extra_sources
-
-    # Attach nested flutter-sdk jsons only when present; otherwise keep top-level module
-    if extra_modules:
-        module['modules'] = extra_modules
-    break
-
-manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False), encoding='utf-8')
-PY
+    python3 "$PYTHON_CLI" bundle-app-archive \
+      --manifest "$OUT_MANIFEST" \
+      --archive "$LOTT_ARCHIVE_NAME" \
+      --sha256 "$LOTT_ARCHIVE_SHA256" \
+      --output-dir "$OUTPUT_DIR"
   fi
 fi
 
