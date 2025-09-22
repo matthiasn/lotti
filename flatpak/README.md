@@ -194,3 +194,28 @@ Currently, the Flatpak uses a single 1024px icon file for all sizes. For better 
 - Create pre-scaled icons: 512px, 256px, 128px, 64px, 48px, 32px, 16px
 - Update the manifest to use appropriately sized icons
 - This will improve rendering quality and reduce memory usage 
+
+## Python Helper Tests
+
+The helper scripts under `flatpak/python/` now ship with a pytest suite. To run it locally without touching the system Python, create a virtual environment from the repository root:
+
+```bash
+# Install the venv tooling once (Ubuntu/Debian only)
+sudo apt install python3-venv
+
+# Create and activate the virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install test dependencies inside the venv
+python -m pip install --upgrade pip
+pip install pytest
+
+# Run the tests
+python -m pytest flatpak/python/tests
+
+# When finished
+deactivate
+```
+
+> Tip: keep the `.venv/` directory out of version control (it is already covered by the root `.gitignore`).

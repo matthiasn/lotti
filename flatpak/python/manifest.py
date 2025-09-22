@@ -65,7 +65,10 @@ class ManifestDocument:
         return self._changed
 
     def ensure_modules(self) -> list[Any]:
-        modules = self.data.setdefault("modules", [])
+        if "modules" not in self.data:
+            raise TypeError("manifest.modules must be a list")
+
+        modules = self.data["modules"]
         if not isinstance(modules, list):
             raise TypeError("manifest.modules must be a list")
         return modules
