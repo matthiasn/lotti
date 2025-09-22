@@ -15,27 +15,74 @@ if [ ! -f "$MANIFEST_FILE" ]; then
   exit 1
 fi
 
-# Determine commit to pin
-COMMIT_HASH="${1:-$(git -C "$SCRIPT_DIR/.." rev-parse HEAD)}"
-
-echo "Updating Flatpak manifest with commit: $COMMIT_HASH"
-
-# Preflight: guard against bad states and give immediate feedback
-if grep -qE '^[[:space:]]*commit:[[:space:]]*$' "$MANIFEST_FILE"; then
-  echo "Error: Empty 'commit:' field detected in $MANIFEST_FILE. Please restore 'commit: COMMIT_PLACEHOLDER' before running this script." >&2
-  exit 1
+# Detect pull_request context to pin to the PR head commit and repo
+PR_MODE=false
+PR_HEAD_SHA=""
+PR_HEAD_REF=""
+PR_HEAD_URL=""
+if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ] && [ -n "${GITHUB_EVENT_PATH:-}" ] && [ -f "${GITHUB_EVENT_PATH}" ]; then
+  echo "Pull request context detected; extracting head repo + SHA from event payload"
+  eval "$(python3 - "$GITHUB_EVENT_PATH" <<'PY'
+import json,sys,shlex
+path=sys.argv[1]
+with open(path,'r',encoding='utf-8') as f:
+    ev=json.load(f)
+head=ev.get('pull_request',{}).get('head',{})
+sha=head.get('sha','')
+ref=head.get('ref','')
+repo=head.get('repo',{})
+url=repo.get('clone_url','')
+def esc(s):
+    return s.replace("'","'\\''")
+print(f"PR_MODE=true")
+print(f"PR_HEAD_SHA='{esc(sha)}'")
+print(f"PR_HEAD_REF='{esc(ref)}'")
+print(f"PR_HEAD_URL='{esc(url)}'")
+PY
+  )"
 fi
 
-if ! grep -q 'commit: COMMIT_PLACEHOLDER' "$MANIFEST_FILE"; then
-  echo "Error: No COMMIT_PLACEHOLDER found in $MANIFEST_FILE; aborting to avoid using stale commit." >&2
-  exit 1
+if [ "$PR_MODE" = true ] && [ -n "$PR_HEAD_SHA" ] && [ -n "$PR_HEAD_URL" ]; then
+  echo "Updating manifest for PR head: $PR_HEAD_SHA from $PR_HEAD_URL"
+  # Update URL to PR head repo (handles forks) and pin commit to PR head SHA
+  # Replace the first occurrence of the app repo URL under the lotti module
+  sed -i "0,/url: https:\/\/github.com\/matthiasn\/lotti/s||url: $PR_HEAD_URL|" "$MANIFEST_FILE"
+  # Replace placeholder with PR head SHA
+  if grep -q 'commit: COMMIT_PLACEHOLDER' "$MANIFEST_FILE"; then
+    sed -i "s|commit: COMMIT_PLACEHOLDER|commit: $PR_HEAD_SHA|" "$MANIFEST_FILE"
+  else
+    # Fallback: replace the first 'commit:' after the URL occurrence
+    awk -v sha="$PR_HEAD_SHA" '
+      BEGIN{changed=0}
+      /url: / && $0 ~ /github.com/ && $0 ~ /lotti/ {seen_url=1}
+      {
+        if (seen_url && !changed && $0 ~ /^[[:space:]]*commit:[[:space:]]*/) {
+          sub(/commit:.*/, "commit: " sha)
+          changed=1
+        }
+        print $0
+      }
+    ' "$MANIFEST_FILE" > "$MANIFEST_FILE.tmp" && mv "$MANIFEST_FILE.tmp" "$MANIFEST_FILE"
+  fi
+  echo "Updated $MANIFEST_FILE for PR head commit"
+else
+  # Determine commit to pin for non-PR contexts
+  COMMIT_HASH="${1:-$(git -C "$SCRIPT_DIR/.." rev-parse HEAD)}"
+  echo "Updating Flatpak manifest with commit: $COMMIT_HASH"
+  # Preflight: guard against bad states and give immediate feedback
+  if grep -qE '^[[:space:]]*commit:[[:space:]]*$' "$MANIFEST_FILE"; then
+    echo "Error: Empty 'commit:' field detected in $MANIFEST_FILE. Please restore 'commit: COMMIT_PLACEHOLDER' before running this script." >&2
+    exit 1
+  fi
+  if ! grep -q 'commit: COMMIT_PLACEHOLDER' "$MANIFEST_FILE"; then
+    echo "Error: No COMMIT_PLACEHOLDER found in $MANIFEST_FILE; aborting to avoid using stale commit." >&2
+    exit 1
+  fi
+  # Replace the placeholder with the commit hash
+  sed -i "s|commit: COMMIT_PLACEHOLDER|commit: $COMMIT_HASH|" "$MANIFEST_FILE"
+  echo "Updated $MANIFEST_FILE with commit $COMMIT_HASH"
 fi
-
-# Replace the placeholder with the commit hash
-sed -i "s/commit: COMMIT_PLACEHOLDER/commit: $COMMIT_HASH/" "$MANIFEST_FILE"
-
-echo "Updated $MANIFEST_FILE with commit $COMMIT_HASH"
 
 # Show the change context
 echo "Modified source configuration:"
-grep -n -A3 -B1 "url: https://github.com/matthiasn/lotti" "$MANIFEST_FILE" || true
+grep -n -A3 -B1 "name: lotti" "$MANIFEST_FILE" | sed -n '1,40p' || true
