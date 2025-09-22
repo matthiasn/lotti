@@ -38,6 +38,15 @@ jobs:
         run: |
           python3 -m pip install --user --disable-pip-version-check toml pyyaml packaging
 
+      - name: Run manifest helper tests
+        run: |
+          cd flatpak
+          python3 -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install pytest pyyaml
+          python -m pytest manifest_tool/tests
+
       - name: Prepare Flathub payload
         env:
           CLEAN_AFTER_GEN: "false"  # Keep build artifacts for the verification step

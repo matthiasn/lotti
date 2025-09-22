@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from flatpak.python import sources_ops
-from flatpak.python.manifest import ManifestDocument
+from flatpak.manifest_tool import sources_ops
+from flatpak.manifest_tool.manifest import ManifestDocument
 
 
 def test_replace_url_with_path_text_rewrites_lines():

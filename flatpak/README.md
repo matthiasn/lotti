@@ -29,16 +29,16 @@ This directory contains the Flatpak manifest and related files for building Lott
 
 ```bash
 cd flatpak
-./update_manifest_commit.sh
-flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.source.yml
+./create_local_manifest.sh
+flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
 ```
 
 Note:
-- Always run `./update_manifest_commit.sh` before building — it pins the manifest by replacing `commit: COMMIT_PLACEHOLDER` with your current git HEAD (or a commit you pass in).
+- Always run `./create_local_manifest.sh` before building — it pins the manifest by replacing `commit: COMMIT_PLACEHOLDER` with your current git HEAD (or a commit you pass in) and writes the result to `com.matthiasn.lotti.yml`.
 - The script includes a guard: if it detects an empty `commit:` field or cannot find `COMMIT_PLACEHOLDER`, it will exit and print a clear message so you get immediate feedback.
 - The build tooling also fails fast if any `COMMIT_PLACEHOLDER` or `branch:` entries remain in the final manifest used for submission.
 
-You can also specify a different commit: `./update_manifest_commit.sh <commit-hash>`
+You can also specify a different commit: `./create_local_manifest.sh <commit-hash>`
 
 ### Running the App
 
@@ -118,9 +118,10 @@ The Flathub build requires all dependencies to be available offline. We use `fla
 
 ### Key Files
 
-- `com.matthiasn.lotti.source.yml` - Main manifest for local builds (requires network, uses COMMIT_PLACEHOLDER)
+- `com.matthiasn.lotti.source.yml` - Base manifest (kept pristine; still contains COMMIT_PLACEHOLDER)
+- `com.matthiasn.lotti.yml` - Generated manifest with a pinned commit (created by `create_local_manifest.sh`)
 - `com.matthiasn.lotti.metainfo.xml` - App metadata with version placeholders
-- `update_manifest_commit.sh` - Updates COMMIT_PLACEHOLDER with actual commit hash in the manifest
+- `create_local_manifest.sh` - Updates COMMIT_PLACEHOLDER with actual commit hash in the manifest copy
 - `prepare_flathub_submission.sh` - Prepares everything for Flathub (generates offline manifest)
 
 ## Creating a Bundle
@@ -128,10 +129,10 @@ The Flathub build requires all dependencies to be available offline. We use `fla
 To create a distributable Flatpak bundle:
 ```bash
 # First update the manifest with desired commit
-./update_manifest_commit.sh
+./create_local_manifest.sh
 
 # Build into a repo
-flatpak-builder --repo=repo build-dir com.matthiasn.lotti.source.yml
+flatpak-builder --repo=repo build-dir com.matthiasn.lotti.yml
 
 # Create the bundle
 flatpak build-bundle repo lotti.flatpak com.matthiasn.lotti
@@ -197,7 +198,7 @@ Currently, the Flatpak uses a single 1024px icon file for all sizes. For better 
 
 ## Python Helper Tests
 
-The helper scripts under `flatpak/python/` now ship with a pytest suite. To run it locally without touching the system Python, create a virtual environment from the repository root:
+The helper scripts under `flatpak/manifest_tool/` now ship with a pytest suite. To run it locally without touching the system Python, create a virtual environment from the repository root:
 
 ```bash
 # Install the venv tooling once (Ubuntu/Debian only)
@@ -209,10 +210,10 @@ source .venv/bin/activate
 
 # Install test dependencies inside the venv
 python -m pip install --upgrade pip
-pip install pytest
+pip install pytest pyyaml
 
 # Run the tests
-python -m pytest flatpak/python/tests
+python -m pytest flatpak/manifest_tool/tests
 
 # When finished
 deactivate

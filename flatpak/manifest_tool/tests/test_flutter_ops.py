@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from flatpak.python import flutter_ops
-from flatpak.python.manifest import ManifestDocument
+from flatpak.manifest_tool import flutter_ops
+from flatpak.manifest_tool.manifest import ManifestDocument
 
 
 def test_ensure_nested_sdk(make_document, tmp_path: Path):

@@ -8,13 +8,18 @@ set -euo pipefail
 
 # Resolve paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MANIFEST_FILE="$SCRIPT_DIR/com.matthiasn.lotti.source.yml"
-PYTHON_CLI="$SCRIPT_DIR/python/cli.py"
+SOURCE_MANIFEST="$SCRIPT_DIR/com.matthiasn.lotti.source.yml"
+OUTPUT_MANIFEST="$SCRIPT_DIR/com.matthiasn.lotti.yml"
+PYTHON_CLI="$SCRIPT_DIR/manifest_tool/cli.py"
 
-if [ ! -f "$MANIFEST_FILE" ]; then
-  echo "Error: Manifest not found: $MANIFEST_FILE" >&2
+if [ ! -f "$SOURCE_MANIFEST" ]; then
+  echo "Error: Manifest not found: $SOURCE_MANIFEST" >&2
   exit 1
 fi
+
+# Work on a fresh copy alongside the source manifest.
+cp "$SOURCE_MANIFEST" "$OUTPUT_MANIFEST"
+MANIFEST_FILE="$OUTPUT_MANIFEST"
 
 # Detect pull_request context to pin to the PR head commit and repo
 PR_MODE=false
@@ -54,7 +59,7 @@ if [ "$PR_MODE" = true ] && [ -n "$PR_HEAD_SHA" ] && [ -n "$PR_HEAD_URL" ]; then
 else
   # Determine commit to pin for non-PR contexts
   COMMIT_HASH="${1:-$(git -C "$SCRIPT_DIR/.." rev-parse HEAD)}"
-  echo "Updating Flatpak manifest with commit: $COMMIT_HASH"
+  echo "Updating Flatpak manifest copy with commit: $COMMIT_HASH"
   # Preflight: guard against bad states and give immediate feedback
   if grep -qE '^[[:space:]]*commit:[[:space:]]*$' "$MANIFEST_FILE"; then
     echo "Error: Empty 'commit:' field detected in $MANIFEST_FILE. Please restore 'commit: COMMIT_PLACEHOLDER' before running this script." >&2
@@ -70,5 +75,6 @@ else
 fi
 
 # Show the change context
+echo "Generated manifest: $MANIFEST_FILE"
 echo "Modified source configuration:"
 grep -n -A3 -B1 "name: lotti" "$MANIFEST_FILE" | sed -n '1,40p' || true

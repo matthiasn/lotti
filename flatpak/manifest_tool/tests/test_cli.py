@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import yaml
 
-from flatpak.python import cli
-from flatpak.python.tests.conftest import SAMPLE_MANIFEST
+from flatpak.manifest_tool import cli
+from flatpak.manifest_tool.tests.conftest import SAMPLE_MANIFEST
 
 
 def test_cli_normalize_lotti_env(manifest_file, capsys):

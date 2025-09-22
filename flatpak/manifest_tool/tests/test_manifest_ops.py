@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flatpak.python import manifest_ops
+from flatpak.manifest_tool import manifest_ops
 
 
 def test_ensure_flutter_setup_helper(make_document):

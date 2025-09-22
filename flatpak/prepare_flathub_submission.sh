@@ -98,7 +98,7 @@ replace_source_url_with_path() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOTTI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FLATPAK_DIR="$LOTTI_ROOT/flatpak"
-PYTHON_CLI="$FLATPAK_DIR/python/cli.py"
+PYTHON_CLI="$FLATPAK_DIR/manifest_tool/cli.py"
 
 # Work directory for generation
 WORK_DIR="$FLATPAK_DIR/flathub-build"

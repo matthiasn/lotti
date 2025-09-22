@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from flatpak.python.manifest import ManifestDocument, OperationResult, merge_results
+from flatpak.manifest_tool.manifest import (
+    ManifestDocument,
+    OperationResult,
+    merge_results,
+)
 
 
 def test_manifest_document_load_and_save(make_document):
