@@ -60,6 +60,7 @@ class KnownModel {
 /// Known models for each inference provider type
 const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.gemini: geminiModels,
+  InferenceProviderType.gemma3n: gemma3nModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
   InferenceProviderType.ollama: ollamaModels,
   InferenceProviderType.openAi: openaiModels,
@@ -67,6 +68,37 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.openRouter: openRouterModels,
   InferenceProviderType.whisper: whisperModels,
 };
+
+/// Gemma 3n models - Local multimodal AI models with audio transcription
+///
+/// These models run locally using the Gemma 3n service and provide both text generation
+/// and audio transcription capabilities. They don't require internet connectivity or API keys,
+/// making them suitable for privacy-focused applications.
+///
+/// Note: Users must download these models using the service's model pull endpoint
+/// before they can be used in the application.
+const List<KnownModel> gemma3nModels = [
+  KnownModel(
+    providerModelId: 'google/gemma-3n-E2B-it',
+    name: 'Gemma 3n E2B',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Local multimodal model with audio transcription capabilities. '
+        'Efficient 2B parameter variant optimized for audio-to-text tasks and general conversation.',
+  ),
+  KnownModel(
+    providerModelId: 'google/gemma-3n-E4B-it',
+    name: 'Gemma 3n E4B',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Local multimodal model with enhanced audio transcription capabilities. '
+        'Larger 4B parameter variant providing improved accuracy for audio-to-text tasks.',
+  ),
+];
 
 /// Gemini models - Google's multimodal AI models
 const List<KnownModel> geminiModels = [

@@ -17,6 +17,7 @@ class ProviderConfig {
   static const Map<InferenceProviderType, String> defaultBaseUrls = {
     InferenceProviderType.gemini:
         'https://generativelanguage.googleapis.com/v1beta/openai',
+    InferenceProviderType.gemma3n: 'http://localhost:11343',
     InferenceProviderType.nebiusAiStudio: 'https://api.studio.nebius.com/v1',
     InferenceProviderType.ollama: 'http://localhost:11434',
     InferenceProviderType.openAi: 'https://api.openai.com/v1',
@@ -30,6 +31,7 @@ class ProviderConfig {
   /// These names are displayed in the UI when creating or editing provider configurations.
   static const Map<InferenceProviderType, String> defaultNames = {
     InferenceProviderType.gemini: 'Gemini',
+    InferenceProviderType.gemma3n: 'Gemma 3n (local)',
     InferenceProviderType.nebiusAiStudio: 'Nebius AI Studio',
     InferenceProviderType.ollama: 'Ollama (local)',
     InferenceProviderType.openAi: 'OpenAI',
@@ -43,6 +45,7 @@ class ProviderConfig {
   /// These providers run locally and don't require authentication.
   /// They are suitable for privacy-focused applications.
   static const Set<InferenceProviderType> noApiKeyRequired = {
+    InferenceProviderType.gemma3n,
     InferenceProviderType.ollama,
     InferenceProviderType.whisper,
   };

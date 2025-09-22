@@ -173,11 +173,11 @@ async def chat_completion(request: ChatCompletionRequest):
                             context_prompt = context_part
                     break
             
-            # Process audio
+            # Process audio - disable chunking to match working script behavior
             result = await audio_processor.process_audio_base64(
                 request.audio,
                 context_prompt,
-                use_chunking=True  # Enable chunking for audio > 30s
+                use_chunking=False  # Disable chunking to avoid "Run Run" issue
             )
             
             # Handle both single audio and chunked audio
@@ -719,7 +719,7 @@ async def generate_transcription_with_chat_context(
             # Fallback to simpler generation
             outputs = model_manager.model.generate(
                 **inputs,
-                max_new_tokens=200,
+                max_new_tokens=2000,
                 do_sample=False,
                 pad_token_id=model_manager.tokenizer.eos_token_id
             )
