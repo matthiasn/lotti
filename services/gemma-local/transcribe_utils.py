@@ -22,12 +22,9 @@ def prepare_audio_for_transcription(
     Returns:
         Tuple of (wav_bytes, duration_seconds)
     """
-    print(f"Loading {audio_path}...")
-    
     # Load audio file
     audio = AudioSegment.from_file(audio_path)
     duration_seconds = len(audio) / 1000
-    print(f"Original duration: {duration_seconds:.1f} seconds")
     
     # Trim if too long
     if duration_seconds > max_duration_seconds:
@@ -41,7 +38,6 @@ def prepare_audio_for_transcription(
     
     # Convert to WAV
     wav_bytes = audio.export(format='wav').read()
-    print(f"Converted to WAV: {len(wav_bytes)} bytes")
     
     return wav_bytes, duration_seconds
 

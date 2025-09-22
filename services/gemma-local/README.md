@@ -114,7 +114,7 @@ Run the comprehensive test suite:
 # Install dependencies first
 pip install -r requirements.txt
 
-# Run all tests with E2B model (takes 10+ minutes)
+# Run all tests with E2B model
 python test_transcription.py --run-all
 
 # Test with E4B model  
@@ -278,14 +278,14 @@ Environment variables for service configuration:
 
 ### E2B (2 Billion Parameters) - Default
 - **Size**: ~5.4 GB
-- **Speed**: Faster inference (~3-4 minutes per 30-second chunk)
+- **Speed**: Fast inference for audio transcription
 - **Memory**: Lower requirements (~6GB RAM)
 - **Use Case**: Real-time transcription, resource-constrained environments
 - **Accuracy**: Good for most use cases
 
 ### E4B (4 Billion Parameters)
 - **Size**: ~10.8 GB
-- **Speed**: Slower inference (~5-6 minutes per 30-second chunk)
+- **Speed**: Slower inference than E2B
 - **Memory**: Higher requirements (~12GB RAM)
 - **Use Case**: Maximum accuracy, batch processing
 - **Accuracy**: Higher quality transcription
@@ -301,9 +301,9 @@ Environment variables for service configuration:
 - **Supported formats**: WAV, MP3, M4A, FLAC, OGG, WebM
 
 ### Processing Times
-- **E2B Model**: ~3-4 minutes per 30-second audio chunk
-- **E4B Model**: ~5-6 minutes per 30-second audio chunk
-- **Total time**: Depends on audio length (e.g., 2-minute audio = ~8-16 minutes with E2B)
+- Processing time varies based on hardware, model variant, and audio length
+- E2B model is generally faster than E4B
+- Performance is optimized for Apple Silicon (MPS) devices
 
 ### Device Compatibility
 - **Apple Silicon (MPS)**: Recommended for best performance
