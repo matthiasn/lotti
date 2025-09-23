@@ -83,7 +83,6 @@ class AudioProcessor:
                 t_rs0 = time.perf_counter()
                 try:
                     import torchaudio.functional as AF
-                    import torch
                     _tensor = torch.from_numpy(audio_array).float()
                     _res = AF.resample(_tensor, orig_freq=original_sr, new_freq=self.sample_rate)
                     audio_array = _res.numpy()
@@ -172,7 +171,6 @@ class AudioProcessor:
                 t_rs0 = time.perf_counter()
                 try:
                     import torchaudio.functional as AF
-                    import torch
                     _tensor = torch.from_numpy(audio_array).float()
                     _res = AF.resample(_tensor, orig_freq=original_sr, new_freq=self.sample_rate)
                     audio_array = _res.numpy()
@@ -322,9 +320,9 @@ class AudioProcessor:
                     if len(audio_array.shape) > 1:
                         audio_array = audio_array.mean(axis=1)
                     return audio_array.astype('float32'), sample_rate
-            except Exception:
+            except Exception as e:
                 # Fall back to librosa below
-                pass
+                logger.warning(f"ffmpeg decoding failed, falling back to librosa. Error: {e}")
 
             # Fallback: use librosa with warnings suppressed
             with warnings.catch_warnings():

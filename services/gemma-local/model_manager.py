@@ -387,8 +387,8 @@ class GemmaModelManager:
                                 logger.info(
                                     f"cfg: hidden={hidden}, layers={layers}, ff={ff}"
                                 )
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.debug(f"Could not log detailed config fields: {e}")
                     except Exception as _e:
                         logger.info(f"Model loaded successfully on {self.device} (details unavailable: {_e})")
                 

@@ -132,8 +132,8 @@ async def startup_event() -> None:
         veclib = os.environ.get('VECLIB_MAXIMUM_THREADS')
         mkl = os.environ.get('MKL_NUM_THREADS')
         logger.info(f"Threads env: OMP_NUM_THREADS={omp}, VECLIB_MAXIMUM_THREADS={veclib}, MKL_NUM_THREADS={mkl}")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Could not read thread env vars: {e}")
 
     # Check if model is available
     if model_manager.is_model_available():
@@ -562,6 +562,17 @@ def build_chat_prompt(messages: List[Dict[str, Any]], include_audio_token: bool 
     return "\n\n".join(prompt_parts)
 
 
+def _compute_decode_cap_for_audio(audio_array: np.ndarray) -> tuple[int, float]:
+    """Compute dynamic max_new_tokens cap and duration (seconds) for an audio array."""
+    try:
+        samples = audio_array.shape[-1] if audio_array.ndim > 1 else audio_array.shape[0]
+        duration_sec = samples / float(ServiceConfig.AUDIO_SAMPLE_RATE)
+    except Exception:
+        duration_sec = 30.0
+    est_tokens = int(duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
+    cap = max(128, min(1024, est_tokens))
+    return cap, duration_sec
+
 async def generate_transcription_optimized(
     prompt: str,
     audio_array: np.ndarray,
@@ -589,16 +600,9 @@ async def generate_transcription_optimized(
         # Move inputs to device
         inputs = {k: v.to(model_manager.device) if hasattr(v, 'to') else v for k, v in inputs.items()}
         
-        # Get optimized generation config for the task
+        # Get optimized generation config for the task + dynamic cap
         gen_config = ServiceConfig.get_generation_config(task_type)
-        # Dynamic max_new_tokens based on audio duration to avoid runaway decode
-        try:
-            samples = audio_array.shape[-1] if audio_array.ndim > 1 else audio_array.shape[0]
-            duration_sec = samples / float(ServiceConfig.AUDIO_SAMPLE_RATE)
-        except Exception:
-            duration_sec = 30.0
-        est_tokens = int(duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
-        dynamic_cap = max(128, min(1024, est_tokens))
+        dynamic_cap, duration_sec = _compute_decode_cap_for_audio(audio_array)
         gen_config.update({
             'pad_token_id': model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id,
             'eos_token_id': model_manager.tokenizer.eos_token_id,
@@ -642,8 +646,8 @@ async def generate_transcription_optimized(
                 logger.info(f"[REQ {request_id}] {msg}")
             else:
                 logger.info(msg)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Could not log token generation stats: {e}")
 
         return response.strip()
     
@@ -783,13 +787,7 @@ async def generate_transcription_with_chat_context(
         
         # Get optimized generation config for transcription with dynamic cap
         gen_config = ServiceConfig.get_generation_config("transcription")
-        try:
-            samples = audio_array.shape[0]
-            duration_sec = samples / float(ServiceConfig.AUDIO_SAMPLE_RATE)
-        except Exception:
-            duration_sec = 30.0
-        est_tokens = int(duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
-        dynamic_cap = max(128, min(1024, est_tokens))
+        dynamic_cap, duration_sec = _compute_decode_cap_for_audio(audio_array)
         gen_config.update({
             'pad_token_id': model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id,
             'eos_token_id': model_manager.tokenizer.eos_token_id,
@@ -829,13 +827,8 @@ async def generate_transcription_with_chat_context(
         try:
             new_tokens = max(0, outputs.shape[1] - input_length)
             logger.info(f"{prefix}Generated {new_tokens} tokens in {(t1 - t0):.2f}s ({(new_tokens / max(1e-3, (t1 - t0))):.1f} tok/s); device={model_manager.device}, dtype={ServiceConfig.TORCH_DTYPE}")
-        except Exception:
-            pass
-        try:
-            new_tokens = max(0, outputs.shape[1] - input_length)
-            logger.info(f"Generated {new_tokens} tokens in {(t1 - t0):.2f}s ({(new_tokens / max(1e-3, (t1 - t0))):.1f} tok/s)")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Could not log token generation stats: {e}")
 
         transcription = response.strip()
 
