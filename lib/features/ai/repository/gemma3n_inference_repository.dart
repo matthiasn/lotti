@@ -34,7 +34,7 @@ class Gemma3nInferenceRepository {
   ///
   /// Throws:
   ///   ArgumentError if required parameters are empty
-  ///   Gemma3nTranscriptionException if transcription fails
+  ///   Gemma3nInferenceException if transcription fails
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
     required String model,
     required String audioBase64,
@@ -91,7 +91,8 @@ class Gemma3nInferenceRepository {
             'model': normalizedModel,
             'messages': messages,
             'temperature': 0.1, // Same as working script
-            'max_tokens': 2000, // Force to 2000 for full transcription
+            'max_tokens': maxCompletionTokens ??
+                2000, // Use parameter or default for full transcription
             'audio': audioBase64, // Add audio data to the request
           };
 
@@ -106,7 +107,7 @@ class Gemma3nInferenceRepository {
               .timeout(
             requestTimeout,
             onTimeout: () {
-              throw Gemma3nTranscriptionException(
+              throw Gemma3nInferenceException(
                 timeoutErrorMessage,
                 statusCode: httpStatusRequestTimeout,
               );
@@ -119,7 +120,7 @@ class Gemma3nInferenceRepository {
               name: 'Gemma3nInferenceRepository',
               error: response.body,
             );
-            throw Gemma3nTranscriptionException(
+            throw Gemma3nInferenceException(
               'Failed to transcribe audio (HTTP ${response.statusCode}). '
               'Please check your audio file and try again.',
               statusCode: response.statusCode,
@@ -128,38 +129,24 @@ class Gemma3nInferenceRepository {
 
           final result = jsonDecode(response.body) as Map<String, dynamic>;
 
-          // Validate response structure (OpenAI format)
-          if (!result.containsKey('choices') ||
-              result['choices'] is! List ||
-              (result['choices'] as List<dynamic>).isEmpty) {
+          // Extract text from response with robust error handling
+          final String text;
+          try {
+            final choices = result['choices'] as List<dynamic>;
+            final firstChoice = choices[0] as Map<String, dynamic>;
+            final message = firstChoice['message'] as Map<String, dynamic>;
+            text = message['content'] as String;
+          } catch (e) {
             developer.log(
-              'Invalid response from Gemma 3n server: missing or empty choices',
+              'Invalid response from Gemma 3n server: missing or invalid content',
               name: 'Gemma3nInferenceRepository',
               error: result,
             );
-            throw Gemma3nTranscriptionException(
-              'Invalid response from transcription service: missing choices',
-            );
-          }
-
-          final choices = result['choices'] as List<dynamic>;
-          final firstChoice = choices[0] as Map<String, dynamic>;
-
-          if (!firstChoice.containsKey('message') ||
-              !(firstChoice['message'] as Map<String, dynamic>)
-                  .containsKey('content')) {
-            developer.log(
-              'Invalid response from Gemma 3n server: missing message content',
-              name: 'Gemma3nInferenceRepository',
-              error: result,
-            );
-            throw Gemma3nTranscriptionException(
+            throw Gemma3nInferenceException(
               'Invalid response from transcription service: missing message content',
+              originalError: e,
             );
           }
-
-          final text = (firstChoice['message']
-              as Map<String, dynamic>)['content'] as String;
 
           developer.log(
             'Successfully transcribed audio - transcriptionLength: ${text.length}',
@@ -182,7 +169,7 @@ class Gemma3nInferenceRepository {
             created: result['created'] as int? ??
                 DateTime.now().millisecondsSinceEpoch ~/ 1000,
           );
-        } on Gemma3nTranscriptionException {
+        } on Gemma3nInferenceException {
           // Re-throw our custom exceptions as-is
           rethrow;
         } on TimeoutException catch (e) {
@@ -192,7 +179,7 @@ class Gemma3nInferenceRepository {
             name: 'Gemma3nInferenceRepository',
             error: e,
           );
-          throw Gemma3nTranscriptionException(
+          throw Gemma3nInferenceException(
             timeoutErrorMessage,
             statusCode: httpStatusRequestTimeout,
             originalError: e,
@@ -204,7 +191,7 @@ class Gemma3nInferenceRepository {
             name: 'Gemma3nInferenceRepository',
             error: e,
           );
-          throw Gemma3nTranscriptionException(
+          throw Gemma3nInferenceException(
             'Invalid response format from transcription service',
             originalError: e,
           );
@@ -215,7 +202,7 @@ class Gemma3nInferenceRepository {
             name: 'Gemma3nInferenceRepository',
             error: e,
           );
-          throw Gemma3nTranscriptionException(
+          throw Gemma3nInferenceException(
             'Failed to transcribe audio: $e',
             originalError: e,
           );
@@ -298,7 +285,7 @@ class Gemma3nInferenceRepository {
       final streamedResponse = await _httpClient.send(request).timeout(
         requestTimeout,
         onTimeout: () {
-          throw Gemma3nTranscriptionException(
+          throw Gemma3nInferenceException(
             'Request timed out after ${requestTimeout.inSeconds} seconds',
             statusCode: httpStatusRequestTimeout,
           );
@@ -307,7 +294,7 @@ class Gemma3nInferenceRepository {
 
       if (streamedResponse.statusCode != 200) {
         final body = await streamedResponse.stream.bytesToString();
-        throw Gemma3nTranscriptionException(
+        throw Gemma3nInferenceException(
           'Failed to generate text (HTTP ${streamedResponse.statusCode}): $body',
           statusCode: streamedResponse.statusCode,
         );
@@ -387,10 +374,10 @@ class Gemma3nInferenceRepository {
         name: 'Gemma3nInferenceRepository',
         error: e,
       );
-      if (e is Gemma3nTranscriptionException) {
+      if (e is Gemma3nInferenceException) {
         rethrow;
       }
-      throw Gemma3nTranscriptionException(
+      throw Gemma3nInferenceException(
         'Failed to generate text: $e',
         originalError: e,
       );
@@ -399,8 +386,8 @@ class Gemma3nInferenceRepository {
 }
 
 /// Exception thrown when Gemma 3n operations fail
-class Gemma3nTranscriptionException implements Exception {
-  Gemma3nTranscriptionException(
+class Gemma3nInferenceException implements Exception {
+  Gemma3nInferenceException(
     this.message, {
     this.statusCode,
     this.originalError,
@@ -411,5 +398,5 @@ class Gemma3nTranscriptionException implements Exception {
   final Object? originalError;
 
   @override
-  String toString() => 'Gemma3nTranscriptionException: $message';
+  String toString() => 'Gemma3nInferenceException: $message';
 }

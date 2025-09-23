@@ -16,12 +16,6 @@ enum InferenceProviderType {
   whisper,
 }
 
-const Set<InferenceProviderType> providersWithoutApiKey = {
-  InferenceProviderType.ollama,
-  InferenceProviderType.whisper,
-  InferenceProviderType.gemma3n,
-};
-
 enum Modality {
   text,
   audio,
