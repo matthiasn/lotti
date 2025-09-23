@@ -716,12 +716,13 @@ async def generate_transcription_with_chat_context(
                     outputs = model_manager.model.generate(**inputs, **gen_config)
         except Exception as e:
             logger.error(f"Generation failed on {model_manager.device}: {e}")
-            # Fallback to simpler generation
+            # Fallback to simpler generation with configured limits
             outputs = model_manager.model.generate(
                 **inputs,
-                max_new_tokens=2000,
+                max_new_tokens=gen_config.get('max_new_tokens', 2000),
                 do_sample=False,
-                pad_token_id=model_manager.tokenizer.eos_token_id
+                eos_token_id=model_manager.tokenizer.eos_token_id,
+                pad_token_id=model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id
             )
         
         # Decode the output, skipping the input tokens

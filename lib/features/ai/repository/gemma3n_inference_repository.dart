@@ -98,7 +98,7 @@ class Gemma3nInferenceRepository {
 
           final response = await _httpClient
               .post(
-            Uri.parse(baseUrl).resolve('/v1/chat/completions'),
+            Uri.parse(baseUrl).resolve('v1/chat/completions'),
             headers: {
               'Content-Type': 'application/json',
             },
@@ -276,7 +276,7 @@ class Gemma3nInferenceRepository {
       // Use http.Request for streaming support
       final request = http.Request(
         'POST',
-        Uri.parse(baseUrl).resolve('/v1/chat/completions'),
+        Uri.parse(baseUrl).resolve('v1/chat/completions'),
       );
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(requestBody);
