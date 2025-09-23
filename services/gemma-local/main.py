@@ -177,7 +177,7 @@ async def chat_completion(request: ChatCompletionRequest):
             result = await audio_processor.process_audio_base64(
                 request.audio,
                 context_prompt,
-                use_chunking=False  # Disable chunking to avoid "Run Run" issue
+                use_chunking=True  # Enable chunking for audio > 30s
             )
             
             # Handle both single audio and chunked audio
