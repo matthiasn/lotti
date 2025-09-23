@@ -151,6 +151,8 @@
   "aiProviderAnthropicName": "Anthropic Claude",
   "aiProviderGeminiDescription": "Google's Gemini AI models",
   "aiProviderGeminiName": "Google Gemini",
+  "aiProviderGemma3nDescription": "Local Gemma 3n model with audio transcription capabilities",
+  "aiProviderGemma3nName": "Gemma 3n (local)",
   "aiProviderGenericOpenAiDescription": "API compatible with OpenAI format",
   "aiProviderGenericOpenAiName": "OpenAI Compatible",
   "aiProviderNebiusAiStudioDescription": "Nebius AI Studio's models",

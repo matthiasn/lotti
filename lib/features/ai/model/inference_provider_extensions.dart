@@ -10,7 +10,7 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
       case InferenceProviderType.gemini:
         return context.messages.aiProviderGeminiName;
       case InferenceProviderType.gemma3n:
-        return 'Gemma 3n (local)';
+        return context.messages.aiProviderGemma3nName;
       case InferenceProviderType.genericOpenAi:
         return context.messages.aiProviderGenericOpenAiName;
       case InferenceProviderType.openAi:
@@ -34,7 +34,7 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
       case InferenceProviderType.gemini:
         return context.messages.aiProviderGeminiDescription;
       case InferenceProviderType.gemma3n:
-        return 'Local Gemma 3n model with audio transcription capabilities';
+        return context.messages.aiProviderGemma3nDescription;
       case InferenceProviderType.genericOpenAi:
         return context.messages.aiProviderGenericOpenAiDescription;
       case InferenceProviderType.openAi:
