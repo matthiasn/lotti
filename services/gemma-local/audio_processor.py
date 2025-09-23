@@ -16,6 +16,8 @@ import librosa
 import warnings
 import torch
 import torchaudio
+import shutil
+import subprocess
 
 from config import ServiceConfig
 
@@ -92,38 +94,39 @@ class AudioProcessor:
             t_norm0 = time.perf_counter()
             audio_array = self._normalize_audio(audio_array)
             t_norm1 = time.perf_counter()
-            
+
             # Use chunking for long audio or if explicitly requested
             chunk_time = 0.0
-            if use_chunking and duration > self.chunk_duration:
+            is_chunked = use_chunking and duration > self.chunk_duration
+            num_chunks = 1
+            chunks = None
+            if is_chunked:
                 t_ck0 = time.perf_counter()
                 chunks = self.chunk_audio_optimized(audio_array)
                 chunk_time = time.perf_counter() - t_ck0
-                
-                # Create prompt for chunked transcription with audio token
-                if prompt:
-                    combined_prompt = f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio chunk:"
-                else:
-                    combined_prompt = "<audio_soft_token>\n\nTranscribe the above audio chunk:"
-                    
-                logger.info(
-                    f"{prefix}Audio decoded. bytes={len(audio_bytes)} ({size_mb:.2f}MB) fmt={detected_fmt} sr={original_sr}->{self.sample_rate} "
-                    f"dur={duration:.1f}s; decode={(t1 - t0):.3f}s load={(t2 - t1):.3f}s resample={resample_time:.3f}s "
-                    f"normalize={(t_norm1 - t_norm0):.3f}s chunk={chunk_time:.3f}s chunks={len(chunks)}"
+                num_chunks = len(chunks)
+
+            # Create prompt with audio token
+            if prompt:
+                combined_prompt = (
+                    f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio chunk:" if is_chunked
+                    else f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio."
                 )
-                return chunks, combined_prompt
             else:
-                # Create prompt for transcription with audio token
-                if prompt:
-                    combined_prompt = f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio."
-                else:
-                    combined_prompt = "<audio_soft_token>\n\nTranscribe the above audio."
-                logger.info(
-                    f"{prefix}Audio decoded. bytes={len(audio_bytes)} ({size_mb:.2f}MB) fmt={detected_fmt} sr={original_sr}->{self.sample_rate} "
-                    f"dur={duration:.1f}s; decode={(t1 - t0):.3f}s load={(t2 - t1):.3f}s resample={resample_time:.3f}s "
-                    f"normalize={(t_norm1 - t_norm0):.3f}s chunk=0.000s chunks=1"
+                combined_prompt = (
+                    "<audio_soft_token>\n\nTranscribe the above audio chunk:" if is_chunked
+                    else "<audio_soft_token>\n\nTranscribe the above audio."
                 )
-                return audio_array, combined_prompt
+
+            logger.info(
+                f"{prefix}Audio decoded. bytes={len(audio_bytes)} ({size_mb:.2f}MB) fmt={detected_fmt} sr={original_sr}->{self.sample_rate} "
+                f"dur={duration:.1f}s; decode={(t1 - t0):.3f}s load={(t2 - t1):.3f}s resample={resample_time:.3f}s "
+                f"normalize={(t_norm1 - t_norm0):.3f}s chunk={chunk_time:.3f}s chunks={num_chunks}"
+            )
+
+            if is_chunked:
+                return chunks, combined_prompt
+            return audio_array, combined_prompt
             
         except Exception as e:
             logger.error(f"Error processing audio: {e}")
@@ -171,33 +174,35 @@ class AudioProcessor:
             
             # Use chunking for long audio or if explicitly requested
             chunk_time = 0.0
-            if use_chunking and duration > self.chunk_duration:
+            is_chunked = use_chunking and duration > self.chunk_duration
+            num_chunks = 1
+            chunks = None
+            if is_chunked:
                 t_ck0 = time.perf_counter()
                 chunks = self.chunk_audio_optimized(audio_array)
                 chunk_time = time.perf_counter() - t_ck0
-                
-                # Create prompt for chunked transcription with audio token
-                if prompt:
-                    combined_prompt = f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio chunk:"
-                else:
-                    combined_prompt = "<audio_soft_token>\n\nTranscribe the above audio chunk:"
-                    
-                logger.info(
-                    f"{prefix}Loaded file. sr={original_sr}->{self.sample_rate} dur={duration:.1f}s; load={(t1 - t0):.3f}s "
-                    f"resample={resample_time:.3f}s normalize={(t_norm1 - t_norm0):.3f}s chunk={chunk_time:.3f}s chunks={len(chunks)}"
+                num_chunks = len(chunks)
+
+            # Create prompt with audio token
+            if prompt:
+                combined_prompt = (
+                    f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio chunk:" if is_chunked
+                    else f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio."
                 )
-                return chunks, combined_prompt
             else:
-                # Create prompt for transcription with audio token
-                if prompt:
-                    combined_prompt = f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio."
-                else:
-                    combined_prompt = "<audio_soft_token>\n\nTranscribe the above audio."
-                logger.info(
-                    f"{prefix}Loaded file. sr={original_sr}->{self.sample_rate} dur={duration:.1f}s; load={(t1 - t0):.3f}s "
-                    f"resample={resample_time:.3f}s normalize={(t_norm1 - t_norm0):.3f}s chunk=0.000s chunks=1"
+                combined_prompt = (
+                    "<audio_soft_token>\n\nTranscribe the above audio chunk:" if is_chunked
+                    else "<audio_soft_token>\n\nTranscribe the above audio."
                 )
-                return audio_array, combined_prompt
+
+            logger.info(
+                f"{prefix}Loaded file. sr={original_sr}->{self.sample_rate} dur={duration:.1f}s; load={(t1 - t0):.3f}s "
+                f"resample={resample_time:.3f}s normalize={(t_norm1 - t_norm0):.3f}s chunk={chunk_time:.3f}s chunks={num_chunks}"
+            )
+
+            if is_chunked:
+                return chunks, combined_prompt
+            return audio_array, combined_prompt
             
         except Exception as e:
             logger.error(f"Error processing audio file: {e}")
@@ -275,8 +280,6 @@ class AudioProcessor:
             
             # Prefer ffmpeg decode for formats librosa/soundfile struggle with (e.g., m4a)
             try:
-                import shutil
-                import subprocess
                 ffmpeg_bin = shutil.which('ffmpeg')
                 if ffmpeg_bin and format_type in ('m4a', 'unknown'):
                     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as wav_out:
@@ -348,9 +351,8 @@ class AudioProcessor:
             return audio_array, 0.0
         t_rs0 = time.perf_counter()
         try:
-            import torchaudio.functional as AF
             _tensor = torch.from_numpy(audio_array).float()
-            _res = AF.resample(_tensor, orig_freq=original_sr, new_freq=self.sample_rate)
+            _res = torchaudio.functional.resample(_tensor, orig_freq=original_sr, new_freq=self.sample_rate)
             resampled = _res.numpy()
         except Exception:
             resampled = librosa.resample(

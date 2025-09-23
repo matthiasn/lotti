@@ -54,9 +54,8 @@ try:
 
     # Optional stdout mirroring controlled by env LOG_TO_STDOUT
     if os.getenv('LOG_TO_STDOUT', '0').lower() in ('1', 'true', 'yes', 'on'):
-        import sys as _sys
-        if not any(isinstance(h, logging.StreamHandler) and getattr(h, 'stream', None) is _sys.stdout for h in root_logger.handlers):
-            sh = logging.StreamHandler(_sys.stdout)
+        if not any(isinstance(h, logging.StreamHandler) and getattr(h, 'stream', None) is sys.stdout for h in root_logger.handlers):
+            sh = logging.StreamHandler(sys.stdout)
             sh.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
             sh.setFormatter(fmt)
             root_logger.addHandler(sh)
@@ -563,9 +562,10 @@ def build_chat_prompt(messages: List[Dict[str, Any]], include_audio_token: bool 
 def _compute_decode_cap_for_audio(audio_array: np.ndarray) -> tuple[int, float]:
     """Compute dynamic max_new_tokens cap and duration (seconds) for an audio array."""
     try:
-        samples = audio_array.shape[-1] if audio_array.ndim > 1 else audio_array.shape[0]
+        samples = audio_array.shape[-1] if getattr(audio_array, 'ndim', None) and audio_array.ndim > 1 else audio_array.shape[0]
         duration_sec = samples / float(ServiceConfig.AUDIO_SAMPLE_RATE)
-    except Exception:
+    except (AttributeError, IndexError) as e:
+        logger.warning(f"Could not determine audio duration from shape, defaulting to 30s. Error: {e}")
         duration_sec = 30.0
     est_tokens = int(duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
     cap = max(128, min(1024, est_tokens))
@@ -709,7 +709,6 @@ async def generate_transcription_with_chat_context(
         logger.info(f"{prefix}Audio array shape: {audio_array.shape}, dtype: {audio_array.dtype}")
 
         # Convert audio to float32 and ensure it's in the correct format
-        import numpy as np
 
         # Ensure audio is float32 (Gemma 3N expects this)
         if audio_array.dtype != np.float32:
