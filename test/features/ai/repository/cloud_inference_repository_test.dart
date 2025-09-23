@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +18,8 @@ class MockOpenAIClient extends Mock implements OpenAIClient {}
 
 class MockHttpClient extends Mock implements http.Client {}
 
+class MockStreamedResponse extends Mock implements http.StreamedResponse {}
+
 class MockRef extends Mock implements Ref<Object?> {}
 
 class MockOllamaInferenceRepository extends Mock
@@ -29,11 +32,14 @@ class MockGeminiInferenceRepository extends Mock
 class FakeCreateChatCompletionRequest extends Fake
     implements CreateChatCompletionRequest {}
 
+class FakeRequest extends Fake implements http.Request {}
+
 void main() {
-  setUp(() {
-    // This needs to be called before each test to register the fallback value
+  setUpAll(() {
+    // Register fallback values for mocktail
     registerFallbackValue(FakeCreateChatCompletionRequest());
     registerFallbackValue(Uri.parse('http://example.com'));
+    registerFallbackValue(FakeRequest());
   });
 
   group('CloudInferenceRepository', () {
@@ -1526,6 +1532,156 @@ void main() {
       final request = captured.first as CreateChatCompletionRequest;
       expect(request.toolChoice, isNull);
       expect(request.tools, isEmpty);
+    });
+
+    test('generateWithAudio handles Gemma3n provider type successfully',
+        () async {
+      // Create a Gemma3n provider
+      final gemma3nProvider = AiConfig.inferenceProvider(
+        id: 'gemma3n-id',
+        name: 'Gemma 3n',
+        baseUrl: 'http://localhost:8080',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemma3n,
+      ) as AiConfigInferenceProvider;
+
+      const audioBase64 = 'audio-base64-data';
+      const transcribedText = 'This is the Gemma 3n transcription.';
+
+      // Mock successful response from Gemma3n repository
+      // Since Gemma3n uses a dedicated repository, we need to mock the HTTP call
+      when(() => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({
+              'id': 'gemma3n-123',
+              'choices': [
+                {
+                  'message': {
+                    'content': transcribedText,
+                  },
+                },
+              ],
+              'created': 1234567890,
+            }),
+            200,
+          ));
+
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: 'google/gemma-3n-E2B-it', // Use Gemma3n model
+        baseUrl: gemma3nProvider.baseUrl,
+        apiKey: gemma3nProvider.apiKey,
+        audioBase64: audioBase64,
+        provider: gemma3nProvider,
+      );
+
+      expect(stream.isBroadcast, isTrue);
+
+      final response = await stream.first;
+      expect(response.choices?.length, 1);
+      expect(response.choices?[0].delta?.content, transcribedText);
+      expect(response.id, 'gemma3n-123');
+      expect(response.object, 'chat.completion.chunk');
+
+      // Verify the HTTP call was made with correct parameters
+      final captured = verify(() => mockHttpClient.post(
+            captureAny(),
+            headers: captureAny(named: 'headers'),
+            body: captureAny(named: 'body'),
+          )).captured;
+
+      final uri = captured[0] as Uri;
+      expect(uri.toString(), '${gemma3nProvider.baseUrl}/v1/chat/completions');
+
+      final body = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      expect(body['audio'], audioBase64);
+      expect(body['model'], contains('gemma'));
+    });
+
+    test('generate handles Gemma3n provider type successfully', () async {
+      // Create a Gemma3n provider
+      final gemma3nProvider = AiConfig.inferenceProvider(
+        id: 'gemma3n-id',
+        name: 'Gemma 3n',
+        baseUrl: 'http://localhost:8080',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemma3n,
+      ) as AiConfigInferenceProvider;
+
+      const systemMessage = 'You are a helpful assistant.';
+
+      // Mock streaming response from Gemma3n
+      final mockStreamedResponse = MockStreamedResponse();
+
+      // Simulate SSE stream chunks
+      final chunks = [
+        'data: {"id":"test-1","choices":[{"delta":{"content":"Hello"}}],"created":1234567890}\n',
+        'data: {"id":"test-2","choices":[{"delta":{"content":" from Gemma"}}]}\n',
+        'data: [DONE]\n',
+      ];
+
+      // Create a stream controller to simulate the response
+      final streamController = StreamController<List<int>>();
+
+      // Create the byte stream from the controller
+      final byteStream = http.ByteStream(streamController.stream);
+
+      when(() => mockStreamedResponse.statusCode).thenReturn(200);
+      when(() => mockStreamedResponse.stream).thenAnswer((_) => byteStream);
+
+      when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+        // Add chunks to stream asynchronously
+        unawaited(Future.microtask(() async {
+          for (final chunk in chunks) {
+            streamController.add(utf8.encode(chunk));
+          }
+          await streamController.close();
+        }));
+        return mockStreamedResponse;
+      });
+
+      // Act
+      final stream = repository.generate(
+        prompt,
+        model: 'google/gemma-3n-E2B-it', // Use Gemma3n model
+        temperature: temperature,
+        baseUrl: gemma3nProvider.baseUrl,
+        apiKey: gemma3nProvider.apiKey,
+        systemMessage: systemMessage,
+        provider: gemma3nProvider,
+      );
+
+      final results = await stream.toList();
+
+      // Assert
+      expect(results.length, 2);
+      expect(results[0].choices?.first.delta?.content, 'Hello');
+      expect(results[1].choices?.first.delta?.content, ' from Gemma');
+
+      // Verify request
+      final captured = verify(() => mockHttpClient.send(captureAny())).captured;
+      final request = captured.first as http.Request;
+
+      expect(request.method, 'POST');
+      expect(request.url.toString(),
+          '${gemma3nProvider.baseUrl}/v1/chat/completions');
+      expect(request.headers['Content-Type'], contains('application/json'));
+
+      final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+      expect(requestBody['model'], contains('gemma'));
+      expect(requestBody['stream'], isTrue);
+
+      final messages = requestBody['messages'] as List<dynamic>;
+      expect(messages.length, 2);
+      expect((messages[0] as Map<String, dynamic>)['role'], 'system');
+      expect((messages[0] as Map<String, dynamic>)['content'], systemMessage);
+      expect((messages[1] as Map<String, dynamic>)['role'], 'user');
+      expect((messages[1] as Map<String, dynamic>)['content'], prompt);
     });
 
     test('generate with non-empty tools list sets toolChoice', () async {
