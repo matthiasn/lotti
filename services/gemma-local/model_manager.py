@@ -301,25 +301,7 @@ class GemmaModelManager:
                     if not model_loaded:
                         raise Exception(f"Failed to load model after {len(load_attempts)} attempts. Last error: {last_error}")
                     
-                    # Optional: override attention implementation if requested
-                    try:
-                        if ServiceConfig.ATTN_IMPL:
-                            applied = False
-                            # Try config field first
-                            if hasattr(self.model, 'config') and hasattr(self.model.config, 'attn_implementation'):
-                                self.model.config.attn_implementation = ServiceConfig.ATTN_IMPL
-                                applied = True
-                            # Some models expose a setter
-                            if hasattr(self.model, 'set_attn_implementation'):
-                                try:
-                                    self.model.set_attn_implementation(ServiceConfig.ATTN_IMPL)
-                                    applied = True
-                                except Exception:
-                                    pass
-                            eff = getattr(getattr(self.model, 'config', object()), 'attn_implementation', 'unknown')
-                            logger.info(f"Attention override requested: {ServiceConfig.ATTN_IMPL}; effective attn={eff}; applied={applied}")
-                    except Exception as e:
-                        logger.warning(f"Failed to apply attention implementation override '{ServiceConfig.ATTN_IMPL}': {e}")
+                    # (Attention implementation override removed; default attention is used on MPS.)
 
                     # Move model to device if needed
                     if self.device == "cpu" and not hasattr(self.model, 'device'):
