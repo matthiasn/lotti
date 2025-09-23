@@ -228,9 +228,8 @@ class _InferenceProviderEditPageState
           const SizedBox(height: 32),
 
           // Authentication Section - Only show for providers that require API key
-          if (formState.inferenceProviderType != InferenceProviderType.ollama &&
-              formState.inferenceProviderType !=
-                  InferenceProviderType.whisper) ...[
+          if (!providersWithoutApiKey
+              .contains(formState.inferenceProviderType)) ...[
             AiFormSection(
               title: 'Authentication',
               icon: Icons.security_rounded,
