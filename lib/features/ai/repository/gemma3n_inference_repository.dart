@@ -224,10 +224,10 @@ class Gemma3nInferenceRepository {
     ).asBroadcastStream();
   }
 
-  /// Generates text using the Gemma 3n model
+  /// Generates text using the Gemma 3n model with streaming support
   ///
   /// This method provides text generation capabilities using the OpenAI-compatible
-  /// chat completions endpoint.
+  /// chat completions endpoint with Server-Sent Events (SSE) streaming.
   ///
   /// Args:
   ///   prompt: The text prompt to generate from
@@ -239,7 +239,7 @@ class Gemma3nInferenceRepository {
   ///   timeout: Optional timeout override
   ///
   /// Returns:
-  ///   Stream of chat completion responses containing the generated text
+  ///   Stream of chat completion responses containing the generated text chunks
   Stream<CreateChatCompletionStreamResponse> generateText({
     required String prompt,
     required String model,
@@ -248,7 +248,7 @@ class Gemma3nInferenceRepository {
     int? maxCompletionTokens,
     String? systemMessage,
     Duration? timeout,
-  }) {
+  }) async* {
     // Validate required inputs
     if (model.isEmpty) {
       throw ArgumentError('Model name cannot be empty');
@@ -260,89 +260,141 @@ class Gemma3nInferenceRepository {
     // Use provided timeout or default
     final requestTimeout = timeout ?? const Duration(seconds: 120);
 
-    // Create a stream that performs the async text generation
-    return Stream.fromFuture(
-      () async {
-        try {
-          developer.log(
-            'Sending text generation request to Gemma 3n server - '
-            'baseUrl: $baseUrl, model: $model, promptLength: ${prompt.length}',
-            name: 'Gemma3nInferenceRepository',
+    try {
+      developer.log(
+        'Starting streaming text generation request to Gemma 3n server - '
+        'baseUrl: $baseUrl, model: $model, promptLength: ${prompt.length}',
+        name: 'Gemma3nInferenceRepository',
+      );
+
+      // Build messages
+      final messages = <Map<String, dynamic>>[
+        if (systemMessage != null && systemMessage.isNotEmpty)
+          {'role': 'system', 'content': systemMessage},
+        {'role': 'user', 'content': prompt},
+      ];
+
+      // Normalize model name - remove google/ prefix
+      final normalizedModel = model.replaceFirst('google/', '');
+
+      // Build request body with streaming enabled
+      final requestBody = {
+        'model': normalizedModel,
+        'messages': messages,
+        'temperature': temperature,
+        'max_tokens': maxCompletionTokens ?? 2000,
+        'stream': true, // Enable streaming
+      };
+
+      // Use http.Request for streaming support
+      final request = http.Request(
+        'POST',
+        Uri.parse(baseUrl).resolve('/v1/chat/completions'),
+      );
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode(requestBody);
+
+      // Send the request and get the streaming response
+      final streamedResponse = await _httpClient.send(request).timeout(
+        requestTimeout,
+        onTimeout: () {
+          throw Gemma3nTranscriptionException(
+            'Request timed out after ${requestTimeout.inSeconds} seconds',
+            statusCode: httpStatusRequestTimeout,
           );
+        },
+      );
 
-          // Build messages
-          final messages = <Map<String, dynamic>>[
-            if (systemMessage != null && systemMessage.isNotEmpty)
-              {'role': 'system', 'content': systemMessage},
-            {'role': 'user', 'content': prompt},
-          ];
+      if (streamedResponse.statusCode != 200) {
+        final body = await streamedResponse.stream.bytesToString();
+        throw Gemma3nTranscriptionException(
+          'Failed to generate text (HTTP ${streamedResponse.statusCode}): $body',
+          statusCode: streamedResponse.statusCode,
+        );
+      }
 
-          // Normalize model name - remove google/ prefix
-          final normalizedModel = model.replaceFirst('google/', '');
+      // Process the SSE stream
+      final stream = streamedResponse.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
 
-          // Build request body
-          final requestBody = {
-            'model': normalizedModel,
-            'messages': messages,
-            'temperature': temperature,
-            'max_tokens': maxCompletionTokens ?? 2000,
-          };
+      var buffer = '';
+      await for (final line in stream) {
+        // SSE format: "data: {json}"
+        if (line.startsWith('data: ')) {
+          final data = line.substring(6); // Remove "data: " prefix
 
-          final response = await _httpClient
-              .post(
-                Uri.parse(baseUrl).resolve('/v1/chat/completions'),
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: jsonEncode(requestBody),
-              )
-              .timeout(requestTimeout);
-
-          if (response.statusCode != 200) {
-            throw Gemma3nTranscriptionException(
-              'Failed to generate text (HTTP ${response.statusCode})',
-              statusCode: response.statusCode,
+          // Check for end of stream
+          if (data.trim() == '[DONE]') {
+            developer.log(
+              'Stream completed',
+              name: 'Gemma3nInferenceRepository',
             );
+            break;
           }
 
-          final result = jsonDecode(response.body) as Map<String, dynamic>;
-          final choices = result['choices'] as List<dynamic>;
-          final text = ((choices[0] as Map<String, dynamic>)['message']
-              as Map<String, dynamic>)['content'] as String;
+          try {
+            final json = jsonDecode(data) as Map<String, dynamic>;
 
-          developer.log(
-            'Successfully generated text - responseLength: ${text.length}',
-            name: 'Gemma3nInferenceRepository',
-          );
+            // Extract content from the chunk
+            if (json.containsKey('choices')) {
+              final choices = json['choices'] as List<dynamic>;
+              if (choices.isNotEmpty) {
+                final choice = choices[0] as Map<String, dynamic>;
+                final delta = choice['delta'] as Map<String, dynamic>?;
 
-          return CreateChatCompletionStreamResponse(
-            id: result['id'] as String? ??
-                'gemma3n-${DateTime.now().millisecondsSinceEpoch}',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: text,
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: result['created'] as int? ??
-                DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          );
-        } catch (e) {
-          developer.log(
-            'Text generation error',
-            name: 'Gemma3nInferenceRepository',
-            error: e,
-          );
-          throw Gemma3nTranscriptionException(
-            'Failed to generate text: $e',
-            originalError: e,
-          );
+                if (delta != null && delta.containsKey('content')) {
+                  final content = delta['content'] as String;
+                  buffer += content;
+
+                  // Yield the chunk immediately for real-time display
+                  yield CreateChatCompletionStreamResponse(
+                    id: json['id'] as String? ??
+                        'gemma3n-${DateTime.now().millisecondsSinceEpoch}',
+                    choices: [
+                      ChatCompletionStreamResponseChoice(
+                        delta: ChatCompletionStreamResponseDelta(
+                          content: content,
+                        ),
+                        index: 0,
+                      ),
+                    ],
+                    object: 'chat.completion.chunk',
+                    created: json['created'] as int? ??
+                        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                  );
+                }
+              }
+            }
+          } catch (e) {
+            // Log but don't fail on individual chunk parse errors
+            developer.log(
+              'Error parsing SSE chunk: $data',
+              name: 'Gemma3nInferenceRepository',
+              error: e,
+            );
+          }
         }
-      }(),
-    ).asBroadcastStream();
+      }
+
+      developer.log(
+        'Successfully completed streaming text generation - totalLength: ${buffer.length}',
+        name: 'Gemma3nInferenceRepository',
+      );
+    } catch (e) {
+      developer.log(
+        'Text generation streaming error',
+        name: 'Gemma3nInferenceRepository',
+        error: e,
+      );
+      if (e is Gemma3nTranscriptionException) {
+        rethrow;
+      }
+      throw Gemma3nTranscriptionException(
+        'Failed to generate text: $e',
+        originalError: e,
+      );
+    }
   }
 }
 
