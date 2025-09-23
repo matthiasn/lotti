@@ -343,7 +343,7 @@ class Gemma3nInferenceRepository {
                 final choice = choices[0] as Map<String, dynamic>;
                 final delta = choice['delta'] as Map<String, dynamic>?;
 
-                if (delta != null && delta.containsKey('content')) {
+                if (delta != null && delta['content'] is String) {
                   final content = delta['content'] as String;
                   buffer += content;
 
