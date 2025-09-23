@@ -616,14 +616,16 @@ async def generate_transcription_optimized(
             duration_sec = samples / float(ServiceConfig.AUDIO_SAMPLE_RATE)
         except Exception:
             duration_sec = 30.0
-        est_tokens = int(duration_sec * 4.0) + 64  # ~4 toks/sec speech + buffer
+        est_tokens = int(duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
         dynamic_cap = max(128, min(1024, est_tokens))
         gen_config.update({
             'pad_token_id': model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id,
             'eos_token_id': model_manager.tokenizer.eos_token_id,
-            'temperature': temperature if temperature > 0 else 0.1,
             'max_new_tokens': min(gen_config.get('max_new_tokens', 2000), dynamic_cap),
         })
+        # Remove flags the Gemma 3N generate may ignore to reduce warnings
+        for k in ('temperature', 'top_p', 'top_k', 'early_stopping'):
+            gen_config.pop(k, None)
         if request_id:
             logger.info(f"[REQ {request_id}] Decode cap: max_new_tokens={gen_config['max_new_tokens']} (≈{duration_sec:.1f}s audio)")
         else:
@@ -805,14 +807,15 @@ async def generate_transcription_with_chat_context(
             duration_sec = samples / float(ServiceConfig.AUDIO_SAMPLE_RATE)
         except Exception:
             duration_sec = 30.0
-        est_tokens = int(duration_sec * 4.0) + 64
+        est_tokens = int(duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
         dynamic_cap = max(128, min(1024, est_tokens))
         gen_config.update({
             'pad_token_id': model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id,
             'eos_token_id': model_manager.tokenizer.eos_token_id,
-            'temperature': temperature if temperature > 0 else 0.1,
             'max_new_tokens': min(gen_config.get('max_new_tokens', 2000), dynamic_cap),
         })
+        for k in ('temperature', 'top_p', 'top_k', 'early_stopping'):
+            gen_config.pop(k, None)
         logger.info(f"{prefix}Decode cap: max_new_tokens={gen_config['max_new_tokens']} (≈{duration_sec:.1f}s audio)")
         
         # Use appropriate inference mode based on device

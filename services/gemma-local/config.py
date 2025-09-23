@@ -60,6 +60,10 @@ class ServiceConfig:
     # Reduce overlap to trim redundant decoding work per chunk
     AUDIO_OVERLAP_SECONDS = float(os.getenv("AUDIO_OVERLAP_SECONDS", "0.5"))
     MAX_AUDIO_DURATION_SECONDS = 300
+
+    # Transcription decode capping (env-tunable)
+    TOKENS_PER_SEC = float(os.getenv("TOKENS_PER_SEC", "3.2"))
+    TOKEN_BUFFER = int(os.getenv("TOKEN_BUFFER", "48"))
     
     # API settings - conservative for CPU
     MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "2"))

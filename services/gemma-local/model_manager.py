@@ -355,10 +355,38 @@ class GemmaModelManager:
                             n_params = sum(p.numel() for p in self.model.parameters())
                         except Exception:
                             n_params = -1
-                        attn_impl = getattr(getattr(self.model, 'config', object()), 'attn_implementation', 'default')
+                        cfg = getattr(self.model, 'config', None)
+                        attn_impl = getattr(cfg, 'attn_implementation', 'default') if cfg else 'default'
                         logger.info(
                             f"Model loaded successfully on {self.device}; params={n_params/1e6:.1f}M; dtype={param_dtype}; attn={attn_impl}"
                         )
+                        if cfg is not None:
+                            try:
+                                text_cfg = getattr(cfg, 'text_config', None)
+                                def pick(*vals):
+                                    for v in vals:
+                                        if v is not None and v != '?':
+                                            return v
+                                    return '?'
+                                hidden = pick(
+                                    getattr(cfg, 'hidden_size', None),
+                                    getattr(text_cfg, 'hidden_size', None),
+                                )
+                                layers = pick(
+                                    getattr(cfg, 'num_hidden_layers', None),
+                                    getattr(text_cfg, 'num_hidden_layers', None),
+                                )
+                                ff = pick(
+                                    getattr(cfg, 'intermediate_size', None),
+                                    getattr(text_cfg, 'intermediate_size', None),
+                                    getattr(cfg, 'ffn_dim', None),
+                                    getattr(text_cfg, 'ffn_dim', None),
+                                )
+                                logger.info(
+                                    f"cfg: hidden={hidden}, layers={layers}, ff={ff}"
+                                )
+                            except Exception:
+                                pass
                     except Exception as _e:
                         logger.info(f"Model loaded successfully on {self.device} (details unavailable: {_e})")
                 
