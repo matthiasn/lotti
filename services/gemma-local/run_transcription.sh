@@ -34,6 +34,22 @@ sleep 2
 
 # Start server in background
 echo -e "${BLUE}🚀 Starting Gemma 3N service...${NC}"
+
+# Load optional .env next to this script
+if [ -f .env ]; then
+  echo -e "${BLUE}📦 Loading .env from $(pwd)/.env${NC}"
+  set -a; source .env; set +a
+fi
+
+# Defaults for perf/logging (can override via env)
+export LOG_LEVEL=${LOG_LEVEL:-INFO}
+export OMP_NUM_THREADS=${OMP_NUM_THREADS:-8}
+export VECLIB_MAXIMUM_THREADS=${VECLIB_MAXIMUM_THREADS:-8}
+export MKL_NUM_THREADS=${MKL_NUM_THREADS:-8}
+export AUDIO_OVERLAP_SECONDS=${AUDIO_OVERLAP_SECONDS:-0.5}
+export LOG_TO_STDOUT=${LOG_TO_STDOUT:-1}
+echo -e "${BLUE}⚙️  Env: LOG_LEVEL=$LOG_LEVEL OMP_NUM_THREADS=$OMP_NUM_THREADS VECLIB_MAXIMUM_THREADS=$VECLIB_MAXIMUM_THREADS MKL_NUM_THREADS=$MKL_NUM_THREADS AUDIO_OVERLAP_SECONDS=$AUDIO_OVERLAP_SECONDS LOG_TO_STDOUT=$LOG_TO_STDOUT${NC}"
+
 source venv/bin/activate
 python main.py > /tmp/gemma_server.log 2>&1 &
 SERVER_PID=$!

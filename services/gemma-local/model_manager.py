@@ -345,8 +345,22 @@ class GemmaModelManager:
                     
                     # Set to evaluation mode
                     self.model.eval()
-                    
-                    logger.info(f"Model loaded successfully on {self.device}")
+                    # Log model details
+                    try:
+                        try:
+                            param_dtype = next(self.model.parameters()).dtype
+                        except Exception:
+                            param_dtype = 'unknown'
+                        try:
+                            n_params = sum(p.numel() for p in self.model.parameters())
+                        except Exception:
+                            n_params = -1
+                        attn_impl = getattr(getattr(self.model, 'config', object()), 'attn_implementation', 'default')
+                        logger.info(
+                            f"Model loaded successfully on {self.device}; params={n_params/1e6:.1f}M; dtype={param_dtype}; attn={attn_impl}"
+                        )
+                    except Exception as _e:
+                        logger.info(f"Model loaded successfully on {self.device} (details unavailable: {_e})")
                 
                 await loop.run_in_executor(None, load_model_sync)
                 

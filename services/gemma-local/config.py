@@ -57,7 +57,8 @@ class ServiceConfig:
     AUDIO_SAMPLE_RATE = 16000
     SUPPORTED_AUDIO_FORMATS = ["wav", "mp3", "m4a", "flac", "ogg", "webm"]
     AUDIO_CHUNK_SIZE_SECONDS = int(os.getenv("AUDIO_CHUNK_SIZE_SECONDS", "30"))  # Model limit is 30s
-    AUDIO_OVERLAP_SECONDS = int(os.getenv("AUDIO_OVERLAP_SECONDS", "2"))
+    # Reduce overlap to trim redundant decoding work per chunk
+    AUDIO_OVERLAP_SECONDS = float(os.getenv("AUDIO_OVERLAP_SECONDS", "0.5"))
     MAX_AUDIO_DURATION_SECONDS = 300
     
     # API settings - conservative for CPU

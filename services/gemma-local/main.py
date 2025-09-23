@@ -16,6 +16,8 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import torch
+from logging.handlers import RotatingFileHandler
+import sys
 import numpy as np
 
 # Load environment variables from .env file if it exists
@@ -36,6 +38,30 @@ logging.basicConfig(
     level=getattr(logging, ServiceConfig.LOG_LEVEL),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+# File and optional stdout log handlers for diagnostics
+try:
+    root_logger = logging.getLogger()
+    root_logger.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
+
+    # Rotating file handler
+    log_file = ServiceConfig.LOG_DIR / 'service.log'
+    file_handler = RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=3)
+    file_handler.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
+    fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(fmt)
+    if not any(isinstance(h, RotatingFileHandler) for h in root_logger.handlers):
+        root_logger.addHandler(file_handler)
+
+    # Optional stdout mirroring controlled by env LOG_TO_STDOUT
+    if os.getenv('LOG_TO_STDOUT', '0').lower() in ('1', 'true', 'yes', 'on'):
+        import sys as _sys
+        if not any(isinstance(h, logging.StreamHandler) and getattr(h, 'stream', None) is _sys.stdout for h in root_logger.handlers):
+            sh = logging.StreamHandler(_sys.stdout)
+            sh.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
+            sh.setFormatter(fmt)
+            root_logger.addHandler(sh)
+except Exception as _e:
+    logging.getLogger(__name__).warning(f"Failed to initialize log handlers: {_e}")
 logger = logging.getLogger(__name__)
 
 
@@ -97,7 +123,37 @@ async def startup_event() -> None:
     logger.info(f"Starting Gemma Local Service with model: {ServiceConfig.MODEL_ID}")
     logger.info(f"Device: {ServiceConfig.DEFAULT_DEVICE}")
     logger.info(f"Model variant: {ServiceConfig.MODEL_VARIANT}")
+    logger.info(f"Torch version: {torch.__version__}; dtype default: {ServiceConfig.TORCH_DTYPE}")
+    # Ensure our module loggers also stream to stdout even under Uvicorn's log config
+    try:
+        stream_fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        def ensure_stream_handler(lgr: logging.Logger):
+            has_stdout = False
+            for h in lgr.handlers:
+                if isinstance(h, logging.StreamHandler) and getattr(h, 'stream', None) is sys.stdout:
+                    has_stdout = True
+                    break
+            if not has_stdout:
+                sh = logging.StreamHandler(sys.stdout)
+                sh.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
+                sh.setFormatter(stream_fmt)
+                lgr.addHandler(sh)
+            # Ensure logger level allows INFO output
+            lgr.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
+        for name in ("__main__", "audio_processor", "model_manager"):
+            ensure_stream_handler(logging.getLogger(name))
+    except Exception as _e:
+        logger.warning(f"Failed to ensure stream handlers: {_e}")
     
+    # Log threading/env hints for performance diagnostics
+    try:
+        omp = os.environ.get('OMP_NUM_THREADS')
+        veclib = os.environ.get('VECLIB_MAXIMUM_THREADS')
+        mkl = os.environ.get('MKL_NUM_THREADS')
+        logger.info(f"Threads env: OMP_NUM_THREADS={omp}, VECLIB_MAXIMUM_THREADS={veclib}, MKL_NUM_THREADS={mkl}")
+    except Exception:
+        pass
+
     # Check if model is available
     if model_manager.is_model_available():
         logger.info("Model files found. Ready to load on first request.")
@@ -158,6 +214,8 @@ async def chat_completion(request: ChatCompletionRequest):
         
         # Check if this is audio transcription or regular chat
         if request.audio:
+            req_id = uuid.uuid4().hex[:8]
+            logger.info(f"[REQ {req_id}] Audio transcription request received. Model={request.model}")
             # Audio transcription through chat completions
             logger.info("Processing audio transcription via chat completions")
             
@@ -174,11 +232,14 @@ async def chat_completion(request: ChatCompletionRequest):
                     break
             
             # Process audio - disable chunking to match working script behavior
+            t_audio0 = time.perf_counter()
             result = await audio_processor.process_audio_base64(
                 request.audio,
                 context_prompt,
-                use_chunking=True  # Enable chunking for audio > 30s
+                use_chunking=True,  # Enable chunking for audio > 30s
+                request_id=req_id
             )
+            t_audio1 = time.perf_counter()
             
             # Handle both single audio and chunked audio
             if isinstance(result[0], list):
@@ -201,25 +262,38 @@ async def chat_completion(request: ChatCompletionRequest):
             
             # Generate transcription using chat context
             if len(audio_chunks) == 1:
+                logger.info(f"[REQ {req_id}] 1 chunk; starting generation")
+                t_gen0 = time.perf_counter()
                 transcription = await generate_transcription_with_chat_context(
                     messages=messages,
                     audio_array=audio_chunks[0],
-                    temperature=request.temperature
+                    temperature=request.temperature,
+                    request_id=req_id
                 )
+                t_gen1 = time.perf_counter()
             else:
                 # Multi-chunk processing with context
+                logger.info(f"[REQ {req_id}] {len(audio_chunks)} chunks; starting sequential generation")
+                t_gen0 = time.perf_counter()
                 transcription = await process_audio_chunks_with_continuation(
                     chunks=audio_chunks,
                     initial_messages=messages,
-                    temperature=request.temperature
+                    temperature=request.temperature,
+                    request_id=req_id
                 )
+                t_gen1 = time.perf_counter()
             
             # Return in chat completion format
+            total_t = (t_gen1 - t_gen0) + (t_audio1 - t_audio0)
+            logger.info(
+                f"[REQ {req_id}] Done. AudioProc={(t_audio1 - t_audio0):.2f}s, Gen={(t_gen1 - t_gen0):.2f}s, Total={total_t:.2f}s"
+            )
             return {
                 "id": f"chatcmpl-{uuid.uuid4().hex[:8]}",
                 "object": "chat.completion",
                 "created": int(time.time()),
                 "model": request.model,
+                "system_fingerprint": f"req-{req_id}",
                 "choices": [
                     {
                         "index": 0,
@@ -511,7 +585,8 @@ async def generate_transcription_optimized(
     prompt: str,
     audio_array: np.ndarray,
     temperature: float,
-    task_type: str = "cpu_optimized"
+    task_type: str = "cpu_optimized",
+    request_id: Optional[str] = None,
 ) -> str:
     """Generate transcription from audio."""
     
@@ -535,20 +610,35 @@ async def generate_transcription_optimized(
         
         # Get optimized generation config for the task
         gen_config = ServiceConfig.get_generation_config(task_type)
+        # Dynamic max_new_tokens based on audio duration to avoid runaway decode
+        try:
+            samples = audio_array.shape[-1] if audio_array.ndim > 1 else audio_array.shape[0]
+            duration_sec = samples / float(ServiceConfig.AUDIO_SAMPLE_RATE)
+        except Exception:
+            duration_sec = 30.0
+        est_tokens = int(duration_sec * 4.0) + 64  # ~4 toks/sec speech + buffer
+        dynamic_cap = max(128, min(1024, est_tokens))
         gen_config.update({
             'pad_token_id': model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id,
             'eos_token_id': model_manager.tokenizer.eos_token_id,
             'temperature': temperature if temperature > 0 else 0.1,
+            'max_new_tokens': min(gen_config.get('max_new_tokens', 2000), dynamic_cap),
         })
+        if request_id:
+            logger.info(f"[REQ {request_id}] Decode cap: max_new_tokens={gen_config['max_new_tokens']} (≈{duration_sec:.1f}s audio)")
+        else:
+            logger.info(f"Transcription decode cap: max_new_tokens={gen_config['max_new_tokens']} (duration≈{duration_sec:.1f}s)")
         
         
         # Use inference mode for better CPU performance
+        t0 = time.perf_counter()
         if model_manager.device == "cpu":
             with torch.inference_mode():
                 outputs = model_manager.model.generate(**inputs, **gen_config)
         else:
             with torch.no_grad():
                 outputs = model_manager.model.generate(**inputs, **gen_config)
+        t1 = time.perf_counter()
         
         # Check if generation succeeded
         if outputs is None or len(outputs) == 0:
@@ -562,7 +652,16 @@ async def generate_transcription_optimized(
             outputs[0][input_length:],
             skip_special_tokens=True
         )
-        
+        try:
+            new_tokens = max(0, outputs.shape[1] - input_length)
+            msg = f"Generated {new_tokens} tokens in {(t1 - t0):.2f}s ({(new_tokens / max(1e-3, (t1 - t0))):.1f} tok/s)"
+            if request_id:
+                logger.info(f"[REQ {request_id}] {msg}")
+            else:
+                logger.info(msg)
+        except Exception:
+            pass
+
         return response.strip()
     
     except Exception as e:
@@ -610,7 +709,8 @@ async def process_audio_chunks(
 async def generate_transcription_with_chat_context(
     messages: List[Dict[str, Any]],
     audio_array: np.ndarray,
-    temperature: float
+    temperature: float,
+    request_id: Optional[str] = None,
 ) -> str:
     """Generate transcription using chat context for better understanding."""
     try:
@@ -621,7 +721,8 @@ async def generate_transcription_with_chat_context(
             if not model_manager.is_model_loaded():
                 raise Exception("Failed to load model for chunk processing")
 
-        logger.info(f"Audio array shape: {audio_array.shape}, dtype: {audio_array.dtype}")
+        prefix = f"[REQ {request_id}] " if request_id else ""
+        logger.info(f"{prefix}Audio array shape: {audio_array.shape}, dtype: {audio_array.dtype}")
 
         # Convert audio to float32 and ensure it's in the correct format
         import numpy as np
@@ -655,7 +756,7 @@ async def generate_transcription_with_chat_context(
         if len(audio_array) == 0:
             raise ValueError("Audio array is empty after preprocessing")
 
-        logger.info(f"Processed audio shape: {audio_array.shape}, dtype: {audio_array.dtype}, range: [{audio_array.min():.2f}, {audio_array.max():.2f}]")
+        logger.info(f"{prefix}Processed audio shape: {audio_array.shape}, dtype: {audio_array.dtype}, range: [{audio_array.min():.2f}, {audio_array.max():.2f}]")
 
         # Use Lotti-style structured prompting for better transcription
         # Create message structure with audio content matching Lotti's approach
@@ -669,7 +770,7 @@ async def generate_transcription_with_chat_context(
             }
         ]
 
-        logger.info("Using apply_chat_template with structured messages")
+        logger.info(f"{prefix}Using apply_chat_template with structured messages")
 
         # Apply chat template to get proper inputs
         try:
@@ -680,13 +781,12 @@ async def generate_transcription_with_chat_context(
                 return_dict=True,
                 return_tensors="pt"
             )
-            logger.info(f"✅ Chat template applied successfully")
-            logger.info(f"Input keys: {inputs.keys()}")
+            logger.info(f"{prefix}✅ Chat template applied successfully; input keys: {list(inputs.keys())}")
 
         except Exception as template_error:
             logger.error(f"Chat template error: {template_error}")
             # Fallback to direct processor call if apply_chat_template fails
-            logger.info("Falling back to direct processor call")
+            logger.info(f"{prefix}Falling back to direct processor call")
 
             inputs = model_manager.processor(
                 text="Transcribe this audio",
@@ -698,22 +798,33 @@ async def generate_transcription_with_chat_context(
         # Move inputs to device
         inputs = {k: v.to(model_manager.device) if hasattr(v, 'to') else v for k, v in inputs.items()}
         
-        # Get optimized generation config for transcription
+        # Get optimized generation config for transcription with dynamic cap
         gen_config = ServiceConfig.get_generation_config("transcription")
+        try:
+            samples = audio_array.shape[0]
+            duration_sec = samples / float(ServiceConfig.AUDIO_SAMPLE_RATE)
+        except Exception:
+            duration_sec = 30.0
+        est_tokens = int(duration_sec * 4.0) + 64
+        dynamic_cap = max(128, min(1024, est_tokens))
         gen_config.update({
             'pad_token_id': model_manager.tokenizer.pad_token_id or model_manager.tokenizer.eos_token_id,
             'eos_token_id': model_manager.tokenizer.eos_token_id,
             'temperature': temperature if temperature > 0 else 0.1,
+            'max_new_tokens': min(gen_config.get('max_new_tokens', 2000), dynamic_cap),
         })
+        logger.info(f"{prefix}Decode cap: max_new_tokens={gen_config['max_new_tokens']} (≈{duration_sec:.1f}s audio)")
         
         # Use appropriate inference mode based on device
         try:
+            t0 = time.perf_counter()
             if model_manager.device == "cpu":
                 with torch.inference_mode():
                     outputs = model_manager.model.generate(**inputs, **gen_config)
             else:  # mps or cuda
                 with torch.no_grad():
                     outputs = model_manager.model.generate(**inputs, **gen_config)
+            t1 = time.perf_counter()
         except Exception as e:
             logger.error(f"Generation failed on {model_manager.device}: {e}")
             # Fallback to simpler generation with configured limits
@@ -731,6 +842,16 @@ async def generate_transcription_with_chat_context(
             outputs[0][input_length:],
             skip_special_tokens=True
         )
+        try:
+            new_tokens = max(0, outputs.shape[1] - input_length)
+            logger.info(f"{prefix}Generated {new_tokens} tokens in {(t1 - t0):.2f}s ({(new_tokens / max(1e-3, (t1 - t0))):.1f} tok/s); device={model_manager.device}, dtype={ServiceConfig.TORCH_DTYPE}")
+        except Exception:
+            pass
+        try:
+            new_tokens = max(0, outputs.shape[1] - input_length)
+            logger.info(f"Generated {new_tokens} tokens in {(t1 - t0):.2f}s ({(new_tokens / max(1e-3, (t1 - t0))):.1f} tok/s)")
+        except Exception:
+            pass
 
         transcription = response.strip()
 
@@ -796,7 +917,8 @@ async def generate_transcription_with_chat_context(
 async def process_audio_chunks_with_continuation(
     chunks: List[np.ndarray],
     initial_messages: List[Dict[str, Any]],
-    temperature: float
+    temperature: float,
+    request_id: Optional[str] = None,
 ) -> str:
     """
     Process multiple audio chunks with smart continuation.
@@ -805,20 +927,21 @@ async def process_audio_chunks_with_continuation(
     transcriptions = []
     previous_text = ""
     
-    logger.info(f"Processing {len(chunks)} audio chunks with continuation context")
+    prefix = f"[REQ {request_id}] " if request_id else ""
+    logger.info(f"{prefix}Processing {len(chunks)} audio chunks with continuation context")
 
     # Process all chunks for full transcription
     chunks_to_process = chunks
-    logger.info(f"Processing all {len(chunks_to_process)} chunks for complete transcription")
+    logger.info(f"{prefix}Processing all {len(chunks_to_process)} chunks for complete transcription")
 
     # Log chunk durations for debugging
     for i, chunk in enumerate(chunks_to_process):
         chunk_duration = len(chunk) / 16000  # assuming 16kHz sample rate
-        logger.info(f"Chunk {i+1}: {chunk_duration:.1f}s ({len(chunk)} samples)")
+        logger.info(f"{prefix}Chunk {i+1}: {chunk_duration:.1f}s ({len(chunk)} samples)")
     
     for i, chunk in enumerate(chunks_to_process):
         try:
-            logger.info(f"Processing chunk {i+1}/{len(chunks_to_process)}")
+            logger.info(f"{prefix}Processing chunk {i+1}/{len(chunks_to_process)}")
             
             # Use simple prompt for all chunks
             chunk_messages = [
@@ -829,7 +952,8 @@ async def process_audio_chunks_with_continuation(
             transcription = await generate_transcription_with_chat_context(
                 messages=chunk_messages,
                 audio_array=chunk,
-                temperature=temperature
+                temperature=temperature,
+                request_id=request_id
             )
             
             # Clean up transcription
@@ -848,13 +972,13 @@ async def process_audio_chunks_with_continuation(
                         if last_prev[-j:] == first_curr[:j]:
                             # Remove the overlapping part from current
                             cleaned = cleaned[j:].strip()
-                            logger.info(f"Removed {j} overlapping characters from chunk {i+1}")
+                            logger.info(f"{prefix}Removed {j} overlapping characters from chunk {i+1}")
                             break
             
             if cleaned:
                 transcriptions.append(cleaned)
                 previous_text = " ".join(transcriptions)  # Update context with all text so far
-                logger.info(f"Chunk {i+1} transcribed: {cleaned[:100]}...")
+                logger.info(f"{prefix}Chunk {i+1} transcribed: {cleaned[:100]}...")
         
         except Exception as e:
             logger.error(f"Failed to process chunk {i+1}: {e}")
