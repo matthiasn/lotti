@@ -264,6 +264,11 @@ cat >"$SETUP_HELPER" <<'EOF'
 #!/bin/bash
 set -euo pipefail
 
+# Optional verbose tracing in CI when DEBUG_SETUP_FLUTTER=1
+if [ "${DEBUG_SETUP_FLUTTER:-0}" = "1" ]; then
+  set -x
+fi
+
 usage() {
   cat <<USAGE
 usage: setup-flutter.sh [-C dir] [flutter pub get args...]
@@ -315,9 +320,26 @@ if ! command -v "$FLUTTER_BIN" >/dev/null 2>&1; then
   done
 fi
 
-if ! "$FLUTTER_BIN" pub get --offline -C "$TOOLS_DIR" "$@"; then
-  echo "Offline pub get failed, retrying with network access..." >&2
+# Debug: show PUB_CACHE and presence of test package in cache
+echo "PUB_CACHE: ${PUB_CACHE:-<unset>}"
+if [ -n "${PUB_CACHE:-}" ] && [ -d "${PUB_CACHE}" ]; then
+  echo "Listing PUB_CACHE contents (top-level):"
+  ls -la "${PUB_CACHE}" || true
+  if [ -d "${PUB_CACHE}/hosted/pub.dev" ]; then
+    echo "Sample of cached hosted packages matching 'test-':"
+    ls -1 "${PUB_CACHE}/hosted/pub.dev" | grep '^test-' || echo "(no cached test-* packages found)"
+  fi
+fi
+
+# Allow CI to skip offline with NO_OFFLINE_PUB=1
+if [ "${NO_OFFLINE_PUB:-0}" = "1" ]; then
+  echo "NO_OFFLINE_PUB=1 set; running pub get online for flutter_tools..."
   "$FLUTTER_BIN" pub get -C "$TOOLS_DIR" "$@"
+else
+  if ! "$FLUTTER_BIN" pub get --offline -C "$TOOLS_DIR" "$@"; then
+    echo "Offline pub get failed, retrying with network access..." >&2
+    "$FLUTTER_BIN" pub get -C "$TOOLS_DIR" "$@"
+  fi
 fi
 
 popd >/dev/null

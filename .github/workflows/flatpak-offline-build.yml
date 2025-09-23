@@ -59,8 +59,18 @@ jobs:
 
       - name: Build from prepared manifest
         working-directory: flatpak/flathub-build/output
+        env:
+          # Immediate fix: force online pub inside flutter_tools and enable debug
+          NO_OFFLINE_PUB: "1"
+          DEBUG_SETUP_FLUTTER: "1"
         run: |
-          flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
+          flatpak-builder \
+            --user \
+            --install \
+            --force-clean \
+            --env=NO_OFFLINE_PUB=1 \
+            --env=DEBUG_SETUP_FLUTTER=1 \
+            build-dir com.matthiasn.lotti.yml
 
       - name: Upload prepared payload
         uses: actions/upload-artifact@v4
