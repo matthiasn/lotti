@@ -13,6 +13,7 @@ import numpy as np
 
 import soundfile as sf
 import librosa
+import warnings
 import torch
 import torchaudio
 
@@ -288,6 +289,7 @@ class AudioProcessor:
     def _load_from_temp_file(self, audio_bytes: bytes) -> Tuple[np.ndarray, int]:
         """Load audio using temporary file (for M4A, MP3, etc.)."""
         temp_file_path = None
+        temp_wav_path = None
         try:
             # Create temporary file with appropriate extension
             format_type = self._detect_audio_format(audio_bytes)
@@ -297,9 +299,37 @@ class AudioProcessor:
                 temp_file.write(audio_bytes)
                 temp_file_path = temp_file.name
             
-            
-            # Try librosa with the temp file
-            audio_array, sample_rate = librosa.load(temp_file_path, sr=None, mono=True)
+            # Prefer ffmpeg decode for formats librosa/soundfile struggle with (e.g., m4a)
+            try:
+                import shutil
+                import subprocess
+                ffmpeg_bin = shutil.which('ffmpeg')
+                if ffmpeg_bin and format_type in ('m4a', 'unknown'):
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as wav_out:
+                        temp_wav_path = wav_out.name
+                    # Decode to 16k mono WAV for consistency
+                    cmd = [
+                        ffmpeg_bin,
+                        '-y', '-hide_banner', '-loglevel', 'error',
+                        '-i', temp_file_path,
+                        '-ar', str(self.sample_rate),
+                        '-ac', '1',
+                        temp_wav_path,
+                    ]
+                    subprocess.run(cmd, check=True)
+                    # Read decoded wav via soundfile
+                    audio_array, sample_rate = sf.read(temp_wav_path)
+                    if len(audio_array.shape) > 1:
+                        audio_array = audio_array.mean(axis=1)
+                    return audio_array.astype('float32'), sample_rate
+            except Exception:
+                # Fall back to librosa below
+                pass
+
+            # Fallback: use librosa with warnings suppressed
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                audio_array, sample_rate = librosa.load(temp_file_path, sr=None, mono=True)
             return audio_array, sample_rate
             
         except Exception as e:
@@ -312,6 +342,11 @@ class AudioProcessor:
                     os.unlink(temp_file_path)
                 except Exception as e:
                     logger.warning(f"Failed to clean up temp file: {e}")
+            if temp_wav_path and os.path.exists(temp_wav_path):
+                try:
+                    os.unlink(temp_wav_path)
+                except Exception as e:
+                    logger.warning(f"Failed to clean up temp wav file: {e}")
     
     def _normalize_audio(self, audio_array: np.ndarray) -> np.ndarray:
         """
