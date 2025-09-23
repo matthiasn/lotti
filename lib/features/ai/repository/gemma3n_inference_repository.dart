@@ -129,46 +129,45 @@ class Gemma3nInferenceRepository {
 
           final result = jsonDecode(response.body) as Map<String, dynamic>;
 
-          // Extract text from response with robust error handling
-          final String text;
+          // Extract text from response and create stream response with robust error handling
           try {
             final choices = result['choices'] as List<dynamic>;
             final firstChoice = choices[0] as Map<String, dynamic>;
             final message = firstChoice['message'] as Map<String, dynamic>;
-            text = message['content'] as String;
+            final text = message['content'] as String;
+
+            developer.log(
+              'Successfully transcribed audio - transcriptionLength: ${text.length}',
+              name: 'Gemma3nInferenceRepository',
+            );
+
+            // Create a mock stream response to match the expected format
+            return CreateChatCompletionStreamResponse(
+              id: result['id'] as String? ??
+                  'gemma3n-${DateTime.now().millisecondsSinceEpoch}',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: text,
+                  ),
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: result['created'] as int? ??
+                  DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            );
           } catch (e) {
             developer.log(
-              'Invalid response from Gemma 3n server: missing or invalid content',
+              'Invalid response from Gemma 3n server: failed to parse response',
               name: 'Gemma3nInferenceRepository',
               error: result,
             );
             throw Gemma3nInferenceException(
-              'Invalid response from transcription service: missing message content',
+              'Invalid response from transcription service: $e',
               originalError: e,
             );
           }
-
-          developer.log(
-            'Successfully transcribed audio - transcriptionLength: ${text.length}',
-            name: 'Gemma3nInferenceRepository',
-          );
-
-          // Create a mock stream response to match the expected format
-          return CreateChatCompletionStreamResponse(
-            id: result['id'] as String? ??
-                'gemma3n-${DateTime.now().millisecondsSinceEpoch}',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: text,
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: result['created'] as int? ??
-                DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          );
         } on Gemma3nInferenceException {
           // Re-throw our custom exceptions as-is
           rethrow;

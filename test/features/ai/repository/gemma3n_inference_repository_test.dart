@@ -316,8 +316,10 @@ void main() {
 
         expect(
           stream.first,
-          throwsA(isA<Gemma3nInferenceException>().having((e) => e.message,
-              'message', contains('missing message content'))),
+          throwsA(isA<Gemma3nInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('Invalid response from transcription service'))),
         );
       });
 
@@ -346,8 +348,10 @@ void main() {
 
         expect(
           stream.first,
-          throwsA(isA<Gemma3nInferenceException>().having((e) => e.message,
-              'message', contains('missing message content'))),
+          throwsA(isA<Gemma3nInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('Invalid response from transcription service'))),
         );
       });
 
@@ -382,8 +386,10 @@ void main() {
 
         expect(
           stream.first,
-          throwsA(isA<Gemma3nInferenceException>().having((e) => e.message,
-              'message', contains('missing message content'))),
+          throwsA(isA<Gemma3nInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('Invalid response from transcription service'))),
         );
       });
     });
