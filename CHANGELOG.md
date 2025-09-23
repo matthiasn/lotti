@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.668] - 2025-09-23
+
+### Added:
+- Gemma 3n local AI provider support for audio transcription and text generation
+- Streaming support for Gemma 3n text generation with OpenAI-compatible API
+- Internationalization for Gemma 3n provider strings
+
+### Changed:
+- Refactored provider configuration to centralize API key requirement logic
+- Improved JSON response validation in Gemma 3n repository with try-catch error handling
+- Hide API key field for local providers (Ollama, Whisper, Gemma 3n)
+
+## [0.9.667] - 2025-09-22
+
+### Added:
+- Gemma 3N audio transcription service with Docker and local Python support
+- Self-contained Flatpak build system with automated submission scripts
+- Improved screenshot portal service for Flatpak environments
+
+### Changed:
+- Updated app identifier from com.matthiasnehlsen.lotti to com.matthiasn.lotti across all platforms
+- Enhanced Gemma service with improved error handling and streaming capabilities
+- Upgraded Flutter to version 3.35.4
+- Upgraded dependencies
+
+### Fixed:
+- Gemma service transcription improvements with better audio processing
+- Flatpak build process streamlining and reliability enhancements
+
 ## [0.9.665] - 2025-09-17
 ### Changed:
 - Update app identifier to use with different Apple developer account
