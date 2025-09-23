@@ -278,19 +278,15 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select OpenAI from the modal options
-      final openAiOptions = find.text('OpenAI');
-      // Find the OpenAI option that's in the modal (not the title)
-      for (var i = 0; i < openAiOptions.evaluate().length; i++) {
-        final option = openAiOptions.at(i);
-        final ancestor = find.ancestor(
-          of: option,
-          matching: find.byType(InkWell),
-        );
-        if (ancestor.evaluate().isNotEmpty) {
-          await tester.tap(ancestor.first);
-          break;
-        }
-      }
+      final openAiOption = find.text('OpenAI').first;
+      // Ensure OpenAI option is visible before tapping
+      await tester.ensureVisible(openAiOption);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: openAiOption,
+        matching: find.byType(InkWell),
+      ));
       await tester.pumpAndSettle();
 
       // Check that form was pre-filled
@@ -394,18 +390,15 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select OpenAI
-      final openAiOptions = find.text('OpenAI');
-      for (var i = 0; i < openAiOptions.evaluate().length; i++) {
-        final option = openAiOptions.at(i);
-        final ancestor = find.ancestor(
-          of: option,
-          matching: find.byType(InkWell),
-        );
-        if (ancestor.evaluate().isNotEmpty) {
-          await tester.tap(ancestor.first);
-          break;
-        }
-      }
+      final openAiOption = find.text('OpenAI').first;
+      // Ensure OpenAI option is visible before tapping
+      await tester.ensureVisible(openAiOption);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: openAiOption,
+        matching: find.byType(InkWell),
+      ));
       await tester.pumpAndSettle();
 
       // API key field should be visible
@@ -494,18 +487,15 @@ void main() {
           .first);
       await tester.pumpAndSettle();
 
-      final openAiOptions = find.text('OpenAI');
-      for (var i = 0; i < openAiOptions.evaluate().length; i++) {
-        final option = openAiOptions.at(i);
-        final ancestor = find.ancestor(
-          of: option,
-          matching: find.byType(InkWell),
-        );
-        if (ancestor.evaluate().isNotEmpty) {
-          await tester.tap(ancestor.first);
-          break;
-        }
-      }
+      // Ensure OpenAI option is visible before tapping
+      final openAiOption = find.text('OpenAI').first;
+      await tester.ensureVisible(openAiOption);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: openAiOption,
+        matching: find.byType(InkWell),
+      ));
       await tester.pumpAndSettle();
 
       // API key should be visible again
