@@ -94,6 +94,8 @@ class ServiceConfig:
     
     # Logging
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    # Attention implementation override (e.g., 'sdpa', 'eager', 'flash_attention_2' where supported)
+    ATTN_IMPL = os.getenv("ATTN_IMPL", "").strip()
     
     @classmethod
     def get_device(cls):

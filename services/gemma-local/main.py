@@ -124,26 +124,7 @@ async def startup_event() -> None:
     logger.info(f"Device: {ServiceConfig.DEFAULT_DEVICE}")
     logger.info(f"Model variant: {ServiceConfig.MODEL_VARIANT}")
     logger.info(f"Torch version: {torch.__version__}; dtype default: {ServiceConfig.TORCH_DTYPE}")
-    # Ensure our module loggers also stream to stdout even under Uvicorn's log config
-    try:
-        stream_fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        def ensure_stream_handler(lgr: logging.Logger):
-            has_stdout = False
-            for h in lgr.handlers:
-                if isinstance(h, logging.StreamHandler) and getattr(h, 'stream', None) is sys.stdout:
-                    has_stdout = True
-                    break
-            if not has_stdout:
-                sh = logging.StreamHandler(sys.stdout)
-                sh.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
-                sh.setFormatter(stream_fmt)
-                lgr.addHandler(sh)
-            # Ensure logger level allows INFO output
-            lgr.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
-        for name in ("__main__", "audio_processor", "model_manager"):
-            ensure_stream_handler(logging.getLogger(name))
-    except Exception as _e:
-        logger.warning(f"Failed to ensure stream handlers: {_e}")
+    # Avoid adding extra stdout handlers here to prevent duplicate console logs under Uvicorn.
     
     # Log threading/env hints for performance diagnostics
     try:
@@ -907,7 +888,6 @@ async def generate_transcription_with_chat_context(
             logger.info(f"Truncated to reasonable length: {max_reasonable_length} chars")
 
         logger.info(f"Final transcription result length: {len(transcription)} chars")
-        logger.info(f"Final transcription preview: {transcription[:200]}...")
 
         return transcription
     
@@ -981,7 +961,7 @@ async def process_audio_chunks_with_continuation(
             if cleaned:
                 transcriptions.append(cleaned)
                 previous_text = " ".join(transcriptions)  # Update context with all text so far
-                logger.info(f"{prefix}Chunk {i+1} transcribed: {cleaned[:100]}...")
+                logger.info(f"{prefix}Chunk {i+1} transcribed ({len(cleaned)} chars)")
         
         except Exception as e:
             logger.error(f"Failed to process chunk {i+1}: {e}")
