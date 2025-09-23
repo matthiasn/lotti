@@ -371,6 +371,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderGeminiName => 'Google Gemini';
 
   @override
+  String get aiProviderGemma3nDescription =>
+      'Local Gemma 3n model with audio transcription capabilities';
+
+  @override
+  String get aiProviderGemma3nName => 'Gemma 3n (local)';
+
+  @override
   String get aiProviderGenericOpenAiDescription =>
       'API compatible with OpenAI format';
 

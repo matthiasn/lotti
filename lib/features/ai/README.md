@@ -73,7 +73,15 @@ The repository layer has been refactored for better separation of concerns:
   - Interfaces with locally running Whisper instances
   - Converts audio to transcription responses
   - Custom `WhisperTranscriptionException` for error handling
-  
+
+- **`gemma3n_inference_repository.dart`**: Local Gemma 3n model support
+  - Provides audio transcription using local Gemma 3n server
+  - Supports streaming text generation with OpenAI-compatible API
+  - Handles both transcription and chat completion requests
+  - Custom `Gemma3nInferenceException` for error handling
+  - Automatic model name normalization (removes `google/` prefix)
+  - Robust JSON response parsing with error recovery
+
 - **`ai_input_repository.dart`**: Prepares task data for AI processing
 
 #### Services (`services/`)
@@ -335,6 +343,14 @@ The system supports multiple inference providers through a modular architecture:
   - Runs on local Whisper server
   - Supports various audio formats via base64 encoding
   - Integrated with task context for better accuracy
+
+- **Gemma 3n**: Local Gemma model with audio capabilities
+  - Runs on local server (default port 11343)
+  - Provides both audio transcription and text generation
+  - OpenAI-compatible API for seamless integration
+  - No API key required (local execution)
+  - Supports streaming responses for real-time interaction
+  - Optimized for high-quality transcription with 2000 token default
 
 ## How Task Summaries Work
 

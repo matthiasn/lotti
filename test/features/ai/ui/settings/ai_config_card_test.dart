@@ -262,6 +262,7 @@ void main() {
           InferenceProviderType.ollama: Icons.computer,
           InferenceProviderType.genericOpenAi: Icons.cloud,
           InferenceProviderType.nebiusAiStudio: Icons.rocket_launch,
+          InferenceProviderType.gemma3n: Icons.multitrack_audio,
         };
 
         for (final entry in providerTypes.entries) {

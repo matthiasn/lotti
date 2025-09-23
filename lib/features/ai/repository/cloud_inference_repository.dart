@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/gemini_config.dart';
@@ -21,12 +22,14 @@ class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
         _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
-        _whisperRepository = WhisperInferenceRepository(httpClient: httpClient);
+        _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
+        _gemma3nRepository = Gemma3nInferenceRepository(httpClient: httpClient);
 
   final Ref ref;
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
   final WhisperInferenceRepository _whisperRepository;
+  final Gemma3nInferenceRepository _gemma3nRepository;
 
   /// Helper method to create common request parameters
   CreateChatCompletionRequest _createBaseRequest({
@@ -143,6 +146,19 @@ class CloudInferenceRepository {
         provider: provider,
         tools: tools,
         thinkingConfig: finalThinking,
+      );
+    }
+
+    // For Gemma 3n, use the dedicated repository
+    if (provider != null &&
+        provider.inferenceProviderType == InferenceProviderType.gemma3n) {
+      return _gemma3nRepository.generateText(
+        prompt: prompt,
+        model: model,
+        baseUrl: baseUrl,
+        temperature: temperature,
+        systemMessage: systemMessage,
+        maxCompletionTokens: maxCompletionTokens,
       );
     }
 
@@ -289,6 +305,17 @@ class CloudInferenceRepository {
         audioBase64: audioBase64,
         baseUrl: baseUrl,
         prompt: prompt, // Optional parameter
+        maxCompletionTokens: maxCompletionTokens,
+      );
+    }
+
+    // For Gemma 3n, use the dedicated repository
+    if (provider.inferenceProviderType == InferenceProviderType.gemma3n) {
+      return _gemma3nRepository.transcribeAudio(
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        prompt: prompt,
         maxCompletionTokens: maxCompletionTokens,
       );
     }

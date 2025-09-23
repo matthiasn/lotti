@@ -129,6 +129,7 @@ For detailed documentation of UI components, see [recording/README.md](ui/widget
 9. **Entry Creation**: Audio file is saved and journal entry created
 10. **Transcription**: If enabled, ASR service processes the audio
 11. **Linked Entity Support**: If recording is linked to a task, both entities track the transcription progress
+12. **Provider Selection**: Transcription can use Whisper or Gemma 3n (local) providers based on configuration
 
 ## Testing
 
@@ -188,6 +189,21 @@ The speech feature coordinates with the AI system's linked entity tracking:
 - AI system creates active inference entries for both entities
 - Both entities receive status updates (running, complete, error)
 - UI components on both entities show appropriate indicators
+
+## Transcription Providers
+
+The speech feature supports multiple transcription providers:
+
+### Whisper
+- Locally running Whisper server for privacy
+- High accuracy with various audio formats
+- Context-aware transcription when linked to tasks
+
+### Gemma 3n (Local)
+- New local Gemma model with audio transcription capabilities
+- No API key required - runs entirely locally
+- Provides high-quality transcription with streaming support
+- Automatically selected when configured as a provider
 
 ## Future Enhancements
 

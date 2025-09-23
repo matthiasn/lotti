@@ -118,7 +118,7 @@ class ServiceConfig:
         
         if task_type == "transcription":
             base_config.update({
-                "max_new_tokens": 400,      # Enough for full audio content
+                "max_new_tokens": 2000,     # Increased for full 1-minute+ audio content
                 "temperature": 0.0,         # Completely deterministic like Whisper
                 "do_sample": False,         # No sampling - greedy decoding like Whisper
                 "num_beams": 1,            # Greedy decoding like Whisper

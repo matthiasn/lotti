@@ -9,6 +9,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderAnthropicName;
       case InferenceProviderType.gemini:
         return context.messages.aiProviderGeminiName;
+      case InferenceProviderType.gemma3n:
+        return context.messages.aiProviderGemma3nName;
       case InferenceProviderType.genericOpenAi:
         return context.messages.aiProviderGenericOpenAiName;
       case InferenceProviderType.openAi:
@@ -31,6 +33,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderAnthropicDescription;
       case InferenceProviderType.gemini:
         return context.messages.aiProviderGeminiDescription;
+      case InferenceProviderType.gemma3n:
+        return context.messages.aiProviderGemma3nDescription;
       case InferenceProviderType.genericOpenAi:
         return context.messages.aiProviderGenericOpenAiDescription;
       case InferenceProviderType.openAi:
@@ -52,6 +56,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return Icons.psychology;
       case InferenceProviderType.gemini:
         return Icons.diamond;
+      case InferenceProviderType.gemma3n:
+        return Icons.multitrack_audio;
       case InferenceProviderType.genericOpenAi:
         return Icons.public;
       case InferenceProviderType.openAi:

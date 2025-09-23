@@ -41,6 +41,7 @@ Map<String, dynamic> _$AiConfigInferenceProviderToJson(
 const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.anthropic: 'anthropic',
   InferenceProviderType.gemini: 'gemini',
+  InferenceProviderType.gemma3n: 'gemma3n',
   InferenceProviderType.genericOpenAi: 'genericOpenAi',
   InferenceProviderType.nebiusAiStudio: 'nebiusAiStudio',
   InferenceProviderType.openAi: 'openAi',
