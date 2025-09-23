@@ -13,8 +13,11 @@ import numpy as np
 
 import soundfile as sf
 import librosa
+import warnings
 import torch
 import torchaudio
+import shutil
+import subprocess
 
 from config import ServiceConfig
 
@@ -41,7 +44,8 @@ class AudioProcessor:
         self,
         audio_base64: str,
         prompt: Optional[str] = None,
-        use_chunking: bool = True
+        use_chunking: bool = True,
+        request_id: Optional[str] = None
     ) -> Union[Tuple[np.ndarray, str], Tuple[List[np.ndarray], str]]:
         """
         Process base64-encoded audio data.
@@ -54,12 +58,16 @@ class AudioProcessor:
             Tuple of (audio_array, combined_prompt)
         """
         try:
+            prefix = f"[REQ {request_id}] " if request_id else ""
+            t0 = time.perf_counter()
             # Validate base64 format
             if not audio_base64 or len(audio_base64) == 0:
                 raise ValueError("Empty audio_base64 data provided")
             
             # Decode base64
             audio_bytes = base64.b64decode(audio_base64)
+            t1 = time.perf_counter()
+            detected_fmt = self._detect_audio_format(audio_bytes)
             
             # Check size
             size_mb = len(audio_bytes) / (1024 * 1024)
@@ -69,14 +77,12 @@ class AudioProcessor:
             
             # Load audio from bytes
             audio_array, original_sr = self._load_audio_from_bytes(audio_bytes)
+            t2 = time.perf_counter()
             
-            # Resample if necessary
+            # Resample if necessary (prefer torchaudio for speed; fallback to librosa)
+            resample_time = 0.0
             if original_sr != self.sample_rate:
-                audio_array = librosa.resample(
-                    audio_array,
-                    orig_sr=original_sr,
-                    target_sr=self.sample_rate
-                )
+                audio_array, resample_time = self._resample_audio(audio_array, original_sr)
             
             # Check duration and apply chunking if needed
             duration = len(audio_array) / self.sample_rate
@@ -85,27 +91,42 @@ class AudioProcessor:
                 raise ValueError(f"Audio too long: {duration:.1f}s (max: {self.max_duration}s)")
             
             # Normalize audio
+            t_norm0 = time.perf_counter()
             audio_array = self._normalize_audio(audio_array)
-            
+            t_norm1 = time.perf_counter()
+
             # Use chunking for long audio or if explicitly requested
-            if use_chunking and duration > self.chunk_duration:
+            chunk_time = 0.0
+            is_chunked = use_chunking and duration > self.chunk_duration
+            num_chunks = 1
+            chunks = None
+            if is_chunked:
+                t_ck0 = time.perf_counter()
                 chunks = self.chunk_audio_optimized(audio_array)
-                
-                # Create prompt for chunked transcription with audio token
-                if prompt:
-                    combined_prompt = f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio chunk:"
-                else:
-                    combined_prompt = "<audio_soft_token>\n\nTranscribe the above audio chunk:"
-                    
-                return chunks, combined_prompt
+                chunk_time = time.perf_counter() - t_ck0
+                num_chunks = len(chunks)
+
+            # Create prompt with audio token
+            if prompt:
+                combined_prompt = (
+                    f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio chunk:" if is_chunked
+                    else f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio."
+                )
             else:
-                # Create prompt for transcription with audio token
-                if prompt:
-                    combined_prompt = f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio."
-                else:
-                    combined_prompt = "<audio_soft_token>\n\nTranscribe the above audio."
-                
-                return audio_array, combined_prompt
+                combined_prompt = (
+                    "<audio_soft_token>\n\nTranscribe the above audio chunk:" if is_chunked
+                    else "<audio_soft_token>\n\nTranscribe the above audio."
+                )
+
+            logger.info(
+                f"{prefix}Audio decoded. bytes={len(audio_bytes)} ({size_mb:.2f}MB) fmt={detected_fmt} sr={original_sr}->{self.sample_rate} "
+                f"dur={duration:.1f}s; decode={(t1 - t0):.3f}s load={(t2 - t1):.3f}s resample={resample_time:.3f}s "
+                f"normalize={(t_norm1 - t_norm0):.3f}s chunk={chunk_time:.3f}s chunks={num_chunks}"
+            )
+
+            if is_chunked:
+                return chunks, combined_prompt
+            return audio_array, combined_prompt
             
         except Exception as e:
             logger.error(f"Error processing audio: {e}")
@@ -115,7 +136,8 @@ class AudioProcessor:
         self,
         file_path: str,
         prompt: Optional[str] = None,
-        use_chunking: bool = True
+        use_chunking: bool = True,
+        request_id: Optional[str] = None
     ) -> Union[Tuple[np.ndarray, str], Tuple[List[np.ndarray], str]]:
         """
         Process audio from file path.
@@ -128,16 +150,16 @@ class AudioProcessor:
             Tuple of (audio_array, combined_prompt)
         """
         try:
+            prefix = f"[REQ {request_id}] " if request_id else ""
+            t0 = time.perf_counter()
             # Load audio file
             audio_array, original_sr = librosa.load(file_path, sr=None, mono=True)
+            t1 = time.perf_counter()
             
-            # Resample if necessary
+            # Resample if necessary (prefer torchaudio for speed; fallback to librosa)
+            resample_time = 0.0
             if original_sr != self.sample_rate:
-                audio_array = librosa.resample(
-                    audio_array,
-                    orig_sr=original_sr,
-                    target_sr=self.sample_rate
-                )
+                audio_array, resample_time = self._resample_audio(audio_array, original_sr)
             
             # Check duration and apply chunking if needed
             duration = len(audio_array) / self.sample_rate
@@ -146,27 +168,41 @@ class AudioProcessor:
                 raise ValueError(f"Audio too long: {duration:.1f}s (max: {self.max_duration}s)")
             
             # Normalize audio
+            t_norm0 = time.perf_counter()
             audio_array = self._normalize_audio(audio_array)
+            t_norm1 = time.perf_counter()
             
             # Use chunking for long audio or if explicitly requested
-            if use_chunking and duration > self.chunk_duration:
+            chunk_time = 0.0
+            is_chunked = use_chunking and duration > self.chunk_duration
+            num_chunks = 1
+            chunks = None
+            if is_chunked:
+                t_ck0 = time.perf_counter()
                 chunks = self.chunk_audio_optimized(audio_array)
-                
-                # Create prompt for chunked transcription with audio token
-                if prompt:
-                    combined_prompt = f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio chunk:"
-                else:
-                    combined_prompt = "<audio_soft_token>\n\nTranscribe the above audio chunk:"
-                    
-                return chunks, combined_prompt
+                chunk_time = time.perf_counter() - t_ck0
+                num_chunks = len(chunks)
+
+            # Create prompt with audio token
+            if prompt:
+                combined_prompt = (
+                    f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio chunk:" if is_chunked
+                    else f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio."
+                )
             else:
-                # Create prompt for transcription with audio token
-                if prompt:
-                    combined_prompt = f"<audio_soft_token>\n\nContext: {prompt}\n\nTranscribe the above audio."
-                else:
-                    combined_prompt = "<audio_soft_token>\n\nTranscribe the above audio."
-                
-                return audio_array, combined_prompt
+                combined_prompt = (
+                    "<audio_soft_token>\n\nTranscribe the above audio chunk:" if is_chunked
+                    else "<audio_soft_token>\n\nTranscribe the above audio."
+                )
+
+            logger.info(
+                f"{prefix}Loaded file. sr={original_sr}->{self.sample_rate} dur={duration:.1f}s; load={(t1 - t0):.3f}s "
+                f"resample={resample_time:.3f}s normalize={(t_norm1 - t_norm0):.3f}s chunk={chunk_time:.3f}s chunks={num_chunks}"
+            )
+
+            if is_chunked:
+                return chunks, combined_prompt
+            return audio_array, combined_prompt
             
         except Exception as e:
             logger.error(f"Error processing audio file: {e}")
@@ -232,6 +268,7 @@ class AudioProcessor:
     def _load_from_temp_file(self, audio_bytes: bytes) -> Tuple[np.ndarray, int]:
         """Load audio using temporary file (for M4A, MP3, etc.)."""
         temp_file_path = None
+        temp_wav_path = None
         try:
             # Create temporary file with appropriate extension
             format_type = self._detect_audio_format(audio_bytes)
@@ -241,9 +278,35 @@ class AudioProcessor:
                 temp_file.write(audio_bytes)
                 temp_file_path = temp_file.name
             
-            
-            # Try librosa with the temp file
-            audio_array, sample_rate = librosa.load(temp_file_path, sr=None, mono=True)
+            # Prefer ffmpeg decode for formats librosa/soundfile struggle with (e.g., m4a)
+            try:
+                ffmpeg_bin = shutil.which('ffmpeg')
+                if ffmpeg_bin and format_type in ('m4a', 'unknown'):
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as wav_out:
+                        temp_wav_path = wav_out.name
+                    # Decode to 16k mono WAV for consistency
+                    cmd = [
+                        ffmpeg_bin,
+                        '-y', '-hide_banner', '-loglevel', 'error',
+                        '-i', temp_file_path,
+                        '-ar', str(self.sample_rate),
+                        '-ac', '1',
+                        temp_wav_path,
+                    ]
+                    subprocess.run(cmd, check=True)
+                    # Read decoded wav via soundfile
+                    audio_array, sample_rate = sf.read(temp_wav_path)
+                    if len(audio_array.shape) > 1:
+                        audio_array = audio_array.mean(axis=1)
+                    return audio_array.astype('float32'), sample_rate
+            except Exception as e:
+                # Fall back to librosa below
+                logger.warning(f"ffmpeg decoding failed, falling back to librosa. Error: {e}")
+
+            # Fallback: use librosa with warnings suppressed
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                audio_array, sample_rate = librosa.load(temp_file_path, sr=None, mono=True)
             return audio_array, sample_rate
             
         except Exception as e:
@@ -256,6 +319,11 @@ class AudioProcessor:
                     os.unlink(temp_file_path)
                 except Exception as e:
                     logger.warning(f"Failed to clean up temp file: {e}")
+            if temp_wav_path and os.path.exists(temp_wav_path):
+                try:
+                    os.unlink(temp_wav_path)
+                except Exception as e:
+                    logger.warning(f"Failed to clean up temp wav file: {e}")
     
     def _normalize_audio(self, audio_array: np.ndarray) -> np.ndarray:
         """
@@ -276,6 +344,23 @@ class AudioProcessor:
             audio_array = audio_array / max_val * 0.95  # Leave some headroom
         
         return audio_array
+
+    def _resample_audio(self, audio_array: np.ndarray, original_sr: int) -> Tuple[np.ndarray, float]:
+        """Resample to target sample rate, return (array, seconds)."""
+        if original_sr == self.sample_rate:
+            return audio_array, 0.0
+        t_rs0 = time.perf_counter()
+        try:
+            _tensor = torch.from_numpy(audio_array).float()
+            _res = torchaudio.functional.resample(_tensor, orig_freq=original_sr, new_freq=self.sample_rate)
+            resampled = _res.numpy()
+        except Exception:
+            resampled = librosa.resample(
+                audio_array,
+                orig_sr=original_sr,
+                target_sr=self.sample_rate
+            )
+        return resampled, (time.perf_counter() - t_rs0)
     
     def prepare_for_model(
         self,
