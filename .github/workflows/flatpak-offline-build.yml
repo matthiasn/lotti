@@ -53,6 +53,10 @@ jobs:
         run: |
           ./flatpak/prepare_flathub_submission.sh
 
+      - name: Debug prepared payload contents
+        run: |
+          ls -R flatpak/flathub-build/output || true
+
       - name: Build from prepared manifest
         working-directory: flatpak/flathub-build/output
         run: |

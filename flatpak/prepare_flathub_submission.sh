@@ -472,14 +472,33 @@ done
 if [ ! -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
   print_warning "No pubspec-sources.json; generating from pubspec.lock files..."
   APP_LOCK="$WORK_DIR/pubspec.lock"
-  TOOLS_LOCK="$WORK_DIR/.flatpak-builder/build/lotti/flutter/packages/flutter_tools/pubspec.lock"
-  if [ -f "$APP_LOCK" ] && [ -f "$TOOLS_LOCK" ]; then
+  TOOLS_LOCK=""
+  if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
+    TOOLS_LOCK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/pubspec.lock' -print -quit 2>/dev/null || true)"
+  fi
+
+  if [ -z "$TOOLS_LOCK" ]; then
+    print_warning "Could not locate flutter_tools pubspec.lock within .flatpak-builder cache"
+  fi
+
+  if [ -f "$APP_LOCK" ] && [ -n "$TOOLS_LOCK" ] && [ -f "$TOOLS_LOCK" ]; then
     python3 "$FLATPAK_DIR/flatpak-flutter/pubspec_generator/pubspec_generator.py" \
       "$APP_LOCK,$TOOLS_LOCK" -o "$OUTPUT_DIR/pubspec-sources.json" || print_error "Failed to generate pubspec-sources.json"
     # Also stage the current package_config.json if available to speed offline bootstrap
-    PKG_CFG="$WORK_DIR/.flatpak-builder/build/lotti/flutter/packages/flutter_tools/.dart_tool/package_config.json"
+    TOOLS_DIR="$(dirname "$TOOLS_LOCK")"
+    PKG_CFG="$TOOLS_DIR/.dart_tool/package_config.json"
     if [ -f "$PKG_CFG" ]; then
       cp -- "$PKG_CFG" "$OUTPUT_DIR/package_config.json" || true
+    else
+      PKG_CFG_FALLBACK=""
+      if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
+        PKG_CFG_FALLBACK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/.dart_tool/package_config.json' -print -quit 2>/dev/null || true)"
+      fi
+      if [ -n "$PKG_CFG_FALLBACK" ] && [ -f "$PKG_CFG_FALLBACK" ]; then
+        cp -- "$PKG_CFG_FALLBACK" "$OUTPUT_DIR/package_config.json" || true
+      else
+        print_warning "Could not locate flutter_tools package_config.json for offline cache"
+      fi
     fi
   else
     print_warning "Missing pubspec.lock paths; cannot generate pubspec-sources.json"
@@ -507,6 +526,11 @@ if [ -z "$FLUTTER_JSON_PATH" ]; then
   else
     print_warning "Primed Flutter SDK not found at $GEN_INPUT_DIR; cannot generate flutter-sdk JSON"
   fi
+fi
+
+if [ ! -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
+  print_error "pubspec-sources.json missing after preparation; offline bundle is incomplete"
+  exit 1
 fi
 
 # Check if files were generated in parent directory
