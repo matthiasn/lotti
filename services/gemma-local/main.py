@@ -248,7 +248,6 @@ async def chat_completion(request: ChatCompletionRequest):
                 transcription = await generate_transcription_with_chat_context(
                     messages=messages,
                     audio_array=audio_chunks[0],
-                    temperature=request.temperature,
                     request_id=req_id
                 )
                 t_gen1 = time.perf_counter()
@@ -259,7 +258,6 @@ async def chat_completion(request: ChatCompletionRequest):
                 transcription = await process_audio_chunks_with_continuation(
                     chunks=audio_chunks,
                     initial_messages=messages,
-                    temperature=request.temperature,
                     request_id=req_id
                 )
                 t_gen1 = time.perf_counter()
@@ -696,7 +694,6 @@ async def process_audio_chunks(
 async def generate_transcription_with_chat_context(
     messages: List[Dict[str, Any]],
     audio_array: np.ndarray,
-    temperature: float,
     request_id: Optional[str] = None,
 ) -> str:
     """Generate transcription using chat context for better understanding."""
@@ -893,7 +890,6 @@ async def generate_transcription_with_chat_context(
 async def process_audio_chunks_with_continuation(
     chunks: List[np.ndarray],
     initial_messages: List[Dict[str, Any]],
-    temperature: float,
     request_id: Optional[str] = None,
 ) -> str:
     """
@@ -928,7 +924,6 @@ async def process_audio_chunks_with_continuation(
             transcription = await generate_transcription_with_chat_context(
                 messages=chunk_messages,
                 audio_array=chunk,
-                temperature=temperature,
                 request_id=request_id
             )
             
@@ -979,8 +974,8 @@ async def process_audio_chunks_with_context(
     messages: List[Dict[str, Any]],
     temperature: float
 ) -> str:
-    """Legacy function - redirects to continuation-based processing."""
-    return await process_audio_chunks_with_continuation(chunks, messages, temperature)
+    """Legacy function - redirects to continuation-based processing (temperature ignored)."""
+    return await process_audio_chunks_with_continuation(chunks, messages)
 
 
 async def generate_text(

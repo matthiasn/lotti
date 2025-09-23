@@ -80,19 +80,7 @@ class AudioProcessor:
             # Resample if necessary (prefer torchaudio for speed; fallback to librosa)
             resample_time = 0.0
             if original_sr != self.sample_rate:
-                t_rs0 = time.perf_counter()
-                try:
-                    import torchaudio.functional as AF
-                    _tensor = torch.from_numpy(audio_array).float()
-                    _res = AF.resample(_tensor, orig_freq=original_sr, new_freq=self.sample_rate)
-                    audio_array = _res.numpy()
-                except Exception:
-                    audio_array = librosa.resample(
-                        audio_array,
-                        orig_sr=original_sr,
-                        target_sr=self.sample_rate
-                    )
-                resample_time = time.perf_counter() - t_rs0
+                audio_array, resample_time = self._resample_audio(audio_array, original_sr)
             
             # Check duration and apply chunking if needed
             duration = len(audio_array) / self.sample_rate
@@ -168,19 +156,7 @@ class AudioProcessor:
             # Resample if necessary (prefer torchaudio for speed; fallback to librosa)
             resample_time = 0.0
             if original_sr != self.sample_rate:
-                t_rs0 = time.perf_counter()
-                try:
-                    import torchaudio.functional as AF
-                    _tensor = torch.from_numpy(audio_array).float()
-                    _res = AF.resample(_tensor, orig_freq=original_sr, new_freq=self.sample_rate)
-                    audio_array = _res.numpy()
-                except Exception:
-                    audio_array = librosa.resample(
-                        audio_array,
-                        orig_sr=original_sr,
-                        target_sr=self.sample_rate
-                    )
-                resample_time = time.perf_counter() - t_rs0
+                audio_array, resample_time = self._resample_audio(audio_array, original_sr)
             
             # Check duration and apply chunking if needed
             duration = len(audio_array) / self.sample_rate
@@ -365,6 +341,24 @@ class AudioProcessor:
             audio_array = audio_array / max_val * 0.95  # Leave some headroom
         
         return audio_array
+
+    def _resample_audio(self, audio_array: np.ndarray, original_sr: int) -> Tuple[np.ndarray, float]:
+        """Resample to target sample rate, return (array, seconds)."""
+        if original_sr == self.sample_rate:
+            return audio_array, 0.0
+        t_rs0 = time.perf_counter()
+        try:
+            import torchaudio.functional as AF
+            _tensor = torch.from_numpy(audio_array).float()
+            _res = AF.resample(_tensor, orig_freq=original_sr, new_freq=self.sample_rate)
+            resampled = _res.numpy()
+        except Exception:
+            resampled = librosa.resample(
+                audio_array,
+                orig_sr=original_sr,
+                target_sr=self.sample_rate
+            )
+        return resampled, (time.perf_counter() - t_rs0)
     
     def prepare_for_model(
         self,
