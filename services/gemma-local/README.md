@@ -36,9 +36,43 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+### Model Management
+
+#### Download Models
+
+**Important**: Models are downloaded automatically on first use, but you can pre-download them using the included script:
+
+```bash
+# Download E2B model (default, smaller)
+python download_model.py
+
+# Download E4B model (larger, better quality)
+python download_model.py E4B
+
+# Download both variants
+python download_model.py both
+```
+
+If you encounter authentication errors, you'll need a HuggingFace token:
+```bash
+# Get token from https://huggingface.co/settings/tokens
+python download_model.py --token YOUR_HF_TOKEN
+```
+
 ### Running the Service
 
-#### Basic Usage
+#### Using the Start Script (Recommended)
+
+Use the convenient startup script:
+```bash
+# Default E2B model
+./start_server.sh
+
+# Use E4B model
+GEMMA_MODEL_VARIANT=E4B ./start_server.sh
+```
+
+#### Manual Startup
 
 Start the service with default settings (E2B model variant):
 ```bash
@@ -475,10 +509,28 @@ volumes:
 
 ### Common Issues
 
+#### Model Not Found (HTTP 404 Error)
+
+If you get a 404 error when trying to use a model variant, it means the model isn't downloaded yet:
+
+```bash
+# Error message example:
+# INFO: 127.0.0.1:64309 - "POST /v1/chat/completions HTTP/1.1" 404 Not Found
+
+# Solution: Download the model first
+python download_model.py E4B  # or whichever variant you're trying to use
+
+# Then restart the server with that variant
+GEMMA_MODEL_VARIANT=E4B ./start_server.sh
+```
+
 #### Model Download Fails
 ```bash
 # Clear cache and retry
 rm -rf ~/.cache/gemma-local/models
+python download_model.py
+
+# Or use the manual method
 python main.py
 ```
 
