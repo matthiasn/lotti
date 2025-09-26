@@ -107,7 +107,8 @@ class UnifiedAiPromptsList extends ConsumerWidget {
 
   final JournalEntity journalEntity;
   final String? linkedFromId;
-  final Future<void> Function(AiConfigPrompt prompt, int index) onPromptSelected;
+  final Future<void> Function(AiConfigPrompt prompt, int index)
+      onPromptSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

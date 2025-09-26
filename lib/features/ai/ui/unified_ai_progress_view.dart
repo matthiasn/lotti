@@ -154,7 +154,9 @@ class _UnifiedAiProgressContentState
                 ),
               );
 
-        final state = widget.showExisting ? _streamProgress : controllerState?.message ?? '';
+        final state = widget.showExisting
+            ? _streamProgress
+            : controllerState?.message ?? '';
 
         final inferenceStatus = ref.watch(
           inferenceStatusControllerProvider(
@@ -212,9 +214,10 @@ class _UnifiedAiProgressContentState
             );
 
             // Determine if it's a Gemma or Ollama model based on naming pattern
-            final isGemmaModel = modelNotInstalledError.modelName.contains('gemma') ||
-                                 modelNotInstalledError.modelName.contains('E2B') ||
-                                 modelNotInstalledError.modelName.contains('E4B');
+            final isGemmaModel =
+                modelNotInstalledError.modelName.contains('gemma') ||
+                    modelNotInstalledError.modelName.contains('E2B') ||
+                    modelNotInstalledError.modelName.contains('E4B');
 
             if (isGemmaModel) {
               developer.log(
