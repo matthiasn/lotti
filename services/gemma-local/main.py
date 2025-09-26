@@ -192,6 +192,51 @@ async def chat_completion(request: ChatCompletionRequest):
                     detail="Failed to load model"
                 )
         
+        # Check if the requested model files exist on disk
+        if request.model:
+            # Build the full model ID for the requested model
+            if 'google/' not in request.model:
+                requested_model_id = f'google/{request.model}'
+            else:
+                requested_model_id = request.model
+
+            # Check if requested model files exist
+            requested_model_path = ServiceConfig.CACHE_DIR / "models" / requested_model_id.replace("/", "--")
+            model_files_exist = requested_model_path.exists() and any(requested_model_path.glob("*.safetensors"))
+
+            if not model_files_exist:
+                # Requested model not downloaded - return 404 to trigger install dialog
+                logger.warning(f"Requested model '{request.model}' not found on disk at {requested_model_path}")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Model '{request.model}' not downloaded. Use /v1/models/pull to download."
+                )
+            else:
+                # Model files exist but server might be configured for a different model
+                # Switch server configuration to use the requested model
+                configured_model = ServiceConfig.MODEL_ID.replace('google/', '')
+                if request.model != configured_model:
+                    logger.info(f"Switching server configuration from '{configured_model}' to '{request.model}'")
+
+                    # Update configuration to requested model
+                    os.environ['GEMMA_MODEL_ID'] = requested_model_id
+                    ServiceConfig.MODEL_ID = requested_model_id
+
+                    # Update variant
+                    if 'E4B' in request.model.upper():
+                        os.environ['GEMMA_MODEL_VARIANT'] = 'E4B'
+                        ServiceConfig.MODEL_VARIANT = 'E4B'
+                    elif 'E2B' in request.model.upper():
+                        os.environ['GEMMA_MODEL_VARIANT'] = 'E2B'
+                        ServiceConfig.MODEL_VARIANT = 'E2B'
+
+                    # Unload current model so it reloads with new config
+                    if model_manager.is_model_loaded():
+                        await model_manager.unload_model()
+
+                    # Refresh model manager config
+                    model_manager.refresh_config()
+
         # Check if this is audio transcription or regular chat
         if request.audio:
             req_id = uuid.uuid4().hex[:8]
@@ -352,31 +397,54 @@ async def chat_completion(request: ChatCompletionRequest):
 async def pull_model(request: ModelPullRequest):
     """
     Download and prepare model with progress streaming.
+    Dynamically downloads the requested model and updates configuration.
     """
     async def generate():
         """Generator that yields SSE-formatted download progress."""
         try:
+            # Normalize the requested model name
+            requested_model = request.model_name.replace('google/', '')
+
+            # Determine the full model ID
+            if 'E4B' in requested_model.upper():
+                model_id = 'google/gemma-3n-E4B-it'
+                variant = 'E4B'
+            elif 'E2B' in requested_model.upper():
+                model_id = 'google/gemma-3n-E2B-it'
+                variant = 'E2B'
+            else:
+                # Default to E2B if not specified
+                model_id = 'google/gemma-3n-E2B-it'
+                variant = 'E2B'
+
             # Send initial status
             progress_event = {
                 "status": "pulling",
-                "digest": ServiceConfig.MODEL_ID,
+                "digest": model_id,
                 "total": None,
                 "completed": 0
             }
             yield f"data: {json.dumps(progress_event)}\n\n"
-            
-            # Check if already cached
-            if model_manager.is_model_available():
+
+            # Check if the requested model is already cached
+            model_path = ServiceConfig.CACHE_DIR / "models" / model_id.replace("/", "--")
+            if model_path.exists() and any(model_path.glob("*.safetensors")):
                 progress_event = {
                     "status": "success",
-                    "digest": ServiceConfig.MODEL_ID,
+                    "digest": model_id,
                     "message": "Model already downloaded"
                 }
                 yield f"data: {json.dumps(progress_event)}\n\n"
+
+                # Update the environment to use this model
+                os.environ['GEMMA_MODEL_VARIANT'] = variant
+                os.environ['GEMMA_MODEL_ID'] = model_id
+                ServiceConfig.MODEL_VARIANT = variant
+                ServiceConfig.MODEL_ID = model_id
                 return
-            
+
             # Download model files
-            logger.info(f"Starting model download: {ServiceConfig.MODEL_ID}")
+            logger.info(f"Starting model download: {model_id}")
             
             try:
                 # Simulate download progress
@@ -387,21 +455,31 @@ async def pull_model(request: ModelPullRequest):
                         progress = int((downloaded / total) * 100)
                         progress_event = {
                             "status": "pulling",
-                            "digest": ServiceConfig.MODEL_ID,
+                            "digest": model_id,
                             "total": total,
                             "completed": downloaded,
                             "percent": progress
                         }
                         # Note: This is simplified - actual implementation would need async handling
                 
-                # Get HuggingFace token
-                hf_token = os.environ.get('HF_TOKEN') or os.environ.get('HUGGING_FACE_HUB_TOKEN')
+                # Get HuggingFace token from environment
+                # Check multiple possible env var names for flexibility
+                hf_token = (
+                    os.environ.get('HUGGINGFACE_TOKEN') or  # From .env file
+                    os.environ.get('HF_TOKEN') or           # Alternative name
+                    os.environ.get('HUGGING_FACE_HUB_TOKEN')  # HF Hub standard
+                )
+
+                if not hf_token:
+                    logger.warning("No HuggingFace token found. Attempting download without authentication.")
+                    logger.info("For gated models like Gemma, add HUGGINGFACE_TOKEN to .env file")
 
                 # Download model to the correct location
+                download_path = ServiceConfig.CACHE_DIR / "models" / model_id.replace("/", "--")
                 model_path = snapshot_download(
-                    repo_id=ServiceConfig.MODEL_ID,
+                    repo_id=model_id,
                     cache_dir=ServiceConfig.CACHE_DIR / "models",
-                    local_dir=ServiceConfig.get_model_path(),
+                    local_dir=download_path,
                     local_dir_use_symlinks=False,
                     resume_download=True,
                     token=hf_token
@@ -409,11 +487,26 @@ async def pull_model(request: ModelPullRequest):
                 
                 # Send success message
                 progress_event = {
-                    "status": "success", 
-                    "digest": ServiceConfig.MODEL_ID,
+                    "status": "success",
+                    "digest": model_id,
                     "message": f"Model downloaded successfully to {model_path}"
                 }
                 yield f"data: {json.dumps(progress_event)}\n\n"
+
+                # Update the environment to use this model
+                os.environ['GEMMA_MODEL_VARIANT'] = variant
+                os.environ['GEMMA_MODEL_ID'] = model_id
+                ServiceConfig.MODEL_VARIANT = variant
+                ServiceConfig.MODEL_ID = model_id
+
+                # Clear the model manager so it reloads with new model
+                if model_manager.is_model_loaded():
+                    await model_manager.unload_model()
+
+                # Refresh the model manager configuration
+                model_manager.refresh_config()
+
+                logger.info(f"Configuration updated to use {model_id}")
                 
             except Exception as e:
                 error_event = {
@@ -435,26 +528,73 @@ async def pull_model(request: ModelPullRequest):
     else:
         # Non-streaming download
         try:
-            if model_manager.is_model_available():
+            # Normalize the requested model name
+            requested_model = request.model_name.replace('google/', '')
+
+            # Determine the full model ID
+            if 'E4B' in requested_model.upper():
+                model_id = 'google/gemma-3n-E4B-it'
+                variant = 'E4B'
+            elif 'E2B' in requested_model.upper():
+                model_id = 'google/gemma-3n-E2B-it'
+                variant = 'E2B'
+            else:
+                # Default to E2B if not specified
+                model_id = 'google/gemma-3n-E2B-it'
+                variant = 'E2B'
+
+            # Check if the requested model is already cached
+            model_path = ServiceConfig.CACHE_DIR / "models" / model_id.replace("/", "--")
+            if model_path.exists() and any(model_path.glob("*.safetensors")):
+                # Update configuration to use this model
+                os.environ['GEMMA_MODEL_VARIANT'] = variant
+                os.environ['GEMMA_MODEL_ID'] = model_id
+                ServiceConfig.MODEL_VARIANT = variant
+                ServiceConfig.MODEL_ID = model_id
                 return {"status": "success", "message": "Model already downloaded"}
-            
+
             from huggingface_hub import snapshot_download
 
-            # Get HuggingFace token
-            hf_token = os.environ.get('HF_TOKEN') or os.environ.get('HUGGING_FACE_HUB_TOKEN')
+            # Get HuggingFace token from environment
+            # Check multiple possible env var names for flexibility
+            hf_token = (
+                os.environ.get('HUGGINGFACE_TOKEN') or  # From .env file
+                os.environ.get('HF_TOKEN') or           # Alternative name
+                os.environ.get('HUGGING_FACE_HUB_TOKEN')  # HF Hub standard
+            )
 
+            if not hf_token:
+                logger.warning("No HuggingFace token found. Attempting download without authentication.")
+                logger.info("For gated models like Gemma, add HUGGINGFACE_TOKEN to .env file")
+
+            download_path = ServiceConfig.CACHE_DIR / "models" / model_id.replace("/", "--")
             model_path = snapshot_download(
-                repo_id=ServiceConfig.MODEL_ID,
+                repo_id=model_id,
                 cache_dir=ServiceConfig.CACHE_DIR / "models",
-                local_dir=ServiceConfig.get_model_path(),
+                local_dir=download_path,
                 local_dir_use_symlinks=False,
                 resume_download=True,
                 token=hf_token
             )
             
+            # Update configuration to use this model
+            os.environ['GEMMA_MODEL_VARIANT'] = variant
+            os.environ['GEMMA_MODEL_ID'] = model_id
+            ServiceConfig.MODEL_VARIANT = variant
+            ServiceConfig.MODEL_ID = model_id
+
+            # Clear the model manager so it reloads with new model
+            if model_manager.is_model_loaded():
+                await model_manager.unload_model()
+
+            # Refresh the model manager configuration
+            model_manager.refresh_config()
+
+            logger.info(f"Configuration updated to use {model_id}")
+
             return {
                 "status": "success",
-                "message": f"Model downloaded to {model_path}"
+                "message": f"Model {model_id} downloaded to {model_path}"
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

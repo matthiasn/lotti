@@ -415,14 +415,23 @@ class GemmaModelManager:
             if self.processor is not None:
                 del self.processor
                 self.processor = None
-            
+
             # Force garbage collection
             import gc
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            
+            if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+
             logger.info("Model unloaded from memory")
+
+    def refresh_config(self):
+        """Refresh configuration after model download/change."""
+        old_model_id = self.model_id
+        self.model_id = ServiceConfig.MODEL_ID
+        self.device = ServiceConfig.DEFAULT_DEVICE
+        logger.info(f"Configuration refreshed: {old_model_id} -> {self.model_id}, device: {self.device}")
     
     def is_model_available(self) -> bool:
         """Check if model files exist locally."""

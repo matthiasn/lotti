@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -114,7 +115,16 @@ class Gemma3nInferenceRepository {
             },
           );
 
-          if (response.statusCode != 200) {
+          if (response.statusCode == 404) {
+            // Model not found - this indicates the model hasn't been downloaded yet
+            developer.log(
+              'Model not downloaded: HTTP 404',
+              name: 'Gemma3nInferenceRepository',
+              error: response.body,
+            );
+            // Use the same exception as Ollama for consistency
+            throw ModelNotInstalledException(normalizedModel);
+          } else if (response.statusCode != 200) {
             developer.log(
               'Failed to transcribe audio: HTTP ${response.statusCode}',
               name: 'Gemma3nInferenceRepository',
@@ -195,6 +205,11 @@ class Gemma3nInferenceRepository {
             originalError: e,
           );
         } catch (e) {
+          // Let ModelNotInstalledException bubble up for UI handling
+          if (e is ModelNotInstalledException) {
+            rethrow;
+          }
+
           // Wrap other exceptions
           developer.log(
             'Unexpected error during audio transcription',
@@ -291,7 +306,11 @@ class Gemma3nInferenceRepository {
         },
       );
 
-      if (streamedResponse.statusCode != 200) {
+      if (streamedResponse.statusCode == 404) {
+        await streamedResponse.stream.bytesToString(); // Consume the stream
+        // Use the same exception as Ollama for consistency
+        throw ModelNotInstalledException(normalizedModel);
+      } else if (streamedResponse.statusCode != 200) {
         final body = await streamedResponse.stream.bytesToString();
         throw Gemma3nInferenceException(
           'Failed to generate text (HTTP ${streamedResponse.statusCode}): $body',
@@ -373,7 +392,7 @@ class Gemma3nInferenceRepository {
         name: 'Gemma3nInferenceRepository',
         error: e,
       );
-      if (e is Gemma3nInferenceException) {
+      if (e is Gemma3nInferenceException || e is ModelNotInstalledException) {
         rethrow;
       }
       throw Gemma3nInferenceException(
@@ -398,4 +417,19 @@ class Gemma3nInferenceException implements Exception {
 
   @override
   String toString() => 'Gemma3nInferenceException: $message';
+}
+
+/// Exception thrown when a Gemma 3n model is not available and needs to be downloaded
+class ModelNotAvailableException extends Gemma3nInferenceException {
+  ModelNotAvailableException(
+    super.message, {
+    required this.modelName,
+    super.statusCode,
+    super.originalError,
+  });
+
+  final String modelName;
+
+  @override
+  String toString() => 'ModelNotAvailableException: $message';
 }
