@@ -4,7 +4,6 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/ai/ui/gemma_model_install_dialog.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -145,14 +145,16 @@ class _UnifiedAiProgressContentState
         final promptConfig = config;
 
         // Use stream progress if showing existing, otherwise use controller state
-        final state = widget.showExisting
-            ? _streamProgress
+        final controllerState = widget.showExisting
+            ? null
             : ref.watch(
                 unifiedAiControllerProvider(
                   entityId: widget.entityId,
                   promptId: widget.promptId,
                 ),
               );
+
+        final state = widget.showExisting ? _streamProgress : controllerState?.message ?? '';
 
         final inferenceStatus = ref.watch(
           inferenceStatusControllerProvider(
@@ -178,33 +180,162 @@ class _UnifiedAiProgressContentState
 
         // If there's an error, show error modal (no _hideError check)
         if (isError) {
-          try {
-            final inferenceError = AiErrorUtils.categorizeError(state);
+          // Debug logging
+          developer.log(
+            'Error detected, showExisting: ${widget.showExisting}, controllerState: $controllerState, error: ${controllerState?.error}, type: ${controllerState?.error.runtimeType}',
+            name: 'UnifiedAiProgressContent',
+          );
 
-            // Debug logging
+          // Check for model not installed error directly from controller state
+          // For showExisting mode, we need to get the controller state explicitly
+          final actualControllerState = widget.showExisting
+              ? ref.read(
+                  unifiedAiControllerProvider(
+                    entityId: widget.entityId,
+                    promptId: widget.promptId,
+                  ),
+                )
+              : controllerState;
+
+          developer.log(
+            'actualControllerState: $actualControllerState, error: ${actualControllerState?.error}, type: ${actualControllerState?.error.runtimeType}',
+            name: 'UnifiedAiProgressContent',
+          );
+
+          if (actualControllerState?.error is ModelNotInstalledException) {
+            final modelNotInstalledError =
+                actualControllerState!.error! as ModelNotInstalledException;
+
             developer.log(
-              'Error detected: "${inferenceError.message}"',
+              'ModelNotInstalledException detected for model: ${modelNotInstalledError.modelName}',
               name: 'UnifiedAiProgressContent',
             );
 
-            // Check for model not installed error
-            String? modelNameToInstall;
+            // Determine if it's a Gemma or Ollama model based on naming pattern
+            final isGemmaModel = modelNotInstalledError.modelName.contains('gemma') ||
+                                 modelNotInstalledError.modelName.contains('E2B') ||
+                                 modelNotInstalledError.modelName.contains('E4B');
 
-            // First, try the reliable typed exception
-            if (inferenceError.originalError is ModelNotInstalledException) {
-              final modelNotInstalledError =
-                  inferenceError.originalError as ModelNotInstalledException;
-              modelNameToInstall = modelNotInstalledError.modelName;
+            if (isGemmaModel) {
+              developer.log(
+                'Showing GemmaModelInstallDialog for model: ${modelNotInstalledError.modelName}',
+                name: 'UnifiedAiProgressContent',
+              );
+
+              return GemmaModelInstallDialog(
+                modelName: modelNotInstalledError.modelName,
+                onModelInstalled: () async {
+                  try {
+                    // Check if widget is still mounted before proceeding
+                    if (!mounted) return;
+
+                    // Trigger a new inference run
+                    await ref.read(
+                      triggerNewInferenceProvider(
+                        entityId: widget.entityId,
+                        promptId: widget.promptId,
+                      ).future,
+                    );
+
+                    // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
+                    final prompt = await ref.read(
+                      aiConfigByIdProvider(widget.promptId).future,
+                    );
+
+                    // Double-check mounted state after async operation
+                    if (!mounted || !context.mounted) return;
+
+                    if (prompt is AiConfigPrompt) {
+                      await ModalUtils.showSingleSliverPageModal<void>(
+                        context: context,
+                        builder: (ctx) => UnifiedAiProgressUtils.progressPage(
+                          context: ctx,
+                          prompt: prompt,
+                          entityId: widget.entityId,
+                          onTapBack: () => Navigator.of(ctx).pop(),
+                        ),
+                      );
+                    }
+                  } catch (e, stack) {
+                    developer.log(
+                      'Error in Gemma onModelInstalled callback: $e',
+                      name: 'UnifiedAiProgressContent',
+                      error: e,
+                      stackTrace: stack,
+                    );
+                    // Don't re-throw - this is a callback error that shouldn't crash the app
+                  }
+                },
+              );
+            } else {
+              // It's an Ollama model
+              developer.log(
+                'Showing OllamaModelInstallDialog for model: ${modelNotInstalledError.modelName}',
+                name: 'UnifiedAiProgressContent',
+              );
+
+              return OllamaModelInstallDialog(
+                modelName: modelNotInstalledError.modelName,
+                onModelInstalled: () async {
+                  try {
+                    // Check if widget is still mounted before proceeding
+                    if (!mounted) return;
+
+                    // Trigger a new inference run
+                    await ref.read(
+                      triggerNewInferenceProvider(
+                        entityId: widget.entityId,
+                        promptId: widget.promptId,
+                      ).future,
+                    );
+
+                    // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
+                    final prompt = await ref.read(
+                      aiConfigByIdProvider(widget.promptId).future,
+                    );
+
+                    // Double-check mounted state after async operation
+                    if (!mounted || !context.mounted) return;
+
+                    if (prompt is AiConfigPrompt) {
+                      await ModalUtils.showSingleSliverPageModal<void>(
+                        context: context,
+                        builder: (ctx) => UnifiedAiProgressUtils.progressPage(
+                          context: ctx,
+                          prompt: prompt,
+                          entityId: widget.entityId,
+                          onTapBack: () => Navigator.of(ctx).pop(),
+                        ),
+                      );
+                    }
+                  } catch (e, stack) {
+                    developer.log(
+                      'Error in Ollama onModelInstalled callback: $e',
+                      name: 'UnifiedAiProgressContent',
+                      error: e,
+                      stackTrace: stack,
+                    );
+                    // Don't re-throw - this is a callback error that shouldn't crash the app
+                  }
+                },
+              );
             }
-            // Fallback to string matching if the typed exception isn't present
-            else if (inferenceError.message.isNotEmpty) {
-              // The message format is expected to be: 'Model "modelName" is not installed. Please install it first.'
-              // A case-insensitive regex is used for robustness.
-              final modelNameMatch =
-                  _modelNotInstalledRegex.firstMatch(inferenceError.message);
-              // Only proceed if we could successfully extract the model name.
-              modelNameToInstall = modelNameMatch?.group(1);
-            }
+          }
+
+          // Now categorize for other error types
+          final inferenceError = actualControllerState?.error != null
+              ? AiErrorUtils.categorizeError(actualControllerState!.error)
+              : AiErrorUtils.categorizeError(state);
+
+          // Fallback to string matching if the typed exception isn't present (backward compatibility)
+          if (inferenceError.message.isNotEmpty) {
+            // The message format is expected to be: 'Model "modelName" is not installed. Please install it first.'
+            // A case-insensitive regex is used for robustness.
+            final modelNameMatch =
+                _modelNotInstalledRegex.firstMatch(inferenceError.message);
+
+            // Only proceed if we could successfully extract the model name.
+            final modelNameToInstall = modelNameMatch?.group(1);
 
             if (modelNameToInstall != null) {
               // Pass a callback to re-trigger inference and re-show progress modal sheet after install
@@ -254,29 +385,13 @@ class _UnifiedAiProgressContentState
                 },
               );
             }
-
-            return AiErrorDisplay(
-              error: inferenceError,
-              onRetry: _handleRetry,
-            );
-          } catch (e, stack) {
-            developer.log(
-              'Exception in AiErrorUtils.categorizeError: $e',
-              name: 'UnifiedAiProgressContent',
-              error: e,
-              stackTrace: stack,
-            );
-            // Show a generic error UI to the user
-            return AiErrorDisplay(
-              error: InferenceError(
-                message:
-                    'An unexpected error occurred while processing the AI response.',
-                type: InferenceErrorType.unknown,
-                originalError: e,
-              ),
-              onRetry: _handleRetry,
-            );
           }
+
+          // Default error display
+          return AiErrorDisplay(
+            error: inferenceError,
+            onRetry: _handleRetry,
+          );
         }
 
         // Default: show the state (result or idle)

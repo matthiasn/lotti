@@ -135,7 +135,7 @@ void main() {
           promptId: testPromptId,
         ),
         (previous, next) {
-          stateChanges.add(next);
+          stateChanges.add(next.message);
         },
       );
 

@@ -167,7 +167,7 @@ void main() {
           promptId: 'prompt-1',
         ),
         (previous, next) {
-          stateUpdates.add(next);
+          stateUpdates.add(next.message);
         },
         fireImmediately: true,
       );
@@ -264,7 +264,7 @@ void main() {
           promptId: 'prompt-1',
         ),
         (previous, next) {
-          stateUpdates.add(next);
+          stateUpdates.add(next.message);
         },
         fireImmediately: true,
       );
