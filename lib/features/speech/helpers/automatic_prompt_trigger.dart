@@ -92,7 +92,6 @@ class AutomaticPromptTrigger {
             ).future,
           );
 
-
           // If neither checklist updates nor task summary is needed, await transcription
           // Otherwise, we'll wait for it before triggering the next steps
           if (!shouldTriggerChecklistUpdates && !shouldTriggerTaskSummary ||

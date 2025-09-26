@@ -146,7 +146,7 @@ void main() {
         promptId: testPromptId,
       ),
     );
-    expect(initialState, '');
+    expect(initialState.message, '');
 
     // Trigger inference
     await container.read(
@@ -170,7 +170,7 @@ void main() {
     // Verify state changes
     expect(stateChanges, contains('Starting...'));
     expect(stateChanges, contains('Complete!'));
-    expect(finalState, 'Complete!');
+    expect(finalState.message, 'Complete!');
 
     container.dispose();
   });
