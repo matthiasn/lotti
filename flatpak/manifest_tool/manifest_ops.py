@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Optional
 
 try:  # pragma: no cover
     from . import utils
@@ -102,3 +102,38 @@ def pin_commit(
         _LOGGER.debug("Pinned lotti module to commit %s", commit)
         return OperationResult.changed_result(f"Pinned lotti module to {commit}")
     return OperationResult.unchanged()
+
+
+def ensure_module_include(
+    document: ManifestDocument,
+    *,
+    module_name: str,
+    before_name: Optional[str] = None,
+) -> OperationResult:
+    """Ensure a string module include (e.g., rustup-1.83.0.json) is present.
+
+    If ``before_name`` is provided and a module with that name exists, the
+    include is inserted just before it to influence build order; otherwise it is
+    appended to the end of the modules list.
+    """
+
+    modules = document.ensure_modules()
+    # Already present?
+    for module in modules:
+        if isinstance(module, str) and module == module_name:
+            return OperationResult.unchanged()
+
+    insert_index = None
+    if before_name is not None:
+        for idx, module in enumerate(modules):
+            if isinstance(module, dict) and module.get("name") == before_name:
+                insert_index = idx
+                break
+    if insert_index is None:
+        modules.append(module_name)
+    else:
+        modules.insert(insert_index, module_name)
+
+    document.mark_changed()
+    _LOGGER.debug("Ensured module include %s", module_name)
+    return OperationResult.changed_result(f"Ensured module include {module_name}")

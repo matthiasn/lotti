@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Optional
+import re
 
 try:  # pragma: no cover
     from . import utils
@@ -92,9 +93,12 @@ class ArtifactCache:
             return None, messages
 
         parsed = urlparse(source_url)
-        scheme = parsed.scheme or ""
-        if scheme and scheme not in _ALLOWED_URL_SCHEMES:
-            message = f"UNSUPPORTED {filename} scheme {scheme} {source_url}"
+        scheme = (parsed.scheme or "").lower()
+        # Only allow explicit http/https downloads; reject empty or other schemes (e.g., file:)
+        if scheme not in _ALLOWED_URL_SCHEMES:
+            message = (
+                f"UNSUPPORTED {filename} scheme {scheme or '<none>'} {source_url}"
+            )
             messages.append(message)
             _LOGGER.warning(message)
             return None, messages
@@ -136,50 +140,42 @@ def add_offline_sources(
     """Ensure lotti sources reference offline JSON artifacts."""
 
     modules = document.ensure_modules()
-    rustup = [entry for entry in (rustup or []) if entry]
+    target = _find_named_module(modules, "lotti")
+    if not target:
+        return OperationResult.unchanged()
+
+    sources = target.setdefault("sources", [])
+    existing_strings = {source for source in sources if isinstance(source, str)}
+    added_strings: list[str] = []
     changed = False
+
+    # Normalize rustup list
+    rustup_list = [entry for entry in (rustup or []) if entry]
+
+    # Ensure string-based source entries
+    for entry in [pubspec, cargo, *rustup_list]:
+        if _ensure_string_entry(sources, entry, existing_strings):
+            added_strings.append(entry)  # type: ignore[arg-type]
+            changed = True
+
+    # Ensure helper file entry
+    if _ensure_file_entry(sources, flutter_file):
+        changed = True
+
+    if not changed:
+        return OperationResult.unchanged()
+
+    document.mark_changed()
     messages: list[str] = []
-
-    for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
-            continue
-        sources = module.setdefault("sources", [])
-        existing_strings = {source for source in sources if isinstance(source, str)}
-        if pubspec and pubspec not in existing_strings:
-            sources.append(pubspec)
-            existing_strings.add(pubspec)
-            changed = True
-        if cargo and cargo not in existing_strings:
-            sources.append(cargo)
-            existing_strings.add(cargo)
-            changed = True
-        for entry in rustup:
-            if entry not in existing_strings:
-                sources.append(entry)
-                existing_strings.add(entry)
-                changed = True
-        if flutter_file:
-            if not any(
-                isinstance(source, dict)
-                and source.get("type") == "file"
-                and source.get("path") == flutter_file
-                for source in sources
-            ):
-                sources.append({"type": "file", "path": flutter_file})
-                changed = True
-        break
-
-    if changed:
-        document.mark_changed()
-        if pubspec or cargo or rustup:
-            wanted = [name for name in [pubspec, cargo, *rustup] if name]
-            messages.append(f"Added offline source references: {', '.join(wanted)}")
-        if flutter_file:
-            messages.append(f"Ensured helper file {flutter_file} available in sources")
-        for message in messages:
-            _LOGGER.debug(message)
-        return OperationResult(changed=True, messages=messages)
-    return OperationResult.unchanged()
+    if added_strings:
+        messages.append(
+            f"Added offline source references: {', '.join([s for s in added_strings if s])}"
+        )
+    if flutter_file:
+        messages.append(f"Ensured helper file {flutter_file} available in sources")
+    for message in messages:
+        _LOGGER.debug(message)
+    return OperationResult(changed=True, messages=messages)
 
 
 def bundle_archive_sources(
@@ -244,3 +240,77 @@ def _bundle_single_source(
     source["path"] = local_path.name
     source.pop("url", None)
     return True, fetch_messages
+
+
+_RUSTUP_JSON_RE = re.compile(r"^rustup-.*\.json$")
+
+
+def remove_rustup_sources(document: ManifestDocument) -> OperationResult:
+    """Remove any rustup-*.json entries from module sources.
+
+    Accepts both bare string references and file-type dict entries.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages: list[str] = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+        sources = module.get("sources")
+        if not isinstance(sources, list):
+            continue
+        filtered: list = []
+        removed = 0
+        for src in sources:
+            if isinstance(src, str) and _RUSTUP_JSON_RE.match(src):
+                removed += 1
+                continue
+            if isinstance(src, dict) and src.get("type") == "file":
+                path = str(src.get("path", ""))
+                if _RUSTUP_JSON_RE.match(path):
+                    removed += 1
+                    continue
+            filtered.append(src)
+        if removed:
+            module["sources"] = filtered
+            changed = True
+            messages.append(f"Removed {removed} rustup JSON reference(s) from module {module.get('name')}")
+
+    if changed:
+        document.mark_changed()
+        for msg in messages:
+            _LOGGER.debug(msg)
+        return OperationResult(changed=True, messages=messages)
+    return OperationResult.unchanged()
+
+
+# ---- helpers to reduce complexity in add_offline_sources ----
+def _find_named_module(modules: Iterable[object], name: str) -> Optional[dict]:
+    for module in modules:
+        if isinstance(module, dict) and module.get("name") == name:
+            return module
+    return None
+
+
+def _ensure_string_entry(sources: list[object], entry: str, existing: set[str]) -> bool:
+    if not entry or entry in existing:
+        return False
+    sources.append(entry)
+    existing.add(entry)
+    return True
+
+
+def _ensure_file_entry(sources: list[object], path: Optional[str]) -> bool:
+    if not path:
+        return False
+    present = any(
+        isinstance(source, dict)
+        and source.get("type") == "file"
+        and source.get("path") == path
+        for source in sources
+    )
+    if present:
+        return False
+    sources.append({"type": "file", "path": path})
+    return True

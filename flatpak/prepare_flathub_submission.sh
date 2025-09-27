@@ -109,7 +109,6 @@ OUTPUT_DIR="$WORK_DIR/output"
 : "${PIN_COMMIT:=true}"               # Pin app source to exact commit in output manifest
 : "${USE_OFFLINE_FLUTTER:=true}"      # Rewrite manifest to consume generated Flutter JSON
 : "${USE_NESTED_FLUTTER:=false}"      # Prefer nested SDK module under lotti (false = keep top-level flutter-sdk)
-: "${USE_OFFLINE_PYTHON:=true}"       # Prefer cached Python artifacts for offline builds
 : "${USE_OFFLINE_ARCHIVES:=true}"     # Prefer cached archive/file sources in manifest
 : "${USE_OFFLINE_APP_SOURCE:=true}"   # Bundle app source as archive for offline testing
 : "${DOWNLOAD_MISSING_SOURCES:=true}" # Permit downloading sources when cache is absent
@@ -175,6 +174,19 @@ echo "Release Date: ${LOTTI_RELEASE_DATE}"
 echo "Branch: ${CURRENT_BRANCH}"
 echo ""
 
+# Show effective options for diagnostics
+print_info "Effective options:"
+echo "  PIN_COMMIT=${PIN_COMMIT}"
+echo "  USE_OFFLINE_FLUTTER=${USE_OFFLINE_FLUTTER}"
+echo "  USE_NESTED_FLUTTER=${USE_NESTED_FLUTTER}"
+echo "  USE_OFFLINE_ARCHIVES=${USE_OFFLINE_ARCHIVES}"
+echo "  USE_OFFLINE_APP_SOURCE=${USE_OFFLINE_APP_SOURCE}"
+echo "  DOWNLOAD_MISSING_SOURCES=${DOWNLOAD_MISSING_SOURCES}"
+echo "  CLEAN_AFTER_GEN=${CLEAN_AFTER_GEN}"
+echo "  NO_FLATPAK_FLUTTER=${NO_FLATPAK_FLUTTER:-false}"
+echo "  FLATPAK_FLUTTER_TIMEOUT=${FLATPAK_FLUTTER_TIMEOUT:-<unset>}"
+echo ""
+
 # Step 1: Clean and create work directory
 print_status "Creating clean work directory..."
 mkdir -p "$WORK_DIR"
@@ -211,11 +223,12 @@ else
 fi
 
 CACHED_FLUTTER_DIR="$(find_cached_flutter_dir || true)"
+# Always use the canonical upstream URL for the injected Flutter git source so that
+# flatpak-flutter can detect the tag and generate sources JSONs. We'll still reuse
+# any cached SDK only for priming the build directory below.
 FLUTTER_GIT_URL="https://github.com/flutter/flutter.git"
 if [ -n "$CACHED_FLUTTER_DIR" ]; then
   print_info "Found cached Flutter SDK checkout at $CACHED_FLUTTER_DIR"
-  # Use local checkout to avoid network requirement during preparation
-  FLUTTER_GIT_URL="file://$CACHED_FLUTTER_DIR"
 fi
 
 # Insert a Flutter SDK git source into the lotti module's sources list
@@ -249,7 +262,7 @@ fi
 
 # Using upstream flatpak-flutter directly; no local patching required
 
-# Step 4: Run flatpak-flutter in work directory
+# Step 4: Run flatpak-flutter in work directory (with timeout + fallback)
 print_status "Running flatpak-flutter to generate offline sources..."
 cd "$WORK_DIR"
 
@@ -331,14 +344,23 @@ if [ -n "${PUB_CACHE:-}" ] && [ -d "${PUB_CACHE}" ]; then
   fi
 fi
 
-# Allow CI to skip offline with NO_OFFLINE_PUB=1
-if [ "${NO_OFFLINE_PUB:-0}" = "1" ]; then
-  echo "NO_OFFLINE_PUB=1 set; running pub get online for flutter_tools..."
-  "$FLUTTER_BIN" pub get -C "$TOOLS_DIR" "$@"
+HAVE_PKGCFG=0
+if [ -f /var/lib/flutter/packages/flutter_tools/.dart_tool/package_config.json ]; then
+  HAVE_PKGCFG=1
+fi
+
+if [ "$HAVE_PKGCFG" = "1" ]; then
+  echo "Detected staged package_config.json for flutter_tools; skipping pub get."
 else
-  if ! "$FLUTTER_BIN" pub get --offline -C "$TOOLS_DIR" "$@"; then
-    echo "Offline pub get failed, retrying with network access..." >&2
+  # Allow CI to skip offline with NO_OFFLINE_PUB=1
+  if [ "${NO_OFFLINE_PUB:-0}" = "1" ]; then
+    echo "NO_OFFLINE_PUB=1 set; running pub get online for flutter_tools..."
     "$FLUTTER_BIN" pub get -C "$TOOLS_DIR" "$@"
+  else
+    if ! "$FLUTTER_BIN" pub get --offline -C "$TOOLS_DIR" "$@"; then
+      echo "Offline pub get failed, retrying with network access..." >&2
+      "$FLUTTER_BIN" pub get -C "$TOOLS_DIR" "$@"
+    fi
   fi
 fi
 
@@ -411,16 +433,42 @@ print_info "Running flatpak-flutter with the following manifest:"
 grep -A 5 "name: flutter-sdk" com.matthiasn.lotti.yml || print_warning "No flutter-sdk module found"
 grep -A 5 "name: lotti" com.matthiasn.lotti.yml || print_warning "No lotti module found"
 
-if ! python3 "$FLATPAK_DIR/flatpak-flutter/flatpak-flutter.py" \
-    --app-module lotti \
-    --keep-build-dirs \
-    "com.matthiasn.lotti.yml" 2>&1 | tee flatpak-flutter.log; then
-    print_error "flatpak-flutter failed to generate files"
-    print_info "Check flatpak-flutter.log for details"
-    exit 1
-fi
+FLATPAK_FLUTTER_TIMEOUT="${FLATPAK_FLUTTER_TIMEOUT:-}"
+NO_FLATPAK_FLUTTER="${NO_FLATPAK_FLUTTER:-false}"
+FLATPAK_FLUTTER_STATUS=0
 
-print_status "Generated offline manifest and dependencies"
+if [ "$NO_FLATPAK_FLUTTER" != "true" ]; then
+  set +e
+  if [ -n "$FLATPAK_FLUTTER_TIMEOUT" ]; then
+    GIT_TERMINAL_PROMPT=0 timeout "$FLATPAK_FLUTTER_TIMEOUT" \
+      python3 "$FLATPAK_DIR/flatpak-flutter/flatpak-flutter.py" \
+        --app-module lotti \
+        --keep-build-dirs \
+        "com.matthiasn.lotti.yml" 2>&1 | tee flatpak-flutter.log
+    FLATPAK_FLUTTER_STATUS=$?
+  else
+    GIT_TERMINAL_PROMPT=0 \
+      python3 "$FLATPAK_DIR/flatpak-flutter/flatpak-flutter.py" \
+        --app-module lotti \
+        --keep-build-dirs \
+        "com.matthiasn.lotti.yml" 2>&1 | tee flatpak-flutter.log
+    FLATPAK_FLUTTER_STATUS=$?
+  fi
+  set -e
+  if [ $FLATPAK_FLUTTER_STATUS -eq 0 ]; then
+    print_status "Generated offline manifest and dependencies"
+  else
+    if [ $FLATPAK_FLUTTER_STATUS -eq 124 ]; then
+      print_warning "flatpak-flutter timed out after ${FLATPAK_FLUTTER_TIMEOUT}s; set FLATPAK_FLUTTER_TIMEOUT to a larger value or unset to disable. Proceeding with fallback generation."
+    else
+      print_warning "flatpak-flutter did not complete (exit ${FLATPAK_FLUTTER_STATUS}); proceeding with fallback generation"
+    fi
+    print_info "Check flatpak-flutter.log for partial output"
+  fi
+else
+  print_info "Skipping flatpak-flutter run (NO_FLATPAK_FLUTTER=true); using fallback generation paths"
+  FLATPAK_FLUTTER_STATUS=124
+fi
 
 # Pin commit in the working manifest before submission/copy
 APP_COMMIT=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
@@ -471,7 +519,7 @@ cp -- "com.matthiasn.lotti.yml" "$OUTPUT_DIR/"
 cp -- flutter-sdk-*.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No flutter-sdk JSON found"
 cp -- pubspec-sources.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No pubspec-sources.json found"
 cp -- cargo-sources.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No cargo-sources.json found"
-cp -- rustup-*.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No rustup JSON found"
+cp -- rustup-*.json "$OUTPUT_DIR/" 2>/dev/null || print_info "No rustup JSON found (will rely on SDK extension if not present)"
 cp -- package_config.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No package_config.json found"
 cp -- "$WORK_DIR/setup-flutter.sh" "$OUTPUT_DIR/" 2>/dev/null || true
 
@@ -480,7 +528,6 @@ for search_root in . ..; do
   for pattern in \
     '*/.flatpak-builder/*/pubspec-sources.json' \
     '*/.flatpak-builder/*/cargo-sources.json' \
-    '*/.flatpak-builder/*/rustup-*.json' \
     '*/.flatpak-builder/*/flutter-sdk-*.json'; do
     while IFS= read -r json; do
       [ -n "${json:-}" ] || continue
@@ -491,6 +538,22 @@ for search_root in . ..; do
 done
 
 # Fallback: generate pubspec-sources.json and package_config.json if missing
+# Also: generate cargo-sources.json if cargo locks are present but the file is missing
+if [ ! -f "$OUTPUT_DIR/cargo-sources.json" ]; then
+  print_warning "No cargo-sources.json; attempting to generate from Cargo.lock files..."
+  CARGO_LOCKS=$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 7 -path '*/.pub-cache/hosted/pub.dev/*/rust/Cargo.lock' -print 2>/dev/null || true)
+  if [ -n "$CARGO_LOCKS" ]; then
+    LOCK_LIST=$(echo "$CARGO_LOCKS" | paste -sd, -)
+    if python3 "$FLATPAK_DIR/flatpak-flutter/cargo_generator/cargo_generator.py" "$LOCK_LIST" -o "$WORK_DIR/cargo-sources.json"; then
+      cp -- "$WORK_DIR/cargo-sources.json" "$OUTPUT_DIR/" 2>/dev/null && print_status "Generated cargo-sources.json from Cargo.lock"
+    else
+      print_warning "Failed to synthesize cargo-sources.json via cargo_generator"
+    fi
+  else
+    print_warning "No Cargo.lock files found under .flatpak-builder; skipping cargo-sources generation"
+  fi
+fi
+
 if [ ! -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
   print_warning "No pubspec-sources.json; generating from pubspec.lock files..."
   APP_LOCK="$WORK_DIR/pubspec.lock"
@@ -561,7 +624,7 @@ if [ -f "../pubspec-sources.json" ]; then
     cp -- ../flutter-sdk-*.json "$OUTPUT_DIR/" 2>/dev/null
     cp -- ../pubspec-sources.json "$OUTPUT_DIR/" 2>/dev/null
     cp -- ../cargo-sources.json "$OUTPUT_DIR/" 2>/dev/null
-    cp -- ../rustup-*.json "$OUTPUT_DIR/" 2>/dev/null
+    cp -- ../rustup-*.json "$OUTPUT_DIR/" 2>/dev/null || true
     cp -- ../package_config.json "$OUTPUT_DIR/" 2>/dev/null
 fi
 
@@ -639,6 +702,35 @@ if [ -f "$OUT_MANIFEST" ]; then
     --manifest "$OUT_MANIFEST" \
     --layout top
 
+  # Ensure network sharing is allowed for the lotti build stage
+  python3 "$PYTHON_CLI" ensure-lotti-network-share \
+    --manifest "$OUT_MANIFEST"
+
+  # Prefer Rust SDK extension over rustup installer
+  python3 "$PYTHON_CLI" ensure-rust-sdk-env \
+    --manifest "$OUT_MANIFEST"
+  python3 "$PYTHON_CLI" remove-rustup-install \
+    --manifest "$OUT_MANIFEST"
+
+  # If a rustup JSON module is present, include it before lotti so rustup
+  # is available for cargokit-based plugins that require rustup.
+  RUSTUP_MOD=""
+  for candidate in "$OUTPUT_DIR"/rustup-*.json; do
+    if [ -e "$candidate" ]; then
+      RUSTUP_MOD="$(basename "$candidate")"
+      break
+    fi
+  done
+  if [ -n "$RUSTUP_MOD" ]; then
+    print_info "Including rustup module $RUSTUP_MOD before lotti"
+    python3 "$PYTHON_CLI" ensure-module-include \
+      --manifest "$OUT_MANIFEST" \
+      --name "$RUSTUP_MOD" \
+      --before lotti
+  else
+    print_info "No rustup module JSON found; proceeding with Rust SDK extension only"
+  fi
+
   if [ "$PIN_COMMIT" = "true" ]; then
     APP_COMMIT=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
     print_info "Pinning app source to commit: $APP_COMMIT"
@@ -691,15 +783,7 @@ if [ -f "$OUT_MANIFEST" ]; then
       CARGO_JSON="cargo-sources.json"
     fi
 
-    RUSTUP_JSON=""
-    for candidate in "$OUTPUT_DIR"/rustup-*.json; do
-      if [ -e "$candidate" ]; then
-        RUSTUP_JSON="$(basename "$candidate")"
-        break
-      fi
-    done
-
-    print_info "Adding offline sources: ${FLUTTER_JSON:-none} ${PUBSPEC_JSON:-} ${CARGO_JSON:-} ${RUSTUP_JSON:-}"
+    print_info "Adding offline sources: ${FLUTTER_JSON:-none} ${PUBSPEC_JSON:-} ${CARGO_JSON:-}"
     PYTHON_OFFLINE_ARGS=(
       "$PYTHON_CLI" add-offline-sources
       --manifest "$OUT_MANIFEST"
@@ -709,9 +793,6 @@ if [ -f "$OUT_MANIFEST" ]; then
     fi
     if [ -n "$CARGO_JSON" ]; then
       PYTHON_OFFLINE_ARGS+=(--cargo "$CARGO_JSON")
-    fi
-    if [ -n "$RUSTUP_JSON" ]; then
-      PYTHON_OFFLINE_ARGS+=(--rustup "$RUSTUP_JSON")
     fi
     if [ "$USE_NESTED_FLUTTER" = "true" ] && [ -n "$FLUTTER_JSON" ]; then
       PYTHON_OFFLINE_ARGS+=(--flutter-json "$FLUTTER_JSON")
@@ -739,6 +820,10 @@ if [ -f "$OUT_MANIFEST" ]; then
     fi
 
     python3 "$PYTHON_CLI" normalize-sdk-copy \
+      --manifest "$OUT_MANIFEST"
+
+    # Ensure no rustup JSONs are referenced in sources (we rely on the Rust SDK extension)
+    python3 "$PYTHON_CLI" remove-rustup-sources \
       --manifest "$OUT_MANIFEST"
     awk '
       BEGIN { in_patch=0; has_cmake=0; }
@@ -814,59 +899,8 @@ if [ -f "$OUT_MANIFEST" ]; then
     fi
   fi
 
-  if [ "$USE_OFFLINE_PYTHON" = "true" ]; then
-    print_info "Ensuring python3-jinja2 module sources use cached artifacts..."
-
-    JINJA_FILENAME="jinja2-3.1.4-py3-none-any.whl"
-    JINJA_URL="https://files.pythonhosted.org/packages/31/80/3a54838c3fb461f6fec263ebf3a3a41771bd05190238de3486aae8540c36/jinja2-3.1.4-py3-none-any.whl"
-    if [ -f "$OUTPUT_DIR/$JINJA_FILENAME" ]; then
-      JINJA_SOURCE="$OUTPUT_DIR/$JINJA_FILENAME"
-    else
-      JINJA_SOURCE=$(find_cached_source_file "$JINJA_FILENAME" || true)
-    fi
-    if [ -z "${JINJA_SOURCE:-}" ] && [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
-      print_info "Downloading $JINJA_FILENAME from upstream"
-      if curl -L --fail -o "$OUTPUT_DIR/$JINJA_FILENAME" "$JINJA_URL"; then
-        JINJA_SOURCE="$OUTPUT_DIR/$JINJA_FILENAME"
-      else
-        print_warning "Failed to download $JINJA_FILENAME; manifest will reference upstream URL"
-      fi
-    fi
-    if [ -n "${JINJA_SOURCE:-}" ]; then
-      if [ "$JINJA_SOURCE" != "$OUTPUT_DIR/$JINJA_FILENAME" ]; then
-        cp -- "$JINJA_SOURCE" "$OUTPUT_DIR/$JINJA_FILENAME"
-      fi
-      replace_source_url_with_path "$OUT_MANIFEST" "$JINJA_FILENAME" "$JINJA_FILENAME"
-      print_info "Bundled $JINJA_FILENAME from ${JINJA_SOURCE#$LOTTI_ROOT/}"
-    else
-      print_warning "No local copy of $JINJA_FILENAME available; leaving upstream URL"
-    fi
-
-    MARKUPSAFE_FILENAME="MarkupSafe-2.1.5.tar.gz"
-    MARKUPSAFE_URL="https://files.pythonhosted.org/packages/87/5b/aae44c6655f3801e81aa3eef09dbbf012431987ba564d7231722f68df02d/MarkupSafe-2.1.5.tar.gz"
-    if [ -f "$OUTPUT_DIR/$MARKUPSAFE_FILENAME" ]; then
-      MARKUPSAFE_SOURCE="$OUTPUT_DIR/$MARKUPSAFE_FILENAME"
-    else
-      MARKUPSAFE_SOURCE=$(find_cached_source_file "$MARKUPSAFE_FILENAME" || true)
-    fi
-    if [ -z "${MARKUPSAFE_SOURCE:-}" ] && [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
-      print_info "Downloading $MARKUPSAFE_FILENAME from upstream"
-      if curl -L --fail -o "$OUTPUT_DIR/$MARKUPSAFE_FILENAME" "$MARKUPSAFE_URL"; then
-        MARKUPSAFE_SOURCE="$OUTPUT_DIR/$MARKUPSAFE_FILENAME"
-      else
-        print_warning "Failed to download $MARKUPSAFE_FILENAME; manifest will reference upstream URL"
-      fi
-    fi
-    if [ -n "${MARKUPSAFE_SOURCE:-}" ]; then
-      if [ "$MARKUPSAFE_SOURCE" != "$OUTPUT_DIR/$MARKUPSAFE_FILENAME" ]; then
-        cp -- "$MARKUPSAFE_SOURCE" "$OUTPUT_DIR/$MARKUPSAFE_FILENAME"
-      fi
-      replace_source_url_with_path "$OUT_MANIFEST" "$MARKUPSAFE_FILENAME" "$MARKUPSAFE_FILENAME"
-      print_info "Bundled $MARKUPSAFE_FILENAME from ${MARKUPSAFE_SOURCE#$LOTTI_ROOT/}"
-    else
-      print_warning "No local copy of $MARKUPSAFE_FILENAME available; leaving upstream URL"
-    fi
-  fi
+  # Offline Python artifacts (e.g., Jinja2, MarkupSafe) are handled generically
+  # by bundle-archive-sources below; no bespoke logic needed here.
 
   if [ "$USE_OFFLINE_ARCHIVES" = "true" ]; then
     print_info "Bundling cached archive and file sources referenced by manifest..."

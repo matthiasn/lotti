@@ -257,6 +257,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser_pin.add_argument("--repo-url", action="append", default=None, help="Optional repository URL to match (can be repeated).")
     parser_pin.set_defaults(func=_run_pin_commit)
 
+    parser_mod_include = subparsers.add_parser("ensure-module-include", help="Ensure a string module include is present (e.g., rustup JSON module).")
+    parser_mod_include.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_mod_include.add_argument("--name", required=True, help="Module include name (e.g., rustup-1.83.0.json)")
+    parser_mod_include.add_argument("--before", dest="before_name", default=None, help="Insert before module with this name (e.g., lotti).")
+    parser_mod_include.set_defaults(func=lambda ns: _run_manifest_operation(ManifestOperation(
+        manifest=Path(ns.manifest),
+        executor=lambda document: manifest_ops.ensure_module_include(document, module_name=ns.name, before_name=ns.before_name),
+    )))
+
     parser_nested = subparsers.add_parser("ensure-nested-sdk", help="Attach flutter-sdk JSON modules under lotti.")
     parser_nested.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_nested.add_argument("--output-dir", required=True, help="Directory containing flutter jsons.")
@@ -273,6 +282,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser_helper.add_argument("--layout", choices=("top", "nested"), default="top", help="SDK layout to target.")
     parser_helper.add_argument("--helper", default="setup-flutter.sh", help="Helper script basename.")
     parser_helper.set_defaults(func=_run_ensure_lotti_setup_helper)
+
+    parser_net = subparsers.add_parser("ensure-lotti-network-share", help="Ensure lotti build-args include --share=network.")
+    parser_net.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_net.set_defaults(func=lambda ns: _run_manifest_operation(ManifestOperation(
+        manifest=Path(ns.manifest),
+        executor=lambda document: flutter_ops.ensure_lotti_network_share(document),
+    )))
+
+    parser_rust_env = subparsers.add_parser("ensure-rust-sdk-env", help="Ensure Rust SDK extension bin is on PATH for lotti.")
+    parser_rust_env.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_rust_env.set_defaults(func=lambda ns: _run_manifest_operation(ManifestOperation(
+        manifest=Path(ns.manifest),
+        executor=lambda document: flutter_ops.ensure_rust_sdk_env(document),
+    )))
+
+    parser_rm_rustup = subparsers.add_parser("remove-rustup-install", help="Remove rustup install commands from lotti.")
+    parser_rm_rustup.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_rm_rustup.set_defaults(func=lambda ns: _run_manifest_operation(ManifestOperation(
+        manifest=Path(ns.manifest),
+        executor=lambda document: flutter_ops.remove_rustup_install(document),
+    )))
 
     parser_remove = subparsers.add_parser("should-remove-flutter-sdk", help="Check if the top-level flutter-sdk module can be removed.")
     parser_remove.add_argument("--manifest", required=True, help="Manifest file path.")
@@ -318,6 +348,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser_bundle_app.add_argument("--sha256", required=True, help="Archive SHA256 hash.")
     parser_bundle_app.add_argument("--output-dir", required=True, help="Directory containing offline artifacts.")
     parser_bundle_app.set_defaults(func=_run_bundle_app_archive)
+
+    parser_rm_rustup = subparsers.add_parser("remove-rustup-sources", help="Remove rustup-*.json references from sources.")
+    parser_rm_rustup.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_rm_rustup.set_defaults(func=lambda ns: _run_manifest_operation(ManifestOperation(
+        manifest=Path(ns.manifest),
+        executor=lambda document: sources_ops.remove_rustup_sources(document),
+    )))
 
     return parser
 

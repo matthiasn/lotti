@@ -149,3 +149,25 @@ def test_bundle_single_source_converts_url(tmp_path: Path):
     assert source["path"] == "archive.tar.gz"
     assert "url" not in source
     assert messages == ["FETCH"]
+
+
+def test_remove_rustup_sources(make_document):
+    document = make_document()
+    # Inject rustup references into lotti sources
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
+    lotti["sources"].extend([
+        "rustup-1.83.0.json",
+        {"type": "file", "path": "rustup-1.83.0.json"},
+        {"type": "file", "path": "keep-me.json"},
+    ])
+
+    result = sources_ops.remove_rustup_sources(document)
+
+    assert result.changed
+    sources = lotti["sources"]
+    assert "rustup-1.83.0.json" not in [s for s in sources if isinstance(s, str)]
+    assert not any(
+        isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json" for s in sources
+    )
+    # Unrelated entries remain
+    assert any(isinstance(s, dict) and s.get("path") == "keep-me.json" for s in sources)

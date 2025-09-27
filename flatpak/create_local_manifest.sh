@@ -42,18 +42,8 @@ if [ "$PR_MODE" = true ] && [ -n "$PR_HEAD_SHA" ] && [ -n "$PR_HEAD_URL" ]; then
   if grep -q 'commit: COMMIT_PLACEHOLDER' "$MANIFEST_FILE"; then
     sed -i "s|commit: COMMIT_PLACEHOLDER|commit: $PR_HEAD_SHA|" "$MANIFEST_FILE"
   else
-    # Fallback: replace the first 'commit:' after the URL occurrence
-    awk -v sha="$PR_HEAD_SHA" '
-      BEGIN{changed=0}
-      /url: / && $0 ~ /github.com/ && $0 ~ /lotti/ {seen_url=1}
-      {
-        if (seen_url && !changed && $0 ~ /^[[:space:]]*commit:[[:space:]]*/) {
-          sub(/commit:.*/, "commit: " sha)
-          changed=1
-        }
-        print $0
-      }
-    ' "$MANIFEST_FILE" > "$MANIFEST_FILE.tmp" && mv "$MANIFEST_FILE.tmp" "$MANIFEST_FILE"
+    echo "Error: No COMMIT_PLACEHOLDER found in $MANIFEST_FILE. This is required for PR-aware pinning." >&2
+    exit 1
   fi
   echo "Updated $MANIFEST_FILE for PR head commit"
 else

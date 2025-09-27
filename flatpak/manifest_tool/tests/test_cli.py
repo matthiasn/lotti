@@ -77,3 +77,53 @@ def test_cli_pin_commit(tmp_path, capsys):
     lotti = next(module for module in data["modules"] if module["name"] == "lotti")
     commits = [source.get("commit") for source in lotti["sources"] if isinstance(source, dict)]
     assert "abc123" in commits
+
+
+def test_cli_remove_rustup_sources(tmp_path, capsys):
+    # Build a manifest embedding rustup JSON under lotti sources
+    data = yaml.safe_load(SAMPLE_MANIFEST)
+    for module in data["modules"]:
+        if module.get("name") == "lotti":
+            module.setdefault("sources", []).extend([
+                "rustup-1.83.0.json",
+                {"type": "file", "path": "rustup-1.83.0.json"},
+            ])
+            break
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+    exit_code = cli.main([
+        "remove-rustup-sources",
+        "--manifest",
+        str(manifest_path),
+    ])
+
+    assert exit_code == 0
+    new_data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    lotti = next(module for module in new_data["modules"] if module["name"] == "lotti")
+    sources = lotti["sources"]
+    assert "rustup-1.83.0.json" not in [s for s in sources if isinstance(s, str)]
+    assert not any(isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json" for s in sources)
+
+
+def test_cli_ensure_module_include_before_lotti(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
+
+    mod_name = "rustup-1.83.0.json"
+    exit_code = cli.main([
+        "ensure-module-include",
+        "--manifest",
+        str(manifest_path),
+        "--name",
+        mod_name,
+        "--before",
+        "lotti",
+    ])
+    assert exit_code == 0
+
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    modules = data["modules"]
+    idx_mod = next(i for i, m in enumerate(modules) if m == mod_name)
+    idx_lotti = next(i for i, m in enumerate(modules) if isinstance(m, dict) and m.get("name") == "lotti")
+    assert idx_mod < idx_lotti

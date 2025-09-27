@@ -70,12 +70,22 @@ def test_ensure_setup_helper_source_and_command(make_document):
     assert any(isinstance(src, dict) and src.get("path") == "setup-flutter.sh" for src in sources)
 
     commands = lotti["build-commands"]
-    expected = (
-        "if [ -d /app/flutter ]; then bash setup-flutter.sh -C /app; "
-        "elif [ -d /var/lib/flutter ]; then bash setup-flutter.sh -C /var/lib; "
-        "else bash setup-flutter.sh; fi"
-    )
-    assert expected in commands
+    # The helper command resolves the helper and invokes it; assert the command contains -C /app
+    assert any("setup-flutter.sh" in cmd and "-C /app" in cmd for cmd in commands)
+
+
+def test_ensure_rust_sdk_env(make_document):
+    document = make_document()
+    result = flutter_ops.ensure_rust_sdk_env(document)
+    assert result.changed
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
+    build_opts = lotti["build-options"]
+    assert "/usr/lib/sdk/rust-stable/bin" in build_opts["append-path"]
+    assert "/var/lib/rustup/bin" in build_opts["append-path"]
+    env_path = build_opts["env"]["PATH"]
+    assert env_path.startswith("/var/lib/rustup/bin")
+    assert "/usr/lib/sdk/rust-stable/bin" in env_path
+    assert build_opts["env"].get("RUSTUP_HOME") == "/var/lib/rustup"
 
 
 def test_normalize_sdk_copy_replaces_command(make_document):

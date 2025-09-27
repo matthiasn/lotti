@@ -103,13 +103,31 @@ The Flathub build requires all dependencies to be available offline. We use `fla
    TEST_BUILD=true ./prepare_flathub_submission.sh
    ```
 
-   The script will:
+The script will:
    - Create a clean work directory at `flatpak/flathub-build/`
    - Use version from pubspec.yaml (or override)
    - Use current git HEAD commit
    - Generate offline manifest and all dependencies using flatpak-flutter
    - Process the metainfo.xml with version substitution
-   - Output all files to `flatpak/flathub-build/output/`
+- Output all files to `flatpak/flathub-build/output/`
+
+#### Tuning & Env Vars
+
+You can influence the preparation behavior with these environment variables:
+
+- `FLATPAK_FLUTTER_TIMEOUT` — seconds to allow `flatpak-flutter` to run; unset by default (no timeout). Example: `FLATPAK_FLUTTER_TIMEOUT=1800 ./prepare_flathub_submission.sh`
+- `NO_FLATPAK_FLUTTER` — set to `true` to skip running `flatpak-flutter` entirely and use the script’s fallback generators. Example: `NO_FLATPAK_FLUTTER=true ./prepare_flathub_submission.sh`
+- `PIN_COMMIT` — `true` (default) to pin the app source to the current commit in the output manifest.
+- `USE_OFFLINE_FLUTTER` — `true` (default) to attach offline Flutter SDK JSON/archive when available.
+- `USE_NESTED_FLUTTER` — `false` (default). When `true`, references Flutter SDK JSONs as nested modules under the `lotti` module and removes the top-level `flutter-sdk` module when safe.
+- `USE_OFFLINE_ARCHIVES` — `true` (default) to bundle archive/file sources into the output directory and rewrite URLs to local paths.
+- `USE_OFFLINE_APP_SOURCE` — `true` (default) to bundle the app source as `lotti-<commit>.tar.xz` and reference it from the manifest.
+- `DOWNLOAD_MISSING_SOURCES` — `true` (default) to allow downloading sources that aren’t found in local caches; set to `false` for strictly offline generation.
+- `CLEAN_AFTER_GEN` — `true` (default) to remove the work `.flatpak-builder` directory after generation.
+
+Tips:
+- Logs are written to `flatpak/flathub-build/flatpak-flutter.log`. Use `tail -f` while preparing to monitor progress.
+- If network is constrained, try `NO_FLATPAK_FLUTTER=true` to rely on fallback generators; or keep `flatpak-flutter` and set a larger `FLATPAK_FLUTTER_TIMEOUT`.
 
 4. **Submit to Flathub**:
    - Fork the [Flathub repository](https://github.com/flathub/flathub)
