@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -57,7 +58,8 @@ class _GemmaModelInstallDialogState
             'Gemma provider not found. Please configure Gemma in settings.');
       }
 
-      final httpClient = http.Client();
+      // Use the shared HTTP client provider for better testability and resource management
+      final httpClient = ref.read(httpClientProvider);
 
       try {
         // Call the Gemma server's model pull endpoint
@@ -181,8 +183,9 @@ class _GemmaModelInstallDialogState
             _isInstalling = false;
           });
         }
-      } finally {
-        httpClient.close();
+      } catch (e) {
+        // Re-throw the exception to be handled by outer catch block
+        rethrow;
       }
     } catch (e) {
       developer.log(
