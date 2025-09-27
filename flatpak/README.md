@@ -29,16 +29,16 @@ This directory contains the Flatpak manifest and related files for building Lott
 
 ```bash
 cd flatpak
-./update_manifest_commit.sh
-flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.source.yml
+./create_local_manifest.sh
+flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
 ```
 
 Note:
-- Always run `./update_manifest_commit.sh` before building — it pins the manifest by replacing `commit: COMMIT_PLACEHOLDER` with your current git HEAD (or a commit you pass in).
+- Always run `./create_local_manifest.sh` before building — it pins the manifest by replacing `commit: COMMIT_PLACEHOLDER` with your current git HEAD (or a commit you pass in) and writes the result to `com.matthiasn.lotti.yml`.
 - The script includes a guard: if it detects an empty `commit:` field or cannot find `COMMIT_PLACEHOLDER`, it will exit and print a clear message so you get immediate feedback.
 - The build tooling also fails fast if any `COMMIT_PLACEHOLDER` or `branch:` entries remain in the final manifest used for submission.
 
-You can also specify a different commit: `./update_manifest_commit.sh <commit-hash>`
+You can also specify a different commit: `./create_local_manifest.sh <commit-hash>`
 
 ### Running the App
 
@@ -103,13 +103,31 @@ The Flathub build requires all dependencies to be available offline. We use `fla
    TEST_BUILD=true ./prepare_flathub_submission.sh
    ```
 
-   The script will:
+The script will:
    - Create a clean work directory at `flatpak/flathub-build/`
    - Use version from pubspec.yaml (or override)
    - Use current git HEAD commit
    - Generate offline manifest and all dependencies using flatpak-flutter
    - Process the metainfo.xml with version substitution
    - Output all files to `flatpak/flathub-build/output/`
+
+#### Tuning & Env Vars
+
+You can influence the preparation behavior with these environment variables:
+
+- `FLATPAK_FLUTTER_TIMEOUT` — seconds to allow `flatpak-flutter` to run; unset by default (no timeout). Example: `FLATPAK_FLUTTER_TIMEOUT=1800 ./prepare_flathub_submission.sh`
+- `NO_FLATPAK_FLUTTER` — set to `true` to skip running `flatpak-flutter` entirely and use the script’s fallback generators. Example: `NO_FLATPAK_FLUTTER=true ./prepare_flathub_submission.sh`
+- `PIN_COMMIT` — `true` (default) to pin the app source to the current commit in the output manifest.
+- `USE_OFFLINE_FLUTTER` — `true` (default) to attach offline Flutter SDK JSON/archive when available.
+- `USE_NESTED_FLUTTER` — `false` (default). When `true`, references Flutter SDK JSONs as nested modules under the `lotti` module and removes the top-level `flutter-sdk` module when safe.
+- `USE_OFFLINE_ARCHIVES` — `true` (default) to bundle archive/file sources into the output directory and rewrite URLs to local paths.
+- `USE_OFFLINE_APP_SOURCE` — `true` (default) to bundle the app source as `lotti-<commit>.tar.xz` and reference it from the manifest.
+- `DOWNLOAD_MISSING_SOURCES` — `true` (default) to allow downloading sources that aren’t found in local caches; set to `false` for strictly offline generation.
+- `CLEAN_AFTER_GEN` — `true` (default) to remove the work `.flatpak-builder` directory after generation.
+
+Tips:
+- Logs are written to `flatpak/flathub-build/flatpak-flutter.log`. Use `tail -f` while preparing to monitor progress.
+- If network is constrained, try `NO_FLATPAK_FLUTTER=true` to rely on fallback generators; or keep `flatpak-flutter` and set a larger `FLATPAK_FLUTTER_TIMEOUT`.
 
 4. **Submit to Flathub**:
    - Fork the [Flathub repository](https://github.com/flathub/flathub)
@@ -118,20 +136,28 @@ The Flathub build requires all dependencies to be available offline. We use `fla
 
 ### Key Files
 
-- `com.matthiasn.lotti.source.yml` - Main manifest for local builds (requires network, uses COMMIT_PLACEHOLDER)
+- `com.matthiasn.lotti.source.yml` - Base manifest (kept pristine; still contains COMMIT_PLACEHOLDER)
+- `com.matthiasn.lotti.yml` - Generated manifest with a pinned commit (created by `create_local_manifest.sh`)
 - `com.matthiasn.lotti.metainfo.xml` - App metadata with version placeholders
-- `update_manifest_commit.sh` - Updates COMMIT_PLACEHOLDER with actual commit hash in the manifest
+- `create_local_manifest.sh` - Updates COMMIT_PLACEHOLDER with actual commit hash in the manifest copy
 - `prepare_flathub_submission.sh` - Prepares everything for Flathub (generates offline manifest)
+- `check_complexity.sh` - Analyzes code complexity metrics for the manifest_tool Python code
+- `manifest_tool/` - Python tooling for manifest manipulation and build preparation
+  - `cli.py` - Command-line interface for all manifest operations
+  - `flutter_ops.py` - Flutter SDK and environment manipulation functions
+  - `manifest_ops.py` - Manifest modification operations (pinning, module management)
+  - `sources_ops.py` - Sources manipulation (bundling, URL replacement)
+  - `build_utils.py` - Build utilities (Flutter SDK copying, directory preparation)
 
 ## Creating a Bundle
 
 To create a distributable Flatpak bundle:
 ```bash
 # First update the manifest with desired commit
-./update_manifest_commit.sh
+./create_local_manifest.sh
 
 # Build into a repo
-flatpak-builder --repo=repo build-dir com.matthiasn.lotti.source.yml
+flatpak-builder --repo=repo build-dir com.matthiasn.lotti.yml
 
 # Create the bundle
 flatpak build-bundle repo lotti.flatpak com.matthiasn.lotti
@@ -194,3 +220,46 @@ Currently, the Flatpak uses a single 1024px icon file for all sizes. For better 
 - Create pre-scaled icons: 512px, 256px, 128px, 64px, 48px, 32px, 16px
 - Update the manifest to use appropriately sized icons
 - This will improve rendering quality and reduce memory usage 
+
+## Python Helper Tests
+
+The helper scripts under `flatpak/manifest_tool/` now ship with a pytest suite. To run it locally without touching the system Python, create a virtual environment in the flatpak directory:
+
+```bash
+# Install the venv tooling once (Ubuntu/Debian only)
+sudo apt install python3-venv
+
+# Navigate to the flatpak directory (all commands should be run from here)
+cd flatpak
+
+# Create and activate the virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install test dependencies inside the venv
+python -m pip install --upgrade pip
+pip install pytest pyyaml
+
+# Run the tests
+python -m pytest manifest_tool/tests
+
+# When finished
+deactivate
+```
+
+> Tip: keep the `.venv/` directory out of version control (it is already covered by the root `.gitignore`).
+
+### Code Complexity Analysis
+
+To analyze code complexity (similar to CodeFactor):
+
+```bash
+# From the flatpak directory
+./check_complexity.sh
+```
+
+This will:
+- Check cyclomatic complexity (functions with complexity > 10)
+- Check cognitive complexity
+- Provide a summary of complex functions
+- Install required tools (radon, flake8) automatically if not present

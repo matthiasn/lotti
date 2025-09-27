@@ -49,6 +49,15 @@ jobs:
         sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.llvm20//24.08
         sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
 
+    - name: Run manifest helper tests
+      run: |
+        cd flatpak
+        python3 -m venv .venv
+        source .venv/bin/activate
+        python -m pip install --upgrade pip
+        pip install pytest pyyaml
+        python -m pytest manifest_tool/tests
+
     - name: Update manifest with current commit
       run: |
         # Always use the actual HEAD commit from the checked out repository
@@ -58,16 +67,23 @@ jobs:
 
         # Update the manifest commit placeholder with the actual commit
         cd flatpak
-        ./update_manifest_commit.sh "$COMMIT_SHA"
+        ./create_local_manifest.sh "$COMMIT_SHA"
 
-        # Show the updated manifest
+        # Show the updated manifest (works for both upstream and fork URLs)
         echo "Manifest updated with commit:"
-        grep -A2 "url: https://github.com/matthiasn/lotti" com.matthiasn.lotti.source.yml
+        grep -A2 -E "url:.*lotti" com.matthiasn.lotti.yml | grep -E "url:.*/lotti"
 
     - name: Build Flatpak
       run: |
         cd flatpak
-        flatpak-builder --verbose --force-clean --repo=repo build-dir com.matthiasn.lotti.source.yml
+        # Use --user with --install to install at user level (no sudo required)
+        # Also export to repo for creating the bundle
+        flatpak-builder --verbose --user --install --force-clean --repo=repo build-dir com.matthiasn.lotti.yml
+
+    - name: Verify Flatpak (post-build)
+      run: |
+        flatpak --version
+        flatpak list
 
     - name: Create Flatpak bundle
       run: |
