@@ -89,10 +89,7 @@ OUTPUT_DIR="$WORK_DIR/output"
 # Behavior toggles (can be overridden via env)
 : "${CLEAN_AFTER_GEN:=true}"          # Remove .flatpak-builder after generation
 : "${PIN_COMMIT:=true}"               # Pin app source to exact commit in output manifest
-: "${USE_OFFLINE_FLUTTER:=true}"      # Rewrite manifest to consume generated Flutter JSON
 : "${USE_NESTED_FLUTTER:=false}"      # Prefer nested SDK module under lotti (false = keep top-level flutter-sdk)
-: "${USE_OFFLINE_ARCHIVES:=true}"     # Prefer cached archive/file sources in manifest
-: "${USE_OFFLINE_APP_SOURCE:=true}"   # Bundle app source as archive for offline testing
 : "${DOWNLOAD_MISSING_SOURCES:=true}" # Permit downloading sources when cache is absent
 
 # Version configuration
@@ -159,10 +156,7 @@ echo ""
 # Show effective options for diagnostics
 print_info "Effective options:"
 echo "  PIN_COMMIT=${PIN_COMMIT}"
-echo "  USE_OFFLINE_FLUTTER=${USE_OFFLINE_FLUTTER}"
 echo "  USE_NESTED_FLUTTER=${USE_NESTED_FLUTTER}"
-echo "  USE_OFFLINE_ARCHIVES=${USE_OFFLINE_ARCHIVES}"
-echo "  USE_OFFLINE_APP_SOURCE=${USE_OFFLINE_APP_SOURCE}"
 echo "  DOWNLOAD_MISSING_SOURCES=${DOWNLOAD_MISSING_SOURCES}"
 echo "  CLEAN_AFTER_GEN=${CLEAN_AFTER_GEN}"
 echo "  NO_FLATPAK_FLUTTER=${NO_FLATPAK_FLUTTER:-false}"
@@ -648,87 +642,87 @@ if [ -f "$OUT_MANIFEST" ]; then
       --output-dir "$OUTPUT_DIR"
   fi
 
-  if [ "$USE_OFFLINE_FLUTTER" = "true" ]; then
-    FLUTTER_JSON=""
-    for candidate in "$OUTPUT_DIR"/flutter-sdk-*.json; do
-      if [ -e "$candidate" ]; then
-        FLUTTER_JSON="$(basename "$candidate")"
-        break
-      fi
-    done
-
-    REMOVE_FLUTTER_SDK=$(python3 "$PYTHON_CLI" should-remove-flutter-sdk \
-      --manifest "$OUT_MANIFEST" \
-      --output-dir "$OUTPUT_DIR")
-
-    if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
-      print_info "Offline Flutter JSON found and referenced; removing top-level flutter-sdk module."
-      awk '
-        BEGIN{skip=0}
-        /^\s*- name: flutter-sdk\s*$/ {skip=1}
-        skip && /^\s*- name: / {skip=0}
-        !skip {print}
-      ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
-    else
-      print_info "Keeping top-level flutter-sdk module (offline JSON missing or not referenced)."
+  # Process offline Flutter JSON (required for Flathub compliance)
+  FLUTTER_JSON=""
+  for candidate in "$OUTPUT_DIR"/flutter-sdk-*.json; do
+    if [ -e "$candidate" ]; then
+      FLUTTER_JSON="$(basename "$candidate")"
+      break
     fi
+  done
 
-    python3 "$PYTHON_CLI" normalize-flutter-sdk-module \
-      --manifest "$OUT_MANIFEST"
+  REMOVE_FLUTTER_SDK=$(python3 "$PYTHON_CLI" should-remove-flutter-sdk \
+    --manifest "$OUT_MANIFEST" \
+    --output-dir "$OUTPUT_DIR")
 
-    PUBSPEC_JSON=""
-    if [ -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
-      PUBSPEC_JSON="pubspec-sources.json"
-    fi
-
-    CARGO_JSON=""
-    if [ -f "$OUTPUT_DIR/cargo-sources.json" ]; then
-      CARGO_JSON="cargo-sources.json"
-    fi
-
-    print_info "Adding offline sources: ${FLUTTER_JSON:-none} ${PUBSPEC_JSON:-} ${CARGO_JSON:-}"
-    PYTHON_OFFLINE_ARGS=(
-      "$PYTHON_CLI" add-offline-sources
-      --manifest "$OUT_MANIFEST"
-    )
-    if [ -n "$PUBSPEC_JSON" ]; then
-      PYTHON_OFFLINE_ARGS+=(--pubspec "$PUBSPEC_JSON")
-    fi
-    if [ -n "$CARGO_JSON" ]; then
-      PYTHON_OFFLINE_ARGS+=(--cargo "$CARGO_JSON")
-    fi
-    if [ "$USE_NESTED_FLUTTER" = "true" ] && [ -n "$FLUTTER_JSON" ]; then
-      PYTHON_OFFLINE_ARGS+=(--flutter-json "$FLUTTER_JSON")
-    fi
-    python3 "${PYTHON_OFFLINE_ARGS[@]}"
-
-    if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
-      python3 "$PYTHON_CLI" normalize-lotti-env \
-        --manifest "$OUT_MANIFEST" \
-        --layout nested \
-        --append-path
-      python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
-        --manifest "$OUT_MANIFEST" \
-        --layout nested \
-        --helper "$SETUP_HELPER_BASENAME"
-    else
-      python3 "$PYTHON_CLI" normalize-lotti-env \
-        --manifest "$OUT_MANIFEST" \
-        --layout top \
-        --append-path
-      python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
-        --manifest "$OUT_MANIFEST" \
-        --layout top \
-        --helper "$SETUP_HELPER_BASENAME"
-    fi
-
-    python3 "$PYTHON_CLI" normalize-sdk-copy \
-      --manifest "$OUT_MANIFEST"
-
-    # Ensure no rustup JSONs are referenced in sources (we rely on the Rust SDK extension)
-    python3 "$PYTHON_CLI" remove-rustup-sources \
-      --manifest "$OUT_MANIFEST"
+  if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
+    print_info "Offline Flutter JSON found and referenced; removing top-level flutter-sdk module."
     awk '
+      BEGIN{skip=0}
+      /^\s*- name: flutter-sdk\s*$/ {skip=1}
+      skip && /^\s*- name: / {skip=0}
+      !skip {print}
+    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+  else
+    print_info "Keeping top-level flutter-sdk module (offline JSON missing or not referenced)."
+  fi
+
+  python3 "$PYTHON_CLI" normalize-flutter-sdk-module \
+    --manifest "$OUT_MANIFEST"
+
+  PUBSPEC_JSON=""
+  if [ -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
+    PUBSPEC_JSON="pubspec-sources.json"
+  fi
+
+  CARGO_JSON=""
+  if [ -f "$OUTPUT_DIR/cargo-sources.json" ]; then
+    CARGO_JSON="cargo-sources.json"
+  fi
+
+  print_info "Adding offline sources: ${FLUTTER_JSON:-none} ${PUBSPEC_JSON:-} ${CARGO_JSON:-}"
+  PYTHON_OFFLINE_ARGS=(
+    "$PYTHON_CLI" add-offline-sources
+    --manifest "$OUT_MANIFEST"
+  )
+  if [ -n "$PUBSPEC_JSON" ]; then
+    PYTHON_OFFLINE_ARGS+=(--pubspec "$PUBSPEC_JSON")
+  fi
+  if [ -n "$CARGO_JSON" ]; then
+    PYTHON_OFFLINE_ARGS+=(--cargo "$CARGO_JSON")
+  fi
+  if [ "$USE_NESTED_FLUTTER" = "true" ] && [ -n "$FLUTTER_JSON" ]; then
+    PYTHON_OFFLINE_ARGS+=(--flutter-json "$FLUTTER_JSON")
+  fi
+  python3 "${PYTHON_OFFLINE_ARGS[@]}"
+
+  if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
+    python3 "$PYTHON_CLI" normalize-lotti-env \
+      --manifest "$OUT_MANIFEST" \
+      --layout nested \
+      --append-path
+    python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
+      --manifest "$OUT_MANIFEST" \
+      --layout nested \
+      --helper "$SETUP_HELPER_BASENAME"
+  else
+    python3 "$PYTHON_CLI" normalize-lotti-env \
+      --manifest "$OUT_MANIFEST" \
+      --layout top \
+      --append-path
+    python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
+      --manifest "$OUT_MANIFEST" \
+      --layout top \
+      --helper "$SETUP_HELPER_BASENAME"
+  fi
+
+  python3 "$PYTHON_CLI" normalize-sdk-copy \
+    --manifest "$OUT_MANIFEST"
+
+  # Ensure no rustup JSONs are referenced in sources (we rely on the Rust SDK extension)
+  python3 "$PYTHON_CLI" remove-rustup-sources \
+    --manifest "$OUT_MANIFEST"
+  awk '
       BEGIN { in_patch=0; has_cmake=0; }
       {
         if (!in_patch) {
@@ -752,99 +746,93 @@ if [ -f "$OUT_MANIFEST" ]; then
           if (!has_cmake) { for (i=1;i<=buf_cnt;i++) print buf[i]; }
         }
       }
-    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+  ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
 
-    if [ -z "$FLUTTER_JSON" ]; then
-      FLUTTER_ARCHIVE_BASENAME="flutter_linux_${FLUTTER_TAG}-stable.tar.xz"
-      FLUTTER_ARCHIVE_SOURCE=""
+  if [ -z "$FLUTTER_JSON" ]; then
+    FLUTTER_ARCHIVE_BASENAME="flutter_linux_${FLUTTER_TAG}-stable.tar.xz"
+    FLUTTER_ARCHIVE_SOURCE=""
 
-      if [ -f "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" ]; then
+    if [ -f "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" ]; then
+      FLUTTER_ARCHIVE_SOURCE="$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME"
+    else
+      for root in \
+        "$FLATPAK_DIR/.flatpak-builder" \
+        "$LOTTI_ROOT/.flatpak-builder" \
+        "$(dirname "$LOTTI_ROOT")/.flatpak-builder"; do
+        [ -d "$root" ] || continue
+        candidate=$(find "$root" -type f -name "flutter_*${FLUTTER_TAG}*.tar.*" -print -quit 2>/dev/null || true)
+        if [ -n "$candidate" ]; then
+          FLUTTER_ARCHIVE_SOURCE="$candidate"
+          break
+        fi
+      done
+    fi
+
+    if [ -z "$FLUTTER_ARCHIVE_SOURCE" ] && [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
+      FLUTTER_ARCHIVE_URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_TAG}-stable.tar.xz"
+      print_info "Downloading Flutter archive ${FLUTTER_ARCHIVE_BASENAME}"
+      if curl -L --fail -o "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" "$FLUTTER_ARCHIVE_URL"; then
         FLUTTER_ARCHIVE_SOURCE="$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME"
       else
-        for root in \
-          "$FLATPAK_DIR/.flatpak-builder" \
-          "$LOTTI_ROOT/.flatpak-builder" \
-          "$(dirname "$LOTTI_ROOT")/.flatpak-builder"; do
-          [ -d "$root" ] || continue
-          candidate=$(find "$root" -type f -name "flutter_*${FLUTTER_TAG}*.tar.*" -print -quit 2>/dev/null || true)
-          if [ -n "$candidate" ]; then
-            FLUTTER_ARCHIVE_SOURCE="$candidate"
-            break
-          fi
-        done
+        print_warning "Failed to download Flutter archive from $FLUTTER_ARCHIVE_URL"
       fi
+    fi
 
-      if [ -z "$FLUTTER_ARCHIVE_SOURCE" ] && [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
-        FLUTTER_ARCHIVE_URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_TAG}-stable.tar.xz"
-        print_info "Downloading Flutter archive ${FLUTTER_ARCHIVE_BASENAME}"
-        if curl -L --fail -o "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" "$FLUTTER_ARCHIVE_URL"; then
-          FLUTTER_ARCHIVE_SOURCE="$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME"
-        else
-          print_warning "Failed to download Flutter archive from $FLUTTER_ARCHIVE_URL"
-        fi
+    if [ -n "$FLUTTER_ARCHIVE_SOURCE" ]; then
+      FLUTTER_ARCHIVE_BASENAME="$(basename "$FLUTTER_ARCHIVE_SOURCE")"
+      if [ "$FLUTTER_ARCHIVE_SOURCE" != "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" ]; then
+        cp -- "$FLUTTER_ARCHIVE_SOURCE" "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME"
       fi
+      FLUTTER_ARCHIVE_SHA256=$(sha256sum "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" | awk '{print $1}')
 
-      if [ -n "$FLUTTER_ARCHIVE_SOURCE" ]; then
-        FLUTTER_ARCHIVE_BASENAME="$(basename "$FLUTTER_ARCHIVE_SOURCE")"
-        if [ "$FLUTTER_ARCHIVE_SOURCE" != "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" ]; then
-          cp -- "$FLUTTER_ARCHIVE_SOURCE" "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME"
-        fi
-        FLUTTER_ARCHIVE_SHA256=$(sha256sum "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" | awk '{print $1}')
-
-        python3 "$PYTHON_CLI" convert-flutter-git-to-archive \
-          --manifest "$OUT_MANIFEST" \
-          --archive "$FLUTTER_ARCHIVE_BASENAME" \
-          --sha256 "$FLUTTER_ARCHIVE_SHA256"
-        print_info "Bundled Flutter archive ${FLUTTER_ARCHIVE_BASENAME} for offline builds"
-      else
-        print_warning "No cached Flutter archive found; flutter-sdk module will continue to reference upstream git"
-      fi
+      python3 "$PYTHON_CLI" convert-flutter-git-to-archive \
+        --manifest "$OUT_MANIFEST" \
+        --archive "$FLUTTER_ARCHIVE_BASENAME" \
+        --sha256 "$FLUTTER_ARCHIVE_SHA256"
+      print_info "Bundled Flutter archive ${FLUTTER_ARCHIVE_BASENAME} for offline builds"
+    else
+      print_warning "No cached Flutter archive found; flutter-sdk module will continue to reference upstream git"
     fi
   fi
 
-  # Offline Python artifacts (e.g., Jinja2, MarkupSafe) are handled generically
-  # by bundle-archive-sources below; no bespoke logic needed here.
-
-  if [ "$USE_OFFLINE_ARCHIVES" = "true" ]; then
-    print_info "Bundling cached archive and file sources referenced by manifest..."
-    if [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
-      python3 "$PYTHON_CLI" bundle-archive-sources \
-        --manifest "$OUT_MANIFEST" \
-        --output-dir "$OUTPUT_DIR" \
-        --download-missing \
-        --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
-        --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
-        --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
-    else
-      python3 "$PYTHON_CLI" bundle-archive-sources \
-        --manifest "$OUT_MANIFEST" \
-        --output-dir "$OUTPUT_DIR" \
-        --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
-        --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
-        --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
-    fi
+  # Bundle all archive and file sources for offline builds (required by Flathub)
+  print_info "Bundling cached archive and file sources referenced by manifest..."
+  if [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
+    python3 "$PYTHON_CLI" bundle-archive-sources \
+      --manifest "$OUT_MANIFEST" \
+      --output-dir "$OUTPUT_DIR" \
+      --download-missing \
+      --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
+      --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
+      --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
+  else
+    python3 "$PYTHON_CLI" bundle-archive-sources \
+      --manifest "$OUT_MANIFEST" \
+      --output-dir "$OUTPUT_DIR" \
+      --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
+      --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
+      --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
   fi
 
   python3 "$PYTHON_CLI" rewrite-flutter-git-url \
     --manifest "$OUT_MANIFEST"
 
-  if [ "$USE_OFFLINE_APP_SOURCE" = "true" ]; then
-    LOTT_ARCHIVE_NAME="lotti-${APP_COMMIT}.tar.xz"
-    LOTT_ARCHIVE_PATH="$OUTPUT_DIR/$LOTT_ARCHIVE_NAME"
+  # Bundle app source as archive for offline builds (required by Flathub)
+  LOTT_ARCHIVE_NAME="lotti-${APP_COMMIT}.tar.xz"
+  LOTT_ARCHIVE_PATH="$OUTPUT_DIR/$LOTT_ARCHIVE_NAME"
 
-    if [ ! -f "$LOTT_ARCHIVE_PATH" ]; then
-      print_info "Creating archived app source ${LOTT_ARCHIVE_NAME}"
-      git -C "$LOTTI_ROOT" archive --format=tar --prefix=lotti/ "$APP_COMMIT" | xz > "$LOTT_ARCHIVE_PATH"
-    fi
-
-    LOTT_ARCHIVE_SHA256=$(sha256sum "$LOTT_ARCHIVE_PATH" | awk '{print $1}')
-
-    python3 "$PYTHON_CLI" bundle-app-archive \
-      --manifest "$OUT_MANIFEST" \
-      --archive "$LOTT_ARCHIVE_NAME" \
-      --sha256 "$LOTT_ARCHIVE_SHA256" \
-      --output-dir "$OUTPUT_DIR"
+  if [ ! -f "$LOTT_ARCHIVE_PATH" ]; then
+    print_info "Creating archived app source ${LOTT_ARCHIVE_NAME}"
+    git -C "$LOTTI_ROOT" archive --format=tar --prefix=lotti/ "$APP_COMMIT" | xz > "$LOTT_ARCHIVE_PATH"
   fi
+
+  LOTT_ARCHIVE_SHA256=$(sha256sum "$LOTT_ARCHIVE_PATH" | awk '{print $1}')
+
+  python3 "$PYTHON_CLI" bundle-app-archive \
+    --manifest "$OUT_MANIFEST" \
+    --archive "$LOTT_ARCHIVE_NAME" \
+    --sha256 "$LOTT_ARCHIVE_SHA256" \
+    --output-dir "$OUTPUT_DIR"
 fi
 
 # Final validation: ensure the manifest to be submitted is commit-pinned (no branch:, no COMMIT_PLACEHOLDER)
