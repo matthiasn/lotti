@@ -195,55 +195,75 @@ def ensure_lotti_network_share(document: ManifestDocument) -> OperationResult:
     return OperationResult.unchanged()
 
 
+def _update_append_path(build_options: dict, rust_bin: str, rustup_bin: str) -> bool:
+    """Update append-path with Rust SDK directories."""
+    append_current = str(build_options.get("append-path", ""))
+    append_entries = [e for e in append_current.split(":") if e]
+
+    changed = False
+    for entry in (rust_bin, rustup_bin):
+        if entry not in append_entries:
+            append_entries.append(entry)
+            changed = True
+
+    if changed:
+        build_options["append-path"] = ":".join(append_entries) if append_entries else rust_bin
+
+    return changed
+
+
+def _update_env_path(env: dict, rust_bin: str, rustup_bin: str) -> bool:
+    """Update env.PATH with Rust SDK directories in proper order."""
+    path_current = str(env.get("PATH", ""))
+    path_entries = [e for e in path_current.split(":") if e]
+
+    # Remove existing entries and prepend in desired order
+    original_len = len(path_entries)
+    path_entries = [e for e in path_entries if e not in (rustup_bin, rust_bin)]
+    path_entries = [rustup_bin, rust_bin] + path_entries
+
+    if len(path_entries) != original_len or not env.get("PATH", "").startswith(rustup_bin):
+        env["PATH"] = ":".join(path_entries)
+        return True
+    return False
+
+
+def _update_rustup_home(env: dict) -> bool:
+    """Ensure RUSTUP_HOME is set for tool expectations."""
+    if env.get("RUSTUP_HOME") != "/var/lib/rustup":
+        env["RUSTUP_HOME"] = "/var/lib/rustup"
+        return True
+    return False
+
+
 def ensure_rust_sdk_env(document: ManifestDocument) -> OperationResult:
     """Ensure /usr/lib/sdk/rust-stable/bin is available on PATH for lotti.
 
     This prefers the Rust SDK extension over rustup to avoid network access.
     """
-
     rust_bin = "/usr/lib/sdk/rust-stable/bin"
     rustup_bin = "/var/lib/rustup/bin"
+
     modules = document.ensure_modules()
     changed = False
+
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
+
         build_options = module.setdefault("build-options", {})
 
-        # append-path
-        append_current = str(build_options.get("append-path", ""))
-        append_entries = [e for e in append_current.split(":") if e]
-        # Ensure Rust SDK and rustup bins are in append-path
-        changed_local = False
-        for entry in (rust_bin, rustup_bin):
-            if entry not in append_entries:
-                append_entries.append(entry)
-                changed_local = True
-        if changed_local:
-            if append_entries:
-                build_options["append-path"] = ":".join(append_entries)
-            else:
-                build_options["append-path"] = rust_bin
+        # Update append-path
+        if _update_append_path(build_options, rust_bin, rustup_bin):
             changed = True
 
-        # env.PATH
+        # Update env.PATH and RUSTUP_HOME
         env = build_options.setdefault("env", {})
-        path_current = str(env.get("PATH", ""))
-        path_entries = [e for e in path_current.split(":") if e]
-        # Ensure PATH begins with rustup, then rust SDK bin (stable order)
-        # Remove any existing occurrences first, then prepend in desired order.
-        original_len = len(path_entries)
-        path_entries = [e for e in path_entries if e not in (rustup_bin, rust_bin)]
-        path_entries = [rustup_bin, rust_bin] + path_entries
-        if len(path_entries) != original_len or not env.get("PATH", "").startswith(
-            rustup_bin
-        ):
-            env["PATH"] = ":".join(path_entries)
+        if _update_env_path(env, rust_bin, rustup_bin):
             changed = True
-        # Ensure RUSTUP_HOME is set for tool expectations
-        if env.get("RUSTUP_HOME") != "/var/lib/rustup":
-            env["RUSTUP_HOME"] = "/var/lib/rustup"
+        if _update_rustup_home(env):
             changed = True
+
         break
 
     if changed:
@@ -323,26 +343,13 @@ def ensure_setup_helper_source(
     return OperationResult.unchanged()
 
 
-def ensure_setup_helper_command(
-    document: ManifestDocument,
-    *,
-    helper_name: str,
-    working_dir: str,
-    enable_debug: bool = False,  # Disabled by default, can be enabled via env var
-) -> OperationResult:
-    """Ensure lotti build-commands invoke the setup helper with the desired working dir.
+def _build_setup_helper_command(
+    helper_name: str, working_dir: str, enable_debug: bool = False
+) -> str:
+    """Build the setup helper command with resolver and execution logic.
 
-    Args:
-        document: The manifest document to modify
-        helper_name: Name of the helper script (e.g., "setup-flutter.sh")
-        working_dir: Working directory to pass to the helper
-        enable_debug: Whether to include debug output (default: False)
+    This is extracted to reduce complexity of ensure_setup_helper_command.
     """
-    # Allow environment variable to enable debug mode
-    import os
-
-    if os.environ.get("FLATPAK_HELPER_DEBUG", "").lower() in ("1", "true", "yes"):
-        enable_debug = True
 
     def _get_resolver_command(helper_name: str) -> str:
         """Get the helper resolver command."""
@@ -382,36 +389,87 @@ def ensure_setup_helper_command(
     resolver = _get_resolver_command(helper_name)
     exec_cmd = _get_exec_command(working_dir)
 
-    desired_command = debug + resolver + exec_cmd
+    return debug + resolver + exec_cmd
 
+
+def _update_lotti_build_commands(
+    module: dict, helper_name: str, desired_command: str
+) -> bool:
+    """Update the build commands for the lotti module.
+
+    Returns True if changes were made.
+    """
+    commands = module.get("build-commands")
+    if not isinstance(commands, list):
+        commands = []
+
+    normalized: list[str] = []
+    present = False
+
+    # Normalize existing commands
+    for raw in commands:
+        command = str(raw)
+        if helper_name in command:
+            command = desired_command
+        if command.strip() == desired_command:
+            present = True
+        normalized.append(command)
+
+    # Add command if not present
+    if not present:
+        insertion_index = _find_insertion_index(normalized)
+        normalized.insert(insertion_index, desired_command)
+
+    # Update module if changed
+    if normalized != commands:
+        module["build-commands"] = normalized
+        return True
+    return False
+
+
+def _find_insertion_index(commands: list[str]) -> int:
+    """Find the best index to insert the setup helper command."""
+    for idx, command in enumerate(commands):
+        if "flutter " in command:
+            return idx
+    return len(commands)
+
+
+def ensure_setup_helper_command(
+    document: ManifestDocument,
+    *,
+    helper_name: str,
+    working_dir: str,
+    enable_debug: bool = False,  # Disabled by default, can be enabled via env var
+) -> OperationResult:
+    """Ensure lotti build-commands invoke the setup helper with the desired working dir.
+
+    Args:
+        document: The manifest document to modify
+        helper_name: Name of the helper script (e.g., "setup-flutter.sh")
+        working_dir: Working directory to pass to the helper
+        enable_debug: Whether to include debug output (default: False)
+    """
+    # Allow environment variable to enable debug mode
+    import os
+
+    if os.environ.get("FLATPAK_HELPER_DEBUG", "").lower() in ("1", "true", "yes"):
+        enable_debug = True
+
+    # Build the desired command
+    desired_command = _build_setup_helper_command(
+        helper_name, working_dir, enable_debug
+    )
+
+    # Find and update the lotti module
     modules = document.ensure_modules()
     changed = False
+
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
-        commands = module.get("build-commands")
-        if not isinstance(commands, list):
-            commands = []
-        normalized: list[str] = []
-        present = False
-        for raw in commands:
-            command = str(raw)
-            if helper_name in command:
-                command = desired_command
-            if command.strip() == desired_command:
-                present = True
-            normalized.append(command)
-        if not present:
-            insertion_index = 0
-            for idx, command in enumerate(normalized):
-                if "flutter " in command:
-                    insertion_index = idx
-                    break
-                insertion_index = idx + 1
-            normalized.insert(insertion_index, desired_command)
-        if normalized != commands:
-            module["build-commands"] = normalized
-            changed = True
+
+        changed = _update_lotti_build_commands(module, helper_name, desired_command)
         break
 
     if changed:
@@ -456,6 +514,47 @@ def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
     return OperationResult.unchanged()
 
 
+def _convert_flutter_sdk_sources(
+    module: dict, archive_name: str, sha256: str
+) -> bool:
+    """Convert flutter-sdk module git sources to archive."""
+    changed = False
+    for source in module.setdefault("sources", []):
+        if isinstance(source, dict) and source.get("type") == "git":
+            source["type"] = "archive"
+            source["path"] = archive_name
+            source["sha256"] = sha256
+            source.pop("url", None)
+            source.pop("branch", None)
+            source.pop("tag", None)
+            changed = True
+    return changed
+
+
+def _remove_lotti_flutter_git_sources(module: dict) -> bool:
+    """Remove flutter git sources from lotti module."""
+    sources = module.get("sources", [])
+    if not isinstance(sources, list):
+        return False
+
+    filtered = []
+    removed = False
+    for source in sources:
+        if (
+            isinstance(source, dict)
+            and source.get("type") == "git"
+            and source.get("dest") == "flutter"
+        ):
+            removed = True
+            continue
+        filtered.append(source)
+
+    if removed:
+        module["sources"] = filtered
+        return True
+    return False
+
+
 def convert_flutter_git_to_archive(
     document: ManifestDocument,
     *,
@@ -466,38 +565,19 @@ def convert_flutter_git_to_archive(
 
     modules = document.ensure_modules()
     changed = False
+
     for module in modules:
         if not isinstance(module, dict):
             continue
+
         name = module.get("name")
         if name == "flutter-sdk":
-            for source in module.setdefault("sources", []):
-                if isinstance(source, dict) and source.get("type") == "git":
-                    source["type"] = "archive"
-                    source["path"] = archive_name
-                    source["sha256"] = sha256
-                    source.pop("url", None)
-                    source.pop("branch", None)
-                    source.pop("tag", None)
-                    changed = True
-        elif name == "lotti":
-            sources = module.get("sources", [])
-            if not isinstance(sources, list):
-                continue
-            filtered = []
-            removed = False
-            for source in sources:
-                if (
-                    isinstance(source, dict)
-                    and source.get("type") == "git"
-                    and source.get("dest") == "flutter"
-                ):
-                    removed = True
-                    continue
-                filtered.append(source)
-            if removed:
-                module["sources"] = filtered
+            if _convert_flutter_sdk_sources(module, archive_name, sha256):
                 changed = True
+        elif name == "lotti":
+            if _remove_lotti_flutter_git_sources(module):
+                changed = True
+
     if changed:
         document.mark_changed()
         message = f"Converted flutter git source to archive {archive_name}"
@@ -594,6 +674,49 @@ def _add_build_sources(sources: list, output_path: Path) -> None:
             sources.append(helper_source)
 
 
+def _remove_flutter_sdk_if_nested(
+    document: ManifestDocument, modules: list, extra_modules: list
+) -> tuple[list, bool, str | None]:
+    """Remove top-level flutter-sdk module if nested modules exist."""
+    if not extra_modules:
+        return modules, False, None
+
+    filtered_modules = [
+        module
+        for module in modules
+        if not (isinstance(module, dict) and module.get("name") == "flutter-sdk")
+    ]
+
+    if filtered_modules != modules:
+        document.data["modules"] = filtered_modules
+        return filtered_modules, True, "Removed top-level flutter-sdk in favor of nested modules"
+
+    return modules, False, None
+
+
+def _process_lotti_module(
+    module: dict, archive_name: str, sha256: str, output_path: Path, extra_modules: list
+) -> bool:
+    """Process the lotti module to add archive and build sources."""
+    # Get or create sources list
+    sources = module.setdefault("sources", [])
+    if not isinstance(sources, list):
+        sources = []
+        module["sources"] = sources
+
+    # Replace git source with archive or add archive
+    _replace_or_add_archive_source(sources, archive_name, sha256)
+
+    # Add build-related sources
+    _add_build_sources(sources, output_path)
+
+    # Add nested modules if they exist
+    if extra_modules:
+        module["modules"] = extra_modules
+
+    return True
+
+
 def bundle_app_archive(
     document: ManifestDocument,
     *,
@@ -609,41 +732,22 @@ def bundle_app_archive(
     changed = False
 
     # Remove top-level flutter-sdk if nested modules exist
-    if extra_modules:
-        filtered_modules = [
-            module
-            for module in modules
-            if not (isinstance(module, dict) and module.get("name") == "flutter-sdk")
-        ]
-        if filtered_modules != modules:
-            document.data["modules"] = filtered_modules
-            modules = filtered_modules
-            changed = True
-            messages.append("Removed top-level flutter-sdk in favor of nested modules")
+    modules, sdk_removed, sdk_message = _remove_flutter_sdk_if_nested(
+        document, modules, extra_modules
+    )
+    if sdk_removed:
+        changed = True
+        if sdk_message:
+            messages.append(sdk_message)
 
     # Process lotti module
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
 
-        # Get or create sources list
-        sources = module.setdefault("sources", [])
-        if not isinstance(sources, list):
-            sources = []
-            module["sources"] = sources
-
-        # Replace git source with archive or add archive
-        _replace_or_add_archive_source(sources, archive_name, sha256)
-
-        # Add build-related sources
-        _add_build_sources(sources, output_path)
-
-        # Add nested modules if they exist
-        if extra_modules:
-            module["modules"] = extra_modules
-
-        changed = True
-        messages.append(f"Bundled app archive {archive_name}")
+        if _process_lotti_module(module, archive_name, sha256, output_path, extra_modules):
+            changed = True
+            messages.append(f"Bundled app archive {archive_name}")
         break
 
     if changed:

@@ -223,6 +223,31 @@ class ArtifactCache:
         return None
 
 
+def _add_string_sources(
+    sources: list[object],
+    existing_strings: set[str],
+    entries: list[Optional[str]],
+) -> list[str]:
+    """Add string source entries and return list of added strings."""
+    added_strings: list[str] = []
+    for entry in entries:
+        if _ensure_string_entry(sources, entry, existing_strings):  # type: ignore
+            added_strings.append(entry)  # type: ignore[arg-type]
+    return added_strings
+
+
+def _build_result_messages(added_strings: list[str], flutter_file: Optional[str]) -> list[str]:
+    """Build result messages for the operation."""
+    messages: list[str] = []
+    if added_strings:
+        messages.append(
+            f"Added offline source references: {', '.join([s for s in added_strings if s])}"
+        )
+    if flutter_file:
+        messages.append(f"Ensured helper file {flutter_file} available in sources")
+    return messages
+
+
 def add_offline_sources(
     document: ManifestDocument,
     *,
@@ -240,33 +265,22 @@ def add_offline_sources(
 
     sources = target.setdefault("sources", [])
     existing_strings = {source for source in sources if isinstance(source, str)}
-    added_strings: list[str] = []
-    changed = False
 
-    # Normalize rustup list
+    # Prepare entries list
     rustup_list = [entry for entry in (rustup or []) if entry]
+    entries = [pubspec, cargo, *rustup_list]
 
-    # Ensure string-based source entries
-    for entry in [pubspec, cargo, *rustup_list]:
-        if _ensure_string_entry(sources, entry, existing_strings):
-            added_strings.append(entry)  # type: ignore[arg-type]
-            changed = True
+    # Add string sources
+    added_strings = _add_string_sources(sources, existing_strings, entries)
 
     # Ensure helper file entry
-    if _ensure_file_entry(sources, flutter_file):
-        changed = True
+    file_changed = _ensure_file_entry(sources, flutter_file)
 
-    if not changed:
+    if not added_strings and not file_changed:
         return OperationResult.unchanged()
 
     document.mark_changed()
-    messages: list[str] = []
-    if added_strings:
-        messages.append(
-            f"Added offline source references: {', '.join([s for s in added_strings if s])}"
-        )
-    if flutter_file:
-        messages.append(f"Ensured helper file {flutter_file} available in sources")
+    messages = _build_result_messages(added_strings, flutter_file if file_changed else None)
     for message in messages:
         _LOGGER.debug(message)
     return OperationResult(changed=True, messages=messages)
@@ -339,6 +353,35 @@ def _bundle_single_source(
 _RUSTUP_JSON_RE = re.compile(r"^rustup-.*\.json$")
 
 
+def _is_rustup_source(src: object) -> bool:
+    """Check if a source is a rustup JSON reference."""
+    if isinstance(src, str):
+        return _RUSTUP_JSON_RE.match(src) is not None
+    if isinstance(src, dict) and src.get("type") == "file":
+        path = str(src.get("path", ""))
+        return _RUSTUP_JSON_RE.match(path) is not None
+    return False
+
+
+def _filter_rustup_from_module(module: dict) -> tuple[int, bool]:
+    """Filter rustup sources from a module.
+
+    Returns:
+        Tuple of (number removed, whether module was changed)
+    """
+    sources = module.get("sources")
+    if not isinstance(sources, list):
+        return 0, False
+
+    filtered = [src for src in sources if not _is_rustup_source(src)]
+    removed = len(sources) - len(filtered)
+
+    if removed > 0:
+        module["sources"] = filtered
+        return removed, True
+    return 0, False
+
+
 def remove_rustup_sources(document: ManifestDocument) -> OperationResult:
     """Remove any rustup-*.json entries from module sources.
 
@@ -351,26 +394,13 @@ def remove_rustup_sources(document: ManifestDocument) -> OperationResult:
     for module in modules:
         if not isinstance(module, dict):
             continue
-        sources = module.get("sources")
-        if not isinstance(sources, list):
-            continue
-        filtered: list = []
-        removed = 0
-        for src in sources:
-            if isinstance(src, str) and _RUSTUP_JSON_RE.match(src):
-                removed += 1
-                continue
-            if isinstance(src, dict) and src.get("type") == "file":
-                path = str(src.get("path", ""))
-                if _RUSTUP_JSON_RE.match(path):
-                    removed += 1
-                    continue
-            filtered.append(src)
-        if removed:
-            module["sources"] = filtered
+
+        removed, module_changed = _filter_rustup_from_module(module)
+        if module_changed:
             changed = True
+            module_name = module.get('name', '<unnamed>')
             messages.append(
-                f"Removed {removed} rustup JSON reference(s) from module {module.get('name')}"
+                f"Removed {removed} rustup JSON reference(s) from module {module_name}"
             )
 
     if changed:

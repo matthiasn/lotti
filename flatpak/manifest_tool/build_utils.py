@@ -14,6 +14,67 @@ except ImportError:  # pragma: no cover
 _LOGGER = utils.get_logger("build_utils")
 
 
+def _should_skip_directory(
+    current_path: Path, exclude_set: set[Path]
+) -> bool:
+    """Check if a directory should be skipped based on exclusions."""
+    current_resolved = current_path.resolve()
+    for excluded in exclude_set:
+        try:
+            # Check if current path is inside an excluded directory
+            current_resolved.relative_to(excluded)
+            return True
+        except ValueError:
+            # Not a subdirectory
+            continue
+    return False
+
+
+def _is_valid_flutter_sdk(current_path: Path) -> bool:
+    """Check if a directory contains a valid Flutter SDK."""
+    flutter_bin = current_path / "bin" / "flutter"
+    if not (flutter_bin.is_file() and os.access(flutter_bin, os.X_OK)):
+        return False
+
+    # Verify it's a valid Flutter SDK by checking for other expected files
+    dart_bin = current_path / "bin" / "dart"
+    packages_dir = current_path / "packages"
+    return dart_bin.exists() and packages_dir.is_dir()
+
+
+def _search_flutter_in_root(
+    root: Path, exclude_set: set[Path], max_depth: int
+) -> Optional[Path]:
+    """Search for Flutter SDK in a single root directory."""
+    if not root.exists():
+        return None
+
+    for dirpath, dirnames, filenames in os.walk(root):
+        current_path = Path(dirpath)
+
+        # Calculate depth
+        try:
+            depth = len(current_path.relative_to(root).parts)
+        except ValueError:
+            continue
+
+        if depth > max_depth:
+            dirnames[:] = []  # Don't recurse deeper
+            continue
+
+        # Skip excluded directories
+        if _should_skip_directory(current_path, exclude_set):
+            dirnames[:] = []  # Don't recurse into excluded dirs
+            continue
+
+        # Check if this is a Flutter SDK directory
+        if _is_valid_flutter_sdk(current_path):
+            _LOGGER.debug("Found Flutter SDK at %s", current_path)
+            return current_path
+
+    return None
+
+
 def find_flutter_sdk(
     *,
     search_roots: Iterable[Path],
@@ -36,49 +97,9 @@ def find_flutter_sdk(
             exclude_set.add(path.resolve())
 
     for root in search_roots:
-        if not root.exists():
-            continue
-
-        # Use os.walk with depth limit for better control
-        for dirpath, dirnames, filenames in os.walk(root):
-            current_path = Path(dirpath)
-
-            # Calculate depth
-            try:
-                depth = len(current_path.relative_to(root).parts)
-            except ValueError:
-                continue
-
-            if depth > max_depth:
-                dirnames[:] = []  # Don't recurse deeper
-                continue
-
-            # Skip excluded directories and their subdirectories
-            current_resolved = current_path.resolve()
-            skip = False
-            for excluded in exclude_set:
-                try:
-                    # Check if current path is inside an excluded directory
-                    current_resolved.relative_to(excluded)
-                    skip = True
-                    break
-                except ValueError:
-                    # Not a subdirectory
-                    continue
-
-            if skip:
-                dirnames[:] = []  # Don't recurse into excluded dirs
-                continue
-
-            # Check if this is a Flutter SDK directory
-            flutter_bin = current_path / "bin" / "flutter"
-            if flutter_bin.is_file() and os.access(flutter_bin, os.X_OK):
-                # Verify it's a valid Flutter SDK by checking for other expected files
-                dart_bin = current_path / "bin" / "dart"
-                packages_dir = current_path / "packages"
-                if dart_bin.exists() and packages_dir.is_dir():
-                    _LOGGER.debug("Found Flutter SDK at %s", current_path)
-                    return current_path
+        found = _search_flutter_in_root(root, exclude_set, max_depth)
+        if found:
+            return found
 
     return None
 

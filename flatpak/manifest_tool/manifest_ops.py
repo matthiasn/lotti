@@ -19,6 +19,45 @@ _DEFAULT_REPO_URLS: tuple[str, ...] = (
 _LOGGER = utils.get_logger("manifest_ops")
 
 
+def _ensure_flutter_sdk_helper(module: dict, helper_name: str) -> bool:
+    """Ensure flutter-sdk module has the setup helper."""
+    sources = module.setdefault("sources", [])
+    has_helper = any(
+        isinstance(source, dict)
+        and source.get("dest-filename") == "setup-flutter.sh"
+        for source in sources
+    )
+
+    if not has_helper:
+        sources.append(
+            {
+                "type": "file",
+                "path": helper_name,
+                "dest": "flutter/bin",
+                "dest-filename": "setup-flutter.sh",
+            }
+        )
+        return True
+    return False
+
+
+def _ensure_lotti_flutter_path(module: dict) -> bool:
+    """Ensure lotti module PATH includes /app/flutter/bin."""
+    build_options = module.setdefault("build-options", {})
+    env = build_options.setdefault("env", {})
+    current_path = env.get("PATH", "")
+    entries = [entry for entry in current_path.split(":") if entry]
+
+    if "/app/flutter/bin" not in entries:
+        env["PATH"] = (
+            f"/app/flutter/bin:{current_path}"
+            if current_path
+            else "/app/flutter/bin"
+        )
+        return True
+    return False
+
+
 def ensure_flutter_setup_helper(
     document: ManifestDocument,
     *,
@@ -28,37 +67,17 @@ def ensure_flutter_setup_helper(
 
     modules = document.ensure_modules()
     changed = False
+
     for module in modules:
         if not isinstance(module, dict):
             continue
+
         name = module.get("name")
         if name == "flutter-sdk":
-            sources = module.setdefault("sources", [])
-            if not any(
-                isinstance(source, dict)
-                and source.get("dest-filename") == "setup-flutter.sh"
-                for source in sources
-            ):
-                sources.append(
-                    {
-                        "type": "file",
-                        "path": helper_name,
-                        "dest": "flutter/bin",
-                        "dest-filename": "setup-flutter.sh",
-                    }
-                )
+            if _ensure_flutter_sdk_helper(module, helper_name):
                 changed = True
         elif name == "lotti":
-            build_options = module.setdefault("build-options", {})
-            env = build_options.setdefault("env", {})
-            current_path = env.get("PATH", "")
-            entries = [entry for entry in current_path.split(":") if entry]
-            if "/app/flutter/bin" not in entries:
-                env["PATH"] = (
-                    f"/app/flutter/bin:{current_path}"
-                    if current_path
-                    else "/app/flutter/bin"
-                )
+            if _ensure_lotti_flutter_path(module):
                 changed = True
 
     if changed:
@@ -66,6 +85,47 @@ def ensure_flutter_setup_helper(
         _LOGGER.debug("Ensured setup helper %s is present", helper_name)
         return OperationResult.changed_result(f"Ensured setup helper {helper_name}")
     return OperationResult.unchanged()
+
+
+def _get_normalized_targets(repo_urls: Sequence[str] | None) -> set[str]:
+    """Get normalized target URLs for comparison."""
+    if repo_urls is None:
+        return {url.rstrip(".git") for url in _DEFAULT_REPO_URLS}
+    return {url.rstrip(".git") for url in repo_urls}
+
+
+def _should_pin_source(
+    source: dict, normalized_targets: set[str], commit: str
+) -> bool:
+    """Check if a source should be pinned to a commit."""
+    if not isinstance(source, dict):
+        return False
+    if source.get("type") != "git":
+        return False
+
+    # Normalize source URL by removing trailing .git
+    url = (source.get("url") or "").rstrip(".git")
+    if url not in normalized_targets:
+        return False
+
+    # Already pinned correctly
+    if source.get("commit") == commit and "branch" not in source:
+        return False
+
+    return True
+
+
+def _pin_lotti_sources(
+    module: dict, commit: str, normalized_targets: set[str]
+) -> bool:
+    """Pin git sources in lotti module to specified commit."""
+    changed = False
+    for source in module.get("sources", []):
+        if _should_pin_source(source, normalized_targets, commit):
+            source["commit"] = commit
+            source.pop("branch", None)
+            changed = True
+    return changed
 
 
 def pin_commit(
@@ -76,34 +136,17 @@ def pin_commit(
 ) -> OperationResult:
     """Replace lotti git source commit with ``commit`` and drop branch keys."""
 
-    # Normalize target URLs by removing trailing .git
-    normalized_targets: set[str]
-    if repo_urls is None:
-        normalized_targets = {url.rstrip(".git") for url in _DEFAULT_REPO_URLS}
-    else:
-        normalized_targets = {url.rstrip(".git") for url in repo_urls}
-
+    normalized_targets = _get_normalized_targets(repo_urls)
     modules = document.ensure_modules()
-
     changed = False
+
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
-        for source in module.get("sources", []):
-            if not isinstance(source, dict):
-                continue
-            # Only process git sources
-            if source.get("type") != "git":
-                continue
-            # Normalize source URL by removing trailing .git
-            url = (source.get("url") or "").rstrip(".git")
-            if url not in normalized_targets:
-                continue
-            if source.get("commit") == commit and "branch" not in source:
-                continue
-            source["commit"] = commit
-            source.pop("branch", None)
+        if _pin_lotti_sources(module, commit, normalized_targets):
             changed = True
+        break  # Only process lotti module
+
     if changed:
         document.mark_changed()
         _LOGGER.debug("Pinned lotti module to commit %s", commit)
