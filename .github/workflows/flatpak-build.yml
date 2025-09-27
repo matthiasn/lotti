@@ -87,7 +87,12 @@ jobs:
     - name: Build Flatpak
       run: |
         cd flatpak
-        flatpak-builder --verbose --force-clean --repo=repo build-dir com.matthiasn.lotti.yml
+        flatpak-builder --verbose --install --force-clean --repo=repo build-dir com.matthiasn.lotti.yml
+
+    - name: Verify Flatpak (post-build)
+      run: |
+        flatpak --version
+        flatpak list
 
     - name: Create Flatpak bundle
       run: |
