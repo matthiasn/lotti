@@ -19,7 +19,8 @@ except ImportError:  # pragma: no cover
     from manifest import ManifestDocument, OperationResult  # type: ignore
 
 _LOGGER = utils.get_logger("sources_ops")
-_ALLOWED_URL_SCHEMES = {"http", "https"}
+# Only allow explicit https downloads; reject http, file, or custom schemes.
+_ALLOWED_URL_SCHEMES = {"https"}
 
 
 def replace_url_with_path_text(
@@ -107,7 +108,10 @@ class ArtifactCache:
 
         destination.parent.mkdir(parents=True, exist_ok=True)
         try:
-            with urllib.request.urlopen(source_url) as response, open(
+            # nosec B310: urlopen is guarded by strict scheme whitelist above
+            with urllib.request.urlopen(
+                source_url, timeout=30
+            ) as response, open(  # nosec B310
                 destination, "wb"
             ) as handle:
                 shutil.copyfileobj(response, handle)
