@@ -36,6 +36,20 @@ def test_replace_url_with_path(tmp_path: Path):
     assert "path: file.dat" in manifest_path.read_text(encoding="utf-8")
 
 
+def test_replace_url_with_path_noop(tmp_path: Path):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(
+        """sources:\n  - type: file\n    url: https://example.com/file.dat\n""",
+        encoding="utf-8",
+    )
+    result = sources_ops.replace_url_with_path(
+        manifest_path=str(manifest_path),
+        identifier="other.dat",
+        path_value="other.dat",
+    )
+    assert result is False
+
+
 def test_add_offline_sources(make_document):
     document = make_document()
     result = sources_ops.add_offline_sources(
@@ -90,6 +104,16 @@ def test_artifact_cache_reports_missing(tmp_path: Path):
     local_path, messages = cache.ensure_local("missing.dat", "https://example.com/missing.dat")
     assert local_path is None
     assert messages == ["MISSING missing.dat https://example.com/missing.dat"]
+
+
+def test_artifact_cache_bundles_from_search_roots(tmp_path: Path):
+    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[tmp_path / "root"]) 
+    (tmp_path / "root").mkdir()
+    (tmp_path / "root" / "archive.tar.gz").write_text("data", encoding="utf-8")
+    local_path, messages = cache.ensure_local("archive.tar.gz", "https://example.com/archive.tar.gz")
+    assert local_path is not None
+    assert (tmp_path / "out" / "archive.tar.gz").exists()
+    assert any(m.startswith("BUNDLE archive.tar.gz") for m in messages)
 
 
 def test_artifact_cache_rejects_unsupported_scheme(tmp_path: Path):
@@ -149,6 +173,12 @@ def test_bundle_single_source_converts_url(tmp_path: Path):
     assert source["path"] == "archive.tar.gz"
     assert "url" not in source
     assert messages == ["FETCH"]
+
+
+def test_remove_rustup_sources_idempotent(make_document):
+    document = make_document()
+    result = sources_ops.remove_rustup_sources(document)
+    assert not result.changed
 
 
 def test_remove_rustup_sources(make_document):

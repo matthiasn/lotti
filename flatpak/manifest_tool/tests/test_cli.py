@@ -3,6 +3,8 @@ from __future__ import annotations
 import yaml
 
 from flatpak.manifest_tool import cli
+from pathlib import Path
+import json
 from flatpak.manifest_tool.tests.conftest import SAMPLE_MANIFEST
 
 
@@ -127,3 +129,272 @@ def test_cli_ensure_module_include_before_lotti(tmp_path, capsys):
     idx_mod = next(i for i, m in enumerate(modules) if m == mod_name)
     idx_lotti = next(i for i, m in enumerate(modules) if isinstance(m, dict) and m.get("name") == "lotti")
     assert idx_mod < idx_lotti
+
+
+def test_cli_replace_url_with_path(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(
+        """
+modules:
+  - name: lotti
+    sources:
+      - type: file
+        url: https://example.com/file.dat
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main([
+        "replace-url-with-path",
+        "--manifest",
+        str(manifest_path),
+        "--identifier",
+        "file.dat",
+        "--path",
+        "file.dat",
+    ])
+    assert exit_code == 0
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    source = data["modules"][0]["sources"][0]
+    assert source.get("path") == "file.dat"
+    assert "url" not in source
+
+
+def test_cli_ensure_setup_helper(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
+    exit_code = cli.main([
+        "ensure-setup-helper",
+        "--manifest",
+        str(manifest_path),
+        "--helper",
+        "setup-flutter.sh",
+    ])
+    assert exit_code == 0
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    flutter = next(m for m in data["modules"] if m.get("name") == "flutter-sdk")
+    assert any(
+        isinstance(s, dict)
+        and s.get("type") == "file"
+        and s.get("path") == "setup-flutter.sh"
+        and s.get("dest") == "flutter/bin"
+        for s in flutter.get("sources", [])
+    )
+    lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
+    assert lotti["build-options"]["env"]["PATH"].startswith("/app/flutter/bin")
+
+
+def test_cli_ensure_lotti_setup_helper_idempotent(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
+    for _ in range(2):
+        assert (
+            cli.main([
+                "ensure-lotti-setup-helper",
+                "--manifest",
+                str(manifest_path),
+                "--layout",
+                "top",
+                "--helper",
+                "setup-flutter.sh",
+            ])
+            == 0
+        )
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
+    cmds = lotti.get("build-commands", [])
+    assert sum(1 for c in cmds if "setup-flutter.sh" in c) == 1
+
+
+def test_cli_ensure_lotti_setup_helper(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
+    exit_code = cli.main([
+        "ensure-lotti-setup-helper",
+        "--manifest",
+        str(manifest_path),
+        "--layout",
+        "top",
+        "--helper",
+        "setup-flutter.sh",
+    ])
+    assert exit_code == 0
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
+    cmds = lotti.get("build-commands", [])
+    assert any("setup-flutter.sh" in c for c in cmds)
+
+
+def test_cli_add_offline_sources(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
+    exit_code = cli.main([
+        "add-offline-sources",
+        "--manifest",
+        str(manifest_path),
+        "--pubspec",
+        "pubspec-sources.json",
+        "--cargo",
+        "cargo-sources.json",
+        "--flutter-json",
+        "flutter-sdk-3.35.4.json",
+    ])
+    assert exit_code == 0
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
+    assert "pubspec-sources.json" in lotti["sources"]
+    assert "cargo-sources.json" in lotti["sources"]
+    assert any(
+        isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.4.json"
+        for s in lotti["sources"]
+    )
+
+
+def test_cli_normalize_lotti_env_idempotent(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
+    for _ in range(2):
+        assert (
+            cli.main([
+                "normalize-lotti-env",
+                "--manifest",
+                str(manifest_path),
+                "--layout",
+                "top",
+                "--append-path",
+            ])
+            == 0
+        )
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
+    env_path = lotti["build-options"]["env"]["PATH"]
+    parts = [p for p in env_path.split(":") if p]
+    # /app/flutter/bin appears only once at the beginning
+    assert parts[0] == "/app/flutter/bin"
+    assert parts.count("/app/flutter/bin") == 1
+
+
+def test_cli_ensure_rust_sdk_env(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
+    exit_code = cli.main([
+        "ensure-rust-sdk-env",
+        "--manifest",
+        str(manifest_path),
+    ])
+    assert exit_code == 0
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
+    env_path = lotti["build-options"]["env"]["PATH"]
+    assert env_path.startswith("/var/lib/rustup/bin")
+    assert "/usr/lib/sdk/rust-stable/bin" in env_path
+
+
+def test_cli_ensure_rust_sdk_env_idempotent(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
+    for _ in range(2):
+        assert cli.main(["ensure-rust-sdk-env", "--manifest", str(manifest_path)]) == 0
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
+    env_path = lotti["build-options"]["env"]["PATH"]
+    parts = [p for p in env_path.split(":") if p]
+    assert parts[0] == "/var/lib/rustup/bin"
+    assert parts[1] == "/usr/lib/sdk/rust-stable/bin"
+    # No duplicates
+    assert parts.count("/var/lib/rustup/bin") == 1
+    assert parts.count("/usr/lib/sdk/rust-stable/bin") == 1
+
+
+def test_cli_remove_rustup_install(tmp_path, capsys):
+    data = yaml.safe_load(SAMPLE_MANIFEST)
+    for module in data["modules"]:
+        if module.get("name") == "lotti":
+            module["build-commands"] = [
+                "echo Installing Rust...",
+                "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal",
+                "export PATH=\"$HOME/.cargo/bin:$PATH\"",
+                "echo done",
+            ]
+            break
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+    exit_code = cli.main([
+        "remove-rustup-install",
+        "--manifest",
+        str(manifest_path),
+    ])
+    assert exit_code == 0
+    new_data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    cmds = next(m for m in new_data["modules"] if m.get("name") == "lotti")["build-commands"]
+    assert all("rustup" not in c and "cargo/bin" not in c for c in cmds)
+
+
+def test_cli_pr_aware_pin(tmp_path, capsys):
+    # Create a minimal PR event payload
+    payload = {
+        "pull_request": {
+            "head": {
+                "sha": "deadbeef",
+                "ref": "feature/x",
+                "repo": {"clone_url": "https://github.com/user/repo.git"},
+            }
+        }
+    }
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    exit_code = cli.main([
+        "pr-aware-pin",
+        "--event-name",
+        "pull_request",
+        "--event-path",
+        str(event_path),
+    ])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    # Parse assignments, tolerate optional quoting of values
+    pairs = [line.split("=", 1) for line in out.strip().splitlines() if "=" in line]
+    assigns = {k: v for k, v in pairs}
+    assert assigns.get("PR_MODE") == "true"
+    sha = assigns.get("PR_HEAD_SHA", "").strip("'\"")
+    assert sha == "deadbeef"
+
+
+def test_cli_ensure_module_include_idempotent(tmp_path, capsys):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
+    for _ in range(2):
+        assert (
+            cli.main([
+                "ensure-module-include",
+                "--manifest",
+                str(manifest_path),
+                "--name",
+                "rustup-1.83.0.json",
+                "--before",
+                "lotti",
+            ])
+            == 0
+        )
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    mods = data["modules"]
+    assert sum(1 for m in mods if m == "rustup-1.83.0.json") == 1
+
+
+def test_cli_remove_rustup_sources_global(tmp_path, capsys):
+    data = yaml.safe_load(SAMPLE_MANIFEST)
+    # Inject rustup under both flutter-sdk and lotti sources
+    for module in data["modules"]:
+        module.setdefault("sources", []).extend([
+            "rustup-1.83.0.json",
+            {"type": "file", "path": "rustup-1.83.0.json"},
+        ])
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+    assert cli.main(["remove-rustup-sources", "--manifest", str(manifest_path)]) == 0
+    new = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    for module in new["modules"]:
+        sources = module.get("sources", [])
+        assert "rustup-1.83.0.json" not in [s for s in sources if isinstance(s, str)]
+        assert not any(isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json" for s in sources)
