@@ -473,6 +473,46 @@ class GemmaModelManager:
             logger.error(f"Warm-up failed: {e}")
             raise
     
+    async def switch_model(self, model_id: str, variant: str) -> bool:
+        """
+        Thread-safe model switching that handles configuration updates.
+
+        Args:
+            model_id: The new model ID to switch to
+            variant: The model variant (E2B, E4B, etc.)
+
+        Returns:
+            True if switch was successful, False otherwise
+        """
+        async with self._lock:
+            try:
+                # Construct full model name with variant
+                full_model_id = f"google/gemma-3n-{variant}-it"
+
+                logger.info(f"Switching from {self.model_id} to {full_model_id}")
+
+                # Unload current model to free memory
+                if self.is_model_loaded():
+                    await self.unload_model()
+
+                # Update instance configuration
+                old_model_id = self.model_id
+                self.model_id = full_model_id
+
+                # Update ServiceConfig in a thread-safe way
+                # Note: We avoid modifying os.environ directly in concurrent context
+                ServiceConfig.MODEL_ID = full_model_id
+
+                # Update cache directory for new model
+                self.cache_dir = ServiceConfig.CACHE_DIR
+
+                logger.info(f"Model switched successfully: {old_model_id} -> {full_model_id}")
+                return True
+
+            except Exception as e:
+                logger.error(f"Failed to switch model: {e}")
+                return False
+
     async def get_model_info(self) -> Dict[str, Any]:
         """Get information about the current model."""
         info = {
@@ -487,14 +527,14 @@ class GemmaModelManager:
                 "quantized" in str(type(m)).lower() for m in self.model.modules()
             ) if self.is_model_loaded() else False,
         }
-        
+
         if self.is_model_available():
             model_path = ServiceConfig.get_model_path()
             # Get size of model files
             total_size = sum(f.stat().st_size for f in model_path.rglob("*") if f.is_file())
             info["size_bytes"] = total_size
             info["size_gb"] = round(total_size / (1024**3), 2)
-        
+
         return info
 
 

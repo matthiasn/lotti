@@ -216,26 +216,16 @@ async def chat_completion(request: ChatCompletionRequest):
                 # Switch server configuration to use the requested model
                 configured_model = ServiceConfig.MODEL_ID.replace('google/', '')
                 if request.model != configured_model:
-                    logger.info(f"Switching server configuration from '{configured_model}' to '{request.model}'")
+                    logger.info(f"Switching model from '{configured_model}' to '{request.model}'")
 
-                    # Update configuration to requested model
-                    os.environ['GEMMA_MODEL_ID'] = requested_model_id
-                    ServiceConfig.MODEL_ID = requested_model_id
+                    # Determine variant from model name
+                    variant = 'E4B' if 'E4B' in request.model.upper() else 'E2B'
 
-                    # Update variant
-                    if 'E4B' in request.model.upper():
-                        os.environ['GEMMA_MODEL_VARIANT'] = 'E4B'
-                        ServiceConfig.MODEL_VARIANT = 'E4B'
-                    elif 'E2B' in request.model.upper():
-                        os.environ['GEMMA_MODEL_VARIANT'] = 'E2B'
-                        ServiceConfig.MODEL_VARIANT = 'E2B'
+                    # Update model manager with new model configuration
+                    # This is thread-safe as model_manager handles its own locking
+                    await model_manager.switch_model(requested_model_id, variant)
 
-                    # Unload current model so it reloads with new config
-                    if model_manager.is_model_loaded():
-                        await model_manager.unload_model()
-
-                    # Refresh model manager config
-                    model_manager.refresh_config()
+                    logger.info(f"Model switched successfully to {request.model}")
 
         # Check if this is audio transcription or regular chat
         if request.audio:
