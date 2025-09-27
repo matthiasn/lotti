@@ -108,6 +108,10 @@ The script will:
    - Use version from pubspec.yaml (or override)
    - Use current git HEAD commit
    - Generate offline manifest and all dependencies using flatpak-flutter
+   - Always create fully offline builds as required by Flathub:
+     - Process Flutter SDK for offline use
+     - Bundle all archive/file sources locally
+     - Create app source archive (`lotti-<commit>.tar.xz`)
    - Process the metainfo.xml with version substitution
    - Output all files to `flatpak/flathub-build/output/`
 
@@ -118,11 +122,8 @@ You can influence the preparation behavior with these environment variables:
 - `FLATPAK_FLUTTER_TIMEOUT` — seconds to allow `flatpak-flutter` to run; unset by default (no timeout). Example: `FLATPAK_FLUTTER_TIMEOUT=1800 ./prepare_flathub_submission.sh`
 - `NO_FLATPAK_FLUTTER` — set to `true` to skip running `flatpak-flutter` entirely and use the script’s fallback generators. Example: `NO_FLATPAK_FLUTTER=true ./prepare_flathub_submission.sh`
 - `PIN_COMMIT` — `true` (default) to pin the app source to the current commit in the output manifest.
-- `USE_OFFLINE_FLUTTER` — `true` (default) to attach offline Flutter SDK JSON/archive when available.
 - `USE_NESTED_FLUTTER` — `false` (default). When `true`, references Flutter SDK JSONs as nested modules under the `lotti` module and removes the top-level `flutter-sdk` module when safe.
-- `USE_OFFLINE_ARCHIVES` — `true` (default) to bundle archive/file sources into the output directory and rewrite URLs to local paths.
-- `USE_OFFLINE_APP_SOURCE` — `true` (default) to bundle the app source as `lotti-<commit>.tar.xz` and reference it from the manifest.
-- `DOWNLOAD_MISSING_SOURCES` — `true` (default) to allow downloading sources that aren’t found in local caches; set to `false` for strictly offline generation.
+- `DOWNLOAD_MISSING_SOURCES` — `true` (default) to allow downloading sources that aren't found in local caches; set to `false` for strictly offline generation.
 - `CLEAN_AFTER_GEN` — `true` (default) to remove the work `.flatpak-builder` directory after generation.
 
 Tips:
