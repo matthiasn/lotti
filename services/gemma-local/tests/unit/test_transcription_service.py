@@ -49,7 +49,7 @@ class TestTranscriptionService:
         mock_model_manager.is_model_loaded.return_value = True
 
         # Mock single transcription generation
-        with patch.object(service, '_generate_single_transcription', return_value="Test transcription") as mock_gen:
+        with patch.object(service, '_generate_single_transcription', new=AsyncMock(return_value="Test transcription")) as mock_gen:
             request = AudioRequest(
                 audio_data="base64encodedaudio",
                 model="gemma-3n-E2B-it",
@@ -93,7 +93,7 @@ class TestTranscriptionService:
         mock_model_manager.is_model_loaded.return_value = True
 
         # Mock chunked transcription generation
-        with patch.object(service, '_generate_chunked_transcription', return_value="Chunked transcription") as mock_gen:
+        with patch.object(service, '_generate_chunked_transcription', new=AsyncMock(return_value="Chunked transcription")) as mock_gen:
             request = AudioRequest(
                 audio_data="base64encodedaudio",
                 model="gemma-3n-E2B-it"
@@ -126,7 +126,7 @@ class TestTranscriptionService:
         audio_array = np.array([1, 2, 3], dtype=np.float32)
         mock_audio_processor.process_audio_base64.return_value = (audio_array, "Test prompt")
 
-        with patch.object(service, '_generate_single_transcription', return_value="Test transcription"):
+        with patch.object(service, '_generate_single_transcription', new=AsyncMock(return_value="Test transcription")):
             request = AudioRequest(
                 audio_data="base64encodedaudio",
                 model="gemma-3n-E2B-it"
@@ -206,7 +206,7 @@ class TestTranscriptionService:
         audio_array = np.array([1, 2, 3], dtype=np.float32)
         mock_audio_processor.process_audio_base64.return_value = (audio_array, "Test prompt")
 
-        with patch.object(service, '_generate_single_transcription', return_value="Test transcription") as mock_gen:
+        with patch.object(service, '_generate_single_transcription', new=AsyncMock(return_value="Test transcription")) as mock_gen:
             request = AudioRequest(
                 audio_data="base64encodedaudio",
                 model="gemma-3n-E2B-it",
@@ -242,7 +242,7 @@ class TestTranscriptionService:
         audio_array = np.array(range(samples), dtype=np.float32)
         mock_audio_processor.process_audio_base64.return_value = (audio_array, "Test prompt")
 
-        with patch.object(service, '_generate_single_transcription', return_value="Test transcription"):
+        with patch.object(service, '_generate_single_transcription', new=AsyncMock(return_value="Test transcription")):
             request = AudioRequest(
                 audio_data="base64encodedaudio",
                 model="gemma-3n-E2B-it"
