@@ -344,7 +344,12 @@ def _bundle_single_source(
     if not url:
         return False, []
 
-    filename = os.path.basename(url)
+    # Parse URL to get clean filename without query/fragment
+    parsed = urlparse(url)
+    filename = os.path.basename(parsed.path)
+    # Fall back to using the whole URL if basename is empty
+    if not filename:
+        filename = os.path.basename(url) or "download"
     local_path, fetch_messages = cache.ensure_local(filename, url)
     if local_path is None:
         return False, fetch_messages

@@ -208,6 +208,73 @@ def test_bundle_single_source_converts_url(tmp_path: Path):
     assert messages == ["FETCH"]
 
 
+def test_bundle_single_source_with_query_params(tmp_path: Path):
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out", download_missing=False, search_roots=[]
+    )
+
+    def fake_ensure_local(filename, _url):
+        assert (
+            filename == "archive.tar.gz"
+        ), f"Expected 'archive.tar.gz', got '{filename}'"
+        return Path(filename), ["FETCH"]
+
+    cache.ensure_local = fake_ensure_local  # type: ignore[assignment]
+
+    # Test URL with query parameters
+    source = {
+        "type": "archive",
+        "url": "https://example.com/archive.tar.gz?v=1.0&token=abc",
+    }
+    changed, messages = sources_ops._bundle_single_source(source, cache)
+    assert changed
+    assert source["path"] == "archive.tar.gz"
+    assert "url" not in source
+    assert messages == ["FETCH"]
+
+
+def test_bundle_single_source_with_fragment(tmp_path: Path):
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out", download_missing=False, search_roots=[]
+    )
+
+    def fake_ensure_local(filename, _url):
+        assert filename == "file.zip", f"Expected 'file.zip', got '{filename}'"
+        return Path(filename), ["FETCH"]
+
+    cache.ensure_local = fake_ensure_local  # type: ignore[assignment]
+
+    # Test URL with fragment
+    source = {"type": "file", "url": "https://example.com/path/to/file.zip#section"}
+    changed, messages = sources_ops._bundle_single_source(source, cache)
+    assert changed
+    assert source["path"] == "file.zip"
+    assert "url" not in source
+    assert messages == ["FETCH"]
+
+
+def test_bundle_single_source_no_path_basename(tmp_path: Path):
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out", download_missing=False, search_roots=[]
+    )
+
+    def fake_ensure_local(filename, _url):
+        # Should fall back to "download" or use URL basename
+        assert filename in ["", "download"], f"Unexpected filename: '{filename}'"
+        return Path(filename or "download"), ["FETCH"]
+
+    cache.ensure_local = fake_ensure_local  # type: ignore[assignment]
+
+    # Test URL with no path (just domain)
+    source = {"type": "file", "url": "https://example.com/"}
+    changed, messages = sources_ops._bundle_single_source(source, cache)
+    assert changed
+    # Path should be whatever cache.ensure_local returned
+    assert "path" in source
+    assert "url" not in source
+    assert messages == ["FETCH"]
+
+
 def test_remove_rustup_sources_idempotent(make_document):
     document = make_document()
     result = sources_ops.remove_rustup_sources(document)

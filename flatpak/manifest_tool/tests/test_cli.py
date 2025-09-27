@@ -562,7 +562,7 @@ def test_cli_update_manifest_head_fallback(tmp_path, monkeypatch, capsys):
     )
 
     # Mock subprocess to return a fake HEAD commit
-    def mock_check_output(cmd, **kwargs):
+    def mock_check_output(cmd, **_kwargs):
         if "/usr/bin/git" in cmd[0] and "rev-parse" in cmd:
             return "fake-head-commit-sha\n"
         raise subprocess.CalledProcessError(1, cmd)
