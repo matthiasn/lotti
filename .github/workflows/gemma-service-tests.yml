@@ -1,5 +1,8 @@
 name: Gemma Service Tests
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main, develop ]
