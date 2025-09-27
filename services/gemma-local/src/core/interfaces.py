@@ -114,6 +114,11 @@ class IModelValidator(ABC):
         """Ensure requested model is available, switching config if needed"""
         pass
 
+    @abstractmethod
+    def get_available_models(self) -> List[str]:
+        """Get list of available models on disk"""
+        pass
+
 
 class IConfigManager(ABC):
     """Interface for configuration management"""
@@ -136,4 +141,39 @@ class IConfigManager(ABC):
     @abstractmethod
     def set_model_variant(self, variant: str) -> None:
         """Set model variant"""
+        pass
+
+    @abstractmethod
+    def get_cache_dir(self) -> Path:
+        """Get cache directory"""
+        pass
+
+    @abstractmethod
+    def get_huggingface_token(self) -> Optional[str]:
+        """Get HuggingFace token"""
+        pass
+
+    @abstractmethod
+    def get_device(self) -> str:
+        """Get compute device"""
+        pass
+
+    @abstractmethod
+    def get_log_level(self) -> str:
+        """Get log level"""
+        pass
+
+    @abstractmethod
+    def get_host(self) -> str:
+        """Get server host"""
+        pass
+
+    @abstractmethod
+    def get_port(self) -> int:
+        """Get server port"""
+        pass
+
+    @abstractmethod
+    def validate_config(self) -> None:
+        """Validate configuration"""
         pass

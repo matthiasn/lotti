@@ -61,9 +61,10 @@ class TestAPIEndpoints:
     def test_chat_completion_text_only(self, client, mock_container):
         """Test text-only chat completion"""
         from src.core.models import ChatResponse
+        from unittest.mock import AsyncMock
 
         mock_chat_service = mock_container.get_chat_service.return_value
-        mock_chat_service.complete_chat.return_value = ChatResponse(
+        mock_chat_service.complete_chat = AsyncMock(return_value=ChatResponse(
             id="chatcmpl-test123",
             model="gemma-3n-E2B-it",
             choices=[{
@@ -73,7 +74,7 @@ class TestAPIEndpoints:
             }],
             usage={"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
             created=1234567890
-        )
+        ))
 
         request_data = {
             "model": "gemma-3n-E2B-it",
@@ -96,9 +97,10 @@ class TestAPIEndpoints:
     def test_chat_completion_with_audio(self, client, mock_container):
         """Test chat completion with audio transcription"""
         from src.core.models import ChatResponse
+        from unittest.mock import AsyncMock
 
         mock_chat_service = mock_container.get_chat_service.return_value
-        mock_chat_service.complete_chat.return_value = ChatResponse(
+        mock_chat_service.complete_chat = AsyncMock(return_value=ChatResponse(
             id="chatcmpl-test123",
             model="gemma-3n-E2B-it",
             choices=[{
@@ -108,7 +110,7 @@ class TestAPIEndpoints:
             }],
             usage={"prompt_tokens": 20, "completion_tokens": 10, "total_tokens": 30},
             created=1234567890
-        )
+        ))
 
         request_data = {
             "model": "gemma-3n-E2B-it",
@@ -253,10 +255,11 @@ class TestAPIEndpoints:
         """Test successful model loading"""
         mock_model_manager = mock_container.get_model_manager.return_value
         from src.core.models import ModelInfo
+        from unittest.mock import AsyncMock
 
         mock_model_manager.is_model_loaded.return_value = False
         mock_model_manager.is_model_available.return_value = True
-        mock_model_manager.load_model.return_value = True
+        mock_model_manager.load_model = AsyncMock(return_value=True)
         mock_model_manager.get_model_info.return_value = ModelInfo(
             id="google/gemma-3n-E2B-it",
             name="Gemma 3n E2B",

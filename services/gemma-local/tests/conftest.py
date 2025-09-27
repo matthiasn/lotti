@@ -36,13 +36,16 @@ def mock_config_manager():
     """Mock configuration manager"""
     mock = Mock(spec=IConfigManager)
     mock.get_model_id.return_value = "google/gemma-3n-E2B-it"
+    mock.set_model_id.return_value = None
     mock.get_model_variant.return_value = "E2B"
+    mock.set_model_variant.return_value = None
     mock.get_cache_dir.return_value = Path("/tmp/test-cache")
     mock.get_huggingface_token.return_value = "test-token"
     mock.get_device.return_value = "cpu"
     mock.get_log_level.return_value = "INFO"
     mock.get_host.return_value = "localhost"
     mock.get_port.return_value = 8000
+    mock.validate_config.return_value = None
     return mock
 
 

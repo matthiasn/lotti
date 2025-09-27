@@ -26,36 +26,33 @@ class Container:
 
     def _configure_services(self):
         """Configure all service dependencies"""
-        # Core services
-        self._services['config_manager'] = ConfigManager()
+        # Core services - initialize first
+        config_manager = ConfigManager()
+        self._services['config_manager'] = config_manager
 
         # Adapters for legacy code
-        self._services['model_manager'] = ModelManagerAdapter(
-            self.get('config_manager')
-        )
-        self._services['audio_processor'] = AudioProcessorAdapter()
+        model_manager = ModelManagerAdapter(config_manager)
+        self._services['model_manager'] = model_manager
+
+        audio_processor = AudioProcessorAdapter()
+        self._services['audio_processor'] = audio_processor
 
         # Business logic services
-        self._services['model_validator'] = ModelValidator(
-            self.get('config_manager'),
-            self.get('model_manager')
-        )
+        model_validator = ModelValidator(config_manager, model_manager)
+        self._services['model_validator'] = model_validator
 
-        self._services['model_downloader'] = ModelDownloader(
-            self.get('config_manager')
-        )
+        model_downloader = ModelDownloader(config_manager)
+        self._services['model_downloader'] = model_downloader
 
-        self._services['transcription_service'] = TranscriptionService(
-            self.get('model_manager'),
-            self.get('audio_processor'),
-            self.get('model_validator')
+        transcription_service = TranscriptionService(
+            model_manager, audio_processor, model_validator
         )
+        self._services['transcription_service'] = transcription_service
 
-        self._services['chat_service'] = ChatService(
-            self.get('model_manager'),
-            self.get('model_validator'),
-            self.get('transcription_service')
+        chat_service = ChatService(
+            model_manager, model_validator, transcription_service
         )
+        self._services['chat_service'] = chat_service
 
     def get(self, service_name: str) -> Any:
         """Get a service by name"""
