@@ -25,10 +25,108 @@ _LOGGER = utils.get_logger("sources_ops")
 _ALLOWED_URL_SCHEMES = {"https"}
 
 
+def replace_url_with_path_in_manifest(
+    manifest_data: dict, identifier: str, path_value: str
+) -> bool:
+    """Replace URL containing identifier with path in manifest data structure."""
+    changed = False
+
+    # Helper function to process sources list
+    def process_sources(sources: list, context: str = "") -> bool:
+        nonlocal changed
+        for source in sources:
+            if not isinstance(source, dict):
+                continue
+            # Check if this source has a URL containing the identifier
+            url = source.get("url", "")
+            if identifier in url:
+                # Remove the URL and add the path
+                source.pop("url", None)
+                source["path"] = path_value
+                changed = True
+                _LOGGER.debug(
+                    "Replaced URL containing '%s' with path '%s'%s",
+                    identifier, path_value,
+                    f" in {context}" if context else ""
+                )
+        return changed
+
+    # Check for sources at root level (simple format)
+    if "sources" in manifest_data:
+        sources = manifest_data.get("sources", [])
+        if isinstance(sources, list):
+            process_sources(sources, "root")
+
+    # Also check for sources inside modules (Flatpak format)
+    for module in manifest_data.get("modules", []):
+        if not isinstance(module, dict):
+            continue
+        # Process sources in each module
+        sources = module.get("sources", [])
+        if isinstance(sources, list):
+            module_name = module.get("name", "<unnamed>")
+            process_sources(sources, f"module '{module_name}'")
+
+    return changed
+
+
+def replace_url_with_path(
+    *, manifest_path: str, identifier: str, path_value: str
+) -> Optional[bool]:
+    """File-based helper used by shell scripts to rewrite sources inline.
+
+    This now uses proper YAML parsing instead of text manipulation.
+    """
+
+    path = Path(manifest_path)
+    if not path.is_file():
+        return None
+
+    try:
+        import yaml
+
+        # Load the manifest as YAML
+        content = path.read_text(encoding="utf-8")
+        manifest_data = yaml.safe_load(content)
+
+        if not isinstance(manifest_data, dict):
+            _LOGGER.warning("Invalid manifest format in %s", manifest_path)
+            return False
+
+        # Replace URLs with paths in the data structure
+        changed = replace_url_with_path_in_manifest(manifest_data, identifier, path_value)
+
+        if changed:
+            # Write back as YAML
+            new_content = yaml.dump(
+                manifest_data,
+                default_flow_style=False,
+                sort_keys=False,
+                allow_unicode=True,
+                width=120
+            )
+            path.write_text(new_content, encoding="utf-8")
+            _LOGGER.debug("Replaced url with path for %s", identifier)
+
+        return changed
+
+    except (FileNotFoundError, OSError) as e:
+        _LOGGER.warning("Failed to process manifest %s: %s", manifest_path, e)
+        return None
+    except yaml.YAMLError as e:
+        _LOGGER.error("Failed to parse YAML in %s: %s", manifest_path, e)
+        return False
+
+
+# Keep the old text-based function for backward compatibility but mark as deprecated
 def replace_url_with_path_text(
     text: str, identifier: str, path_value: str
 ) -> tuple[str, bool]:
-    """Replace ``url:`` lines containing ``identifier`` with ``path:`` entries."""
+    """Replace ``url:`` lines containing ``identifier`` with ``path:`` entries.
+
+    DEPRECATED: This function uses text manipulation which is fragile.
+    Use replace_url_with_path_in_manifest() with proper YAML parsing instead.
+    """
 
     lines = text.splitlines()
     changed = False
@@ -40,27 +138,6 @@ def replace_url_with_path_text(
     if not changed:
         return text, False
     return "\n".join(lines) + "\n", True
-
-
-def replace_url_with_path(
-    *, manifest_path: str, identifier: str, path_value: str
-) -> Optional[bool]:
-    """File-based helper used by shell scripts to rewrite sources inline."""
-
-    path = Path(manifest_path)
-    if not path.is_file():
-        return None
-
-    try:
-        content = path.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return None
-
-    new_content, changed = replace_url_with_path_text(content, identifier, path_value)
-    if changed:
-        path.write_text(new_content, encoding="utf-8")
-        _LOGGER.debug("Replaced url with path for %s", identifier)
-    return changed
 
 
 @dataclass

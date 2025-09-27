@@ -10,12 +10,13 @@ from pathlib import Path
 from typing import Callable
 
 try:  # pragma: no cover - import fallback for direct execution
-    from . import ci_ops, flutter_ops, manifest_ops, sources_ops, utils
+    from . import build_utils, ci_ops, flutter_ops, manifest_ops, sources_ops, utils
     from .manifest import ManifestDocument, OperationResult, merge_results
 except ImportError:  # pragma: no cover
     PACKAGE_ROOT = Path(__file__).resolve().parent
     if str(PACKAGE_ROOT) not in sys.path:
         sys.path.insert(0, str(PACKAGE_ROOT))
+    import build_utils  # type: ignore
     import ci_ops  # type: ignore
     import flutter_ops  # type: ignore
     import manifest_ops  # type: ignore
@@ -581,7 +582,92 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    # Build utility commands
+    parser_find_flutter = subparsers.add_parser(
+        "find-flutter-sdk",
+        help="Find a cached Flutter SDK installation."
+    )
+    parser_find_flutter.add_argument(
+        "--search-root",
+        action="append",
+        required=True,
+        help="Root directory to search (can be repeated)."
+    )
+    parser_find_flutter.add_argument(
+        "--exclude",
+        action="append",
+        help="Path to exclude from search (can be repeated)."
+    )
+    parser_find_flutter.add_argument(
+        "--max-depth",
+        type=int,
+        default=6,
+        help="Maximum search depth (default: 6)."
+    )
+    parser_find_flutter.set_defaults(
+        func=lambda ns: _run_find_flutter_sdk(ns)
+    )
+
+    parser_prepare_build = subparsers.add_parser(
+        "prepare-build-dir",
+        help="Prepare build directory for flatpak-flutter."
+    )
+    parser_prepare_build.add_argument(
+        "--build-dir",
+        required=True,
+        help="Build directory to prepare."
+    )
+    parser_prepare_build.add_argument(
+        "--pubspec-yaml",
+        help="Path to pubspec.yaml to copy."
+    )
+    parser_prepare_build.add_argument(
+        "--pubspec-lock",
+        help="Path to pubspec.lock to copy."
+    )
+    parser_prepare_build.add_argument(
+        "--no-foreign-deps",
+        action="store_true",
+        help="Don't create empty foreign_deps.json."
+    )
+    parser_prepare_build.set_defaults(
+        func=lambda ns: _run_prepare_build_dir(ns)
+    )
+
     return parser
+
+
+def _run_find_flutter_sdk(namespace: argparse.Namespace) -> int:
+    """Run the find-flutter-sdk command."""
+    search_roots = [Path(root) for root in namespace.search_root]
+    exclude_paths = [Path(p) for p in namespace.exclude] if namespace.exclude else None
+
+    sdk_path = build_utils.find_flutter_sdk(
+        search_roots=search_roots,
+        exclude_paths=exclude_paths,
+        max_depth=namespace.max_depth
+    )
+
+    if sdk_path:
+        print(sdk_path)
+        return 0
+    return 1
+
+
+def _run_prepare_build_dir(namespace: argparse.Namespace) -> int:
+    """Run the prepare-build-dir command."""
+    build_dir = Path(namespace.build_dir)
+    pubspec_yaml = Path(namespace.pubspec_yaml) if namespace.pubspec_yaml else None
+    pubspec_lock = Path(namespace.pubspec_lock) if namespace.pubspec_lock else None
+
+    success = build_utils.prepare_build_directory(
+        build_dir=build_dir,
+        pubspec_yaml=pubspec_yaml,
+        pubspec_lock=pubspec_lock,
+        create_foreign_deps=not namespace.no_foreign_deps
+    )
+
+    return 0 if success else 1
 
 
 def main(argv: list[str] | None = None) -> int:
