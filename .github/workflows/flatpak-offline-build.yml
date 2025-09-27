@@ -73,4 +73,9 @@ jobs:
             --force-clean \
             build-dir com.matthiasn.lotti.yml
 
+      - name: Verify Flatpak (post-build)
+        run: |
+          flatpak --version
+          flatpak list
+
       # Removed artifact upload step; no useful binaries in payload
