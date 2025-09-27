@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -118,10 +119,21 @@ def _run_update_manifest(namespace: argparse.Namespace) -> int:
                 commit = None  # Don't use the regular commit in PR mode
                 print(f"PR mode: updating manifest for {pr_url} @ {pr_commit}")
 
-    # If no commit specified and not in PR mode, error out
+    # If no commit specified and not in PR mode, use current HEAD
     if not commit and not pr_commit:
-        print("Error: No commit specified and not in PR mode", file=sys.stderr)
-        return 1
+        try:
+            commit = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                text=True,
+                stderr=subprocess.STDOUT
+            ).strip()
+            print(f"No commit specified, using current HEAD: {commit}")
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
+            print(
+                f"Error: Unable to determine current HEAD commit: {exc}",
+                file=sys.stderr
+            )
+            return 1
 
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
@@ -634,6 +646,20 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_prepare_build_dir(ns)
     )
 
+    # Generate the setup-flutter.sh helper script
+    parser_generate_helper = subparsers.add_parser(
+        "generate-setup-helper",
+        help="Generate the setup-flutter.sh helper script."
+    )
+    parser_generate_helper.add_argument(
+        "--output",
+        default="setup-flutter.sh",
+        help="Output file path (default: setup-flutter.sh)."
+    )
+    parser_generate_helper.set_defaults(
+        func=lambda ns: _run_generate_setup_helper(ns)
+    )
+
     return parser
 
 
@@ -668,6 +694,30 @@ def _run_prepare_build_dir(namespace: argparse.Namespace) -> int:
     )
 
     return 0 if success else 1
+
+
+def _run_generate_setup_helper(namespace: argparse.Namespace) -> int:
+    """Generate the setup-flutter.sh helper script."""
+    output_path = Path(namespace.output)
+
+    # Read the helper script from the helpers directory
+    helpers_dir = Path(__file__).parent.parent / "helpers"
+    helper_script = helpers_dir / "setup-flutter.sh"
+
+    if not helper_script.exists():
+        logger.error("Helper script not found at %s", helper_script)
+        return 1
+
+    try:
+        content = helper_script.read_text(encoding="utf-8")
+        output_path.write_text(content, encoding="utf-8")
+        # Make it executable
+        output_path.chmod(0o755)
+        logger.info("Generated helper script at %s", output_path)
+        return 0
+    except (OSError, IOError) as e:
+        logger.error("Failed to generate helper script: %s", e)
+        return 1
 
 
 def main(argv: list[str] | None = None) -> int:
