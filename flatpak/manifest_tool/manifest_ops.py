@@ -111,6 +111,84 @@ def pin_commit(
     return OperationResult.unchanged()
 
 
+def update_manifest_for_build(
+    document: ManifestDocument,
+    *,
+    commit: str | None = None,
+    pr_url: str | None = None,
+    pr_commit: str | None = None,
+) -> OperationResult:
+    """Update manifest for building, handling both PR and non-PR scenarios.
+
+    For PR builds:
+    - Updates the lotti git URL to the PR's fork repository
+    - Pins the commit to the PR's head commit
+
+    For non-PR builds:
+    - Replaces COMMIT_PLACEHOLDER with the specified commit
+
+    Args:
+        document: The manifest document to update
+        commit: The commit SHA for non-PR builds
+        pr_url: The PR fork repository URL (for PR builds)
+        pr_commit: The PR head commit SHA (for PR builds)
+
+    Returns:
+        OperationResult indicating what changed
+    """
+    modules = document.ensure_modules()
+    changes = []
+
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+
+        for source in module.get("sources", []):
+            if not isinstance(source, dict):
+                continue
+            if source.get("type") != "git":
+                continue
+
+            # Check if this is the lotti source
+            url = source.get("url", "")
+            normalized_url = url.rstrip(".git")
+            if not any(
+                normalized_url.endswith(
+                    repo.rstrip(".git")
+                    .replace("https://github.com/", "")
+                    .replace("git@github.com:", "")
+                )
+                for repo in _DEFAULT_REPO_URLS
+            ):
+                continue
+
+            if pr_url and pr_commit:
+                # PR mode: update URL and commit
+                if source.get("url") != pr_url:
+                    source["url"] = pr_url
+                    changes.append(f"Updated URL to {pr_url}")
+                if source.get("commit") != pr_commit:
+                    source["commit"] = pr_commit
+                    source.pop("branch", None)
+                    changes.append(f"Pinned to PR commit {pr_commit}")
+            elif commit:
+                # Non-PR mode: replace placeholder or update commit
+                current_commit = source.get("commit", "")
+                if current_commit == "COMMIT_PLACEHOLDER" or current_commit != commit:
+                    source["commit"] = commit
+                    source.pop("branch", None)
+                    changes.append(f"Updated commit to {commit}")
+                elif current_commit == commit and "branch" in source:
+                    source.pop("branch", None)
+                    changes.append("Removed branch reference")
+
+    if changes:
+        document.mark_changed()
+        _LOGGER.debug("Updated manifest: %s", "; ".join(changes))
+        return OperationResult(changed=True, messages=changes)
+    return OperationResult.unchanged()
+
+
 def ensure_module_include(
     document: ManifestDocument,
     *,

@@ -97,6 +97,43 @@ def _run_pin_commit(namespace: argparse.Namespace) -> int:
     return _run_manifest_operation(operation)
 
 
+def _run_update_manifest(namespace: argparse.Namespace) -> int:
+    """Update manifest for build, handling both PR and non-PR scenarios."""
+    # Check if we're in PR mode
+    pr_url = None
+    pr_commit = None
+    commit = namespace.commit
+
+    if namespace.event_name and namespace.event_path:
+        if namespace.event_name == "pull_request":
+            # Get PR information
+            pr_env = ci_ops.pr_aware_environment(
+                event_name=namespace.event_name,
+                event_path=namespace.event_path,
+            )
+            if pr_env.get("PR_MODE") == "true":
+                pr_url = pr_env.get("PR_HEAD_URL")
+                pr_commit = pr_env.get("PR_HEAD_SHA")
+                commit = None  # Don't use the regular commit in PR mode
+                print(f"PR mode: updating manifest for {pr_url} @ {pr_commit}")
+
+    # If no commit specified and not in PR mode, error out
+    if not commit and not pr_commit:
+        print("Error: No commit specified and not in PR mode", file=sys.stderr)
+        return 1
+
+    operation = ManifestOperation(
+        manifest=Path(namespace.manifest),
+        executor=lambda document: manifest_ops.update_manifest_for_build(
+            document,
+            commit=commit,
+            pr_url=pr_url,
+            pr_commit=pr_commit,
+        ),
+    )
+    return _run_manifest_operation(operation)
+
+
 def _run_ensure_nested_sdk(namespace: argparse.Namespace) -> int:
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
@@ -283,6 +320,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional repository URL to match (can be repeated).",
     )
     parser_pin.set_defaults(func=_run_pin_commit)
+
+    # New comprehensive update-manifest command
+    parser_update = subparsers.add_parser(
+        "update-manifest",
+        help="Update manifest for build (handles both PR and non-PR scenarios).",
+    )
+    parser_update.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_update.add_argument(
+        "--commit",
+        default=None,
+        help="Commit SHA to pin (for non-PR builds). If not provided, uses current HEAD.",
+    )
+    parser_update.add_argument(
+        "--event-name",
+        default=None,
+        help="GitHub event name (e.g., pull_request).",
+    )
+    parser_update.add_argument(
+        "--event-path",
+        default=None,
+        help="Path to GitHub event JSON file.",
+    )
+    parser_update.set_defaults(func=_run_update_manifest)
 
     parser_mod_include = subparsers.add_parser(
         "ensure-module-include",
