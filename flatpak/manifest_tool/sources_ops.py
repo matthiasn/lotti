@@ -46,8 +46,9 @@ def replace_url_with_path_in_manifest(
                 changed = True
                 _LOGGER.debug(
                     "Replaced URL containing '%s' with path '%s'%s",
-                    identifier, path_value,
-                    f" in {context}" if context else ""
+                    identifier,
+                    path_value,
+                    f" in {context}" if context else "",
                 )
         return changed
 
@@ -94,7 +95,9 @@ def replace_url_with_path(
             return False
 
         # Replace URLs with paths in the data structure
-        changed = replace_url_with_path_in_manifest(manifest_data, identifier, path_value)
+        changed = replace_url_with_path_in_manifest(
+            manifest_data, identifier, path_value
+        )
 
         if changed:
             # Write back as YAML
@@ -103,7 +106,7 @@ def replace_url_with_path(
                 default_flow_style=False,
                 sort_keys=False,
                 allow_unicode=True,
-                width=120
+                width=120,
             )
             path.write_text(new_content, encoding="utf-8")
             _LOGGER.debug("Replaced url with path for %s", identifier)

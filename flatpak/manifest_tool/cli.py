@@ -124,20 +124,19 @@ def _run_update_manifest(namespace: argparse.Namespace) -> int:
         try:
             # Use absolute path to git for security (B607)
             import shutil
+
             git_path = shutil.which("git")
             if not git_path:
                 raise FileNotFoundError("git executable not found in PATH")
 
             commit = subprocess.check_output(
-                [git_path, "rev-parse", "HEAD"],
-                text=True,
-                stderr=subprocess.STDOUT
+                [git_path, "rev-parse", "HEAD"], text=True, stderr=subprocess.STDOUT
             ).strip()
             print(f"No commit specified, using current HEAD: {commit}")
         except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
             print(
                 f"Error: Unable to determine current HEAD commit: {exc}",
-                file=sys.stderr
+                file=sys.stderr,
             )
             return 1
 
@@ -602,69 +601,53 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Build utility commands
     parser_find_flutter = subparsers.add_parser(
-        "find-flutter-sdk",
-        help="Find a cached Flutter SDK installation."
+        "find-flutter-sdk", help="Find a cached Flutter SDK installation."
     )
     parser_find_flutter.add_argument(
         "--search-root",
         action="append",
         required=True,
-        help="Root directory to search (can be repeated)."
+        help="Root directory to search (can be repeated).",
     )
     parser_find_flutter.add_argument(
         "--exclude",
         action="append",
-        help="Path to exclude from search (can be repeated)."
+        help="Path to exclude from search (can be repeated).",
     )
     parser_find_flutter.add_argument(
-        "--max-depth",
-        type=int,
-        default=6,
-        help="Maximum search depth (default: 6)."
+        "--max-depth", type=int, default=6, help="Maximum search depth (default: 6)."
     )
-    parser_find_flutter.set_defaults(
-        func=lambda ns: _run_find_flutter_sdk(ns)
-    )
+    parser_find_flutter.set_defaults(func=lambda ns: _run_find_flutter_sdk(ns))
 
     parser_prepare_build = subparsers.add_parser(
-        "prepare-build-dir",
-        help="Prepare build directory for flatpak-flutter."
+        "prepare-build-dir", help="Prepare build directory for flatpak-flutter."
     )
     parser_prepare_build.add_argument(
-        "--build-dir",
-        required=True,
-        help="Build directory to prepare."
+        "--build-dir", required=True, help="Build directory to prepare."
     )
     parser_prepare_build.add_argument(
-        "--pubspec-yaml",
-        help="Path to pubspec.yaml to copy."
+        "--pubspec-yaml", help="Path to pubspec.yaml to copy."
     )
     parser_prepare_build.add_argument(
-        "--pubspec-lock",
-        help="Path to pubspec.lock to copy."
+        "--pubspec-lock", help="Path to pubspec.lock to copy."
     )
     parser_prepare_build.add_argument(
         "--no-foreign-deps",
         action="store_true",
-        help="Don't create empty foreign_deps.json."
+        help="Don't create empty foreign_deps.json.",
     )
-    parser_prepare_build.set_defaults(
-        func=lambda ns: _run_prepare_build_dir(ns)
-    )
+    parser_prepare_build.set_defaults(func=lambda ns: _run_prepare_build_dir(ns))
 
     # Generate the setup-flutter.sh helper script
     parser_generate_helper = subparsers.add_parser(
-        "generate-setup-helper",
-        help="Generate the setup-flutter.sh helper script."
+        "generate-setup-helper", help="Generate the setup-flutter.sh helper script."
     )
     parser_generate_helper.add_argument(
         "--output",
         default="setup-flutter.sh",
-        help="Output file path (default: setup-flutter.sh)."
+        help="Output file path (default: setup-flutter.sh).",
     )
-    parser_generate_helper.set_defaults(
-        func=lambda ns: _run_generate_setup_helper(ns)
-    )
+    parser_generate_helper.set_defaults(func=lambda ns: _run_generate_setup_helper(ns))
 
     return parser
 
@@ -677,7 +660,7 @@ def _run_find_flutter_sdk(namespace: argparse.Namespace) -> int:
     sdk_path = build_utils.find_flutter_sdk(
         search_roots=search_roots,
         exclude_paths=exclude_paths,
-        max_depth=namespace.max_depth
+        max_depth=namespace.max_depth,
     )
 
     if sdk_path:
@@ -696,7 +679,7 @@ def _run_prepare_build_dir(namespace: argparse.Namespace) -> int:
         build_dir=build_dir,
         pubspec_yaml=pubspec_yaml,
         pubspec_lock=pubspec_lock,
-        create_foreign_deps=not namespace.no_foreign_deps
+        create_foreign_deps=not namespace.no_foreign_deps,
     )
 
     return 0 if success else 1

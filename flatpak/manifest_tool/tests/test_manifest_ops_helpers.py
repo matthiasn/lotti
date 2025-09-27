@@ -69,7 +69,9 @@ def test_is_lotti_repo_url():
 
     # Non-lotti URLs
     assert not manifest_ops._is_lotti_repo_url("https://github.com/user/other-repo")
-    assert not manifest_ops._is_lotti_repo_url("https://github.com/matthiasn/lotti-fork")
+    assert not manifest_ops._is_lotti_repo_url(
+        "https://github.com/matthiasn/lotti-fork"
+    )
     assert not manifest_ops._is_lotti_repo_url("https://github.com/matthiasn/other")
 
     # Edge cases

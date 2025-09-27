@@ -18,7 +18,7 @@ def find_flutter_sdk(
     *,
     search_roots: Iterable[Path],
     exclude_paths: Optional[Iterable[Path]] = None,
-    max_depth: int = 6
+    max_depth: int = 6,
 ) -> Optional[Path]:
     """Find a cached Flutter SDK installation.
 
@@ -88,7 +88,7 @@ def prepare_build_directory(
     build_dir: Path,
     pubspec_yaml: Optional[Path] = None,
     pubspec_lock: Optional[Path] = None,
-    create_foreign_deps: bool = True
+    create_foreign_deps: bool = True,
 ) -> bool:
     """Prepare a build directory for flatpak-flutter.
 
@@ -130,10 +130,7 @@ def prepare_build_directory(
 
 
 def copy_flutter_sdk(
-    *,
-    source_sdk: Path,
-    target_dir: Path,
-    clean_target: bool = True
+    *, source_sdk: Path, target_dir: Path, clean_target: bool = True
 ) -> bool:
     """Copy a Flutter SDK to a target directory.
 
@@ -170,7 +167,7 @@ def copy_flutter_sdk(
         _LOGGER.info("Copying Flutter SDK from %s to %s", source_sdk, target_dir)
 
         # Use shutil.copytree with dirs_exist_ok for Python 3.8+
-        if hasattr(shutil, 'copytree'):
+        if hasattr(shutil, "copytree"):
             # Copy all contents of source_sdk to target_dir
             for item in source_sdk.iterdir():
                 dest = target_dir / item.name
@@ -181,6 +178,7 @@ def copy_flutter_sdk(
         else:
             # Fallback for older Python
             from distutils.dir_util import copy_tree
+
             copy_tree(str(source_sdk), str(target_dir))
 
         # Verify the copy

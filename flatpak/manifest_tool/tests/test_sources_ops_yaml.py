@@ -18,15 +18,9 @@ def test_replace_url_with_path_yaml_based(tmp_path: Path):
             {
                 "name": "test-module",
                 "sources": [
-                    {
-                        "type": "file",
-                        "url": "https://example.com/file.dat"
-                    },
-                    {
-                        "type": "git",
-                        "url": "https://github.com/user/repo.git"
-                    }
-                ]
+                    {"type": "file", "url": "https://example.com/file.dat"},
+                    {"type": "git", "url": "https://github.com/user/repo.git"},
+                ],
             }
         ]
     }
@@ -38,7 +32,7 @@ def test_replace_url_with_path_yaml_based(tmp_path: Path):
     result = sources_ops.replace_url_with_path(
         manifest_path=str(manifest_path),
         identifier="file.dat",
-        path_value="local-file.dat"
+        path_value="local-file.dat",
     )
 
     assert result is True
@@ -62,12 +56,7 @@ def test_replace_url_with_path_no_match(tmp_path: Path):
         "modules": [
             {
                 "name": "test-module",
-                "sources": [
-                    {
-                        "type": "git",
-                        "url": "https://github.com/user/repo.git"
-                    }
-                ]
+                "sources": [{"type": "git", "url": "https://github.com/user/repo.git"}],
             }
         ]
     }
@@ -77,14 +66,16 @@ def test_replace_url_with_path_no_match(tmp_path: Path):
     result = sources_ops.replace_url_with_path(
         manifest_path=str(manifest_path),
         identifier="nonexistent",
-        path_value="local-file.dat"
+        path_value="local-file.dat",
     )
 
     assert result is False
 
     # Verify nothing changed
     updated = yaml.safe_load(manifest_path.read_text())
-    assert updated["modules"][0]["sources"][0]["url"] == "https://github.com/user/repo.git"
+    assert (
+        updated["modules"][0]["sources"][0]["url"] == "https://github.com/user/repo.git"
+    )
 
 
 def test_replace_url_with_path_multiple_matches(tmp_path: Path):
@@ -95,25 +86,16 @@ def test_replace_url_with_path_multiple_matches(tmp_path: Path):
             {
                 "name": "module1",
                 "sources": [
-                    {
-                        "type": "file",
-                        "url": "https://example.com/myfile.tar.gz"
-                    }
-                ]
+                    {"type": "file", "url": "https://example.com/myfile.tar.gz"}
+                ],
             },
             {
                 "name": "module2",
                 "sources": [
-                    {
-                        "type": "file",
-                        "url": "https://mirror.com/myfile.tar.gz"
-                    },
-                    {
-                        "type": "git",
-                        "url": "https://github.com/user/repo"
-                    }
-                ]
-            }
+                    {"type": "file", "url": "https://mirror.com/myfile.tar.gz"},
+                    {"type": "git", "url": "https://github.com/user/repo"},
+                ],
+            },
         ]
     }
 
@@ -122,7 +104,7 @@ def test_replace_url_with_path_multiple_matches(tmp_path: Path):
     result = sources_ops.replace_url_with_path(
         manifest_path=str(manifest_path),
         identifier="myfile.tar.gz",
-        path_value="cached/myfile.tar.gz"
+        path_value="cached/myfile.tar.gz",
     )
 
     assert result is True
@@ -146,9 +128,7 @@ def test_replace_url_with_path_invalid_manifest(tmp_path: Path):
     manifest_path.write_text("invalid: yaml: content: [", encoding="utf-8")
 
     result = sources_ops.replace_url_with_path(
-        manifest_path=str(manifest_path),
-        identifier="test",
-        path_value="test.dat"
+        manifest_path=str(manifest_path), identifier="test", path_value="test.dat"
     )
 
     # Should return False for invalid YAML
@@ -158,9 +138,7 @@ def test_replace_url_with_path_invalid_manifest(tmp_path: Path):
 def test_replace_url_with_path_nonexistent_file():
     """Test with non-existent file."""
     result = sources_ops.replace_url_with_path(
-        manifest_path="/nonexistent/file.yml",
-        identifier="test",
-        path_value="test.dat"
+        manifest_path="/nonexistent/file.yml", identifier="test", path_value="test.dat"
     )
 
     # Should return None for non-existent file
@@ -175,19 +153,20 @@ def test_replace_url_with_path_in_manifest_direct():
                 "name": "test",
                 "sources": [
                     {"type": "file", "url": "https://example.com/data.zip"},
-                    {"type": "git", "url": "https://github.com/test/repo"}
-                ]
+                    {"type": "git", "url": "https://github.com/test/repo"},
+                ],
             }
         ]
     }
 
     changed = sources_ops.replace_url_with_path_in_manifest(
-        manifest_data,
-        "data.zip",
-        "local/data.zip"
+        manifest_data, "data.zip", "local/data.zip"
     )
 
     assert changed is True
     assert manifest_data["modules"][0]["sources"][0]["path"] == "local/data.zip"
     assert "url" not in manifest_data["modules"][0]["sources"][0]
-    assert manifest_data["modules"][0]["sources"][1]["url"] == "https://github.com/test/repo"
+    assert (
+        manifest_data["modules"][0]["sources"][1]["url"]
+        == "https://github.com/test/repo"
+    )
