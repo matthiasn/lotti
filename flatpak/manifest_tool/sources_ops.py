@@ -117,8 +117,8 @@ def replace_url_with_path(
         _LOGGER.warning("Failed to process manifest %s: %s", manifest_path, e)
         return None
     except yaml.YAMLError as e:
-        _LOGGER.error("Failed to parse YAML in %s: %s", manifest_path, e)
-        return False
+        _LOGGER.exception("Failed to parse YAML in %s", manifest_path)
+        return None
 
 
 # Keep the old text-based function for backward compatibility but mark as deprecated

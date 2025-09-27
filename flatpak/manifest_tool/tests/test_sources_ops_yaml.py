@@ -131,8 +131,8 @@ def test_replace_url_with_path_invalid_manifest(tmp_path: Path):
         manifest_path=str(manifest_path), identifier="test", path_value="test.dat"
     )
 
-    # Should return False for invalid YAML
-    assert result is False
+    # Should return None for invalid YAML (error state)
+    assert result is None
 
 
 def test_replace_url_with_path_nonexistent_file():
