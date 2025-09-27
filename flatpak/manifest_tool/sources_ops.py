@@ -236,7 +236,9 @@ def _add_string_sources(
     return added_strings
 
 
-def _build_result_messages(added_strings: list[str], flutter_file: Optional[str]) -> list[str]:
+def _build_result_messages(
+    added_strings: list[str], flutter_file: Optional[str]
+) -> list[str]:
     """Build result messages for the operation."""
     messages: list[str] = []
     if added_strings:
@@ -280,7 +282,9 @@ def add_offline_sources(
         return OperationResult.unchanged()
 
     document.mark_changed()
-    messages = _build_result_messages(added_strings, flutter_file if file_changed else None)
+    messages = _build_result_messages(
+        added_strings, flutter_file if file_changed else None
+    )
     for message in messages:
         _LOGGER.debug(message)
     return OperationResult(changed=True, messages=messages)
@@ -398,7 +402,7 @@ def remove_rustup_sources(document: ManifestDocument) -> OperationResult:
         removed, module_changed = _filter_rustup_from_module(module)
         if module_changed:
             changed = True
-            module_name = module.get('name', '<unnamed>')
+            module_name = module.get("name", "<unnamed>")
             messages.append(
                 f"Removed {removed} rustup JSON reference(s) from module {module_name}"
             )

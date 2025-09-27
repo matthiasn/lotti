@@ -14,9 +14,7 @@ except ImportError:  # pragma: no cover
 _LOGGER = utils.get_logger("build_utils")
 
 
-def _should_skip_directory(
-    current_path: Path, exclude_set: set[Path]
-) -> bool:
+def _should_skip_directory(current_path: Path, exclude_set: set[Path]) -> bool:
     """Check if a directory should be skipped based on exclusions."""
     current_resolved = current_path.resolve()
     for excluded in exclude_set:

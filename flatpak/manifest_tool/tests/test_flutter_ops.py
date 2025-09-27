@@ -399,8 +399,8 @@ def test_ensure_setup_helper_command_idempotent(make_document):
     assert commands_after == commands_before
 
 
-def test_bundle_app_archive_preserves_existing_sources(make_document, tmp_path):
-    """Test that bundle_app_archive preserves existing file and patch sources."""
+def test_bundle_app_archive_replaces_all_sources(make_document, tmp_path):
+    """Test that bundle_app_archive replaces ALL sources to avoid version mismatches."""
     document = make_document()
 
     # Add initial sources with a git source, file source, and patch
@@ -408,7 +408,7 @@ def test_bundle_app_archive_preserves_existing_sources(make_document, tmp_path):
     lotti["sources"] = [
         {"type": "file", "path": "existing-file.txt"},
         {"type": "git", "url": "https://github.com/test/test.git"},
-        {"type": "patch", "path": "fix.patch"},
+        {"type": "patch", "path": "fix.patch"},  # This should be removed
     ]
 
     out_dir = tmp_path / "output"
@@ -425,39 +425,42 @@ def test_bundle_app_archive_preserves_existing_sources(make_document, tmp_path):
     )
 
     assert result.changed
-    # Check that existing sources are preserved
     updated_sources = lotti["sources"]
     assert isinstance(updated_sources, list)
 
-    # Archive should replace the git source at index 1
-    assert updated_sources[0] == {"type": "file", "path": "existing-file.txt"}
-    assert updated_sources[1]["type"] == "archive"
-    assert updated_sources[1]["path"] == "lotti.tar.xz"
-    assert {"type": "patch", "path": "fix.patch"} in updated_sources
+    # First source should be the archive
+    assert updated_sources[0]["type"] == "archive"
+    assert updated_sources[0]["path"] == "lotti.tar.xz"
+    assert updated_sources[0]["sha256"] == "cafebabe"
+
+    # Patch should NOT be preserved (to avoid version mismatches)
+    assert {"type": "patch", "path": "fix.patch"} not in updated_sources
+    # Old file source should NOT be preserved
+    assert {"type": "file", "path": "existing-file.txt"} not in updated_sources
 
     # New sources should be added
     assert "pubspec-sources.json" in updated_sources
     assert {"type": "file", "path": "setup-flutter.sh"} in updated_sources
 
 
-def test_bundle_app_archive_no_duplicate_sources(make_document, tmp_path):
-    """Test that bundle_app_archive doesn't add duplicate sources."""
+def test_bundle_app_archive_includes_all_required_sources(make_document, tmp_path):
+    """Test that bundle_app_archive includes all required sources in fresh list."""
     document = make_document()
 
-    # Add initial sources with some that would be duplicates
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    # Start with some existing sources that should be replaced
     lotti["sources"] = [
         {"type": "git", "url": "https://github.com/test/test.git"},
-        "pubspec-sources.json",  # Already present
-        {"type": "file", "path": "setup-flutter.sh"},  # Already present
+        {"type": "patch", "path": "old.patch"},  # Should be removed
     ]
 
     out_dir = tmp_path / "output"
     out_dir.mkdir()
-    # Create required files
+    # Create all required files
     (out_dir / "pubspec-sources.json").write_text("[]", encoding="utf-8")
     (out_dir / "setup-flutter.sh").write_text("#!/bin/bash", encoding="utf-8")
     (out_dir / "cargo-sources.json").write_text("[]", encoding="utf-8")
+    (out_dir / "package_config.json").write_text("{}", encoding="utf-8")
 
     result = flutter_ops.bundle_app_archive(
         document,
@@ -469,218 +472,24 @@ def test_bundle_app_archive_no_duplicate_sources(make_document, tmp_path):
     assert result.changed
     updated_sources = lotti["sources"]
 
-    # Count occurrences - should have no duplicates
-    pubspec_count = updated_sources.count("pubspec-sources.json")
-    assert pubspec_count == 1
+    # Should have exactly the expected sources, no more, no less
+    assert len(updated_sources) == 5  # archive + 4 extra sources
 
-    setup_helper_count = sum(
-        1
-        for s in updated_sources
-        if isinstance(s, dict) and s.get("path") == "setup-flutter.sh"
-    )
-    assert setup_helper_count == 1
+    # First is always the archive
+    assert updated_sources[0]["type"] == "archive"
+    assert updated_sources[0]["path"] == "lotti.tar.xz"
+
+    # All required sources should be present
+    assert "pubspec-sources.json" in updated_sources
+    assert "cargo-sources.json" in updated_sources
+    assert {"type": "file", "path": "package_config.json"} in updated_sources
+    assert {"type": "file", "path": "setup-flutter.sh"} in updated_sources
+
+    # Old patch should NOT be present
+    assert {"type": "patch", "path": "old.patch"} not in updated_sources
 
     # cargo-sources.json should be added since it wasn't there before
     assert "cargo-sources.json" in updated_sources
-
-
-def test_source_exists_helper_string_sources():
-    """Test _source_exists helper with string sources."""
-    sources = ["pubspec-sources.json", "cargo-sources.json"]
-
-    # Test exact match
-    assert flutter_ops._source_exists(sources, "pubspec-sources.json")
-    assert flutter_ops._source_exists(sources, "cargo-sources.json")
-
-    # Test non-existent
-    assert not flutter_ops._source_exists(sources, "other.json")
-
-    # Test dict source against string sources
-    assert not flutter_ops._source_exists(sources, {"type": "file", "path": "test.txt"})
-
-
-def test_source_exists_helper_dict_sources():
-    """Test _source_exists helper with dict sources."""
-    sources = [
-        {"type": "file", "path": "setup.sh"},
-        {"type": "archive", "sha256": "abc123", "path": "archive.tar"},
-        {"type": "patch", "path": "fix.patch"},
-    ]
-
-    # Test file source match
-    assert flutter_ops._source_exists(sources, {"type": "file", "path": "setup.sh"})
-    assert not flutter_ops._source_exists(sources, {"type": "file", "path": "other.sh"})
-
-    # Test archive source match (by sha256)
-    assert flutter_ops._source_exists(sources, {"type": "archive", "sha256": "abc123"})
-    assert not flutter_ops._source_exists(
-        sources, {"type": "archive", "sha256": "xyz789"}
-    )
-
-    # Test patch source (no special matching, so always false for different instances)
-    assert not flutter_ops._source_exists(
-        sources, {"type": "patch", "path": "fix.patch"}
-    )
-
-    # Test string source against dict sources
-    assert not flutter_ops._source_exists(sources, "setup.sh")
-
-
-def test_source_exists_helper_mixed_sources():
-    """Test _source_exists helper with mixed source types."""
-    sources = [
-        "pubspec-sources.json",
-        {"type": "file", "path": "setup.sh"},
-        {"type": "archive", "sha256": "abc123", "path": "archive.tar"},
-    ]
-
-    # String matches
-    assert flutter_ops._source_exists(sources, "pubspec-sources.json")
-
-    # Dict file matches
-    assert flutter_ops._source_exists(sources, {"type": "file", "path": "setup.sh"})
-
-    # Dict archive matches
-    assert flutter_ops._source_exists(sources, {"type": "archive", "sha256": "abc123"})
-
-    # Non-matches
-    assert not flutter_ops._source_exists(sources, "other.json")
-    assert not flutter_ops._source_exists(sources, {"type": "file", "path": "other.sh"})
-
-
-def test_replace_or_add_archive_source_replaces_git():
-    """Test _replace_or_add_archive_source replaces existing git source."""
-    sources = [
-        {"type": "file", "path": "file1.txt"},
-        {"type": "git", "url": "https://github.com/test/test.git"},
-        {"type": "patch", "path": "fix.patch"},
-    ]
-
-    flutter_ops._replace_or_add_archive_source(sources, "app.tar.xz", "sha256hash")
-
-    # Git source should be replaced at index 1
-    assert len(sources) == 3
-    assert sources[0] == {"type": "file", "path": "file1.txt"}
-    assert sources[1] == {
-        "type": "archive",
-        "path": "app.tar.xz",
-        "sha256": "sha256hash",
-        "strip-components": 1,
-    }
-    assert sources[2] == {"type": "patch", "path": "fix.patch"}
-
-
-def test_replace_or_add_archive_source_adds_when_no_git():
-    """Test _replace_or_add_archive_source adds archive when no git source."""
-    sources = [
-        {"type": "file", "path": "file1.txt"},
-        {"type": "patch", "path": "fix.patch"},
-    ]
-
-    flutter_ops._replace_or_add_archive_source(sources, "app.tar.xz", "sha256hash")
-
-    # Archive should be added at index 0
-    assert len(sources) == 3
-    assert sources[0] == {
-        "type": "archive",
-        "path": "app.tar.xz",
-        "sha256": "sha256hash",
-        "strip-components": 1,
-    }
-    assert sources[1] == {"type": "file", "path": "file1.txt"}
-    assert sources[2] == {"type": "patch", "path": "fix.patch"}
-
-
-def test_replace_or_add_archive_source_empty_list():
-    """Test _replace_or_add_archive_source with empty sources list."""
-    sources = []
-
-    flutter_ops._replace_or_add_archive_source(sources, "app.tar.xz", "sha256hash")
-
-    # Archive should be the only source
-    assert len(sources) == 1
-    assert sources[0] == {
-        "type": "archive",
-        "path": "app.tar.xz",
-        "sha256": "sha256hash",
-        "strip-components": 1,
-    }
-
-
-def test_add_build_sources_all_files_exist(tmp_path):
-    """Test _add_build_sources when all files exist."""
-    sources = []
-
-    # Create all files
-    (tmp_path / "pubspec-sources.json").write_text("[]", encoding="utf-8")
-    (tmp_path / "cargo-sources.json").write_text("[]", encoding="utf-8")
-    (tmp_path / "package_config.json").write_text("{}", encoding="utf-8")
-    (tmp_path / "setup-flutter.sh").write_text("#!/bin/bash", encoding="utf-8")
-
-    flutter_ops._add_build_sources(sources, tmp_path)
-
-    # All sources should be added
-    assert "pubspec-sources.json" in sources
-    assert "cargo-sources.json" in sources
-    assert {"type": "file", "path": "package_config.json"} in sources
-    assert {"type": "file", "path": "setup-flutter.sh"} in sources
-
-
-def test_add_build_sources_no_files_exist(tmp_path):
-    """Test _add_build_sources when no files exist."""
-    sources = []
-
-    flutter_ops._add_build_sources(sources, tmp_path)
-
-    # No sources should be added
-    assert len(sources) == 0
-
-
-def test_add_build_sources_some_files_exist(tmp_path):
-    """Test _add_build_sources when only some files exist."""
-    sources = []
-
-    # Create only some files
-    (tmp_path / "pubspec-sources.json").write_text("[]", encoding="utf-8")
-    (tmp_path / "setup-flutter.sh").write_text("#!/bin/bash", encoding="utf-8")
-
-    flutter_ops._add_build_sources(sources, tmp_path)
-
-    # Only existing sources should be added
-    assert "pubspec-sources.json" in sources
-    assert {"type": "file", "path": "setup-flutter.sh"} in sources
-    assert "cargo-sources.json" not in sources
-    assert {"type": "file", "path": "package_config.json"} not in sources
-
-
-def test_add_build_sources_avoids_duplicates(tmp_path):
-    """Test _add_build_sources doesn't add duplicates."""
-    sources = [
-        "pubspec-sources.json",  # Already present
-        {"type": "file", "path": "setup-flutter.sh"},  # Already present
-    ]
-
-    # Create all files
-    (tmp_path / "pubspec-sources.json").write_text("[]", encoding="utf-8")
-    (tmp_path / "cargo-sources.json").write_text("[]", encoding="utf-8")
-    (tmp_path / "package_config.json").write_text("{}", encoding="utf-8")
-    (tmp_path / "setup-flutter.sh").write_text("#!/bin/bash", encoding="utf-8")
-
-    initial_length = len(sources)
-    flutter_ops._add_build_sources(sources, tmp_path)
-
-    # Should only add the missing ones
-    assert "cargo-sources.json" in sources
-    assert {"type": "file", "path": "package_config.json"} in sources
-
-    # Should not duplicate existing ones
-    assert sources.count("pubspec-sources.json") == 1
-    setup_helper_count = sum(
-        1
-        for s in sources
-        if isinstance(s, dict) and s.get("path") == "setup-flutter.sh"
-    )
-    assert setup_helper_count == 1
 
 
 def test_bundle_app_archive_with_non_list_sources(make_document, tmp_path):

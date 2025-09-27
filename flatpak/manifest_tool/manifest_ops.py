@@ -23,8 +23,7 @@ def _ensure_flutter_sdk_helper(module: dict, helper_name: str) -> bool:
     """Ensure flutter-sdk module has the setup helper."""
     sources = module.setdefault("sources", [])
     has_helper = any(
-        isinstance(source, dict)
-        and source.get("dest-filename") == "setup-flutter.sh"
+        isinstance(source, dict) and source.get("dest-filename") == "setup-flutter.sh"
         for source in sources
     )
 
@@ -50,9 +49,7 @@ def _ensure_lotti_flutter_path(module: dict) -> bool:
 
     if "/app/flutter/bin" not in entries:
         env["PATH"] = (
-            f"/app/flutter/bin:{current_path}"
-            if current_path
-            else "/app/flutter/bin"
+            f"/app/flutter/bin:{current_path}" if current_path else "/app/flutter/bin"
         )
         return True
     return False
@@ -94,9 +91,7 @@ def _get_normalized_targets(repo_urls: Sequence[str] | None) -> set[str]:
     return {url.rstrip(".git") for url in repo_urls}
 
 
-def _should_pin_source(
-    source: dict, normalized_targets: set[str], commit: str
-) -> bool:
+def _should_pin_source(source: dict, normalized_targets: set[str], commit: str) -> bool:
     """Check if a source should be pinned to a commit."""
     if not isinstance(source, dict):
         return False
@@ -115,9 +110,7 @@ def _should_pin_source(
     return True
 
 
-def _pin_lotti_sources(
-    module: dict, commit: str, normalized_targets: set[str]
-) -> bool:
+def _pin_lotti_sources(module: dict, commit: str, normalized_targets: set[str]) -> bool:
     """Pin git sources in lotti module to specified commit."""
     changed = False
     for source in module.get("sources", []):
