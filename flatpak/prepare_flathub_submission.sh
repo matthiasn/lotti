@@ -28,10 +28,59 @@ print_info() {
     echo -e "${BLUE}[i]${NC} $1"
 }
 
+# Locate an existing Flutter SDK checkout that can be reused for offline builds
+# This now delegates to the Python CLI tool for consistency
+find_cached_flutter_dir() {
+    python3 "$PYTHON_CLI" find-flutter-sdk \
+        --search-root "$LOTTI_ROOT" \
+        --max-depth 6 2>/dev/null || true
+}
+
+# Find a previously downloaded source artifact by filename
+find_cached_source_file() {
+    local filename="$1"
+
+    local search_roots=(
+        "$FLATPAK_DIR/.flatpak-builder"
+        "$LOTTI_ROOT/.flatpak-builder"
+        "$(dirname "$LOTTI_ROOT")/.flatpak-builder"
+    )
+
+    local root
+    for root in "${search_roots[@]}"; do
+        if [ -d "$root" ]; then
+            local match
+            match=$(find "$root" -type f -name "$filename" -print -quit 2>/dev/null || true)
+            if [ -n "$match" ]; then
+                echo "$match"
+                return 0
+            fi
+        fi
+    done
+
+    return 1
+}
+
+# Replace a source url entry with a local path in the manifest
+replace_source_url_with_path() {
+    local manifest="$1"
+    local identifier="$2"
+    local path_value="$3"
+
+    # The Python CLI handles non-existent files and missing identifiers gracefully
+    if [ -n "${PYTHON_CLI:-}" ] && [ -f "$PYTHON_CLI" ]; then
+        python3 "$PYTHON_CLI" replace-url-with-path \
+            --manifest "$manifest" \
+            --identifier "$identifier" \
+            --path "$path_value" 2>/dev/null || true
+    fi
+}
+
 # Get the script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOTTI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FLATPAK_DIR="$LOTTI_ROOT/flatpak"
+PYTHON_CLI="$FLATPAK_DIR/manifest_tool/cli.py"
 
 # Work directory for generation
 WORK_DIR="$FLATPAK_DIR/flathub-build"
@@ -41,6 +90,10 @@ OUTPUT_DIR="$WORK_DIR/output"
 : "${CLEAN_AFTER_GEN:=true}"          # Remove .flatpak-builder after generation
 : "${PIN_COMMIT:=true}"               # Pin app source to exact commit in output manifest
 : "${USE_OFFLINE_FLUTTER:=true}"      # Rewrite manifest to consume generated Flutter JSON
+: "${USE_NESTED_FLUTTER:=false}"      # Prefer nested SDK module under lotti (false = keep top-level flutter-sdk)
+: "${USE_OFFLINE_ARCHIVES:=true}"     # Prefer cached archive/file sources in manifest
+: "${USE_OFFLINE_APP_SOURCE:=true}"   # Bundle app source as archive for offline testing
+: "${DOWNLOAD_MISSING_SOURCES:=true}" # Permit downloading sources when cache is absent
 
 # Version configuration
 if [ -z "${LOTTI_VERSION:-}" ]; then
@@ -56,18 +109,41 @@ if [ -z "${LOTTI_VERSION:-}" ]; then
     fi
 fi
 
+
 if [ -z "${LOTTI_RELEASE_DATE:-}" ]; then
     LOTTI_RELEASE_DATE=$(date +%Y-%m-%d)
 fi
 
-# Get the current branch
+# Get the current branch (handle detached HEAD in CI gracefully)
 CURRENT_BRANCH=$(cd "$LOTTI_ROOT" && git rev-parse --abbrev-ref HEAD)
 
-# Verify branch exists on remote (required for flatpak-flutter)
-if ! git -C "$LOTTI_ROOT" ls-remote origin "refs/heads/$CURRENT_BRANCH" > /dev/null 2>&1; then
-    print_error "Branch $CURRENT_BRANCH not found on remote"
-    print_info "Please push your branch first: git push origin $CURRENT_BRANCH"
-    exit 1
+if [ "$CURRENT_BRANCH" = "HEAD" ]; then
+    if [ -n "${GITHUB_HEAD_REF:-}" ]; then
+        CURRENT_BRANCH="$GITHUB_HEAD_REF"
+        print_warning "Detached HEAD detected; using GitHub head ref: $CURRENT_BRANCH"
+    elif [ -n "${GITHUB_REF_NAME:-}" ]; then
+        CURRENT_BRANCH="$GITHUB_REF_NAME"
+        print_warning "Detached HEAD detected; using GitHub ref name: $CURRENT_BRANCH"
+    else
+        CURRENT_BRANCH="main"
+        print_warning "Detached HEAD detected with no ref information; defaulting branch to 'main'"
+    fi
+fi
+
+# Verify branch exists on remote (optional warning if missing)
+set +e
+REMOTE_CHECK_OUTPUT=$(git -C "$LOTTI_ROOT" ls-remote origin "refs/heads/$CURRENT_BRANCH" 2>&1)
+REMOTE_CHECK_STATUS=$?
+set -e
+
+if [ "$REMOTE_CHECK_STATUS" -eq 0 ]; then
+    if [ -z "$REMOTE_CHECK_OUTPUT" ]; then
+        print_warning "Branch $CURRENT_BRANCH not found on remote"
+        print_info "Please ensure the branch is pushed before publishing"
+    fi
+else
+    print_warning "Unable to verify remote branch $CURRENT_BRANCH (git ls-remote exited with $REMOTE_CHECK_STATUS)."
+    print_info "Proceeding with local branch; ensure origin/$CURRENT_BRANCH exists before publishing."
 fi
 
 print_info "Using branch: $CURRENT_BRANCH"
@@ -80,10 +156,23 @@ echo "Release Date: ${LOTTI_RELEASE_DATE}"
 echo "Branch: ${CURRENT_BRANCH}"
 echo ""
 
+# Show effective options for diagnostics
+print_info "Effective options:"
+echo "  PIN_COMMIT=${PIN_COMMIT}"
+echo "  USE_OFFLINE_FLUTTER=${USE_OFFLINE_FLUTTER}"
+echo "  USE_NESTED_FLUTTER=${USE_NESTED_FLUTTER}"
+echo "  USE_OFFLINE_ARCHIVES=${USE_OFFLINE_ARCHIVES}"
+echo "  USE_OFFLINE_APP_SOURCE=${USE_OFFLINE_APP_SOURCE}"
+echo "  DOWNLOAD_MISSING_SOURCES=${DOWNLOAD_MISSING_SOURCES}"
+echo "  CLEAN_AFTER_GEN=${CLEAN_AFTER_GEN}"
+echo "  NO_FLATPAK_FLUTTER=${NO_FLATPAK_FLUTTER:-false}"
+echo "  FLATPAK_FLUTTER_TIMEOUT=${FLATPAK_FLUTTER_TIMEOUT:-<unset>}"
+echo ""
+
 # Step 1: Clean and create work directory
 print_status "Creating clean work directory..."
-rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
+find "$WORK_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 mkdir -p "$OUTPUT_DIR"
 
 # Step 2: Copy source manifest to work directory
@@ -115,8 +204,17 @@ else
   print_info "Detected Flutter tag: ${FLUTTER_TAG}"
 fi
 
+CACHED_FLUTTER_DIR="$(find_cached_flutter_dir || true)"
+# Always use the canonical upstream URL for the injected Flutter git source so that
+# flatpak-flutter can detect the tag and generate sources JSONs. We'll still reuse
+# any cached SDK only for priming the build directory below.
+FLUTTER_GIT_URL="https://github.com/flutter/flutter.git"
+if [ -n "$CACHED_FLUTTER_DIR" ]; then
+  print_info "Found cached Flutter SDK checkout at $CACHED_FLUTTER_DIR"
+fi
+
 # Insert a Flutter SDK git source into the lotti module's sources list
-awk -v TAG="$FLUTTER_TAG" '
+awk -v TAG="$FLUTTER_TAG" -v FLUTTER_URL="$FLUTTER_GIT_URL" '
   BEGIN { in_lotti=0; inserted=0 }
   /^  - name: lotti$/ { in_lotti=1 }
   # End of lotti module when another module starts
@@ -125,7 +223,7 @@ awk -v TAG="$FLUTTER_TAG" '
     if (in_lotti && /^ {4}sources:/ && !inserted) {
       print $0
       print "      - type: git"
-      print "        url: https://github.com/flutter/flutter.git"
+      print "        url: " FLUTTER_URL
       print "        tag: " TAG
       print "        dest: flutter"
       inserted=1
@@ -146,7 +244,7 @@ fi
 
 # Using upstream flatpak-flutter directly; no local patching required
 
-# Step 4: Run flatpak-flutter in work directory
+# Step 4: Run flatpak-flutter in work directory (with timeout + fallback)
 print_status "Running flatpak-flutter to generate offline sources..."
 cd "$WORK_DIR"
 
@@ -155,6 +253,23 @@ cp -r "$LOTTI_ROOT/lib" .
 cp -r "$LOTTI_ROOT/linux" .
 cp "$LOTTI_ROOT/pubspec.yaml" .
 cp "$LOTTI_ROOT/pubspec.lock" .
+
+# Copy the setup helper script from the helpers directory
+SETUP_HELPER_SOURCE="$FLATPAK_DIR/helpers/setup-flutter.sh"
+SETUP_HELPER="$WORK_DIR/setup-flutter.sh"
+
+if [ -f "$SETUP_HELPER_SOURCE" ]; then
+  cp "$SETUP_HELPER_SOURCE" "$SETUP_HELPER"
+  chmod +x "$SETUP_HELPER"
+else
+  print_error "Setup helper script not found at $SETUP_HELPER_SOURCE"
+  exit 1
+fi
+SETUP_HELPER_BASENAME="$(basename "$SETUP_HELPER")"
+
+python3 "$PYTHON_CLI" ensure-setup-helper \
+  --manifest "$WORK_DIR/com.matthiasn.lotti.yml" \
+  --helper "$SETUP_HELPER_BASENAME"
 
 # Create build directory that flatpak-flutter expects
 mkdir -p .flatpak-builder/build
@@ -173,14 +288,46 @@ for build_dir in \
 done
 
 # Prime a usable Flutter SDK at the path flatpak-flutter expects for pub get
-if [ ! -x ".flatpak-builder/build/lotti/flutter/bin/flutter" ]; then
-  print_status "Priming Flutter SDK at .flatpak-builder/build/lotti/flutter (tag $FLUTTER_TAG)..."
-  mkdir -p .flatpak-builder/build/lotti
-  git clone --depth 1 --branch "$FLUTTER_TAG" https://github.com/flutter/flutter.git .flatpak-builder/build/lotti/flutter || true
-  if [ -x ".flatpak-builder/build/lotti/flutter/bin/flutter" ]; then
-    (cd .flatpak-builder/build/lotti/flutter && ./bin/flutter --version || true)
+TARGET_FLUTTER_DIR=".flatpak-builder/build/lotti/flutter"
+if [ ! -x "$TARGET_FLUTTER_DIR/bin/flutter" ]; then
+  print_status "Priming Flutter SDK at $TARGET_FLUTTER_DIR (tag $FLUTTER_TAG)..."
+
+  # Try to reuse an existing local Flutter checkout to avoid network access
+  # Use Python CLI to find Flutter SDK, excluding the work directory
+  LOCAL_FLUTTER_DIR=""
+  if [ -n "$CACHED_FLUTTER_DIR" ]; then
+    # Check if the cached dir is not the target dir itself
+    if [ "$CACHED_FLUTTER_DIR" != "$(cd "$TARGET_FLUTTER_DIR/.." 2>/dev/null && pwd)/flutter" ]; then
+      LOCAL_FLUTTER_DIR="$CACHED_FLUTTER_DIR"
+    fi
+  fi
+
+  # If still no SDK, use Python tool to find one
+  if [ -z "$LOCAL_FLUTTER_DIR" ]; then
+    LOCAL_FLUTTER_DIR=$(python3 "$PYTHON_CLI" find-flutter-sdk \
+      --search-root "$LOTTI_ROOT" \
+      --exclude "$WORK_DIR" \
+      --exclude "$TARGET_FLUTTER_DIR" \
+      --max-depth 6 2>/dev/null || echo "")
+  fi
+
+  mkdir -p "$TARGET_FLUTTER_DIR"
+
+  if [ -n "$LOCAL_FLUTTER_DIR" ]; then
+    print_info "Using cached Flutter SDK from $LOCAL_FLUTTER_DIR"
+    find "$TARGET_FLUTTER_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    cp -a "$LOCAL_FLUTTER_DIR/." "$TARGET_FLUTTER_DIR" || print_warning "Failed to copy cached Flutter SDK; will fall back to cloning."
+  fi
+
+  if [ ! -x "$TARGET_FLUTTER_DIR/bin/flutter" ]; then
+    print_warning "Cached Flutter SDK not available; attempting shallow clone from remote."
+    git clone --depth 1 --branch "$FLUTTER_TAG" "$FLUTTER_GIT_URL" "$TARGET_FLUTTER_DIR" || true
+  fi
+
+  if [ -x "$TARGET_FLUTTER_DIR/bin/flutter" ]; then
+    (cd "$TARGET_FLUTTER_DIR" && ./bin/flutter --version || true)
   else
-    print_warning "Failed to clone Flutter SDK to expected path; flatpak-flutter will attempt its own clone."
+    print_warning "Failed to provision Flutter SDK; flatpak-flutter will attempt its own clone."
   fi
 fi
 
@@ -189,34 +336,49 @@ print_info "Running flatpak-flutter with the following manifest:"
 grep -A 5 "name: flutter-sdk" com.matthiasn.lotti.yml || print_warning "No flutter-sdk module found"
 grep -A 5 "name: lotti" com.matthiasn.lotti.yml || print_warning "No lotti module found"
 
-if ! python3 "$FLATPAK_DIR/flatpak-flutter/flatpak-flutter.py" \
-    --app-module lotti \
-    --keep-build-dirs \
-    "com.matthiasn.lotti.yml" 2>&1 | tee flatpak-flutter.log; then
-    print_error "flatpak-flutter failed to generate files"
-    print_info "Check flatpak-flutter.log for details"
-    exit 1
-fi
+FLATPAK_FLUTTER_TIMEOUT="${FLATPAK_FLUTTER_TIMEOUT:-}"
+NO_FLATPAK_FLUTTER="${NO_FLATPAK_FLUTTER:-false}"
+FLATPAK_FLUTTER_STATUS=0
 
-print_status "Generated offline manifest and dependencies"
+if [ "$NO_FLATPAK_FLUTTER" != "true" ]; then
+  set +e
+  if [ -n "$FLATPAK_FLUTTER_TIMEOUT" ]; then
+    GIT_TERMINAL_PROMPT=0 timeout "$FLATPAK_FLUTTER_TIMEOUT" \
+      python3 "$FLATPAK_DIR/flatpak-flutter/flatpak-flutter.py" \
+        --app-module lotti \
+        --keep-build-dirs \
+        "com.matthiasn.lotti.yml" 2>&1 | tee flatpak-flutter.log
+    FLATPAK_FLUTTER_STATUS=$?
+  else
+    GIT_TERMINAL_PROMPT=0 \
+      python3 "$FLATPAK_DIR/flatpak-flutter/flatpak-flutter.py" \
+        --app-module lotti \
+        --keep-build-dirs \
+        "com.matthiasn.lotti.yml" 2>&1 | tee flatpak-flutter.log
+    FLATPAK_FLUTTER_STATUS=$?
+  fi
+  set -e
+  if [ $FLATPAK_FLUTTER_STATUS -eq 0 ]; then
+    print_status "Generated offline manifest and dependencies"
+  else
+    if [ $FLATPAK_FLUTTER_STATUS -eq 124 ]; then
+      print_warning "flatpak-flutter timed out after ${FLATPAK_FLUTTER_TIMEOUT}s; set FLATPAK_FLUTTER_TIMEOUT to a larger value or unset to disable. Proceeding with fallback generation."
+    else
+      print_warning "flatpak-flutter did not complete (exit ${FLATPAK_FLUTTER_STATUS}); proceeding with fallback generation"
+    fi
+    print_info "Check flatpak-flutter.log for partial output"
+  fi
+else
+  print_info "Skipping flatpak-flutter run (NO_FLATPAK_FLUTTER=true); using fallback generation paths"
+  FLATPAK_FLUTTER_STATUS=124
+fi
 
 # Pin commit in the working manifest before submission/copy
 APP_COMMIT=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
 print_status "Pinning working manifest to commit: $APP_COMMIT"
-awk -v C="$APP_COMMIT" '
-  BEGIN { in_lotti=0; in_src=0; in_git=0 }
-  /^\s*- name: lotti\s*$/ { in_lotti=1 }
-  in_lotti && /^\s*- name: [^l]/ { in_lotti=0 }
-  {
-    if (in_lotti && /^\s{4}sources:\s*$/) { in_src=1 }
-    if (in_src && /^\s{6}- /) { in_git=0 }
-    if (in_src && /^\s{6}-\s+type:\s+git\s*$/) { in_git=1 }
-    if (in_git && /^\s{8}url:\s+https:\/\/github.com\/matthiasn\/lotti\s*$/) { url_ok=1 }
-    if (in_git && url_ok && /^\s{8}branch:/) { sub(/branch:.*/, "commit: " C) }
-    if (in_git && url_ok && /^\s{8}commit:\s*COMMIT_PLACEHOLDER/) { sub(/commit:.*/, "commit: " C) }
-    print $0
-  }
-' "$WORK_DIR/com.matthiasn.lotti.yml" > "$WORK_DIR/com.matthiasn.lotti.tmp.yml" && mv "$WORK_DIR/com.matthiasn.lotti.tmp.yml" "$WORK_DIR/com.matthiasn.lotti.yml"
+python3 "$PYTHON_CLI" pin-commit \
+  --manifest "$WORK_DIR/com.matthiasn.lotti.yml" \
+  --commit "$APP_COMMIT"
 
 # Fast-fail validation on working manifest to prevent submitting branch refs
 print_status "Validating working manifest is commit-pinned..."
@@ -260,8 +422,104 @@ cp -- "com.matthiasn.lotti.yml" "$OUTPUT_DIR/"
 cp -- flutter-sdk-*.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No flutter-sdk JSON found"
 cp -- pubspec-sources.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No pubspec-sources.json found"
 cp -- cargo-sources.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No cargo-sources.json found"
-cp -- rustup-*.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No rustup JSON found"
+cp -- rustup-*.json "$OUTPUT_DIR/" 2>/dev/null || print_info "No rustup JSON found (will rely on SDK extension if not present)"
 cp -- package_config.json "$OUTPUT_DIR/" 2>/dev/null || print_warning "No package_config.json found"
+cp -- "$WORK_DIR/setup-flutter.sh" "$OUTPUT_DIR/" 2>/dev/null || true
+
+# Collect JSON artifacts from build directories when generated elsewhere
+for search_root in . ..; do
+  for pattern in \
+    '*/.flatpak-builder/*/pubspec-sources.json' \
+    '*/.flatpak-builder/*/cargo-sources.json' \
+    '*/.flatpak-builder/*/flutter-sdk-*.json'; do
+    while IFS= read -r json; do
+      [ -n "${json:-}" ] || continue
+      base=$(basename "$json")
+      cp -- "$json" "$OUTPUT_DIR/" 2>/dev/null && print_info "Bundled $base" || true
+    done < <(find "$search_root" -maxdepth 10 -path "$pattern" -print 2>/dev/null)
+  done
+done
+
+# Fallback: generate pubspec-sources.json and package_config.json if missing
+# Also: generate cargo-sources.json if cargo locks are present but the file is missing
+if [ ! -f "$OUTPUT_DIR/cargo-sources.json" ]; then
+  print_warning "No cargo-sources.json; attempting to generate from Cargo.lock files..."
+  CARGO_LOCKS=$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 7 -path '*/.pub-cache/hosted/pub.dev/*/rust/Cargo.lock' -print 2>/dev/null || true)
+  if [ -n "$CARGO_LOCKS" ]; then
+    LOCK_LIST=$(echo "$CARGO_LOCKS" | paste -sd, -)
+    if python3 "$FLATPAK_DIR/flatpak-flutter/cargo_generator/cargo_generator.py" "$LOCK_LIST" -o "$WORK_DIR/cargo-sources.json"; then
+      cp -- "$WORK_DIR/cargo-sources.json" "$OUTPUT_DIR/" 2>/dev/null && print_status "Generated cargo-sources.json from Cargo.lock"
+    else
+      print_warning "Failed to synthesize cargo-sources.json via cargo_generator"
+    fi
+  else
+    print_warning "No Cargo.lock files found under .flatpak-builder; skipping cargo-sources generation"
+  fi
+fi
+
+if [ ! -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
+  print_warning "No pubspec-sources.json; generating from pubspec.lock files..."
+  APP_LOCK="$WORK_DIR/pubspec.lock"
+  TOOLS_LOCK=""
+  if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
+    TOOLS_LOCK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/pubspec.lock' -print -quit 2>/dev/null || true)"
+  fi
+
+  if [ -z "$TOOLS_LOCK" ]; then
+    print_warning "Could not locate flutter_tools pubspec.lock within .flatpak-builder cache"
+  fi
+
+  if [ -f "$APP_LOCK" ] && [ -n "$TOOLS_LOCK" ] && [ -f "$TOOLS_LOCK" ]; then
+    python3 "$FLATPAK_DIR/flatpak-flutter/pubspec_generator/pubspec_generator.py" \
+      "$APP_LOCK,$TOOLS_LOCK" -o "$OUTPUT_DIR/pubspec-sources.json" || print_error "Failed to generate pubspec-sources.json"
+    # Also stage the current package_config.json if available to speed offline bootstrap
+    TOOLS_DIR="$(dirname "$TOOLS_LOCK")"
+    PKG_CFG="$TOOLS_DIR/.dart_tool/package_config.json"
+    if [ -f "$PKG_CFG" ]; then
+      cp -- "$PKG_CFG" "$OUTPUT_DIR/package_config.json" || true
+    else
+      PKG_CFG_FALLBACK=""
+      if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
+        PKG_CFG_FALLBACK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/.dart_tool/package_config.json' -print -quit 2>/dev/null || true)"
+      fi
+      if [ -n "$PKG_CFG_FALLBACK" ] && [ -f "$PKG_CFG_FALLBACK" ]; then
+        cp -- "$PKG_CFG_FALLBACK" "$OUTPUT_DIR/package_config.json" || true
+      else
+        print_warning "Could not locate flutter_tools package_config.json for offline cache"
+      fi
+    fi
+  else
+    print_warning "Missing pubspec.lock paths; cannot generate pubspec-sources.json"
+  fi
+fi
+
+# Fallback: if flatpak-flutter did not emit a flutter-sdk-*.json, generate one
+FLUTTER_JSON_PATH=""
+for candidate in "$OUTPUT_DIR"/flutter-sdk-*.json; do
+  if [ -e "$candidate" ]; then
+    FLUTTER_JSON_PATH="$candidate"
+    break
+  fi
+done
+
+if [ -z "$FLUTTER_JSON_PATH" ]; then
+  print_warning "No flutter-sdk JSON produced by flatpak-flutter; generating locally..."
+  GEN_INPUT_DIR="$WORK_DIR/.flatpak-builder/build/lotti/flutter"
+  if [ -x "$GEN_INPUT_DIR/bin/flutter" ]; then
+    GEN_OUT="$OUTPUT_DIR/flutter-sdk-${FLUTTER_TAG}.json"
+    python3 "$FLATPAK_DIR/flatpak-flutter/flutter_sdk_generator/flutter_sdk_generator.py" "$GEN_INPUT_DIR" -o "$GEN_OUT" || print_error "Failed to generate flutter-sdk JSON"
+    if [ -f "$GEN_OUT" ]; then
+      print_status "Generated $GEN_OUT"
+    fi
+  else
+    print_warning "Primed Flutter SDK not found at $GEN_INPUT_DIR; cannot generate flutter-sdk JSON"
+  fi
+fi
+
+if [ ! -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
+  print_error "pubspec-sources.json missing after preparation; offline bundle is incomplete"
+  exit 1
+fi
 
 # Check if files were generated in parent directory
 if [ -f "../pubspec-sources.json" ]; then
@@ -269,12 +527,15 @@ if [ -f "../pubspec-sources.json" ]; then
     cp -- ../flutter-sdk-*.json "$OUTPUT_DIR/" 2>/dev/null
     cp -- ../pubspec-sources.json "$OUTPUT_DIR/" 2>/dev/null
     cp -- ../cargo-sources.json "$OUTPUT_DIR/" 2>/dev/null
-    cp -- ../rustup-*.json "$OUTPUT_DIR/" 2>/dev/null
+    cp -- ../rustup-*.json "$OUTPUT_DIR/" 2>/dev/null || true
     cp -- ../package_config.json "$OUTPUT_DIR/" 2>/dev/null
 fi
 
 # Step 6: Copy additional required files
 print_status "Copying additional files..."
+
+# Path to the output manifest for subsequent operations
+OUT_MANIFEST="$OUTPUT_DIR/com.matthiasn.lotti.yml"
 
 # Copy metadata files
 if [ -f "$FLATPAK_DIR/com.matthiasn.lotti.metainfo.xml" ]; then
@@ -298,6 +559,30 @@ for icon in "$FLATPAK_DIR"/app_icon_*.png; do
     fi
 done
 
+# Copy Flutter helper patches if referenced by the manifest
+for flutter_patch in flutter-shared.sh.patch flutter-pre-3_35-shared.sh.patch; do
+  patch_source=""
+  if [ -f "$FLATPAK_DIR/flatpak-flutter/releases/flutter/$flutter_patch" ]; then
+    patch_source="$FLATPAK_DIR/flatpak-flutter/releases/flutter/$flutter_patch"
+  elif [ -f "$FLATPAK_DIR/flatpak-flutter/$flutter_patch" ]; then
+    patch_source="$FLATPAK_DIR/flatpak-flutter/$flutter_patch"
+  fi
+
+  if [ -n "$patch_source" ]; then
+    cp -- "$patch_source" "$OUTPUT_DIR/$flutter_patch"
+    cp -- "$patch_source" "$WORK_DIR/$flutter_patch"
+  fi
+
+  if [ -f "$OUT_MANIFEST" ] && grep -q "$flutter_patch" "$OUT_MANIFEST" 2>/dev/null; then
+    if [ -n "$patch_source" ]; then
+      replace_source_url_with_path "$OUT_MANIFEST" "$flutter_patch" "$flutter_patch"
+      print_info "Bundled Flutter patch $flutter_patch"
+    else
+      print_warning "Referenced Flutter patch $flutter_patch not found in flatpak-flutter sources"
+    fi
+  fi
+done
+
 # Copy patch directories if needed
 if [ -d "$FLATPAK_DIR/patches" ]; then
     cp -r "$FLATPAK_DIR/patches" "$OUTPUT_DIR/"
@@ -316,66 +601,133 @@ print_status "Post-processing output manifest..."
 
 OUT_MANIFEST="$OUTPUT_DIR/com.matthiasn.lotti.yml"
 if [ -f "$OUT_MANIFEST" ]; then
-  # Pin app source to commit
+  python3 "$PYTHON_CLI" normalize-lotti-env \
+    --manifest "$OUT_MANIFEST" \
+    --layout top
+
+  # Ensure network sharing is allowed for the lotti build stage
+  python3 "$PYTHON_CLI" ensure-lotti-network-share \
+    --manifest "$OUT_MANIFEST"
+
+  # Prefer Rust SDK extension over rustup installer
+  python3 "$PYTHON_CLI" ensure-rust-sdk-env \
+    --manifest "$OUT_MANIFEST"
+  python3 "$PYTHON_CLI" remove-rustup-install \
+    --manifest "$OUT_MANIFEST"
+
+  # If a rustup JSON module is present, include it before lotti so rustup
+  # is available for cargokit-based plugins that require rustup.
+  RUSTUP_MOD=""
+  for candidate in "$OUTPUT_DIR"/rustup-*.json; do
+    if [ -e "$candidate" ]; then
+      RUSTUP_MOD="$(basename "$candidate")"
+      break
+    fi
+  done
+  if [ -n "$RUSTUP_MOD" ]; then
+    print_info "Including rustup module $RUSTUP_MOD before lotti"
+    python3 "$PYTHON_CLI" ensure-module-include \
+      --manifest "$OUT_MANIFEST" \
+      --name "$RUSTUP_MOD" \
+      --before lotti
+  else
+    print_info "No rustup module JSON found; proceeding with Rust SDK extension only"
+  fi
+
   if [ "$PIN_COMMIT" = "true" ]; then
     APP_COMMIT=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
     print_info "Pinning app source to commit: $APP_COMMIT"
-    awk -v C="$APP_COMMIT" '
-      BEGIN { in_lotti=0; in_src=0; in_git=0 }
-      /^\s*- name: lotti\s*$/ { in_lotti=1 }
-      in_lotti && /^\s*- name: [^l]/ { in_lotti=0 }
-      {
-        if (in_lotti && /^\s{4}sources:\s*$/) { in_src=1 }
-        if (in_src && /^\s{6}- /) { in_git=0 }
-        if (in_src && /^\s{6}-\s+type:\s+git\s*$/) { in_git=1 }
-        if (in_git && /^\s{8}url:\s+https:\/\/github.com\/matthiasn\/lotti\s*$/) { url_ok=1 }
-        if (in_git && url_ok && /^\s{8}branch:/) { sub(/branch:.*/, "commit: " C) }
-        if (in_git && url_ok && /^\s{8}commit:\s*COMMIT_PLACEHOLDER/) { sub(/commit:.*/, "commit: " C) }
-        print $0
-      }
-    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+    python3 "$PYTHON_CLI" pin-commit \
+      --manifest "$OUT_MANIFEST" \
+      --commit "$APP_COMMIT"
   fi
 
-  # Use offline Flutter SDK JSON instead of separate module
+  if [ "$USE_NESTED_FLUTTER" = "true" ]; then
+    python3 "$PYTHON_CLI" ensure-nested-sdk \
+      --manifest "$OUT_MANIFEST" \
+      --output-dir "$OUTPUT_DIR"
+  fi
+
   if [ "$USE_OFFLINE_FLUTTER" = "true" ]; then
-    # Remove flutter-sdk module block entirely
-    awk '
-      BEGIN{skip=0}
-      /^\s*- name: flutter-sdk\s*$/ {skip=1}
-      skip && /^\s*- name: / {skip=0}
-      !skip {print}
-    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+    FLUTTER_JSON=""
+    for candidate in "$OUTPUT_DIR"/flutter-sdk-*.json; do
+      if [ -e "$candidate" ]; then
+        FLUTTER_JSON="$(basename "$candidate")"
+        break
+      fi
+    done
 
-    # Insert offline JSON includes into lotti module sources
-    # Determine available JSONs relative to output dir
-    FLUTTER_JSON=$(ls "$OUTPUT_DIR"/flutter-sdk-*.json 2>/dev/null | xargs -n1 basename | head -n1)
-    PUBSPEC_JSON=$( [ -f "$OUTPUT_DIR/pubspec-sources.json" ] && echo pubspec-sources.json )
-    CARGO_JSON=$( [ -f "$OUTPUT_DIR/cargo-sources.json" ] && echo cargo-sources.json )
-    RUSTUP_JSON=$(ls "$OUTPUT_DIR"/rustup-*.json 2>/dev/null | xargs -n1 basename | head -n1)
+    REMOVE_FLUTTER_SDK=$(python3 "$PYTHON_CLI" should-remove-flutter-sdk \
+      --manifest "$OUT_MANIFEST" \
+      --output-dir "$OUTPUT_DIR")
 
-    print_info "Adding offline sources: ${FLUTTER_JSON:-none} ${PUBSPEC_JSON:-} ${CARGO_JSON:-} ${RUSTUP_JSON:-}"
+    if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
+      print_info "Offline Flutter JSON found and referenced; removing top-level flutter-sdk module."
+      awk '
+        BEGIN{skip=0}
+        /^\s*- name: flutter-sdk\s*$/ {skip=1}
+        skip && /^\s*- name: / {skip=0}
+        !skip {print}
+      ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+    else
+      print_info "Keeping top-level flutter-sdk module (offline JSON missing or not referenced)."
+    fi
 
-    awk -v FJ="$FLUTTER_JSON" -v PJ="$PUBSPEC_JSON" -v CJ="$CARGO_JSON" -v RJ="$RUSTUP_JSON" '
-      BEGIN { in_lotti=0; inserted=0 }
-      /^\s*- name: lotti\s*$/ { in_lotti=1 }
-      in_lotti && /^\s*- name: [^l]/ { in_lotti=0 }
-      {
-        print $0
-        if (in_lotti && /^\s{4}sources:\s*$/ && !inserted) {
-          if (FJ != "") { print "      - type: file\n        path: " FJ }
-          if (PJ != "") { print "      - type: file\n        path: " PJ }
-          if (CJ != "") { print "      - type: file\n        path: " CJ }
-          if (RJ != "") { print "      - type: file\n        path: " RJ }
-          inserted=1
-        }
-      }
-    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+    python3 "$PYTHON_CLI" normalize-flutter-sdk-module \
+      --manifest "$OUT_MANIFEST"
 
-    # Adjust build-commands to use extracted SDK in module dir rather than /app/flutter
-    sed -i 's|cp -r /app/flutter /run/build/lotti/flutter_sdk|cp -r flutter /run/build/lotti/flutter_sdk|' "$OUT_MANIFEST"
-    
-    # Remove problematic CMake patch entries for sqlite3_flutter_libs if present
-    # This drops any single source item with type: patch whose path contains CMakeLists.txt.patch
+    PUBSPEC_JSON=""
+    if [ -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
+      PUBSPEC_JSON="pubspec-sources.json"
+    fi
+
+    CARGO_JSON=""
+    if [ -f "$OUTPUT_DIR/cargo-sources.json" ]; then
+      CARGO_JSON="cargo-sources.json"
+    fi
+
+    print_info "Adding offline sources: ${FLUTTER_JSON:-none} ${PUBSPEC_JSON:-} ${CARGO_JSON:-}"
+    PYTHON_OFFLINE_ARGS=(
+      "$PYTHON_CLI" add-offline-sources
+      --manifest "$OUT_MANIFEST"
+    )
+    if [ -n "$PUBSPEC_JSON" ]; then
+      PYTHON_OFFLINE_ARGS+=(--pubspec "$PUBSPEC_JSON")
+    fi
+    if [ -n "$CARGO_JSON" ]; then
+      PYTHON_OFFLINE_ARGS+=(--cargo "$CARGO_JSON")
+    fi
+    if [ "$USE_NESTED_FLUTTER" = "true" ] && [ -n "$FLUTTER_JSON" ]; then
+      PYTHON_OFFLINE_ARGS+=(--flutter-json "$FLUTTER_JSON")
+    fi
+    python3 "${PYTHON_OFFLINE_ARGS[@]}"
+
+    if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
+      python3 "$PYTHON_CLI" normalize-lotti-env \
+        --manifest "$OUT_MANIFEST" \
+        --layout nested \
+        --append-path
+      python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
+        --manifest "$OUT_MANIFEST" \
+        --layout nested \
+        --helper "$SETUP_HELPER_BASENAME"
+    else
+      python3 "$PYTHON_CLI" normalize-lotti-env \
+        --manifest "$OUT_MANIFEST" \
+        --layout top \
+        --append-path
+      python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
+        --manifest "$OUT_MANIFEST" \
+        --layout top \
+        --helper "$SETUP_HELPER_BASENAME"
+    fi
+
+    python3 "$PYTHON_CLI" normalize-sdk-copy \
+      --manifest "$OUT_MANIFEST"
+
+    # Ensure no rustup JSONs are referenced in sources (we rely on the Rust SDK extension)
+    python3 "$PYTHON_CLI" remove-rustup-sources \
+      --manifest "$OUT_MANIFEST"
     awk '
       BEGIN { in_patch=0; has_cmake=0; }
       {
@@ -386,13 +738,10 @@ if [ -f "$OUT_MANIFEST" ]; then
             print $0; next;
           }
         } else {
-          # inside a patch source entry
           if ($0 ~ /CMakeLists\.txt\.patch/) { has_cmake=1 }
           buf[++buf_cnt]=$0
           if ($0 ~ /^\s{6}-\s/ ) {
-            # next source entry begins; flush previous
             if (!has_cmake) { for (i=1;i<=buf_cnt-1;i++) print buf[i]; }
-            # start buffering the new line only if it is another patch entry
             if ($0 ~ /^\s{6}-\s*type:\s*patch\s*$/) { in_patch=1; has_cmake=0; buf_cnt=0; buf[++buf_cnt]=$0; }
             else { in_patch=0; print $0; }
           }
@@ -404,9 +753,98 @@ if [ -f "$OUT_MANIFEST" ]; then
         }
       }
     ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
+
+    if [ -z "$FLUTTER_JSON" ]; then
+      FLUTTER_ARCHIVE_BASENAME="flutter_linux_${FLUTTER_TAG}-stable.tar.xz"
+      FLUTTER_ARCHIVE_SOURCE=""
+
+      if [ -f "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" ]; then
+        FLUTTER_ARCHIVE_SOURCE="$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME"
+      else
+        for root in \
+          "$FLATPAK_DIR/.flatpak-builder" \
+          "$LOTTI_ROOT/.flatpak-builder" \
+          "$(dirname "$LOTTI_ROOT")/.flatpak-builder"; do
+          [ -d "$root" ] || continue
+          candidate=$(find "$root" -type f -name "flutter_*${FLUTTER_TAG}*.tar.*" -print -quit 2>/dev/null || true)
+          if [ -n "$candidate" ]; then
+            FLUTTER_ARCHIVE_SOURCE="$candidate"
+            break
+          fi
+        done
+      fi
+
+      if [ -z "$FLUTTER_ARCHIVE_SOURCE" ] && [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
+        FLUTTER_ARCHIVE_URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_TAG}-stable.tar.xz"
+        print_info "Downloading Flutter archive ${FLUTTER_ARCHIVE_BASENAME}"
+        if curl -L --fail -o "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" "$FLUTTER_ARCHIVE_URL"; then
+          FLUTTER_ARCHIVE_SOURCE="$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME"
+        else
+          print_warning "Failed to download Flutter archive from $FLUTTER_ARCHIVE_URL"
+        fi
+      fi
+
+      if [ -n "$FLUTTER_ARCHIVE_SOURCE" ]; then
+        FLUTTER_ARCHIVE_BASENAME="$(basename "$FLUTTER_ARCHIVE_SOURCE")"
+        if [ "$FLUTTER_ARCHIVE_SOURCE" != "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" ]; then
+          cp -- "$FLUTTER_ARCHIVE_SOURCE" "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME"
+        fi
+        FLUTTER_ARCHIVE_SHA256=$(sha256sum "$OUTPUT_DIR/$FLUTTER_ARCHIVE_BASENAME" | awk '{print $1}')
+
+        python3 "$PYTHON_CLI" convert-flutter-git-to-archive \
+          --manifest "$OUT_MANIFEST" \
+          --archive "$FLUTTER_ARCHIVE_BASENAME" \
+          --sha256 "$FLUTTER_ARCHIVE_SHA256"
+        print_info "Bundled Flutter archive ${FLUTTER_ARCHIVE_BASENAME} for offline builds"
+      else
+        print_warning "No cached Flutter archive found; flutter-sdk module will continue to reference upstream git"
+      fi
+    fi
   fi
-else
-  print_warning "Output manifest not found at $OUT_MANIFEST; skipping post-processing"
+
+  # Offline Python artifacts (e.g., Jinja2, MarkupSafe) are handled generically
+  # by bundle-archive-sources below; no bespoke logic needed here.
+
+  if [ "$USE_OFFLINE_ARCHIVES" = "true" ]; then
+    print_info "Bundling cached archive and file sources referenced by manifest..."
+    if [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
+      python3 "$PYTHON_CLI" bundle-archive-sources \
+        --manifest "$OUT_MANIFEST" \
+        --output-dir "$OUTPUT_DIR" \
+        --download-missing \
+        --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
+        --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
+        --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
+    else
+      python3 "$PYTHON_CLI" bundle-archive-sources \
+        --manifest "$OUT_MANIFEST" \
+        --output-dir "$OUTPUT_DIR" \
+        --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
+        --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
+        --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
+    fi
+  fi
+
+  python3 "$PYTHON_CLI" rewrite-flutter-git-url \
+    --manifest "$OUT_MANIFEST"
+
+  if [ "$USE_OFFLINE_APP_SOURCE" = "true" ]; then
+    LOTT_ARCHIVE_NAME="lotti-${APP_COMMIT}.tar.xz"
+    LOTT_ARCHIVE_PATH="$OUTPUT_DIR/$LOTT_ARCHIVE_NAME"
+
+    if [ ! -f "$LOTT_ARCHIVE_PATH" ]; then
+      print_info "Creating archived app source ${LOTT_ARCHIVE_NAME}"
+      git -C "$LOTTI_ROOT" archive --format=tar --prefix=lotti/ "$APP_COMMIT" | xz > "$LOTT_ARCHIVE_PATH"
+    fi
+
+    LOTT_ARCHIVE_SHA256=$(sha256sum "$LOTT_ARCHIVE_PATH" | awk '{print $1}')
+
+    python3 "$PYTHON_CLI" bundle-app-archive \
+      --manifest "$OUT_MANIFEST" \
+      --archive "$LOTT_ARCHIVE_NAME" \
+      --sha256 "$LOTT_ARCHIVE_SHA256" \
+      --output-dir "$OUTPUT_DIR"
+  fi
 fi
 
 # Final validation: ensure the manifest to be submitted is commit-pinned (no branch:, no COMMIT_PLACEHOLDER)

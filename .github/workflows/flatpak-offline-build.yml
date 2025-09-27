@@ -1,0 +1,81 @@
+name: Build Flatpak Offline Payload
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  offline-flatpak:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed so the prep script can pin the exact commit
+
+      - name: Install Flatpak and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+
+          # Add Flathub repository
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+          # Install required runtime and SDK extensions
+          sudo flatpak install -y flathub org.freedesktop.Platform//24.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk//24.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.llvm20//24.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
+
+      - name: Verify Flatpak
+        run: |
+          flatpak --version
+          flatpak list
+
+      - name: Install Python dependencies for flatpak-flutter
+        run: |
+          python3 -m pip install --user --disable-pip-version-check toml pyyaml packaging
+
+      - name: Run manifest helper tests
+        run: |
+          cd flatpak
+          python3 -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install pytest pyyaml
+          python -m pytest manifest_tool/tests
+
+      - name: Prepare Flathub payload
+        env:
+          CLEAN_AFTER_GEN: "false"  # Keep build artifacts for the verification step
+        run: |
+          ./flatpak/prepare_flathub_submission.sh
+
+      - name: Debug prepared payload contents
+        run: |
+          ls -R flatpak/flathub-build/output || true
+
+      - name: Build from prepared manifest
+        working-directory: flatpak/flathub-build/output
+        env:
+          DEBUG_SETUP_FLUTTER: "1"
+        run: |
+          flatpak-builder \
+            --user \
+            --install \
+            --force-clean \
+            build-dir com.matthiasn.lotti.yml
+
+      - name: Verify Flatpak (post-build)
+        run: |
+          flatpak --version
+          flatpak list
+
+      # Removed artifact upload step; no useful binaries in payload
