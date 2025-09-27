@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 import shutil
+import socket
 import urllib.request
+import urllib.error
 from urllib.parse import urlparse
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -119,12 +121,16 @@ class ArtifactCache:
             messages.append(message)
             _LOGGER.debug(message)
             return destination, messages
-        except Exception as exc:  # pragma: no cover - network/path errors
+        except (
+            urllib.error.URLError,
+            socket.timeout,
+            OSError,
+        ) as exc:  # pragma: no cover - network/path errors
+            _LOGGER.exception("Download failed for %s from %s", filename, source_url)
             if destination.exists():
                 destination.unlink(missing_ok=True)
             message = f"ERROR {filename} {exc}"
             messages.append(message)
-            _LOGGER.error(message)
             return None, messages
 
     def _find_in_roots(self, filename: str) -> Optional[Path]:

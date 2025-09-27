@@ -76,11 +76,12 @@ def pin_commit(
 ) -> OperationResult:
     """Replace lotti git source commit with ``commit`` and drop branch keys."""
 
-    targets: Iterable[str]
+    # Normalize target URLs by removing trailing .git
+    normalized_targets: set[str]
     if repo_urls is None:
-        targets = _DEFAULT_REPO_URLS
+        normalized_targets = {url.rstrip(".git") for url in _DEFAULT_REPO_URLS}
     else:
-        targets = repo_urls
+        normalized_targets = {url.rstrip(".git") for url in repo_urls}
 
     modules = document.ensure_modules()
 
@@ -91,8 +92,12 @@ def pin_commit(
         for source in module.get("sources", []):
             if not isinstance(source, dict):
                 continue
-            url = source.get("url") or ""
-            if url not in targets:
+            # Only process git sources
+            if source.get("type") != "git":
+                continue
+            # Normalize source URL by removing trailing .git
+            url = (source.get("url") or "").rstrip(".git")
+            if url not in normalized_targets:
                 continue
             if source.get("commit") == commit and "branch" not in source:
                 continue

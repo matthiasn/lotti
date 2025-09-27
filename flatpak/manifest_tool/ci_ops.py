@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Dict, Mapping
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def pr_aware_environment(
@@ -28,7 +31,8 @@ def pr_aware_environment(
 
     try:
         payload = json.loads(payload_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, OSError) as e:
+        _LOGGER.warning("Failed to load event payload from %s: %s", payload_path, e)
         return {}
 
     head = payload.get("pull_request", {}).get("head", {})

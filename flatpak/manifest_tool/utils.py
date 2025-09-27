@@ -18,7 +18,7 @@ _logger_configured = False
 def get_logger(name: str | None = None) -> logging.Logger:
     """Return a module-level logger with default configuration."""
 
-    global _logger_configured  # noqa: PLW0603 - intentional module-level guard
+    global _logger_configured  # intentional module-level guard
     base_logger = logging.getLogger(_LOGGER_BASENAME)
     if not _logger_configured:
         handler = logging.StreamHandler()

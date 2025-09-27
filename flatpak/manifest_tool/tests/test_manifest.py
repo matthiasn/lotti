@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import yaml
 
 from flatpak.manifest_tool.manifest import (
     ManifestDocument,
@@ -21,7 +22,12 @@ def test_manifest_document_load_and_save(make_document):
 
     document.save()
     assert not document.changed
-    assert document.path.read_text(encoding="utf-8").strip().startswith("modules:")
+
+    # Parse the saved YAML and verify structure
+    content = document.path.read_text(encoding="utf-8")
+    parsed = yaml.safe_load(content)
+    assert "modules" in parsed
+    assert isinstance(parsed["modules"], list)
 
 
 def test_manifest_document_allow_missing(tmp_path: Path):
