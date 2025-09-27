@@ -73,21 +73,12 @@ jobs:
         echo "Manifest updated with commit:"
         grep -A2 -E "url:.*lotti" com.matthiasn.lotti.yml | grep -E "url:.*/lotti"
 
-
-
-
-
-
-
-
-
-
-
-
     - name: Build Flatpak
       run: |
         cd flatpak
-        flatpak-builder --verbose --install --force-clean --repo=repo build-dir com.matthiasn.lotti.yml
+        # Use --user with --install to install at user level (no sudo required)
+        # Also export to repo for creating the bundle
+        flatpak-builder --verbose --user --install --force-clean --repo=repo build-dir com.matthiasn.lotti.yml
 
     - name: Verify Flatpak (post-build)
       run: |
