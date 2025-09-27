@@ -34,6 +34,11 @@ jobs:
           sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.llvm20//24.08
           sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
 
+      - name: Verify Flatpak
+        run: |
+          flatpak --version
+          flatpak list
+
       - name: Install Python dependencies for flatpak-flutter
         run: |
           python3 -m pip install --user --disable-pip-version-check toml pyyaml packaging
