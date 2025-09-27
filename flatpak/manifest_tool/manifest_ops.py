@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Sequence, Optional
+from typing import Any, Iterable, Sequence, Optional
 
 try:  # pragma: no cover
     from . import utils
@@ -111,6 +111,83 @@ def pin_commit(
     return OperationResult.unchanged()
 
 
+def _is_lotti_module(module: Any) -> bool:
+    """Check if a module is the lotti module."""
+    return isinstance(module, dict) and module.get("name") == "lotti"
+
+
+def _is_git_source(source: Any) -> bool:
+    """Check if a source is a git source."""
+    return isinstance(source, dict) and source.get("type") == "git"
+
+
+def _normalize_repo_url(url: str) -> str:
+    """Normalize a repository URL for comparison."""
+    # Remove trailing .git if present
+    if url.endswith(".git"):
+        url = url[:-4]
+    # Remove GitHub prefixes
+    url = url.replace("https://github.com/", "")
+    url = url.replace("git@github.com:", "")
+    return url
+
+
+def _is_lotti_repo_url(url: str) -> bool:
+    """Check if a URL points to the official lotti repository."""
+    normalized_url = _normalize_repo_url(url)
+    # Only accept the official matthiasn/lotti repository
+    return normalized_url == "matthiasn/lotti"
+
+
+def _update_source_for_pr(source: dict, pr_url: str, pr_commit: str) -> list[str]:
+    """Update a git source for a PR build.
+
+    Args:
+        source: The git source dictionary to update
+        pr_url: The PR fork repository URL
+        pr_commit: The PR head commit SHA
+
+    Returns:
+        List of change messages
+    """
+    changes = []
+
+    if source.get("url") != pr_url:
+        source["url"] = pr_url
+        changes.append(f"Updated URL to {pr_url}")
+
+    if source.get("commit") != pr_commit:
+        source["commit"] = pr_commit
+        source.pop("branch", None)
+        changes.append(f"Pinned to PR commit {pr_commit}")
+
+    return changes
+
+
+def _update_source_for_commit(source: dict, commit: str) -> list[str]:
+    """Update a git source with a specific commit.
+
+    Args:
+        source: The git source dictionary to update
+        commit: The commit SHA to set
+
+    Returns:
+        List of change messages
+    """
+    changes = []
+    current_commit = source.get("commit", "")
+
+    if current_commit == "COMMIT_PLACEHOLDER" or current_commit != commit:
+        source["commit"] = commit
+        source.pop("branch", None)
+        changes.append(f"Updated commit to {commit}")
+    elif current_commit == commit and "branch" in source:
+        source.pop("branch", None)
+        changes.append("Removed branch reference")
+
+    return changes
+
+
 def update_manifest_for_build(
     document: ManifestDocument,
     *,
@@ -140,47 +217,22 @@ def update_manifest_for_build(
     changes = []
 
     for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
+        if not _is_lotti_module(module):
             continue
 
         for source in module.get("sources", []):
-            if not isinstance(source, dict):
-                continue
-            if source.get("type") != "git":
+            if not _is_git_source(source):
                 continue
 
-            # Check if this is the lotti source
             url = source.get("url", "")
-            normalized_url = url.rstrip(".git")
-            if not any(
-                normalized_url.endswith(
-                    repo.rstrip(".git")
-                    .replace("https://github.com/", "")
-                    .replace("git@github.com:", "")
-                )
-                for repo in _DEFAULT_REPO_URLS
-            ):
+            if not _is_lotti_repo_url(url):
                 continue
 
+            # Update source based on build type
             if pr_url and pr_commit:
-                # PR mode: update URL and commit
-                if source.get("url") != pr_url:
-                    source["url"] = pr_url
-                    changes.append(f"Updated URL to {pr_url}")
-                if source.get("commit") != pr_commit:
-                    source["commit"] = pr_commit
-                    source.pop("branch", None)
-                    changes.append(f"Pinned to PR commit {pr_commit}")
+                changes.extend(_update_source_for_pr(source, pr_url, pr_commit))
             elif commit:
-                # Non-PR mode: replace placeholder or update commit
-                current_commit = source.get("commit", "")
-                if current_commit == "COMMIT_PLACEHOLDER" or current_commit != commit:
-                    source["commit"] = commit
-                    source.pop("branch", None)
-                    changes.append(f"Updated commit to {commit}")
-                elif current_commit == commit and "branch" in source:
-                    source.pop("branch", None)
-                    changes.append("Removed branch reference")
+                changes.extend(_update_source_for_commit(source, commit))
 
     if changes:
         document.mark_changed()
