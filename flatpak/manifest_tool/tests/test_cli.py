@@ -91,7 +91,7 @@ def test_cli_pin_commit(tmp_path, capsys):
     assert "abc123" in commits
 
 
-def test_cli_remove_rustup_sources(tmp_path, capsys):
+def test_cli_remove_rustup_sources(tmp_path):
     # Build a manifest embedding rustup JSON under lotti sources
     data = yaml.safe_load(SAMPLE_MANIFEST)
     for module in data["modules"]:
@@ -124,7 +124,7 @@ def test_cli_remove_rustup_sources(tmp_path, capsys):
     )
 
 
-def test_cli_ensure_module_include_before_lotti(tmp_path, capsys):
+def test_cli_ensure_module_include_before_lotti(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
 
@@ -153,7 +153,7 @@ def test_cli_ensure_module_include_before_lotti(tmp_path, capsys):
     assert idx_mod < idx_lotti
 
 
-def test_cli_replace_url_with_path(tmp_path, capsys):
+def test_cli_replace_url_with_path(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(
         """
@@ -184,7 +184,7 @@ modules:
     assert "url" not in source
 
 
-def test_cli_ensure_setup_helper(tmp_path, capsys):
+def test_cli_ensure_setup_helper(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
     exit_code = cli.main(
@@ -210,7 +210,7 @@ def test_cli_ensure_setup_helper(tmp_path, capsys):
     assert lotti["build-options"]["env"]["PATH"].startswith("/app/flutter/bin")
 
 
-def test_cli_ensure_lotti_setup_helper_idempotent(tmp_path, capsys):
+def test_cli_ensure_lotti_setup_helper_idempotent(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
     for _ in range(2):
@@ -234,7 +234,7 @@ def test_cli_ensure_lotti_setup_helper_idempotent(tmp_path, capsys):
     assert sum(1 for c in cmds if "setup-flutter.sh" in c) == 1
 
 
-def test_cli_ensure_lotti_setup_helper(tmp_path, capsys):
+def test_cli_ensure_lotti_setup_helper(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
     exit_code = cli.main(
@@ -255,7 +255,7 @@ def test_cli_ensure_lotti_setup_helper(tmp_path, capsys):
     assert any("setup-flutter.sh" in c for c in cmds)
 
 
-def test_cli_add_offline_sources(tmp_path, capsys):
+def test_cli_add_offline_sources(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
     exit_code = cli.main(
@@ -282,7 +282,7 @@ def test_cli_add_offline_sources(tmp_path, capsys):
     )
 
 
-def test_cli_normalize_lotti_env_idempotent(tmp_path, capsys):
+def test_cli_normalize_lotti_env_idempotent(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
     for _ in range(2):
@@ -308,7 +308,7 @@ def test_cli_normalize_lotti_env_idempotent(tmp_path, capsys):
     assert parts.count("/app/flutter/bin") == 1
 
 
-def test_cli_ensure_rust_sdk_env(tmp_path, capsys):
+def test_cli_ensure_rust_sdk_env(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
     exit_code = cli.main(
@@ -326,7 +326,7 @@ def test_cli_ensure_rust_sdk_env(tmp_path, capsys):
     assert "/usr/lib/sdk/rust-stable/bin" in env_path
 
 
-def test_cli_ensure_rust_sdk_env_idempotent(tmp_path, capsys):
+def test_cli_ensure_rust_sdk_env_idempotent(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
     for _ in range(2):
@@ -342,7 +342,7 @@ def test_cli_ensure_rust_sdk_env_idempotent(tmp_path, capsys):
     assert parts.count("/usr/lib/sdk/rust-stable/bin") == 1
 
 
-def test_cli_remove_rustup_install(tmp_path, capsys):
+def test_cli_remove_rustup_install(tmp_path):
     data = yaml.safe_load(SAMPLE_MANIFEST)
     for module in data["modules"]:
         if module.get("name") == "lotti":
@@ -403,7 +403,7 @@ def test_cli_pr_aware_pin(tmp_path, capsys):
     assert sha == "deadbeef"
 
 
-def test_cli_ensure_module_include_idempotent(tmp_path, capsys):
+def test_cli_ensure_module_include_idempotent(tmp_path):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(SAMPLE_MANIFEST, encoding="utf-8")
     for _ in range(2):
@@ -426,7 +426,7 @@ def test_cli_ensure_module_include_idempotent(tmp_path, capsys):
     assert sum(1 for m in mods if m == "rustup-1.83.0.json") == 1
 
 
-def test_cli_remove_rustup_sources_global(tmp_path, capsys):
+def test_cli_remove_rustup_sources_global(tmp_path):
     data = yaml.safe_load(SAMPLE_MANIFEST)
     # Inject rustup under both flutter-sdk and lotti sources
     for module in data["modules"]:

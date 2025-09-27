@@ -87,8 +87,8 @@ def ensure_flutter_setup_helper(
 def _get_normalized_targets(repo_urls: Sequence[str] | None) -> set[str]:
     """Get normalized target URLs for comparison."""
     if repo_urls is None:
-        return {url.rstrip(".git") for url in _DEFAULT_REPO_URLS}
-    return {url.rstrip(".git") for url in repo_urls}
+        return {url.removesuffix(".git") for url in _DEFAULT_REPO_URLS}
+    return {url.removesuffix(".git") for url in repo_urls}
 
 
 def _should_pin_source(source: dict, normalized_targets: set[str], commit: str) -> bool:
@@ -99,7 +99,7 @@ def _should_pin_source(source: dict, normalized_targets: set[str], commit: str) 
         return False
 
     # Normalize source URL by removing trailing .git
-    url = (source.get("url") or "").rstrip(".git")
+    url = (source.get("url") or "").removesuffix(".git")
     if url not in normalized_targets:
         return False
 

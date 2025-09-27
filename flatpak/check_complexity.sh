@@ -1,24 +1,44 @@
 #!/bin/bash
 # Check code complexity similar to CodeFactor
 
+# Get the directory of this script
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Set absolute paths for binaries and target
+RADON="$SCRIPT_DIR/.venv/bin/radon"
+PY="$SCRIPT_DIR/.venv/bin/python"
+PIP="$SCRIPT_DIR/.venv/bin/pip"
+TARGET="$SCRIPT_DIR/manifest_tool"
+
+# Ensure required packages are installed
+if [ ! -f "$RADON" ]; then
+    echo "Installing radon..."
+    "$PIP" install radon
+fi
+
+if ! "$PY" -c "import flake8" 2>/dev/null; then
+    echo "Installing flake8 and cognitive complexity plugin..."
+    "$PIP" install flake8 flake8-cognitive-complexity
+fi
+
 echo "Checking cyclomatic complexity (threshold: 10)..."
 echo "==========================================="
 
 # Show functions with complexity > 10 (grades C, D, E, F)
 echo -e "\nFunctions with complexity > 10:"
-.venv/bin/radon cc manifest_tool/ -n C -s | head -n 50
+"$RADON" cc "$TARGET" -n C -s | head -n 50
 
 echo -e "\nChecking cognitive complexity..."
 echo "================================"
-.venv/bin/python -m flake8 manifest_tool/ --select=CCR001 --max-cognitive-complexity=10 || true
+"$PY" -m flake8 "$TARGET" --select=CCR001 --max-cognitive-complexity=10 || true
 
 echo -e "\nSummary:"
 echo "========"
 echo "Functions with high complexity (C or worse):"
-.venv/bin/radon cc manifest_tool/ -n C --no-assert | wc -l | xargs echo "  Count:"
+"$RADON" cc "$TARGET" -n C --no-assert | wc -l | xargs echo "  Count:"
 
 echo -e "\nTo see details for a specific file:"
-echo "  .venv/bin/radon cc manifest_tool/flutter_ops.py -s"
+echo "  $RADON cc $TARGET/flutter_ops.py -s"
 echo ""
 echo "Grade thresholds:"
 echo "  A: 1-5 (simple)"

@@ -116,7 +116,7 @@ def replace_url_with_path(
     except (FileNotFoundError, OSError) as e:
         _LOGGER.warning("Failed to process manifest %s: %s", manifest_path, e)
         return None
-    except yaml.YAMLError as e:
+    except yaml.YAMLError:
         _LOGGER.exception("Failed to parse YAML in %s", manifest_path)
         return None
 
