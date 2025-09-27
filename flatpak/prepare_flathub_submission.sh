@@ -29,7 +29,10 @@ print_info() {
 }
 
 # Locate an existing Flutter SDK checkout that can be reused for offline builds
+# Usage: find_cached_flutter_dir [exclude_dir1] [exclude_dir2] ...
 find_cached_flutter_dir() {
+    local exclude_dirs=("$@")
+
     while IFS= read -r flutter_bin; do
         local candidate_dir
         candidate_dir="$(dirname "$(dirname "$flutter_bin")")"
@@ -40,9 +43,28 @@ find_cached_flutter_dir() {
             "$WORK_DIR") continue ;;
         esac
 
+        # Skip any additional excluded directories
+        local skip=false
+        for exclude in "${exclude_dirs[@]}"; do
+            if [ -n "$exclude" ]; then
+                # Resolve the candidate path for accurate comparison
+                local resolved_candidate=$(cd "$candidate_dir" 2>/dev/null && pwd || echo "$candidate_dir")
+                local resolved_exclude=$(cd "$exclude" 2>/dev/null && pwd || echo "$exclude")
+
+                if [ "$resolved_candidate" = "$resolved_exclude" ]; then
+                    skip=true
+                    break
+                fi
+            fi
+        done
+
+        if [ "$skip" = true ]; then
+            continue
+        fi
+
         echo "$candidate_dir"
         return 0
-    done < <(find "$LOTTI_ROOT" -maxdepth 6 -type f -path "*flutter/bin/flutter" 2>/dev/null | sort)
+    done < <(find "$LOTTI_ROOT" -maxdepth 6 -type f -path "*flutter/bin/flutter" 2>/dev/null)
 
     return 1
 }
@@ -78,19 +100,12 @@ replace_source_url_with_path() {
     local identifier="$2"
     local path_value="$3"
 
-    if [ ! -f "$manifest" ]; then
-        return 0
-    fi
-
-    if ! grep -q "$identifier" "$manifest"; then
-        return 0
-    fi
-
+    # The Python CLI handles non-existent files and missing identifiers gracefully
     if [ -n "${PYTHON_CLI:-}" ] && [ -f "$PYTHON_CLI" ]; then
         python3 "$PYTHON_CLI" replace-url-with-path \
             --manifest "$manifest" \
             --identifier "$identifier" \
-            --path "$path_value"
+            --path "$path_value" 2>/dev/null || true
     fi
 }
 
@@ -311,17 +326,22 @@ if [ ! -x "$TARGET_FLUTTER_DIR/bin/flutter" ]; then
   print_status "Priming Flutter SDK at $TARGET_FLUTTER_DIR (tag $FLUTTER_TAG)..."
 
   # Try to reuse an existing local Flutter checkout to avoid network access
-  LOCAL_FLUTTER_DIR="$CACHED_FLUTTER_DIR"
+  # Use Python CLI to find Flutter SDK, excluding the work directory
+  LOCAL_FLUTTER_DIR=""
+  if [ -n "$CACHED_FLUTTER_DIR" ]; then
+    # Check if the cached dir is not the target dir itself
+    if [ "$CACHED_FLUTTER_DIR" != "$(cd "$TARGET_FLUTTER_DIR/.." 2>/dev/null && pwd)/flutter" ]; then
+      LOCAL_FLUTTER_DIR="$CACHED_FLUTTER_DIR"
+    fi
+  fi
+
+  # If still no SDK, use Python tool to find one
   if [ -z "$LOCAL_FLUTTER_DIR" ]; then
-    while IFS= read -r flutter_bin; do
-      candidate_dir="$(dirname "$(dirname "$flutter_bin")")"
-      # Skip if the candidate already matches the target directory
-      if [ "$candidate_dir" = "$(cd "$TARGET_FLUTTER_DIR/.." 2>/dev/null && pwd)/flutter" ]; then
-        continue
-      fi
-      LOCAL_FLUTTER_DIR="$candidate_dir"
-      break
-    done < <(find "$LOTTI_ROOT" -maxdepth 6 -type f -path "*flutter/bin/flutter" 2>/dev/null | sort)
+    LOCAL_FLUTTER_DIR=$(python3 "$PYTHON_CLI" find-flutter-sdk \
+      --search-root "$LOTTI_ROOT" \
+      --exclude "$WORK_DIR" \
+      --exclude "$TARGET_FLUTTER_DIR" \
+      --max-depth 6 2>/dev/null || echo "")
   fi
 
   mkdir -p "$TARGET_FLUTTER_DIR"
