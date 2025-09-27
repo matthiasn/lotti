@@ -14,7 +14,9 @@ def test_replace_url_with_path_text_rewrites_lines():
       - type: file
         url: https://example.com/file.dat
     """
-    updated, changed = sources_ops.replace_url_with_path_text(original, "file.dat", "file.dat")
+    updated, changed = sources_ops.replace_url_with_path_text(
+        original, "file.dat", "file.dat"
+    )
     assert changed
     assert "path: file.dat" in updated
 
@@ -61,12 +63,17 @@ def test_add_offline_sources(make_document):
     )
 
     assert result.changed
-    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
+    lotti = next(
+        module for module in document.data["modules"] if module["name"] == "lotti"
+    )
     sources = lotti["sources"]
     assert "pubspec-sources.json" in sources
     assert "cargo-sources.json" in sources
     assert "rustup.json" in sources
-    assert any(isinstance(src, dict) and src.get("path") == "setup-flutter.sh" for src in sources)
+    assert any(
+        isinstance(src, dict) and src.get("path") == "setup-flutter.sh"
+        for src in sources
+    )
 
 
 def test_bundle_archive_sources_rewrites_urls(make_document, tmp_path: Path):
@@ -85,12 +92,18 @@ def test_bundle_archive_sources_rewrites_urls(make_document, tmp_path: Path):
     result = sources_ops.bundle_archive_sources(document, cache)
 
     assert result.changed
-    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
+    lotti = next(
+        module for module in document.data["modules"] if module["name"] == "lotti"
+    )
     archive_source = next(
-        source for source in lotti["sources"] if isinstance(source, dict) and source.get("type") == "archive"
+        source
+        for source in lotti["sources"]
+        if isinstance(source, dict) and source.get("type") == "archive"
     )
     helper_source = next(
-        source for source in lotti["sources"] if isinstance(source, dict) and source.get("path") == "helper.dat"
+        source
+        for source in lotti["sources"]
+        if isinstance(source, dict) and source.get("path") == "helper.dat"
     )
 
     assert archive_source.get("path") == "archive.tar.gz"
@@ -100,38 +113,54 @@ def test_bundle_archive_sources_rewrites_urls(make_document, tmp_path: Path):
 
 
 def test_artifact_cache_reports_missing(tmp_path: Path):
-    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[])
-    local_path, messages = cache.ensure_local("missing.dat", "https://example.com/missing.dat")
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out", download_missing=False, search_roots=[]
+    )
+    local_path, messages = cache.ensure_local(
+        "missing.dat", "https://example.com/missing.dat"
+    )
     assert local_path is None
     assert messages == ["MISSING missing.dat https://example.com/missing.dat"]
 
 
 def test_artifact_cache_bundles_from_search_roots(tmp_path: Path):
-    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[tmp_path / "root"]) 
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out",
+        download_missing=False,
+        search_roots=[tmp_path / "root"],
+    )
     (tmp_path / "root").mkdir()
     (tmp_path / "root" / "archive.tar.gz").write_text("data", encoding="utf-8")
-    local_path, messages = cache.ensure_local("archive.tar.gz", "https://example.com/archive.tar.gz")
+    local_path, messages = cache.ensure_local(
+        "archive.tar.gz", "https://example.com/archive.tar.gz"
+    )
     assert local_path is not None
     assert (tmp_path / "out" / "archive.tar.gz").exists()
     assert any(m.startswith("BUNDLE archive.tar.gz") for m in messages)
 
 
 def test_artifact_cache_rejects_unsupported_scheme(tmp_path: Path):
-    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=True, search_roots=[])
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out", download_missing=True, search_roots=[]
+    )
     local_path, messages = cache.ensure_local("file.dat", "file:///tmp/file.dat")
     assert local_path is None
     assert messages == ["UNSUPPORTED file.dat scheme file file:///tmp/file.dat"]
 
 
 def test_bundle_sources_for_module_skips_non_dict(tmp_path: Path):
-    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[])
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out", download_missing=False, search_roots=[]
+    )
     changed, messages = sources_ops._bundle_sources_for_module("not-a-dict", cache)
     assert not changed
     assert messages == []
 
 
 def test_bundle_sources_for_module_updates_sources(tmp_path: Path):
-    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[])
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out", download_missing=False, search_roots=[]
+    )
 
     def fake_ensure_local(filename: str, url: str):
         return tmp_path / filename, [f"MOCK {filename}"]
@@ -153,14 +182,18 @@ def test_bundle_sources_for_module_updates_sources(tmp_path: Path):
 
 
 def test_bundle_single_source_handles_missing_url(tmp_path: Path):
-    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[])
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out", download_missing=False, search_roots=[]
+    )
     changed, messages = sources_ops._bundle_single_source({"type": "archive"}, cache)
     assert not changed
     assert messages == []
 
 
 def test_bundle_single_source_converts_url(tmp_path: Path):
-    cache = sources_ops.ArtifactCache(output_dir=tmp_path / "out", download_missing=False, search_roots=[])
+    cache = sources_ops.ArtifactCache(
+        output_dir=tmp_path / "out", download_missing=False, search_roots=[]
+    )
 
     def fake_ensure_local(filename: str, url: str):
         return tmp_path / filename, ["FETCH"]
@@ -184,12 +217,16 @@ def test_remove_rustup_sources_idempotent(make_document):
 def test_remove_rustup_sources(make_document):
     document = make_document()
     # Inject rustup references into lotti sources
-    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
-    lotti["sources"].extend([
-        "rustup-1.83.0.json",
-        {"type": "file", "path": "rustup-1.83.0.json"},
-        {"type": "file", "path": "keep-me.json"},
-    ])
+    lotti = next(
+        module for module in document.data["modules"] if module["name"] == "lotti"
+    )
+    lotti["sources"].extend(
+        [
+            "rustup-1.83.0.json",
+            {"type": "file", "path": "rustup-1.83.0.json"},
+            {"type": "file", "path": "keep-me.json"},
+        ]
+    )
 
     result = sources_ops.remove_rustup_sources(document)
 

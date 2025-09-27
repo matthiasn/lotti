@@ -55,7 +55,9 @@ def ensure_flutter_setup_helper(
             entries = [entry for entry in current_path.split(":") if entry]
             if "/app/flutter/bin" not in entries:
                 env["PATH"] = (
-                    f"/app/flutter/bin:{current_path}" if current_path else "/app/flutter/bin"
+                    f"/app/flutter/bin:{current_path}"
+                    if current_path
+                    else "/app/flutter/bin"
                 )
                 changed = True
 

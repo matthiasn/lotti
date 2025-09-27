@@ -16,7 +16,7 @@ _LOGGER = utils.get_logger("flutter_ops")
 _FALLBACK_COPY_SNIPPET = (
     "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {dst}; "
     "elif [ -d /app/flutter ]; then cp -r /app/flutter {dst}; "
-    "else echo \"No Flutter SDK found at /var/lib/flutter or /app/flutter\"; exit 1; fi"
+    'else echo "No Flutter SDK found at /var/lib/flutter or /app/flutter"; exit 1; fi'
 )
 
 _CANONICAL_FLUTTER_URL = "https://github.com/flutter/flutter.git"
@@ -29,7 +29,9 @@ def _split_path(value: str | None) -> list[str]:
 
 
 def _discover_flutter_jsons(output_dir: str | Path) -> list[str]:
-    return sorted(candidate.name for candidate in Path(output_dir).glob("flutter-sdk-*.json"))
+    return sorted(
+        candidate.name for candidate in Path(output_dir).glob("flutter-sdk-*.json")
+    )
 
 
 def ensure_nested_sdk(
@@ -81,7 +83,9 @@ def should_remove_flutter_sdk(
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
-        referenced = [name for name in json_names if name in (module.get("modules") or [])]
+        referenced = [
+            name for name in json_names if name in (module.get("modules") or [])
+        ]
         return bool(referenced)
     return False
 
@@ -100,7 +104,9 @@ def normalize_flutter_sdk_module(document: ManifestDocument) -> OperationResult:
         filtered: list[str] = []
         for raw in commands:
             command = str(raw)
-            if command.startswith("mv flutter ") or command.startswith("export PATH=/app/flutter/bin"):
+            if command.startswith("mv flutter ") or command.startswith(
+                "export PATH=/app/flutter/bin"
+            ):
                 filtered.append(command)
         if not any(cmd.startswith("mv flutter ") for cmd in filtered):
             filtered.insert(0, "mv flutter /app/flutter")
@@ -134,7 +140,9 @@ def normalize_lotti_env(
             append_entries = _split_path(append_current)
             if flutter_bin not in append_entries:
                 append_entries.append(flutter_bin)
-                build_options["append-path"] = ":".join(append_entries) if append_entries else flutter_bin
+                build_options["append-path"] = (
+                    ":".join(append_entries) if append_entries else flutter_bin
+                )
                 changed = True
         env = build_options.setdefault("env", {})
         path_current = env.get("PATH", "")
@@ -227,7 +235,9 @@ def ensure_rust_sdk_env(document: ManifestDocument) -> OperationResult:
         original_len = len(path_entries)
         path_entries = [e for e in path_entries if e not in (rustup_bin, rust_bin)]
         path_entries = [rustup_bin, rust_bin] + path_entries
-        if len(path_entries) != original_len or not env.get("PATH", "").startswith(rustup_bin):
+        if len(path_entries) != original_len or not env.get("PATH", "").startswith(
+            rustup_bin
+        ):
             env["PATH"] = ":".join(path_entries)
             changed = True
         # Ensure RUSTUP_HOME is set for tool expectations
@@ -262,7 +272,11 @@ def remove_rustup_install(document: ManifestDocument) -> OperationResult:
         removed_any = False
         for raw in commands:
             cmd = str(raw)
-            if ("sh.rustup.rs" in cmd) or ("Installing Rust" in cmd) or ("$HOME/.cargo/bin" in cmd):
+            if (
+                ("sh.rustup.rs" in cmd)
+                or ("Installing Rust" in cmd)
+                or ("$HOME/.cargo/bin" in cmd)
+            ):
                 removed_any = True
                 continue
             filtered.append(cmd)
@@ -325,22 +339,30 @@ def ensure_setup_helper_command(
             "elif [ -x /app/flutter/bin/{h} ]; then H=/app/flutter/bin/{h}; "
             "else H=./{h}; fi; ".format(h=helper_name)
         )
-        debug = "if [ ! -f ./" + helper_name + " ]; then echo 'DEBUG: missing ./" + helper_name + "; PWD='\"$PWD\"; ls -la; fi; "
+        debug = (
+            "if [ ! -f ./"
+            + helper_name
+            + " ]; then echo 'DEBUG: missing ./"
+            + helper_name
+            + '; PWD=\'"$PWD"; ls -la; fi; '
+        )
         if working_dir == "/app":
             return (
-                debug + resolver
-                + "if [ -d /app/flutter ]; then bash \"$H\" -C /app; "
-                + "elif [ -d /var/lib/flutter ]; then bash \"$H\" -C /var/lib; "
-                + "else bash \"$H\"; fi"
+                debug
+                + resolver
+                + 'if [ -d /app/flutter ]; then bash "$H" -C /app; '
+                + 'elif [ -d /var/lib/flutter ]; then bash "$H" -C /var/lib; '
+                + 'else bash "$H"; fi'
             )
         if working_dir == "/var/lib":
             return (
-                debug + resolver
-                + "if [ -d /var/lib/flutter ]; then bash \"$H\" -C /var/lib; "
-                + "elif [ -d /app/flutter ]; then bash \"$H\" -C /app; "
-                + "else bash \"$H\"; fi"
+                debug
+                + resolver
+                + 'if [ -d /var/lib/flutter ]; then bash "$H" -C /var/lib; '
+                + 'elif [ -d /app/flutter ]; then bash "$H" -C /app; '
+                + 'else bash "$H"; fi'
             )
-        return debug + resolver + f"bash \"$H\" -C {working_dir}"
+        return debug + resolver + f'bash "$H" -C {working_dir}'
 
     desired_command = _desired_command()
 
@@ -398,7 +420,9 @@ def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
         for raw in commands:
             command = str(raw)
             if "cp -r" in command and "/run/build/lotti/flutter_sdk" in command:
-                fallback = _FALLBACK_COPY_SNIPPET.format(dst="/run/build/lotti/flutter_sdk")
+                fallback = _FALLBACK_COPY_SNIPPET.format(
+                    dst="/run/build/lotti/flutter_sdk"
+                )
                 new_commands.append(fallback)
                 updated = True
             else:

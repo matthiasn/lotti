@@ -6,11 +6,13 @@ from flatpak.manifest_tool import utils
 
 
 def test_format_shell_assignments_quotes_and_bools() -> None:
-    out = utils.format_shell_assignments({
-        "BOOL": "true",
-        "NAME": "hello world",
-        "SHA": "deadbeef",
-    })
+    out = utils.format_shell_assignments(
+        {
+            "BOOL": "true",
+            "NAME": "hello world",
+            "SHA": "deadbeef",
+        }
+    )
     # Booleans are unquoted lowercase
     assert "BOOL=true" in out
     # Strings containing spaces are shell-quoted

@@ -22,7 +22,9 @@ _LOGGER = utils.get_logger("sources_ops")
 _ALLOWED_URL_SCHEMES = {"http", "https"}
 
 
-def replace_url_with_path_text(text: str, identifier: str, path_value: str) -> tuple[str, bool]:
+def replace_url_with_path_text(
+    text: str, identifier: str, path_value: str
+) -> tuple[str, bool]:
     """Replace ``url:`` lines containing ``identifier`` with ``path:`` entries."""
 
     lines = text.splitlines()
@@ -70,7 +72,9 @@ class ArtifactCache:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.search_roots = [Path(root) for root in self.search_roots]
 
-    def ensure_local(self, filename: str, source_url: str) -> tuple[Optional[Path], list[str]]:
+    def ensure_local(
+        self, filename: str, source_url: str
+    ) -> tuple[Optional[Path], list[str]]:
         messages: list[str] = []
         destination = self.output_dir / filename
         if destination.exists():
@@ -96,16 +100,16 @@ class ArtifactCache:
         scheme = (parsed.scheme or "").lower()
         # Only allow explicit http/https downloads; reject empty or other schemes (e.g., file:)
         if scheme not in _ALLOWED_URL_SCHEMES:
-            message = (
-                f"UNSUPPORTED {filename} scheme {scheme or '<none>'} {source_url}"
-            )
+            message = f"UNSUPPORTED {filename} scheme {scheme or '<none>'} {source_url}"
             messages.append(message)
             _LOGGER.warning(message)
             return None, messages
 
         destination.parent.mkdir(parents=True, exist_ok=True)
         try:
-            with urllib.request.urlopen(source_url) as response, open(destination, "wb") as handle:
+            with urllib.request.urlopen(source_url) as response, open(
+                destination, "wb"
+            ) as handle:
                 shutil.copyfileobj(response, handle)
             message = f"DOWNLOAD {filename} {source_url}"
             messages.append(message)
@@ -275,7 +279,9 @@ def remove_rustup_sources(document: ManifestDocument) -> OperationResult:
         if removed:
             module["sources"] = filtered
             changed = True
-            messages.append(f"Removed {removed} rustup JSON reference(s) from module {module.get('name')}")
+            messages.append(
+                f"Removed {removed} rustup JSON reference(s) from module {module.get('name')}"
+            )
 
     if changed:
         document.mark_changed()

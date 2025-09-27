@@ -47,7 +47,9 @@ class ManifestDocument:
     _changed: bool = False
 
     @classmethod
-    def load(cls, path: str | Path, *, allow_missing: bool = False) -> "ManifestDocument":
+    def load(
+        cls, path: str | Path, *, allow_missing: bool = False
+    ) -> "ManifestDocument":
         manifest_path = Path(path)
         if allow_missing and not manifest_path.exists():
             return cls(manifest_path, {})
