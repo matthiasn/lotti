@@ -11,16 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install libgtk-3-dev cmake cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
       - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
-      - name: Update apt-get
-        run: sudo apt-get update
-      - name: Install libraries
-        run: sudo apt-get install libgtk-3-dev cmake cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
       - name: Enable Linux Desktop
         run: flutter config --enable-linux-desktop
       - name: Flutter Doctor
