@@ -109,7 +109,7 @@ The script will:
    - Use current git HEAD commit
    - Generate offline manifest and all dependencies using flatpak-flutter
    - Always create fully offline builds as required by Flathub:
-     - Process Flutter SDK for offline use
+     - Process Flutter SDK for offline use (as top-level module)
      - Bundle all archive/file sources locally
      - Create app source archive (`lotti-<commit>.tar.xz`)
    - Process the metainfo.xml with version substitution
@@ -120,9 +120,8 @@ The script will:
 You can influence the preparation behavior with these environment variables:
 
 - `FLATPAK_FLUTTER_TIMEOUT` — seconds to allow `flatpak-flutter` to run; unset by default (no timeout). Example: `FLATPAK_FLUTTER_TIMEOUT=1800 ./prepare_flathub_submission.sh`
-- `NO_FLATPAK_FLUTTER` — set to `true` to skip running `flatpak-flutter` entirely and use the script’s fallback generators. Example: `NO_FLATPAK_FLUTTER=true ./prepare_flathub_submission.sh`
+- `NO_FLATPAK_FLUTTER` — set to `true` to skip running `flatpak-flutter` entirely and use the script's fallback generators. Example: `NO_FLATPAK_FLUTTER=true ./prepare_flathub_submission.sh`
 - `PIN_COMMIT` — `true` (default) to pin the app source to the current commit in the output manifest.
-- `USE_NESTED_FLUTTER` — `false` (default). When `true`, references Flutter SDK JSONs as nested modules under the `lotti` module and removes the top-level `flutter-sdk` module when safe.
 - `DOWNLOAD_MISSING_SOURCES` — `true` (default) to allow downloading sources that aren't found in local caches; set to `false` for strictly offline generation.
 - `CLEAN_AFTER_GEN` — `true` (default) to remove the work `.flatpak-builder` directory after generation.
 

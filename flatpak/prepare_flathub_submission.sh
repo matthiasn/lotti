@@ -89,7 +89,6 @@ OUTPUT_DIR="$WORK_DIR/output"
 # Behavior toggles (can be overridden via env)
 : "${CLEAN_AFTER_GEN:=true}"          # Remove .flatpak-builder after generation
 : "${PIN_COMMIT:=true}"               # Pin app source to exact commit in output manifest
-: "${USE_NESTED_FLUTTER:=false}"      # Prefer nested SDK module under lotti (false = keep top-level flutter-sdk)
 : "${DOWNLOAD_MISSING_SOURCES:=true}" # Permit downloading sources when cache is absent
 
 # Version configuration
@@ -156,7 +155,6 @@ echo ""
 # Show effective options for diagnostics
 print_info "Effective options:"
 echo "  PIN_COMMIT=${PIN_COMMIT}"
-echo "  USE_NESTED_FLUTTER=${USE_NESTED_FLUTTER}"
 echo "  DOWNLOAD_MISSING_SOURCES=${DOWNLOAD_MISSING_SOURCES}"
 echo "  CLEAN_AFTER_GEN=${CLEAN_AFTER_GEN}"
 echo "  NO_FLATPAK_FLUTTER=${NO_FLATPAK_FLUTTER:-false}"
@@ -636,12 +634,6 @@ if [ -f "$OUT_MANIFEST" ]; then
       --commit "$APP_COMMIT"
   fi
 
-  if [ "$USE_NESTED_FLUTTER" = "true" ]; then
-    python3 "$PYTHON_CLI" ensure-nested-sdk \
-      --manifest "$OUT_MANIFEST" \
-      --output-dir "$OUTPUT_DIR"
-  fi
-
   # Process offline Flutter JSON (required for Flathub compliance)
   FLUTTER_JSON=""
   for candidate in "$OUTPUT_DIR"/flutter-sdk-*.json; do
@@ -651,21 +643,8 @@ if [ -f "$OUT_MANIFEST" ]; then
     fi
   done
 
-  REMOVE_FLUTTER_SDK=$(python3 "$PYTHON_CLI" should-remove-flutter-sdk \
-    --manifest "$OUT_MANIFEST" \
-    --output-dir "$OUTPUT_DIR")
-
-  if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
-    print_info "Offline Flutter JSON found and referenced; removing top-level flutter-sdk module."
-    awk '
-      BEGIN{skip=0}
-      /^\s*- name: flutter-sdk\s*$/ {skip=1}
-      skip && /^\s*- name: / {skip=0}
-      !skip {print}
-    ' "$OUT_MANIFEST" > "$OUT_MANIFEST.tmp" && mv "$OUT_MANIFEST.tmp" "$OUT_MANIFEST"
-  else
-    print_info "Keeping top-level flutter-sdk module (offline JSON missing or not referenced)."
-  fi
+  # Always keep the top-level flutter-sdk module (no longer using nested layout)
+  print_info "Keeping top-level flutter-sdk module."
 
   python3 "$PYTHON_CLI" normalize-flutter-sdk-module \
     --manifest "$OUT_MANIFEST"
@@ -691,30 +670,18 @@ if [ -f "$OUT_MANIFEST" ]; then
   if [ -n "$CARGO_JSON" ]; then
     PYTHON_OFFLINE_ARGS+=(--cargo "$CARGO_JSON")
   fi
-  if [ "$USE_NESTED_FLUTTER" = "true" ] && [ -n "$FLUTTER_JSON" ]; then
-    PYTHON_OFFLINE_ARGS+=(--flutter-json "$FLUTTER_JSON")
-  fi
+  # Never add --flutter-json since we're always using top-level flutter-sdk
   python3 "${PYTHON_OFFLINE_ARGS[@]}"
 
-  if [ "${REMOVE_FLUTTER_SDK:-0}" = "1" ]; then
-    python3 "$PYTHON_CLI" normalize-lotti-env \
-      --manifest "$OUT_MANIFEST" \
-      --layout nested \
-      --append-path
-    python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
-      --manifest "$OUT_MANIFEST" \
-      --layout nested \
-      --helper "$SETUP_HELPER_BASENAME"
-  else
-    python3 "$PYTHON_CLI" normalize-lotti-env \
-      --manifest "$OUT_MANIFEST" \
-      --layout top \
-      --append-path
-    python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
-      --manifest "$OUT_MANIFEST" \
-      --layout top \
-      --helper "$SETUP_HELPER_BASENAME"
-  fi
+  # Always use top-level layout since we removed USE_NESTED_FLUTTER
+  python3 "$PYTHON_CLI" normalize-lotti-env \
+    --manifest "$OUT_MANIFEST" \
+    --layout top \
+    --append-path
+  python3 "$PYTHON_CLI" ensure-lotti-setup-helper \
+    --manifest "$OUT_MANIFEST" \
+    --layout top \
+    --helper "$SETUP_HELPER_BASENAME"
 
   python3 "$PYTHON_CLI" normalize-sdk-copy \
     --manifest "$OUT_MANIFEST"
