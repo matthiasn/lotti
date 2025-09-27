@@ -29,44 +29,11 @@ print_info() {
 }
 
 # Locate an existing Flutter SDK checkout that can be reused for offline builds
-# Usage: find_cached_flutter_dir [exclude_dir1] [exclude_dir2] ...
+# This now delegates to the Python CLI tool for consistency
 find_cached_flutter_dir() {
-    local exclude_dirs=("$@")
-
-    while IFS= read -r flutter_bin; do
-        local candidate_dir
-        candidate_dir="$(dirname "$(dirname "$flutter_bin")")"
-
-        # Skip directories that live inside the working directory to avoid recursion
-        case "$candidate_dir" in
-            "$WORK_DIR"/*) continue ;;
-            "$WORK_DIR") continue ;;
-        esac
-
-        # Skip any additional excluded directories
-        local skip=false
-        for exclude in "${exclude_dirs[@]}"; do
-            if [ -n "$exclude" ]; then
-                # Resolve the candidate path for accurate comparison
-                local resolved_candidate=$(cd "$candidate_dir" 2>/dev/null && pwd || echo "$candidate_dir")
-                local resolved_exclude=$(cd "$exclude" 2>/dev/null && pwd || echo "$exclude")
-
-                if [ "$resolved_candidate" = "$resolved_exclude" ]; then
-                    skip=true
-                    break
-                fi
-            fi
-        done
-
-        if [ "$skip" = true ]; then
-            continue
-        fi
-
-        echo "$candidate_dir"
-        return 0
-    done < <(find "$LOTTI_ROOT" -maxdepth 6 -type f -path "*flutter/bin/flutter" 2>/dev/null)
-
-    return 1
+    python3 "$PYTHON_CLI" find-flutter-sdk \
+        --search-root "$LOTTI_ROOT" \
+        --max-depth 6 2>/dev/null || true
 }
 
 # Find a previously downloaded source artifact by filename
