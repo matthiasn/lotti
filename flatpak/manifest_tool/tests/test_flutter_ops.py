@@ -217,3 +217,183 @@ def test_ensure_setup_helper_command_layout(
     )
     commands = lotti["build-commands"]
     assert any(expected_dir in command for command in commands)
+
+
+def test_ensure_setup_helper_command_debug_disabled_by_default(make_document):
+    """Test that debug output is disabled by default."""
+    document = make_document()
+    result = flutter_ops.ensure_setup_helper_command(
+        document,
+        helper_name="setup-flutter.sh",
+        working_dir="/app",
+    )
+
+    assert result.changed
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    commands = lotti.get("build-commands", [])
+    # Debug output should NOT be included by default
+    helper_cmd = next((cmd for cmd in commands if "setup-flutter.sh" in cmd), None)
+    assert helper_cmd is not None
+    assert "DEBUG: missing" not in helper_cmd
+
+
+def test_ensure_setup_helper_command_debug_enabled_explicitly(make_document):
+    """Test that debug output can be enabled explicitly."""
+    document = make_document()
+    result = flutter_ops.ensure_setup_helper_command(
+        document,
+        helper_name="setup-flutter.sh",
+        working_dir="/app",
+        enable_debug=True,
+    )
+
+    assert result.changed
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    commands = lotti.get("build-commands", [])
+    # Debug output should be included when explicitly enabled
+    helper_cmd = next((cmd for cmd in commands if "setup-flutter.sh" in cmd), None)
+    assert helper_cmd is not None
+    assert "DEBUG: missing" in helper_cmd
+
+
+def test_ensure_setup_helper_command_debug_enabled_via_env(make_document, monkeypatch):
+    """Test that debug output can be enabled via environment variable."""
+    monkeypatch.setenv("FLATPAK_HELPER_DEBUG", "true")
+
+    document = make_document()
+    result = flutter_ops.ensure_setup_helper_command(
+        document,
+        helper_name="setup-flutter.sh",
+        working_dir="/app",
+        enable_debug=False,  # Explicitly False, but env var should override
+    )
+
+    assert result.changed
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    commands = lotti.get("build-commands", [])
+    # Debug output should be included when env var is set
+    helper_cmd = next((cmd for cmd in commands if "setup-flutter.sh" in cmd), None)
+    assert helper_cmd is not None
+    assert "DEBUG: missing" in helper_cmd
+
+
+def test_ensure_setup_helper_command_resolver_paths(make_document):
+    """Test that the resolver checks all expected paths."""
+    document = make_document()
+    result = flutter_ops.ensure_setup_helper_command(
+        document,
+        helper_name="my-helper.sh",
+        working_dir="/custom",
+    )
+
+    assert result.changed
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    commands = lotti.get("build-commands", [])
+    helper_cmd = next((cmd for cmd in commands if "my-helper.sh" in cmd), None)
+    assert helper_cmd is not None
+
+    # Should check local file first
+    assert "[ -f ./my-helper.sh ]" in helper_cmd
+    # Should check /var/lib/flutter/bin
+    assert "/var/lib/flutter/bin/my-helper.sh" in helper_cmd
+    # Should check /app/flutter/bin
+    assert "/app/flutter/bin/my-helper.sh" in helper_cmd
+    # Should use the resolved helper variable
+    assert 'bash "$H"' in helper_cmd
+
+
+def test_ensure_setup_helper_command_custom_working_dir(make_document):
+    """Test with a custom working directory."""
+    document = make_document()
+    result = flutter_ops.ensure_setup_helper_command(
+        document,
+        helper_name="setup.sh",
+        working_dir="/opt/custom",
+    )
+
+    assert result.changed
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    commands = lotti.get("build-commands", [])
+    helper_cmd = next((cmd for cmd in commands if "setup.sh" in cmd), None)
+    assert helper_cmd is not None
+
+    # Should pass custom working dir
+    assert "-C /opt/custom" in helper_cmd
+    # Should not have the conditional logic for standard dirs
+    assert "if [ -d /app/flutter ]" not in helper_cmd
+    assert "if [ -d /var/lib/flutter ]" not in helper_cmd
+
+
+def test_ensure_setup_helper_command_app_working_dir_fallback(make_document):
+    """Test /app working directory with fallback logic."""
+    document = make_document()
+    result = flutter_ops.ensure_setup_helper_command(
+        document,
+        helper_name="setup.sh",
+        working_dir="/app",
+    )
+
+    assert result.changed
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    commands = lotti.get("build-commands", [])
+    helper_cmd = next((cmd for cmd in commands if "setup.sh" in cmd), None)
+    assert helper_cmd is not None
+
+    # Should try /app first, then /var/lib as fallback
+    assert "if [ -d /app/flutter ]" in helper_cmd
+    assert "-C /app" in helper_cmd
+    assert "elif [ -d /var/lib/flutter ]" in helper_cmd
+    assert "-C /var/lib" in helper_cmd
+
+
+def test_ensure_setup_helper_command_varlib_working_dir_fallback(make_document):
+    """Test /var/lib working directory with fallback logic."""
+    document = make_document()
+    result = flutter_ops.ensure_setup_helper_command(
+        document,
+        helper_name="setup.sh",
+        working_dir="/var/lib",
+    )
+
+    assert result.changed
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    commands = lotti.get("build-commands", [])
+    helper_cmd = next((cmd for cmd in commands if "setup.sh" in cmd), None)
+    assert helper_cmd is not None
+
+    # Should try /var/lib first, then /app as fallback
+    assert "if [ -d /var/lib/flutter ]" in helper_cmd
+    assert "-C /var/lib" in helper_cmd
+    assert "elif [ -d /app/flutter ]" in helper_cmd
+    assert "-C /app" in helper_cmd
+
+
+def test_ensure_setup_helper_command_idempotent(make_document):
+    """Test that the command is idempotent."""
+    document = make_document()
+
+    # First call
+    result1 = flutter_ops.ensure_setup_helper_command(
+        document,
+        helper_name="setup.sh",
+        working_dir="/app",
+    )
+    assert result1.changed
+
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    commands_before = lotti.get("build-commands", []).copy()
+
+    # Second call with same parameters
+    result2 = flutter_ops.ensure_setup_helper_command(
+        document,
+        helper_name="setup.sh",
+        working_dir="/app",
+    )
+
+    # Should recognize it's already there (no change)
+    assert not result2.changed
+    commands_after = lotti.get("build-commands", [])
+
+    # Commands should not have duplicates
+    assert len(commands_after) == len(commands_before)
+    assert commands_after == commands_before

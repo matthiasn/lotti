@@ -328,43 +328,56 @@ def ensure_setup_helper_command(
     *,
     helper_name: str,
     working_dir: str,
+    enable_debug: bool = False,  # Disabled by default, can be enabled via env var
 ) -> OperationResult:
-    """Ensure lotti build-commands invoke the setup helper with the desired working dir."""
+    """Ensure lotti build-commands invoke the setup helper with the desired working dir.
 
-    def _desired_command() -> str:
-        # Resolve helper with fallbacks to SDK-provided helper if the local one is missing
-        resolver = (
-            "if [ -f ./{h} ]; then H=./{h}; "
-            "elif [ -x /var/lib/flutter/bin/{h} ]; then H=/var/lib/flutter/bin/{h}; "
-            "elif [ -x /app/flutter/bin/{h} ]; then H=/app/flutter/bin/{h}; "
-            "else H=./{h}; fi; ".format(h=helper_name)
-        )
-        debug = (
-            "if [ ! -f ./"
-            + helper_name
-            + " ]; then echo 'DEBUG: missing ./"
-            + helper_name
-            + '; PWD=\'"$PWD"; ls -la; fi; '
-        )
+    Args:
+        document: The manifest document to modify
+        helper_name: Name of the helper script (e.g., "setup-flutter.sh")
+        working_dir: Working directory to pass to the helper
+        enable_debug: Whether to include debug output (default: False)
+    """
+    # Allow environment variable to enable debug mode
+    import os
+    if os.environ.get("FLATPAK_HELPER_DEBUG", "").lower() in ("1", "true", "yes"):
+        enable_debug = True
+
+    def _build_helper_command(helper_name: str, working_dir: str, enable_debug: bool) -> str:
+        """Build the helper command with cleaner structure."""
+        # Template components as separate strings
+        resolver_template = """if [ -f ./{helper} ]; then H=./{helper}; \
+elif [ -x /var/lib/flutter/bin/{helper} ]; then H=/var/lib/flutter/bin/{helper}; \
+elif [ -x /app/flutter/bin/{helper} ]; then H=/app/flutter/bin/{helper}; \
+else H=./{helper}; fi; """
+
+        debug_template = """if [ ! -f ./{helper} ]; then \
+echo 'DEBUG: missing ./{helper}; PWD='"$PWD"; ls -la; fi; """
+
+        # Build the resolver and debug parts
+        resolver = resolver_template.format(helper=helper_name)
+        debug = debug_template.format(helper=helper_name) if enable_debug else ""
+
+        # Determine the execution command based on working directory
         if working_dir == "/app":
-            return (
-                debug
-                + resolver
-                + 'if [ -d /app/flutter ]; then bash "$H" -C /app; '
-                + 'elif [ -d /var/lib/flutter ]; then bash "$H" -C /var/lib; '
-                + 'else bash "$H"; fi'
+            exec_cmd = (
+                'if [ -d /app/flutter ]; then bash "$H" -C /app; '
+                'elif [ -d /var/lib/flutter ]; then bash "$H" -C /var/lib; '
+                'else bash "$H"; fi'
             )
-        if working_dir == "/var/lib":
-            return (
-                debug
-                + resolver
-                + 'if [ -d /var/lib/flutter ]; then bash "$H" -C /var/lib; '
-                + 'elif [ -d /app/flutter ]; then bash "$H" -C /app; '
-                + 'else bash "$H"; fi'
+        elif working_dir == "/var/lib":
+            exec_cmd = (
+                'if [ -d /var/lib/flutter ]; then bash "$H" -C /var/lib; '
+                'elif [ -d /app/flutter ]; then bash "$H" -C /app; '
+                'else bash "$H"; fi'
             )
-        return debug + resolver + f'bash "$H" -C {working_dir}'
+        else:
+            exec_cmd = f'bash "$H" -C {working_dir}'
 
-    desired_command = _desired_command()
+        # Combine all parts
+        return debug + resolver + exec_cmd
+
+    desired_command = _build_helper_command(helper_name, working_dir, enable_debug)
 
     modules = document.ensure_modules()
     changed = False
