@@ -250,6 +250,28 @@ def _build_result_messages(
     return messages
 
 
+def _prepare_offline_entries(
+    pubspec: Optional[str],
+    cargo: Optional[str],
+    rustup: Iterable[str] | None,
+) -> list[str]:
+    """Prepare the list of offline source entries."""
+    rustup_list = [entry for entry in (rustup or []) if entry]
+    return [pubspec, cargo, *rustup_list]
+
+
+def _process_offline_sources(
+    sources: list[object],
+    entries: list[str],
+    flutter_file: Optional[str],
+) -> tuple[list[str], bool]:
+    """Process offline sources and return added strings and file change status."""
+    existing_strings = {source for source in sources if isinstance(source, str)}
+    added_strings = _add_string_sources(sources, existing_strings, entries)
+    file_changed = _ensure_file_entry(sources, flutter_file)
+    return added_strings, file_changed
+
+
 def add_offline_sources(
     document: ManifestDocument,
     *,
@@ -259,24 +281,16 @@ def add_offline_sources(
     flutter_file: Optional[str] = None,
 ) -> OperationResult:
     """Ensure lotti sources reference offline JSON artifacts."""
-
     modules = document.ensure_modules()
     target = _find_named_module(modules, "lotti")
     if not target:
         return OperationResult.unchanged()
 
     sources = target.setdefault("sources", [])
-    existing_strings = {source for source in sources if isinstance(source, str)}
-
-    # Prepare entries list
-    rustup_list = [entry for entry in (rustup or []) if entry]
-    entries = [pubspec, cargo, *rustup_list]
-
-    # Add string sources
-    added_strings = _add_string_sources(sources, existing_strings, entries)
-
-    # Ensure helper file entry
-    file_changed = _ensure_file_entry(sources, flutter_file)
+    entries = _prepare_offline_entries(pubspec, cargo, rustup)
+    added_strings, file_changed = _process_offline_sources(
+        sources, entries, flutter_file
+    )
 
     if not added_strings and not file_changed:
         return OperationResult.unchanged()

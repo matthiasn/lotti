@@ -90,29 +90,40 @@ def should_remove_flutter_sdk(
     return False
 
 
+def _should_keep_flutter_command(command: str) -> bool:
+    """Check if a Flutter SDK build command should be kept."""
+    return command.startswith("mv flutter ") or command.startswith(
+        "export PATH=/app/flutter/bin"
+    )
+
+
+def _normalize_single_flutter_module(module: dict) -> bool:
+    """Normalize a single flutter-sdk module. Returns True if changed."""
+    if not isinstance(module, dict) or module.get("name") != "flutter-sdk":
+        return False
+
+    commands = module.get("build-commands", [])
+    if not isinstance(commands, list):
+        commands = []
+
+    # Filter commands keeping only mv and export PATH commands
+    filtered = [str(cmd) for cmd in commands if _should_keep_flutter_command(str(cmd))]
+
+    # Ensure at least one mv command exists
+    if not any(cmd.startswith("mv flutter ") for cmd in filtered):
+        filtered.insert(0, "mv flutter /app/flutter")
+
+    if filtered != commands:
+        module["build-commands"] = filtered
+        return True
+    return False
+
+
 def normalize_flutter_sdk_module(document: ManifestDocument) -> OperationResult:
     """Strip Flutter invocations from flutter-sdk build commands."""
-
     modules = document.ensure_modules()
-    changed = False
-    for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "flutter-sdk":
-            continue
-        commands = module.get("build-commands", [])
-        if not isinstance(commands, list):
-            commands = []
-        filtered: list[str] = []
-        for raw in commands:
-            command = str(raw)
-            if command.startswith("mv flutter ") or command.startswith(
-                "export PATH=/app/flutter/bin"
-            ):
-                filtered.append(command)
-        if not any(cmd.startswith("mv flutter ") for cmd in filtered):
-            filtered.insert(0, "mv flutter /app/flutter")
-        if filtered != commands:
-            module["build-commands"] = filtered
-            changed = True
+    changed = any(_normalize_single_flutter_module(module) for module in modules)
+
     if changed:
         document.mark_changed()
         message = "Normalized flutter-sdk build commands"
@@ -278,42 +289,48 @@ def ensure_rust_sdk_env(document: ManifestDocument) -> OperationResult:
     return OperationResult.unchanged()
 
 
+def _is_rustup_command(cmd: str) -> bool:
+    """Check if a command is related to rustup installation."""
+    return (
+        "sh.rustup.rs" in cmd or "Installing Rust" in cmd or "$HOME/.cargo/bin" in cmd
+    )
+
+
+def _remove_rustup_from_module(module: dict) -> bool:
+    """Remove rustup commands from a module. Returns True if changed."""
+    if not isinstance(module, dict) or module.get("name") != "lotti":
+        return False
+
+    commands = module.get("build-commands")
+    if not isinstance(commands, list):
+        return False
+
+    # Filter out rustup-related commands
+    filtered = [str(cmd) for cmd in commands if not _is_rustup_command(str(cmd))]
+
+    if len(filtered) < len(commands):
+        module["build-commands"] = filtered
+        return True
+    return False
+
+
 def remove_rustup_install(document: ManifestDocument) -> OperationResult:
     """Remove rustup installation commands from lotti build-commands.
 
     This avoids network and relies on the Rust SDK extension instead.
     """
-
     modules = document.ensure_modules()
-    changed = False
-    for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
-            continue
-        commands = module.get("build-commands")
-        if not isinstance(commands, list):
-            continue
-        filtered: list[str] = []
-        removed_any = False
-        for raw in commands:
-            cmd = str(raw)
-            if (
-                ("sh.rustup.rs" in cmd)
-                or ("Installing Rust" in cmd)
-                or ("$HOME/.cargo/bin" in cmd)
-            ):
-                removed_any = True
-                continue
-            filtered.append(cmd)
-        if removed_any:
-            module["build-commands"] = filtered
-            changed = True
-        break
 
-    if changed:
-        document.mark_changed()
-        message = "Removed rustup install steps from lotti"
-        _LOGGER.debug(message)
-        return OperationResult.changed_result(message)
+    # Process only the first matching lotti module
+    for module in modules:
+        if _remove_rustup_from_module(module):
+            document.mark_changed()
+            message = "Removed rustup install steps from lotti"
+            _LOGGER.debug(message)
+            return OperationResult.changed_result(message)
+        if isinstance(module, dict) and module.get("name") == "lotti":
+            break
+
     return OperationResult.unchanged()
 
 

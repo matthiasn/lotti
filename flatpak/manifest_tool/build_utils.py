@@ -148,6 +148,56 @@ def prepare_build_directory(
         return False
 
 
+def _verify_flutter_sdk(sdk_path: Path) -> bool:
+    """Verify that a path contains a valid Flutter SDK."""
+    flutter_bin = sdk_path / "bin" / "flutter"
+    return flutter_bin.is_file()
+
+
+def _clean_target_directory(target_dir: Path) -> None:
+    """Remove existing contents of target directory but keep the directory itself."""
+    import shutil
+
+    for item in target_dir.iterdir():
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
+    _LOGGER.debug("Cleaned existing content in %s", target_dir)
+
+
+def _copy_tree_contents_recursive(src_dir: Path, dst_dir: Path) -> None:
+    """Recursively copy directory contents (Python < 3.8 fallback)."""
+    import shutil
+
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    for src_item in src_dir.iterdir():
+        dst_item = dst_dir / src_item.name
+        if src_item.is_dir():
+            _copy_tree_contents_recursive(src_item, dst_item)
+        else:
+            shutil.copy2(src_item, dst_item)
+
+
+def _copy_single_item(item: Path, dest: Path) -> None:
+    """Copy a single file or directory to destination."""
+    import shutil
+
+    if not item.is_dir():
+        shutil.copy2(item, dest)
+        return
+
+    try:
+        # Try Python 3.8+ syntax first
+        shutil.copytree(item, dest, dirs_exist_ok=True)
+    except TypeError:
+        # Fallback for Python < 3.8
+        if dest.exists():
+            _copy_tree_contents_recursive(item, dest)
+        else:
+            shutil.copytree(item, dest)
+
+
 def copy_flutter_sdk(
     *, source_sdk: Path, target_dir: Path, clean_target: bool = True
 ) -> bool:
@@ -161,66 +211,30 @@ def copy_flutter_sdk(
     Returns:
         True if successful, False otherwise
     """
-    import shutil
-
     try:
-        # Verify source is a valid Flutter SDK
-        flutter_bin = source_sdk / "bin" / "flutter"
-        if not flutter_bin.is_file():
+        # Verify source
+        if not _verify_flutter_sdk(source_sdk):
             _LOGGER.error("Invalid Flutter SDK at %s: missing bin/flutter", source_sdk)
             return False
 
-        # Prepare target directory
+        # Prepare target
         target_dir.mkdir(parents=True, exist_ok=True)
-
         if clean_target and target_dir.exists():
-            # Remove existing contents but keep the directory
-            for item in target_dir.iterdir():
-                if item.is_dir():
-                    shutil.rmtree(item)
-                else:
-                    item.unlink()
-            _LOGGER.debug("Cleaned existing content in %s", target_dir)
+            _clean_target_directory(target_dir)
 
         # Copy SDK
         _LOGGER.info("Copying Flutter SDK from %s to %s", source_sdk, target_dir)
-
-        # Copy all contents of source_sdk to target_dir
-        # Try with dirs_exist_ok for Python 3.8+, fallback to manual handling for older versions
         for item in source_sdk.iterdir():
-            dest = target_dir / item.name
-            if item.is_dir():
-                try:
-                    # Try Python 3.8+ syntax first
-                    shutil.copytree(item, dest, dirs_exist_ok=True)
-                except TypeError:
-                    # Fallback for Python < 3.8: manually handle existing directories
-                    if dest.exists():
-                        # Copy contents recursively
-                        def _copy_tree_contents(src_dir: Path, dst_dir: Path):
-                            dst_dir.mkdir(parents=True, exist_ok=True)
-                            for src_item in src_dir.iterdir():
-                                dst_item = dst_dir / src_item.name
-                                if src_item.is_dir():
-                                    _copy_tree_contents(src_item, dst_item)
-                                else:
-                                    shutil.copy2(src_item, dst_item)
+            _copy_single_item(item, target_dir / item.name)
 
-                        _copy_tree_contents(item, dest)
-                    else:
-                        shutil.copytree(item, dest)
-            else:
-                shutil.copy2(item, dest)
-
-        # Verify the copy
-        target_flutter = target_dir / "bin" / "flutter"
-        if not target_flutter.is_file():
+        # Verify result
+        if not _verify_flutter_sdk(target_dir):
             _LOGGER.error("Flutter SDK copy verification failed")
             return False
 
         _LOGGER.info("Successfully copied Flutter SDK to %s", target_dir)
         return True
 
-    except (OSError, IOError, shutil.Error) as e:
+    except (OSError, IOError) as e:
         _LOGGER.error("Failed to copy Flutter SDK: %s", e)
         return False
