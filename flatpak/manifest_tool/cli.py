@@ -122,8 +122,14 @@ def _run_update_manifest(namespace: argparse.Namespace) -> int:
     # If no commit specified and not in PR mode, use current HEAD
     if not commit and not pr_commit:
         try:
+            # Use absolute path to git for security (B607)
+            import shutil
+            git_path = shutil.which("git")
+            if not git_path:
+                raise FileNotFoundError("git executable not found in PATH")
+
             commit = subprocess.check_output(
-                ["git", "rev-parse", "HEAD"],
+                [git_path, "rev-parse", "HEAD"],
                 text=True,
                 stderr=subprocess.STDOUT
             ).strip()

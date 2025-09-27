@@ -72,7 +72,14 @@ if [ -n "${PUB_CACHE:-}" ] && [ -d "${PUB_CACHE}" ]; then
   ls -la "${PUB_CACHE}" || true
   if [ -d "${PUB_CACHE}/hosted/pub.dev" ]; then
     echo "Sample of cached hosted packages matching 'test-':"
-    ls -1 "${PUB_CACHE}/hosted/pub.dev" | grep '^test-' || echo "(no cached test-* packages found)"
+    found=0
+    for pkg in "${PUB_CACHE}/hosted/pub.dev"/test-*; do
+      if [ -e "$pkg" ]; then
+        basename "$pkg"
+        found=1
+      fi
+    done
+    [ $found -eq 0 ] && echo "(no cached test-* packages found)"
   fi
 fi
 

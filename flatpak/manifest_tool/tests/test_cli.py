@@ -552,15 +552,19 @@ def test_cli_prepare_build_dir_no_foreign_deps(tmp_path):
 def test_cli_update_manifest_head_fallback(tmp_path, monkeypatch, capsys):
     """Test update-manifest uses HEAD when no commit specified."""
     import subprocess
+    import shutil
 
     # Create manifest
     manifest_path = tmp_path / "manifest.yml"
     data = yaml.safe_load(SAMPLE_MANIFEST)
     manifest_path.write_text(yaml.safe_dump(data), encoding="utf-8")
 
+    # Mock shutil.which to return a fake git path
+    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/git" if cmd == "git" else None)
+
     # Mock subprocess to return a fake HEAD commit
     def mock_check_output(cmd, **kwargs):
-        if cmd == ["git", "rev-parse", "HEAD"]:
+        if "/usr/bin/git" in cmd[0] and "rev-parse" in cmd:
             return "fake-head-commit-sha\n"
         raise subprocess.CalledProcessError(1, cmd)
 
