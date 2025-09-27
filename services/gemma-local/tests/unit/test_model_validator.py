@@ -65,7 +65,7 @@ class TestModelValidator:
 
         with patch.object(validator, 'validate_model_request', return_value=True):
             # Should not call _switch_model_config
-            with patch.object(validator, '_switch_model_config') as mock_switch:
+            with patch.object(validator, '_switch_model_config', new=AsyncMock()) as mock_switch:
                 await validator.ensure_model_available("gemma-3n-E2B-it")
                 mock_switch.assert_not_called()
 
@@ -76,7 +76,7 @@ class TestModelValidator:
         mock_config_manager.get_model_id.return_value = "google/gemma-3n-E2B-it"
 
         with patch.object(validator, 'validate_model_request', return_value=True):
-            with patch.object(validator, '_switch_model_config') as mock_switch:
+            with patch.object(validator, '_switch_model_config', new=AsyncMock()) as mock_switch:
                 await validator.ensure_model_available("gemma-3n-E4B-it")
                 mock_switch.assert_called_once_with("gemma-3n-E4B-it")
 
