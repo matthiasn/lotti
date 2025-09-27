@@ -8,7 +8,7 @@ from typing import Dict, Any
 
 
 # Helper function for device detection
-def _get_device():
+def _get_device() -> str:
     """Get the best available device with memory considerations."""
     device = os.getenv("GEMMA_DEVICE", "auto")
     
@@ -96,7 +96,7 @@ class ServiceConfig:
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     
     @classmethod
-    def get_device(cls):
+    def get_device(cls) -> str:
         """Get the best available device with memory considerations."""
         return cls.DEFAULT_DEVICE
     
@@ -112,9 +112,9 @@ class ServiceConfig:
         return model_path.exists() and any(model_path.glob("*.safetensors"))
     
     @classmethod
-    def get_generation_config(cls, task_type: str = "general") -> dict:
+    def get_generation_config(cls, task_type: str = "general") -> Dict[str, Any]:
         """Get optimized generation config for different task types."""
-        base_config = {
+        base_config: Dict[str, Any] = {
             "do_sample": False,  # Deterministic for transcription
             "use_cache": cls.USE_CACHE,
             "pad_token_id": None,  # Will be set from tokenizer

@@ -9,6 +9,7 @@ import numpy as np
 
 class ModelStatus(Enum):
     """Model status enumeration"""
+
     IDLE = "idle"
     CHECKING = "checking"
     PREPARING = "preparing"
@@ -21,6 +22,7 @@ class ModelStatus(Enum):
 
 class InferenceStatus(Enum):
     """Inference status enumeration"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -30,6 +32,7 @@ class InferenceStatus(Enum):
 @dataclass
 class ModelInfo:
     """Model information"""
+
     id: str
     name: str
     variant: str
@@ -43,6 +46,7 @@ class ModelInfo:
 @dataclass
 class DownloadProgress:
     """Model download progress"""
+
     status: ModelStatus
     message: str
     progress: float = 0.0
@@ -54,6 +58,7 @@ class DownloadProgress:
 @dataclass
 class AudioRequest:
     """Audio transcription request"""
+
     audio_data: str  # base64 encoded
     model: str
     language: Optional[str] = None
@@ -65,6 +70,7 @@ class AudioRequest:
 @dataclass
 class TranscriptionResult:
     """Transcription result"""
+
     text: str
     model_used: str
     processing_time: float
@@ -75,6 +81,7 @@ class TranscriptionResult:
 @dataclass
 class ChatRequest:
     """Chat completion request"""
+
     model: str
     messages: List[Dict[str, Any]]
     temperature: float = 0.7
@@ -88,6 +95,7 @@ class ChatRequest:
 @dataclass
 class ChatResponse:
     """Chat completion response"""
+
     id: str
     model: str
     choices: List[Dict[str, Any]]

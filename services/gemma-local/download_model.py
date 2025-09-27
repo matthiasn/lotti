@@ -22,11 +22,23 @@ except ImportError:
     sys.exit(1)
 
 
-def download_model(variant="E2B", token=None):
-    """Download a specific Gemma 3n model variant."""
+def download_model(variant="E2B", token=None, revision=None):
+    """Download a specific Gemma 3n model variant.
+
+    Args:
+        variant: Model variant ('E2B' or 'E4B')
+        token: Optional HuggingFace token
+        revision: Optional revision/commit hash for security (defaults to 'main')
+    """
 
     # Construct model ID
     model_id = f'google/gemma-3n-{variant}-it'
+
+    # Use provided revision or environment variable or default to 'main' for security
+    if not revision:
+        model_key = model_id.replace('/', '_').replace('-', '_').upper()
+        env_key = f'{model_key}_REVISION'
+        revision = os.environ.get(env_key) or os.environ.get('GEMMA_MODEL_REVISION', 'main')
 
     # Setup paths (matching the server's expected location)
     cache_dir = os.path.expanduser('~/.cache/gemma-local/models')
@@ -34,6 +46,7 @@ def download_model(variant="E2B", token=None):
 
     print(f"\n📦 Downloading {model_id}...")
     print(f"📂 Destination: {local_dir}")
+    print(f"🔒 Revision: {revision} (pinned for security)")
 
     # Check if already exists
     if os.path.exists(local_dir) and any(Path(local_dir).glob("*.safetensors")):
@@ -47,6 +60,7 @@ def download_model(variant="E2B", token=None):
 
         path = snapshot_download(
             repo_id=model_id,
+            revision=revision,  # Pin to specific revision for security
             cache_dir=cache_dir,
             local_dir=local_dir,
             local_dir_use_symlinks=False,
@@ -99,6 +113,12 @@ Examples:
         default=None
     )
 
+    parser.add_argument(
+        '--revision',
+        help='Specific model revision/commit hash for security (default: main)',
+        default=None
+    )
+
     args = parser.parse_args()
 
     print("🎯 Gemma 3n Model Downloader")
@@ -114,7 +134,7 @@ Examples:
     # Download each variant
     success_count = 0
     for variant in variants_to_download:
-        result = download_model(variant, args.token)
+        result = download_model(variant, args.token, args.revision)
         if result:
             success_count += 1
 

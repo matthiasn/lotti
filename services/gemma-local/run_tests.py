@@ -50,9 +50,11 @@ def main():
         print("Error: Please run this script from the services/gemma-local directory")
         sys.exit(1)
 
-    # Set up environment
+    # Set up environment with secure temp directory
+    import tempfile
+    test_cache_dir = tempfile.mkdtemp(prefix='gemma-test-')
     os.environ.setdefault('PYTHONPATH', str(Path.cwd()))
-    os.environ.setdefault('GEMMA_CACHE_DIR', '/tmp/test-cache')
+    os.environ.setdefault('GEMMA_CACHE_DIR', test_cache_dir)
     os.environ.setdefault('LOG_LEVEL', 'DEBUG')
 
     tests_to_run = [

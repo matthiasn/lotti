@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from typing import Any
 
 # Add parent directory to path to import legacy modules
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -43,7 +44,7 @@ class ModelManagerAdapter(IModelManager):
             is_available=self.is_model_available(),
             is_loaded=self.is_model_loaded(),
             device=self.legacy_manager.device,
-            path=Path(self.legacy_manager.model_id) if self.is_model_available() else None
+            path=Path(self.legacy_manager.model_id) if self.is_model_available() else None,
         )
 
     def refresh_config(self) -> None:
@@ -51,21 +52,21 @@ class ModelManagerAdapter(IModelManager):
         self.legacy_manager.refresh_config()
 
     @property
-    def model(self):
+    def model(self) -> Any:
         """Get the underlying model for legacy compatibility"""
         return self.legacy_manager.model
 
     @property
-    def tokenizer(self):
+    def tokenizer(self) -> Any:
         """Get the tokenizer for legacy compatibility"""
         return self.legacy_manager.tokenizer
 
     @property
-    def processor(self):
+    def processor(self) -> Any:
         """Get the processor for legacy compatibility"""
         return self.legacy_manager.processor
 
     @property
-    def device(self):
+    def device(self) -> str:
         """Get the device for legacy compatibility"""
         return self.legacy_manager.device

@@ -1,6 +1,7 @@
 """Unit tests for ModelValidator"""
 
 import pytest
+import tempfile
 from pathlib import Path
 from unittest.mock import Mock, AsyncMock, patch
 
@@ -23,9 +24,10 @@ class TestModelValidator:
         """Test validation when model files exist"""
         validator = ModelValidator(mock_config_manager, mock_model_manager)
 
-        # Mock cache dir and model path
-        cache_dir = Path("/tmp/test-cache")
-        mock_config_manager.get_cache_dir.return_value = cache_dir
+        # Mock cache dir and model path with secure temp directory
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            cache_dir = Path(tmp_dir) / "test-cache"
+            mock_config_manager.get_cache_dir.return_value = cache_dir
 
         with patch.object(validator, '_get_model_path') as mock_get_path:
             mock_path = Mock()
@@ -109,62 +111,66 @@ class TestModelValidator:
     def test_get_model_path_without_prefix(self, mock_config_manager, mock_model_manager):
         """Test getting model path without google/ prefix"""
         validator = ModelValidator(mock_config_manager, mock_model_manager)
-        cache_dir = Path("/tmp/test-cache")
-        mock_config_manager.get_cache_dir.return_value = cache_dir
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            cache_dir = Path(tmp_dir) / "test-cache"
+            mock_config_manager.get_cache_dir.return_value = cache_dir
 
-        path = validator._get_model_path("gemma-3n-E2B-it")
-        expected = cache_dir / "models" / "google--gemma-3n-E2B-it"
-        assert path == expected
+            path = validator._get_model_path("gemma-3n-E2B-it")
+            expected = cache_dir / "models" / "google--gemma-3n-E2B-it"
+            assert path == expected
 
     def test_get_model_path_with_prefix(self, mock_config_manager, mock_model_manager):
         """Test getting model path with google/ prefix"""
         validator = ModelValidator(mock_config_manager, mock_model_manager)
-        cache_dir = Path("/tmp/test-cache")
-        mock_config_manager.get_cache_dir.return_value = cache_dir
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            cache_dir = Path(tmp_dir) / "test-cache"
+            mock_config_manager.get_cache_dir.return_value = cache_dir
 
-        path = validator._get_model_path("google/gemma-3n-E2B-it")
-        expected = cache_dir / "models" / "google--gemma-3n-E2B-it"
-        assert path == expected
+            path = validator._get_model_path("google/gemma-3n-E2B-it")
+            expected = cache_dir / "models" / "google--gemma-3n-E2B-it"
+            assert path == expected
 
     def test_get_available_models_no_models_dir(self, mock_config_manager, mock_model_manager):
         """Test getting available models when models directory doesn't exist"""
         validator = ModelValidator(mock_config_manager, mock_model_manager)
-        cache_dir = Path("/tmp/test-cache")
-        mock_config_manager.get_cache_dir.return_value = cache_dir
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            cache_dir = Path(tmp_dir) / "test-cache"
+            mock_config_manager.get_cache_dir.return_value = cache_dir
 
-        models = validator.get_available_models()
-        assert models == []
+            models = validator.get_available_models()
+            assert models == []
 
     def test_get_available_models_with_models(self, mock_config_manager, mock_model_manager):
         """Test getting available models when models exist"""
         validator = ModelValidator(mock_config_manager, mock_model_manager)
-        cache_dir = Path("/tmp/test-cache")
-        mock_config_manager.get_cache_dir.return_value = cache_dir
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            cache_dir = Path(tmp_dir) / "test-cache"
+            mock_config_manager.get_cache_dir.return_value = cache_dir
 
-        # Mock models directory structure
-        with patch('pathlib.Path.exists', return_value=True), \
-             patch('pathlib.Path.iterdir') as mock_iterdir:
+            # Mock models directory structure
+            with patch('pathlib.Path.exists', return_value=True), \
+                 patch('pathlib.Path.iterdir') as mock_iterdir:
 
-            # Create mock model directories
-            mock_e2b_dir = Mock()
-            mock_e2b_dir.is_dir.return_value = True
-            mock_e2b_dir.name = "google--gemma-3n-E2B-it"
-            mock_e2b_dir.glob.return_value = ["model.safetensors"]
+                # Create mock model directories
+                mock_e2b_dir = Mock()
+                mock_e2b_dir.is_dir.return_value = True
+                mock_e2b_dir.name = "google--gemma-3n-E2B-it"
+                mock_e2b_dir.glob.return_value = ["model.safetensors"]
 
-            mock_e4b_dir = Mock()
-            mock_e4b_dir.is_dir.return_value = True
-            mock_e4b_dir.name = "google--gemma-3n-E4B-it"
-            mock_e4b_dir.glob.return_value = ["model.safetensors"]
+                mock_e4b_dir = Mock()
+                mock_e4b_dir.is_dir.return_value = True
+                mock_e4b_dir.name = "google--gemma-3n-E4B-it"
+                mock_e4b_dir.glob.return_value = ["model.safetensors"]
 
-            mock_empty_dir = Mock()
-            mock_empty_dir.is_dir.return_value = True
-            mock_empty_dir.name = "empty-model"
-            mock_empty_dir.glob.return_value = []  # No safetensors files
+                mock_empty_dir = Mock()
+                mock_empty_dir.is_dir.return_value = True
+                mock_empty_dir.name = "empty-model"
+                mock_empty_dir.glob.return_value = []  # No safetensors files
 
-            mock_iterdir.return_value = [mock_e2b_dir, mock_e4b_dir, mock_empty_dir]
+                mock_iterdir.return_value = [mock_e2b_dir, mock_e4b_dir, mock_empty_dir]
 
-            models = validator.get_available_models()
+                models = validator.get_available_models()
 
-            # Should only include directories with safetensors files
-            expected = ["google/gemma-3n-E2B-it", "google/gemma-3n-E4B-it"]
-            assert sorted(models) == sorted(expected)
+                # Should only include directories with safetensors files
+                expected = ["google/gemma-3n-E2B-it", "google/gemma-3n-E4B-it"]
+                assert sorted(models) == sorted(expected)

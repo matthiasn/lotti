@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -249,12 +250,17 @@ class _UnifiedAiProgressContentState
             name: 'UnifiedAiProgressContent',
           );
 
-          if (actualControllerState?.error is ModelNotInstalledException) {
-            final modelNotInstalledError =
-                actualControllerState!.error! as ModelNotInstalledException;
+          // Check for model installation errors (both Ollama and Gemma)
+          final error = actualControllerState?.error;
+          if (error is ModelNotInstalledException ||
+              error is ModelNotAvailableException) {
+            final modelName = error is ModelNotInstalledException
+                ? error.modelName
+                : (error as ModelNotAvailableException?)?.modelName ??
+                    'unknown';
 
             developer.log(
-              'ModelNotInstalledException detected for model: ${modelNotInstalledError.modelName}',
+              '${error.runtimeType} detected for model: $modelName',
               name: 'UnifiedAiProgressContent',
             );
 
@@ -273,30 +279,31 @@ class _UnifiedAiProgressContentState
                 final gemmaProvider = providers
                     .whereType<AiConfigInferenceProvider>()
                     .where((AiConfigInferenceProvider p) =>
-                        p.inferenceProviderType == InferenceProviderType.gemma3n)
+                        p.inferenceProviderType ==
+                        InferenceProviderType.gemma3n)
                     .firstOrNull;
 
                 final isGemmaModel = gemmaProvider != null;
 
                 if (isGemmaModel) {
                   developer.log(
-                    'Showing GemmaModelInstallDialog for model: ${modelNotInstalledError.modelName}',
+                    'Showing GemmaModelInstallDialog for model: $modelName',
                     name: 'UnifiedAiProgressContent',
                   );
 
                   return GemmaModelInstallDialog(
-                    modelName: modelNotInstalledError.modelName,
+                    modelName: modelName,
                     onModelInstalled: () => _handleModelInstalled('Gemma'),
                   );
                 } else {
                   // It's an Ollama model
                   developer.log(
-                    'Showing OllamaModelInstallDialog for model: ${modelNotInstalledError.modelName}',
+                    'Showing OllamaModelInstallDialog for model: $modelName',
                     name: 'UnifiedAiProgressContent',
                   );
 
                   return OllamaModelInstallDialog(
-                    modelName: modelNotInstalledError.modelName,
+                    modelName: modelName,
                     onModelInstalled: () => _handleModelInstalled('Ollama'),
                   );
                 }

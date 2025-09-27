@@ -1,95 +1,123 @@
 """Dependency injection container"""
 
-from typing import Dict, Any
+from typing import Dict, Any, cast, Callable, TypeVar
 
 from .core.interfaces import (
-    IConfigManager, IModelManager, IModelDownloader, IModelValidator,
-    ITranscriptionService, IChatService, IAudioProcessor
+    IConfigManager,
+    IModelManager,
+    IModelDownloader,
+    IModelValidator,
+    ITranscriptionService,
+    IChatService,
+    IAudioProcessor,
 )
-from .services.config_manager import ConfigManager
-from .services.model_validator import ModelValidator
-from .services.model_downloader import ModelDownloader
-from .services.transcription_service import TranscriptionService
-from .services.chat_service import ChatService
+from .core.constants import (
+    SERVICE_CONFIG_MANAGER, SERVICE_MODEL_MANAGER, SERVICE_AUDIO_PROCESSOR,
+    SERVICE_MODEL_VALIDATOR, SERVICE_MODEL_DOWNLOADER, SERVICE_TRANSCRIPTION_SERVICE,
+    SERVICE_CHAT_SERVICE
+)
 
-# Import legacy adapters
-from .adapters.model_manager_adapter import ModelManagerAdapter
-from .adapters.audio_processor_adapter import AudioProcessorAdapter
+T = TypeVar('T')
 
 
 class Container:
     """Simple dependency injection container"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._services: Dict[str, Any] = {}
-        self._configure_services()
+        self._factories: Dict[str, Callable[[], Any]] = {}
+        self._configure_factories()
 
-    def _configure_services(self):
-        """Configure all service dependencies"""
-        # Core services
-        self._services['config_manager'] = ConfigManager()
+    def _configure_factories(self) -> None:
+        """Configure service factory functions for lazy initialization"""
+        # Lazy import to avoid circular dependencies and startup overhead
+        self._factories[SERVICE_CONFIG_MANAGER] = lambda: self._create_config_manager()
+        self._factories[SERVICE_MODEL_MANAGER] = lambda: self._create_model_manager()
+        self._factories[SERVICE_AUDIO_PROCESSOR] = lambda: self._create_audio_processor()
+        self._factories[SERVICE_MODEL_VALIDATOR] = lambda: self._create_model_validator()
+        self._factories[SERVICE_MODEL_DOWNLOADER] = lambda: self._create_model_downloader()
+        self._factories[SERVICE_TRANSCRIPTION_SERVICE] = lambda: self._create_transcription_service()
+        self._factories[SERVICE_CHAT_SERVICE] = lambda: self._create_chat_service()
 
-        # Adapters for legacy code
-        self._services['model_manager'] = ModelManagerAdapter(
-            self.get('config_manager')
+    def _create_config_manager(self) -> Any:
+        """Create config manager service"""
+        from .services.config_manager import ConfigManager
+        return ConfigManager()
+
+    def _create_model_manager(self) -> Any:
+        """Create model manager service"""
+        from .adapters.model_manager_adapter import ModelManagerAdapter
+        return ModelManagerAdapter(self.get_config_manager())
+
+    def _create_audio_processor(self) -> Any:
+        """Create audio processor service"""
+        from .adapters.audio_processor_adapter import AudioProcessorAdapter
+        return AudioProcessorAdapter()
+
+    def _create_model_validator(self) -> Any:
+        """Create model validator service"""
+        from .services.model_validator import ModelValidator
+        return ModelValidator(self.get_config_manager(), self.get_model_manager())
+
+    def _create_model_downloader(self) -> Any:
+        """Create model downloader service"""
+        from .services.model_downloader import ModelDownloader
+        return ModelDownloader(self.get_config_manager())
+
+    def _create_transcription_service(self) -> Any:
+        """Create transcription service"""
+        from .services.transcription_service import TranscriptionService
+        return TranscriptionService(
+            self.get_model_manager(),
+            self.get_audio_processor(),
+            self.get_model_validator()
         )
-        self._services['audio_processor'] = AudioProcessorAdapter()
 
-        # Business logic services
-        self._services['model_validator'] = ModelValidator(
-            self.get('config_manager'),
-            self.get('model_manager')
-        )
-
-        self._services['model_downloader'] = ModelDownloader(
-            self.get('config_manager')
-        )
-
-        self._services['transcription_service'] = TranscriptionService(
-            self.get('model_manager'),
-            self.get('audio_processor'),
-            self.get('model_validator')
-        )
-
-        self._services['chat_service'] = ChatService(
-            self.get('model_manager'),
-            self.get('model_validator'),
-            self.get('transcription_service')
+    def _create_chat_service(self) -> Any:
+        """Create chat service"""
+        from .services.chat_service import ChatService
+        return ChatService(
+            self.get_model_manager(),
+            self.get_model_validator(),
+            self.get_transcription_service()
         )
 
     def get(self, service_name: str) -> Any:
-        """Get a service by name"""
+        """Get a service by name (lazy initialization)"""
         if service_name not in self._services:
-            raise ValueError(f"Service '{service_name}' not found")
+            if service_name not in self._factories:
+                raise ValueError(f"Service '{service_name}' not found")
+            # Lazy initialization - create service when first requested
+            self._services[service_name] = self._factories[service_name]()
         return self._services[service_name]
 
     def get_config_manager(self) -> IConfigManager:
         """Get config manager service"""
-        return self.get('config_manager')
+        return cast(IConfigManager, self.get(SERVICE_CONFIG_MANAGER))
 
     def get_model_manager(self) -> IModelManager:
         """Get model manager service"""
-        return self.get('model_manager')
+        return cast(IModelManager, self.get(SERVICE_MODEL_MANAGER))
 
     def get_model_downloader(self) -> IModelDownloader:
         """Get model downloader service"""
-        return self.get('model_downloader')
+        return cast(IModelDownloader, self.get(SERVICE_MODEL_DOWNLOADER))
 
     def get_model_validator(self) -> IModelValidator:
         """Get model validator service"""
-        return self.get('model_validator')
+        return cast(IModelValidator, self.get(SERVICE_MODEL_VALIDATOR))
 
     def get_transcription_service(self) -> ITranscriptionService:
         """Get transcription service"""
-        return self.get('transcription_service')
+        return cast(ITranscriptionService, self.get(SERVICE_TRANSCRIPTION_SERVICE))
 
     def get_chat_service(self) -> IChatService:
         """Get chat service"""
-        return self.get('chat_service')
+        return cast(IChatService, self.get(SERVICE_CHAT_SERVICE))
 
     def get_audio_processor(self) -> IAudioProcessor:
         """Get audio processor service"""
-        return self.get('audio_processor')
+        return cast(IAudioProcessor, self.get(SERVICE_AUDIO_PROCESSOR))
 
 
 # Global container instance

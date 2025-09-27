@@ -3,6 +3,7 @@
 import pytest
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 from src.services.config_manager import ConfigManager
 from src.core.exceptions import ConfigurationError
@@ -157,3 +158,53 @@ class TestConfigManager:
                 config.validate_config()
         finally:
             os.environ.pop('GEMMA_MODEL_ID', None)
+
+    def test_get_model_revision_default(self):
+        """Test getting model revision defaults to main"""
+        config = ConfigManager()
+        revision = config.get_model_revision('google/gemma-3n-E2B-it')
+        assert revision == 'main'
+
+    def test_get_model_revision_from_general_env(self):
+        """Test getting model revision from general environment variable"""
+        config = ConfigManager()
+        with patch.dict(os.environ, {'GEMMA_MODEL_REVISION': 'v1.2.3'}):
+            revision = config.get_model_revision('google/gemma-3n-E2B-it')
+            assert revision == 'v1.2.3'
+
+    def test_get_model_revision_from_specific_env(self):
+        """Test getting model revision from model-specific environment variable"""
+        config = ConfigManager()
+        with patch.dict(os.environ, {
+            'GOOGLE_GEMMA_3N_E2B_IT_REVISION': 'specific-rev',
+            'GEMMA_MODEL_REVISION': 'general-rev'
+        }):
+            revision = config.get_model_revision('google/gemma-3n-E2B-it')
+            assert revision == 'specific-rev'  # Specific should override general
+
+    def test_get_host_default_secure(self):
+        """Test that default host is localhost for security"""
+        config = ConfigManager()
+        with patch.dict(os.environ, {}, clear=True):
+            # Clear HOST env var for this test
+            os.environ.pop('HOST', None)
+            host = config.get_host()
+            assert host == '127.0.0.1'  # Should default to localhost, not 0.0.0.0
+
+    def test_get_host_rejects_all_interfaces(self):
+        """Test that binding to all interfaces is rejected for security"""
+        config = ConfigManager()
+        # Test that 0.0.0.0 is rejected and defaults to localhost
+        with patch.dict(os.environ, {'HOST': '0.0.0.0'}):  # nosec B104 - Testing security rejection
+            host = config.get_host()
+            # Should override to safe default
+            assert host == '127.0.0.1'
+
+    def test_get_host_allows_specific_ip(self):
+        """Test that specific IP addresses are allowed"""
+        config = ConfigManager()
+        # Test that specific IPs are allowed
+        specific_ip = '192.168.1.100'
+        with patch.dict(os.environ, {'HOST': specific_ip}):
+            host = config.get_host()
+            assert host == specific_ip

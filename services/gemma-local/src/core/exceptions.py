@@ -5,6 +5,7 @@ from typing import Optional
 
 class GemmaServiceError(Exception):
     """Base exception for all Gemma service errors"""
+
     pass
 
 
@@ -18,6 +19,7 @@ class ModelNotFoundError(GemmaServiceError):
 
 class ModelLoadError(GemmaServiceError):
     """Raised when model fails to load"""
+
     pass
 
 
@@ -32,19 +34,23 @@ class ModelDownloadError(GemmaServiceError):
 
 class AudioProcessingError(GemmaServiceError):
     """Raised when audio processing fails"""
+
     pass
 
 
 class TranscriptionError(GemmaServiceError):
     """Raised when transcription fails"""
+
     pass
 
 
 class ConfigurationError(GemmaServiceError):
     """Raised when configuration is invalid"""
+
     pass
 
 
 class ValidationError(GemmaServiceError):
     """Raised when validation fails"""
+
     pass

@@ -7,24 +7,33 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from dotenv import load_dotenv
+
+# Import constants first - needed for configuration
+from .core.constants import (
+    API_TITLE, API_DESCRIPTION, API_VERSION, ENV_FILE_NAME,
+    ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, LOG_FORMAT,
+    CORS_ALLOW_ORIGINS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS,
+    MSG_LOADED_ENV, MSG_STARTING_SERVICE, MSG_MODEL_FILES_FOUND,
+    MSG_MODEL_NOT_DOWNLOADED
+)
 
 # Load environment variables
-from dotenv import load_dotenv
-env_path = Path(__file__).parent.parent / '.env'
+env_path = Path(__file__).parent.parent / ENV_FILE_NAME
 if env_path.exists():
     load_dotenv(env_path)
-    logging.info(f"Loaded environment from {env_path}")
+    logging.info(f"{MSG_LOADED_ENV} {env_path}")
 
-# Configure logging first
+# Configure logging
 logging.basicConfig(
-    level=getattr(logging, os.environ.get('LOG_LEVEL', 'INFO')),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=getattr(logging, os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)),
+    format=LOG_FORMAT
 )
 logger = logging.getLogger(__name__)
 
-# Import after logging is configured
-from .container import container
-from .api.routes import router
+# Import services after logging is configured
+from .container import container  # noqa: E402 - Import after logging setup
+from .api.routes import router  # noqa: E402 - Import after logging setup
 
 
 def create_app() -> FastAPI:
@@ -36,18 +45,18 @@ def create_app() -> FastAPI:
 
     # Create FastAPI app
     app = FastAPI(
-        title="Gemma Local Service",
-        description="Local Gemma model service with OpenAI-compatible API - Modular Architecture",
-        version="2.0.0"
+        title=API_TITLE,
+        description=API_DESCRIPTION,
+        version=API_VERSION,
     )
 
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=CORS_ALLOW_ORIGINS,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=CORS_ALLOW_METHODS,
+        allow_headers=CORS_ALLOW_HEADERS,
     )
 
     # Include routes
@@ -55,19 +64,19 @@ def create_app() -> FastAPI:
 
     # Startup event
     @app.on_event("startup")
-    async def startup_event():
+    async def startup_event() -> None:
         """Initialize service on startup"""
         model_manager = container.get_model_manager()
         model_info = model_manager.get_model_info()
 
-        logger.info(f"Starting Gemma Local Service (Modular) with model: {model_info.id}")
+        logger.info(f"{MSG_STARTING_SERVICE}: {model_info.id}")
         logger.info(f"Device: {model_info.device}")
         logger.info(f"Model variant: {model_info.variant}")
 
         if model_manager.is_model_available():
-            logger.info("Model files found. Ready to load on first request.")
+            logger.info(MSG_MODEL_FILES_FOUND)
         else:
-            logger.info("Model not downloaded. Use /v1/models/pull to download.")
+            logger.info(MSG_MODEL_NOT_DOWNLOADED)
 
     return app
 
@@ -83,5 +92,5 @@ if __name__ == "__main__":
         host=config_manager.get_host(),
         port=config_manager.get_port(),
         log_level=config_manager.get_log_level().lower(),
-        reload=True
+        reload=True,
     )
