@@ -109,7 +109,7 @@ The script will:
    - Use current git HEAD commit
    - Generate offline manifest and all dependencies using flatpak-flutter
    - Process the metainfo.xml with version substitution
-- Output all files to `flatpak/flathub-build/output/`
+   - Output all files to `flatpak/flathub-build/output/`
 
 #### Tuning & Env Vars
 
@@ -141,6 +141,13 @@ Tips:
 - `com.matthiasn.lotti.metainfo.xml` - App metadata with version placeholders
 - `create_local_manifest.sh` - Updates COMMIT_PLACEHOLDER with actual commit hash in the manifest copy
 - `prepare_flathub_submission.sh` - Prepares everything for Flathub (generates offline manifest)
+- `check_complexity.sh` - Analyzes code complexity metrics for the manifest_tool Python code
+- `manifest_tool/` - Python tooling for manifest manipulation and build preparation
+  - `cli.py` - Command-line interface for all manifest operations
+  - `flutter_ops.py` - Flutter SDK and environment manipulation functions
+  - `manifest_ops.py` - Manifest modification operations (pinning, module management)
+  - `sources_ops.py` - Sources manipulation (bundling, URL replacement)
+  - `build_utils.py` - Build utilities (Flutter SDK copying, directory preparation)
 
 ## Creating a Bundle
 
@@ -216,11 +223,14 @@ Currently, the Flatpak uses a single 1024px icon file for all sizes. For better 
 
 ## Python Helper Tests
 
-The helper scripts under `flatpak/manifest_tool/` now ship with a pytest suite. To run it locally without touching the system Python, create a virtual environment from the repository root:
+The helper scripts under `flatpak/manifest_tool/` now ship with a pytest suite. To run it locally without touching the system Python, create a virtual environment in the flatpak directory:
 
 ```bash
 # Install the venv tooling once (Ubuntu/Debian only)
 sudo apt install python3-venv
+
+# Navigate to the flatpak directory (all commands should be run from here)
+cd flatpak
 
 # Create and activate the virtual environment
 python3 -m venv .venv
@@ -231,10 +241,25 @@ python -m pip install --upgrade pip
 pip install pytest pyyaml
 
 # Run the tests
-python -m pytest flatpak/manifest_tool/tests
+python -m pytest manifest_tool/tests
 
 # When finished
 deactivate
 ```
 
 > Tip: keep the `.venv/` directory out of version control (it is already covered by the root `.gitignore`).
+
+### Code Complexity Analysis
+
+To analyze code complexity (similar to CodeFactor):
+
+```bash
+# From the flatpak directory
+./check_complexity.sh
+```
+
+This will:
+- Check cyclomatic complexity (functions with complexity > 10)
+- Check cognitive complexity
+- Provide a summary of complex functions
+- Install required tools (radon, flake8) automatically if not present

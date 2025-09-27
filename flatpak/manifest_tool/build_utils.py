@@ -185,20 +185,32 @@ def copy_flutter_sdk(
         # Copy SDK
         _LOGGER.info("Copying Flutter SDK from %s to %s", source_sdk, target_dir)
 
-        # Use shutil.copytree with dirs_exist_ok for Python 3.8+
-        if hasattr(shutil, "copytree"):
-            # Copy all contents of source_sdk to target_dir
-            for item in source_sdk.iterdir():
-                dest = target_dir / item.name
-                if item.is_dir():
+        # Copy all contents of source_sdk to target_dir
+        # Try with dirs_exist_ok for Python 3.8+, fallback to manual handling for older versions
+        for item in source_sdk.iterdir():
+            dest = target_dir / item.name
+            if item.is_dir():
+                try:
+                    # Try Python 3.8+ syntax first
                     shutil.copytree(item, dest, dirs_exist_ok=True)
-                else:
-                    shutil.copy2(item, dest)
-        else:
-            # Fallback for older Python
-            from distutils.dir_util import copy_tree
+                except TypeError:
+                    # Fallback for Python < 3.8: manually handle existing directories
+                    if dest.exists():
+                        # Copy contents recursively
+                        def _copy_tree_contents(src_dir: Path, dst_dir: Path):
+                            dst_dir.mkdir(parents=True, exist_ok=True)
+                            for src_item in src_dir.iterdir():
+                                dst_item = dst_dir / src_item.name
+                                if src_item.is_dir():
+                                    _copy_tree_contents(src_item, dst_item)
+                                else:
+                                    shutil.copy2(src_item, dst_item)
 
-            copy_tree(str(source_sdk), str(target_dir))
+                        _copy_tree_contents(item, dest)
+                    else:
+                        shutil.copytree(item, dest)
+            else:
+                shutil.copy2(item, dest)
 
         # Verify the copy
         target_flutter = target_dir / "bin" / "flutter"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -315,3 +316,55 @@ def test_copy_flutter_sdk_copy_error(mock_logger, tmp_path: Path):
 
     assert result is False
     mock_logger.error.assert_called()
+
+
+def test_copy_flutter_sdk_python37_fallback(tmp_path: Path):
+    """Test copying Flutter SDK with Python 3.7 fallback (no dirs_exist_ok)."""
+    # Create source SDK with nested directories
+    source_sdk = tmp_path / "source" / "flutter"
+    source_sdk.mkdir(parents=True)
+
+    bin_dir = source_sdk / "bin"
+    bin_dir.mkdir()
+    flutter_bin = bin_dir / "flutter"
+    flutter_bin.write_text("#!/bin/bash\necho flutter", encoding="utf-8")
+    flutter_bin.chmod(0o755)
+
+    dart_bin = bin_dir / "dart"
+    dart_bin.write_text("#!/bin/bash\necho dart", encoding="utf-8")
+
+    # Create nested directory structure
+    nested_dir = source_sdk / "packages" / "flutter" / "lib"
+    nested_dir.mkdir(parents=True)
+    (nested_dir / "material.dart").write_text("// material")
+
+    # Create target with partial existing structure to test the fallback
+    target_dir = tmp_path / "target" / "flutter"
+    target_dir.mkdir(parents=True)
+
+    # Mock shutil.copytree to raise TypeError on dirs_exist_ok parameter
+    original_copytree = shutil.copytree
+
+    def mock_copytree(src, dst, *args, **kwargs):
+        if "dirs_exist_ok" in kwargs:
+            # Simulate Python < 3.8 which doesn't support dirs_exist_ok
+            raise TypeError(
+                "copytree() got an unexpected keyword argument 'dirs_exist_ok'"
+            )
+        return original_copytree(src, dst, *args, **kwargs)
+
+    with patch.object(shutil, "copytree", side_effect=mock_copytree):
+        result = build_utils.copy_flutter_sdk(
+            source_sdk=source_sdk, target_dir=target_dir, clean_target=True
+        )
+
+    # Verify the copy succeeded using fallback logic
+    assert result is True
+    assert target_dir.exists()
+    assert (target_dir / "bin" / "flutter").exists()
+    assert (target_dir / "bin" / "dart").exists()
+    assert (target_dir / "packages" / "flutter" / "lib" / "material.dart").exists()
+
+    # Verify file contents were copied
+    flutter_content = (target_dir / "bin" / "flutter").read_text()
+    assert "echo flutter" in flutter_content
