@@ -213,116 +213,132 @@ class _UnifiedAiProgressContentState
               name: 'UnifiedAiProgressContent',
             );
 
-            // Determine if it's a Gemma or Ollama model based on naming pattern
-            final isGemmaModel =
-                modelNotInstalledError.modelName.contains('gemma') ||
-                    modelNotInstalledError.modelName.contains('E2B') ||
-                    modelNotInstalledError.modelName.contains('E4B');
+            // Determine if it's a Gemma model by checking provider configuration
+            // Use FutureBuilder to handle async provider lookup
+            return FutureBuilder<List<AiConfig>>(
+              future: ref.read(aiConfigByTypeControllerProvider(
+                      configType: AiConfigType.inferenceProvider)
+                  .future),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const CircularProgressIndicator();
+                }
 
-            if (isGemmaModel) {
-              developer.log(
-                'Showing GemmaModelInstallDialog for model: ${modelNotInstalledError.modelName}',
-                name: 'UnifiedAiProgressContent',
-              );
+                final providers = snapshot.data!;
+                final gemmaProvider = providers
+                    .whereType<AiConfigInferenceProvider>()
+                    .where((AiConfigInferenceProvider p) =>
+                        p.inferenceProviderType == InferenceProviderType.gemma3n)
+                    .firstOrNull;
 
-              return GemmaModelInstallDialog(
-                modelName: modelNotInstalledError.modelName,
-                onModelInstalled: () async {
-                  try {
-                    // Check if widget is still mounted before proceeding
-                    if (!mounted) return;
+                final isGemmaModel = gemmaProvider != null;
 
-                    // Trigger a new inference run
-                    await ref.read(
-                      triggerNewInferenceProvider(
-                        entityId: widget.entityId,
-                        promptId: widget.promptId,
-                      ).future,
-                    );
+                if (isGemmaModel) {
+                  developer.log(
+                    'Showing GemmaModelInstallDialog for model: ${modelNotInstalledError.modelName}',
+                    name: 'UnifiedAiProgressContent',
+                  );
 
-                    // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
-                    final prompt = await ref.read(
-                      aiConfigByIdProvider(widget.promptId).future,
-                    );
+                  return GemmaModelInstallDialog(
+                    modelName: modelNotInstalledError.modelName,
+                    onModelInstalled: () async {
+                      try {
+                        // Check if widget is still mounted before proceeding
+                        if (!mounted) return;
 
-                    // Double-check mounted state after async operation
-                    if (!mounted || !context.mounted) return;
+                        // Trigger a new inference run
+                        await ref.read(
+                          triggerNewInferenceProvider(
+                            entityId: widget.entityId,
+                            promptId: widget.promptId,
+                          ).future,
+                        );
 
-                    if (prompt is AiConfigPrompt) {
-                      await ModalUtils.showSingleSliverPageModal<void>(
-                        context: context,
-                        builder: (ctx) => UnifiedAiProgressUtils.progressPage(
-                          context: ctx,
-                          prompt: prompt,
-                          entityId: widget.entityId,
-                          onTapBack: () => Navigator.of(ctx).pop(),
-                        ),
-                      );
-                    }
-                  } catch (e, stack) {
-                    developer.log(
-                      'Error in Gemma onModelInstalled callback: $e',
-                      name: 'UnifiedAiProgressContent',
-                      error: e,
-                      stackTrace: stack,
-                    );
-                    // Don't re-throw - this is a callback error that shouldn't crash the app
-                  }
-                },
-              );
-            } else {
-              // It's an Ollama model
-              developer.log(
-                'Showing OllamaModelInstallDialog for model: ${modelNotInstalledError.modelName}',
-                name: 'UnifiedAiProgressContent',
-              );
+                        // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
+                        final prompt = await ref.read(
+                          aiConfigByIdProvider(widget.promptId).future,
+                        );
 
-              return OllamaModelInstallDialog(
-                modelName: modelNotInstalledError.modelName,
-                onModelInstalled: () async {
-                  try {
-                    // Check if widget is still mounted before proceeding
-                    if (!mounted) return;
+                        // Double-check mounted state after async operation
+                        if (!mounted || !context.mounted) return;
 
-                    // Trigger a new inference run
-                    await ref.read(
-                      triggerNewInferenceProvider(
-                        entityId: widget.entityId,
-                        promptId: widget.promptId,
-                      ).future,
-                    );
+                        if (prompt is AiConfigPrompt) {
+                          await ModalUtils.showSingleSliverPageModal<void>(
+                            context: context,
+                            builder: (ctx) => UnifiedAiProgressUtils.progressPage(
+                              context: ctx,
+                              prompt: prompt,
+                              entityId: widget.entityId,
+                              onTapBack: () => Navigator.of(ctx).pop(),
+                            ),
+                          );
+                        }
+                      } catch (e, stack) {
+                        developer.log(
+                          'Error in Gemma onModelInstalled callback: $e',
+                          name: 'UnifiedAiProgressContent',
+                          error: e,
+                          stackTrace: stack,
+                        );
+                        // Don't re-throw - this is a callback error that shouldn't crash the app
+                      }
+                    },
+                  );
+                } else {
+                  // It's an Ollama model
+                  developer.log(
+                    'Showing OllamaModelInstallDialog for model: ${modelNotInstalledError.modelName}',
+                    name: 'UnifiedAiProgressContent',
+                  );
 
-                    // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
-                    final prompt = await ref.read(
-                      aiConfigByIdProvider(widget.promptId).future,
-                    );
+                  return OllamaModelInstallDialog(
+                    modelName: modelNotInstalledError.modelName,
+                    onModelInstalled: () async {
+                      try {
+                        // Check if widget is still mounted before proceeding
+                        if (!mounted) return;
 
-                    // Double-check mounted state after async operation
-                    if (!mounted || !context.mounted) return;
+                        // Trigger a new inference run
+                        await ref.read(
+                          triggerNewInferenceProvider(
+                            entityId: widget.entityId,
+                            promptId: widget.promptId,
+                          ).future,
+                        );
 
-                    if (prompt is AiConfigPrompt) {
-                      await ModalUtils.showSingleSliverPageModal<void>(
-                        context: context,
-                        builder: (ctx) => UnifiedAiProgressUtils.progressPage(
-                          context: ctx,
-                          prompt: prompt,
-                          entityId: widget.entityId,
-                          onTapBack: () => Navigator.of(ctx).pop(),
-                        ),
-                      );
-                    }
-                  } catch (e, stack) {
-                    developer.log(
-                      'Error in Ollama onModelInstalled callback: $e',
-                      name: 'UnifiedAiProgressContent',
-                      error: e,
-                      stackTrace: stack,
-                    );
-                    // Don't re-throw - this is a callback error that shouldn't crash the app
-                  }
-                },
-              );
-            }
+                        // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
+                        final prompt = await ref.read(
+                          aiConfigByIdProvider(widget.promptId).future,
+                        );
+
+                        // Double-check mounted state after async operation
+                        if (!mounted || !context.mounted) return;
+
+                        if (prompt is AiConfigPrompt) {
+                          await ModalUtils.showSingleSliverPageModal<void>(
+                            context: context,
+                            builder: (ctx) => UnifiedAiProgressUtils.progressPage(
+                              context: ctx,
+                              prompt: prompt,
+                              entityId: widget.entityId,
+                              onTapBack: () => Navigator.of(ctx).pop(),
+                            ),
+                          );
+                        }
+                      } catch (e, stack) {
+                        developer.log(
+                          'Error in Ollama onModelInstalled callback: $e',
+                          name: 'UnifiedAiProgressContent',
+                          error: e,
+                          stackTrace: stack,
+                        );
+                        // Don't re-throw - this is a callback error that shouldn't crash the app
+                      }
+                    },
+                  );
+                }
+              },
+            );
           }
 
           // Now categorize for other error types
