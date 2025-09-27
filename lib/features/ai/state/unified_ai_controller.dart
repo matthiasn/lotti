@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -14,15 +15,48 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_ai_controller.g.dart';
 
+/// State object for unified AI inference
+@immutable
+class UnifiedAiState {
+  const UnifiedAiState({
+    required this.message,
+    this.error,
+  });
+
+  final String message;
+  final Exception? error;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UnifiedAiState &&
+          runtimeType == other.runtimeType &&
+          message == other.message &&
+          error == other.error;
+
+  @override
+  int get hashCode => message.hashCode ^ error.hashCode;
+
+  UnifiedAiState copyWith({
+    String? message,
+    Exception? error,
+  }) {
+    return UnifiedAiState(
+      message: message ?? this.message,
+      error: error ?? this.error,
+    );
+  }
+}
+
 /// Controller for running unified AI inference with configurable prompts
 @riverpod
 class UnifiedAiController extends _$UnifiedAiController {
   @override
-  String build({
+  UnifiedAiState build({
     required String entityId,
     required String promptId,
   }) {
-    return '';
+    return const UnifiedAiState(message: '');
   }
 
   // Helper method to update inference status for both entities
@@ -162,7 +196,7 @@ class UnifiedAiController extends _$UnifiedAiController {
       );
 
       // Clear any previous progress message
-      state = '';
+      state = const UnifiedAiState(message: '');
 
       // Start tracking this inference
       _startActiveInference(
@@ -175,7 +209,7 @@ class UnifiedAiController extends _$UnifiedAiController {
             entityId: entityId,
             promptConfig: promptConfig,
             onProgress: (progress) {
-              state = progress;
+              state = UnifiedAiState(message: progress);
 
               // Update active inference progress for both entities
               _updateActiveInferenceProgress(
@@ -207,13 +241,22 @@ class UnifiedAiController extends _$UnifiedAiController {
       final inferenceError =
           AiErrorUtils.categorizeError(e, stackTrace: stackTrace);
 
-      // Set the error message to display
-      state = inferenceError.message;
+      // Set the error message and preserve the original exception
+      // Store the original caught exception 'e' directly, not inferenceError.originalError
+      state = UnifiedAiState(
+        message: inferenceError.message,
+        error: e is Exception ? e : null,
+      );
 
       // Try to set error status if we have prompt config
       try {
         final config = await ref.read(aiConfigByIdProvider(promptId).future);
         if (config != null && config is AiConfigPrompt) {
+          loggingService.captureEvent(
+            'Setting inference status to ERROR for ${config.aiResponseType}',
+            subDomain: 'runInference',
+            domain: 'UnifiedAiController',
+          );
           _updateInferenceStatus(
             InferenceStatus.error,
             config.aiResponseType,

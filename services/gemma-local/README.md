@@ -36,9 +36,43 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+### Model Management
+
+#### Download Models
+
+**Important**: Models are downloaded automatically on first use, but you can pre-download them using the included script:
+
+```bash
+# Download E2B model (default, smaller)
+python download_model.py
+
+# Download E4B model (larger, better quality)
+python download_model.py E4B
+
+# Download both variants
+python download_model.py both
+```
+
+If you encounter authentication errors, you'll need a HuggingFace token:
+```bash
+# Get token from https://huggingface.co/settings/tokens
+python download_model.py --token YOUR_HF_TOKEN
+```
+
 ### Running the Service
 
-#### Basic Usage
+#### Using the Start Script (Recommended)
+
+Use the convenient startup script:
+```bash
+# Default E2B model
+./start_server.sh
+
+# Use E4B model
+GEMMA_MODEL_VARIANT=E4B ./start_server.sh
+```
+
+#### Manual Startup
 
 Start the service with default settings (E2B model variant):
 ```bash
@@ -475,10 +509,28 @@ volumes:
 
 ### Common Issues
 
+#### Model Not Found (HTTP 404 Error)
+
+If you get a 404 error when trying to use a model variant, it means the model isn't downloaded yet:
+
+```bash
+# Error message example:
+# INFO: 127.0.0.1:64309 - "POST /v1/chat/completions HTTP/1.1" 404 Not Found
+
+# Solution: Download the model first
+python download_model.py E4B  # or whichever variant you're trying to use
+
+# Then restart the server with that variant
+GEMMA_MODEL_VARIANT=E4B ./start_server.sh
+```
+
 #### Model Download Fails
 ```bash
 # Clear cache and retry
 rm -rf ~/.cache/gemma-local/models
+python download_model.py
+
+# Or use the manual method
 python main.py
 ```
 
@@ -571,33 +623,190 @@ View logs:
 tail -f ~/.logs/gemma-local/service.log
 ```
 
+## Architecture
+
+This service features a **modular architecture** designed for testability, maintainability, and engineering best practices:
+
+### Legacy Service (main.py)
+The original monolithic implementation that provides all functionality in a single file.
+
+### New Modular Service (src/)
+A restructured, modular implementation with the following benefits:
+- **Separation of Concerns**: Domain, service, API, and adapter layers
+- **Dependency Injection**: Interface-based design for easy testing and mocking
+- **Comprehensive Testing**: Unit tests, integration tests, and CI/CD pipeline
+- **Type Safety**: Full type hints and interface definitions
+
+```
+src/
+├── core/                    # Domain models and interfaces
+│   ├── models.py           # Data models and DTOs
+│   ├── interfaces.py       # Service interfaces
+│   └── exceptions.py       # Custom exceptions
+├── services/               # Business logic implementations
+│   ├── config_manager.py   # Configuration management
+│   ├── model_validator.py  # Model validation logic
+│   ├── transcription_service.py # Audio transcription
+│   └── chat_service.py     # Chat completions
+├── adapters/               # Legacy code adapters
+├── api/                    # HTTP API layer
+├── legacy/                 # Bridges to existing code
+└── container.py            # Dependency injection container
+```
+
+### Running the Services
+
+#### Legacy Service
+```bash
+python main.py
+```
+
+#### New Modular Service
+```bash
+python -m src.main_new
+# or with auto-reload
+uvicorn src.main_new:app --reload
+```
+
+Both services provide identical API compatibility.
+
 ## Development
+
+### Setting Up Development Environment
+
+```bash
+# Create virtual environment
+make setup-env
+source venv/bin/activate
+
+# Install all dependencies
+make install-dev
+```
 
 ### Running Tests
 
+#### Quick Test Suite
 ```bash
-# Install dev dependencies
-pip install -r requirements.txt
+# Run the automated test runner
+python run_tests.py
 
-# Run tests with coverage
-pytest --cov=. --cov-report=html
+# Or using the Makefile
+make test
+```
 
-# Run linting
-ruff check .
-black --check .
+#### Detailed Testing
+```bash
+# Unit tests only
+make test-unit
+pytest tests/unit -v
 
-# Type checking
-mypy .
+# Integration tests only
+make test-integration
+pytest tests/integration -v
+
+# Run with coverage
+pytest --cov=src --cov-report=html --cov-report=term-missing
+
+# Test specific service
+pytest tests/unit/test_transcription_service.py -v
 ```
 
 ### Code Quality
 
+```bash
+# Run all quality checks
+make check-all
+
+# Individual checks
+make lint          # Linting with flake8
+make format        # Code formatting with black/isort
+make type-check    # Type checking with mypy
+make security-scan # Security scanning
+```
+
+### Available Make Commands
+
+```bash
+make help          # Show all available commands
+make install-dev   # Install dev dependencies
+make test          # Run all tests
+make test-unit     # Run unit tests only
+make test-integration # Run integration tests only
+make lint          # Run linting
+make format        # Format code
+make type-check    # Type checking
+make security-scan # Security scans
+make clean         # Clean build artifacts
+make run           # Run legacy service
+make run-new       # Run modular service
+make docker-build  # Build Docker image
+make benchmark     # Run performance benchmark
+```
+
+### Testing Strategy
+
+- **Unit Tests**: Mock all dependencies, test business logic in isolation
+- **Integration Tests**: Test API endpoints and service interactions
+- **Mocking**: Comprehensive mocking of external dependencies
+- **Coverage**: Maintain high test coverage (>80%)
+- **CI/CD**: Automated testing in GitHub Actions
+
+### GitHub Actions CI/CD
+
+The project includes a comprehensive CI/CD pipeline:
+
+#### Test Matrix
+- **Python versions**: 3.9, 3.10, 3.11
+- **Test types**: Unit tests, integration tests
+- **Coverage reporting**: Codecov integration
+- **Code quality**: Linting, type checking, formatting
+
+#### Security & Quality
+- **Security scanning**: Safety (vulnerabilities) and Bandit (security issues)
+- **Performance testing**: Basic load testing with Locust
+- **Docker integration**: Build and test containerized deployments
+
+#### Workflow Triggers
+- **Push to main/develop**: Full test suite
+- **Pull requests**: All checks + performance tests
+- **Changes to service files**: Automatic testing
+
+### Development Workflow
+
+1. **Make changes** to service code
+2. **Write tests** for new functionality
+3. **Run quality checks**: `make check-all`
+4. **Test locally**: `make test`
+5. **Submit PR**: GitHub Actions runs full test suite
+
+### Contributing Guidelines
+
+When contributing to the modular architecture:
+
+1. **Follow existing patterns**: Use dependency injection and interfaces
+2. **Write comprehensive tests**: Both unit and integration tests
+3. **Maintain type safety**: Include type hints for all functions
+4. **Update documentation**: Keep README and docstrings current
+5. **Run full test suite**: Ensure all tests pass before submitting
+
+### Code Quality Standards
+
 The codebase follows these standards:
-- Type hints for all functions
-- Comprehensive docstrings
-- Error handling and logging
-- Async/await best practices
-- Security input validation
+- **Type hints** for all functions and methods
+- **Comprehensive docstrings** following Google/NumPy style
+- **Error handling and logging** at appropriate levels
+- **Async/await best practices** for concurrent operations
+- **Security input validation** for all user inputs
+- **SOLID principles** in service design
+- **Interface segregation** for better testability
+- **Dependency inversion** through dependency injection
+
+### Performance Considerations
+
+- **Service isolation**: Individual services can be optimized independently
+- **Caching strategies**: Interface-based caching implementations
+- **Resource management**: Proper cleanup and memory management
+- **Monitoring**: Clear service boundaries for better observability
 
 ## License
 

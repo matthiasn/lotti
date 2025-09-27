@@ -636,14 +636,14 @@ class _TriggerNewInferenceProviderElement
 }
 
 String _$unifiedAiControllerHash() =>
-    r'180e794348f286a6a4952666cd735376cb2c6223';
+    r'7d130cbd4bd24f78155d41e78fea7323abdd0fd3';
 
 abstract class _$UnifiedAiController
-    extends BuildlessAutoDisposeNotifier<String> {
+    extends BuildlessAutoDisposeNotifier<UnifiedAiState> {
   late final String entityId;
   late final String promptId;
 
-  String build({
+  UnifiedAiState build({
     required String entityId,
     required String promptId,
   });
@@ -658,7 +658,7 @@ const unifiedAiControllerProvider = UnifiedAiControllerFamily();
 /// Controller for running unified AI inference with configurable prompts
 ///
 /// Copied from [UnifiedAiController].
-class UnifiedAiControllerFamily extends Family<String> {
+class UnifiedAiControllerFamily extends Family<UnifiedAiState> {
   /// Controller for running unified AI inference with configurable prompts
   ///
   /// Copied from [UnifiedAiController].
@@ -705,8 +705,8 @@ class UnifiedAiControllerFamily extends Family<String> {
 /// Controller for running unified AI inference with configurable prompts
 ///
 /// Copied from [UnifiedAiController].
-class UnifiedAiControllerProvider
-    extends AutoDisposeNotifierProviderImpl<UnifiedAiController, String> {
+class UnifiedAiControllerProvider extends AutoDisposeNotifierProviderImpl<
+    UnifiedAiController, UnifiedAiState> {
   /// Controller for running unified AI inference with configurable prompts
   ///
   /// Copied from [UnifiedAiController].
@@ -745,7 +745,7 @@ class UnifiedAiControllerProvider
   final String promptId;
 
   @override
-  String runNotifierBuild(
+  UnifiedAiState runNotifierBuild(
     covariant UnifiedAiController notifier,
   ) {
     return notifier.build(
@@ -774,7 +774,7 @@ class UnifiedAiControllerProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<UnifiedAiController, String>
+  AutoDisposeNotifierProviderElement<UnifiedAiController, UnifiedAiState>
       createElement() {
     return _UnifiedAiControllerProviderElement(this);
   }
@@ -798,7 +798,7 @@ class UnifiedAiControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin UnifiedAiControllerRef on AutoDisposeNotifierProviderRef<String> {
+mixin UnifiedAiControllerRef on AutoDisposeNotifierProviderRef<UnifiedAiState> {
   /// The parameter `entityId` of this provider.
   String get entityId;
 
@@ -807,8 +807,8 @@ mixin UnifiedAiControllerRef on AutoDisposeNotifierProviderRef<String> {
 }
 
 class _UnifiedAiControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<UnifiedAiController, String>
-    with UnifiedAiControllerRef {
+    extends AutoDisposeNotifierProviderElement<UnifiedAiController,
+        UnifiedAiState> with UnifiedAiControllerRef {
   _UnifiedAiControllerProviderElement(super.provider);
 
   @override
