@@ -51,10 +51,11 @@ async def chat_completion(request: ChatRequest):
     except ModelNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except TranscriptionError as e:
-        raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
+        logger.error(f"Transcription failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Transcription failed")
     except Exception as e:
-        logger.error(f"Chat completion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Chat completion error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Chat completion failed")
 
 
 @router.post("/v1/models/pull", response_model=None)
@@ -92,11 +93,11 @@ async def pull_model(request: Dict[str, Any]):
                     model_manager.refresh_config()
 
         except Exception as e:
-            logger.error(f"Model pull error: {e}")
+            logger.error(f"Model pull error: {e}", exc_info=True)
             import json
             error_event = {
                 "status": "error",
-                "error": str(e)
+                "error": "An internal error occurred."
             }
             yield f"data: {json.dumps(error_event)}\n\n"
 
@@ -122,7 +123,8 @@ async def pull_model(request: Dict[str, Any]):
             return result or {"status": "success", "message": "Download completed"}
 
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"Model pull error: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Model download failed")
 
 
 @router.get("/v1/models", response_model=None)
@@ -213,5 +215,5 @@ async def load_model():
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Model load error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Model load error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Model loading failed")

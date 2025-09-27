@@ -97,14 +97,14 @@ class ModelDownloader(IModelDownloader):
             logger.info(f"Configuration updated to use {model_id}")
 
         except Exception as e:
-            logger.error(f"Model download failed: {e}")
+            logger.error(f"Model download failed: {e}", exc_info=True)
             yield DownloadProgress(
                 status=ModelStatus.ERROR,
-                message=f"Download failed: {e}",
+                message="Download failed",
                 progress=0.0,
-                error=str(e)
+                error="Download failed"
             )
-            raise ModelDownloadError(model_name, str(e))
+            raise ModelDownloadError(model_name, "Download failed")
 
     def is_model_downloaded(self, model_name: str) -> bool:
         """Check if model is already downloaded"""
