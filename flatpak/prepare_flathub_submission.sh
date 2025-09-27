@@ -597,9 +597,8 @@ if [ -f "$OUT_MANIFEST" ]; then
     --manifest "$OUT_MANIFEST" \
     --layout top
 
-  # Ensure network sharing is allowed for the lotti build stage
-  python3 "$PYTHON_CLI" ensure-lotti-network-share \
-    --manifest "$OUT_MANIFEST"
+  # Note: --share=network is NOT allowed in build-args on Flathub infrastructure
+  # Network access during builds violates Flathub policy
 
   # Prefer Rust SDK extension over rustup installer
   python3 "$PYTHON_CLI" ensure-rust-sdk-env \
@@ -670,7 +669,10 @@ if [ -f "$OUT_MANIFEST" ]; then
   if [ -n "$CARGO_JSON" ]; then
     PYTHON_OFFLINE_ARGS+=(--cargo "$CARGO_JSON")
   fi
-  # Never add --flutter-json since we're always using top-level flutter-sdk
+  # Add --flutter-json if a Flutter JSON file exists (preserves fallback when missing)
+  if [ -n "$FLUTTER_JSON" ]; then
+    PYTHON_OFFLINE_ARGS+=(--flutter-json "$FLUTTER_JSON")
+  fi
   python3 "${PYTHON_OFFLINE_ARGS[@]}"
 
   # Always use top-level layout since we removed USE_NESTED_FLUTTER
@@ -764,22 +766,17 @@ if [ -f "$OUT_MANIFEST" ]; then
 
   # Bundle all archive and file sources for offline builds (required by Flathub)
   print_info "Bundling cached archive and file sources referenced by manifest..."
+  args=()
   if [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
-    python3 "$PYTHON_CLI" bundle-archive-sources \
-      --manifest "$OUT_MANIFEST" \
-      --output-dir "$OUTPUT_DIR" \
-      --download-missing \
-      --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
-      --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
-      --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
-  else
-    python3 "$PYTHON_CLI" bundle-archive-sources \
-      --manifest "$OUT_MANIFEST" \
-      --output-dir "$OUTPUT_DIR" \
-      --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
-      --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
-      --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
+    args+=(--download-missing)
   fi
+  python3 "$PYTHON_CLI" bundle-archive-sources \
+    --manifest "$OUT_MANIFEST" \
+    --output-dir "$OUTPUT_DIR" \
+    "${args[@]}" \
+    --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
+    --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
+    --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
 
   python3 "$PYTHON_CLI" rewrite-flutter-git-url \
     --manifest "$OUT_MANIFEST"
@@ -800,6 +797,7 @@ if [ -f "$OUT_MANIFEST" ]; then
     --archive "$LOTT_ARCHIVE_NAME" \
     --sha256 "$LOTT_ARCHIVE_SHA256" \
     --output-dir "$OUTPUT_DIR"
+fi
 
 # Final validation: ensure the manifest to be submitted is commit-pinned (no branch:, no COMMIT_PLACEHOLDER)
 print_status "Validating output manifest is commit-pinned..."

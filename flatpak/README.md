@@ -109,9 +109,9 @@ The script will:
    - Use current git HEAD commit
    - Generate offline manifest and all dependencies using flatpak-flutter
    - Always create fully offline builds as required by Flathub:
-     - Process Flutter SDK for offline use (as top-level module)
-     - Bundle all archive/file sources locally
-     - Create app source archive (`lotti-<commit>.tar.xz`)
+       - Process Flutter SDK for offline use (as top-level module)
+       - Bundle all archive/file sources locally
+       - Create app source archive (`lotti-<commit>.tar.xz`)
    - Process the metainfo.xml with version substitution
    - Output all files to `flatpak/flathub-build/output/`
 
