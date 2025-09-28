@@ -864,29 +864,110 @@ if [ -f "$OUT_MANIFEST" ]; then
     --sha256 "$LOTT_ARCHIVE_SHA256" \
     --output-dir "$OUTPUT_DIR"
 
-  # Re-inject the sqlite3 CMake patch after bundling, because bundle_app_archive
-  # intentionally drops patch sources to avoid version skew. This patch adds
-  # URL_HASH and must match the pre-fetched 3500400 tarball so CMake accepts
-  # the local archive offline.
-  SQLITE_PATCH_OUT="$OUTPUT_DIR/sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch"
-  if [ -f "$SQLITE_PATCH_OUT" ]; then
-    # Discover sqlite3_flutter_libs version from pubspec.lock
-    SQLITE3_PLUGIN_VERSION=$(awk '
-      $1=="sqlite3_flutter_libs:" {f=1}
-      f && $1=="version:" {gsub("\"","",$2); print $2; exit}
-    ' "$WORK_DIR/pubspec.lock" 2>/dev/null || true)
-    if [ -z "$SQLITE3_PLUGIN_VERSION" ]; then
-      SQLITE3_PLUGIN_VERSION="0.5.39"
-      print_warning "Could not detect sqlite3_flutter_libs version; defaulting to ${SQLITE3_PLUGIN_VERSION}"
-    fi
-    python3 "$PYTHON_CLI" add-sqlite3-patch \
-      --manifest "$OUT_MANIFEST" \
-      --plugin-version "$SQLITE3_PLUGIN_VERSION" \
-      --patch "sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch"
-    print_info "Re-injected sqlite3 patch for sqlite3_flutter_libs-${SQLITE3_PLUGIN_VERSION}"
-  else
-    print_warning "sqlite3 patch not found in output; skipping add-sqlite3-patch"
-  fi
+  # Ensure sqlite3 plugin adds URL_HASH offline without relying on patch files
+  OUT_MANIFEST="$OUT_MANIFEST" PYTHON_CLI="$PYTHON_CLI" python3 - <<'PYTHON_MANIFEST_OPS'
+import os
+import sys
+from pathlib import Path
+from textwrap import dedent
+
+cli_path = Path(os.environ['PYTHON_CLI']).resolve()
+package_root = cli_path.parent
+if str(package_root) not in sys.path:
+    sys.path.insert(0, str(package_root))
+
+from manifest import ManifestDocument  # type: ignore
+
+manifest_path = Path(os.environ['OUT_MANIFEST'])
+document = ManifestDocument.load(manifest_path)
+modules = document.ensure_modules()
+
+sqlite_command = dedent(
+    """python3 - <<'PY'
+import pathlib
+
+base = pathlib.Path('.pub-cache/hosted/pub.dev')
+target = next(base.glob('sqlite3_flutter_libs-*/linux/CMakeLists.txt'), None)
+if target is None:
+    raise SystemExit('sqlite3_flutter_libs linux/CMakeLists.txt not found')
+content = target.read_text()
+needle = 'URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18'
+if needle not in content:
+    url_line = '    URL https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz\n'
+    if url_line not in content:
+        raise SystemExit('sqlite3 URL stanza missing; unable to inject URL_HASH')
+    line = "    " + needle + "\n"
+    updated = content.replace(url_line, url_line + line, 2)
+    if needle not in updated:
+        raise SystemExit('sqlite3 URL_HASH injection failed')
+    target.write_text(updated)
+PY
+"""
+).strip() + "\n"
+
+cargokit_command = dedent(
+    """python3 - <<'PY'
+import pathlib
+
+base = pathlib.Path('.pub-cache/hosted/pub.dev')
+for script in base.glob('*/*/cargokit/run_build_tool.sh'):
+    text = script.read_text()
+    if '--offline --no-precompile' in text:
+        continue
+    if 'pub get --no-precompile' not in text:
+        continue
+    updated = text.replace('pub get --no-precompile', 'pub get --offline --no-precompile')
+    script.write_text(updated)
+PY
+"""
+).strip() + "\n"
+
+commands_to_add = [
+    ("sqlite3_flutter_libs-*/linux/CMakeLists.txt", sqlite_command),
+    ("cargokit/run_build_tool.sh", cargokit_command),
+]
+
+modified = False
+
+for module in modules:
+    if not isinstance(module, dict) or module.get('name') != 'lotti':
+        continue
+
+    commands = module.setdefault('build-commands', [])
+
+    for marker, _ in commands_to_add:
+        filtered = [
+            value
+            for value in commands
+            if not (
+                isinstance(value, str) and marker in value
+            )
+        ]
+        if len(filtered) != len(commands):
+            module['build-commands'] = filtered
+            commands = filtered
+            modified = True
+
+    for _, command in commands_to_add:
+        if command in commands:
+            continue
+        insert_index = next(
+            (
+                idx
+                for idx, value in enumerate(commands)
+                if isinstance(value, str) and 'flutter build linux' in value
+            ),
+            len(commands),
+        )
+        commands.insert(insert_index, command)
+        modified = True
+    break
+
+if modified:
+    document.mark_changed()
+    document.save()
+PYTHON_MANIFEST_OPS
+
 fi
 
 # Final validation: ensure the manifest to be submitted is commit-pinned (no branch:, no COMMIT_PLACEHOLDER)

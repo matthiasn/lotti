@@ -274,64 +274,69 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
     changed = False
     messages = []
 
+    dest_map = {
+        "x86_64": "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
+        "aarch64": "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
+    }
+
+    def _matches_version(source: dict, version: str) -> bool:
+        if not isinstance(source, dict):
+            return False
+        version_tag = f"sqlite-autoconf-{version}"
+        for key in ("url", "path", "dest-filename"):
+            value = source.get(key)
+            if isinstance(value, str) and version_tag in value:
+                return True
+        return False
+
     for module in modules:
         if not isinstance(module, dict):
             continue
 
-        # Only modify the lotti module
         if module.get("name") != "lotti":
             continue
 
-        # Ensure sources list exists
         if "sources" not in module:
             module["sources"] = []
         sources = module["sources"]
 
-        # Check if SQLite file sources already exist for each architecture
-        has_x64_sqlite = any(
-            isinstance(src, dict)
-            and src.get("type") == "file"
-            and "x86_64" in src.get("only-arches", [])
-            and src.get("dest")
-            == "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
-            and "3500400" in str(src.get("url", ""))
-            for src in sources
-        )
-        has_arm64_sqlite = any(
-            isinstance(src, dict)
-            and src.get("type") == "file"
-            and "aarch64" in src.get("only-arches", [])
-            and src.get("dest")
-            == "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
-            and "3500400" in str(src.get("url", ""))
-            for src in sources
-        )
+        filtered_sources: list[dict] = []
+        removed_stale = False
+        for source in sources:
+            if (
+                isinstance(source, dict)
+                and source.get("type") == "file"
+                and source.get("dest") in dest_map.values()
+                and _matches_version(source, "3500100")
+            ):
+                removed_stale = True
+                changed = True
+                continue
+            filtered_sources.append(source)
+        if removed_stale:
+            module["sources"] = filtered_sources
+        sources = module["sources"]
 
-        # Add SQLite file sources that CMake FetchContent will find
-        if not has_x64_sqlite:
-            sqlite_x64 = {
+        for arch, dest in dest_map.items():
+            has_sqlite = any(
+                isinstance(src, dict)
+                and src.get("type") == "file"
+                and src.get("dest") == dest
+                and _matches_version(src, "3500400")
+                for src in sources
+            )
+            if has_sqlite:
+                continue
+            sqlite_source = {
                 "type": "file",
-                "only-arches": ["x86_64"],
+                "only-arches": [arch],
                 "url": "https://www.sqlite.org/2025/sqlite-autoconf-3500400.tar.gz",
                 "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
-                "dest": "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
+                "dest": dest,
                 "dest-filename": "sqlite-autoconf-3500400.tar.gz",
             }
-            sources.append(sqlite_x64)
-            messages.append("Added SQLite 3.50.4 file for x86_64")
-            changed = True
-
-        if not has_arm64_sqlite:
-            sqlite_arm64 = {
-                "type": "file",
-                "only-arches": ["aarch64"],
-                "url": "https://www.sqlite.org/2025/sqlite-autoconf-3500400.tar.gz",
-                "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
-                "dest": "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
-                "dest-filename": "sqlite-autoconf-3500400.tar.gz",
-            }
-            sources.append(sqlite_arm64)
-            messages.append("Added SQLite 3.50.4 file for aarch64")
+            sources.append(sqlite_source)
+            messages.append(f"Added SQLite 3.50.4 file for {arch}")
             changed = True
 
     if changed:
