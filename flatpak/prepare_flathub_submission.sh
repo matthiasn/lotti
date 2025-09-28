@@ -910,14 +910,18 @@ cargokit_command = dedent(
 import pathlib
 
 base = pathlib.Path('.pub-cache/hosted/pub.dev')
+patched = False
 for script in base.glob('*/*/cargokit/run_build_tool.sh'):
     text = script.read_text()
-    if '--offline --no-precompile' in text:
+    if 'pub get --offline --no-precompile' in text:
         continue
     if 'pub get --no-precompile' not in text:
         continue
-    updated = text.replace('pub get --no-precompile', 'pub get --offline --no-precompile')
-    script.write_text(updated)
+    script.write_text(text.replace('pub get --no-precompile', 'pub get --offline --no-precompile'))
+    print(f"Patched {script}")
+    patched = True
+if not patched:
+    print('No cargokit scripts patched')
 PY
 """
 ).strip() + "\n"
