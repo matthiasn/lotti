@@ -489,6 +489,22 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    parser_mimalloc = subparsers.add_parser(
+        "add-mimalloc-source",
+        help="Add mimalloc source for media_kit_libs_linux plugin.",
+    )
+    parser_mimalloc.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_mimalloc.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.add_mimalloc_source(document),
+            )
+        )
+    )
+
     parser_rust_env = subparsers.add_parser(
         "ensure-rust-sdk-env",
         help="Ensure Rust SDK extension bin is on PATH for lotti.",

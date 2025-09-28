@@ -613,6 +613,11 @@ if [ -f "$OUT_MANIFEST" ]; then
   python3 "$PYTHON_CLI" ensure-dart-pub-offline-in-build \
     --manifest "$OUT_MANIFEST"
 
+  # Add mimalloc source for media_kit_libs_linux plugin
+  # The plugin tries to download this during build, so we pre-include it
+  python3 "$PYTHON_CLI" add-mimalloc-source \
+    --manifest "$OUT_MANIFEST"
+
   # Prefer Rust SDK extension over rustup installer
   python3 "$PYTHON_CLI" ensure-rust-sdk-env \
     --manifest "$OUT_MANIFEST"

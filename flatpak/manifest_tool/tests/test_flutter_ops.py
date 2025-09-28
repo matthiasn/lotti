@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from flatpak.manifest_tool import flutter_ops
-from flatpak.manifest_tool.manifest import ManifestDocument
+from flatpak.manifest_tool.manifest import ManifestDocument, OperationResult
 
 
 def test_ensure_nested_sdk(make_document, tmp_path: Path):

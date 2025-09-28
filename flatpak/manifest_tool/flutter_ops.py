@@ -264,6 +264,56 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
     return OperationResult.unchanged()
 
 
+def add_mimalloc_source(document: ManifestDocument) -> OperationResult:
+    """Add mimalloc source for media_kit_libs_linux plugin.
+
+    The media_kit plugin tries to download mimalloc during build.
+    We need to pre-download it and make it available offline.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+
+        # Only modify the lotti module
+        if module.get("name") != "lotti":
+            continue
+
+        sources = module.setdefault("sources", [])
+
+        # Check if mimalloc is already added
+        has_mimalloc = any(
+            isinstance(s, dict)
+            and s.get("url")
+            == "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz"
+            for s in sources
+        )
+
+        if not has_mimalloc:
+            # Add mimalloc source as a file (not archive) so it's placed as-is
+            # The CMake script expects the tar.gz file, not extracted content
+            mimalloc_source = {
+                "type": "file",
+                "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
+                "sha256": "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
+                "dest-filename": "mimalloc-2.1.2.tar.gz",
+            }
+            sources.append(mimalloc_source)
+            messages.append("Added mimalloc archive for media_kit_libs_linux plugin")
+            changed = True
+
+    if changed:
+        document.mark_changed()
+        message = "Added required external sources for plugins"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
+    return OperationResult.unchanged()
+
+
 def remove_network_from_build_args(document: ManifestDocument) -> OperationResult:
     """Remove --share=network from build-args in all modules for Flathub compliance.
 
