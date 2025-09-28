@@ -431,21 +431,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser_helper.set_defaults(func=_run_ensure_lotti_setup_helper)
 
-    parser_net = subparsers.add_parser(
-        "ensure-lotti-network-share",
-        help="Ensure lotti build-args include --share=network.",
-    )
-    parser_net.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser_net.set_defaults(
-        func=lambda ns: _run_manifest_operation(
-            ManifestOperation(
-                manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.ensure_lotti_network_share(
-                    document
-                ),
-            )
-        )
-    )
+    # Note: ensure-lotti-network-share command removed
+    # --share=network in build-args is NOT allowed on Flathub infrastructure
+    # Network access during builds violates Flathub policy
 
     parser_rust_env = subparsers.add_parser(
         "ensure-rust-sdk-env",

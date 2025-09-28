@@ -599,9 +599,9 @@ if [ -f "$OUT_MANIFEST" ]; then
     --manifest "$OUT_MANIFEST" \
     --layout top
 
-  # Ensure network sharing is allowed for the lotti build stage
-  python3 "$PYTHON_CLI" ensure-lotti-network-share \
-    --manifest "$OUT_MANIFEST"
+  # Note: --share=network is NOT allowed in build-args on Flathub infrastructure
+  # Network access during builds violates Flathub policy
+  # Removed ensure-lotti-network-share call that was adding prohibited network access
 
   # Prefer Rust SDK extension over rustup installer
   python3 "$PYTHON_CLI" ensure-rust-sdk-env \

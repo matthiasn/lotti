@@ -61,12 +61,8 @@ def test_normalize_lotti_env_top_layout(make_document):
     assert append_path.endswith("/app/flutter/bin")
 
 
-def test_ensure_lotti_network_share(make_document):
-    document = make_document()
-    result1 = flutter_ops.ensure_lotti_network_share(document)
-    assert result1.changed
-    result2 = flutter_ops.ensure_lotti_network_share(document)
-    assert not result2.changed
+# test_ensure_lotti_network_share removed
+# --share=network in build-args is NOT allowed on Flathub infrastructure
 
 
 def test_ensure_setup_helper_source_and_command(make_document):

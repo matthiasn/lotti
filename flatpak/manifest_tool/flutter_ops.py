@@ -170,40 +170,10 @@ def normalize_lotti_env(
     return OperationResult.unchanged()
 
 
-def ensure_lotti_network_share(document: ManifestDocument) -> OperationResult:
-    """Ensure the lotti module has build-args with --share=network.
-
-    Some build environments rely on network access during setup (e.g., when
-    falling back from offline cache). This helper makes sure the final manifest
-    preserves that capability for the lotti build stage.
-    """
-
-    modules = document.ensure_modules()
-    changed = False
-    for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
-            continue
-        build_opts = module.setdefault("build-options", {})
-        build_args = build_opts.get("build-args")
-        if isinstance(build_args, list):
-            if "--share=network" not in build_args:
-                build_args.insert(0, "--share=network")
-                changed = True
-        elif build_args is None:
-            build_opts["build-args"] = ["--share=network"]
-            changed = True
-        else:
-            # Unexpected type; normalize to list including --share=network
-            build_opts["build-args"] = ["--share=network"]
-            changed = True
-        break
-
-    if changed:
-        document.mark_changed()
-        message = "Ensured lotti build-args include --share=network"
-        _LOGGER.debug(message)
-        return OperationResult.changed_result(message)
-    return OperationResult.unchanged()
+# Note: ensure_lotti_network_share function removed
+# --share=network in build-args is NOT allowed on Flathub infrastructure
+# Network access during builds violates Flathub policy for security and reproducibility
+# Builds must be completely offline with all dependencies pre-fetched
 
 
 def _update_append_path(build_options: dict, rust_bin: str, rustup_bin: str) -> bool:
