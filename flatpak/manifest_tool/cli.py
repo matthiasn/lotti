@@ -489,6 +489,20 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    parser_sqlite = subparsers.add_parser(
+        "add-sqlite3-source",
+        help="Add SQLite source for sqlite3_flutter_libs plugin.",
+    )
+    parser_sqlite.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_sqlite.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.add_sqlite3_source(document),
+            )
+        )
+    )
+
     parser_mimalloc = subparsers.add_parser(
         "add-media-kit-mimalloc-source",
         help="Add mimalloc source for media_kit_libs_linux plugin.",

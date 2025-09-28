@@ -264,6 +264,57 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
     return OperationResult.unchanged()
 
 
+def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
+    """Add SQLite source for sqlite3_flutter_libs plugin.
+
+    The sqlite3_flutter_libs plugin's CMake tries to download SQLite during configure.
+    We pre-download it and place it where CMake expects to find it.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+
+        # Only modify the lotti module
+        if module.get("name") != "lotti":
+            continue
+
+        # Ensure sources list exists
+        if "sources" not in module:
+            module["sources"] = []
+        sources = module["sources"]
+
+        # Check if SQLite source already exists (for the correct version)
+        has_sqlite = any(
+            isinstance(src, dict)
+            and src.get("dest-filename") == "sqlite-autoconf-3500400.tar.gz"
+            for src in sources
+        )
+
+        if not has_sqlite:
+            # Add SQLite source for version 3.50.4
+            sqlite_source = {
+                "type": "file",
+                "url": "https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz",
+                "sha256": "02e3b4b8e82f2bd33e388dd4c7a0984e85db9f5ca77d946ab5c8c2e96aded12a",
+                "dest-filename": "sqlite-autoconf-3500400.tar.gz",
+            }
+            sources.append(sqlite_source)
+            messages.append("Added SQLite 3.50.4 source for sqlite3_flutter_libs")
+            changed = True
+
+    if changed:
+        document.mark_changed()
+        message = "Added SQLite source for sqlite3_flutter_libs plugin"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
+    return OperationResult.unchanged()
+
+
 def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult:
     """Add mimalloc source for media_kit_libs_linux plugin.
 

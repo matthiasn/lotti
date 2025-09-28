@@ -618,6 +618,11 @@ if [ -f "$OUT_MANIFEST" ]; then
   python3 "$PYTHON_CLI" add-media-kit-mimalloc-source \
     --manifest "$OUT_MANIFEST"
 
+  # Add SQLite source for sqlite3_flutter_libs plugin
+  # This provides the SQLite archive that the plugin needs during build
+  python3 "$PYTHON_CLI" add-sqlite3-source \
+    --manifest "$OUT_MANIFEST"
+
   # Prefer Rust SDK extension over rustup installer
   python3 "$PYTHON_CLI" ensure-rust-sdk-env \
     --manifest "$OUT_MANIFEST"
