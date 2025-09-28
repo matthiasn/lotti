@@ -917,14 +917,35 @@ def test_add_sqlite3_source(make_document):
     assert result.changed
     assert "sqlite" in str(result.messages).lower()
 
-    # Check that SQLite source was added
+    # Check that SQLite sources were added (one for each architecture)
     sources = lotti["sources"]
-    assert len(sources) == 1
-    sqlite = sources[0]
-    assert sqlite["type"] == "file"
-    assert "sqlite-autoconf-3500400.tar.gz" in sqlite["url"]
-    assert sqlite["sha256"] == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
-    assert sqlite["dest-filename"] == "sqlite-autoconf-3500400.tar.gz"
+    assert len(sources) == 2
+
+    # Check x86_64 source
+    x64_source = next(s for s in sources if "x86_64" in s.get("only-arches", []))
+    assert x64_source["type"] == "file"
+    assert x64_source["path"] == "sqlite-autoconf-3500400.tar.gz"
+    assert (
+        x64_source["sha256"]
+        == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
+    )
+    assert (
+        x64_source["dest"]
+        == "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+    )
+
+    # Check aarch64 source
+    arm64_source = next(s for s in sources if "aarch64" in s.get("only-arches", []))
+    assert arm64_source["type"] == "file"
+    assert arm64_source["path"] == "sqlite-autoconf-3500400.tar.gz"
+    assert (
+        arm64_source["sha256"]
+        == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
+    )
+    assert (
+        arm64_source["dest"]
+        == "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+    )
 
     # Run again - should not change
     result2 = flutter_ops.add_sqlite3_source(document)

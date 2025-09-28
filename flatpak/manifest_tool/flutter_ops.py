@@ -287,28 +287,64 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
             module["sources"] = []
         sources = module["sources"]
 
-        # Check if SQLite source already exists (for the correct version)
-        has_sqlite = any(
+        # Remove old SQLite 3.50.1 entries first
+        sources_to_remove = []
+        for i, src in enumerate(sources):
+            if isinstance(src, dict) and "sqlite-autoconf-3500100" in str(
+                src.get("path", "")
+            ):
+                sources_to_remove.append(i)
+                messages.append("Removed old SQLite 3.50.1 source")
+                changed = True
+
+        # Remove in reverse order to maintain indices
+        for i in reversed(sources_to_remove):
+            sources.pop(i)
+
+        # Check if correct SQLite sources already exist
+        has_x64_sqlite = any(
             isinstance(src, dict)
-            and src.get("dest-filename") == "sqlite-autoconf-3500400.tar.gz"
+            and src.get("dest")
+            == "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+            and "3500400" in str(src.get("path", ""))
+            for src in sources
+        )
+        has_arm64_sqlite = any(
+            isinstance(src, dict)
+            and src.get("dest")
+            == "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+            and "3500400" in str(src.get("path", ""))
             for src in sources
         )
 
-        if not has_sqlite:
-            # Add SQLite source for version 3.50.4
-            sqlite_source = {
+        # Add SQLite 3.50.4 sources with proper destinations for CMake
+        if not has_x64_sqlite:
+            sqlite_x64 = {
                 "type": "file",
-                "url": "https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz",
+                "only-arches": ["x86_64"],
                 "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
-                "dest-filename": "sqlite-autoconf-3500400.tar.gz",
+                "dest": "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
+                "path": "sqlite-autoconf-3500400.tar.gz",
             }
-            sources.append(sqlite_source)
-            messages.append("Added SQLite 3.50.4 source for sqlite3_flutter_libs")
+            sources.append(sqlite_x64)
+            messages.append("Added SQLite 3.50.4 source for x86_64")
+            changed = True
+
+        if not has_arm64_sqlite:
+            sqlite_arm64 = {
+                "type": "file",
+                "only-arches": ["aarch64"],
+                "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+                "dest": "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
+                "path": "sqlite-autoconf-3500400.tar.gz",
+            }
+            sources.append(sqlite_arm64)
+            messages.append("Added SQLite 3.50.4 source for aarch64")
             changed = True
 
     if changed:
         document.mark_changed()
-        message = "Added SQLite source for sqlite3_flutter_libs plugin"
+        message = "Updated SQLite sources for sqlite3_flutter_libs plugin"
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 
