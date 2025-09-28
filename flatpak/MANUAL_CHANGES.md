@@ -72,19 +72,32 @@ To make these changes permanent, the prepare_flathub_submission.sh script should
 
 3. **Fix the cargokit script glob pattern** to check both `*/cargokit/` and `*/*/cargokit/` paths
 
-## Verification
+## Current Status
 
-After these changes, the build completes successfully with:
-- No network access attempts
-- All Rust plugins building correctly
-- Application successfully installed to /app/lotti
+The automated script has been updated with all the fixes:
+1. ✅ Cargo.lock discovery now searches all possible locations (android/rust, rust/, etc.)
+2. ✅ Cargo config command is automatically added to the manifest
+3. ✅ Cargokit script glob pattern fixed to check both depths
 
-The build can be verified with:
-```bash
-cd flathub-build/output
-flatpak-builder --force-clean --disable-updates build-dir com.matthiasn.lotti.yml
-```
+However, there's still an issue with cargo-sources.json generation:
+- The cargo-sources.json is generated from the initial flatpak-flutter run
+- But the actual Cargo.lock files in the build directory may have different dependency versions
+- This causes version mismatch errors like: `error: failed to select a version for the requirement 'anyhow = "^1.0.69"' (locked to 1.0.97)`
+
+## Remaining Issue
+
+The cargo-sources.json generation happens too early in the process. It needs to:
+1. Run after the first build populates the .pub-cache with actual plugin code
+2. Use the Cargo.lock files from the actual plugins being built
+3. Include all required versions of dependencies
+
+## Workaround
+
+After running prepare_flathub_submission.sh, if the build fails with cargo version errors:
+1. Find the Cargo.lock files in the build directory
+2. Regenerate cargo-sources.json using those files
+3. Replace the cargo-sources.json in the output directory
 
 ## Next Steps
 
-These manual fixes should be incorporated into the prepare_flathub_submission.sh script to ensure reproducible builds without manual intervention.
+The prepare_flathub_submission.sh script has been updated with all the structural fixes. The cargo-sources.json version issue may require a two-phase build process or manual regeneration for now.

@@ -737,7 +737,36 @@ if [ -d "$FLATPAK_DIR/patches" ]; then
     cp -r "$FLATPAK_DIR/patches" "$OUTPUT_DIR/"
 fi
 
-# Also look for and regenerate cargo-sources.json from cargokit Cargo.lock files if available
+# Always use the pre-generated working cargo-sources.json if available (replace any from flatpak-flutter)
+if [ -f "$FLATPAK_DIR/cargo-sources-working.json" ]; then
+  print_info "Using pre-generated working cargo-sources.json"
+  cp "$FLATPAK_DIR/cargo-sources-working.json" "$OUTPUT_DIR/cargo-sources.json"
+  print_status "Replaced cargo-sources.json with known-good version"
+# Check for pre-saved Cargo.lock files (for known Rust plugins)
+elif [ -d "$FLATPAK_DIR/cargo-lock-files" ] && [ ! -f "$OUTPUT_DIR/cargo-sources.json" ]; then
+  print_info "Using pre-saved Cargo.lock files for cargo-sources.json generation..."
+  CARGOKIT_CARGO_LOCKS=""
+  for lock_file in "$FLATPAK_DIR"/cargo-lock-files/*.lock; do
+    if [ -f "$lock_file" ]; then
+      if [ -n "$CARGOKIT_CARGO_LOCKS" ]; then
+        CARGOKIT_CARGO_LOCKS="$CARGOKIT_CARGO_LOCKS,$lock_file"
+      else
+        CARGOKIT_CARGO_LOCKS="$lock_file"
+      fi
+      print_info "Using Cargo.lock: $(basename "$lock_file")"
+    fi
+  done
+
+  if [ -n "$CARGOKIT_CARGO_LOCKS" ]; then
+    if python3 "$FLATPAK_DIR/flatpak-flutter/cargo_generator/cargo_generator.py" "$CARGOKIT_CARGO_LOCKS" -o "$WORK_DIR/cargo-sources-cargokit.json"; then
+      cp -- "$WORK_DIR/cargo-sources-cargokit.json" "$OUTPUT_DIR/cargo-sources.json" 2>/dev/null && print_status "Generated cargo-sources.json from pre-saved Cargo.lock files"
+    else
+      print_warning "Failed to generate cargo-sources.json from pre-saved Cargo.lock files"
+    fi
+  fi
+fi
+
+# Fallback to discovery if pre-saved files don't exist or cargo-sources.json wasn't generated
 if [ -d "$WORK_DIR/.flatpak-builder/build" ] && [ ! -f "$OUTPUT_DIR/cargo-sources.json" ]; then
   print_info "Looking for cargokit Cargo.lock files to generate cargo-sources.json..."
   CARGOKIT_CARGO_LOCKS=""
@@ -1217,6 +1246,19 @@ if [ "${TEST_BUILD:-false}" == "true" ]; then
     else
         print_error "Test build failed"
     fi
+fi
+
+# Step 8.5: Check for cargo-sources.json regeneration needs
+if [ -f "$OUTPUT_DIR/cargo-sources.json" ]; then
+  print_warning "Note: cargo-sources.json was generated from initial pubspec.lock data"
+  print_info "If the build fails with cargo version mismatch errors, you may need to:"
+  print_info "  1. Run a test build: cd $OUTPUT_DIR && flatpak-builder --force-clean --disable-updates build-dir com.matthiasn.lotti.yml"
+  print_info "  2. When it fails, run: ./regenerate_cargo_sources.sh"
+  print_info "  3. Rebuild with the updated cargo-sources.json"
+  echo ""
+  print_info "This two-phase process is needed because cargo dependencies are only known after"
+  print_info "the first build populates .pub-cache with the actual Rust plugin Cargo.lock files."
+  echo ""
 fi
 
 # Step 9: Final report
