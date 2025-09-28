@@ -840,16 +840,17 @@ def _process_lotti_module(
     if helper.exists():
         extra_sources.append({"type": "file", "path": helper.name})
 
-    # Preserve any file sources that were added for plugins (like mimalloc)
+    # Preserve any file sources that were added for plugins
+    # These are critical dependencies that plugins need during build
     existing_file_sources = []
     if "sources" in module:
         for src in module["sources"]:
             if isinstance(src, dict) and src.get("type") == "file":
-                # Keep file sources that aren't being replaced
-                if src.get("dest-filename") == "mimalloc-2.1.2.tar.gz":
-                    existing_file_sources.append(src)
+                # Keep ALL file sources - they're likely plugin dependencies
+                # that flatpak-flutter or our operations added
+                existing_file_sources.append(src)
 
-    # Replace ALL sources with fresh ones for the bundle, but preserve plugin files
+    # Replace sources but preserve ALL file sources for plugin dependencies
     module["sources"] = (
         [
             {
