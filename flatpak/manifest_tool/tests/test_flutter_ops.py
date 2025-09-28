@@ -467,16 +467,24 @@ def test_ensure_setup_helper_command_idempotent(make_document):
     assert commands_after == commands_before
 
 
-def test_bundle_app_archive_replaces_all_sources(make_document, tmp_path):
-    """Test that bundle_app_archive replaces ALL sources to avoid version mismatches."""
+def test_bundle_app_archive_replaces_non_file_sources(make_document, tmp_path):
+    """Test that bundle_app_archive replaces non-file sources but preserves file sources.
+
+    File sources are preserved because they're often plugin dependencies needed
+    for offline builds. Non-file sources (git, patch) are replaced to avoid
+    version mismatches.
+    """
     document = make_document()
 
     # Add initial sources with a git source, file source, and patch
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
     lotti["sources"] = [
-        {"type": "file", "path": "existing-file.txt"},
-        {"type": "git", "url": "https://github.com/test/test.git"},
-        {"type": "patch", "path": "fix.patch"},  # This should be removed
+        {
+            "type": "file",
+            "path": "existing-file.txt",
+        },  # Should be preserved (plugin dep)
+        {"type": "git", "url": "https://github.com/test/test.git"},  # Should be removed
+        {"type": "patch", "path": "fix.patch"},  # Should be removed
     ]
 
     out_dir = tmp_path / "output"
@@ -503,8 +511,14 @@ def test_bundle_app_archive_replaces_all_sources(make_document, tmp_path):
 
     # Patch should NOT be preserved (to avoid version mismatches)
     assert {"type": "patch", "path": "fix.patch"} not in updated_sources
-    # Old file source should NOT be preserved
-    assert {"type": "file", "path": "existing-file.txt"} not in updated_sources
+    # Git source should NOT be preserved
+    git_sources = [
+        s for s in updated_sources if isinstance(s, dict) and s.get("type") == "git"
+    ]
+    assert len(git_sources) == 0
+
+    # File sources SHOULD be preserved (they're plugin dependencies)
+    assert {"type": "file", "path": "existing-file.txt"} in updated_sources
 
     # New sources should be added
     assert "pubspec-sources.json" in updated_sources
