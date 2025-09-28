@@ -849,3 +849,51 @@ def test_ensure_rust_sdk_env(make_document):
     # Run again - should not change
     result2 = flutter_ops.ensure_rust_sdk_env(document)
     assert not result2.changed
+
+
+def test_bundle_app_archive_preserves_mimalloc_source(make_document, tmp_path):
+    """Test that bundle_app_archive preserves the mimalloc source."""
+    document = make_document()
+
+    # Add mimalloc source first
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    lotti["sources"] = [
+        {"type": "git", "url": "https://github.com/test/test.git"},
+        {
+            "type": "file",
+            "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
+            "sha256": "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
+            "dest-filename": "mimalloc-2.1.2.tar.gz",
+        },
+    ]
+
+    out_dir = tmp_path / "output"
+    out_dir.mkdir()
+    # Create required files
+    (out_dir / "pubspec-sources.json").write_text("[]", encoding="utf-8")
+    (out_dir / "setup-flutter.sh").write_text("#!/bin/bash", encoding="utf-8")
+
+    result = flutter_ops.bundle_app_archive(
+        document,
+        archive_name="lotti.tar.xz",
+        sha256="cafebabe",
+        output_dir=out_dir,
+    )
+
+    assert result.changed
+    updated_sources = lotti["sources"]
+
+    # Find the mimalloc source
+    mimalloc_sources = [
+        src
+        for src in updated_sources
+        if isinstance(src, dict) and src.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
+    ]
+
+    # Mimalloc source should be preserved
+    assert len(mimalloc_sources) == 1
+    assert mimalloc_sources[0]["type"] == "file"
+    assert (
+        mimalloc_sources[0]["sha256"]
+        == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
+    )

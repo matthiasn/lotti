@@ -871,15 +871,28 @@ def _process_lotti_module(
     if helper.exists():
         extra_sources.append({"type": "file", "path": helper.name})
 
-    # Replace ALL sources with fresh ones for the bundle
-    module["sources"] = [
-        {
-            "type": "archive",
-            "path": archive_name,
-            "sha256": sha256,
-            "strip-components": 1,
-        }
-    ] + extra_sources
+    # Preserve any file sources that were added for plugins (like mimalloc)
+    existing_file_sources = []
+    if "sources" in module:
+        for src in module["sources"]:
+            if isinstance(src, dict) and src.get("type") == "file":
+                # Keep file sources that aren't being replaced
+                if src.get("dest-filename") == "mimalloc-2.1.2.tar.gz":
+                    existing_file_sources.append(src)
+
+    # Replace ALL sources with fresh ones for the bundle, but preserve plugin files
+    module["sources"] = (
+        [
+            {
+                "type": "archive",
+                "path": archive_name,
+                "sha256": sha256,
+                "strip-components": 1,
+            }
+        ]
+        + extra_sources
+        + existing_file_sources
+    )
 
     # Add nested modules if they exist
     if extra_modules:
