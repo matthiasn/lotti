@@ -306,41 +306,10 @@ def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult
             messages.append("Added mimalloc source for media_kit_libs_linux")
             changed = True
 
-        # Now add a build command to place the file where CMake expects it
-        build_commands = module.get("build-commands", [])
-
-        # Check if we already have the placement command
-        has_placement = any(
-            isinstance(cmd, str)
-            and "mimalloc-2.1.2.tar.gz" in cmd
-            and "build/linux" in cmd
-            for cmd in build_commands
-        )
-
-        if not has_placement:
-            # Find position before flutter build
-            insert_idx = None
-            for i, cmd in enumerate(build_commands):
-                if isinstance(cmd, str) and "flutter build linux" in cmd:
-                    insert_idx = i
-                    break
-
-            if insert_idx is not None:
-                # Add commands to place mimalloc where CMake will look for it
-                # We need to create the build directories first and place the file there
-                # before flutter build runs cmake
-                debug_cmd = "echo 'Preparing mimalloc archive...' && md5sum mimalloc-2.1.2.tar.gz && ls -la mimalloc-2.1.2.tar.gz"
-                placement_cmd = (
-                    "mkdir -p build/linux/x64/release build/linux/arm64/release && "
-                    "cp mimalloc-2.1.2.tar.gz build/linux/x64/release/mimalloc-2.1.2.tar.gz && "
-                    "cp mimalloc-2.1.2.tar.gz build/linux/arm64/release/mimalloc-2.1.2.tar.gz && "
-                    "echo 'Placed mimalloc archive in build directories' && "
-                    "ls -la build/linux/*/release/mimalloc-2.1.2.tar.gz"
-                )
-                build_commands.insert(insert_idx, debug_cmd)
-                build_commands.insert(insert_idx + 1, placement_cmd)
-                messages.append("Added commands to place mimalloc archive for CMake")
-                changed = True
+        # No need to add build commands to place the file
+        # The bundle-archive-sources operation will modify the source entry
+        # to use the 'dest' field which makes Flatpak place it directly
+        # in the build directories before the build starts
 
     if changed:
         document.mark_changed()

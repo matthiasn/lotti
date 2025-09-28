@@ -727,20 +727,11 @@ def test_add_media_kit_mimalloc_source(make_document):
     )
     assert mimalloc["dest-filename"] == "mimalloc-2.1.2.tar.gz"
 
-    # Check that placement commands were added before flutter build
-    commands = lotti["build-commands"]
-    assert len(commands) == 4  # Original 2 + debug + placement command
-
-    # Find commands that deal with mimalloc
-    mimalloc_cmds = [
-        cmd
-        for cmd in commands
-        if isinstance(cmd, str) and "mimalloc-2.1.2.tar.gz" in cmd
-    ]
-    assert len(mimalloc_cmds) >= 1
-
-    # At least one should have the placement logic
-    assert any("build/linux" in cmd and "mkdir -p" in cmd for cmd in mimalloc_cmds)
+    # Build commands should remain unchanged (no placement commands needed)
+    # The bundle-archive-sources will handle placement via the 'dest' field
+    commands = lotti.get("build-commands", [])
+    # Commands should be unchanged from original
+    assert "flutter build linux --release" in commands
 
     # Run again - should not change
     result2 = flutter_ops.add_media_kit_mimalloc_source(document)
