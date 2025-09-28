@@ -264,11 +264,11 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
     return OperationResult.unchanged()
 
 
-def disable_media_kit_mimalloc(document: ManifestDocument) -> OperationResult:
-    """Disable mimalloc in media_kit_libs_linux to avoid download during build.
+def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult:
+    """Add mimalloc source for media_kit_libs_linux plugin.
 
-    The media_kit plugin's CMake tries to download mimalloc during configure,
-    which fails in offline builds. We set CMAKE_ARGS to disable static linking.
+    The media_kit plugin's CMake tries to download mimalloc during configure.
+    We pre-download it and place it where CMake expects to find it.
     """
     modules = document.ensure_modules()
     changed = False
@@ -282,17 +282,42 @@ def disable_media_kit_mimalloc(document: ManifestDocument) -> OperationResult:
         if module.get("name") != "lotti":
             continue
 
+        # Ensure sources list exists
+        if "sources" not in module:
+            module["sources"] = []
+        sources = module["sources"]
+
+        # Check if mimalloc source already exists
+        has_mimalloc = any(
+            isinstance(src, dict)
+            and src.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
+            for src in sources
+        )
+
+        if not has_mimalloc:
+            # Add mimalloc source
+            mimalloc_source = {
+                "type": "file",
+                "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
+                "sha256": "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
+                "dest-filename": "mimalloc-2.1.2.tar.gz"
+            }
+            sources.append(mimalloc_source)
+            messages.append("Added mimalloc source for media_kit_libs_linux")
+            changed = True
+
+        # Now add a build command to place the file where CMake expects it
         build_commands = module.get("build-commands", [])
 
-        # Check if we already have the CMAKE_ARGS export
-        has_cmake_args = any(
+        # Check if we already have the placement command
+        has_placement = any(
             isinstance(cmd, str)
-            and "CMAKE_ARGS" in cmd
-            and "MIMALLOC_USE_STATIC_LIBS" in cmd
+            and "mimalloc-2.1.2.tar.gz" in cmd
+            and "build/linux" in cmd
             for cmd in build_commands
         )
 
-        if not has_cmake_args:
+        if not has_placement:
             # Find position before flutter build
             insert_idx = None
             for i, cmd in enumerate(build_commands):
@@ -301,15 +326,15 @@ def disable_media_kit_mimalloc(document: ManifestDocument) -> OperationResult:
                     break
 
             if insert_idx is not None:
-                # Add CMAKE_ARGS environment variable before flutter build
-                cmake_args_cmd = 'export CMAKE_ARGS="-DMIMALLOC_USE_STATIC_LIBS=OFF"'
-                build_commands.insert(insert_idx, cmake_args_cmd)
-                messages.append("Added CMAKE_ARGS to disable static mimalloc")
+                # Add command to place mimalloc where CMake will look for it
+                placement_cmd = "mkdir -p build/linux/x64/release build/linux/arm64/release && cp mimalloc-2.1.2.tar.gz build/linux/x64/release/ 2>/dev/null || true && cp mimalloc-2.1.2.tar.gz build/linux/arm64/release/ 2>/dev/null || true"
+                build_commands.insert(insert_idx, placement_cmd)
+                messages.append("Added command to place mimalloc archive for CMake")
                 changed = True
 
     if changed:
         document.mark_changed()
-        message = "Disabled static mimalloc in media_kit_libs_linux plugin"
+        message = "Added mimalloc source for media_kit_libs_linux plugin"
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 

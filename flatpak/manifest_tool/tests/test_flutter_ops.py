@@ -701,76 +701,67 @@ def test_ensure_dart_pub_offline_in_build_already_has_flag(make_document):
     assert not result.changed
 
 
-def test_disable_media_kit_mimalloc(make_document):
-    """Test disabling mimalloc in media_kit plugin."""
+def test_add_media_kit_mimalloc_source(make_document):
+    """Test adding mimalloc source for media_kit plugin."""
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
-    # Start with build commands
+    # Start with no sources and build commands
+    lotti["sources"] = []
     lotti["build-commands"] = ["echo 'Starting build'", "flutter build linux --release"]
 
-    result = flutter_ops.disable_media_kit_mimalloc(document)
+    result = flutter_ops.add_media_kit_mimalloc_source(document)
 
     assert result.changed
     assert "mimalloc" in str(result.messages).lower()
 
-    # Check that CMAKE_ARGS export was added before flutter build
+    # Check that mimalloc source was added
+    sources = lotti["sources"]
+    assert len(sources) == 1
+    mimalloc = sources[0]
+    assert mimalloc["type"] == "file"
+    assert "mimalloc/archive/refs/tags/v2.1.2.tar.gz" in mimalloc["url"]
+    assert mimalloc["sha256"] == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
+    assert mimalloc["dest-filename"] == "mimalloc-2.1.2.tar.gz"
+
+    # Check that placement command was added before flutter build
     commands = lotti["build-commands"]
-    assert len(commands) == 3  # Original 2 + new export
+    assert len(commands) == 3  # Original 2 + new placement command
 
-    # Find the CMAKE_ARGS export
-    cmake_export = next(
-        cmd for cmd in commands if isinstance(cmd, str) and "CMAKE_ARGS" in cmd
+    placement_cmd = next(
+        cmd for cmd in commands if isinstance(cmd, str) and "mimalloc-2.1.2.tar.gz" in cmd
     )
-    assert "MIMALLOC_USE_STATIC_LIBS=OFF" in cmake_export
-
-    # Ensure it's before flutter build
-    flutter_idx = next(
-        i
-        for i, cmd in enumerate(commands)
-        if isinstance(cmd, str) and "flutter build linux" in cmd
-    )
-    cmake_idx = next(
-        i
-        for i, cmd in enumerate(commands)
-        if isinstance(cmd, str) and "CMAKE_ARGS" in cmd
-    )
-    assert cmake_idx < flutter_idx
+    assert "build/linux" in placement_cmd
+    assert "mkdir -p" in placement_cmd
 
     # Run again - should not change
-    result2 = flutter_ops.disable_media_kit_mimalloc(document)
+    result2 = flutter_ops.add_media_kit_mimalloc_source(document)
     assert not result2.changed
 
 
-def test_disable_media_kit_mimalloc_with_existing_commands(make_document):
-    """Test that disabling mimalloc works with existing build commands."""
+def test_add_media_kit_mimalloc_source_preserves_existing(make_document):
+    """Test that adding mimalloc preserves existing sources."""
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
-    # Start with multiple build commands
-    lotti["build-commands"] = [
-        "echo 'Starting build'",
-        "export SOME_VAR=value",
-        "flutter build linux --release",
+    # Start with existing sources and build commands
+    lotti["sources"] = [
+        {"type": "git", "url": "https://github.com/test/test.git"},
+        {"type": "file", "path": "some-file.txt"},
     ]
+    lotti["build-commands"] = ["flutter build linux --release"]
 
-    result = flutter_ops.disable_media_kit_mimalloc(document)
+    result = flutter_ops.add_media_kit_mimalloc_source(document)
 
     assert result.changed
+    sources = lotti["sources"]
+    assert len(sources) == 3  # Original 2 + mimalloc
 
-    # Check that CMAKE_ARGS was inserted at the right position
-    commands = lotti["build-commands"]
-    assert len(commands) == 4  # Original 3 + new export
-
-    # The CMAKE_ARGS should be right before flutter build
-    flutter_idx = next(
-        i
-        for i, cmd in enumerate(commands)
-        if isinstance(cmd, str) and "flutter build linux" in cmd
-    )
-    cmake_cmd = commands[flutter_idx - 1]
-    assert "CMAKE_ARGS" in cmake_cmd
-    assert "MIMALLOC_USE_STATIC_LIBS=OFF" in cmake_cmd
+    # Original sources still there
+    assert sources[0]["type"] == "git"
+    assert sources[1]["type"] == "file"
+    # New mimalloc source
+    assert sources[2]["dest-filename"] == "mimalloc-2.1.2.tar.gz"
 
 
 def test_remove_network_from_build_args(make_document):
