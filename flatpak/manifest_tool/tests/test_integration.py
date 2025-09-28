@@ -141,6 +141,7 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
     assert any("setup-flutter.sh" in c for c in lotti["build-commands"])
 
     # Build args and env updated (--share=network removed as it's not allowed on Flathub)
+    assert "--share=network" not in lotti["build-options"].get("build-args", [])
     env = lotti["build-options"]["env"]
     assert env["PATH"].startswith("/var/lib/rustup/bin")
     assert "/usr/lib/sdk/rust-stable/bin" in env["PATH"]

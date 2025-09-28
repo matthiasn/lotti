@@ -435,6 +435,24 @@ def build_parser() -> argparse.ArgumentParser:
     # --share=network in build-args is NOT allowed on Flathub infrastructure
     # Network access during builds violates Flathub policy
 
+    parser_remove_network = subparsers.add_parser(
+        "remove-network-from-build-args",
+        help="Remove --share=network from build-args for Flathub compliance.",
+    )
+    parser_remove_network.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_remove_network.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.remove_network_from_build_args(
+                    document
+                ),
+            )
+        )
+    )
+
     parser_rust_env = subparsers.add_parser(
         "ensure-rust-sdk-env",
         help="Ensure Rust SDK extension bin is on PATH for lotti.",

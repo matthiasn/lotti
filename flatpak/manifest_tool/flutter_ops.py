@@ -176,6 +176,49 @@ def normalize_lotti_env(
 # Builds must be completely offline with all dependencies pre-fetched
 
 
+def remove_network_from_build_args(document: ManifestDocument) -> OperationResult:
+    """Remove --share=network from build-args in all modules for Flathub compliance.
+
+    Flathub strictly prohibits network access during builds. While the source
+    manifest may include --share=network for local development convenience,
+    it must be removed for Flathub submission.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+
+        build_options = module.get("build-options", {})
+        build_args = build_options.get("build-args")
+
+        if isinstance(build_args, list) and "--share=network" in build_args:
+            # Remove all instances of --share=network
+            while "--share=network" in build_args:
+                build_args.remove("--share=network")
+
+            # If build-args is now empty, remove it
+            if not build_args:
+                del build_options["build-args"]
+                # If build-options is now empty, remove it
+                if not build_options:
+                    del module["build-options"]
+
+            module_name = module.get("name", "unnamed")
+            messages.append(f"Removed --share=network from {module_name}")
+            changed = True
+
+    if changed:
+        document.mark_changed()
+        message = "Removed network access from build-args for Flathub compliance"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
+    return OperationResult.unchanged()
+
+
 def _update_append_path(build_options: dict, rust_bin: str, rustup_bin: str) -> bool:
     """Update append-path with Rust SDK directories."""
     append_current = str(build_options.get("append-path", ""))

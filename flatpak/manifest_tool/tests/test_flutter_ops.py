@@ -65,6 +65,44 @@ def test_normalize_lotti_env_top_layout(make_document):
 # --share=network in build-args is NOT allowed on Flathub infrastructure
 
 
+def test_remove_network_from_build_args(make_document):
+    # Create document with network access in build-args
+    document = make_document()
+
+    # Add --share=network to both flutter-sdk and lotti modules
+    flutter_sdk = next(
+        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
+    )
+    flutter_sdk.setdefault("build-options", {})["build-args"] = [
+        "--share=network",
+        "--allow=devel",
+    ]
+
+    lotti = next(
+        module for module in document.data["modules"] if module["name"] == "lotti"
+    )
+    lotti["build-options"]["build-args"] = ["--share=network"]
+
+    # Remove network access
+    result = flutter_ops.remove_network_from_build_args(document)
+
+    assert result.changed
+    assert len(result.messages) == 2
+    assert "Removed --share=network from flutter-sdk" in result.messages
+    assert "Removed --share=network from lotti" in result.messages
+
+    # Verify --share=network is removed but other args remain
+    assert "--share=network" not in flutter_sdk["build-options"]["build-args"]
+    assert "--allow=devel" in flutter_sdk["build-options"]["build-args"]
+
+    # Verify empty build-args is removed
+    assert "build-args" not in lotti["build-options"]
+
+    # Should be idempotent
+    result2 = flutter_ops.remove_network_from_build_args(document)
+    assert not result2.changed
+
+
 def test_ensure_setup_helper_source_and_command(make_document):
     document = make_document()
     source_result = flutter_ops.ensure_setup_helper_source(

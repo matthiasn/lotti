@@ -112,7 +112,7 @@ The script will:
      - Process Flutter SDK for offline use
      - Bundle all archive/file sources locally
      - Create app source archive (`lotti-<commit>.tar.xz`)
-     - **No network access during builds** (--share=network not allowed in build-args)
+     - **Removes --share=network from build-args** (prohibited by Flathub policy)
    - Process the metainfo.xml with version substitution
    - Output all files to `flatpak/flathub-build/output/`
 
