@@ -220,11 +220,13 @@ def ensure_flutter_pub_get_offline(document: ManifestDocument) -> OperationResul
 
 
 def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationResult:
-    """Wrap flutter build command to skip internal dart pub get calls.
+    """Prevent flutter build from running internal dart pub get.
 
-    Since flutter build doesn't support --offline, we need to prevent its
-    internal dart pub get --example call from accessing the network.
-    This is done by temporarily setting PUB_HOSTED_URL to force offline mode.
+    Flutter build internally calls 'dart pub get --example' which tries to
+    access the network. We prevent this by:
+    1. Setting PUB_HOSTED_URL to a non-existent URL to fail fast
+    2. Setting FLUTTER_STORAGE_BASE_URL to prevent SDK downloads
+    3. These combined force Flutter to use only cached packages
     """
     modules = document.ensure_modules()
     changed = False
@@ -239,7 +241,6 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
             continue
 
         build_commands = module.get("build-commands", [])
-        module_name = module.get("name", "unnamed")
 
         for i, cmd in enumerate(build_commands):
             if not isinstance(cmd, str):
@@ -247,18 +248,22 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
 
             # Find flutter build linux commands
             if "flutter build linux" in cmd and "PUB_HOSTED_URL" not in cmd:
-                # Wrap the command to disable network access during build
-                # Setting PUB_HOSTED_URL to empty effectively disables pub.dev access
-                wrapped_cmd = f"PUB_HOSTED_URL='' {cmd}"
+                # Wrap with environment variables to force offline mode
+                # Using file:// URL causes immediate failure instead of hanging
+                wrapped_cmd = (
+                    "PUB_HOSTED_URL='file:///dev/null' "
+                    "FLUTTER_STORAGE_BASE_URL='file:///dev/null' "
+                    f"{cmd}"
+                )
                 build_commands[i] = wrapped_cmd
                 messages.append(
-                    f"Wrapped flutter build command to disable pub network access"
+                    "Wrapped flutter build to prevent network access attempts"
                 )
                 changed = True
 
     if changed:
         document.mark_changed()
-        message = "Ensured dart pub runs offline during flutter build"
+        message = "Configured flutter build to run fully offline"
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 
