@@ -893,10 +893,10 @@ if target is None:
 content = target.read_text()
 needle = 'URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18'
 if needle not in content:
-    url_line = '    URL https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz\n'
+    url_line = '    URL https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz\\n'
     if url_line not in content:
         raise SystemExit('sqlite3 URL stanza missing; unable to inject URL_HASH')
-    line = "    " + needle + "\n"
+    line = "    " + needle + "\\n"
     updated = content.replace(url_line, url_line + line, 2)
     if needle not in updated:
         raise SystemExit('sqlite3 URL_HASH injection failed')
