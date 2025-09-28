@@ -320,14 +320,23 @@ def add_mimalloc_source(document: ManifestDocument) -> OperationResult:
                     break
 
             if insert_idx is not None:
-                # Add command to place mimalloc where CMake expects it
-                place_cmd = (
-                    "# Place mimalloc where media_kit CMake expects it\n"
-                    "mkdir -p build/linux/x64/release && "
-                    "cp mimalloc-2.1.2.tar.gz build/linux/x64/release/"
-                )
-                build_commands.insert(insert_idx, place_cmd)
-                messages.append("Added command to place mimalloc in build directory")
+                # Add commands to find and place mimalloc where CMake expects it
+                place_cmds = [
+                    "# Place mimalloc where media_kit CMake expects it",
+                    "echo 'Looking for mimalloc-2.1.2.tar.gz file...'",
+                    "find . -name 'mimalloc*.tar.gz' -type f 2>/dev/null | head -5 || echo 'No mimalloc files found'",
+                    "ls -la | grep mimalloc || echo 'No mimalloc in current dir'",
+                    "mkdir -p build/linux/x64/release",
+                    "# Try to find and copy mimalloc",
+                    "if [ -f mimalloc-2.1.2.tar.gz ]; then cp mimalloc-2.1.2.tar.gz build/linux/x64/release/; "
+                    "elif [ -f ./mimalloc-2.1.2.tar.gz ]; then cp ./mimalloc-2.1.2.tar.gz build/linux/x64/release/; "
+                    "else find . -name 'mimalloc-2.1.2.tar.gz' -type f -exec cp {} build/linux/x64/release/ \\; 2>/dev/null || "
+                    "echo 'WARNING: Could not find mimalloc-2.1.2.tar.gz'; fi",
+                ]
+                # Insert commands in reverse order so they appear in correct order
+                for cmd in reversed(place_cmds):
+                    build_commands.insert(insert_idx, cmd)
+                messages.append("Added commands to place mimalloc in build directory")
                 changed = True
 
     if changed:
