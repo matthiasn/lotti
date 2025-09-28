@@ -923,25 +923,31 @@ def test_add_sqlite3_source(make_document):
 
     # Check x86_64 source
     x64_source = next(s for s in sources if "x86_64" in s.get("only-arches", []))
-    assert x64_source["type"] == "archive"
+    assert x64_source["type"] == "file"
     assert "sqlite-autoconf-3500400.tar.gz" in x64_source["url"]
     assert (
         x64_source["sha256"]
         == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
     )
-    assert x64_source["dest"] == "build/linux/x64/release/_deps/sqlite3-src"
-    assert x64_source["strip-components"] == 1
+    assert (
+        x64_source["dest"]
+        == "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+    )
+    assert x64_source["dest-filename"] == "sqlite-autoconf-3500400.tar.gz"
 
     # Check aarch64 source
     arm64_source = next(s for s in sources if "aarch64" in s.get("only-arches", []))
-    assert arm64_source["type"] == "archive"
+    assert arm64_source["type"] == "file"
     assert "sqlite-autoconf-3500400.tar.gz" in arm64_source["url"]
     assert (
         arm64_source["sha256"]
         == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
     )
-    assert arm64_source["dest"] == "build/linux/arm64/release/_deps/sqlite3-src"
-    assert arm64_source["strip-components"] == 1
+    assert (
+        arm64_source["dest"]
+        == "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+    )
+    assert arm64_source["dest-filename"] == "sqlite-autoconf-3500400.tar.gz"
 
     # Run again - should not change
     result2 = flutter_ops.add_sqlite3_source(document)
