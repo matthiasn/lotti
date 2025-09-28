@@ -70,11 +70,9 @@ fi
 # Generate new cargo-sources.json
 OUTPUT_FILE="flathub-build/output/cargo-sources.json"
 print_status "Regenerating cargo-sources.json from actual Cargo.lock files..."
-python3 flatpak-flutter/cargo_generator/cargo_generator.py \
+if python3 flatpak-flutter/cargo_generator/cargo_generator.py \
   "$CARGO_LOCKS" \
-  -o "$OUTPUT_FILE"
-
-if [ $? -eq 0 ]; then
+  -o "$OUTPUT_FILE"; then
   print_status "Successfully regenerated $OUTPUT_FILE"
   print_info "You can now rebuild with: cd flathub-build/output && flatpak-builder --force-clean --disable-updates build-dir com.matthiasn.lotti.yml"
 else
