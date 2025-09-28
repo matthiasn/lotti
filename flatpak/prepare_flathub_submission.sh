@@ -737,12 +737,20 @@ if [ -d "$FLATPAK_DIR/patches" ]; then
     cp -r "$FLATPAK_DIR/patches" "$OUTPUT_DIR/"
 fi
 
-# Always use the pre-generated working cargo-sources.json if available (replace any from flatpak-flutter)
-if [ -f "$FLATPAK_DIR/cargo-sources-working.json" ]; then
-  print_info "Using pre-generated working cargo-sources.json"
-  cp "$FLATPAK_DIR/cargo-sources-working.json" "$OUTPUT_DIR/cargo-sources.json"
-  print_status "Replaced cargo-sources.json with known-good version"
-# Check for pre-saved Cargo.lock files (for known Rust plugins)
+# Download Cargo.lock files from GitHub for cargokit-based plugins
+# Always run this to ensure we have the correct versions (overwriting flatpak-flutter's inadequate cargo-sources.json)
+if [ -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
+  print_info "Downloading Cargo.lock files from GitHub to generate correct cargo-sources.json..."
+  if [ -x "$FLATPAK_DIR/download_cargo_locks.sh" ]; then
+    if bash "$FLATPAK_DIR/download_cargo_locks.sh"; then
+      print_status "Generated cargo-sources.json from downloaded Cargo.lock files"
+    else
+      print_warning "Failed to generate cargo-sources.json from downloaded files"
+    fi
+  else
+    print_warning "download_cargo_locks.sh not found or not executable"
+  fi
+# Legacy: Check for pre-saved Cargo.lock files (for known Rust plugins)
 elif [ -d "$FLATPAK_DIR/cargo-lock-files" ] && [ ! -f "$OUTPUT_DIR/cargo-sources.json" ]; then
   print_info "Using pre-saved Cargo.lock files for cargo-sources.json generation..."
   CARGOKIT_CARGO_LOCKS=""
