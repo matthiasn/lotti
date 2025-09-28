@@ -902,3 +902,30 @@ def test_bundle_app_archive_preserves_mimalloc_source(make_document, tmp_path):
         mimalloc_sources[0]["sha256"]
         == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
     )
+
+
+def test_add_sqlite3_source(make_document):
+    """Test adding SQLite source for sqlite3_flutter_libs plugin."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Start with no sources
+    lotti["sources"] = []
+
+    result = flutter_ops.add_sqlite3_source(document)
+
+    assert result.changed
+    assert "sqlite" in str(result.messages).lower()
+
+    # Check that SQLite source was added
+    sources = lotti["sources"]
+    assert len(sources) == 1
+    sqlite = sources[0]
+    assert sqlite["type"] == "file"
+    assert "sqlite-autoconf-3500400.tar.gz" in sqlite["url"]
+    assert sqlite["sha256"] == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
+    assert sqlite["dest-filename"] == "sqlite-autoconf-3500400.tar.gz"
+
+    # Run again - should not change
+    result2 = flutter_ops.add_sqlite3_source(document)
+    assert not result2.changed
