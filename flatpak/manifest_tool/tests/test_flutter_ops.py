@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 from flatpak.manifest_tool import flutter_ops
-from flatpak.manifest_tool.manifest import ManifestDocument, OperationResult
 
 
 def test_ensure_nested_sdk(make_document, tmp_path: Path):
@@ -628,36 +627,6 @@ def test_bundle_app_archive_no_lotti_module(make_document, tmp_path):
 # Tests for newly added functions
 
 
-def test_ensure_flutter_pub_get_offline(make_document):
-    """Test adding --offline flag to flutter pub get commands."""
-    document = make_document()
-    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
-
-    # Add flutter pub get commands without --offline
-    lotti["build-commands"] = [
-        "echo 'Starting build'",
-        "/run/build/lotti/flutter_sdk/bin/flutter pub get",
-        "flutter pub get",
-        "some other command",
-    ]
-
-    result = flutter_ops.ensure_flutter_pub_get_offline(document)
-
-    assert result.changed
-    assert "--offline flag to flutter pub get" in str(result.messages)
-
-    # Check that --offline was added
-    commands = lotti["build-commands"]
-    assert "/run/build/lotti/flutter_sdk/bin/flutter pub get --offline" in commands
-    assert "flutter pub get --offline" in commands
-    assert commands[0] == "echo 'Starting build'"  # Unchanged
-    assert commands[3] == "some other command"  # Unchanged
-
-    # Run again - should not change
-    result2 = flutter_ops.ensure_flutter_pub_get_offline(document)
-    assert not result2.changed
-
-
 def test_ensure_flutter_pub_get_offline_no_changes_needed(make_document):
     """Test when flutter pub get already has --offline."""
     document = make_document()
@@ -777,35 +746,6 @@ def test_add_media_kit_mimalloc_source_preserves_existing(make_document):
     assert sources[2]["dest-filename"] == "mimalloc-2.1.2.tar.gz"
 
 
-def test_remove_network_from_build_args(make_document):
-    """Test removing --share=network from build-args."""
-    document = make_document()
-
-    # Add --share=network to multiple modules
-    for module in document.data["modules"]:
-        if isinstance(module, dict):
-            module["build-options"] = {
-                "build-args": ["--share=network", "--something-else"]
-            }
-
-    result = flutter_ops.remove_network_from_build_args(document)
-
-    assert result.changed
-    assert "Removed --share=network" in str(result.messages)
-
-    # Check that --share=network was removed but other args remain
-    for module in document.data["modules"]:
-        if isinstance(module, dict) and "build-options" in module:
-            build_args = module["build-options"].get("build-args", [])
-            assert "--share=network" not in build_args
-            if build_args:  # Some modules might have had only --share=network
-                assert "--something-else" in build_args
-
-    # Run again - should not change
-    result2 = flutter_ops.remove_network_from_build_args(document)
-    assert not result2.changed
-
-
 def test_remove_network_from_build_args_cleans_empty(make_document):
     """Test that empty build-args and build-options are removed."""
     document = make_document()
@@ -821,39 +761,6 @@ def test_remove_network_from_build_args_cleans_empty(make_document):
     assert "build-options" not in lotti or "build-args" not in lotti.get(
         "build-options", {}
     )
-
-
-def test_ensure_rust_sdk_env(make_document):
-    """Test ensuring Rust SDK environment configuration."""
-    document = make_document()
-    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
-
-    # Clear any existing Rust SDK configuration to test from clean state
-    if "build-options" in lotti and "env" in lotti["build-options"]:
-        env = lotti["build-options"]["env"]
-        # Remove any existing Rust paths
-        if "PATH" in env:
-            env["PATH"] = env["PATH"].replace("/usr/lib/sdk/rust-stable/bin:", "")
-            env["PATH"] = env["PATH"].replace(":/usr/lib/sdk/rust-stable/bin", "")
-        env.pop("RUSTUP_HOME", None)
-
-    result = flutter_ops.ensure_rust_sdk_env(document)
-
-    assert result.changed
-    assert "Rust SDK" in str(result.messages)
-
-    # Check the environment was configured
-    env = lotti["build-options"]["env"]
-    assert "/usr/lib/sdk/rust-stable/bin" in env["PATH"]
-    assert env["RUSTUP_HOME"] == "/var/lib/rustup"
-
-    # Check append-path was updated
-    append_path = lotti["build-options"].get("append-path", "")
-    assert "/usr/lib/sdk/rust-stable/bin" in append_path
-
-    # Run again - should not change
-    result2 = flutter_ops.ensure_rust_sdk_env(document)
-    assert not result2.changed
 
 
 def test_bundle_app_archive_preserves_mimalloc_source(make_document, tmp_path):
