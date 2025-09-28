@@ -472,8 +472,20 @@ if [ -z "$TOOLS_LOCK" ]; then
 fi
 
 CARGOKIT_LOCKS=""
-if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
-  CARGOKIT_LOCKS=$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 7 -path '*/cargokit/build_tool/pubspec.lock' -print 2>/dev/null | sort || true)
+if [ -d "$WORK_DIR/.flatpak-builder/build" ] || [ -d "$OUTPUT_DIR/.flatpak-builder/build" ]; then
+  TMP_LOCKS=""
+  for search_root in \
+    "$WORK_DIR/.flatpak-builder/build" \
+    "$OUTPUT_DIR/.flatpak-builder/build"; do
+    [ -d "$search_root" ] || continue
+    found=$(find "$search_root" -maxdepth 15 -path '*/cargokit/build_tool/pubspec.lock' -print 2>/dev/null || true)
+    if [ -n "$found" ]; then
+      TMP_LOCKS+="$found\n"
+    fi
+  done
+  if [ -n "$TMP_LOCKS" ]; then
+    CARGOKIT_LOCKS=$(printf "%s" "$TMP_LOCKS" | sort -u)
+  fi
 fi
 
 LOCK_INPUTS=""
