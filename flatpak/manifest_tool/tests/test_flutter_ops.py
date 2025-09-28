@@ -609,3 +609,228 @@ def test_bundle_app_archive_no_lotti_module(make_document, tmp_path):
 
     # Should not change anything
     assert not result.changed
+
+
+# Tests for newly added functions
+
+
+def test_ensure_flutter_pub_get_offline(make_document):
+    """Test adding --offline flag to flutter pub get commands."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Add flutter pub get commands without --offline
+    lotti["build-commands"] = [
+        "echo 'Starting build'",
+        "/run/build/lotti/flutter_sdk/bin/flutter pub get",
+        "flutter pub get",
+        "some other command",
+    ]
+
+    result = flutter_ops.ensure_flutter_pub_get_offline(document)
+
+    assert result.changed
+    assert "--offline flag to flutter pub get" in str(result.messages)
+
+    # Check that --offline was added
+    commands = lotti["build-commands"]
+    assert "/run/build/lotti/flutter_sdk/bin/flutter pub get --offline" in commands
+    assert "flutter pub get --offline" in commands
+    assert commands[0] == "echo 'Starting build'"  # Unchanged
+    assert commands[3] == "some other command"  # Unchanged
+
+    # Run again - should not change
+    result2 = flutter_ops.ensure_flutter_pub_get_offline(document)
+    assert not result2.changed
+
+
+def test_ensure_flutter_pub_get_offline_no_changes_needed(make_document):
+    """Test when flutter pub get already has --offline."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Commands already have --offline
+    lotti["build-commands"] = [
+        "flutter pub get --offline",
+    ]
+
+    result = flutter_ops.ensure_flutter_pub_get_offline(document)
+    assert not result.changed
+
+
+def test_ensure_dart_pub_offline_in_build(make_document):
+    """Test adding --no-pub flag to flutter build commands."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Add flutter build commands without --no-pub
+    lotti["build-commands"] = [
+        "echo 'Preparing'",
+        "flutter build linux --release --verbose",
+        "/run/build/lotti/flutter_sdk/bin/flutter build linux",
+        "flutter build linux --debug",
+    ]
+
+    result = flutter_ops.ensure_dart_pub_offline_in_build(document)
+
+    assert result.changed
+    assert "Added --no-pub flag" in str(result.messages)
+
+    # Check that --no-pub was added to all flutter build linux commands
+    commands = lotti["build-commands"]
+    assert "flutter build linux --no-pub --release --verbose" in commands
+    assert "/run/build/lotti/flutter_sdk/bin/flutter build linux --no-pub" in commands
+    assert "flutter build linux --no-pub --debug" in commands
+    assert commands[0] == "echo 'Preparing'"  # Unchanged
+
+    # Run again - should not change
+    result2 = flutter_ops.ensure_dart_pub_offline_in_build(document)
+    assert not result2.changed
+
+
+def test_ensure_dart_pub_offline_in_build_already_has_flag(make_document):
+    """Test when flutter build already has --no-pub."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    lotti["build-commands"] = [
+        "flutter build linux --no-pub --release",
+    ]
+
+    result = flutter_ops.ensure_dart_pub_offline_in_build(document)
+    assert not result.changed
+
+
+def test_add_mimalloc_source(make_document):
+    """Test adding mimalloc source for media_kit plugin."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Start with no sources
+    lotti["sources"] = []
+
+    result = flutter_ops.add_mimalloc_source(document)
+
+    assert result.changed
+    assert "mimalloc archive for media_kit" in str(result.messages)
+
+    # Check the mimalloc source was added
+    sources = lotti["sources"]
+    assert len(sources) == 1
+
+    mimalloc = sources[0]
+    assert mimalloc["type"] == "file"
+    assert "mimalloc/archive/refs/tags/v2.1.2.tar.gz" in mimalloc["url"]
+    assert (
+        mimalloc["sha256"]
+        == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
+    )
+    assert mimalloc["dest-filename"] == "mimalloc-2.1.2.tar.gz"
+
+    # Run again - should not add duplicate
+    result2 = flutter_ops.add_mimalloc_source(document)
+    assert not result2.changed
+    assert len(lotti["sources"]) == 1
+
+
+def test_add_mimalloc_source_preserves_existing(make_document):
+    """Test that adding mimalloc preserves existing sources."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Start with existing sources
+    lotti["sources"] = [
+        {"type": "git", "url": "https://github.com/test/test.git"},
+        {"type": "file", "path": "some-file.txt"},
+    ]
+
+    result = flutter_ops.add_mimalloc_source(document)
+
+    assert result.changed
+    sources = lotti["sources"]
+    assert len(sources) == 3  # Original 2 + mimalloc
+
+    # Original sources still there
+    assert sources[0]["type"] == "git"
+    assert sources[1]["type"] == "file"
+    # New mimalloc source
+    assert sources[2]["dest-filename"] == "mimalloc-2.1.2.tar.gz"
+
+
+def test_remove_network_from_build_args(make_document):
+    """Test removing --share=network from build-args."""
+    document = make_document()
+
+    # Add --share=network to multiple modules
+    for module in document.data["modules"]:
+        if isinstance(module, dict):
+            module["build-options"] = {
+                "build-args": ["--share=network", "--something-else"]
+            }
+
+    result = flutter_ops.remove_network_from_build_args(document)
+
+    assert result.changed
+    assert "Removed --share=network" in str(result.messages)
+
+    # Check that --share=network was removed but other args remain
+    for module in document.data["modules"]:
+        if isinstance(module, dict) and "build-options" in module:
+            build_args = module["build-options"].get("build-args", [])
+            assert "--share=network" not in build_args
+            if build_args:  # Some modules might have had only --share=network
+                assert "--something-else" in build_args
+
+    # Run again - should not change
+    result2 = flutter_ops.remove_network_from_build_args(document)
+    assert not result2.changed
+
+
+def test_remove_network_from_build_args_cleans_empty(make_document):
+    """Test that empty build-args and build-options are removed."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Only --share=network in build-args
+    lotti["build-options"] = {"build-args": ["--share=network"]}
+
+    result = flutter_ops.remove_network_from_build_args(document)
+
+    assert result.changed
+    # build-options should be completely removed when empty
+    assert "build-options" not in lotti or "build-args" not in lotti.get(
+        "build-options", {}
+    )
+
+
+def test_ensure_rust_sdk_env(make_document):
+    """Test ensuring Rust SDK environment configuration."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Clear any existing Rust SDK configuration to test from clean state
+    if "build-options" in lotti and "env" in lotti["build-options"]:
+        env = lotti["build-options"]["env"]
+        # Remove any existing Rust paths
+        if "PATH" in env:
+            env["PATH"] = env["PATH"].replace("/usr/lib/sdk/rust-stable/bin:", "")
+            env["PATH"] = env["PATH"].replace(":/usr/lib/sdk/rust-stable/bin", "")
+        env.pop("RUSTUP_HOME", None)
+
+    result = flutter_ops.ensure_rust_sdk_env(document)
+
+    assert result.changed
+    assert "Rust SDK" in str(result.messages)
+
+    # Check the environment was configured
+    env = lotti["build-options"]["env"]
+    assert "/usr/lib/sdk/rust-stable/bin" in env["PATH"]
+    assert env["RUSTUP_HOME"] == "/var/lib/rustup"
+
+    # Check append-path was updated
+    append_path = lotti["build-options"].get("append-path", "")
+    assert "/usr/lib/sdk/rust-stable/bin" in append_path
+
+    # Run again - should not change
+    result2 = flutter_ops.ensure_rust_sdk_env(document)
+    assert not result2.changed
