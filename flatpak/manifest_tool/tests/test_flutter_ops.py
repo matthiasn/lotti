@@ -714,41 +714,38 @@ def test_disable_media_kit_mimalloc(make_document):
     assert result.changed
     assert "mimalloc" in str(result.messages).lower()
 
-    # Check that build-options were added with the environment variable
-    assert "build-options" in lotti
-    build_options = lotti["build-options"]
-    assert "env" in build_options
-    env = build_options["env"]
-    assert "MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC" in env
-    assert env["MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC"] == "0"
+    # Check that the flutter build command was updated with CMake option
+    commands = lotti["build-commands"]
+    flutter_cmd = next(
+        cmd for cmd in commands if isinstance(cmd, str) and "flutter build linux" in cmd
+    )
+    assert "-DMIMALLOC_USE_STATIC_LIBS=OFF" in flutter_cmd
+    assert " -- " in flutter_cmd
 
     # Run again - should not change
     result2 = flutter_ops.disable_media_kit_mimalloc(document)
     assert not result2.changed
 
 
-def test_disable_media_kit_mimalloc_preserves_existing_env(make_document):
-    """Test that disabling mimalloc preserves existing environment variables."""
+def test_disable_media_kit_mimalloc_with_existing_cmake_args(make_document):
+    """Test that disabling mimalloc preserves existing CMake arguments."""
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
-    # Start with existing build-options and environment
-    lotti["build-options"] = {
-        "env": {"EXISTING_VAR": "value1", "ANOTHER_VAR": "value2"}
-    }
-    lotti["build-commands"] = ["flutter build linux --release"]
+    # Start with existing CMake args in flutter build command
+    lotti["build-commands"] = ["flutter build linux --release -- -DSOME_OPTION=value"]
 
     result = flutter_ops.disable_media_kit_mimalloc(document)
 
     assert result.changed
-    env = lotti["build-options"]["env"]
-    assert len(env) == 3  # Original 2 + new one
 
-    # Original environment variables still there
-    assert env["EXISTING_VAR"] == "value1"
-    assert env["ANOTHER_VAR"] == "value2"
-    # New mimalloc disable variable
-    assert env["MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC"] == "0"
+    # Check that both CMake options are present
+    commands = lotti["build-commands"]
+    flutter_cmd = next(
+        cmd for cmd in commands if isinstance(cmd, str) and "flutter build linux" in cmd
+    )
+    assert "-DMIMALLOC_USE_STATIC_LIBS=OFF" in flutter_cmd
+    assert "-DSOME_OPTION=value" in flutter_cmd
 
 
 def test_remove_network_from_build_args(make_document):

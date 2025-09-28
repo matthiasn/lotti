@@ -268,7 +268,7 @@ def disable_media_kit_mimalloc(document: ManifestDocument) -> OperationResult:
     """Disable mimalloc in media_kit_libs_linux to avoid download during build.
 
     The media_kit plugin's CMake tries to download mimalloc during configure,
-    which fails in offline builds. We set an environment variable to disable it.
+    which fails in offline builds. We pass a CMake option to disable static linking.
     """
     modules = document.ensure_modules()
     changed = False
@@ -282,31 +282,33 @@ def disable_media_kit_mimalloc(document: ManifestDocument) -> OperationResult:
         if module.get("name") != "lotti":
             continue
 
-        # Ensure build-options exists
-        if "build-options" not in module:
-            module["build-options"] = {}
-            changed = True
+        build_commands = module.get("build-commands", [])
 
-        build_options = module["build-options"]
-
-        # Ensure env exists
-        if "env" not in build_options:
-            build_options["env"] = {}
-            changed = True
-
-        env = build_options["env"]
-
-        # Check if we already have the environment variable
-        if "MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC" not in env:
-            env["MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC"] = "0"
-            messages.append(
-                "Set MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC=0 to disable mimalloc"
-            )
-            changed = True
+        # Find and update flutter build commands to add the CMake option
+        for i, cmd in enumerate(build_commands):
+            if (
+                isinstance(cmd, str)
+                and "flutter build linux" in cmd
+                and "-DMIMALLOC_USE_STATIC_LIBS=OFF" not in cmd
+            ):
+                # Add the CMake define to disable static mimalloc
+                # Flutter passes extra args after -- to CMake
+                if " -- " in cmd:
+                    # Insert before existing CMake args
+                    build_commands[i] = cmd.replace(
+                        " -- ", " -- -DMIMALLOC_USE_STATIC_LIBS=OFF "
+                    )
+                else:
+                    # Add CMake args section
+                    build_commands[i] = cmd + " -- -DMIMALLOC_USE_STATIC_LIBS=OFF"
+                messages.append(
+                    "Added -DMIMALLOC_USE_STATIC_LIBS=OFF to flutter build command"
+                )
+                changed = True
 
     if changed:
         document.mark_changed()
-        message = "Disabled mimalloc in media_kit_libs_linux plugin"
+        message = "Disabled static mimalloc in media_kit_libs_linux plugin"
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 
