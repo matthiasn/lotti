@@ -471,6 +471,24 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    parser_remove_config = subparsers.add_parser(
+        "remove-flutter-config",
+        help="Remove flutter config commands from lotti build steps.",
+    )
+    parser_remove_config.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_remove_config.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.remove_flutter_config_command(
+                    document
+                ),
+            )
+        )
+    )
+
     parser_dart_offline = subparsers.add_parser(
         "ensure-dart-pub-offline-in-build",
         help="Wrap flutter build to disable pub network access.",

@@ -264,6 +264,40 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
     return OperationResult.unchanged()
 
 
+def remove_flutter_config_command(document: ManifestDocument) -> OperationResult:
+    """Remove flutter config commands from lotti build-commands."""
+
+    modules = document.ensure_modules()
+    changed = False
+
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+
+        commands = module.get("build-commands")
+        if not isinstance(commands, list):
+            continue
+
+        filtered: list[str] = []
+        for raw in commands:
+            command = str(raw)
+            if "flutter config" in command:
+                changed = True
+                continue
+            filtered.append(command)
+
+        if changed:
+            module["build-commands"] = filtered
+        break
+
+    if changed:
+        document.mark_changed()
+        message = "Removed flutter config command from lotti build steps"
+        _LOGGER.debug(message)
+        return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
+
+
 def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
     """Add SQLite source for sqlite3_flutter_libs plugin.
 

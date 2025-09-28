@@ -664,6 +664,10 @@ if [ -f "$OUT_MANIFEST" ]; then
   python3 "$PYTHON_CLI" ensure-flutter-pub-get-offline \
     --manifest "$OUT_MANIFEST"
 
+  # Remove flutter config invocations to avoid pub upgrade cycles offline
+  python3 "$PYTHON_CLI" remove-flutter-config \
+    --manifest "$OUT_MANIFEST"
+
   # Add --no-pub flag to flutter build to skip automatic pub get
   # This prevents the internal dart pub get --example from attempting network access
   python3 "$PYTHON_CLI" ensure-dart-pub-offline-in-build \
