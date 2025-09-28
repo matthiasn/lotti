@@ -721,18 +721,26 @@ def test_add_media_kit_mimalloc_source(make_document):
     mimalloc = sources[0]
     assert mimalloc["type"] == "file"
     assert "mimalloc/archive/refs/tags/v2.1.2.tar.gz" in mimalloc["url"]
-    assert mimalloc["sha256"] == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
+    assert (
+        mimalloc["sha256"]
+        == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
+    )
     assert mimalloc["dest-filename"] == "mimalloc-2.1.2.tar.gz"
 
-    # Check that placement command was added before flutter build
+    # Check that placement commands were added before flutter build
     commands = lotti["build-commands"]
-    assert len(commands) == 3  # Original 2 + new placement command
+    assert len(commands) == 4  # Original 2 + debug + placement command
 
-    placement_cmd = next(
-        cmd for cmd in commands if isinstance(cmd, str) and "mimalloc-2.1.2.tar.gz" in cmd
-    )
-    assert "build/linux" in placement_cmd
-    assert "mkdir -p" in placement_cmd
+    # Find commands that deal with mimalloc
+    mimalloc_cmds = [
+        cmd
+        for cmd in commands
+        if isinstance(cmd, str) and "mimalloc-2.1.2.tar.gz" in cmd
+    ]
+    assert len(mimalloc_cmds) >= 1
+
+    # At least one should have the placement logic
+    assert any("build/linux" in cmd and "mkdir -p" in cmd for cmd in mimalloc_cmds)
 
     # Run again - should not change
     result2 = flutter_ops.add_media_kit_mimalloc_source(document)

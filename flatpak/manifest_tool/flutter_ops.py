@@ -300,7 +300,7 @@ def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult
                 "type": "file",
                 "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
                 "sha256": "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
-                "dest-filename": "mimalloc-2.1.2.tar.gz"
+                "dest-filename": "mimalloc-2.1.2.tar.gz",
             }
             sources.append(mimalloc_source)
             messages.append("Added mimalloc source for media_kit_libs_linux")
@@ -326,10 +326,20 @@ def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult
                     break
 
             if insert_idx is not None:
-                # Add command to place mimalloc where CMake will look for it
-                placement_cmd = "mkdir -p build/linux/x64/release build/linux/arm64/release && cp mimalloc-2.1.2.tar.gz build/linux/x64/release/ 2>/dev/null || true && cp mimalloc-2.1.2.tar.gz build/linux/arm64/release/ 2>/dev/null || true"
-                build_commands.insert(insert_idx, placement_cmd)
-                messages.append("Added command to place mimalloc archive for CMake")
+                # Add commands to place mimalloc where CMake will look for it
+                # We need to create the build directories first and place the file there
+                # before flutter build runs cmake
+                debug_cmd = "echo 'Preparing mimalloc archive...' && md5sum mimalloc-2.1.2.tar.gz && ls -la mimalloc-2.1.2.tar.gz"
+                placement_cmd = (
+                    "mkdir -p build/linux/x64/release build/linux/arm64/release && "
+                    "cp mimalloc-2.1.2.tar.gz build/linux/x64/release/mimalloc-2.1.2.tar.gz && "
+                    "cp mimalloc-2.1.2.tar.gz build/linux/arm64/release/mimalloc-2.1.2.tar.gz && "
+                    "echo 'Placed mimalloc archive in build directories' && "
+                    "ls -la build/linux/*/release/mimalloc-2.1.2.tar.gz"
+                )
+                build_commands.insert(insert_idx, debug_cmd)
+                build_commands.insert(insert_idx + 1, placement_cmd)
+                messages.append("Added commands to place mimalloc archive for CMake")
                 changed = True
 
     if changed:
