@@ -701,70 +701,54 @@ def test_ensure_dart_pub_offline_in_build_already_has_flag(make_document):
     assert not result.changed
 
 
-def test_add_mimalloc_source(make_document):
-    """Test adding mimalloc source for media_kit plugin."""
+def test_disable_media_kit_mimalloc(make_document):
+    """Test disabling mimalloc in media_kit plugin."""
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
-    # Start with no sources and set up build commands
-    lotti["sources"] = []
+    # Start with build commands
     lotti["build-commands"] = ["echo 'Starting build'", "flutter build linux --release"]
 
-    result = flutter_ops.add_mimalloc_source(document)
+    result = flutter_ops.disable_media_kit_mimalloc(document)
 
     assert result.changed
     assert "mimalloc" in str(result.messages).lower()
 
-    # Check the mimalloc source was added
-    sources = lotti["sources"]
-    assert len(sources) == 1
+    # Check that build-options were added with the environment variable
+    assert "build-options" in lotti
+    build_options = lotti["build-options"]
+    assert "env" in build_options
+    env = build_options["env"]
+    assert "MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC" in env
+    assert env["MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC"] == "0"
 
-    mimalloc = sources[0]
-    assert mimalloc["type"] == "file"
-    assert "mimalloc/archive/refs/tags/v2.1.2.tar.gz" in mimalloc["url"]
-    assert (
-        mimalloc["sha256"]
-        == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
-    )
-    assert mimalloc["dest-filename"] == "mimalloc-2.1.2.tar.gz"
-
-    # Check that placement command was added
-    commands = lotti["build-commands"]
-    assert any(
-        "mimalloc-2.1.2.tar.gz" in cmd and "build/linux" in cmd
-        for cmd in commands
-        if isinstance(cmd, str)
-    )
-
-    # Run again - should not add duplicate
-    result2 = flutter_ops.add_mimalloc_source(document)
+    # Run again - should not change
+    result2 = flutter_ops.disable_media_kit_mimalloc(document)
     assert not result2.changed
-    assert len(lotti["sources"]) == 1
 
 
-def test_add_mimalloc_source_preserves_existing(make_document):
-    """Test that adding mimalloc preserves existing sources."""
+def test_disable_media_kit_mimalloc_preserves_existing_env(make_document):
+    """Test that disabling mimalloc preserves existing environment variables."""
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
-    # Start with existing sources and build commands
-    lotti["sources"] = [
-        {"type": "git", "url": "https://github.com/test/test.git"},
-        {"type": "file", "path": "some-file.txt"},
-    ]
+    # Start with existing build-options and environment
+    lotti["build-options"] = {
+        "env": {"EXISTING_VAR": "value1", "ANOTHER_VAR": "value2"}
+    }
     lotti["build-commands"] = ["flutter build linux --release"]
 
-    result = flutter_ops.add_mimalloc_source(document)
+    result = flutter_ops.disable_media_kit_mimalloc(document)
 
     assert result.changed
-    sources = lotti["sources"]
-    assert len(sources) == 3  # Original 2 + mimalloc
+    env = lotti["build-options"]["env"]
+    assert len(env) == 3  # Original 2 + new one
 
-    # Original sources still there
-    assert sources[0]["type"] == "git"
-    assert sources[1]["type"] == "file"
-    # New mimalloc source
-    assert sources[2]["dest-filename"] == "mimalloc-2.1.2.tar.gz"
+    # Original environment variables still there
+    assert env["EXISTING_VAR"] == "value1"
+    assert env["ANOTHER_VAR"] == "value2"
+    # New mimalloc disable variable
+    assert env["MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC"] == "0"
 
 
 def test_remove_network_from_build_args(make_document):

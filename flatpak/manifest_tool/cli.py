@@ -490,8 +490,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser_mimalloc = subparsers.add_parser(
-        "add-mimalloc-source",
-        help="Add mimalloc source for media_kit_libs_linux plugin.",
+        "disable-media-kit-mimalloc",
+        help="Disable mimalloc in media_kit_libs_linux plugin.",
     )
     parser_mimalloc.add_argument(
         "--manifest", required=True, help="Manifest file path."
@@ -500,7 +500,9 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.add_mimalloc_source(document),
+                executor=lambda document: flutter_ops.disable_media_kit_mimalloc(
+                    document
+                ),
             )
         )
     )

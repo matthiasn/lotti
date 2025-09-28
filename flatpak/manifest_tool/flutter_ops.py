@@ -264,11 +264,11 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
     return OperationResult.unchanged()
 
 
-def add_mimalloc_source(document: ManifestDocument) -> OperationResult:
-    """Add build commands to pre-place mimalloc for media_kit_libs_linux plugin.
+def disable_media_kit_mimalloc(document: ManifestDocument) -> OperationResult:
+    """Disable mimalloc in media_kit_libs_linux to avoid download during build.
 
-    The media_kit plugin's CMake tries to download mimalloc during configure.
-    We add the file as a source and a command to place it where CMake expects it.
+    The media_kit plugin's CMake tries to download mimalloc during configure,
+    which fails in offline builds. We set an environment variable to disable it.
     """
     modules = document.ensure_modules()
     changed = False
@@ -282,66 +282,31 @@ def add_mimalloc_source(document: ManifestDocument) -> OperationResult:
         if module.get("name") != "lotti":
             continue
 
-        sources = module.setdefault("sources", [])
-        build_commands = module.get("build-commands", [])
-
-        # Check if mimalloc source is already added
-        has_mimalloc_source = any(
-            isinstance(s, dict) and s.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
-            for s in sources
-        )
-
-        if not has_mimalloc_source:
-            # Add mimalloc as a source file
-            mimalloc_source = {
-                "type": "file",
-                "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
-                "sha256": "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
-                "dest-filename": "mimalloc-2.1.2.tar.gz",
-            }
-            sources.append(mimalloc_source)
-            messages.append("Added mimalloc source file")
+        # Ensure build-options exists
+        if "build-options" not in module:
+            module["build-options"] = {}
             changed = True
 
-        # Check if we have the command to place mimalloc where CMake expects it
-        has_mimalloc_cmd = any(
-            isinstance(cmd, str)
-            and "mimalloc-2.1.2.tar.gz" in cmd
-            and "build/linux" in cmd
-            for cmd in build_commands
-        )
+        build_options = module["build-options"]
 
-        if not has_mimalloc_cmd:
-            # Find position before flutter build
-            insert_idx = None
-            for i, cmd in enumerate(build_commands):
-                if isinstance(cmd, str) and "flutter build linux" in cmd:
-                    insert_idx = i
-                    break
+        # Ensure env exists
+        if "env" not in build_options:
+            build_options["env"] = {}
+            changed = True
 
-            if insert_idx is not None:
-                # Add commands to find and place mimalloc where CMake expects it
-                place_cmds = [
-                    "# Place mimalloc where media_kit CMake expects it",
-                    "echo 'Looking for mimalloc-2.1.2.tar.gz file...'",
-                    "find . -name 'mimalloc*.tar.gz' -type f 2>/dev/null | head -5 || echo 'No mimalloc files found'",
-                    "ls -la | grep mimalloc || echo 'No mimalloc in current dir'",
-                    "mkdir -p build/linux/x64/release",
-                    "# Try to find and copy mimalloc",
-                    "if [ -f mimalloc-2.1.2.tar.gz ]; then cp mimalloc-2.1.2.tar.gz build/linux/x64/release/; "
-                    "elif [ -f ./mimalloc-2.1.2.tar.gz ]; then cp ./mimalloc-2.1.2.tar.gz build/linux/x64/release/; "
-                    "else find . -name 'mimalloc-2.1.2.tar.gz' -type f -exec cp {} build/linux/x64/release/ \\; 2>/dev/null || "
-                    "echo 'WARNING: Could not find mimalloc-2.1.2.tar.gz'; fi",
-                ]
-                # Insert commands in reverse order so they appear in correct order
-                for cmd in reversed(place_cmds):
-                    build_commands.insert(insert_idx, cmd)
-                messages.append("Added commands to place mimalloc in build directory")
-                changed = True
+        env = build_options["env"]
+
+        # Check if we already have the environment variable
+        if "MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC" not in env:
+            env["MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC"] = "0"
+            messages.append(
+                "Set MEDIA_KIT_LIBS_LINUX_USE_MIMALLOC=0 to disable mimalloc"
+            )
+            changed = True
 
     if changed:
         document.mark_changed()
-        message = "Configured mimalloc for media_kit_libs_linux plugin"
+        message = "Disabled mimalloc in media_kit_libs_linux plugin"
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 
