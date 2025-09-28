@@ -556,11 +556,17 @@ fi
 # Check if files were generated in parent directory
 if [ -f "../pubspec-sources.json" ]; then
     print_info "Found generated files in parent directory, copying..."
-    cp -- ../flutter-sdk-*.json "$OUTPUT_DIR/" 2>/dev/null
-    cp -- ../pubspec-sources.json "$OUTPUT_DIR/" 2>/dev/null
-    cp -- ../cargo-sources.json "$OUTPUT_DIR/" 2>/dev/null
-    cp -- ../rustup-*.json "$OUTPUT_DIR/" 2>/dev/null || true
-    cp -- ../package_config.json "$OUTPUT_DIR/" 2>/dev/null
+    for candidate in ../flutter-sdk-*.json; do
+      [ -f "$candidate" ] || continue
+      cp -- "$candidate" "$OUTPUT_DIR/" 2>/dev/null || true
+    done
+    cp -- ../pubspec-sources.json "$OUTPUT_DIR/" 2>/dev/null || true
+    cp -- ../cargo-sources.json "$OUTPUT_DIR/" 2>/dev/null || true
+    for candidate in ../rustup-*.json; do
+      [ -f "$candidate" ] || continue
+      cp -- "$candidate" "$OUTPUT_DIR/" 2>/dev/null || true
+    done
+    cp -- ../package_config.json "$OUTPUT_DIR/" 2>/dev/null || true
 fi
 
 # Step 6: Copy additional required files
