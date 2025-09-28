@@ -1,4 +1,4 @@
-name: Build Flatpak Offline Payload
+name: Build Flatpak Offline Artifacts
 
 permissions:
   contents: read
@@ -52,13 +52,13 @@ jobs:
           pip install pytest pyyaml
           python -m pytest manifest_tool/tests
 
-      - name: Prepare Flathub payload
+      - name: Prepare Flathub build artifacts
         env:
           CLEAN_AFTER_GEN: "false"  # Keep build artifacts for the verification step
         run: |
           ./flatpak/prepare_flathub_submission.sh
 
-      - name: Debug prepared payload contents
+      - name: Debug prepared artifacts contents
         run: |
           ls -R flatpak/flathub-build/output || true
 
@@ -78,4 +78,4 @@ jobs:
           flatpak --version
           flatpak list
 
-      # Removed artifact upload step; no useful binaries in payload
+      # Removed artifact upload step; no useful binaries in build output
