@@ -723,6 +723,43 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser_generate_helper.set_defaults(func=lambda ns: _run_generate_setup_helper(ns))
 
+    # Ensure sqlite3 CMake patch is present after bundling
+    parser_sqlite_patch = subparsers.add_parser(
+        "add-sqlite3-patch",
+        help=(
+            "Ensure sqlite3_flutter_libs CMake patch is present in sources. "
+            "Use after bundling when patch sources were dropped."
+        ),
+    )
+    parser_sqlite_patch.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_sqlite_patch.add_argument(
+        "--plugin-version",
+        required=True,
+        dest="plugin_version",
+        help="sqlite3_flutter_libs version (e.g., 0.5.39)",
+    )
+    parser_sqlite_patch.add_argument(
+        "--patch",
+        required=True,
+        dest="patch_path",
+        help=(
+            "Path to CMakeLists.txt patch relative to manifest dir "
+            "(e.g., sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch)"
+        ),
+    )
+    parser_sqlite_patch.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.add_sqlite3_patch(
+                    document, version=ns.plugin_version, patch_path=ns.patch_path
+                ),
+            )
+        )
+    )
+
     return parser
 
 

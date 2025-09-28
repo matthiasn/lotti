@@ -367,6 +367,16 @@ else
   FLATPAK_FLUTTER_STATUS=124
 fi
 
+# Normalize sqlite3 plugin patch to 3.50.4 (3500400) so CMake uses local tarball
+# flatpak-flutter may ship a patch for an earlier sqlite version (e.g., 3500100).
+# Update it here to match our pre-fetched archive and SHA.
+SQLITE_PATCH_CANDIDATE="$WORK_DIR/sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch"
+if [ -f "$SQLITE_PATCH_CANDIDATE" ]; then
+  print_info "Normalizing sqlite3 patch to 3.50.4 (3500400) with SHA verification"
+  sed -i -E 's/sqlite-autoconf-3500[0-9]{2}00/sqlite-autoconf-3500400/g' "$SQLITE_PATCH_CANDIDATE" || true
+  sed -i -E 's/SHA256=[0-9a-f]{64}/SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18/g' "$SQLITE_PATCH_CANDIDATE" || true
+fi
+
 # Pin commit in the working manifest before submission/copy
 APP_COMMIT=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
 print_status "Pinning working manifest to commit: $APP_COMMIT"
@@ -853,6 +863,30 @@ if [ -f "$OUT_MANIFEST" ]; then
     --archive "$LOTT_ARCHIVE_NAME" \
     --sha256 "$LOTT_ARCHIVE_SHA256" \
     --output-dir "$OUTPUT_DIR"
+
+  # Re-inject the sqlite3 CMake patch after bundling, because bundle_app_archive
+  # intentionally drops patch sources to avoid version skew. This patch adds
+  # URL_HASH and must match the pre-fetched 3500400 tarball so CMake accepts
+  # the local archive offline.
+  SQLITE_PATCH_OUT="$OUTPUT_DIR/sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch"
+  if [ -f "$SQLITE_PATCH_OUT" ]; then
+    # Discover sqlite3_flutter_libs version from pubspec.lock
+    SQLITE3_PLUGIN_VERSION=$(awk '
+      $1=="sqlite3_flutter_libs:" {f=1}
+      f && $1=="version:" {gsub("\"","",$2); print $2; exit}
+    ' "$WORK_DIR/pubspec.lock" 2>/dev/null || true)
+    if [ -z "$SQLITE3_PLUGIN_VERSION" ]; then
+      SQLITE3_PLUGIN_VERSION="0.5.39"
+      print_warning "Could not detect sqlite3_flutter_libs version; defaulting to ${SQLITE3_PLUGIN_VERSION}"
+    fi
+    python3 "$PYTHON_CLI" add-sqlite3-patch \
+      --manifest "$OUT_MANIFEST" \
+      --plugin-version "$SQLITE3_PLUGIN_VERSION" \
+      --patch "sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch"
+    print_info "Re-injected sqlite3 patch for sqlite3_flutter_libs-${SQLITE3_PLUGIN_VERSION}"
+  else
+    print_warning "sqlite3 patch not found in output; skipping add-sqlite3-patch"
+  fi
 fi
 
 # Final validation: ensure the manifest to be submitted is commit-pinned (no branch:, no COMMIT_PLACEHOLDER)

@@ -919,35 +919,81 @@ def _process_lotti_module(
     if helper.exists():
         extra_sources.append({"type": "file", "path": helper.name})
 
-    # Preserve any file sources that were added for plugins
-    # These are critical dependencies that plugins need during build
-    existing_file_sources = []
+    # Preserve existing sources required by plugins/tools
+    # - Keep ALL file sources (plugin blobs like mimalloc/sqlite archives)
+    # - Do NOT keep patch or git sources here to avoid version mismatches
+    #   (patches can be re-injected explicitly by the preparation script if needed)
+    existing_file_sources: list = []
     if "sources" in module:
         for src in module["sources"]:
             if isinstance(src, dict) and src.get("type") == "file":
-                # Keep ALL file sources - they're likely plugin dependencies
-                # that flatpak-flutter or our operations added
                 existing_file_sources.append(src)
 
     # Replace sources but preserve ALL file sources for plugin dependencies
-    module["sources"] = (
-        [
-            {
-                "type": "archive",
-                "path": archive_name,
-                "sha256": sha256,
-                "strip-components": 1,
-            }
-        ]
-        + extra_sources
-        + existing_file_sources
-    )
+    module["sources"] = [
+        {
+            "type": "archive",
+            "path": archive_name,
+            "sha256": sha256,
+            "strip-components": 1,
+        }
+    ]
+    # Attach generator outputs
+    module["sources"].extend(extra_sources)
+    # Preserve important existing sources for plugins/tools
+    module["sources"].extend(existing_file_sources)
+    # Intentionally drop patch/git/dir sources here; they can be added later by tooling
 
     # Add nested modules if they exist
     if extra_modules:
         module["modules"] = extra_modules
 
     return True
+
+
+def add_sqlite3_patch(
+    document: ManifestDocument, *, version: str, patch_path: str
+) -> OperationResult:
+    """Ensure sqlite3 plugin CMake patch is present for offline builds.
+
+    Args:
+        version: sqlite3_flutter_libs version string (e.g., "0.5.39")
+        patch_path: relative path to patch file staged in sources
+                    (e.g., "sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch")
+
+    Adds:
+      - type: patch
+        path: <patch_path>
+        dest: .pub-cache/hosted/pub.dev/sqlite3_flutter_libs-<version>
+    """
+    modules = document.ensure_modules()
+    target = None
+    for module in modules:
+        if isinstance(module, dict) and module.get("name") == "lotti":
+            target = module
+            break
+    if not target:
+        return OperationResult.unchanged()
+
+    sources = target.setdefault("sources", [])
+    dest_dir = f".pub-cache/hosted/pub.dev/sqlite3_flutter_libs-{version}"
+
+    # Already present?
+    for src in sources:
+        if (
+            isinstance(src, dict)
+            and src.get("type") == "patch"
+            and src.get("path") == patch_path
+            and src.get("dest") == dest_dir
+        ):
+            return OperationResult.unchanged()
+
+    sources.append({"type": "patch", "path": patch_path, "dest": dest_dir})
+    document.mark_changed()
+    _LOGGER.debug("Ensured sqlite3 patch %s targeting %s present", patch_path, dest_dir)
+    return OperationResult.changed_result(
+        f"Added sqlite3 patch {patch_path} for {dest_dir}"
+    )
 
 
 def bundle_app_archive(
