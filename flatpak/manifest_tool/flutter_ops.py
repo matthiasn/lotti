@@ -180,7 +180,10 @@ def ensure_flutter_pub_get_offline(document: ManifestDocument) -> OperationResul
     """Ensure flutter pub get commands use --offline flag for Flathub compliance.
 
     Flathub builds have no network access, so pub get must run in offline mode.
-    This function adds the --offline flag to any flutter pub get commands.
+    This function adds the --offline flag to flutter pub get commands.
+
+    Note: flutter build does not support --offline flag. The internal dart pub get
+    calls made by flutter build will need to be handled differently.
     """
     modules = document.ensure_modules()
     changed = False
@@ -194,12 +197,11 @@ def ensure_flutter_pub_get_offline(document: ManifestDocument) -> OperationResul
         module_name = module.get("name", "unnamed")
 
         for i, cmd in enumerate(build_commands):
-            if (
-                isinstance(cmd, str)
-                and "flutter pub get" in cmd
-                and "--offline" not in cmd
-            ):
-                # Add --offline flag to the command
+            if not isinstance(cmd, str):
+                continue
+
+            # Handle flutter pub get commands (only pub get supports --offline)
+            if "flutter pub get" in cmd and "--offline" not in cmd:
                 build_commands[i] = cmd.replace(
                     "flutter pub get", "flutter pub get --offline"
                 )
@@ -211,6 +213,45 @@ def ensure_flutter_pub_get_offline(document: ManifestDocument) -> OperationResul
     if changed:
         document.mark_changed()
         message = "Ensured flutter pub get uses --offline mode"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
+    return OperationResult.unchanged()
+
+
+def skip_pub_get_on_build(document: ManifestDocument) -> OperationResult:
+    """Skip pub get during flutter build by setting FLUTTER_ALREADY_LOCKED=true.
+
+    This environment variable tells Flutter that dependencies are already resolved
+    and it should skip the internal dart pub get --example call during build.
+    This is critical for offline builds where network access is not available.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+
+        # Only add to lotti module (the app being built)
+        if module.get("name") != "lotti":
+            continue
+
+        build_options = module.setdefault("build-options", {})
+        env = build_options.setdefault("env", {})
+
+        # Add FLUTTER_ALREADY_LOCKED=true to skip pub get during build
+        if env.get("FLUTTER_ALREADY_LOCKED") != "true":
+            env["FLUTTER_ALREADY_LOCKED"] = "true"
+            messages.append(
+                "Added FLUTTER_ALREADY_LOCKED=true to skip pub get during build"
+            )
+            changed = True
+
+    if changed:
+        document.mark_changed()
+        message = "Configured environment to skip pub get during flutter build"
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 

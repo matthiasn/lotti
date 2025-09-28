@@ -608,6 +608,11 @@ if [ -f "$OUT_MANIFEST" ]; then
   python3 "$PYTHON_CLI" ensure-flutter-pub-get-offline \
     --manifest "$OUT_MANIFEST"
 
+  # Skip pub get during flutter build to prevent network access attempts
+  # This sets FLUTTER_ALREADY_LOCKED=true to skip internal dart pub get --example calls
+  python3 "$PYTHON_CLI" skip-pub-get-on-build \
+    --manifest "$OUT_MANIFEST"
+
   # Prefer Rust SDK extension over rustup installer
   python3 "$PYTHON_CLI" ensure-rust-sdk-env \
     --manifest "$OUT_MANIFEST"

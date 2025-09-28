@@ -113,6 +113,7 @@ The script will:
      - Bundle all archive/file sources locally
      - Create app source archive (`lotti-<commit>.tar.xz`)
      - **Removes --share=network from build-args** (prohibited by Flathub policy)
+     - **Adds --offline flag to flutter pub get** (ensures offline dependency resolution)
    - Process the metainfo.xml with version substitution
    - Output all files to `flatpak/flathub-build/output/`
 

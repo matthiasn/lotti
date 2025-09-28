@@ -471,6 +471,22 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    parser_skip_pub = subparsers.add_parser(
+        "skip-pub-get-on-build",
+        help="Skip pub get during flutter build by setting FLUTTER_ALREADY_LOCKED.",
+    )
+    parser_skip_pub.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_skip_pub.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.skip_pub_get_on_build(document),
+            )
+        )
+    )
+
     parser_rust_env = subparsers.add_parser(
         "ensure-rust-sdk-env",
         help="Ensure Rust SDK extension bin is on PATH for lotti.",
