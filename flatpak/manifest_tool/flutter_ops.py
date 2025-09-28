@@ -220,13 +220,11 @@ def ensure_flutter_pub_get_offline(document: ManifestDocument) -> OperationResul
 
 
 def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationResult:
-    """Prevent flutter build from running internal dart pub get.
+    """Add --no-pub flag to flutter build to skip internal dart pub get.
 
     Flutter build internally calls 'dart pub get --example' which tries to
-    access the network. We prevent this by:
-    1. Setting PUB_HOSTED_URL to a non-existent URL to fail fast
-    2. Setting FLUTTER_STORAGE_BASE_URL to prevent SDK downloads
-    3. These combined force Flutter to use only cached packages
+    access the network. The --no-pub flag skips this automatic pub get,
+    since dependencies were already resolved by our explicit flutter pub get --offline.
     """
     modules = document.ensure_modules()
     changed = False
@@ -246,24 +244,20 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
             if not isinstance(cmd, str):
                 continue
 
-            # Find flutter build linux commands
-            if "flutter build linux" in cmd and "PUB_HOSTED_URL" not in cmd:
-                # Wrap with environment variables to force offline mode
-                # Using file:// URL causes immediate failure instead of hanging
-                wrapped_cmd = (
-                    "PUB_HOSTED_URL='file:///dev/null' "
-                    "FLUTTER_STORAGE_BASE_URL='file:///dev/null' "
-                    f"{cmd}"
+            # Find flutter build linux commands without --no-pub flag
+            if "flutter build linux" in cmd and "--no-pub" not in cmd:
+                # Add --no-pub flag to skip automatic pub get
+                build_commands[i] = cmd.replace(
+                    "flutter build linux", "flutter build linux --no-pub"
                 )
-                build_commands[i] = wrapped_cmd
                 messages.append(
-                    "Wrapped flutter build to prevent network access attempts"
+                    "Added --no-pub flag to skip automatic pub get during build"
                 )
                 changed = True
 
     if changed:
         document.mark_changed()
-        message = "Configured flutter build to run fully offline"
+        message = "Configured flutter build to skip automatic pub get"
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 
