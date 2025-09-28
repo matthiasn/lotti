@@ -219,12 +219,12 @@ def ensure_flutter_pub_get_offline(document: ManifestDocument) -> OperationResul
     return OperationResult.unchanged()
 
 
-def skip_pub_get_on_build(document: ManifestDocument) -> OperationResult:
-    """Skip pub get during flutter build by setting FLUTTER_ALREADY_LOCKED=true.
+def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationResult:
+    """Wrap flutter build command to skip internal dart pub get calls.
 
-    This environment variable tells Flutter that dependencies are already resolved
-    and it should skip the internal dart pub get --example call during build.
-    This is critical for offline builds where network access is not available.
+    Since flutter build doesn't support --offline, we need to prevent its
+    internal dart pub get --example call from accessing the network.
+    This is done by temporarily setting PUB_HOSTED_URL to force offline mode.
     """
     modules = document.ensure_modules()
     changed = False
@@ -234,24 +234,31 @@ def skip_pub_get_on_build(document: ManifestDocument) -> OperationResult:
         if not isinstance(module, dict):
             continue
 
-        # Only add to lotti module (the app being built)
+        # Only modify the lotti module
         if module.get("name") != "lotti":
             continue
 
-        build_options = module.setdefault("build-options", {})
-        env = build_options.setdefault("env", {})
+        build_commands = module.get("build-commands", [])
+        module_name = module.get("name", "unnamed")
 
-        # Add FLUTTER_ALREADY_LOCKED=true to skip pub get during build
-        if env.get("FLUTTER_ALREADY_LOCKED") != "true":
-            env["FLUTTER_ALREADY_LOCKED"] = "true"
-            messages.append(
-                "Added FLUTTER_ALREADY_LOCKED=true to skip pub get during build"
-            )
-            changed = True
+        for i, cmd in enumerate(build_commands):
+            if not isinstance(cmd, str):
+                continue
+
+            # Find flutter build linux commands
+            if "flutter build linux" in cmd and "PUB_HOSTED_URL" not in cmd:
+                # Wrap the command to disable network access during build
+                # Setting PUB_HOSTED_URL to empty effectively disables pub.dev access
+                wrapped_cmd = f"PUB_HOSTED_URL='' {cmd}"
+                build_commands[i] = wrapped_cmd
+                messages.append(
+                    f"Wrapped flutter build command to disable pub network access"
+                )
+                changed = True
 
     if changed:
         document.mark_changed()
-        message = "Configured environment to skip pub get during flutter build"
+        message = "Ensured dart pub runs offline during flutter build"
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 

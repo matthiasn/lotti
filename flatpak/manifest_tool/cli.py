@@ -471,18 +471,20 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
-    parser_skip_pub = subparsers.add_parser(
-        "skip-pub-get-on-build",
-        help="Skip pub get during flutter build by setting FLUTTER_ALREADY_LOCKED.",
+    parser_dart_offline = subparsers.add_parser(
+        "ensure-dart-pub-offline-in-build",
+        help="Wrap flutter build to disable pub network access.",
     )
-    parser_skip_pub.add_argument(
+    parser_dart_offline.add_argument(
         "--manifest", required=True, help="Manifest file path."
     )
-    parser_skip_pub.set_defaults(
+    parser_dart_offline.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.skip_pub_get_on_build(document),
+                executor=lambda document: flutter_ops.ensure_dart_pub_offline_in_build(
+                    document
+                ),
             )
         )
     )
