@@ -706,13 +706,14 @@ def test_add_mimalloc_source(make_document):
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
-    # Start with no sources
+    # Start with no sources and set up build commands
     lotti["sources"] = []
+    lotti["build-commands"] = ["echo 'Starting build'", "flutter build linux --release"]
 
     result = flutter_ops.add_mimalloc_source(document)
 
     assert result.changed
-    assert "mimalloc archive for media_kit" in str(result.messages)
+    assert "mimalloc" in str(result.messages).lower()
 
     # Check the mimalloc source was added
     sources = lotti["sources"]
@@ -727,6 +728,14 @@ def test_add_mimalloc_source(make_document):
     )
     assert mimalloc["dest-filename"] == "mimalloc-2.1.2.tar.gz"
 
+    # Check that placement command was added
+    commands = lotti["build-commands"]
+    assert any(
+        "mimalloc-2.1.2.tar.gz" in cmd and "build/linux" in cmd
+        for cmd in commands
+        if isinstance(cmd, str)
+    )
+
     # Run again - should not add duplicate
     result2 = flutter_ops.add_mimalloc_source(document)
     assert not result2.changed
@@ -738,11 +747,12 @@ def test_add_mimalloc_source_preserves_existing(make_document):
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
-    # Start with existing sources
+    # Start with existing sources and build commands
     lotti["sources"] = [
         {"type": "git", "url": "https://github.com/test/test.git"},
         {"type": "file", "path": "some-file.txt"},
     ]
+    lotti["build-commands"] = ["flutter build linux --release"]
 
     result = flutter_ops.add_mimalloc_source(document)
 

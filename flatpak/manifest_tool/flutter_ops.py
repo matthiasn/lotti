@@ -265,10 +265,10 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
 
 
 def add_mimalloc_source(document: ManifestDocument) -> OperationResult:
-    """Add mimalloc source for media_kit_libs_linux plugin.
+    """Add build commands to pre-place mimalloc for media_kit_libs_linux plugin.
 
-    The media_kit plugin tries to download mimalloc during build.
-    We need to pre-download it and make it available offline.
+    The media_kit plugin's CMake tries to download mimalloc during configure.
+    We add the file as a source and a command to place it where CMake expects it.
     """
     modules = document.ensure_modules()
     changed = False
@@ -283,18 +283,16 @@ def add_mimalloc_source(document: ManifestDocument) -> OperationResult:
             continue
 
         sources = module.setdefault("sources", [])
+        build_commands = module.get("build-commands", [])
 
-        # Check if mimalloc is already added
-        has_mimalloc = any(
-            isinstance(s, dict)
-            and s.get("url")
-            == "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz"
+        # Check if mimalloc source is already added
+        has_mimalloc_source = any(
+            isinstance(s, dict) and s.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
             for s in sources
         )
 
-        if not has_mimalloc:
-            # Add mimalloc source as a file (not archive) so it's placed as-is
-            # The CMake script expects the tar.gz file, not extracted content
+        if not has_mimalloc_source:
+            # Add mimalloc as a source file
             mimalloc_source = {
                 "type": "file",
                 "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
@@ -302,12 +300,39 @@ def add_mimalloc_source(document: ManifestDocument) -> OperationResult:
                 "dest-filename": "mimalloc-2.1.2.tar.gz",
             }
             sources.append(mimalloc_source)
-            messages.append("Added mimalloc archive for media_kit_libs_linux plugin")
+            messages.append("Added mimalloc source file")
             changed = True
+
+        # Check if we have the command to place mimalloc where CMake expects it
+        has_mimalloc_cmd = any(
+            isinstance(cmd, str)
+            and "mimalloc-2.1.2.tar.gz" in cmd
+            and "build/linux" in cmd
+            for cmd in build_commands
+        )
+
+        if not has_mimalloc_cmd:
+            # Find position before flutter build
+            insert_idx = None
+            for i, cmd in enumerate(build_commands):
+                if isinstance(cmd, str) and "flutter build linux" in cmd:
+                    insert_idx = i
+                    break
+
+            if insert_idx is not None:
+                # Add command to place mimalloc where CMake expects it
+                place_cmd = (
+                    "# Place mimalloc where media_kit CMake expects it\n"
+                    "mkdir -p build/linux/x64/release && "
+                    "cp mimalloc-2.1.2.tar.gz build/linux/x64/release/"
+                )
+                build_commands.insert(insert_idx, place_cmd)
+                messages.append("Added command to place mimalloc in build directory")
+                changed = True
 
     if changed:
         document.mark_changed()
-        message = "Added required external sources for plugins"
+        message = "Configured mimalloc for media_kit_libs_linux plugin"
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 
