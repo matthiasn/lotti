@@ -461,39 +461,67 @@ if [ ! -f "$OUTPUT_DIR/cargo-sources.json" ]; then
   fi
 fi
 
-if [ ! -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
-  print_warning "No pubspec-sources.json; generating from pubspec.lock files..."
-  APP_LOCK="$WORK_DIR/pubspec.lock"
-  TOOLS_LOCK=""
-  if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
-    TOOLS_LOCK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/pubspec.lock' -print -quit 2>/dev/null || true)"
-  fi
+APP_LOCK="$WORK_DIR/pubspec.lock"
+TOOLS_LOCK=""
+if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
+  TOOLS_LOCK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/pubspec.lock' -print -quit 2>/dev/null || true)"
+fi
 
-  if [ -z "$TOOLS_LOCK" ]; then
-    print_warning "Could not locate flutter_tools pubspec.lock within .flatpak-builder cache"
-  fi
+if [ -z "$TOOLS_LOCK" ]; then
+  print_warning "Could not locate flutter_tools pubspec.lock within .flatpak-builder cache"
+fi
 
-  if [ -f "$APP_LOCK" ] && [ -n "$TOOLS_LOCK" ] && [ -f "$TOOLS_LOCK" ]; then
-    python3 "$FLATPAK_DIR/flatpak-flutter/pubspec_generator/pubspec_generator.py" \
-      "$APP_LOCK,$TOOLS_LOCK" -o "$OUTPUT_DIR/pubspec-sources.json" || print_error "Failed to generate pubspec-sources.json"
-    # Also stage the current package_config.json if available to speed offline bootstrap
-    TOOLS_DIR="$(dirname "$TOOLS_LOCK")"
-    PKG_CFG="$TOOLS_DIR/.dart_tool/package_config.json"
-    if [ -f "$PKG_CFG" ]; then
-      cp -- "$PKG_CFG" "$OUTPUT_DIR/package_config.json" || true
-    else
-      PKG_CFG_FALLBACK=""
-      if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
-        PKG_CFG_FALLBACK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/.dart_tool/package_config.json' -print -quit 2>/dev/null || true)"
-      fi
-      if [ -n "$PKG_CFG_FALLBACK" ] && [ -f "$PKG_CFG_FALLBACK" ]; then
-        cp -- "$PKG_CFG_FALLBACK" "$OUTPUT_DIR/package_config.json" || true
-      else
-        print_warning "Could not locate flutter_tools package_config.json for offline cache"
-      fi
-    fi
+CARGOKIT_LOCKS=""
+if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
+  CARGOKIT_LOCKS=$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 7 -path '*/cargokit/build_tool/pubspec.lock' -print 2>/dev/null | sort || true)
+fi
+
+LOCK_INPUTS=""
+if [ -f "$APP_LOCK" ]; then
+  LOCK_INPUTS="$APP_LOCK"
+  if [ -n "$TOOLS_LOCK" ] && [ -f "$TOOLS_LOCK" ]; then
+    LOCK_INPUTS="$LOCK_INPUTS,$TOOLS_LOCK"
+  fi
+  if [ -n "$CARGOKIT_LOCKS" ]; then
+    CARGOKIT_LIST=$(echo "$CARGOKIT_LOCKS" | paste -sd, -)
+    LOCK_INPUTS="$LOCK_INPUTS,$CARGOKIT_LIST"
+  fi
+fi
+
+if [ -n "$LOCK_INPUTS" ]; then
+  print_info "Generating pubspec-sources.json from lockfiles"
+  if [ -n "$CARGOKIT_LOCKS" ]; then
+    LOCK_COUNT=$(echo "$CARGOKIT_LOCKS" | grep -c . || true)
+    print_info "Including ${LOCK_COUNT} cargokit lockfile(s)"
+  fi
+  if python3 "$FLATPAK_DIR/flatpak-flutter/pubspec_generator/pubspec_generator.py" \
+    "$LOCK_INPUTS" -o "$WORK_DIR/pubspec-sources.generated.json"; then
+    mv "$WORK_DIR/pubspec-sources.generated.json" "$OUTPUT_DIR/pubspec-sources.json"
+    cp -- "$OUTPUT_DIR/pubspec-sources.json" "$WORK_DIR/../pubspec-sources.json" 2>/dev/null || true
+    print_status "Regenerated pubspec-sources.json with build tool dependencies"
   else
-    print_warning "Missing pubspec.lock paths; cannot generate pubspec-sources.json"
+    print_error "Failed to regenerate pubspec-sources.json"
+  fi
+else
+  print_warning "Missing pubspec.lock inputs; cannot regenerate pubspec-sources.json"
+fi
+
+# Also stage the current package_config.json if available to speed offline bootstrap
+if [ -n "$TOOLS_LOCK" ] && [ -f "$TOOLS_LOCK" ]; then
+  TOOLS_DIR="$(dirname "$TOOLS_LOCK")"
+  PKG_CFG="$TOOLS_DIR/.dart_tool/package_config.json"
+  if [ -f "$PKG_CFG" ]; then
+    cp -- "$PKG_CFG" "$OUTPUT_DIR/package_config.json" || true
+  else
+    PKG_CFG_FALLBACK=""
+    if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
+      PKG_CFG_FALLBACK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/.dart_tool/package_config.json' -print -quit 2>/dev/null || true)"
+    fi
+    if [ -n "$PKG_CFG_FALLBACK" ] && [ -f "$PKG_CFG_FALLBACK" ]; then
+      cp -- "$PKG_CFG_FALLBACK" "$OUTPUT_DIR/package_config.json" || true
+    else
+      print_warning "Could not locate flutter_tools package_config.json for offline cache"
+    fi
   fi
 fi
 
