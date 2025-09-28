@@ -924,7 +924,7 @@ def test_add_sqlite3_source(make_document):
     # Check x86_64 source
     x64_source = next(s for s in sources if "x86_64" in s.get("only-arches", []))
     assert x64_source["type"] == "file"
-    assert x64_source["path"] == "sqlite-autoconf-3500400.tar.gz"
+    assert "sqlite-autoconf-3500400.tar.gz" in x64_source["url"]
     assert (
         x64_source["sha256"]
         == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
@@ -937,7 +937,7 @@ def test_add_sqlite3_source(make_document):
     # Check aarch64 source
     arm64_source = next(s for s in sources if "aarch64" in s.get("only-arches", []))
     assert arm64_source["type"] == "file"
-    assert arm64_source["path"] == "sqlite-autoconf-3500400.tar.gz"
+    assert "sqlite-autoconf-3500400.tar.gz" in arm64_source["url"]
     assert (
         arm64_source["sha256"]
         == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"

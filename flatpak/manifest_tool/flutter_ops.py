@@ -306,14 +306,14 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
             isinstance(src, dict)
             and src.get("dest")
             == "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
-            and "3500400" in str(src.get("path", ""))
+            and "3500400" in str(src.get("url", ""))
             for src in sources
         )
         has_arm64_sqlite = any(
             isinstance(src, dict)
             and src.get("dest")
             == "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
-            and "3500400" in str(src.get("path", ""))
+            and "3500400" in str(src.get("url", ""))
             for src in sources
         )
 
@@ -322,9 +322,9 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
             sqlite_x64 = {
                 "type": "file",
                 "only-arches": ["x86_64"],
+                "url": "https://www.sqlite.org/2025/sqlite-autoconf-3500400.tar.gz",
                 "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
                 "dest": "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
-                "path": "sqlite-autoconf-3500400.tar.gz",
             }
             sources.append(sqlite_x64)
             messages.append("Added SQLite 3.50.4 source for x86_64")
@@ -334,9 +334,9 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
             sqlite_arm64 = {
                 "type": "file",
                 "only-arches": ["aarch64"],
+                "url": "https://www.sqlite.org/2025/sqlite-autoconf-3500400.tar.gz",
                 "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
                 "dest": "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
-                "path": "sqlite-autoconf-3500400.tar.gz",
             }
             sources.append(sqlite_arm64)
             messages.append("Added SQLite 3.50.4 source for aarch64")
