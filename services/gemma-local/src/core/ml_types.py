@@ -111,7 +111,4 @@ SampleRate: TypeAlias = int
 AudioDuration: TypeAlias = float
 
 # Processing results
-AudioProcessingResult: TypeAlias = Union[
-    tuple[AudioData, str],
-    tuple[AudioChunks, str]
-]
+AudioProcessingResult: TypeAlias = Union[tuple[AudioData, str], tuple[AudioChunks, str]]

@@ -3,7 +3,7 @@
 import time
 import uuid
 import logging
-from typing import Optional, List, Any
+from typing import Any, List
 
 from ..core.interfaces import ITranscriptionService, IModelManager, IAudioProcessor, IModelValidator
 from ..core.models import AudioRequest, TranscriptionResult
@@ -16,7 +16,12 @@ logger = logging.getLogger(__name__)
 class TranscriptionService(ITranscriptionService):
     """Handles audio transcription using the loaded model"""
 
-    def __init__(self, model_manager: IModelManager, audio_processor: IAudioProcessor, model_validator: IModelValidator):
+    def __init__(
+        self,
+        model_manager: IModelManager,
+        audio_processor: IAudioProcessor,
+        model_validator: IModelValidator,
+    ):
         self.model_manager = model_manager
         self.audio_processor = audio_processor
         self.model_validator = model_validator
@@ -43,7 +48,10 @@ class TranscriptionService(ITranscriptionService):
             t_audio0 = time.perf_counter()
             try:
                 result = await self.audio_processor.process_audio_base64(
-                    request.audio_data, request.context_prompt, use_chunking=True, request_id=request_id
+                    request.audio_data,
+                    request.context_prompt,
+                    use_chunking=True,
+                    request_id=request_id,
                 )
                 t_audio1 = time.perf_counter()
             except Exception as e:
@@ -87,7 +95,8 @@ class TranscriptionService(ITranscriptionService):
             gen_time = t_gen1 - t_gen0
 
             logger.info(
-                f"[REQ {request_id}] Done. AudioProc={audio_time:.2f}s, " f"Gen={gen_time:.2f}s, Total={total_time:.2f}s"
+                f"[REQ {request_id}] Done. AudioProc={audio_time:.2f}s, "
+                f"Gen={gen_time:.2f}s, Total={total_time:.2f}s"
             )
 
             # Calculate audio duration
@@ -114,7 +123,7 @@ class TranscriptionService(ITranscriptionService):
                 raise
             raise TranscriptionError(f"Transcription failed: {e}") from e
 
-    async def _generate_single_transcription(self, messages: list, audio_array: Any, request_id: str) -> str:
+    async def _generate_single_transcription(self, messages: List[Any], audio_array: Any, request_id: str) -> str:
         """Generate transcription for a single audio chunk"""
         # This would call the actual model inference
         # For now, we'll import and use the existing function
@@ -122,15 +131,23 @@ class TranscriptionService(ITranscriptionService):
         from ..legacy.transcription_engine import generate_transcription_with_chat_context
 
         return await generate_transcription_with_chat_context(
-            messages=messages, audio_array=audio_array, request_id=request_id, model_manager=self.model_manager
+            messages=messages,
+            audio_array=audio_array,
+            request_id=request_id,
+            model_manager=self.model_manager,
         )
 
-    async def _generate_chunked_transcription(self, audio_chunks: list, initial_messages: list, request_id: str) -> str:
+    async def _generate_chunked_transcription(
+        self, audio_chunks: List[Any], initial_messages: List[Any], request_id: str
+    ) -> str:
         """Generate transcription for multiple audio chunks"""
         # This would call the actual chunked processing
         # For now, we'll import and use the existing function
         from ..legacy.transcription_engine import process_audio_chunks_with_continuation
 
         return await process_audio_chunks_with_continuation(
-            chunks=audio_chunks, initial_messages=initial_messages, request_id=request_id, model_manager=self.model_manager
+            chunks=audio_chunks,
+            initial_messages=initial_messages,
+            request_id=request_id,
+            model_manager=self.model_manager,
         )

@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, Tuple
 
 # Add parent directory to path to import legacy modules
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -23,8 +23,11 @@ class AudioProcessorAdapter(IAudioProcessor):
         context_prompt: Optional[str] = None,
         use_chunking: bool = False,
         request_id: Optional[str] = None,
-    ) -> tuple[Any, ...]:
+    ) -> Tuple[Any, ...]:
         """Process base64 audio data"""
         return await self.legacy_processor.process_audio_base64(
-            audio_base64=audio_base64, prompt=context_prompt, use_chunking=use_chunking, request_id=request_id
+            audio_base64=audio_base64,
+            prompt=context_prompt,
+            use_chunking=use_chunking,
+            request_id=request_id,
         )

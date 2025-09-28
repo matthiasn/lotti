@@ -2,9 +2,12 @@
 
 import sys
 from pathlib import Path
+from typing import Any
 
 
-async def generate_text(prompt: str, temperature: float, max_tokens: int, top_p: float, model_manager=None) -> str:
+async def generate_text(
+    prompt: str, temperature: float, max_tokens: int, top_p: float, model_manager: Any = None
+) -> str:
     """Generate text completion"""
     # Import the actual function from main.py
     sys.path.append(str(Path(__file__).parent.parent.parent))

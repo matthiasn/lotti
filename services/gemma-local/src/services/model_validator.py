@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Optional, List
+from typing import List
 
 from ..core.interfaces import IModelValidator, IConfigManager, IModelManager
 from ..core.exceptions import ModelNotFoundError, ValidationError
@@ -32,7 +32,8 @@ class ModelValidator(IModelValidator):
         if not self.validate_model_request(requested_model):
             logger.warning(f"Requested model '{requested_model}' not found on disk")
             raise ModelNotFoundError(
-                requested_model, f"Model '{requested_model}' not downloaded. Use /v1/models/pull to download."
+                requested_model,
+                f"Model '{requested_model}' not downloaded. Use /v1/models/pull to download.",
             )
 
         # Check if we need to switch model configuration

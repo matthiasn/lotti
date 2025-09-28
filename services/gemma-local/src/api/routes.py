@@ -5,7 +5,7 @@ from typing import Dict, Any, Union
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
-from ..core.models import ChatRequest, DownloadProgress
+from ..core.models import ChatRequest
 from ..core.exceptions import ModelNotFoundError, TranscriptionError
 from ..core.constants import STATUS_HEALTHY, STATUS_SUCCESS, STATUS_ERROR
 from ..container import container
@@ -40,9 +40,10 @@ async def chat_completion(request: ChatRequest) -> Union[Dict[str, Any], Streami
 
         if request.stream:
             # Streaming response
-            async def stream_response():
+            async def stream_response() -> Any:
                 async for chunk in chat_service.complete_chat_stream(request):
                     yield f"data: {chunk}\n\n"
+
             return StreamingResponse(stream_response(), media_type="text/event-stream")
         else:
             # Non-streaming response
@@ -63,11 +64,10 @@ async def chat_completion(request: ChatRequest) -> Union[Dict[str, Any], Streami
 async def pull_model(request: Dict[str, Any]) -> Union[StreamingResponse, Dict[str, Any]]:
     """Download and prepare model with progress streaming"""
 
-    async def generate():
+    async def generate() -> Any:
         """Generator that yields SSE-formatted download progress"""
         try:
             model_downloader = container.get_model_downloader()
-            config_manager = container.get_config_manager()
             model_manager = container.get_model_manager()
 
             model_name = request.get("model_name", "")
@@ -142,7 +142,12 @@ async def list_models() -> Dict[str, Any]:
                 "object": "model",
                 "created": 1234567890,  # Placeholder timestamp
                 "owned_by": "local",
-                "capabilities": {"chat": True, "audio": True, "transcription": True, "streaming": True},
+                "capabilities": {
+                    "chat": True,
+                    "audio": True,
+                    "transcription": True,
+                    "streaming": True,
+                },
             }
         )
 
@@ -159,7 +164,12 @@ async def list_models() -> Dict[str, Any]:
                         "object": "model",
                         "created": 1234567890,
                         "owned_by": "local",
-                        "capabilities": {"chat": True, "audio": True, "transcription": True, "streaming": True},
+                        "capabilities": {
+                            "chat": True,
+                            "audio": True,
+                            "transcription": True,
+                            "streaming": True,
+                        },
                     }
                 )
     except Exception as e:
@@ -183,7 +193,10 @@ async def load_model() -> Dict[str, Any]:
             }
 
         if not model_manager.is_model_available():
-            raise HTTPException(status_code=404, detail="Model not downloaded. Use /v1/models/pull to download first.")
+            raise HTTPException(
+                status_code=404,
+                detail="Model not downloaded. Use /v1/models/pull to download first.",
+            )
 
         # Load model
         success = await model_manager.load_model()
@@ -191,7 +204,11 @@ async def load_model() -> Dict[str, Any]:
             raise HTTPException(status_code=500, detail="Failed to load model")
 
         model_info = model_manager.get_model_info()
-        return {"status": "loaded", "message": f"Model {model_info.id} loaded successfully", "device": model_info.device}
+        return {
+            "status": "loaded",
+            "message": f"Model {model_info.id} loaded successfully",
+            "device": model_info.device,
+        }
 
     except HTTPException:
         raise

@@ -15,7 +15,6 @@ from pathlib import Path
 
 try:
     from huggingface_hub import snapshot_download
-    from tqdm import tqdm
 except ImportError:
     print("Error: Required packages not installed.")
     print("Please run: pip install huggingface_hub tqdm")
@@ -32,17 +31,17 @@ def download_model(variant="E2B", token=None, revision=None):
     """
 
     # Construct model ID
-    model_id = f'google/gemma-3n-{variant}-it'
+    model_id = f"google/gemma-3n-{variant}-it"
 
     # Use provided revision or environment variable or default to 'main' for security
     if not revision:
-        model_key = model_id.replace('/', '_').replace('-', '_').upper()
-        env_key = f'{model_key}_REVISION'
-        revision = os.environ.get(env_key) or os.environ.get('GEMMA_MODEL_REVISION', 'main')
+        model_key = model_id.replace("/", "_").replace("-", "_").upper()
+        env_key = f"{model_key}_REVISION"
+        revision = os.environ.get(env_key) or os.environ.get("GEMMA_MODEL_REVISION", "main")
 
     # Setup paths (matching the server's expected location)
-    cache_dir = os.path.expanduser('~/.cache/gemma-local/models')
-    local_dir = os.path.join(cache_dir, model_id.replace('/', '--'))
+    cache_dir = os.path.expanduser("~/.cache/gemma-local/models")
+    local_dir = os.path.join(cache_dir, model_id.replace("/", "--"))
 
     print(f"\n📦 Downloading {model_id}...")
     print(f"📂 Destination: {local_dir}")
@@ -88,7 +87,7 @@ def download_model(variant="E2B", token=None, revision=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Download Gemma 3n models for local inference',
+        description="Download Gemma 3n models for local inference",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -96,27 +95,23 @@ Examples:
   python download_model.py E4B          # Download E4B (larger, better quality)
   python download_model.py both         # Download both variants
   python download_model.py --token xyz  # Use HuggingFace token if needed
-        """
+        """,
     )
 
     parser.add_argument(
-        'variant',
-        nargs='?',
-        default='E2B',
-        choices=['E2B', 'E4B', 'both'],
-        help='Model variant to download (default: E2B)'
+        "variant",
+        nargs="?",
+        default="E2B",
+        choices=["E2B", "E4B", "both"],
+        help="Model variant to download (default: E2B)",
     )
 
-    parser.add_argument(
-        '--token',
-        help='HuggingFace API token (if required for model access)',
-        default=None
-    )
+    parser.add_argument("--token", help="HuggingFace API token (if required for model access)", default=None)
 
     parser.add_argument(
-        '--revision',
-        help='Specific model revision/commit hash for security (default: main)',
-        default=None
+        "--revision",
+        help="Specific model revision/commit hash for security (default: main)",
+        default=None,
     )
 
     args = parser.parse_args()
@@ -126,8 +121,8 @@ Examples:
 
     # Determine which models to download
     variants_to_download = []
-    if args.variant.lower() == 'both':
-        variants_to_download = ['E2B', 'E4B']
+    if args.variant.lower() == "both":
+        variants_to_download = ["E2B", "E4B"]
     else:
         variants_to_download = [args.variant.upper()]
 

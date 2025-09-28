@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import AsyncIterator
 from huggingface_hub import snapshot_download
 
 from ..core.interfaces import IModelDownloader, IConfigManager
@@ -20,14 +20,18 @@ class ModelDownloader(IModelDownloader):
     def __init__(self, config_manager: IConfigManager):
         self.config_manager = config_manager
 
-    async def download_model(self, model_name: str, stream: bool = True) -> AsyncGenerator[DownloadProgress, None]:
+    async def download_model(self, model_name: str, stream: bool = True) -> AsyncIterator[DownloadProgress]:
         """Download model with progress tracking"""
         try:
             # Normalize model name and determine variant
             requested_model = model_name.replace("google/", "")
             model_id, variant = self._determine_model_details(requested_model)
 
-            yield DownloadProgress(status=ModelStatus.CHECKING, message="Checking if model exists locally...", progress=0.0)
+            yield DownloadProgress(
+                status=ModelStatus.CHECKING,
+                message="Checking if model exists locally...",
+                progress=0.0,
+            )
 
             # Check if already downloaded
             if self.is_model_downloaded(model_name):
@@ -74,14 +78,21 @@ class ModelDownloader(IModelDownloader):
             self.config_manager.set_model_variant(variant)
 
             yield DownloadProgress(
-                status=ModelStatus.COMPLETE, message=f"Model downloaded successfully to {download_path}", progress=100.0
+                status=ModelStatus.COMPLETE,
+                message=f"Model downloaded successfully to {download_path}",
+                progress=100.0,
             )
 
             logger.info(f"Configuration updated to use {model_id}")
 
         except Exception as e:
             logger.error(f"Model download failed: {e}", exc_info=True)
-            yield DownloadProgress(status=ModelStatus.ERROR, message="Download failed", progress=0.0, error="Download failed")
+            yield DownloadProgress(
+                status=ModelStatus.ERROR,
+                message="Download failed",
+                progress=0.0,
+                error="Download failed",
+            )
             raise ModelDownloadError(model_name, "Download failed")
 
     def is_model_downloaded(self, model_name: str) -> bool:

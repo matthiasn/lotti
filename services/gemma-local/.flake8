@@ -1,0 +1,35 @@
+[flake8]
+# Black-compatible configuration
+max-line-length = 120
+extend-ignore =
+    E203,
+    W503,
+    E402,
+    B104,
+    B105
+
+# Exclude directories
+exclude =
+    .git,
+    __pycache__,
+    .pytest_cache,
+    venv,
+    .venv,
+    build,
+    dist,
+    *.egg-info,
+    .mypy_cache,
+    .coverage,
+    htmlcov
+
+# File patterns to check
+filename = *.py
+
+# Complexity threshold
+max-complexity = 15
+
+# Import order (compatible with isort if added later)
+import-order-style = google
+
+# Security scanning with bandit
+select = E,W,F,C,N,B

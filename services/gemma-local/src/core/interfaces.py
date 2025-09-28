@@ -1,11 +1,17 @@
 """Core interfaces for dependency injection"""
 
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator, Optional, List, Dict, Any, Tuple
+from typing import AsyncIterator, Optional, List, Any
 from pathlib import Path
-import numpy as np
 
-from .models import ModelInfo, DownloadProgress, AudioRequest, TranscriptionResult, ChatRequest, ChatResponse
+from .models import (
+    ModelInfo,
+    DownloadProgress,
+    AudioRequest,
+    TranscriptionResult,
+    ChatRequest,
+    ChatResponse,
+)
 
 
 class IModelManager(ABC):
@@ -46,7 +52,7 @@ class IModelDownloader(ABC):
     """Interface for model downloading operations"""
 
     @abstractmethod
-    async def download_model(self, model_name: str, stream: bool = True) -> AsyncGenerator[DownloadProgress, None]:
+    def download_model(self, model_name: str, stream: bool = True) -> AsyncIterator[DownloadProgress]:
         """Download model with progress tracking"""
         pass
 
@@ -89,7 +95,7 @@ class IChatService(ABC):
         pass
 
     @abstractmethod
-    async def complete_chat_stream(self, request: ChatRequest) -> AsyncGenerator[str, None]:
+    async def complete_chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
         """Generate streaming chat completion"""
         pass
 

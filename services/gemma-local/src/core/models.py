@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, List, Dict, Any
 from pathlib import Path
-import numpy as np
 
 
 class ModelStatus(Enum):

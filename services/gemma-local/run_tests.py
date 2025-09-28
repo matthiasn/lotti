@@ -11,18 +11,12 @@ from pathlib import Path
 
 def run_command(cmd, description=""):
     """Run a command and print its output"""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Running: {description or ' '.join(cmd)}")
-    print('='*60)
+    print("=" * 60)
 
     try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=True,
-            cwd=Path(__file__).parent
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=Path(__file__).parent)
         print(result.stdout)
         if result.stderr:
             print("STDERR:")
@@ -46,37 +40,58 @@ def main():
     print("=" * 60)
 
     # Check if we're in the right directory
-    if not (Path.cwd() / 'src').exists():
+    if not (Path.cwd() / "src").exists():
         print("Error: Please run this script from the services/gemma-local directory")
         sys.exit(1)
 
     # Set up environment with secure temp directory
     import tempfile
-    test_cache_dir = tempfile.mkdtemp(prefix='gemma-test-')
-    os.environ.setdefault('PYTHONPATH', str(Path.cwd()))
-    os.environ.setdefault('GEMMA_CACHE_DIR', test_cache_dir)
-    os.environ.setdefault('LOG_LEVEL', 'DEBUG')
+
+    test_cache_dir = tempfile.mkdtemp(prefix="gemma-test-")
+    os.environ.setdefault("PYTHONPATH", str(Path.cwd()))
+    os.environ.setdefault("GEMMA_CACHE_DIR", test_cache_dir)
+    os.environ.setdefault("LOG_LEVEL", "DEBUG")
 
     tests_to_run = [
         # Code quality checks
-        (['python', '-m', 'flake8', 'src', 'tests', '--count', '--max-line-length=127', '--extend-ignore=E203,W503'],
-         "Running flake8 linting"),
-
+        (
+            [
+                "python",
+                "-m",
+                "flake8",
+                "src",
+                "tests",
+                "--count",
+                "--max-line-length=127",
+                "--extend-ignore=E203,W503",
+            ],
+            "Running flake8 linting",
+        ),
         # Type checking (basic)
-        (['python', '-c', 'print("Type checking placeholder - mypy would run here")'],
-         "Type checking (placeholder)"),
-
+        (
+            ["python", "-c", 'print("Type checking placeholder - mypy would run here")'],
+            "Type checking (placeholder)",
+        ),
         # Unit tests
-        (['python', '-m', 'pytest', 'tests/unit', '-v', '--tb=short'],
-         "Running unit tests"),
-
+        (["python", "-m", "pytest", "tests/unit", "-v", "--tb=short"], "Running unit tests"),
         # Integration tests
-        (['python', '-m', 'pytest', 'tests/integration', '-v', '--tb=short'],
-         "Running integration tests"),
-
+        (
+            ["python", "-m", "pytest", "tests/integration", "-v", "--tb=short"],
+            "Running integration tests",
+        ),
         # Show test coverage
-        (['python', '-m', 'pytest', 'tests/', '--cov=src', '--cov-report=term-missing', '--tb=short'],
-         "Running all tests with coverage"),
+        (
+            [
+                "python",
+                "-m",
+                "pytest",
+                "tests/",
+                "--cov=src",
+                "--cov-report=term-missing",
+                "--tb=short",
+            ],
+            "Running all tests with coverage",
+        ),
     ]
 
     success_count = 0
@@ -87,9 +102,9 @@ def main():
         else:
             print("❌ FAILED")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Test Summary: {success_count}/{len(tests_to_run)} test suites passed")
-    print('='*60)
+    print("=" * 60)
 
     if success_count == len(tests_to_run):
         print("🎉 All tests passed! The modular architecture is working correctly.")

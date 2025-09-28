@@ -3,7 +3,7 @@
 import time
 import uuid
 import logging
-from typing import AsyncGenerator, Any, Optional
+from typing import AsyncIterator, Any, Optional, List
 
 from ..core.interfaces import IChatService, IModelManager, IModelValidator
 from ..core.models import ChatRequest, ChatResponse
@@ -61,7 +61,13 @@ class ChatService(IChatService):
                 return ChatResponse(
                     id=f"chatcmpl-{request_id}",
                     model=request.model,
-                    choices=[{"index": 0, "message": {"role": "assistant", "content": result.text}, "finish_reason": "stop"}],
+                    choices=[
+                        {
+                            "index": 0,
+                            "message": {"role": "assistant", "content": result.text},
+                            "finish_reason": "stop",
+                        }
+                    ],
                     usage={
                         "prompt_tokens": len(context_prompt.split()) if context_prompt else 0,
                         "completion_tokens": len(result.text.split()),
@@ -82,7 +88,11 @@ class ChatService(IChatService):
                     id=f"chatcmpl-{request_id}",
                     model=request.model,
                     choices=[
-                        {"index": 0, "message": {"role": "assistant", "content": response_text}, "finish_reason": "stop"}
+                        {
+                            "index": 0,
+                            "message": {"role": "assistant", "content": response_text},
+                            "finish_reason": "stop",
+                        }
                     ],
                     usage={
                         "prompt_tokens": self._count_tokens_in_messages(request.messages),
@@ -96,7 +106,7 @@ class ChatService(IChatService):
             logger.error(f"Chat completion error: {e}")
             raise
 
-    async def complete_chat_stream(self, request: ChatRequest) -> AsyncGenerator[str, None]:
+    async def complete_chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
         """Generate streaming chat completion"""
         # This would implement streaming chat completion
         # For now, we'll use the existing streaming generator
@@ -106,11 +116,14 @@ class ChatService(IChatService):
         prompt = self._build_chat_prompt(request.messages)
 
         async for chunk in generator.generate_chat_stream(
-            prompt=prompt, temperature=request.temperature, max_tokens=request.max_tokens or 2000, top_p=request.top_p
+            prompt=prompt,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens or 2000,
+            top_p=request.top_p,
         ):
             yield chunk
 
-    def _extract_context_from_messages(self, messages: list) -> str:
+    def _extract_context_from_messages(self, messages: List[Any]) -> str:
         """Extract context prompt from chat messages"""
         for message in messages:
             if message.get("role") == "user" and "Context:" in message.get("content", ""):
@@ -119,9 +132,9 @@ class ChatService(IChatService):
                     context_part = content.split("Context:")[1].split("\n\n")[0].strip()
                     if context_part:
                         return context_part
-        return None
+        return ""
 
-    def _build_chat_prompt(self, messages: list) -> str:
+    def _build_chat_prompt(self, messages: List[Any]) -> str:
         """Build a prompt from chat messages"""
         prompt_parts = []
 
@@ -139,7 +152,7 @@ class ChatService(IChatService):
         prompt_parts.append("Assistant:")
         return "\n\n".join(prompt_parts)
 
-    def _count_tokens_in_messages(self, messages: list) -> int:
+    def _count_tokens_in_messages(self, messages: List[Any]) -> int:
         """Count approximate tokens in messages"""
         total = 0
         for message in messages:

@@ -7,14 +7,31 @@ from typing import Optional, Dict, Any
 from ..core.interfaces import IConfigManager
 from ..core.exceptions import ConfigurationError
 from ..core.constants import (
-    DEFAULT_MODEL_ID, DEFAULT_MODEL_VARIANT, DEFAULT_MODEL_REVISION,
-    DEFAULT_CACHE_DIR_NAME, DEFAULT_DEVICE, DEFAULT_LOG_LEVEL,
-    DEFAULT_HOST, DEFAULT_PORT, ALLOWED_MODEL_VARIANTS, ALLOWED_MODEL_PREFIXES,
-    ENV_GEMMA_MODEL_ID, ENV_GEMMA_MODEL_VARIANT, ENV_GEMMA_MODEL_REVISION,
-    ENV_GEMMA_CACHE_DIR, ENV_GEMMA_DEVICE, ENV_HOST, ENV_PORT, ENV_LOG_LEVEL,
-    ENV_HUGGINGFACE_TOKEN, ENV_HF_TOKEN, ENV_HUGGING_FACE_HUB_TOKEN,
-    ERROR_EMPTY_MODEL_ID, ERROR_INVALID_PORT, ERROR_INVALID_MODEL_FORMAT,
-    ERROR_INVALID_VARIANT
+    DEFAULT_MODEL_ID,
+    DEFAULT_MODEL_VARIANT,
+    DEFAULT_MODEL_REVISION,
+    DEFAULT_CACHE_DIR_NAME,
+    DEFAULT_DEVICE,
+    DEFAULT_LOG_LEVEL,
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+    ALLOWED_MODEL_VARIANTS,
+    ALLOWED_MODEL_PREFIXES,
+    ENV_GEMMA_MODEL_ID,
+    ENV_GEMMA_MODEL_VARIANT,
+    ENV_GEMMA_MODEL_REVISION,
+    ENV_GEMMA_CACHE_DIR,
+    ENV_GEMMA_DEVICE,
+    ENV_HOST,
+    ENV_PORT,
+    ENV_LOG_LEVEL,
+    ENV_HUGGINGFACE_TOKEN,
+    ENV_HF_TOKEN,
+    ENV_HUGGING_FACE_HUB_TOKEN,
+    ERROR_EMPTY_MODEL_ID,
+    ERROR_INVALID_PORT,
+    ERROR_INVALID_MODEL_FORMAT,
+    ERROR_INVALID_VARIANT,
 )
 
 
@@ -51,7 +68,11 @@ class ConfigManager(IConfigManager):
 
     def get_huggingface_token(self) -> Optional[str]:
         """Get HuggingFace token from various environment variables"""
-        return os.environ.get(ENV_HUGGINGFACE_TOKEN) or os.environ.get(ENV_HF_TOKEN) or os.environ.get(ENV_HUGGING_FACE_HUB_TOKEN)
+        return (
+            os.environ.get(ENV_HUGGINGFACE_TOKEN)
+            or os.environ.get(ENV_HF_TOKEN)
+            or os.environ.get(ENV_HUGGING_FACE_HUB_TOKEN)
+        )
 
     def get_model_revision(self, model_id: str) -> str:
         """Get model revision for secure downloads
@@ -91,6 +112,7 @@ class ConfigManager(IConfigManager):
         # Security check: Reject binding to all interfaces
         if host == "0.0.0.0":  # nosec B104 - Security check to prevent binding to all interfaces
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(
                 "SECURITY WARNING: Attempting to bind to all interfaces (0.0.0.0) is not allowed. "

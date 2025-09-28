@@ -12,12 +12,16 @@ from .core.interfaces import (
     IAudioProcessor,
 )
 from .core.constants import (
-    SERVICE_CONFIG_MANAGER, SERVICE_MODEL_MANAGER, SERVICE_AUDIO_PROCESSOR,
-    SERVICE_MODEL_VALIDATOR, SERVICE_MODEL_DOWNLOADER, SERVICE_TRANSCRIPTION_SERVICE,
-    SERVICE_CHAT_SERVICE
+    SERVICE_CONFIG_MANAGER,
+    SERVICE_MODEL_MANAGER,
+    SERVICE_AUDIO_PROCESSOR,
+    SERVICE_MODEL_VALIDATOR,
+    SERVICE_MODEL_DOWNLOADER,
+    SERVICE_TRANSCRIPTION_SERVICE,
+    SERVICE_CHAT_SERVICE,
 )
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class Container:
@@ -42,45 +46,44 @@ class Container:
     def _create_config_manager(self) -> Any:
         """Create config manager service"""
         from .services.config_manager import ConfigManager
+
         return ConfigManager()
 
     def _create_model_manager(self) -> Any:
         """Create model manager service"""
         from .adapters.model_manager_adapter import ModelManagerAdapter
+
         return ModelManagerAdapter(self.get_config_manager())
 
     def _create_audio_processor(self) -> Any:
         """Create audio processor service"""
         from .adapters.audio_processor_adapter import AudioProcessorAdapter
+
         return AudioProcessorAdapter()
 
     def _create_model_validator(self) -> Any:
         """Create model validator service"""
         from .services.model_validator import ModelValidator
+
         return ModelValidator(self.get_config_manager(), self.get_model_manager())
 
     def _create_model_downloader(self) -> Any:
         """Create model downloader service"""
         from .services.model_downloader import ModelDownloader
+
         return ModelDownloader(self.get_config_manager())
 
     def _create_transcription_service(self) -> Any:
         """Create transcription service"""
         from .services.transcription_service import TranscriptionService
-        return TranscriptionService(
-            self.get_model_manager(),
-            self.get_audio_processor(),
-            self.get_model_validator()
-        )
+
+        return TranscriptionService(self.get_model_manager(), self.get_audio_processor(), self.get_model_validator())
 
     def _create_chat_service(self) -> Any:
         """Create chat service"""
         from .services.chat_service import ChatService
-        return ChatService(
-            self.get_model_manager(),
-            self.get_model_validator(),
-            self.get_transcription_service()
-        )
+
+        return ChatService(self.get_model_manager(), self.get_model_validator(), self.get_transcription_service())
 
     def get(self, service_name: str) -> Any:
         """Get a service by name (lazy initialization)"""

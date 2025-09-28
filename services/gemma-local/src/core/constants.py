@@ -8,7 +8,7 @@ DEFAULT_CACHE_DIR_NAME = "gemma-local"
 DEFAULT_DEVICE = "auto"
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_HOST = "127.0.0.1"  # Localhost only for security
-DEFAULT_PORT = 8000
+DEFAULT_PORT = 11343
 
 # Security settings
 ALLOWED_MODEL_VARIANTS = ["E2B", "E4B"]

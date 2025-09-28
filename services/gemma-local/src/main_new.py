@@ -11,11 +11,20 @@ from dotenv import load_dotenv
 
 # Import constants first - needed for configuration
 from .core.constants import (
-    API_TITLE, API_DESCRIPTION, API_VERSION, ENV_FILE_NAME,
-    ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, LOG_FORMAT,
-    CORS_ALLOW_ORIGINS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS,
-    MSG_LOADED_ENV, MSG_STARTING_SERVICE, MSG_MODEL_FILES_FOUND,
-    MSG_MODEL_NOT_DOWNLOADED
+    API_TITLE,
+    API_DESCRIPTION,
+    API_VERSION,
+    ENV_FILE_NAME,
+    ENV_LOG_LEVEL,
+    DEFAULT_LOG_LEVEL,
+    LOG_FORMAT,
+    CORS_ALLOW_ORIGINS,
+    CORS_ALLOW_METHODS,
+    CORS_ALLOW_HEADERS,
+    MSG_LOADED_ENV,
+    MSG_STARTING_SERVICE,
+    MSG_MODEL_FILES_FOUND,
+    MSG_MODEL_NOT_DOWNLOADED,
 )
 
 # Load environment variables
@@ -25,10 +34,7 @@ if env_path.exists():
     logging.info(f"{MSG_LOADED_ENV} {env_path}")
 
 # Configure logging
-logging.basicConfig(
-    level=getattr(logging, os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)),
-    format=LOG_FORMAT
-)
+logging.basicConfig(level=getattr(logging, os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)), format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 # Import services after logging is configured
