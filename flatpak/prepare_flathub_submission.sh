@@ -76,6 +76,37 @@ replace_source_url_with_path() {
     fi
 }
 
+# Stage a pub.dev archive locally from available caches when missing.
+stage_pubdev_archive() {
+  local package="$1"
+  local version="$2"
+  local dest="$FLATPAK_DIR/cache/pub.dev/${package}-${version}.tar.gz"
+
+  if [ -f "$dest" ]; then
+    return 0
+  fi
+
+  local candidates=(
+    "$LOTTI_ROOT/.pub-cache/hosted/pub.dev/${package}-${version}"
+    "$HOME/.pub-cache/hosted/pub.dev/${package}-${version}"
+  )
+  if [ -n "${PUB_CACHE:-}" ]; then
+    candidates+=("$PUB_CACHE/hosted/pub.dev/${package}-${version}")
+  fi
+
+  for candidate in "${candidates[@]}"; do
+    if [ -d "$candidate" ]; then
+      mkdir -p "$FLATPAK_DIR/cache/pub.dev"
+      ( cd "$(dirname "$candidate")" && tar -czf "$dest" "${package}-${version}" )
+      print_info "Staged pub.dev archive ${package}-${version} from ${candidate}"
+      return 0
+    fi
+  done
+
+  print_warning "Missing staged pub.dev archive for ${package}-${version}; offline bundling may fail"
+  return 1
+}
+
 # Get the script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOTTI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -468,7 +499,12 @@ if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
 fi
 
 if [ -z "$TOOLS_LOCK" ]; then
+  if [ -f "$FLATPAK_DIR/cache/flutter_tools/pubspec.lock" ]; then
+    TOOLS_LOCK="$FLATPAK_DIR/cache/flutter_tools/pubspec.lock"
+    print_info "Using staged flutter_tools pubspec.lock from cache/flutter_tools"
+  else
   print_warning "Could not locate flutter_tools pubspec.lock within .flatpak-builder cache"
+  fi
 fi
 
 CARGOKIT_LOCKS=""
@@ -488,6 +524,12 @@ if [ -d "$WORK_DIR/.flatpak-builder/build" ] || [ -d "$OUTPUT_DIR/.flatpak-build
   fi
 fi
 
+# Include any pre-staged cargokit lockfiles bundled with the repository
+PRESET_CARGOKIT_LOCKS=""
+if [ -d "$FLATPAK_DIR/cache/cargokit" ]; then
+  PRESET_CARGOKIT_LOCKS=$(find "$FLATPAK_DIR/cache/cargokit" -maxdepth 1 -name '*.pubspec.lock' -print 2>/dev/null | sort -u || true)
+fi
+
 LOCK_INPUTS=""
 if [ -f "$APP_LOCK" ]; then
   LOCK_INPUTS="$APP_LOCK"
@@ -497,6 +539,10 @@ if [ -f "$APP_LOCK" ]; then
   if [ -n "$CARGOKIT_LOCKS" ]; then
     CARGOKIT_LIST=$(echo "$CARGOKIT_LOCKS" | paste -sd, -)
     LOCK_INPUTS="$LOCK_INPUTS,$CARGOKIT_LIST"
+  fi
+  if [ -n "$PRESET_CARGOKIT_LOCKS" ]; then
+    PRESET_LIST=$(echo "$PRESET_CARGOKIT_LOCKS" | paste -sd, -)
+    LOCK_INPUTS="$LOCK_INPUTS,$PRESET_LIST"
   fi
 fi
 
@@ -511,6 +557,36 @@ if [ -n "$LOCK_INPUTS" ]; then
     mv "$WORK_DIR/pubspec-sources.generated.json" "$OUTPUT_DIR/pubspec-sources.json"
     cp -- "$OUTPUT_DIR/pubspec-sources.json" "$WORK_DIR/../pubspec-sources.json" 2>/dev/null || true
     print_status "Regenerated pubspec-sources.json with build tool dependencies"
+
+    if [ -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
+      OUT_JSON="$OUTPUT_DIR/pubspec-sources.json"
+      STAGED_PACKAGES=$(OUT_JSON="$OUT_JSON" python3 - <<'PY'
+import json
+import os
+
+path = os.environ["OUT_JSON"]
+data = json.loads(open(path, "r", encoding="utf-8").read())
+seen = set()
+for entry in data:
+    if isinstance(entry, dict):
+        dest = entry.get("dest", "")
+        if dest.startswith(".pub-cache/hosted/pub.dev/"):
+            name_version = dest.split("/")[-1]
+            if "-" in name_version:
+                pkg, ver = name_version.rsplit("-", 1)
+                if pkg and ver and (pkg, ver) not in seen:
+                    seen.add((pkg, ver))
+                    print(f"{pkg} {ver}")
+PY
+)
+      if [ -n "$STAGED_PACKAGES" ]; then
+        while read -r pkg ver; do
+          [ -n "$pkg" ] && stage_pubdev_archive "$pkg" "$ver"
+        done <<EOF
+$STAGED_PACKAGES
+EOF
+      fi
+    fi
   else
     print_error "Failed to regenerate pubspec-sources.json"
   fi
@@ -877,11 +953,15 @@ if [ -f "$OUT_MANIFEST" ]; then
 
   # Bundle all archive and file sources for offline builds (required by Flathub)
   print_info "Bundling cached archive and file sources referenced by manifest..."
+  if [ -d "$FLATPAK_DIR/cache/pub.dev" ]; then
+    print_info "Using staged pub.dev cache from cache/pub.dev"
+  fi
   if [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
     python3 "$PYTHON_CLI" bundle-archive-sources \
       --manifest "$OUT_MANIFEST" \
       --output-dir "$OUTPUT_DIR" \
       --download-missing \
+      --search-root "$FLATPAK_DIR/cache/pub.dev" \
       --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
       --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
       --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
@@ -889,6 +969,7 @@ if [ -f "$OUT_MANIFEST" ]; then
     python3 "$PYTHON_CLI" bundle-archive-sources \
       --manifest "$OUT_MANIFEST" \
       --output-dir "$OUTPUT_DIR" \
+      --search-root "$FLATPAK_DIR/cache/pub.dev" \
       --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
       --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
       --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
@@ -961,24 +1042,45 @@ import pathlib
 
 base = pathlib.Path('.pub-cache/hosted/pub.dev')
 patched = False
-for script in base.glob('*/*/cargokit/run_build_tool.sh'):
-    text = script.read_text()
-    if 'pub get --offline --no-precompile' in text:
-        continue
-    if 'pub get --no-precompile' not in text:
-        continue
-    script.write_text(text.replace('pub get --no-precompile', 'pub get --offline --no-precompile'))
-    print(f"Patched {script}")
-    patched = True
+# Try both one and two levels deep as package structures may vary
+for pattern in ['*/cargokit/run_build_tool.sh', '*/*/cargokit/run_build_tool.sh']:
+    for script in base.glob(pattern):
+        text = script.read_text()
+        if 'pub get --offline --no-precompile' in text:
+            print(f"Already patched: {script}")
+            continue
+        if 'pub get --no-precompile' not in text:
+            continue
+        script.write_text(text.replace('pub get --no-precompile', 'pub get --offline --no-precompile'))
+        print(f"Patched: {script}")
+        patched = True
 if not patched:
-    print('No cargokit scripts patched')
+    print('WARNING: No cargokit scripts found to patch!')
 PY
+"""
+).strip() + "\n"
+
+cargo_config_command = dedent(
+    """mkdir -p "$CARGO_HOME" && cat > "$CARGO_HOME/config" <<'CARGO_CFG'
+[source.vendored-sources]
+directory = "/run/build/lotti/cargo/vendor"
+
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source."https://github.com/knopp/mime_guess"]
+git = "https://github.com/knopp/mime_guess"
+replace-with = "vendored-sources"
+branch = "super_native_extensions"
+CARGO_CFG
+echo "Configured Cargo to use vendored sources"
 """
 ).strip() + "\n"
 
 commands_to_add = [
     ("sqlite3_flutter_libs-*/linux/CMakeLists.txt", sqlite_command),
     ("cargokit/run_build_tool.sh", cargokit_command),
+    ("setup cargo vendor config", cargo_config_command),
 ]
 
 modified = False
@@ -990,6 +1092,9 @@ for module in modules:
     commands = module.setdefault('build-commands', [])
 
     for marker, _ in commands_to_add:
+        if marker == "setup cargo vendor config":
+            # Special marker - don't filter based on it
+            continue
         filtered = [
             value
             for value in commands
