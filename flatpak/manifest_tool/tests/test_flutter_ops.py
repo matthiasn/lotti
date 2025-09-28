@@ -714,38 +714,63 @@ def test_disable_media_kit_mimalloc(make_document):
     assert result.changed
     assert "mimalloc" in str(result.messages).lower()
 
-    # Check that the flutter build command was updated with CMake option
+    # Check that CMAKE_ARGS export was added before flutter build
     commands = lotti["build-commands"]
-    flutter_cmd = next(
-        cmd for cmd in commands if isinstance(cmd, str) and "flutter build linux" in cmd
+    assert len(commands) == 3  # Original 2 + new export
+
+    # Find the CMAKE_ARGS export
+    cmake_export = next(
+        cmd for cmd in commands if isinstance(cmd, str) and "CMAKE_ARGS" in cmd
     )
-    assert "-DMIMALLOC_USE_STATIC_LIBS=OFF" in flutter_cmd
-    assert " -- " in flutter_cmd
+    assert "MIMALLOC_USE_STATIC_LIBS=OFF" in cmake_export
+
+    # Ensure it's before flutter build
+    flutter_idx = next(
+        i
+        for i, cmd in enumerate(commands)
+        if isinstance(cmd, str) and "flutter build linux" in cmd
+    )
+    cmake_idx = next(
+        i
+        for i, cmd in enumerate(commands)
+        if isinstance(cmd, str) and "CMAKE_ARGS" in cmd
+    )
+    assert cmake_idx < flutter_idx
 
     # Run again - should not change
     result2 = flutter_ops.disable_media_kit_mimalloc(document)
     assert not result2.changed
 
 
-def test_disable_media_kit_mimalloc_with_existing_cmake_args(make_document):
-    """Test that disabling mimalloc preserves existing CMake arguments."""
+def test_disable_media_kit_mimalloc_with_existing_commands(make_document):
+    """Test that disabling mimalloc works with existing build commands."""
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
-    # Start with existing CMake args in flutter build command
-    lotti["build-commands"] = ["flutter build linux --release -- -DSOME_OPTION=value"]
+    # Start with multiple build commands
+    lotti["build-commands"] = [
+        "echo 'Starting build'",
+        "export SOME_VAR=value",
+        "flutter build linux --release",
+    ]
 
     result = flutter_ops.disable_media_kit_mimalloc(document)
 
     assert result.changed
 
-    # Check that both CMake options are present
+    # Check that CMAKE_ARGS was inserted at the right position
     commands = lotti["build-commands"]
-    flutter_cmd = next(
-        cmd for cmd in commands if isinstance(cmd, str) and "flutter build linux" in cmd
+    assert len(commands) == 4  # Original 3 + new export
+
+    # The CMAKE_ARGS should be right before flutter build
+    flutter_idx = next(
+        i
+        for i, cmd in enumerate(commands)
+        if isinstance(cmd, str) and "flutter build linux" in cmd
     )
-    assert "-DMIMALLOC_USE_STATIC_LIBS=OFF" in flutter_cmd
-    assert "-DSOME_OPTION=value" in flutter_cmd
+    cmake_cmd = commands[flutter_idx - 1]
+    assert "CMAKE_ARGS" in cmake_cmd
+    assert "MIMALLOC_USE_STATIC_LIBS=OFF" in cmake_cmd
 
 
 def test_remove_network_from_build_args(make_document):
