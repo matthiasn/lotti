@@ -176,6 +176,47 @@ def normalize_lotti_env(
 # Builds must be completely offline with all dependencies pre-fetched
 
 
+def ensure_flutter_pub_get_offline(document: ManifestDocument) -> OperationResult:
+    """Ensure flutter pub get commands use --offline flag for Flathub compliance.
+
+    Flathub builds have no network access, so pub get must run in offline mode.
+    This function adds the --offline flag to any flutter pub get commands.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+
+        build_commands = module.get("build-commands", [])
+        module_name = module.get("name", "unnamed")
+
+        for i, cmd in enumerate(build_commands):
+            if (
+                isinstance(cmd, str)
+                and "flutter pub get" in cmd
+                and "--offline" not in cmd
+            ):
+                # Add --offline flag to the command
+                build_commands[i] = cmd.replace(
+                    "flutter pub get", "flutter pub get --offline"
+                )
+                messages.append(
+                    f"Added --offline flag to flutter pub get in {module_name}"
+                )
+                changed = True
+
+    if changed:
+        document.mark_changed()
+        message = "Ensured flutter pub get uses --offline mode"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
+    return OperationResult.unchanged()
+
+
 def remove_network_from_build_args(document: ManifestDocument) -> OperationResult:
     """Remove --share=network from build-args in all modules for Flathub compliance.
 

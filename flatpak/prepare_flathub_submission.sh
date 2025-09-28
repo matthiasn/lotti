@@ -604,6 +604,10 @@ if [ -f "$OUT_MANIFEST" ]; then
   python3 "$PYTHON_CLI" remove-network-from-build-args \
     --manifest "$OUT_MANIFEST"
 
+  # Ensure flutter pub get uses --offline flag for Flathub compliance
+  python3 "$PYTHON_CLI" ensure-flutter-pub-get-offline \
+    --manifest "$OUT_MANIFEST"
+
   # Prefer Rust SDK extension over rustup installer
   python3 "$PYTHON_CLI" ensure-rust-sdk-env \
     --manifest "$OUT_MANIFEST"

@@ -103,6 +103,40 @@ def test_remove_network_from_build_args(make_document):
     assert not result2.changed
 
 
+def test_ensure_flutter_pub_get_offline(make_document):
+    """Test that flutter pub get commands get --offline flag added."""
+    document = make_document()
+
+    # Add flutter pub get commands to lotti module
+    lotti = next(
+        module for module in document.data["modules"] if module["name"] == "lotti"
+    )
+    lotti["build-commands"] = [
+        "echo Starting build",
+        "/run/build/lotti/flutter_sdk/bin/flutter pub get",
+        "flutter pub get --verbose",
+        "/app/flutter/bin/flutter pub get --offline",  # Already has offline
+        "flutter build linux",
+    ]
+
+    result = flutter_ops.ensure_flutter_pub_get_offline(document)
+
+    assert result.changed
+    assert len(result.messages) == 2  # Two commands without --offline
+
+    # Check commands were updated
+    commands = lotti["build-commands"]
+    assert commands[0] == "echo Starting build"  # Unchanged
+    assert commands[1] == "/run/build/lotti/flutter_sdk/bin/flutter pub get --offline"
+    assert commands[2] == "flutter pub get --offline --verbose"
+    assert commands[3] == "/app/flutter/bin/flutter pub get --offline"  # Already had it
+    assert commands[4] == "flutter build linux"  # Unchanged
+
+    # Should be idempotent
+    result2 = flutter_ops.ensure_flutter_pub_get_offline(document)
+    assert not result2.changed
+
+
 def test_ensure_setup_helper_source_and_command(make_document):
     document = make_document()
     source_result = flutter_ops.ensure_setup_helper_source(

@@ -453,6 +453,24 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    parser_pub_offline = subparsers.add_parser(
+        "ensure-flutter-pub-get-offline",
+        help="Ensure flutter pub get commands use --offline flag.",
+    )
+    parser_pub_offline.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_pub_offline.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.ensure_flutter_pub_get_offline(
+                    document
+                ),
+            )
+        )
+    )
+
     parser_rust_env = subparsers.add_parser(
         "ensure-rust-sdk-env",
         help="Ensure Rust SDK extension bin is on PATH for lotti.",
