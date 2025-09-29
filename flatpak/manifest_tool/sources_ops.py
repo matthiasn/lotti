@@ -1,4 +1,9 @@
-"""Source-related manifest helpers."""
+"""Source-related manifest helpers.
+
+This module handles operations related to source management in Flatpak manifests,
+including bundling offline sources, downloading missing artifacts, and managing
+source references for offline builds.
+"""
 
 from __future__ import annotations
 
@@ -28,10 +33,22 @@ _ALLOWED_URL_SCHEMES = {"https"}
 def replace_url_with_path_in_manifest(
     manifest_data: dict, identifier: str, path_value: str
 ) -> bool:
-    """Replace URL containing identifier with path in manifest data structure."""
+    """Replace URL containing identifier with path in manifest data structure.
+
+    Searches through all sources in the manifest (both root-level and module-level)
+    and replaces URL fields containing the identifier with local path references.
+
+    Args:
+        manifest_data: The manifest dictionary structure
+        identifier: String to search for in URLs
+        path_value: Local path to replace the URL with
+
+    Returns:
+        True if any replacements were made
+    """
     changed = False
 
-    # Helper function to process sources list
+    # Helper function to process sources list recursively
     def process_sources(sources: list, context: str = "") -> bool:
         nonlocal changed
         for source in sources:
@@ -40,7 +57,7 @@ def replace_url_with_path_in_manifest(
             # Check if this source has a URL containing the identifier
             url = source.get("url", "")
             if identifier in url:
-                # Remove the URL and add the path
+                # Replace URL with local path for offline builds
                 source.pop("url", None)
                 source["path"] = path_value
                 changed = True
@@ -145,7 +162,17 @@ def replace_url_with_path_text(
 
 @dataclass
 class ArtifactCache:
-    """Resolve artifacts from local caches or download them when missing."""
+    """Resolve artifacts from local caches or download them when missing.
+
+    This class manages the process of finding, copying, and downloading
+    source artifacts for offline Flatpak builds. It searches through
+    multiple cache locations and can optionally download missing files.
+
+    Attributes:
+        output_dir: Directory to place bundled artifacts
+        download_missing: Whether to download missing artifacts
+        search_roots: List of directories to search for cached artifacts
+    """
 
     output_dir: Path
     download_missing: bool = False
@@ -158,6 +185,20 @@ class ArtifactCache:
     def ensure_local(
         self, filename: str, source_url: str
     ) -> tuple[Optional[Path], list[str]]:
+        """Ensure an artifact is available locally.
+
+        Attempts to find the artifact in:
+        1. The output directory (already bundled)
+        2. Search root directories (cached)
+        3. Downloads from source URL if allowed
+
+        Args:
+            filename: Name of the file to ensure
+            source_url: Original URL for downloading if needed
+
+        Returns:
+            Tuple of (local_path, messages) where local_path is None if failed
+        """
         messages: list[str] = []
         destination = self.output_dir / filename
         if destination.exists():
@@ -214,6 +255,14 @@ class ArtifactCache:
             return None, messages
 
     def _find_in_roots(self, filename: str) -> Optional[Path]:
+        """Search for a file in all search root directories.
+
+        Args:
+            filename: Name of the file to find
+
+        Returns:
+            Path to the found file or None if not found
+        """
         for root in self.search_roots:
             if not root.exists():
                 continue
@@ -228,7 +277,16 @@ def _add_string_sources(
     existing_strings: set[str],
     entries: list[Optional[str]],
 ) -> list[str]:
-    """Add string source entries and return list of added strings."""
+    """Add string source entries and return list of added strings.
+
+    Args:
+        sources: List of source entries to add to
+        existing_strings: Set of already present string sources
+        entries: List of string entries to add
+
+    Returns:
+        List of strings that were actually added
+    """
     added_strings: list[str] = []
     for entry in entries:
         if _ensure_string_entry(sources, entry, existing_strings):  # type: ignore

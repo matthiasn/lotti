@@ -1,4 +1,8 @@
-"""Flutter-specific manifest operations."""
+"""Flutter-specific manifest operations.
+
+This module provides operations specific to Flutter applications in Flatpak manifests,
+including SDK setup, offline build configuration, and plugin dependency handling.
+"""
 
 from __future__ import annotations
 
@@ -298,6 +302,89 @@ def remove_flutter_config_command(document: ManifestDocument) -> OperationResult
     return OperationResult.unchanged()
 
 
+def _sqlite_matches_version(source: dict, version: str) -> bool:
+    """Check if a source matches a specific SQLite version."""
+    if not isinstance(source, dict):
+        return False
+    version_tag = f"sqlite-autoconf-{version}"
+    for key in ("url", "path", "dest-filename"):
+        value = source.get(key)
+        if isinstance(value, str) and version_tag in value:
+            return True
+    return False
+
+
+def _remove_stale_sqlite_sources(
+    sources: list, dest_map: dict, old_version: str
+) -> tuple[list, bool]:
+    """Remove outdated SQLite sources from the sources list.
+
+    Returns:
+        Tuple of (filtered_sources, removed_any)
+    """
+    filtered_sources = []
+    removed_stale = False
+
+    for source in sources:
+        if (
+            isinstance(source, dict)
+            and source.get("type") == "file"
+            and source.get("dest") in dest_map.values()
+            and _sqlite_matches_version(source, old_version)
+        ):
+            removed_stale = True
+            continue
+        filtered_sources.append(source)
+
+    return filtered_sources, removed_stale
+
+
+def _add_sqlite_sources_for_architectures(
+    sources: list, dest_map: dict, current_version: str
+) -> tuple[bool, list]:
+    """Add SQLite sources for each architecture if not already present.
+
+    Returns:
+        Tuple of (changed, messages)
+    """
+    changed = False
+    messages = []
+
+    for arch, dest in dest_map.items():
+        if _has_sqlite_source(sources, dest, current_version):
+            continue
+
+        sqlite_source = _create_sqlite_source(arch, dest, current_version)
+        sources.append(sqlite_source)
+        messages.append(f"Added SQLite 3.50.4 file for {arch}")
+        changed = True
+
+    return changed, messages
+
+
+def _has_sqlite_source(sources: list, dest: str, version: str) -> bool:
+    """Check if sources already contains a SQLite source for the given destination and version."""
+    return any(
+        isinstance(src, dict)
+        and src.get("type") == "file"
+        and src.get("dest") == dest
+        and _sqlite_matches_version(src, version)
+        for src in sources
+    )
+
+
+def _create_sqlite_source(arch: str, dest: str, version: str) -> dict:
+    """Create a SQLite source dictionary for the given architecture."""
+    return {
+        "type": "file",
+        "only-arches": [arch],
+        "url": f"https://www.sqlite.org/2025/sqlite-autoconf-{version}.tar.gz",
+        "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+        "dest": dest,
+        "dest-filename": f"sqlite-autoconf-{version}.tar.gz",
+    }
+
+
 def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
     """Add SQLite source for sqlite3_flutter_libs plugin.
 
@@ -313,65 +400,33 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
         "aarch64": "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
     }
 
-    def _matches_version(source: dict, version: str) -> bool:
-        if not isinstance(source, dict):
-            return False
-        version_tag = f"sqlite-autoconf-{version}"
-        for key in ("url", "path", "dest-filename"):
-            value = source.get(key)
-            if isinstance(value, str) and version_tag in value:
-                return True
-        return False
+    OLD_VERSION = "3500100"
+    CURRENT_VERSION = "3500400"
 
     for module in modules:
-        if not isinstance(module, dict):
-            continue
-
-        if module.get("name") != "lotti":
+        if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
 
         if "sources" not in module:
             module["sources"] = []
         sources = module["sources"]
 
-        filtered_sources: list[dict] = []
-        removed_stale = False
-        for source in sources:
-            if (
-                isinstance(source, dict)
-                and source.get("type") == "file"
-                and source.get("dest") in dest_map.values()
-                and _matches_version(source, "3500100")
-            ):
-                removed_stale = True
-                changed = True
-                continue
-            filtered_sources.append(source)
+        # Remove outdated SQLite sources
+        filtered_sources, removed_stale = _remove_stale_sqlite_sources(
+            sources, dest_map, OLD_VERSION
+        )
         if removed_stale:
             module["sources"] = filtered_sources
-        sources = module["sources"]
-
-        for arch, dest in dest_map.items():
-            has_sqlite = any(
-                isinstance(src, dict)
-                and src.get("type") == "file"
-                and src.get("dest") == dest
-                and _matches_version(src, "3500400")
-                for src in sources
-            )
-            if has_sqlite:
-                continue
-            sqlite_source = {
-                "type": "file",
-                "only-arches": [arch],
-                "url": "https://www.sqlite.org/2025/sqlite-autoconf-3500400.tar.gz",
-                "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
-                "dest": dest,
-                "dest-filename": "sqlite-autoconf-3500400.tar.gz",
-            }
-            sources.append(sqlite_source)
-            messages.append(f"Added SQLite 3.50.4 file for {arch}")
+            sources = module["sources"]
             changed = True
+
+        # Add current SQLite sources for each architecture
+        sources_changed, arch_messages = _add_sqlite_sources_for_architectures(
+            sources, dest_map, CURRENT_VERSION
+        )
+        if sources_changed:
+            changed = True
+            messages.extend(arch_messages)
 
     if changed:
         document.mark_changed()
@@ -1078,11 +1133,11 @@ def bundle_app_archive(
     return OperationResult.unchanged()
 
 
-def add_offline_build_patches(document: ManifestDocument) -> OperationResult:
-    """Add offline build patches to lotti module (sqlite3, cargokit, cargo config)."""
+def _create_sqlite_patch_command() -> str:
+    """Create the SQLite CMakeLists.txt patch command."""
     from textwrap import dedent
 
-    sqlite_command = (
+    return (
         dedent(
             """python3 - <<'PY'
 import pathlib
@@ -1108,7 +1163,12 @@ PY
         + "\n"
     )
 
-    cargokit_command = (
+
+def _create_cargokit_patch_command() -> str:
+    """Create the cargokit offline patch command."""
+    from textwrap import dedent
+
+    return (
         dedent(
             """python3 - <<'PY'
 import pathlib
@@ -1135,7 +1195,12 @@ PY
         + "\n"
     )
 
-    cargo_config_command = (
+
+def _create_cargo_config_command() -> str:
+    """Create the cargo vendor config command."""
+    from textwrap import dedent
+
+    return (
         dedent(
             """mkdir -p "$CARGO_HOME" && cat > "$CARGO_HOME/config" <<'CARGO_CFG'
 [source.vendored-sources]
@@ -1155,12 +1220,54 @@ echo "Configured Cargo to use vendored sources"
         + "\n"
     )
 
-    commands_to_add = [
-        ("sqlite3_flutter_libs-*/linux/CMakeLists.txt", sqlite_command),
-        ("cargokit/run_build_tool.sh", cargokit_command),
-        ("setup cargo vendor config", cargo_config_command),
+
+def _get_offline_patch_commands() -> list[tuple[str, str]]:
+    """Get all offline build patch commands with their markers."""
+    return [
+        ("sqlite3_flutter_libs-*/linux/CMakeLists.txt", _create_sqlite_patch_command()),
+        ("cargokit/run_build_tool.sh", _create_cargokit_patch_command()),
+        ("setup cargo vendor config", _create_cargo_config_command()),
     ]
 
+
+def _remove_duplicate_patch_commands(
+    commands: list, commands_to_add: list[tuple[str, str]]
+) -> list:
+    """Remove existing commands with the same markers to avoid duplicates."""
+    filtered_commands = commands[:]
+    for marker, _ in commands_to_add:
+        if marker == "setup cargo vendor config":
+            # Special marker - don't filter based on it
+            continue
+        filtered_commands = [
+            value
+            for value in filtered_commands
+            if not (isinstance(value, str) and marker in value)
+        ]
+    return filtered_commands
+
+
+def _find_flutter_build_index(commands: list) -> int:
+    """Find the index where flutter build command is located."""
+    for idx, value in enumerate(commands):
+        if isinstance(value, str) and "flutter build linux" in value:
+            return idx
+    return len(commands)
+
+
+def _insert_patch_commands(
+    commands: list, commands_to_add: list[tuple[str, str]], insert_index: int
+) -> list:
+    """Insert patch commands at the specified index if not already present."""
+    for _, command in reversed(commands_to_add):
+        if command not in commands:
+            commands.insert(insert_index, command)
+    return commands
+
+
+def add_offline_build_patches(document: ManifestDocument) -> OperationResult:
+    """Add offline build patches to lotti module (sqlite3, cargokit, cargo config)."""
+    commands_to_add = _get_offline_patch_commands()
     modules = document.ensure_modules()
     modified = False
 
@@ -1173,34 +1280,16 @@ echo "Configured Cargo to use vendored sources"
         # Check if all required commands are already present
         all_present = all(command in commands for _, command in commands_to_add)
         if all_present:
-            # Nothing to do - all commands are already there
             break
 
-        # Remove existing commands with the same markers to avoid duplicates
-        for marker, _ in commands_to_add:
-            if marker == "setup cargo vendor config":
-                # Special marker - don't filter based on it
-                continue
-            commands = [
-                value
-                for value in commands
-                if not (isinstance(value, str) and marker in value)
-            ]
+        # Remove duplicates
+        commands = _remove_duplicate_patch_commands(commands, commands_to_add)
 
-        # Find insertion point (before flutter build)
-        insert_index = next(
-            (
-                idx
-                for idx, value in enumerate(commands)
-                if isinstance(value, str) and "flutter build linux" in value
-            ),
-            len(commands),
-        )
+        # Find insertion point
+        insert_index = _find_flutter_build_index(commands)
 
-        # Add all patch commands at the insertion point
-        for _, command in reversed(commands_to_add):
-            if command not in commands:
-                commands.insert(insert_index, command)
+        # Add patch commands
+        commands = _insert_patch_commands(commands, commands_to_add, insert_index)
 
         module["build-commands"] = commands
         modified = True
