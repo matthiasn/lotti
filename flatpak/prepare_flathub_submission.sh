@@ -711,11 +711,41 @@ if [ -f "../pubspec-sources.json" ]; then
     cp -- ../package_config.json "$OUTPUT_DIR/" 2>/dev/null || true
 fi
 
-# Step 6: Copy additional required files
-print_status "Copying additional files..."
+# Step 6: Apply Flathub compliance fixes to the manifest
+print_status "Applying Flathub compliance fixes..."
 
 # Path to the output manifest for subsequent operations
 OUT_MANIFEST="$OUTPUT_DIR/com.matthiasn.lotti.yml"
+
+# Apply all necessary Flathub compliance fixes
+print_info "Removing network access from build-args..."
+python3 "$PYTHON_CLI" remove-network-from-build-args --manifest "$OUT_MANIFEST"
+
+print_info "Removing flutter config commands..."
+python3 "$PYTHON_CLI" remove-flutter-config --manifest "$OUT_MANIFEST"
+
+print_info "Ensuring flutter pub get uses --offline flag..."
+python3 "$PYTHON_CLI" ensure-flutter-pub-get-offline --manifest "$OUT_MANIFEST"
+
+print_info "Ensuring dart pub uses --offline in build..."
+python3 "$PYTHON_CLI" ensure-dart-pub-offline-in-build --manifest "$OUT_MANIFEST"
+
+print_info "Removing rustup install commands (using SDK extension instead)..."
+python3 "$PYTHON_CLI" remove-rustup-install --manifest "$OUT_MANIFEST"
+
+print_info "Adding offline build patches..."
+python3 "$PYTHON_CLI" add-offline-build-patches --manifest "$OUT_MANIFEST"
+
+# Validate the manifest for Flathub compliance
+print_info "Validating manifest for Flathub compliance..."
+if python3 "$PYTHON_CLI" check-flathub-compliance --manifest "$OUT_MANIFEST"; then
+    print_status "Manifest passes Flathub compliance checks"
+else
+    print_warning "Manifest has compliance issues - review the output above"
+fi
+
+# Step 7: Copy additional required files
+print_status "Copying additional files..."
 
 # Copy metadata files
 if [ -f "$FLATPAK_DIR/com.matthiasn.lotti.metainfo.xml" ]; then
