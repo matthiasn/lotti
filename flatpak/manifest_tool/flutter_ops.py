@@ -1076,3 +1076,140 @@ def bundle_app_archive(
             _LOGGER.debug(message)
         return OperationResult(changed=True, messages=messages)
     return OperationResult.unchanged()
+
+
+def add_offline_build_patches(document: ManifestDocument) -> OperationResult:
+    """Add offline build patches to lotti module (sqlite3, cargokit, cargo config)."""
+    from textwrap import dedent
+
+    sqlite_command = (
+        dedent(
+            """python3 - <<'PY'
+import pathlib
+
+base = pathlib.Path('.pub-cache/hosted/pub.dev')
+target = next(base.glob('sqlite3_flutter_libs-*/linux/CMakeLists.txt'), None)
+if target is None:
+    raise SystemExit('sqlite3_flutter_libs linux/CMakeLists.txt not found')
+content = target.read_text()
+needle = 'URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18'
+if needle not in content:
+    url_line = '    URL https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz\\n'
+    if url_line not in content:
+        raise SystemExit('sqlite3 URL stanza missing; unable to inject URL_HASH')
+    line = "    " + needle + "\\n"
+    updated = content.replace(url_line, url_line + line, 2)
+    if needle not in updated:
+        raise SystemExit('sqlite3 URL_HASH injection failed')
+    target.write_text(updated)
+PY
+"""
+        ).strip()
+        + "\n"
+    )
+
+    cargokit_command = (
+        dedent(
+            """python3 - <<'PY'
+import pathlib
+
+base = pathlib.Path('.pub-cache/hosted/pub.dev')
+patched = False
+# Try both one and two levels deep as package structures may vary
+for pattern in ['*/cargokit/run_build_tool.sh', '*/*/cargokit/run_build_tool.sh']:
+    for script in base.glob(pattern):
+        text = script.read_text()
+        if 'pub get --offline --no-precompile' in text:
+            print(f"Already patched: {script}")
+            continue
+        if 'pub get --no-precompile' not in text:
+            continue
+        script.write_text(text.replace('pub get --no-precompile', 'pub get --offline --no-precompile'))
+        print(f"Patched: {script}")
+        patched = True
+if not patched:
+    print('WARNING: No cargokit scripts found to patch!')
+PY
+"""
+        ).strip()
+        + "\n"
+    )
+
+    cargo_config_command = (
+        dedent(
+            """mkdir -p "$CARGO_HOME" && cat > "$CARGO_HOME/config" <<'CARGO_CFG'
+[source.vendored-sources]
+directory = "/run/build/lotti/cargo/vendor"
+
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source."https://github.com/knopp/mime_guess"]
+git = "https://github.com/knopp/mime_guess"
+replace-with = "vendored-sources"
+branch = "super_native_extensions"
+CARGO_CFG
+echo "Configured Cargo to use vendored sources"
+"""
+        ).strip()
+        + "\n"
+    )
+
+    commands_to_add = [
+        ("sqlite3_flutter_libs-*/linux/CMakeLists.txt", sqlite_command),
+        ("cargokit/run_build_tool.sh", cargokit_command),
+        ("setup cargo vendor config", cargo_config_command),
+    ]
+
+    modules = document.ensure_modules()
+    modified = False
+
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+
+        commands = module.setdefault("build-commands", [])
+
+        # Check if all required commands are already present
+        all_present = all(command in commands for _, command in commands_to_add)
+        if all_present:
+            # Nothing to do - all commands are already there
+            break
+
+        # Remove existing commands with the same markers to avoid duplicates
+        for marker, _ in commands_to_add:
+            if marker == "setup cargo vendor config":
+                # Special marker - don't filter based on it
+                continue
+            commands = [
+                value
+                for value in commands
+                if not (isinstance(value, str) and marker in value)
+            ]
+
+        # Find insertion point (before flutter build)
+        insert_index = next(
+            (
+                idx
+                for idx, value in enumerate(commands)
+                if isinstance(value, str) and "flutter build linux" in value
+            ),
+            len(commands),
+        )
+
+        # Add all patch commands at the insertion point
+        for _, command in reversed(commands_to_add):
+            if command not in commands:
+                commands.insert(insert_index, command)
+
+        module["build-commands"] = commands
+        modified = True
+        break
+
+    if modified:
+        document.mark_changed()
+        _LOGGER.debug("Added offline build patches to lotti module")
+        return OperationResult.changed_result(
+            "Added offline build patches (sqlite3, cargokit, cargo config)"
+        )
+    return OperationResult.unchanged()

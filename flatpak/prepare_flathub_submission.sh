@@ -1096,137 +1096,9 @@ if [ -f "$OUT_MANIFEST" ]; then
     --sha256 "$LOTT_ARCHIVE_SHA256" \
     --output-dir "$OUTPUT_DIR"
 
-  # Ensure sqlite3 plugin adds URL_HASH offline without relying on patch files
-  OUT_MANIFEST="$OUT_MANIFEST" PYTHON_CLI="$PYTHON_CLI" python3 - <<'PYTHON_MANIFEST_OPS'
-import os
-import sys
-from pathlib import Path
-from textwrap import dedent
-
-cli_path = Path(os.environ['PYTHON_CLI']).resolve()
-package_root = cli_path.parent
-if str(package_root) not in sys.path:
-    sys.path.insert(0, str(package_root))
-
-from manifest import ManifestDocument  # type: ignore
-
-manifest_path = Path(os.environ['OUT_MANIFEST'])
-document = ManifestDocument.load(manifest_path)
-modules = document.ensure_modules()
-
-sqlite_command = dedent(
-    """python3 - <<'PY'
-import pathlib
-
-base = pathlib.Path('.pub-cache/hosted/pub.dev')
-target = next(base.glob('sqlite3_flutter_libs-*/linux/CMakeLists.txt'), None)
-if target is None:
-    raise SystemExit('sqlite3_flutter_libs linux/CMakeLists.txt not found')
-content = target.read_text()
-needle = 'URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18'
-if needle not in content:
-    url_line = '    URL https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz\\n'
-    if url_line not in content:
-        raise SystemExit('sqlite3 URL stanza missing; unable to inject URL_HASH')
-    line = "    " + needle + "\\n"
-    updated = content.replace(url_line, url_line + line, 2)
-    if needle not in updated:
-        raise SystemExit('sqlite3 URL_HASH injection failed')
-    target.write_text(updated)
-PY
-"""
-).strip() + "\n"
-
-cargokit_command = dedent(
-    """python3 - <<'PY'
-import pathlib
-
-base = pathlib.Path('.pub-cache/hosted/pub.dev')
-patched = False
-# Try both one and two levels deep as package structures may vary
-for pattern in ['*/cargokit/run_build_tool.sh', '*/*/cargokit/run_build_tool.sh']:
-    for script in base.glob(pattern):
-        text = script.read_text()
-        if 'pub get --offline --no-precompile' in text:
-            print(f"Already patched: {script}")
-            continue
-        if 'pub get --no-precompile' not in text:
-            continue
-        script.write_text(text.replace('pub get --no-precompile', 'pub get --offline --no-precompile'))
-        print(f"Patched: {script}")
-        patched = True
-if not patched:
-    print('WARNING: No cargokit scripts found to patch!')
-PY
-"""
-).strip() + "\n"
-
-cargo_config_command = dedent(
-    """mkdir -p "$CARGO_HOME" && cat > "$CARGO_HOME/config" <<'CARGO_CFG'
-[source.vendored-sources]
-directory = "/run/build/lotti/cargo/vendor"
-
-[source.crates-io]
-replace-with = "vendored-sources"
-
-[source."https://github.com/knopp/mime_guess"]
-git = "https://github.com/knopp/mime_guess"
-replace-with = "vendored-sources"
-branch = "super_native_extensions"
-CARGO_CFG
-echo "Configured Cargo to use vendored sources"
-"""
-).strip() + "\n"
-
-commands_to_add = [
-    ("sqlite3_flutter_libs-*/linux/CMakeLists.txt", sqlite_command),
-    ("cargokit/run_build_tool.sh", cargokit_command),
-    ("setup cargo vendor config", cargo_config_command),
-]
-
-modified = False
-
-for module in modules:
-    if not isinstance(module, dict) or module.get('name') != 'lotti':
-        continue
-
-    commands = module.setdefault('build-commands', [])
-
-    for marker, _ in commands_to_add:
-        if marker == "setup cargo vendor config":
-            # Special marker - don't filter based on it
-            continue
-        filtered = [
-            value
-            for value in commands
-            if not (
-                isinstance(value, str) and marker in value
-            )
-        ]
-        if len(filtered) != len(commands):
-            module['build-commands'] = filtered
-            commands = filtered
-            modified = True
-
-    for _, command in commands_to_add:
-        if command in commands:
-            continue
-        insert_index = next(
-            (
-                idx
-                for idx, value in enumerate(commands)
-                if isinstance(value, str) and 'flutter build linux' in value
-            ),
-            len(commands),
-        )
-        commands.insert(insert_index, command)
-        modified = True
-    break
-
-if modified:
-    document.mark_changed()
-    document.save()
-PYTHON_MANIFEST_OPS
+  # Add offline build patches (sqlite3, cargokit, cargo config)
+  print_status "Adding offline build patches..."
+  "$PYTHON_CLI" add-offline-build-patches --manifest "$OUT_MANIFEST"
 
 fi
 
@@ -1275,20 +1147,11 @@ if [ -f "$OUTPUT_DIR/cargo-sources.json" ]; then
   echo ""
 fi
 
-# Final cleanup: Apply critical Flathub compliance fixes
-# Using sed as a final pass since some Python operations might not be working properly
-
-# Remove --share=network from finish-args for Flathub compliance
-sed -i '/^- --share=network$/d' "$OUT_MANIFEST"
-print_info "Removed --share=network from finish-args for Flathub compliance"
-
-# Ensure flutter pub get uses --offline flag
-sed -i 's|/flutter pub get$|/flutter pub get --offline|' "$OUT_MANIFEST"
-print_info "Added --offline flag to flutter pub get commands"
-
-# Ensure flutter build uses --no-pub flag to skip automatic pub get
-sed -i 's|/flutter build linux --release|/flutter build linux --release --no-pub|' "$OUT_MANIFEST"
-print_info "Added --no-pub flag to flutter build commands"
+# Note: The duplicate sed commands have been removed as they duplicate the Python manifest_tool operations
+# The manifest_tool commands earlier in the script handle:
+# - Removing --share=network (via remove-network-from-build-args)
+# - Adding --offline to flutter pub get (via ensure-flutter-pub-get-offline)
+# - Adding --no-pub to flutter build (via ensure-dart-pub-offline-in-build)
 
 # Step 9: Final report
 print_status "Preparation complete!"

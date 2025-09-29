@@ -691,6 +691,24 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    parser_offline_patches = subparsers.add_parser(
+        "add-offline-build-patches",
+        help="Add offline build patches to lotti module (sqlite3, cargokit, cargo config).",
+    )
+    parser_offline_patches.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_offline_patches.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.add_offline_build_patches(
+                    document
+                ),
+            )
+        )
+    )
+
     # Build utility commands
     parser_find_flutter = subparsers.add_parser(
         "find-flutter-sdk", help="Find a cached Flutter SDK installation."
