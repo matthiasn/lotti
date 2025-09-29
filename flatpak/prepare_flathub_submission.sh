@@ -619,7 +619,12 @@ for entry in data:
         if dest.startswith(".pub-cache/hosted/pub.dev/"):
             name_version = dest.split("/")[-1]
             if "-" in name_version:
-                pkg, ver = name_version.rsplit("-", 1)
+                pkg, ver = name_version.split("-", 1)
+                # Strip known archive suffixes from version
+                for suffix in [".tar.gz", ".tgz", ".tar", ".zip"]:
+                    if ver.endswith(suffix):
+                        ver = ver[:-len(suffix)]
+                        break
                 if pkg and ver and (pkg, ver) not in seen:
                     seen.add((pkg, ver))
                     print(f"{pkg} {ver}")
