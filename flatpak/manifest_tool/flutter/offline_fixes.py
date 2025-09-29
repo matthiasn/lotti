@@ -285,27 +285,47 @@ def ensure_cargo_config_in_place(document: ManifestDocument) -> OperationResult:
             commands = []
             module["build-commands"] = commands
 
-        # Check if we already have the copy command
+        # Check if we already have the helper commands
         has_cargo_copy = any(
             isinstance(cmd, str) and "cp cargo/config .cargo/config" in cmd
             for cmd in commands
         )
+        has_mkdir = any(
+            isinstance(cmd, str) and "mkdir -p .cargo" in cmd for cmd in commands
+        )
+        has_link = any(
+            isinstance(cmd, str) and "ln -sfn ../cargo .cargo/cargo" in cmd
+            for cmd in commands
+        )
+
+        # Determine insertion position after the "Building Lotti" marker
+        insert_pos = 0
+        for i, cmd in enumerate(commands):
+            if isinstance(cmd, str) and "Building Lotti from source" in cmd:
+                insert_pos = i + 1
+                break
+
+        # Default insertion position if marker wasn't found
+        if insert_pos == 0:
+            insert_pos = 3  # After SDK setup commands
+
+        if not has_mkdir:
+            mkdir_cmd = "mkdir -p .cargo"
+            commands.insert(insert_pos, mkdir_cmd)
+            messages.append("Ensured .cargo directory exists")
+            changed = True
+            insert_pos += 1
+
+        if not has_link:
+            link_cmd = "ln -sfn ../cargo .cargo/cargo"
+            commands.insert(insert_pos, link_cmd)
+            messages.append("Linked cargo vendor directory into CARGO_HOME")
+            changed = True
+            insert_pos += 1
 
         if not has_cargo_copy:
             # Add command to copy the vendor config to where CARGO_HOME expects it
             copy_cmd = "cp cargo/config .cargo/config.toml 2>/dev/null || true"
-
-            # Find the position after "Building Lotti from source..."
-            insert_pos = 0
-            for i, cmd in enumerate(commands):
-                if isinstance(cmd, str) and "Building Lotti from source" in cmd:
-                    insert_pos = i + 1
-                    break
-
-            # If not found, add at the beginning
-            if insert_pos == 0:
-                insert_pos = 3  # After SDK setup commands
-
             commands.insert(insert_pos, copy_cmd)
             messages.append("Added cargo config copy command")
             changed = True

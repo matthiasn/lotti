@@ -348,6 +348,8 @@ def test_no_changes_needed():
                 "build-commands": [
                     "echo Building...",
                     "cp -r /var/lib/flutter /run/build/lotti/flutter_sdk",
+                    "mkdir -p .cargo",
+                    "ln -sfn ../cargo .cargo/cargo",
                     "cp cargo/config .cargo/config.toml 2>/dev/null || true",  # Already has cargo config copy
                 ],
                 "build-options": {
@@ -404,19 +406,27 @@ def test_ensure_cargo_config_in_place():
 
     result = offline_fixes.ensure_cargo_config_in_place(doc)
     assert result.changed
-    assert "Added cargo config copy command" in str(result.messages)
-    assert "Set CARGO_HOME to /run/build/lotti/.cargo" in str(result.messages)
+    messages = " ".join(result.messages)
+    assert "Added cargo config copy command" in messages
+    assert "Ensured .cargo directory exists" in messages
+    assert "Linked cargo vendor directory into CARGO_HOME" in messages
+    assert "Set CARGO_HOME to /run/build/lotti/.cargo" in messages
 
     lotti = next(m for m in doc.data["modules"] if m.get("name") == "lotti")
     commands = lotti["build-commands"]
 
-    # Should have the cargo config copy command right after "Building Lotti from source..."
+    # Should have the helper commands immediately after the build marker
     building_index = next(
         i for i, cmd in enumerate(commands) if "Building Lotti from source" in cmd
     )
+    expected_commands = [
+        "mkdir -p .cargo",
+        "ln -sfn ../cargo .cargo/cargo",
+        "cp cargo/config .cargo/config.toml 2>/dev/null || true",
+    ]
     assert (
-        commands[building_index + 1]
-        == "cp cargo/config .cargo/config.toml 2>/dev/null || true"
+        commands[building_index + 1 : building_index + 1 + len(expected_commands)]
+        == expected_commands
     )
 
     # Should have CARGO_HOME set
@@ -436,6 +446,8 @@ def test_cargo_config_copy_idempotent():
                 },
                 "build-commands": [
                     "echo Setting up Flutter SDK...",
+                    "mkdir -p .cargo",
+                    "ln -sfn ../cargo .cargo/cargo",
                     "cp cargo/config .cargo/config.toml 2>/dev/null || true",  # Already has it
                     "flutter pub get --offline",
                 ],
@@ -449,11 +461,13 @@ def test_cargo_config_copy_idempotent():
     lotti = next(m for m in doc.data["modules"] if m.get("name") == "lotti")
     commands = lotti["build-commands"]
 
-    # Should only have one copy command
-    copy_commands = [
-        cmd for cmd in commands if "cp cargo/config .cargo/config.toml" in cmd
-    ]
-    assert len(copy_commands) == 1
+    # Should only have one set of helper commands
+    assert len([cmd for cmd in commands if "mkdir -p .cargo" in cmd]) == 1
+    assert len([cmd for cmd in commands if "ln -sfn ../cargo .cargo/cargo" in cmd]) == 1
+    assert (
+        len([cmd for cmd in commands if "cp cargo/config .cargo/config.toml" in cmd])
+        == 1
+    )
 
     # CARGO_HOME should still be set
     assert lotti["build-options"]["env"]["CARGO_HOME"] == "/run/build/lotti/.cargo"
@@ -506,6 +520,8 @@ def test_cargo_home_not_changed_if_correct():
                     }
                 },
                 "build-commands": [
+                    "mkdir -p .cargo",
+                    "ln -sfn ../cargo .cargo/cargo",
                     "cp cargo/config .cargo/config.toml 2>/dev/null || true",  # Has copy command
                 ],
             }
