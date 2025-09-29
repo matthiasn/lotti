@@ -51,17 +51,15 @@ done
 # Now generate cargo-sources.json from the downloaded Cargo.lock files
 print_info "Generating cargo-sources.json from downloaded Cargo.lock files..."
 
-CARGO_LOCKS=""
+local lock_files=()
 for lock_file in *-Cargo.lock; do
   if [ -f "$lock_file" ]; then
-    if [ -n "$CARGO_LOCKS" ]; then
-      CARGO_LOCKS="$CARGO_LOCKS,$lock_file"
-    else
-      CARGO_LOCKS="$lock_file"
-    fi
+    lock_files+=("$lock_file")
     print_info "Using: $lock_file"
   fi
 done
+
+CARGO_LOCKS=$(IFS=,; echo "${lock_files[*]}")
 
 if [ -n "$CARGO_LOCKS" ]; then
   if python3 "$SCRIPT_DIR/flatpak-flutter/cargo_generator/cargo_generator.py" \

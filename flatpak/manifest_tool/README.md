@@ -77,30 +77,33 @@ Updates version, date, and commit information.
 
 #### Flutter-Specific Operations
 
-**copy-flutter-sdk**
+**ensure-flutter-pub-get-offline**
 ```bash
-python3 manifest_tool/cli.py copy-flutter-sdk \
-  --manifest input.yml \
-  --work-dir ./work \
-  --flutter-dir ./flutter
-```
-Copies Flutter SDK for offline use.
-
-**ensure-offline-flutter**
-```bash
-python3 manifest_tool/cli.py ensure-offline-flutter \
+python3 manifest_tool/cli.py ensure-flutter-pub-get-offline \
   --manifest input.yml
 ```
-Ensures Flutter build commands use offline flags:
-- Adds `--offline` to `flutter pub get`
-- Adds `--no-pub` to `flutter build`
+Ensures `flutter pub get` commands use the `--offline` flag to prevent network access during builds.
 
-**remove-network-from-build**
+**ensure-dart-pub-offline-in-build**
 ```bash
-python3 manifest_tool/cli.py remove-network-from-build \
+python3 manifest_tool/cli.py ensure-dart-pub-offline-in-build \
   --manifest input.yml
 ```
-Removes `--share=network` from build arguments (Flathub requirement).
+Wraps `flutter build` commands with environment variables to disable pub network access.
+
+**remove-flutter-config**
+```bash
+python3 manifest_tool/cli.py remove-flutter-config \
+  --manifest input.yml
+```
+Removes `flutter config` commands from lotti build steps (not allowed during Flathub builds).
+
+**remove-network-from-build-args**
+```bash
+python3 manifest_tool/cli.py remove-network-from-build-args \
+  --manifest input.yml
+```
+Removes `--share=network` from build-args sections (Flathub requirement).
 
 **ensure-rust-sdk-env**
 ```bash
@@ -132,6 +135,30 @@ python3 manifest_tool/cli.py add-sqlite3-source \
 ```
 Adds SQLite source for sqlite3_flutter_libs plugin for both x86_64 and aarch64.
 
+**add-offline-build-patches**
+```bash
+python3 manifest_tool/cli.py add-offline-build-patches \
+  --manifest input.yml
+```
+Adds comprehensive offline build patches to the lotti module including:
+- SQLite3 source configuration
+- Cargokit offline configuration
+- Cargo config setup for offline builds
+This command ensures all necessary configurations are in place for fully offline builds.
+
+#### Validation and Compliance
+
+**check-flathub-compliance**
+```bash
+python3 manifest_tool/cli.py check-flathub-compliance \
+  --manifest input.yml
+```
+Checks the manifest for Flathub compliance violations including:
+- Network access in build-args (forbidden at build time)
+- Flutter config commands (should not modify config during build)
+- pub get commands without --offline flag
+- flutter build commands without --no-pub flag (warning)
+
 #### Source Operations
 
 **bundle-archive-sources**
@@ -148,14 +175,23 @@ Bundles all archive and file sources locally:
 - Verifies checksums
 - Searches multiple cache locations
 
-**make-yaml-source-from-git**
+**add-offline-sources**
 ```bash
-python3 manifest_tool/cli.py make-yaml-source-from-git \
-  --repo-url https://github.com/user/repo \
-  --ref-or-commit main \
-  --output sources.yml
+python3 manifest_tool/cli.py add-offline-sources \
+  --manifest input.yml \
+  --pubspec pubspec-sources.json \
+  --cargo cargo-sources.json \
+  --flutter-json flutter-3.24.0.json \
+  --rustup rustup-1.83.0.json
 ```
-Creates YAML source definition from git repository.
+Attaches offline JSON source files to the lotti module for offline builds.
+
+**remove-rustup-sources**
+```bash
+python3 manifest_tool/cli.py remove-rustup-sources \
+  --manifest input.yml
+```
+Removes rustup-*.json references from sources (when using SDK extension instead).
 
 **make-yaml-source-from-dir**
 ```bash
@@ -165,25 +201,64 @@ python3 manifest_tool/cli.py make-yaml-source-from-dir \
 ```
 Creates YAML source definition from local directory.
 
+#### Build Utility Commands
+
+**find-flutter-sdk**
+```bash
+python3 manifest_tool/cli.py find-flutter-sdk \
+  --search-root /path/to/cache \
+  --search-root /another/path \
+  --exclude /path/to/exclude \
+  --max-depth 6
+```
+Finds a cached Flutter SDK installation in the specified directories.
+
+**prepare-build-dir**
+```bash
+python3 manifest_tool/cli.py prepare-build-dir \
+  --build-dir ./build \
+  --pubspec-yaml pubspec.yaml \
+  --pubspec-lock pubspec.lock \
+  --no-foreign-deps
+```
+Prepares the build directory for flatpak-flutter builds.
+
+**generate-setup-helper**
+```bash
+python3 manifest_tool/cli.py generate-setup-helper \
+  --output setup-flutter.sh
+```
+Generates the setup-flutter.sh helper script.
+
 #### CI/CD Operations
 
-**remove-skip-ci-from-commit**
+**pr-aware-pin**
 ```bash
-python3 manifest_tool/cli.py remove-skip-ci-from-commit \
-  --manifest input.yml \
-  --ref-name feature-branch
+python3 manifest_tool/cli.py pr-aware-pin \
+  --event-name pull_request \
+  --event-path /path/to/event.json
 ```
-Removes CI skip markers and updates branch reference.
+Emits shell assignments for PR-aware manifest pinning.
+
+**update-manifest**
+```bash
+python3 manifest_tool/cli.py update-manifest \
+  --manifest input.yml \
+  --commit abc123def \
+  --event-name pull_request \
+  --event-path event.json
+```
+Updates manifest for builds, handling both PR and non-PR scenarios.
 
 **bundle-app-archive**
 ```bash
 python3 manifest_tool/cli.py bundle-app-archive \
   --manifest input.yml \
-  --source-dir ./app \
-  --output-dir ./output \
-  --commit abc123def
+  --archive lotti-source.tar.gz \
+  --sha256 abc123... \
+  --output-dir ./output
 ```
-Creates app source archive for offline build.
+Bundles the application source archive and attaches metadata.
 
 ## Module Details
 
