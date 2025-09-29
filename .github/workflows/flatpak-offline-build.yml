@@ -68,6 +68,7 @@ jobs:
           DEBUG_SETUP_FLUTTER: "1"
         run: |
           flatpak-builder \
+            --sandbox \
             --user \
             --install \
             --force-clean \
