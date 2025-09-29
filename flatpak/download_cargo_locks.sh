@@ -21,7 +21,7 @@ print_error() { echo -e "${RED}✗${NC} $1"; }
 declare -A PLUGINS=(
   ["flutter_vodozemac"]="https://raw.githubusercontent.com/famedly/dart-vodozemac/a3446206da432a3a48dedf39bb57604a376b3582/rust/Cargo.lock"
   ["super_native_extensions"]="https://raw.githubusercontent.com/superlistapp/super_native_extensions/super_native_extensions-v0.9.1/super_native_extensions/rust/Cargo.lock"
-  ["irondash_engine_context"]="https://raw.githubusercontent.com/irondash/irondash/main/Cargo.lock"
+  ["irondash_engine_context"]="https://raw.githubusercontent.com/irondash/irondash/65343873472d6796c0388362a8e04b6e9a499044/Cargo.lock"
 )
 
 cd "$OUTPUT_DIR"
