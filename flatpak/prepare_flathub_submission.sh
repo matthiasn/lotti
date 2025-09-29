@@ -1166,7 +1166,10 @@ if [ -z "$OUT_MANIFEST" ]; then
 fi
 
 # Use Python manifest_tool for robust compliance checking
-if ! python3 "$PYTHON_CLI" check-flathub-compliance --manifest "$OUT_MANIFEST"; then
+print_info "Running final Flathub compliance validation..."
+if python3 "$PYTHON_CLI" check-flathub-compliance --manifest "$OUT_MANIFEST"; then
+  print_status "✓ Final manifest passes all Flathub compliance checks"
+else
   print_error "FATAL: Flathub compliance violations found in final manifest"
   print_info "See details above for specific violations"
   exit 1
@@ -1206,20 +1209,8 @@ if [ "${TEST_BUILD:-false}" == "true" ]; then
     fi
 fi
 
-# Step 8.5: Check for cargo-sources.json regeneration needs
-if [ -f "$OUTPUT_DIR/cargo-sources.json" ]; then
-  print_warning "Note: cargo-sources.json was generated from initial pubspec.lock data"
-  print_info "If the build fails with cargo version mismatch errors, you may need to:"
-  print_info "  1. Run a test build: cd $OUTPUT_DIR && flatpak-builder --force-clean --disable-updates build-dir com.matthiasn.lotti.yml"
-  print_info "  2. When it fails, run: ./regenerate_cargo_sources.sh"
-  print_info "  3. Rebuild with the updated cargo-sources.json"
-  echo ""
-  print_info "This two-phase process is needed because cargo dependencies are only known after"
-  print_info "the first build populates .pub-cache with the actual Rust plugin Cargo.lock files."
-  echo ""
-fi
-
-# Note: The duplicate sed commands have been removed as they duplicate the Python manifest_tool operations
+# cargo-sources.json is now automatically generated with correct dependencies from GitHub
+# No manual regeneration needed since we download Cargo.lock files directly from plugin repos
 # The manifest_tool commands earlier in the script handle:
 # - Removing --share=network (via remove-network-from-build-args)
 # - Adding --offline to flutter pub get (via ensure-flutter-pub-get-offline)
