@@ -65,7 +65,7 @@ Refactor `flatpak/prepare_flathub_submission.sh` into a thin wrapper that delega
 
 ### Compliance & Bundling
 - Runs multiple `manifest_tool` CLI commands to enforce Flathub rules (remove network, ensure offline flags, apply offline fixes, convert flutter git to archive, bundle sources, bundle app archive, rewrite URLs, etc.).
-- Downloads Cargo.lock files via `download_cargo_locks.sh` and regenerates `cargo-sources.json`.
+  - Downloads Cargo.lock files via Python orchestrator helpers and regenerates `cargo-sources.json`.
 - Bundles Flutter archive and other referenced sources; ensures helper patches copied.
 
 ### Verification & Cleanup

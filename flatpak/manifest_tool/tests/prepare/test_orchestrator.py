@@ -13,6 +13,7 @@ from flatpak.manifest_tool.prepare.orchestrator import (
     PrepareFlathubOptions,
     PrepareFlathubError,
     _StatusPrinter,
+    _download_cargo_lock_files,
     _assert_commit_pinned,
     _prepare_directories,
     _prepare_manifest_for_flatpak_flutter,
@@ -301,6 +302,33 @@ class PrepareOrchestratorTests(unittest.TestCase):
                 (context.output_dir / "sqlite3_flutter_libs" / "dummy.patch").is_file()
             )
             self.assertTrue((context.output_dir / "cargokit" / "Cargo.lock").is_file())
+
+    def test_download_cargo_lock_files_success(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            context = _make_context(base)
+
+            def fake_fetch(url: str, destination: Path) -> None:
+                destination.write_text("[package]\n", encoding="utf-8")
+
+            files = _download_cargo_lock_files(context, _StatusPrinter(), fake_fetch)
+            expected = {
+                context.output_dir / "flutter_vodozemac-Cargo.lock",
+                context.output_dir / "super_native_extensions-Cargo.lock",
+                context.output_dir / "irondash_engine_context-Cargo.lock",
+            }
+            self.assertEqual(set(files), expected)
+
+    def test_download_cargo_lock_files_invalid(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            context = _make_context(base)
+
+            def fake_fetch(url: str, destination: Path) -> None:
+                destination.write_text("invalid", encoding="utf-8")
+
+            files = _download_cargo_lock_files(context, _StatusPrinter(), fake_fetch)
+            self.assertEqual(files, [])
 
     def test_cleanup_removes_builder(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -20,7 +20,7 @@ from contextlib import closing
 from urllib.parse import urlparse
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Mapping, MutableMapping, Optional
+from typing import Callable, Iterable, Mapping, MutableMapping, Optional
 
 import yaml
 
@@ -39,6 +39,21 @@ _SQLITE_AUTOCONF_VERSION = os.getenv(
 _SQLITE_AUTOCONF_SHA256 = os.getenv(
     "SQLITE_AUTOCONF_SHA256",
     "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+)
+
+CARGO_LOCK_SOURCES: tuple[tuple[str, str], ...] = (
+    (
+        "flutter_vodozemac",
+        "https://raw.githubusercontent.com/famedly/dart-vodozemac/a3446206da432a3a48dedf39bb57604a376b3582/rust/Cargo.lock",
+    ),
+    (
+        "super_native_extensions",
+        "https://raw.githubusercontent.com/superlistapp/super_native_extensions/super_native_extensions-v0.9.1/super_native_extensions/rust/Cargo.lock",
+    ),
+    (
+        "irondash_engine_context",
+        "https://raw.githubusercontent.com/irondash/irondash/65343873472d6796c0388362a8e04b6e9a499044/Cargo.lock",
+    ),
 )
 
 from .. import flutter
@@ -1567,29 +1582,65 @@ def _fallback_cargo_sources_from_builder(
     return False
 
 
+def _download_cargo_lock_files(
+    context: PrepareFlathubContext,
+    printer: _StatusPrinter,
+    fetcher: Optional[Callable[[str, Path], None]] = None,
+) -> list[Path]:
+    fetch = fetcher or _download_https_resource
+    output_dir = context.output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    downloaded: list[Path] = []
+    for name, url in CARGO_LOCK_SOURCES:
+        destination = output_dir / f"{name}-Cargo.lock"
+        printer.info(f"Downloading {name} Cargo.lock...")
+        try:
+            fetch(url, destination)
+        except (PrepareFlathubError, urllib.error.URLError, socket.timeout) as exc:
+            printer.warn(f"Failed to download {name} Cargo.lock from {url}: {exc}")
+            destination.unlink(missing_ok=True)
+            continue
+
+        try:
+            content = destination.read_text("utf-8", errors="ignore")
+        except OSError as exc:
+            printer.warn(f"Failed to read downloaded Cargo.lock for {name}: {exc}")
+            destination.unlink(missing_ok=True)
+            continue
+
+        if "[package]" not in content:
+            printer.warn(
+                f"Downloaded file for {name} did not look like a Cargo.lock; removing"
+            )
+            destination.unlink(missing_ok=True)
+            continue
+
+        printer.status(f"Downloaded {destination.name}")
+        downloaded.append(destination)
+
+    return downloaded
+
+
 def _download_and_generate_cargo_sources(
     context: PrepareFlathubContext, printer: _StatusPrinter
 ) -> None:
     printer.info(
         "Downloading Cargo.lock files from GitHub to generate correct cargo-sources.json..."
     )
-    script = context.flatpak_dir / "download_cargo_locks.sh"
-    if script.is_file() and os.access(script, os.X_OK):
-        result = _run_command(
-            ["bash", str(script), str(context.output_dir)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            check=False,
-        )
-        if result.returncode == 0:
+    downloaded_locks = _download_cargo_lock_files(context, printer)
+
+    if downloaded_locks:
+        cargo_json = context.output_dir / "cargo-sources.json"
+        if _run_cargo_generator(context, downloaded_locks, cargo_json):
             printer.status(
                 "Generated cargo-sources.json from downloaded Cargo.lock files"
             )
-        else:
-            printer.warn("Failed to generate cargo-sources.json from downloaded files")
-    else:
-        printer.warn("download_cargo_locks.sh not found or not executable")
+            with cargo_json.open(encoding="utf-8") as fh:
+                line_count = sum(1 for _ in fh)
+            printer.info(f"Line count: {line_count}")
+            return
+        printer.warn("Failed to generate cargo-sources.json from downloaded files")
 
     cargo_json = context.output_dir / "cargo-sources.json"
     if cargo_json.is_file():

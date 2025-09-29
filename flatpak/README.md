@@ -23,7 +23,6 @@ The Flatpak build process involves several stages:
    - `create_local_manifest.sh` - Pins commit for local builds
    - `prepare_flathub_submission.sh` - Orchestrates entire offline build preparation
    - `manifest_tool/` - Python utilities for manifest manipulation (see below)
-   - `download_cargo_locks.sh` - Downloads Cargo.lock files from build cache
 
 3. **manifest_tool Python Utilities** (modular architecture)
    - **core/**: Core manifest operations and utilities
