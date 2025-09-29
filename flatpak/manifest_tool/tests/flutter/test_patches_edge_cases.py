@@ -80,7 +80,8 @@ def test_patches_with_malformed_sources_list(make_document):
     assert result.changed
     # Should replace the malformed sources with a proper list
     assert isinstance(lotti["sources"], list)
-    assert len(lotti["sources"]) == 3  # SQLite patch, cargo config, cargokit patch
+    # Should have at least 4 items: 3 cargokit patches + cargo config
+    assert len(lotti["sources"]) >= 4
 
 
 def test_patches_preserve_other_sources(make_document):
@@ -111,8 +112,8 @@ def test_patches_preserve_other_sources(make_document):
     for orig in original_sources:
         assert orig in sources
 
-    # Plus the new patches
-    assert len(sources) == len(original_sources) + 3
+    # Plus the new patches (3 cargokit patches + cargo config)
+    assert len(sources) >= len(original_sources) + 4
 
 
 def test_patches_with_module_missing_dict_type(make_document):
@@ -176,23 +177,21 @@ def test_patch_sources_have_required_fields():
     assert result.changed
     lotti = document.data["modules"][0]
 
-    # Check SQLite patch
-    sqlite_patch = next(
+    # Check cargokit patches
+    cargokit_patches = [
         s
         for s in lotti["sources"]
-        if isinstance(s, dict) and s.get("path") == "patches/sqlite3-offline.patch"
-    )
-    assert sqlite_patch["type"] == "patch"
-    assert len(sqlite_patch) == 2  # Only type, path
+        if isinstance(s, dict)
+        and s.get("type") == "patch"
+        and "cargokit" in s.get("dest", "")
+    ]
+    assert len(cargokit_patches) >= 3  # At least 3 cargokit patches
 
-    # Check cargokit patch
-    cargokit_patch = next(
-        s
-        for s in lotti["sources"]
-        if isinstance(s, dict) and s.get("path") == "patches/cargokit-offline.patch"
-    )
-    assert cargokit_patch["type"] == "patch"
-    assert len(cargokit_patch) == 2  # Only type, path
+    for patch in cargokit_patches:
+        assert patch["type"] == "patch"
+        assert "path" in patch
+        assert "dest" in patch
+        assert len(patch) == 3  # Only type, path, dest
 
     # Check cargo config
     cargo_config = next(
@@ -230,8 +229,8 @@ def test_multiple_lotti_modules(make_document):
     ]
     assert len(lotti_modules) == 2
 
-    # First should have patches
-    assert len(lotti_modules[0].get("sources", [])) >= 3
+    # First should have patches (at least 4: 3 cargokit + cargo config)
+    assert len(lotti_modules[0].get("sources", [])) >= 4
     # Second should be unchanged
     assert len(lotti_modules[1].get("sources", [])) == 0
 
@@ -251,14 +250,7 @@ def test_patches_do_not_duplicate_on_repeated_calls(make_document):
 
     sources = lotti["sources"]
 
-    # Should only have one of each
-    sqlite_patches = [
-        s
-        for s in sources
-        if isinstance(s, dict) and s.get("path") == "patches/sqlite3-offline.patch"
-    ]
-    assert len(sqlite_patches) == 1
-
+    # Should only have one of each type
     cargo_configs = [
         s
         for s in sources
@@ -268,12 +260,20 @@ def test_patches_do_not_duplicate_on_repeated_calls(make_document):
     ]
     assert len(cargo_configs) == 1
 
+    # Check we have cargokit patches and they don't duplicate
     cargokit_patches = [
         s
         for s in sources
-        if isinstance(s, dict) and s.get("path") == "patches/cargokit-offline.patch"
+        if isinstance(s, dict)
+        and s.get("type") == "patch"
+        and "cargokit" in s.get("dest", "")
     ]
-    assert len(cargokit_patches) == 1
+    # Should have 3 patches, one for each package
+    assert len(cargokit_patches) == 3
+
+    # Each package should have only one patch
+    dests = [p.get("dest") for p in cargokit_patches]
+    assert len(dests) == len(set(dests))  # No duplicates
 
 
 def test_empty_modules_list():

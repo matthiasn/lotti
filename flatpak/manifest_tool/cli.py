@@ -710,6 +710,23 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    # Apply all offline fixes (setup-flutter removal, path fixes, patches)
+    parser_apply_offline_fixes = subparsers.add_parser(
+        "apply-offline-fixes",
+        help="Apply all offline fixes: remove setup-flutter.sh, fix paths, add patches.",
+    )
+    parser_apply_offline_fixes.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_apply_offline_fixes.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter.apply_all_offline_fixes(document),
+            )
+        )
+    )
+
     # Validation command
     parser_check_compliance = subparsers.add_parser(
         "check-flathub-compliance",

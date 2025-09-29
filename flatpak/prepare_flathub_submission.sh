@@ -738,8 +738,8 @@ python3 "$PYTHON_CLI" ensure-dart-pub-offline-in-build --manifest "$OUT_MANIFEST
 print_info "Removing rustup install commands (using SDK extension instead)..."
 python3 "$PYTHON_CLI" remove-rustup-install --manifest "$OUT_MANIFEST"
 
-print_info "Adding offline build patches..."
-python3 "$PYTHON_CLI" add-offline-build-patches --manifest "$OUT_MANIFEST"
+print_info "Applying comprehensive offline fixes..."
+python3 "$PYTHON_CLI" apply-offline-fixes --manifest "$OUT_MANIFEST"
 
 # Validate the manifest for Flathub compliance
 print_info "Validating manifest for Flathub compliance..."
@@ -1156,9 +1156,9 @@ if [ -f "$OUT_MANIFEST" ]; then
     --sha256 "$LOTT_ARCHIVE_SHA256" \
     --output-dir "$OUTPUT_DIR"
 
-  # Add offline build patches (sqlite3, cargokit, cargo config)
-  print_status "Adding offline build patches..."
-  python3 "$PYTHON_CLI" add-offline-build-patches --manifest "$OUT_MANIFEST"
+  # Apply comprehensive offline fixes
+  print_status "Applying comprehensive offline fixes..."
+  python3 "$PYTHON_CLI" apply-offline-fixes --manifest "$OUT_MANIFEST"
 
 fi
 

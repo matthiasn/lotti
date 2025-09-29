@@ -37,6 +37,11 @@ from .patches import (
     add_offline_build_patches,
 )
 
+# Offline fixes
+from .offline_fixes import (
+    apply_all_offline_fixes,
+)
+
 # Helper operations
 from .helpers import (
     ensure_setup_helper_source,
@@ -67,6 +72,8 @@ __all__ = [
     "remove_rustup_install",
     # Patches
     "add_offline_build_patches",
+    # Offline fixes
+    "apply_all_offline_fixes",
     # Helpers
     "ensure_setup_helper_source",
     "ensure_setup_helper_command",

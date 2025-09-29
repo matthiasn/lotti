@@ -19,23 +19,28 @@ def test_add_offline_build_patches_adds_sources(make_document):
     result = flutter_patches.add_offline_build_patches(document)
 
     assert result.changed
-    assert "sqlite offline patch" in str(result.messages).lower()
-    assert "cargo offline config" in str(result.messages).lower()
-    assert "cargokit offline patch" in str(result.messages).lower()
+    # SQLite patches are handled by flatpak-flutter generated patches, not added here
+    assert (
+        "cargo offline config" in str(result.messages).lower()
+        or "cargokit patch" in str(result.messages).lower()
+    )
 
     sources = lotti.get("sources", [])
 
-    # Check that patch sources were added
-    assert any(
-        s.get("path") == "patches/sqlite3-offline.patch"
+    # Check that cargokit patches were added for detected packages
+    cargokit_patches = [
+        s
         for s in sources
         if isinstance(s, dict)
-    )
-    assert any(
-        s.get("path") == "patches/cargokit-offline.patch"
-        for s in sources
-        if isinstance(s, dict)
-    )
+        and s.get("type") == "patch"
+        and "cargokit" in s.get("dest", "")
+    ]
+    # Should have patches for the fallback packages at minimum
+    assert (
+        len(cargokit_patches) >= 3
+    )  # super_native_extensions, flutter_vodozemac, irondash_engine_context
+
+    # Check cargo config was added
     assert any(
         (s.get("dest") == ".cargo" and s.get("dest-filename") == "config.toml")
         for s in sources
@@ -44,29 +49,16 @@ def test_add_offline_build_patches_adds_sources(make_document):
 
 
 def test_add_cmake_offline_patches(make_document):
-    """Test that add_cmake_offline_patches adds SQLite patch."""
+    """Test that add_cmake_offline_patches does nothing (handled by flatpak-flutter)."""
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
     result = flutter_patches.add_cmake_offline_patches(document)
 
-    assert result.changed
-    assert "sqlite offline patch" in str(result.messages).lower()
-
-    sources = lotti.get("sources", [])
-
-    # Check SQLite patch was added
-    sqlite_patch = next(
-        (
-            s
-            for s in sources
-            if isinstance(s, dict) and s.get("path") == "patches/sqlite3-offline.patch"
-        ),
-        None,
-    )
-    assert sqlite_patch is not None
-    assert sqlite_patch["type"] == "patch"
-    # Patches don't have strip property (that's for archives)
+    # SQLite patches are handled by flatpak-flutter generated patches
+    # This function now returns unchanged
+    assert not result.changed
+    assert result.messages == []
 
 
 def test_add_cargokit_offline_patches(make_document):
@@ -77,8 +69,10 @@ def test_add_cargokit_offline_patches(make_document):
     result = flutter_patches.add_cargokit_offline_patches(document)
 
     assert result.changed
-    assert "cargo offline config" in str(result.messages).lower()
-    assert "cargokit offline patch" in str(result.messages).lower()
+    assert (
+        "cargo offline config" in str(result.messages).lower()
+        or "cargokit patch" in str(result.messages).lower()
+    )
 
     sources = lotti.get("sources", [])
 
@@ -98,17 +92,18 @@ def test_add_cargokit_offline_patches(make_document):
     assert "[net]" in cargo_config["contents"]
     assert "offline = true" in cargo_config["contents"]
 
-    # Check cargokit patch was added
-    cargokit_patch = next(
-        (
-            s
-            for s in sources
-            if isinstance(s, dict) and s.get("path") == "patches/cargokit-offline.patch"
-        ),
-        None,
-    )
-    assert cargokit_patch is not None
-    assert cargokit_patch["type"] == "patch"
+    # Check cargokit patches were added for detected packages
+    cargokit_patches = [
+        s
+        for s in sources
+        if isinstance(s, dict)
+        and s.get("type") == "patch"
+        and "cargokit" in s.get("dest", "")
+    ]
+    # Should have patches for the fallback packages at minimum
+    assert (
+        len(cargokit_patches) >= 3
+    )  # super_native_extensions, flutter_vodozemac, irondash_engine_context
 
 
 def test_add_offline_build_patches_idempotent(make_document):
@@ -166,17 +161,17 @@ def test_add_offline_build_patches_no_sources(make_document):
     assert "sources" in lotti
     sources = lotti["sources"]
 
-    # All patches should be present
-    assert any(
-        s.get("path") == "patches/sqlite3-offline.patch"
+    # Check cargokit patches were added
+    cargokit_patches = [
+        s
         for s in sources
         if isinstance(s, dict)
-    )
-    assert any(
-        s.get("path") == "patches/cargokit-offline.patch"
-        for s in sources
-        if isinstance(s, dict)
-    )
+        and s.get("type") == "patch"
+        and "cargokit" in s.get("dest", "")
+    ]
+    assert len(cargokit_patches) >= 3  # fallback packages
+
+    # Check cargo config was added
     assert any(
         (s.get("dest") == ".cargo" and s.get("dest-filename") == "config.toml")
         for s in sources

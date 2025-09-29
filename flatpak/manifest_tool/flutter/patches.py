@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from textwrap import dedent
 
 try:  # pragma: no cover
     from ..core import ManifestDocument, OperationResult, get_logger
@@ -16,43 +15,11 @@ except ImportError:  # pragma: no cover
 _LOGGER = get_logger("flutter.patches")
 
 
-def _create_sqlite_patch_command() -> str:
-    """Create the SQLite CMakeLists.txt patch command."""
-    return (
-        dedent(
-            """python3 - <<'PY'
-import pathlib
-
-base = pathlib.Path('.pub-cache/hosted/pub.dev')
-target = next(base.glob('sqlite3_flutter_libs-*/linux/CMakeLists.txt'), None)
-if target is None:
-    raise SystemExit('sqlite3_flutter_libs linux/CMakeLists.txt not found')
-content = target.read_text()
-needle = 'URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18'
-if needle not in content:
-    new_content = content.replace(
-        'DOWNLOAD_EXTRACT_TIMESTAMP NEW',
-        'URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18\\n    DOWNLOAD_EXTRACT_TIMESTAMP NEW'
-    )
-    # Also handle the older CMake version without DOWNLOAD_EXTRACT_TIMESTAMP
-    if 'DOWNLOAD_EXTRACT_TIMESTAMP' not in content:
-        new_content = content.replace(
-            'URL https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz',
-            'URL https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz\\n    URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18'
-        )
-    target.write_text(new_content)
-    print(f'Patched {target} for offline SQLite build')
-PY"""
-        ).strip()
-        + "\n"
-    )
-
-
 def add_cmake_offline_patches(document: ManifestDocument) -> OperationResult:
     """Add patches for CMake-based plugins to work offline.
 
-    This adds inline patch commands to modify CMakeLists.txt files
-    for plugins like sqlite3_flutter_libs that use CMake FetchContent.
+    Note: SQLite patches are handled by flatpak-flutter which generates
+    sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch automatically.
 
     Args:
         document: The manifest document to modify
@@ -60,101 +27,105 @@ def add_cmake_offline_patches(document: ManifestDocument) -> OperationResult:
     Returns:
         OperationResult with details of changes made
     """
-    modules = document.ensure_modules()
-    changed = False
-    messages = []
+    # SQLite patches are handled by flatpak-flutter's generated patches
+    # No additional patches needed here
+    return OperationResult.unchanged()
 
+
+def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
+    """Find all packages that use cargokit by looking for Cargo.lock files.
+
+    Returns:
+        List of package names with versions that have cargokit
+    """
+    import json
+    from pathlib import Path
+
+    cargokit_packages = []
+    modules = document.ensure_modules()
+
+    # First, try to detect from Cargo.lock files in sources
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
 
-        commands = module.setdefault("build-commands", [])
-        patch_cmd = _create_sqlite_patch_command()
-
-        # Check if patch command already exists
-        if patch_cmd not in commands:
-            # Find insertion point - before flutter build commands
-            insert_index = 0
-            for i, cmd in enumerate(commands):
-                if "flutter build" in cmd or "flutter pub get" in cmd:
-                    insert_index = i
-                    break
-            else:
-                insert_index = len(commands)
-
-            commands.insert(insert_index, patch_cmd)
-            module["build-commands"] = commands
-            messages.append("Added SQLite offline patch command")
-            changed = True
-
+        sources = module.get("sources", [])
+        for source in sources:
+            if isinstance(source, dict) and source.get("type") == "file":
+                path = source.get("path", "")
+                if "Cargo.lock" in path and "-Cargo.lock" in path:
+                    # Extract package name from path like "flutter_vodozemac-Cargo.lock"
+                    pkg_name = path.replace("-Cargo.lock", "")
+                    cargokit_packages.append(pkg_name)
         break
 
-    if changed:
-        document.mark_changed()
-        return OperationResult.changed_result("; ".join(messages))
-    return OperationResult.unchanged()
+    # If we found packages from Cargo.lock files, look up their versions from pubspec-sources.json
+    if cargokit_packages:
+        # Try to read pubspec-sources.json to get exact versions
+        pubspec_sources = []
+        for module in modules:
+            if not isinstance(module, dict) or module.get("name") != "lotti":
+                continue
+            sources = module.get("sources", [])
+            for source in sources:
+                if source == "pubspec-sources.json" or (
+                    isinstance(source, dict)
+                    and source.get("path") == "pubspec-sources.json"
+                ):
+                    # Try to load the file if it exists
+                    manifest_dir = (
+                        Path(document.path).parent
+                        if hasattr(document, "path")
+                        else Path.cwd()
+                    )
+                    pubspec_path = manifest_dir / "pubspec-sources.json"
+                    if pubspec_path.exists():
+                        try:
+                            with open(pubspec_path, "r") as f:
+                                pubspec_data = json.load(f)
+                                # Find packages with matching names
+                                versioned_packages = []
+                                for pkg_base in cargokit_packages:
+                                    for item in pubspec_data:
+                                        if (
+                                            isinstance(item, dict)
+                                            and item.get("type") == "file"
+                                        ):
+                                            dest = item.get("dest", "")
+                                            if pkg_base in dest and "/pub.dev/" in dest:
+                                                # Extract full package name with version
+                                                parts = dest.split("/")
+                                                if len(parts) > 0:
+                                                    pkg_full = parts[-1]
+                                                    if pkg_base in pkg_full:
+                                                        versioned_packages.append(
+                                                            pkg_full
+                                                        )
+                                                        break
+                                if versioned_packages:
+                                    return versioned_packages
+                        except (IOError, json.JSONDecodeError):
+                            pass
+                    break
 
+    # Fallback to known packages if detection fails
+    if not cargokit_packages:
+        _LOGGER.debug("Using fallback list of known cargokit packages")
+        return [
+            "super_native_extensions-0.9.1",
+            "flutter_vodozemac-0.2.2",
+            "irondash_engine_context-0.5.5",
+        ]
 
-def _create_cargokit_patch_command() -> str:
-    """Create the cargokit offline patch command."""
-    return (
-        dedent(
-            """python3 - <<'PY'
-import pathlib
-
-base = pathlib.Path('.pub-cache/hosted/pub.dev')
-patched = False
-# Try both one and two levels deep as package structures may vary
-for pattern in ['*/cargokit/run_build_tool.sh', '*/*/cargokit/run_build_tool.sh']:
-    for script in base.glob(pattern):
-        text = script.read_text()
-        if 'pub get --offline --no-precompile' in text:
-            print(f'{script} already patched')
-            continue
-        new_text = text.replace(
-            'pub get --no-precompile',
-            'pub get --offline --no-precompile'
-        )
-        if new_text != text:
-            script.write_text(new_text)
-            print(f'Patched {script} for offline pub get')
-            patched = True
-if not patched:
-    print('No cargokit scripts needed patching')
-PY"""
-        ).strip()
-        + "\n"
-    )
-
-
-def _create_cargo_config_command() -> str:
-    """Create the cargo vendor config command."""
-    return (
-        dedent(
-            """mkdir -p "$CARGO_HOME" && cat > "$CARGO_HOME/config" <<'CARGO_CFG'
-[source.vendored-sources]
-directory = "/run/build/lotti/cargo/vendor"
-
-[source.crates-io]
-replace-with = "vendored-sources"
-
-[source."https://github.com/knopp/mime_guess"]
-git = "https://github.com/knopp/mime_guess"
-replace-with = "vendored-sources"
-
-[net]
-offline = true
-CARGO_CFG"""
-        ).strip()
-        + "\n"
-    )
+    # Return packages without versions if we couldn't find versions
+    return cargokit_packages
 
 
 def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
     """Add patches for Rust-based plugins to build offline.
 
-    This adds inline patch commands for cargokit and cargo configuration
-    to work in offline mode for plugins that use the cargokit build system.
+    Dynamically finds all cargokit-using packages and adds patches for them.
+    Also adds cargo configuration for offline mode.
 
     Args:
         document: The manifest document to modify
@@ -170,42 +141,67 @@ def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
 
-        commands = module.setdefault("build-commands", [])
+        sources = module.get("sources", [])
+        if not isinstance(sources, list):
+            sources = []
 
-        # Add cargokit patch command
-        cargokit_cmd = _create_cargokit_patch_command()
-        if cargokit_cmd not in commands:
-            # Find insertion point
-            insert_index = 0
-            for i, cmd in enumerate(commands):
-                if "flutter build" in cmd or "flutter pub get" in cmd:
-                    insert_index = i
-                    break
-            else:
-                insert_index = len(commands)
+        # Find all cargokit packages
+        cargokit_packages = _find_cargokit_packages(document)
 
-            commands.insert(insert_index, cargokit_cmd)
-            messages.append("Added cargokit offline patch command")
-            changed = True
+        # Add patch for each cargokit package
+        for package in cargokit_packages:
+            patch_dest = f".pub-cache/hosted/pub.dev/{package}/cargokit"
 
-        # Add cargo config command
-        cargo_config_cmd = _create_cargo_config_command()
-        if cargo_config_cmd not in commands:
-            # Find insertion point
-            insert_index = 0
-            for i, cmd in enumerate(commands):
-                if "flutter build" in cmd or "flutter pub get" in cmd:
-                    insert_index = i
-                    break
-            else:
-                insert_index = len(commands)
+            # Check if patch already exists
+            has_patch = any(
+                s.get("type") == "patch" and s.get("dest") == patch_dest
+                for s in sources
+                if isinstance(s, dict)
+            )
 
-            commands.insert(insert_index, cargo_config_cmd)
-            messages.append("Added cargo config command")
+            if not has_patch:
+                patch_source = {
+                    "type": "patch",
+                    "path": "cargokit/run_build_tool.sh.patch",
+                    "dest": patch_dest,
+                }
+                # Find position to insert patch (after other patches, before cargo-sources.json)
+                insert_pos = len(sources)
+                for i, s in enumerate(sources):
+                    if isinstance(s, dict) and s.get("path") == "cargo-sources.json":
+                        insert_pos = i
+                        break
+                    elif isinstance(s, str) and "cargo-sources.json" in s:
+                        insert_pos = i
+                        break
+
+                sources.insert(insert_pos, patch_source)
+                messages.append(f"Added cargokit patch for {package}")
+                changed = True
+
+        # Add cargo config as an inline source for offline mode
+        cargo_config = {
+            "type": "inline",
+            "dest": ".cargo",
+            "dest-filename": "config.toml",
+            "contents": "[net]\noffline = true\n\n[http]\nmax-retries = 0\n",
+        }
+
+        # Check if cargo config already exists
+        has_cargo_config = any(
+            (s.get("dest") == ".cargo" and s.get("dest-filename") == "config.toml")
+            or s.get("dest-filename") == ".cargo/config.toml"  # old format
+            for s in sources
+            if isinstance(s, dict)
+        )
+
+        if not has_cargo_config:
+            sources.append(cargo_config)
+            messages.append("Added cargo offline config")
             changed = True
 
         if changed:
-            module["build-commands"] = commands
+            module["sources"] = sources
 
         break
 
@@ -218,10 +214,9 @@ def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
 def add_offline_build_patches(document: ManifestDocument) -> OperationResult:
     """Add comprehensive offline build patches to the lotti module.
 
-    This adds patches and configurations to ensure the build works offline:
-    1. Configures CMake-based plugins to use local sources
-    2. Configures Rust/cargo to build in offline mode
-    3. Adds necessary patch files to redirect network fetches
+    This adds configurations to ensure the build works offline:
+    1. Cargo configuration for offline mode
+    2. Relies on flatpak-flutter generated patches for SQLite and cargokit
 
     Args:
         document: The manifest document to modify
@@ -231,12 +226,12 @@ def add_offline_build_patches(document: ManifestDocument) -> OperationResult:
     """
     results = []
 
-    # Add CMake offline patches (for sqlite3_flutter_libs, etc)
+    # Add CMake offline patches (handled by flatpak-flutter)
     cmake_result = add_cmake_offline_patches(document)
     if cmake_result.changed:
         results.append(cmake_result)
 
-    # Add cargo/Rust offline patches (for cargokit-based plugins)
+    # Add cargo/Rust offline configuration
     cargo_result = add_cargokit_offline_patches(document)
     if cargo_result.changed:
         results.append(cargo_result)
