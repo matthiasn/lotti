@@ -19,7 +19,6 @@ def test_add_cmake_patches_with_existing_conflicting_patch(make_document):
         {
             "type": "patch",
             "path": "patches/sqlite3-offline.patch",
-            "strip": 2,  # Different strip level
         }
     ]
 
@@ -34,8 +33,6 @@ def test_add_cmake_patches_with_existing_conflicting_patch(make_document):
         if isinstance(s, dict) and s.get("path") == "patches/sqlite3-offline.patch"
     ]
     assert len(sqlite_patches) == 1
-    # Original strip level should be preserved
-    assert sqlite_patches[0]["strip"] == 2
 
 
 def test_add_cargokit_patches_with_existing_different_cargo_config(make_document):
@@ -47,7 +44,8 @@ def test_add_cargokit_patches_with_existing_different_cargo_config(make_document
     lotti["sources"] = [
         {
             "type": "inline",
-            "dest-filename": ".cargo/config.toml",
+            "dest": ".cargo",
+            "dest-filename": "config.toml",
             "contents": "[net]\noffline = false\n",  # Different content
         }
     ]
@@ -60,7 +58,9 @@ def test_add_cargokit_patches_with_existing_different_cargo_config(make_document
     cargo_configs = [
         s
         for s in sources
-        if isinstance(s, dict) and s.get("dest-filename") == ".cargo/config.toml"
+        if isinstance(s, dict)
+        and s.get("dest") == ".cargo"
+        and s.get("dest-filename") == "config.toml"
     ]
     assert len(cargo_configs) == 1
     # Original config should be preserved
@@ -144,7 +144,9 @@ def test_cargo_config_contents_format():
     cargo_config = next(
         s
         for s in lotti["sources"]
-        if isinstance(s, dict) and s.get("dest-filename") == ".cargo/config.toml"
+        if isinstance(s, dict)
+        and s.get("dest") == ".cargo"
+        and s.get("dest-filename") == "config.toml"
     )
 
     # Verify the config has the right structure
@@ -181,8 +183,7 @@ def test_patch_sources_have_required_fields():
         if isinstance(s, dict) and s.get("path") == "patches/sqlite3-offline.patch"
     )
     assert sqlite_patch["type"] == "patch"
-    assert sqlite_patch["strip"] == 1
-    assert len(sqlite_patch) == 3  # Only type, path, strip
+    assert len(sqlite_patch) == 2  # Only type, path
 
     # Check cargokit patch
     cargokit_patch = next(
@@ -191,19 +192,21 @@ def test_patch_sources_have_required_fields():
         if isinstance(s, dict) and s.get("path") == "patches/cargokit-offline.patch"
     )
     assert cargokit_patch["type"] == "patch"
-    assert cargokit_patch["strip"] == 1
-    assert len(cargokit_patch) == 3
+    assert len(cargokit_patch) == 2  # Only type, path
 
     # Check cargo config
     cargo_config = next(
         s
         for s in lotti["sources"]
-        if isinstance(s, dict) and s.get("dest-filename") == ".cargo/config.toml"
+        if isinstance(s, dict)
+        and s.get("dest") == ".cargo"
+        and s.get("dest-filename") == "config.toml"
     )
     assert cargo_config["type"] == "inline"
     assert "contents" in cargo_config
+    assert "dest" in cargo_config
     assert "dest-filename" in cargo_config
-    assert len(cargo_config) == 3
+    assert len(cargo_config) == 4  # type, dest, dest-filename, contents
 
 
 def test_multiple_lotti_modules(make_document):
@@ -259,7 +262,9 @@ def test_patches_do_not_duplicate_on_repeated_calls(make_document):
     cargo_configs = [
         s
         for s in sources
-        if isinstance(s, dict) and s.get("dest-filename") == ".cargo/config.toml"
+        if isinstance(s, dict)
+        and s.get("dest") == ".cargo"
+        and s.get("dest-filename") == "config.toml"
     ]
     assert len(cargo_configs) == 1
 

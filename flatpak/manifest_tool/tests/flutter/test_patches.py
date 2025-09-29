@@ -37,7 +37,7 @@ def test_add_offline_build_patches_adds_sources(make_document):
         if isinstance(s, dict)
     )
     assert any(
-        s.get("dest-filename") == ".cargo/config.toml"
+        (s.get("dest") == ".cargo" and s.get("dest-filename") == "config.toml")
         for s in sources
         if isinstance(s, dict)
     )
@@ -66,7 +66,7 @@ def test_add_cmake_offline_patches(make_document):
     )
     assert sqlite_patch is not None
     assert sqlite_patch["type"] == "patch"
-    assert sqlite_patch["strip"] == 1
+    # Patches don't have strip property (that's for archives)
 
 
 def test_add_cargokit_offline_patches(make_document):
@@ -87,7 +87,9 @@ def test_add_cargokit_offline_patches(make_document):
         (
             s
             for s in sources
-            if isinstance(s, dict) and s.get("dest-filename") == ".cargo/config.toml"
+            if isinstance(s, dict)
+            and s.get("dest") == ".cargo"
+            and s.get("dest-filename") == "config.toml"
         ),
         None,
     )
@@ -176,7 +178,7 @@ def test_add_offline_build_patches_no_sources(make_document):
         if isinstance(s, dict)
     )
     assert any(
-        s.get("dest-filename") == ".cargo/config.toml"
+        (s.get("dest") == ".cargo" and s.get("dest-filename") == "config.toml")
         for s in sources
         if isinstance(s, dict)
     )

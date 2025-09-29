@@ -44,7 +44,6 @@ def add_cmake_offline_patches(document: ManifestDocument) -> OperationResult:
         sqlite_patch = {
             "type": "patch",
             "path": "patches/sqlite3-offline.patch",
-            "strip": 1,
         }
 
         # Check if patch already exists (by path, not exact dict match)
@@ -93,15 +92,18 @@ def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
         if not isinstance(sources, list):
             sources = []
 
+        # Cargo config needs to be in .cargo directory
         cargo_config = {
             "type": "inline",
-            "dest-filename": ".cargo/config.toml",
+            "dest": ".cargo",
+            "dest-filename": "config.toml",
             "contents": "[net]\noffline = true\n\n[http]\nmax-retries = 0\n",
         }
 
-        # Check if cargo config already exists
+        # Check if cargo config already exists (check both old and new format)
         has_cargo_config = any(
-            s.get("dest-filename") == ".cargo/config.toml"
+            (s.get("dest") == ".cargo" and s.get("dest-filename") == "config.toml")
+            or s.get("dest-filename") == ".cargo/config.toml"  # old format
             for s in sources
             if isinstance(s, dict)
         )
@@ -116,7 +118,6 @@ def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
         cargokit_patch = {
             "type": "patch",
             "path": "patches/cargokit-offline.patch",
-            "strip": 1,
         }
 
         # Check if patch already exists (by path, not exact dict match)
