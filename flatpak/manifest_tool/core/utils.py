@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import shlex
 import logging
 from pathlib import Path
 from typing import Any, Mapping
@@ -10,7 +9,6 @@ from typing import Any, Mapping
 import yaml
 
 
-_BOOLEAN_VALUES = {"true", "false"}
 _LOGGER_BASENAME = "flatpak_helpers"
 _logger_configured = False
 
@@ -30,19 +28,6 @@ def get_logger(name: str | None = None) -> logging.Logger:
     if name:
         return base_logger.getChild(name)
     return base_logger
-
-
-def format_shell_assignments(values: Mapping[str, str]) -> str:
-    """Render a mapping as newline-separated shell assignments."""
-
-    assignments: list[str] = []
-    for key, raw_value in values.items():
-        value = raw_value
-        if value.lower() in _BOOLEAN_VALUES:
-            assignments.append(f"{key}={value.lower()}")
-        else:
-            assignments.append(f"{key}={shlex.quote(value)}")
-    return "\n".join(assignments)
 
 
 def load_manifest(path: str | Path) -> dict[str, Any]:

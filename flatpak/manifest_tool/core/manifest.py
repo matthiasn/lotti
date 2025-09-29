@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
@@ -28,9 +27,6 @@ class OperationResult:
     def changed_result(cls, *messages: str) -> "OperationResult":
         return cls(changed=True, messages=list(messages))
 
-    def add_message(self, message: str) -> None:
-        self.messages.append(message)
-
     def merge(self, other: "OperationResult") -> "OperationResult":
         return OperationResult(
             changed=self.changed or other.changed,
@@ -55,9 +51,6 @@ class ManifestDocument:
             return cls(manifest_path, {})
         data = utils.load_manifest(manifest_path)
         return cls(manifest_path, data)
-
-    def copy(self) -> "ManifestDocument":
-        return ManifestDocument(self.path, copy.deepcopy(self.data))
 
     def mark_changed(self) -> None:
         self._changed = True

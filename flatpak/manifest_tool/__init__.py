@@ -9,7 +9,6 @@ from .core.manifest import ManifestDocument, OperationResult, merge_results
 from .core.utils import (
     load_manifest,
     dump_manifest,
-    format_shell_assignments,
     get_logger,
 )
 from .core.validation import ValidationResult, check_flathub_compliance
@@ -26,5 +25,4 @@ __all__ = [
     "get_logger",
     "load_manifest",
     "dump_manifest",
-    "format_shell_assignments",
 ]

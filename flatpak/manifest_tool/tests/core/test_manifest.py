@@ -44,12 +44,9 @@ def test_manifest_document_ensure_modules_type_error(make_document):
 
 
 def test_operation_result_helpers():
-    result = OperationResult.changed_result("changed")
+    result = OperationResult.changed_result("changed", "extra")
     assert result.changed
-    assert result.messages == ["changed"]
-
-    result.add_message("extra")
-    assert result.messages[-1] == "extra"
+    assert result.messages == ["changed", "extra"]
 
     merged = merge_results([OperationResult.unchanged(), result])
     assert merged.changed
