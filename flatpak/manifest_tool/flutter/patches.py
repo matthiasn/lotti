@@ -211,37 +211,3 @@ def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
         document.mark_changed()
         return OperationResult.changed_result("; ".join(messages))
     return OperationResult.unchanged()
-
-
-def add_offline_build_patches(document: ManifestDocument) -> OperationResult:
-    """Add comprehensive offline build patches to the lotti module.
-
-    This adds configurations to ensure the build works offline:
-    1. Cargo configuration for offline mode
-    2. Relies on flatpak-flutter generated patches for SQLite and cargokit
-
-    Args:
-        document: The manifest document to modify
-
-    Returns:
-        OperationResult with combined results from all patch operations
-    """
-    results = []
-
-    # Add CMake offline patches (handled by flatpak-flutter)
-    cmake_result = add_cmake_offline_patches(document)
-    if cmake_result.changed:
-        results.append(cmake_result)
-
-    # Add cargo/Rust offline configuration
-    cargo_result = add_cargokit_offline_patches(document)
-    if cargo_result.changed:
-        results.append(cargo_result)
-
-    if results:
-        all_messages = []
-        for r in results:
-            all_messages.extend(r.messages)
-        return OperationResult(changed=True, messages=all_messages)
-
-    return OperationResult.unchanged()

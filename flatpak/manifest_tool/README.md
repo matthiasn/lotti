@@ -135,17 +135,6 @@ python3 manifest_tool/cli.py add-sqlite3-source \
 ```
 Adds SQLite source for sqlite3_flutter_libs plugin for both x86_64 and aarch64.
 
-**add-offline-build-patches**
-```bash
-python3 manifest_tool/cli.py add-offline-build-patches \
-  --manifest input.yml
-```
-Adds comprehensive offline build patches to the lotti module including:
-- SQLite3 source configuration
-- Cargokit offline configuration
-- Cargo config setup for offline builds
-This command ensures all necessary configurations are in place for fully offline builds.
-
 #### Validation and Compliance
 
 **check-flathub-compliance**
@@ -213,32 +202,7 @@ python3 manifest_tool/cli.py find-flutter-sdk \
 ```
 Finds a cached Flutter SDK installation in the specified directories.
 
-**prepare-build-dir**
-```bash
-python3 manifest_tool/cli.py prepare-build-dir \
-  --build-dir ./build \
-  --pubspec-yaml pubspec.yaml \
-  --pubspec-lock pubspec.lock \
-  --no-foreign-deps
-```
-Prepares the build directory for flatpak-flutter builds.
-
-**generate-setup-helper**
-```bash
-python3 manifest_tool/cli.py generate-setup-helper \
-  --output setup-flutter.sh
-```
-Generates the setup-flutter.sh helper script.
-
 #### CI/CD Operations
-
-**pr-aware-pin**
-```bash
-python3 manifest_tool/cli.py pr-aware-pin \
-  --event-name pull_request \
-  --event-path /path/to/event.json
-```
-Emits shell assignments for PR-aware manifest pinning.
 
 **update-manifest**
 ```bash
