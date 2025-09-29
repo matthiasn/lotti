@@ -107,6 +107,58 @@ def _create_sqlite_source(arch: str, dest: str, version: str) -> dict:
     }
 
 
+def _ensure_sources_list(module: dict) -> list:
+    """Return a mutable list of sources for the given module."""
+
+    sources = module.get("sources")
+    if isinstance(sources, list):
+        return sources
+    module["sources"] = []
+    return module["sources"]
+
+
+def _is_mimalloc_source(entry: dict, arch: str, dest: str) -> bool:
+    """Return True when entry already represents the desired mimalloc source."""
+
+    if not isinstance(entry, dict) or entry.get("type") != "file":
+        return False
+    if entry.get("dest") != dest:
+        return False
+
+    arches = entry.get("only-arches", [])
+    if isinstance(arches, list) and arch not in arches:
+        return False
+
+    url = entry.get("url", "")
+    path = entry.get("path", "")
+    filename = entry.get("dest-filename")
+    return (
+        "mimalloc" in url or "mimalloc" in path or filename == "mimalloc-2.1.2.tar.gz"
+    )
+
+
+def _has_mimalloc_source(sources: list, arch: str, dest: str) -> bool:
+    """Check whether mimalloc source already exists for ``arch``."""
+
+    for entry in sources:
+        if _is_mimalloc_source(entry, arch, dest):
+            return True
+    return False
+
+
+def _create_mimalloc_source(arch: str, dest: str) -> dict:
+    """Create mimalloc source definition for ``arch``."""
+
+    return {
+        "type": "file",
+        "only-arches": [arch],
+        "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
+        "sha256": "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
+        "dest": dest,
+        "dest-filename": "mimalloc-2.1.2.tar.gz",
+    }
+
+
 def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
     """Add SQLite source for sqlite3_flutter_libs plugin.
 
@@ -198,43 +250,15 @@ def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
 
-        sources = module.get("sources", [])
-        if not isinstance(sources, list):
-            sources = []
-            module["sources"] = sources
+        sources = _ensure_sources_list(module)
 
         for arch, dest in dest_map.items():
-            # Check if mimalloc source already exists for this architecture
-            # Need to check both url and path fields, as sources can be bundled
-            has_mimalloc = any(
-                isinstance(src, dict)
-                and src.get("type") == "file"
-                and src.get("dest") == dest
-                and arch in src.get("only-arches", [])
-                and (
-                    # Check URL field for unbundled sources
-                    "mimalloc" in src.get("url", "")
-                    # Check path field for bundled sources
-                    or "mimalloc" in src.get("path", "")
-                    # Check dest-filename which should be consistent
-                    or src.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
-                )
-                for src in sources
-            )
+            if _has_mimalloc_source(sources, arch, dest):
+                continue
 
-            if not has_mimalloc:
-                # Add mimalloc source for this architecture
-                mimalloc_source = {
-                    "type": "file",
-                    "only-arches": [arch],
-                    "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
-                    "sha256": "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
-                    "dest": dest,
-                    "dest-filename": "mimalloc-2.1.2.tar.gz",
-                }
-                sources.append(mimalloc_source)
-                messages.append(f"Added mimalloc source for {arch}")
-                changed = True
+            sources.append(_create_mimalloc_source(arch, dest))
+            messages.append(f"Added mimalloc source for {arch}")
+            changed = True
 
         module["sources"] = sources
         break

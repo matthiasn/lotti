@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+
 from pathlib import Path
+from typing import Any, Iterable, List, Optional
 
 try:  # pragma: no cover
     from ..core import ManifestDocument, OperationResult, get_logger
@@ -13,6 +16,12 @@ except ImportError:  # pragma: no cover
     from core import ManifestDocument, OperationResult, get_logger  # type: ignore
 
 _LOGGER = get_logger("flutter.patches")
+
+_FALLBACK_CARGOKIT_PACKAGES = [
+    "super_native_extensions-0.9.1",
+    "flutter_vodozemac-0.2.2",
+    "irondash_engine_context-0.5.5",
+]
 
 
 def add_cmake_offline_patches(document: ManifestDocument) -> OperationResult:
@@ -32,93 +41,135 @@ def add_cmake_offline_patches(document: ManifestDocument) -> OperationResult:
     return OperationResult.unchanged()
 
 
-def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
-    """Find all packages that use cargokit by looking for Cargo.lock files.
+def _get_lotti_module(modules: Iterable[Any]) -> Optional[dict]:
+    """Return the lotti module if present in ``modules``."""
 
-    Returns:
-        List of package names with versions that have cargokit
-    """
-    import json
-    from pathlib import Path
-
-    cargokit_packages = []
-    modules = document.ensure_modules()
-
-    # First, try to detect from Cargo.lock files in sources
     for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
+        if isinstance(module, dict) and module.get("name") == "lotti":
+            return module
+    return None
+
+
+def _collect_cargokit_basenames(module: dict) -> List[str]:
+    """Collect package basenames from Cargo.lock sources."""
+
+    sources = module.get("sources", [])
+    basenames: List[str] = []
+    for source in sources:
+        if not (isinstance(source, dict) and source.get("type") == "file"):
             continue
+        path = source.get("path", "")
+        if path.endswith("-Cargo.lock") and "Cargo.lock" in path:
+            basename = path[: -len("-Cargo.lock")]
+            if basename and basename not in basenames:
+                basenames.append(basename)
+    return basenames
 
-        sources = module.get("sources", [])
-        for source in sources:
-            if isinstance(source, dict) and source.get("type") == "file":
-                path = source.get("path", "")
-                if "Cargo.lock" in path and "-Cargo.lock" in path:
-                    # Extract package name from path like "flutter_vodozemac-Cargo.lock"
-                    pkg_name = path.replace("-Cargo.lock", "")
-                    cargokit_packages.append(pkg_name)
-        break
 
-    # If we found packages from Cargo.lock files, look up their versions from pubspec-sources.json
-    if cargokit_packages:
-        # Try to read pubspec-sources.json to get exact versions
-        pubspec_sources = []
-        for module in modules:
-            if not isinstance(module, dict) or module.get("name") != "lotti":
-                continue
-            sources = module.get("sources", [])
-            for source in sources:
-                if source == "pubspec-sources.json" or (
-                    isinstance(source, dict)
-                    and source.get("path") == "pubspec-sources.json"
-                ):
-                    # Try to load the file if it exists
-                    manifest_dir = (
-                        Path(document.path).parent
-                        if hasattr(document, "path")
-                        else Path.cwd()
-                    )
-                    pubspec_path = manifest_dir / "pubspec-sources.json"
-                    if pubspec_path.exists():
-                        try:
-                            with open(pubspec_path, "r") as f:
-                                pubspec_data = json.load(f)
-                                # Find packages with matching names
-                                versioned_packages = []
-                                for pkg_base in cargokit_packages:
-                                    for item in pubspec_data:
-                                        if (
-                                            isinstance(item, dict)
-                                            and item.get("type") == "file"
-                                        ):
-                                            dest = item.get("dest", "")
-                                            if pkg_base in dest and "/pub.dev/" in dest:
-                                                # Extract full package name with version
-                                                parts = dest.split("/")
-                                                if len(parts) > 0:
-                                                    pkg_full = parts[-1]
-                                                    if pkg_base in pkg_full:
-                                                        versioned_packages.append(
-                                                            pkg_full
-                                                        )
-                                                        break
-                                if versioned_packages:
-                                    return versioned_packages
-                        except (IOError, json.JSONDecodeError):
-                            pass
-                    break
+def _load_pubspec_sources(document: ManifestDocument) -> Optional[List[Any]]:
+    """Load pubspec-sources.json if it exists alongside the manifest."""
 
-    # Fallback to known packages if detection fails
-    if not cargokit_packages:
+    manifest_path = getattr(document, "path", None)
+    manifest_dir = Path(manifest_path).parent if manifest_path else Path.cwd()
+    pubspec_path = manifest_dir / "pubspec-sources.json"
+    if not pubspec_path.exists():
+        return None
+
+    try:
+        with pubspec_path.open("r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:  # pragma: no cover - diagnostics
+        _LOGGER.debug("Failed to read pubspec-sources.json: %s", exc)
+        return None
+
+
+def _find_package_in_pubspec(
+    package_base: str, entries: Iterable[Any]
+) -> Optional[str]:
+    """Return ``package-version`` entry for ``package_base`` if available."""
+
+    for item in entries:
+        if not (isinstance(item, dict) and item.get("type") == "file"):
+            continue
+        dest = item.get("dest", "")
+        if "/pub.dev/" not in dest:
+            continue
+        if package_base in dest:
+            candidate = dest.split("/")[-1]
+            if package_base in candidate:
+                return candidate
+    return None
+
+
+def _match_packages_with_versions(
+    package_bases: Iterable[str], pubspec_entries: Iterable[Any]
+) -> List[str]:
+    """Return versioned package names when pubspec data provides them."""
+
+    matched: List[str] = []
+    for base in package_bases:
+        candidate = _find_package_in_pubspec(base, pubspec_entries)
+        if candidate and candidate not in matched:
+            matched.append(candidate)
+    return matched
+
+
+def _has_cargokit_patch(sources: Iterable[Any], package: str) -> bool:
+    """Return True if the sources already include the cargokit patch."""
+
+    dest_path = f".pub-cache/hosted/pub.dev/{package}/cargokit"
+    for source in sources:
+        if (
+            isinstance(source, dict)
+            and source.get("type") == "patch"
+            and source.get("dest") == dest_path
+        ):
+            return True
+    return False
+
+
+def _cargokit_patch_entry(package: str) -> dict:
+    """Build the patch definition for the given package."""
+
+    return {
+        "type": "patch",
+        "path": "cargokit/run_build_tool.sh.patch",
+        "dest": f".pub-cache/hosted/pub.dev/{package}/cargokit",
+    }
+
+
+def _patch_insert_position(sources: List[Any]) -> int:
+    """Return index before which cargokit patches should be inserted."""
+
+    for idx, source in enumerate(sources):
+        if isinstance(source, dict) and source.get("path") == "cargo-sources.json":
+            return idx
+        if isinstance(source, str) and "cargo-sources.json" in source:
+            return idx
+    return len(sources)
+
+
+def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
+    """Find packages that use cargokit by inspecting manifest sources."""
+
+    modules = document.ensure_modules()
+    lotti_module = _get_lotti_module(modules)
+    if not lotti_module:
         _LOGGER.debug("Using fallback list of known cargokit packages")
-        return [
-            "super_native_extensions-0.9.1",
-            "flutter_vodozemac-0.2.2",
-            "irondash_engine_context-0.5.5",
-        ]
+        return list(_FALLBACK_CARGOKIT_PACKAGES)
 
-    # Return packages without versions if we couldn't find versions
-    return cargokit_packages
+    package_bases = _collect_cargokit_basenames(lotti_module)
+    if not package_bases:
+        _LOGGER.debug("No Cargo.lock sources detected; using fallback list")
+        return list(_FALLBACK_CARGOKIT_PACKAGES)
+
+    pubspec_entries = _load_pubspec_sources(document)
+    if pubspec_entries:
+        versioned = _match_packages_with_versions(package_bases, pubspec_entries)
+        if versioned:
+            return versioned
+
+    return package_bases
 
 
 def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
@@ -134,61 +185,29 @@ def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
         OperationResult with details of changes made
     """
     modules = document.ensure_modules()
-    changed = False
-    messages = []
+    lotti_module = _get_lotti_module(modules)
+    if not lotti_module:
+        return OperationResult.unchanged()
 
-    for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
+    sources = lotti_module.get("sources", [])
+    if not isinstance(sources, list):
+        sources = []
+
+    cargokit_packages = _find_cargokit_packages(document)
+    messages: List[str] = []
+    changed = False
+
+    for package in cargokit_packages:
+        if _has_cargokit_patch(sources, package):
             continue
 
-        sources = module.get("sources", [])
-        if not isinstance(sources, list):
-            sources = []
-
-        # Find all cargokit packages
-        cargokit_packages = _find_cargokit_packages(document)
-
-        # Add patch for each cargokit package
-        for package in cargokit_packages:
-            patch_dest = f".pub-cache/hosted/pub.dev/{package}/cargokit"
-
-            # Check if patch already exists
-            has_patch = any(
-                s.get("type") == "patch" and s.get("dest") == patch_dest
-                for s in sources
-                if isinstance(s, dict)
-            )
-
-            if not has_patch:
-                patch_source = {
-                    "type": "patch",
-                    "path": "cargokit/run_build_tool.sh.patch",
-                    "dest": patch_dest,
-                }
-                # Find position to insert patch (after other patches, before cargo-sources.json)
-                insert_pos = len(sources)
-                for i, s in enumerate(sources):
-                    if isinstance(s, dict) and s.get("path") == "cargo-sources.json":
-                        insert_pos = i
-                        break
-                    elif isinstance(s, str) and "cargo-sources.json" in s:
-                        insert_pos = i
-                        break
-
-                sources.insert(insert_pos, patch_source)
-                messages.append(f"Added cargokit patch for {package}")
-                changed = True
-
-        # Note: We do NOT add a cargo config here because cargo-sources.json
-        # already provides the correct vendor configuration with source replacements.
-        # Adding our own config would override the vendor paths and break offline builds.
-
-        if changed:
-            module["sources"] = sources
-
-        break
+        insert_pos = _patch_insert_position(sources)
+        sources.insert(insert_pos, _cargokit_patch_entry(package))
+        messages.append(f"Added cargokit patch for {package}")
+        changed = True
 
     if changed:
+        lotti_module["sources"] = sources
         document.mark_changed()
         return OperationResult.changed_result("; ".join(messages))
     return OperationResult.unchanged()

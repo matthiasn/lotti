@@ -177,6 +177,60 @@ def _remove_lotti_flutter_git_sources(module: dict) -> bool:
     return False
 
 
+def _ensure_lotti_sources(module: dict) -> list:
+    """Ensure ``module['sources']`` is a list and return it."""
+
+    sources = module.get("sources")
+    if isinstance(sources, list):
+        return sources
+    module["sources"] = []
+    return module["sources"]
+
+
+def _ensure_app_archive_source(
+    sources: list, archive_path: str, sha256: str
+) -> tuple[bool, list[str]]:
+    """Add the app archive to sources when missing."""
+
+    messages: list[str] = []
+    for src in sources:
+        if (
+            isinstance(src, dict)
+            and src.get("type") == "file"
+            and src.get("path") == archive_path
+        ):
+            return False, messages
+
+    sources.insert(
+        0,
+        {
+            "type": "file",
+            "path": archive_path,
+            "sha256": sha256,
+        },
+    )
+    messages.append(f"Added app archive {archive_path}")
+    return True, messages
+
+
+def _warn_missing_dependency_sources(sources: list) -> None:
+    """Emit warnings when expected dependency sources are absent."""
+
+    required_sources = {
+        "pubspec-sources.json": "pubspec dependencies",
+        "cargo-sources.json": "Rust cargo dependencies",
+    }
+
+    for source_name, description in required_sources.items():
+        has_source = any(
+            (isinstance(entry, str) and entry == source_name)
+            or (isinstance(entry, dict) and entry.get("path") == source_name)
+            for entry in sources
+        )
+        if not has_source:
+            _LOGGER.warning("Missing %s for %s", source_name, description)
+
+
 def _process_lotti_module(
     module: dict, archive_path: str, sha256: str
 ) -> tuple[bool, list[str]]:
@@ -184,50 +238,22 @@ def _process_lotti_module(
     messages = []
     changed = False
 
-    sources = module.get("sources", [])
-    if not isinstance(sources, list):
-        sources = []
+    sources = _ensure_lotti_sources(module)
 
     # Remove any Flutter git sources from lotti
     if _remove_lotti_flutter_git_sources(module):
         messages.append("Removed Flutter git source from lotti")
-        sources = module.get("sources", [])
+        sources = _ensure_lotti_sources(module)
         changed = True
 
-    # Check for existing app archive
-    has_app_archive = any(
-        isinstance(src, dict)
-        and src.get("type") == "file"
-        and src.get("path") == archive_path
-        for src in sources
+    archive_changed, archive_messages = _ensure_app_archive_source(
+        sources, archive_path, sha256
     )
-
-    if not has_app_archive:
-        # Add app archive as first source
-        app_source = {
-            "type": "file",
-            "path": archive_path,
-            "sha256": sha256,
-        }
-        sources.insert(0, app_source)
-        module["sources"] = sources
-        messages.append(f"Added app archive {archive_path}")
+    if archive_changed:
         changed = True
+        messages.extend(archive_messages)
 
-    # Check for other required sources
-    required_sources = [
-        ("pubspec-sources.json", "pubspec dependencies"),
-        ("cargo-sources.json", "Rust cargo dependencies"),
-    ]
-
-    for source_file, desc in required_sources:
-        has_source = any(
-            (isinstance(src, str) and src == source_file)
-            or (isinstance(src, dict) and src.get("path") == source_file)
-            for src in sources
-        )
-        if not has_source:
-            _LOGGER.warning(f"Missing {source_file} for {desc}")
+    _warn_missing_dependency_sources(sources)
 
     return changed, messages
 

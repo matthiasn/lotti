@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Iterable, List, Optional, Tuple
 
 try:  # pragma: no cover
     from ..core import ManifestDocument, OperationResult, get_logger
@@ -59,6 +59,61 @@ def remove_setup_flutter_command(document: ManifestDocument) -> OperationResult:
     return OperationResult.unchanged()
 
 
+def _has_rustup_module(modules: Iterable[Any]) -> bool:
+    """Return True if the manifest references a rustup module."""
+
+    for module in modules:
+        if isinstance(module, str) and "rustup" in module:
+            return True
+        if isinstance(module, dict) and module.get("name") == "rustup":
+            return True
+    return False
+
+
+def _get_lotti_module(modules: Iterable[Any]) -> Optional[dict]:
+    """Return the lotti module dictionary if present."""
+
+    for module in modules:
+        if isinstance(module, dict) and module.get("name") == "lotti":
+            return module
+    return None
+
+
+def _ensure_rustup_env(env: dict) -> Tuple[bool, list[str]]:
+    """Ensure PATH and RUSTUP_HOME environment variables are configured."""
+
+    messages: list[str] = []
+    changed = False
+
+    path_value = env.get("PATH")
+    if isinstance(path_value, str) and "/var/lib/rustup/bin" not in path_value:
+        env["PATH"] = f"/var/lib/rustup/bin:{path_value}"
+        messages.append("Added /var/lib/rustup/bin to PATH")
+        changed = True
+
+    rustup_home = env.get("RUSTUP_HOME")
+    if rustup_home != "/var/lib/rustup":
+        env["RUSTUP_HOME"] = "/var/lib/rustup"
+        if rustup_home is None:
+            messages.append("Set RUSTUP_HOME to /var/lib/rustup")
+        else:
+            messages.append("Fixed RUSTUP_HOME to /var/lib/rustup")
+        changed = True
+
+    return changed, messages
+
+
+def _ensure_rustup_append_path(build_options: dict) -> Tuple[bool, list[str]]:
+    """Ensure append-path includes rustup bin when the field exists."""
+
+    append_value = build_options.get("append-path")
+    if not isinstance(append_value, str) or "/var/lib/rustup/bin" in append_value:
+        return False, []
+
+    build_options["append-path"] = f"/var/lib/rustup/bin:{append_value}"
+    return True, ["Added /var/lib/rustup/bin to append-path"]
+
+
 def ensure_rustup_in_path(document: ManifestDocument) -> OperationResult:
     """Ensure rustup is in PATH and RUSTUP_HOME is set correctly.
 
@@ -73,62 +128,167 @@ def ensure_rustup_in_path(document: ManifestDocument) -> OperationResult:
         OperationResult with details of changes made
     """
     modules = document.ensure_modules()
-    changed = False
-    messages = []
-
-    # Check if rustup module exists
-    has_rustup = any(
-        isinstance(m, str)
-        and "rustup" in m
-        or isinstance(m, dict)
-        and m.get("name") == "rustup"
-        for m in modules
-    )
-
-    if not has_rustup:
+    if not _has_rustup_module(modules):
         return OperationResult.unchanged()
 
-    for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
-            continue
+    module = _get_lotti_module(modules)
+    if not module or not isinstance(module, dict):
+        return OperationResult.unchanged()
 
-        build_options = module.get("build-options", {})
-        if isinstance(build_options, dict):
-            env = build_options.get("env", {})
-            if isinstance(env, dict):
-                # Fix PATH
-                if "PATH" in env:
-                    path = env["PATH"]
-                    if "/var/lib/rustup/bin" not in path:
-                        # Add rustup bin to the beginning of PATH
-                        env["PATH"] = f"/var/lib/rustup/bin:{path}"
-                        messages.append("Added /var/lib/rustup/bin to PATH")
-                        changed = True
+    messages: list[str] = []
+    changed = False
 
-                # Fix RUSTUP_HOME - must match where rustup was installed
-                if "RUSTUP_HOME" in env and env["RUSTUP_HOME"] != "/var/lib/rustup":
-                    env["RUSTUP_HOME"] = "/var/lib/rustup"
-                    messages.append("Fixed RUSTUP_HOME to /var/lib/rustup")
-                    changed = True
-                elif "RUSTUP_HOME" not in env:
-                    env["RUSTUP_HOME"] = "/var/lib/rustup"
-                    messages.append("Set RUSTUP_HOME to /var/lib/rustup")
-                    changed = True
+    build_options = module.get("build-options", {})
+    if isinstance(build_options, dict):
+        env = build_options.get("env", {})
+        if isinstance(env, dict):
+            env_changed, env_messages = _ensure_rustup_env(env)
+            if env_changed:
+                changed = True
+                messages.extend(env_messages)
 
-            # Also update append-path
-            if "append-path" in build_options:
-                append_path = build_options["append-path"]
-                if "/var/lib/rustup/bin" not in append_path:
-                    # Add to the beginning of append-path
-                    build_options["append-path"] = f"/var/lib/rustup/bin:{append_path}"
-                    messages.append("Added /var/lib/rustup/bin to append-path")
-                    changed = True
-        break
+        append_changed, append_messages = _ensure_rustup_append_path(build_options)
+        if append_changed:
+            changed = True
+            messages.extend(append_messages)
 
     if changed:
         document.mark_changed()
         return OperationResult.changed_result("; ".join(messages))
     return OperationResult.unchanged()
+
+
+def _fix_flutter_commands(commands: list[Any]) -> Tuple[bool, list[str]]:
+    """Replace /app/flutter references inside command list."""
+
+    changed = False
+    messages: list[str] = []
+
+    for index, command in enumerate(commands):
+        if not isinstance(command, str):
+            continue
+        if "/app/flutter" in command and "/var/lib/flutter" not in command:
+            commands[index] = command.replace("/app/flutter", "/var/lib/flutter")
+            messages.append(f"Fixed path in command: {command[:50]}...")
+            changed = True
+
+    return changed, messages
+
+
+def _dedupe_path_entries(value: str) -> str:
+    """Remove duplicate path entries while preserving order."""
+
+    parts = value.split(":")
+    seen = set()
+    deduped: list[str] = []
+    for part in parts:
+        if part and part not in seen:
+            seen.add(part)
+            deduped.append(part)
+    return ":".join(deduped)
+
+
+def _fix_flutter_env(env: dict) -> Tuple[bool, list[str]]:
+    """Adjust PATH variables inside env to point at /var/lib/flutter."""
+
+    changed = False
+    messages: list[str] = []
+
+    path_value = env.get("PATH")
+    if isinstance(path_value, str) and "/app/flutter/bin" in path_value:
+        new_path = path_value.replace("/app/flutter/bin", "/var/lib/flutter/bin")
+        env["PATH"] = _dedupe_path_entries(new_path)
+        messages.append("Fixed PATH environment variable")
+        changed = True
+
+    return changed, messages
+
+
+def _fix_append_path(build_options: dict) -> Tuple[bool, list[str]]:
+    """Fix append-path entry if it refers to /app/flutter/bin."""
+
+    append_value = build_options.get("append-path")
+    if not isinstance(append_value, str) or "/app/flutter/bin" not in append_value:
+        return False, []
+
+    build_options["append-path"] = append_value.replace(
+        "/app/flutter/bin", "/var/lib/flutter/bin"
+    )
+    return True, ["Fixed append-path"]
+
+
+def _ensure_build_commands(module: dict) -> list:
+    """Ensure the module exposes a mutable build command list."""
+
+    commands = module.get("build-commands")
+    if isinstance(commands, list):
+        return commands
+    module["build-commands"] = []
+    return module["build-commands"]
+
+
+def _command_exists(commands: Iterable[Any], predicate: Callable[[str], bool]) -> bool:
+    """Return True if any command matches ``predicate``."""
+
+    for cmd in commands:
+        if isinstance(cmd, str) and predicate(cmd):
+            return True
+    return False
+
+
+def _determine_insert_position(commands: list[Any]) -> int:
+    """Choose insertion index for cargo helper commands."""
+
+    for index, cmd in enumerate(commands):
+        if isinstance(cmd, str) and "Building Lotti from source" in cmd:
+            return index + 1
+    return min(len(commands), 3)
+
+
+def _ensure_cargo_home(env: dict) -> Tuple[bool, list[str]]:
+    """Set CARGO_HOME to the expected build directory."""
+
+    if env.get("CARGO_HOME") == "/run/build/lotti/.cargo":
+        return False, []
+
+    env["CARGO_HOME"] = "/run/build/lotti/.cargo"
+    return True, ["Set CARGO_HOME to /run/build/lotti/.cargo"]
+
+
+def _ensure_cargo_commands(commands: list[Any]) -> Tuple[bool, list[str]]:
+    """Insert helper commands to make cargo config available."""
+
+    changed = False
+    messages: list[str] = []
+    insert_pos = _determine_insert_position(commands)
+
+    command_plan = [
+        (
+            lambda cmd: "mkdir -p .cargo" in cmd,
+            "mkdir -p .cargo",
+            "Ensured .cargo directory exists",
+        ),
+        (
+            lambda cmd: "ln -sfn ../cargo .cargo/cargo" in cmd,
+            "ln -sfn ../cargo .cargo/cargo",
+            "Linked cargo vendor directory into CARGO_HOME",
+        ),
+        (
+            lambda cmd: "cp cargo/config .cargo/config" in cmd,
+            "cp cargo/config .cargo/config.toml 2>/dev/null || true",
+            "Added cargo config copy command",
+        ),
+    ]
+
+    for predicate, command, message in command_plan:
+        if _command_exists(commands, predicate):
+            continue
+        commands.insert(insert_pos, command)
+        insert_pos += 1
+        messages.append(message)
+        changed = True
+
+    return changed, messages
 
 
 def fix_flutter_sdk_paths(document: ManifestDocument) -> OperationResult:
@@ -144,59 +304,33 @@ def fix_flutter_sdk_paths(document: ManifestDocument) -> OperationResult:
         OperationResult with details of changes made
     """
     modules = document.ensure_modules()
+    module = _get_lotti_module(modules)
+    if not module:
+        return OperationResult.unchanged()
+
     changed = False
-    messages = []
+    messages: list[str] = []
 
-    for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
-            continue
+    commands = module.get("build-commands", [])
+    if isinstance(commands, list):
+        cmd_changed, cmd_messages = _fix_flutter_commands(commands)
+        if cmd_changed:
+            changed = True
+            messages.extend(cmd_messages)
 
-        # Fix build commands
-        commands = module.get("build-commands", [])
-        if isinstance(commands, list):
-            for i, cmd in enumerate(commands):
-                if isinstance(cmd, str):
-                    if "/app/flutter" in cmd and "/var/lib/flutter" not in cmd:
-                        new_cmd = cmd.replace("/app/flutter", "/var/lib/flutter")
-                        commands[i] = new_cmd
-                        messages.append(f"Fixed path in command: {cmd[:50]}...")
-                        changed = True
+    build_options = module.get("build-options", {})
+    if isinstance(build_options, dict):
+        env = build_options.get("env", {})
+        if isinstance(env, dict):
+            env_changed, env_messages = _fix_flutter_env(env)
+            if env_changed:
+                changed = True
+                messages.extend(env_messages)
 
-        # Fix build-options environment variables
-        build_options = module.get("build-options", {})
-        if isinstance(build_options, dict):
-            env = build_options.get("env", {})
-            if isinstance(env, dict):
-                # Fix PATH
-                if "PATH" in env:
-                    old_path = env["PATH"]
-                    if "/app/flutter/bin" in old_path:
-                        # Replace /app/flutter/bin with /var/lib/flutter/bin
-                        new_path = old_path.replace(
-                            "/app/flutter/bin", "/var/lib/flutter/bin"
-                        )
-                        # Deduplicate if /var/lib/flutter/bin appears twice
-                        path_parts = new_path.split(":")
-                        seen = set()
-                        deduped_parts = []
-                        for part in path_parts:
-                            if part not in seen:
-                                seen.add(part)
-                                deduped_parts.append(part)
-                        env["PATH"] = ":".join(deduped_parts)
-                        messages.append("Fixed PATH environment variable")
-                        changed = True
-
-            # Fix append-path
-            if "append-path" in build_options:
-                old_append = build_options["append-path"]
-                if "/app/flutter/bin" in old_append:
-                    build_options["append-path"] = old_append.replace(
-                        "/app/flutter/bin", "/var/lib/flutter/bin"
-                    )
-                    messages.append("Fixed append-path")
-                    changed = True
-        break
+        append_changed, append_messages = _fix_append_path(build_options)
+        if append_changed:
+            changed = True
+            messages.extend(append_messages)
 
     if changed:
         document.mark_changed()
@@ -263,73 +397,25 @@ def ensure_cargo_config_in_place(document: ManifestDocument) -> OperationResult:
         OperationResult with details of changes made
     """
     modules = document.ensure_modules()
+    module = _get_lotti_module(modules)
+    if not module:
+        return OperationResult.unchanged()
+
+    messages: list[str] = []
     changed = False
-    messages = []
 
-    for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
-            continue
+    build_options = module.setdefault("build-options", {})
+    env = build_options.setdefault("env", {})
+    home_changed, home_messages = _ensure_cargo_home(env)
+    if home_changed:
+        changed = True
+        messages.extend(home_messages)
 
-        # Ensure CARGO_HOME is set to /run/build/lotti/.cargo in build-options
-        build_options = module.setdefault("build-options", {})
-        env = build_options.setdefault("env", {})
-
-        # Check if CARGO_HOME is already set correctly
-        if env.get("CARGO_HOME") != "/run/build/lotti/.cargo":
-            env["CARGO_HOME"] = "/run/build/lotti/.cargo"
-            messages.append("Set CARGO_HOME to /run/build/lotti/.cargo")
-            changed = True
-
-        commands = module.get("build-commands", [])
-        if not isinstance(commands, list):
-            commands = []
-            module["build-commands"] = commands
-
-        # Check if we already have the helper commands
-        has_cargo_copy = any(
-            isinstance(cmd, str) and "cp cargo/config .cargo/config" in cmd
-            for cmd in commands
-        )
-        has_mkdir = any(
-            isinstance(cmd, str) and "mkdir -p .cargo" in cmd for cmd in commands
-        )
-        has_link = any(
-            isinstance(cmd, str) and "ln -sfn ../cargo .cargo/cargo" in cmd
-            for cmd in commands
-        )
-
-        # Determine insertion position after the "Building Lotti" marker
-        insert_pos = 0
-        for i, cmd in enumerate(commands):
-            if isinstance(cmd, str) and "Building Lotti from source" in cmd:
-                insert_pos = i + 1
-                break
-
-        # Default insertion position if marker wasn't found
-        if insert_pos == 0:
-            insert_pos = 3  # After SDK setup commands
-
-        if not has_mkdir:
-            mkdir_cmd = "mkdir -p .cargo"
-            commands.insert(insert_pos, mkdir_cmd)
-            messages.append("Ensured .cargo directory exists")
-            changed = True
-            insert_pos += 1
-
-        if not has_link:
-            link_cmd = "ln -sfn ../cargo .cargo/cargo"
-            commands.insert(insert_pos, link_cmd)
-            messages.append("Linked cargo vendor directory into CARGO_HOME")
-            changed = True
-            insert_pos += 1
-
-        if not has_cargo_copy:
-            # Add command to copy the vendor config to where CARGO_HOME expects it
-            copy_cmd = "cp cargo/config .cargo/config.toml 2>/dev/null || true"
-            commands.insert(insert_pos, copy_cmd)
-            messages.append("Added cargo config copy command")
-            changed = True
-        break
+    commands = _ensure_build_commands(module)
+    command_changed, command_messages = _ensure_cargo_commands(commands)
+    if command_changed:
+        changed = True
+        messages.extend(command_messages)
 
     if changed:
         document.mark_changed()

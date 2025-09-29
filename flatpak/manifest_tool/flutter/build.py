@@ -157,6 +157,34 @@ def remove_flutter_config_command(document: ManifestDocument) -> OperationResult
     return OperationResult.unchanged()
 
 
+def _strip_network_from_module(module: dict, messages: list[str]) -> bool:
+    """Remove ``--share=network`` from a single module's build args."""
+
+    build_options = module.get("build-options")
+    if not isinstance(build_options, dict):
+        return False
+
+    build_args = build_options.get("build-args")
+    if not isinstance(build_args, list):
+        return False
+
+    filtered = [arg for arg in build_args if arg != "--share=network"]
+    if len(filtered) == len(build_args):
+        return False
+
+    module_name = module.get("name", "unnamed")
+    messages.append(f"Removed --share=network from {module_name}")
+
+    if filtered:
+        build_options["build-args"] = filtered
+    else:
+        build_options.pop("build-args", None)
+        if not build_options:
+            module.pop("build-options", None)
+
+    return True
+
+
 def remove_network_from_build_args(document: ManifestDocument) -> OperationResult:
     """Remove --share=network from build-args sections."""
 
@@ -165,34 +193,8 @@ def remove_network_from_build_args(document: ManifestDocument) -> OperationResul
     messages = []
 
     for module in modules:
-        if not isinstance(module, dict):
-            continue
-
-        build_options = module.get("build-options")
-        if not isinstance(build_options, dict):
-            continue
-
-        build_args = build_options.get("build-args")
-        if not isinstance(build_args, list):
-            continue
-
-        # Filter out --share=network
-        filtered = [arg for arg in build_args if arg != "--share=network"]
-        if len(filtered) != len(build_args):
-            module_name = module.get("name", "unnamed")
-            messages.append(f"Removed --share=network from {module_name}")
+        if isinstance(module, dict) and _strip_network_from_module(module, messages):
             changed = True
-
-            # Update or remove build-args based on filtered content
-            if filtered:
-                build_options["build-args"] = filtered
-            else:
-                # Remove empty build-args
-                build_options.pop("build-args", None)
-
-                # Remove build-options if it becomes empty
-                if not build_options:
-                    module.pop("build-options", None)
 
     if changed:
         document.mark_changed()

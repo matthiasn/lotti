@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Optional
 
 try:  # pragma: no cover
     from ..core import ManifestDocument, OperationResult, get_logger
@@ -24,6 +24,36 @@ def _discover_flutter_jsons(output_dir: str | Path) -> list[str]:
     json_files = list(out_path.glob("flutter-sdk-*.json"))
     # Return just filenames, not paths
     return [f.name for f in json_files]
+
+
+def _get_lotti_module(modules: Iterable[Any]) -> Optional[dict]:
+    """Return the lotti module dictionary if present."""
+
+    for module in modules:
+        if isinstance(module, dict) and module.get("name") == "lotti":
+            return module
+    return None
+
+
+def _ensure_list(module: dict, key: str) -> list:
+    """Ensure ``module[key]`` is a list and return it."""
+
+    value = module.get(key)
+    if isinstance(value, list):
+        return value
+    module[key] = []
+    return module[key]
+
+
+def _append_missing_entries(target: list, entries: Iterable[str]) -> bool:
+    """Append items from ``entries`` that are not yet in ``target``."""
+
+    changed = False
+    for entry in entries:
+        if entry not in target:
+            target.append(entry)
+            changed = True
+    return changed
 
 
 def ensure_nested_sdk(
@@ -49,19 +79,12 @@ def ensure_nested_sdk(
         return OperationResult.unchanged()
 
     modules = document.ensure_modules()
-    changed = False
-    for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "lotti":
-            continue
-        nested_modules = module.get("modules") or []
-        if not isinstance(nested_modules, list):
-            nested_modules = []
-        for json_name in json_names:
-            if json_name not in nested_modules:
-                nested_modules.append(json_name)
-                changed = True
-        module["modules"] = nested_modules
-        break
+    lotti_module = _get_lotti_module(modules)
+    if lotti_module is None:
+        return OperationResult.unchanged()
+
+    nested_modules = _ensure_list(lotti_module, "modules")
+    changed = _append_missing_entries(nested_modules, json_names)
 
     # Also remove top-level flutter-sdk module if nested SDKs are present
     if changed:
@@ -315,32 +338,38 @@ def rewrite_flutter_git_url(document: ManifestDocument) -> OperationResult:
     return OperationResult.unchanged()
 
 
+def _collect_lotti_nested_references(
+    modules: Iterable[Any], candidates: Iterable[str]
+) -> set[str]:
+    """Return candidate names referenced in the lotti module."""
+
+    lotti_module = _get_lotti_module(modules)
+    if not lotti_module:
+        return set()
+
+    nested = lotti_module.get("modules")
+    if not isinstance(nested, list):
+        return set()
+
+    nested_set = {name for name in nested if isinstance(name, str)}
+    return {candidate for candidate in candidates if candidate in nested_set}
+
+
 def _remove_flutter_sdk_if_nested(
     modules: list[Any], json_names: list[str]
 ) -> tuple[list[Any], bool]:
-    """Remove flutter-sdk module(s) if lotti references nested SDK JSONs.
+    """Remove flutter-sdk module(s) when nested SDKs are referenced."""
 
-    Returns (filtered_modules, removed_any).
-    """
-    # Find lotti's nested references (ensure list)
-    lotti_nested: list[Any] = []
-    for m in modules:
-        if isinstance(m, dict) and m.get("name") == "lotti":
-            nested = m.get("modules") or []
-            lotti_nested = nested if isinstance(nested, list) else []
-            break
+    referenced = _collect_lotti_nested_references(modules, json_names)
+    if not referenced:
+        return modules, False
 
-    # Check if any json_names are referenced in lotti's modules
-    referenced = {name for name in json_names if name in lotti_nested}
-
-    # Filter modules
     filtered: list[Any] = []
     removed_any = False
     for module in modules:
         if isinstance(module, dict) and module.get("name") == "flutter-sdk":
-            if referenced:
-                removed_any = True
-                continue  # Skip adding flutter-sdk
+            removed_any = True
+            continue
         filtered.append(module)
 
     return filtered, removed_any
