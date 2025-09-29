@@ -12,7 +12,7 @@ from typing import Callable
 
 try:  # pragma: no cover - import fallback for direct execution
     from . import flutter
-    from .build import utils as build_utils
+    from .build_utils import utils as build_utils
     from .core import utils
     from .core.manifest import ManifestDocument, OperationResult, merge_results
     from .operations import ci as ci_ops
@@ -27,7 +27,7 @@ except ImportError:  # pragma: no cover
     # Import using fully-qualified package paths to avoid clashing with similarly
     # named third-party modules when falling back to direct execution.
     import manifest_tool.flutter as flutter  # type: ignore
-    from manifest_tool.build import utils as build_utils  # type: ignore
+    from manifest_tool.build_utils import utils as build_utils  # type: ignore
     from manifest_tool.core import utils  # type: ignore
     from manifest_tool.core.manifest import (  # type: ignore
         ManifestDocument,
