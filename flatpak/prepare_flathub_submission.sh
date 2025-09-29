@@ -404,7 +404,7 @@ fi
 SQLITE_PATCH_CANDIDATE="$WORK_DIR/sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch"
 if [ -f "$SQLITE_PATCH_CANDIDATE" ]; then
   print_info "Normalizing sqlite3 patch to 3.50.4 (3500400) with SHA verification"
-  sed -i -E 's/sqlite-autoconf-3500[0-9]{2}00/sqlite-autoconf-3500400/g' "$SQLITE_PATCH_CANDIDATE" || true
+  sed -i -E 's/sqlite-autoconf-350[0-9]{4}/sqlite-autoconf-3500400/g' "$SQLITE_PATCH_CANDIDATE" || true
   sed -i -E 's/SHA256=[0-9a-f]{64}/SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18/g' "$SQLITE_PATCH_CANDIDATE" || true
 fi
 
