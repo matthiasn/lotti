@@ -16,7 +16,12 @@ _LOGGER = get_logger("flutter.patches")
 
 
 def _create_sqlite_patch_command() -> str:
-    """Create command to patch sqlite3_flutter_libs CMakeLists.txt."""
+    """Create command to patch sqlite3_flutter_libs CMakeLists.txt.
+
+    Note: This needs to be a shell command because the exact path to the
+    sqlite3_flutter_libs package is not known until runtime - it depends on
+    the package version downloaded by pub.
+    """
     return (
         "find .pub-cache/hosted/pub.dev -name 'sqlite3_flutter_libs-*' -type d | "
         "while read dir; do "

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from manifest_tool import flutter_ops
+from manifest_tool import flutter as flutter_ops
 
 
 def test_ensure_nested_sdk(make_document, tmp_path: Path):

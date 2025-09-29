@@ -2,8 +2,8 @@
 
 import pytest
 from pathlib import Path
-from ..manifest import ManifestDocument
-from ..validation import check_flathub_compliance
+from ..core.manifest import ManifestDocument
+from ..core.validation import check_flathub_compliance
 
 
 def test_check_flathub_compliance_clean_manifest():

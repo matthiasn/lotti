@@ -4,6 +4,7 @@ This module provides validation checks to ensure Flatpak manifests comply with
 Flathub requirements, particularly around network access restrictions during builds.
 """
 
+import re
 from typing import List, Tuple, Optional
 from dataclasses import dataclass, field
 
@@ -138,8 +139,6 @@ def _check_flutter_config_commands(data: dict) -> List[str]:
             if isinstance(cmd, str) and "flutter" in cmd and "config" in cmd:
                 # Use regex to match "flutter config" commands accurately
                 # This avoids false positives like "configure_flutter"
-                import re
-
                 if re.search(r"flutter\s+config", cmd):
                     violations.append(
                         f"{path}[{i}]: flutter config command found (should not modify config during build)"

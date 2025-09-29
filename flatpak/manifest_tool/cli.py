@@ -11,19 +11,26 @@ from pathlib import Path
 from typing import Callable
 
 try:  # pragma: no cover - import fallback for direct execution
-    from . import build_utils, ci_ops, flutter_ops, manifest_ops, sources_ops, utils
-    from .manifest import ManifestDocument, OperationResult, merge_results
+    from . import ci_ops, flutter, utils
+    from .build import utils as build_utils
+    from .core.manifest import ManifestDocument, OperationResult, merge_results
+    from .operations import manifest as manifest_ops
+    from .operations import sources as sources_ops
+    # Create module-level aliases for backward compatibility
+    flutter_ops = flutter
 except ImportError:  # pragma: no cover
     PACKAGE_ROOT = Path(__file__).resolve().parent
     if str(PACKAGE_ROOT) not in sys.path:
         sys.path.insert(0, str(PACKAGE_ROOT))
-    import build_utils  # type: ignore
     import ci_ops  # type: ignore
-    import flutter_ops  # type: ignore
-    import manifest_ops  # type: ignore
-    import sources_ops  # type: ignore
+    import flutter  # type: ignore
     import utils  # type: ignore
-    from manifest import ManifestDocument, OperationResult, merge_results  # type: ignore
+    from build import utils as build_utils  # type: ignore
+    from core.manifest import ManifestDocument, OperationResult, merge_results  # type: ignore
+    from operations import manifest as manifest_ops  # type: ignore
+    from operations import sources as sources_ops  # type: ignore
+    # Create module-level aliases for backward compatibility
+    flutter_ops = flutter  # type: ignore
 
 logger = utils.get_logger("cli")
 
@@ -718,9 +725,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Import validation module
     try:
-        from . import validation
+        from .core import validation
     except ImportError:
-        import validation  # type: ignore
+        from core import validation  # type: ignore
 
     def _run_validation_check(namespace: argparse.Namespace) -> int:
         """Run validation and convert result to appropriate format."""
