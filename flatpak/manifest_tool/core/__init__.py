@@ -1,7 +1,7 @@
 """Core manifest handling functionality."""
 
 from .manifest import ManifestDocument, OperationResult, merge_results
-from .utils import get_logger, load_manifest, dump_manifest, format_shell_assignments
+from .utils import get_logger, load_manifest, dump_manifest
 from .validation import ValidationResult, check_flathub_compliance
 
 __all__ = [
@@ -13,5 +13,4 @@ __all__ = [
     "get_logger",
     "load_manifest",
     "dump_manifest",
-    "format_shell_assignments",
 ]
