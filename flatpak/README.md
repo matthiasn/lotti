@@ -160,7 +160,7 @@ Flathub has strict requirements for security and reproducibility:
    - Pre-places CMake FetchContent dependencies
 
    **Phase 5: Compliance Enforcement**:
-   - Removes all --share=network from finish-args
+   - Removes all --share=network from build-args (not finish-args)
    - Adds --offline to all flutter pub get commands
    - Adds --no-pub to flutter build commands
    - Removes flutter config commands
@@ -233,12 +233,12 @@ python3 manifest_tool/cli.py add-media-kit-mimalloc-source --manifest output.yml
 # Add SQLite3 source for CMake
 python3 manifest_tool/cli.py add-sqlite3-source --manifest output.yml
 
-# Remove network access
-python3 manifest_tool/cli.py remove-finish-arg --manifest output.yml --arg "--share=network"
+# Remove network access from build-args
+python3 manifest_tool/cli.py remove-network-from-build-args --manifest output.yml
 
 # Add offline flags
-python3 manifest_tool/cli.py add-offline-flag --manifest output.yml
-python3 manifest_tool/cli.py add-no-pub-flag --manifest output.yml
+python3 manifest_tool/cli.py ensure-flutter-pub-get-offline --manifest output.yml
+python3 manifest_tool/cli.py ensure-dart-pub-offline-in-build --manifest output.yml
 
 # Validate manifest
 python3 manifest_tool/cli.py validate --manifest output.yml
@@ -333,7 +333,8 @@ grep -n "pub get" flathub-build/output/com.matthiasn.lotti.yml
 The app follows the **principle of least privilege**:
 
 ### Network & System
-- `--share=network` - Sync features and online functionality (runtime only, not build)
+- `--share=network` - Sync features and online functionality (runtime only - this is allowed in finish-args)
+  - Note: Network access is forbidden during build (build-args) but allowed at runtime (finish-args)
 - `--share=ipc` - Inter-process communication for GUI
 - `--socket=pulseaudio` - Audio recording/playback
 - `--socket=wayland` + `--socket=fallback-x11` - Display protocols
