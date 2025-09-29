@@ -20,15 +20,23 @@ try:  # pragma: no cover - import fallback for direct execution
     from .operations import sources as sources_ops
 except ImportError:  # pragma: no cover
     PACKAGE_ROOT = Path(__file__).resolve().parent
-    if str(PACKAGE_ROOT) not in sys.path:
-        sys.path.insert(0, str(PACKAGE_ROOT))
-    import flutter  # type: ignore
-    from build import utils as build_utils  # type: ignore
-    from core import utils  # type: ignore
-    from core.manifest import ManifestDocument, OperationResult, merge_results  # type: ignore
-    from operations import ci as ci_ops  # type: ignore
-    from operations import manifest as manifest_ops  # type: ignore
-    from operations import sources as sources_ops  # type: ignore
+    PACKAGE_PARENT = PACKAGE_ROOT.parent
+    if str(PACKAGE_PARENT) not in sys.path:
+        sys.path.insert(0, str(PACKAGE_PARENT))
+
+    # Import using fully-qualified package paths to avoid clashing with similarly
+    # named third-party modules when falling back to direct execution.
+    import manifest_tool.flutter as flutter  # type: ignore
+    from manifest_tool.build import utils as build_utils  # type: ignore
+    from manifest_tool.core import utils  # type: ignore
+    from manifest_tool.core.manifest import (  # type: ignore
+        ManifestDocument,
+        OperationResult,
+        merge_results,
+    )
+    from manifest_tool.operations import ci as ci_ops  # type: ignore
+    from manifest_tool.operations import manifest as manifest_ops  # type: ignore
+    from manifest_tool.operations import sources as sources_ops  # type: ignore
 
 logger = utils.get_logger("cli")
 
