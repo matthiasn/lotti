@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -18,6 +19,11 @@ try:  # pragma: no cover - import fallback for direct execution
     from .operations import ci as ci_ops
     from .operations import manifest as manifest_ops
     from .operations import sources as sources_ops
+    from .prepare import (
+        PrepareFlathubError,
+        PrepareFlathubOptions,
+        prepare_flathub,
+    )
 except ImportError:  # pragma: no cover
     PACKAGE_ROOT = Path(__file__).resolve().parent
     PACKAGE_PARENT = PACKAGE_ROOT.parent
@@ -37,6 +43,11 @@ except ImportError:  # pragma: no cover
     from manifest_tool.operations import ci as ci_ops  # type: ignore
     from manifest_tool.operations import manifest as manifest_ops  # type: ignore
     from manifest_tool.operations import sources as sources_ops  # type: ignore
+    from manifest_tool.prepare import (  # type: ignore
+        PrepareFlathubError,
+        PrepareFlathubOptions,
+        prepare_flathub,
+    )
 
 logger = utils.get_logger("cli")
 
@@ -751,6 +762,35 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser_find_flutter.set_defaults(func=lambda ns: _run_find_flutter_sdk(ns))
 
+    parser_prepare = subparsers.add_parser(
+        "prepare-flathub",
+        help=(
+            "Prepare the offline Flathub payload using the Python orchestrator."
+        ),
+    )
+    parser_prepare.add_argument(
+        "--repo-root",
+        type=Path,
+        default=Path.cwd(),
+        help="Repository root containing the flatpak directory (default: CWD)",
+    )
+    parser_prepare.add_argument(
+        "--flatpak-dir",
+        type=Path,
+        help="Override path to the flatpak directory (defaults to repo-root/flatpak)",
+    )
+    parser_prepare.add_argument(
+        "--work-dir",
+        type=Path,
+        help="Override work directory (defaults to flatpak-dir/flathub-build)",
+    )
+    parser_prepare.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Override output directory (defaults to work-dir/output)",
+    )
+    parser_prepare.set_defaults(func=_run_prepare_flathub)
+
     return parser
 
 
@@ -769,6 +809,54 @@ def _run_find_flutter_sdk(namespace: argparse.Namespace) -> int:
         print(sdk_path)
         return 0
     return 1
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    value = value.strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def _env_optional_int(name: str) -> int | None:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        logger.warning("Ignoring invalid integer in %s=%s", name, value)
+        return None
+
+
+def _run_prepare_flathub(namespace: argparse.Namespace) -> int:
+    repo_root = namespace.repo_root.resolve()
+    flatpak_dir = (namespace.flatpak_dir or repo_root / "flatpak").resolve()
+    work_dir = (namespace.work_dir or flatpak_dir / "flathub-build").resolve()
+    output_dir = (namespace.output_dir or work_dir / "output").resolve()
+
+    options = PrepareFlathubOptions(
+        repository_root=repo_root,
+        flatpak_dir=flatpak_dir,
+        work_dir=work_dir,
+        output_dir=output_dir,
+        clean_after_gen=_env_bool("CLEAN_AFTER_GEN", True),
+        pin_commit=_env_bool("PIN_COMMIT", True),
+        use_nested_flutter=_env_bool("USE_NESTED_FLUTTER", False),
+        download_missing_sources=_env_bool("DOWNLOAD_MISSING_SOURCES", True),
+        no_flatpak_flutter=_env_bool("NO_FLATPAK_FLUTTER", False),
+        flatpak_flutter_timeout=_env_optional_int("FLATPAK_FLUTTER_TIMEOUT"),
+        extra_env={k: v for k, v in os.environ.items()},
+        test_build=_env_bool("TEST_BUILD", False),
+    )
+
+    try:
+        prepare_flathub(options)
+    except PrepareFlathubError as exc:
+        logger.error("prepare-flathub failed: %s", exc)
+        return 1
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
