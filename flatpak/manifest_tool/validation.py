@@ -2,7 +2,11 @@
 
 from typing import List, Tuple, Optional
 from dataclasses import dataclass, field
-from .manifest import ManifestDocument
+
+try:
+    from .manifest import ManifestDocument
+except ImportError:
+    from manifest import ManifestDocument  # type: ignore
 
 
 @dataclass

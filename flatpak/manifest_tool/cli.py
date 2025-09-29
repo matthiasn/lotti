@@ -724,14 +724,25 @@ def build_parser() -> argparse.ArgumentParser:
     except ImportError:
         import validation  # type: ignore
 
-    parser_check_compliance.set_defaults(
-        func=lambda ns: _run_manifest_operation(
-            ManifestOperation(
-                manifest=Path(ns.manifest),
-                executor=lambda document: validation.check_flathub_compliance(document),
-            )
-        )
-    )
+    def _run_validation_check(namespace: argparse.Namespace) -> int:
+        """Run validation and convert result to appropriate format."""
+        document = ManifestDocument.load(namespace.manifest)
+        try:
+            result = validation.check_flathub_compliance(document)
+        except Exception as exc:  # pragma: no cover
+            logger.error("Validation failed: %s", exc)
+            return 1
+
+        # Print validation result
+        print(result.message)
+        if result.details:
+            for detail in result.details:
+                print(f"  - {detail}")
+
+        # Return appropriate exit code
+        return 0 if result.success else 1
+
+    parser_check_compliance.set_defaults(func=_run_validation_check)
 
     # Build utility commands
     parser_find_flutter = subparsers.add_parser(
