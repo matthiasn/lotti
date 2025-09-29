@@ -4,7 +4,13 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-OUTPUT_DIR="$SCRIPT_DIR/flathub-build/output"
+
+# Accept output directory as first argument, or use default
+if [ -n "$1" ]; then
+  OUTPUT_DIR="$1"
+else
+  OUTPUT_DIR="${OUTPUT_DIR:-$SCRIPT_DIR/flathub-build/output}"
+fi
 
 # Color output
 RED='\033[0;31m'
@@ -24,7 +30,11 @@ declare -A PLUGINS=(
   ["irondash_engine_context"]="https://raw.githubusercontent.com/irondash/irondash/65343873472d6796c0388362a8e04b6e9a499044/Cargo.lock"
 )
 
+# Create output directory if it doesn't exist
+mkdir -p "$OUTPUT_DIR"
 cd "$OUTPUT_DIR"
+
+print_info "Output directory: $OUTPUT_DIR"
 
 print_info "Downloading Cargo.lock files from GitHub..."
 
