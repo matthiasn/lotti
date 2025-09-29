@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from flatpak.manifest_tool import manifest_ops
-from flatpak.manifest_tool.manifest import ManifestDocument
+from manifest_tool.operations import manifest as manifest_ops
+from manifest_tool.core import ManifestDocument
 
 
 def test_update_manifest_for_build_non_pr(tmp_path):

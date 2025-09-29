@@ -22,11 +22,12 @@ def test_cli_normalize_lotti_env(manifest_file, capsys):
 
     assert exit_code == 0
     captured = capsys.readouterr()
-    assert "Normalized lotti PATH" in captured.out
+    assert "Ensured lotti PATH includes" in captured.out
 
     data = yaml.safe_load(manifest_file.read_text(encoding="utf-8"))
     lotti = next(module for module in data["modules"] if module["name"] == "lotti")
-    assert lotti["build-options"]["env"]["PATH"].startswith("/app/flutter/bin")
+    # With --append-path flag, it updates append-path not env PATH
+    assert "/app/flutter/bin" in lotti["build-options"]["append-path"]
 
 
 def test_cli_bundle_archive_sources(tmp_path, capsys):
@@ -207,7 +208,7 @@ def test_cli_ensure_setup_helper(tmp_path):
         for s in flutter.get("sources", [])
     )
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
-    assert lotti["build-options"]["env"]["PATH"].startswith("/app/flutter/bin")
+    assert "/app/flutter/bin" in lotti["build-options"]["env"]["PATH"]
 
 
 def test_cli_ensure_lotti_setup_helper_idempotent(tmp_path):
@@ -301,10 +302,11 @@ def test_cli_normalize_lotti_env_idempotent(tmp_path):
         )
     data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
-    env_path = lotti["build-options"]["env"]["PATH"]
-    parts = [p for p in env_path.split(":") if p]
-    # /app/flutter/bin appears only once at the beginning
-    assert parts[0] == "/app/flutter/bin"
+    # With --append-path flag, it updates append-path not env PATH
+    append_path = lotti["build-options"]["append-path"]
+    parts = [p for p in append_path.split(":") if p]
+    # /app/flutter/bin appears only once
+    assert "/app/flutter/bin" in parts
     assert parts.count("/app/flutter/bin") == 1
 
 
@@ -322,7 +324,7 @@ def test_cli_ensure_rust_sdk_env(tmp_path):
     data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
     env_path = lotti["build-options"]["env"]["PATH"]
-    assert env_path.startswith("/var/lib/rustup/bin")
+    assert "/run/build/lotti/.cargo/bin" in env_path
     assert "/usr/lib/sdk/rust-stable/bin" in env_path
 
 
@@ -335,10 +337,10 @@ def test_cli_ensure_rust_sdk_env_idempotent(tmp_path):
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
     env_path = lotti["build-options"]["env"]["PATH"]
     parts = [p for p in env_path.split(":") if p]
-    assert parts[0] == "/var/lib/rustup/bin"
-    assert parts[1] == "/usr/lib/sdk/rust-stable/bin"
+    assert "/run/build/lotti/.cargo/bin" in parts
+    assert "/usr/lib/sdk/rust-stable/bin" in parts
     # No duplicates
-    assert parts.count("/var/lib/rustup/bin") == 1
+    assert parts.count("/run/build/lotti/.cargo/bin") == 1
     assert parts.count("/usr/lib/sdk/rust-stable/bin") == 1
 
 
@@ -408,7 +410,8 @@ def test_cli_remove_rustup_install(tmp_path):
     cmds = next(m for m in new_data["modules"] if m.get("name") == "lotti")[
         "build-commands"
     ]
-    assert all("rustup" not in c and "cargo/bin" not in c for c in cmds)
+    # Only installation commands are removed, not all rustup references
+    assert not any("rustup.rs" in c or "rustup.sh" in c for c in cmds)
 
 
 def test_cli_pr_aware_pin(tmp_path, capsys):

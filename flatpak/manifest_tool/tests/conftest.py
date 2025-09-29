@@ -12,7 +12,7 @@ if str(PACKAGE_ROOT) not in sys.path:
 
 import pytest
 
-from flatpak.manifest_tool.manifest import ManifestDocument
+from manifest_tool.core import ManifestDocument
 
 SAMPLE_MANIFEST = textwrap.dedent(
     """

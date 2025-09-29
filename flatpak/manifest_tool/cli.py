@@ -188,7 +188,6 @@ def _run_ensure_lotti_setup_helper(namespace: argparse.Namespace) -> int:
         )
         command_result = flutter_ops.ensure_setup_helper_command(
             document,
-            helper_name=namespace.helper,
             working_dir=working_dir,
         )
         return merge_results([source_result, command_result])
@@ -280,9 +279,8 @@ def _run_bundle_app_archive(namespace: argparse.Namespace) -> int:
         manifest=Path(namespace.manifest),
         executor=lambda document: flutter_ops.bundle_app_archive(
             document,
-            archive_name=namespace.archive,
+            archive_path=str(Path(namespace.output_dir) / namespace.archive),
             sha256=namespace.sha256,
-            output_dir=namespace.output_dir,
         ),
     )
     return _run_manifest_operation(operation)
