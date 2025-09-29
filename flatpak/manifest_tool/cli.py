@@ -11,19 +11,32 @@ from pathlib import Path
 from typing import Callable
 
 try:  # pragma: no cover - import fallback for direct execution
-    from . import build_utils, ci_ops, flutter_ops, manifest_ops, sources_ops, utils
-    from .manifest import ManifestDocument, OperationResult, merge_results
+    from . import flutter
+    from .build_utils import utils as build_utils
+    from .core import utils
+    from .core.manifest import ManifestDocument, OperationResult, merge_results
+    from .operations import ci as ci_ops
+    from .operations import manifest as manifest_ops
+    from .operations import sources as sources_ops
 except ImportError:  # pragma: no cover
     PACKAGE_ROOT = Path(__file__).resolve().parent
-    if str(PACKAGE_ROOT) not in sys.path:
-        sys.path.insert(0, str(PACKAGE_ROOT))
-    import build_utils  # type: ignore
-    import ci_ops  # type: ignore
-    import flutter_ops  # type: ignore
-    import manifest_ops  # type: ignore
-    import sources_ops  # type: ignore
-    import utils  # type: ignore
-    from manifest import ManifestDocument, OperationResult, merge_results  # type: ignore
+    PACKAGE_PARENT = PACKAGE_ROOT.parent
+    if str(PACKAGE_PARENT) not in sys.path:
+        sys.path.insert(0, str(PACKAGE_PARENT))
+
+    # Import using fully-qualified package paths to avoid clashing with similarly
+    # named third-party modules when falling back to direct execution.
+    import manifest_tool.flutter as flutter  # type: ignore
+    from manifest_tool.build_utils import utils as build_utils  # type: ignore
+    from manifest_tool.core import utils  # type: ignore
+    from manifest_tool.core.manifest import (  # type: ignore
+        ManifestDocument,
+        OperationResult,
+        merge_results,
+    )
+    from manifest_tool.operations import ci as ci_ops  # type: ignore
+    from manifest_tool.operations import manifest as manifest_ops  # type: ignore
+    from manifest_tool.operations import sources as sources_ops  # type: ignore
 
 logger = utils.get_logger("cli")
 
@@ -155,7 +168,7 @@ def _run_update_manifest(namespace: argparse.Namespace) -> int:
 def _run_ensure_nested_sdk(namespace: argparse.Namespace) -> int:
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
-        executor=lambda document: flutter_ops.ensure_nested_sdk(
+        executor=lambda document: flutter.ensure_nested_sdk(
             document,
             output_dir=namespace.output_dir,
         ),
@@ -169,7 +182,7 @@ def _run_normalize_lotti_env(namespace: argparse.Namespace) -> int:
     )
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
-        executor=lambda document: flutter_ops.normalize_lotti_env(
+        executor=lambda document: flutter.normalize_lotti_env(
             document,
             flutter_bin=flutter_bin,
             ensure_append_path=namespace.append_path,
@@ -182,13 +195,12 @@ def _run_ensure_lotti_setup_helper(namespace: argparse.Namespace) -> int:
     working_dir = "/var/lib" if namespace.layout == "nested" else "/app"
 
     def executor(document: ManifestDocument) -> OperationResult:
-        source_result = flutter_ops.ensure_setup_helper_source(
+        source_result = flutter.ensure_setup_helper_source(
             document,
             helper_name=namespace.helper,
         )
-        command_result = flutter_ops.ensure_setup_helper_command(
+        command_result = flutter.ensure_setup_helper_command(
             document,
-            helper_name=namespace.helper,
             working_dir=working_dir,
         )
         return merge_results([source_result, command_result])
@@ -200,7 +212,7 @@ def _run_ensure_lotti_setup_helper(namespace: argparse.Namespace) -> int:
 def _run_should_remove_flutter_sdk(namespace: argparse.Namespace) -> int:
     document = ManifestDocument.load(namespace.manifest)
     try:
-        result = flutter_ops.should_remove_flutter_sdk(
+        result = flutter.should_remove_flutter_sdk(
             document,
             output_dir=namespace.output_dir,
         )
@@ -214,7 +226,7 @@ def _run_should_remove_flutter_sdk(namespace: argparse.Namespace) -> int:
 def _run_normalize_flutter_sdk_module(namespace: argparse.Namespace) -> int:
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
-        executor=lambda document: flutter_ops.normalize_flutter_sdk_module(document),
+        executor=lambda document: flutter.normalize_flutter_sdk_module(document),
     )
     return _run_manifest_operation(operation)
 
@@ -222,7 +234,7 @@ def _run_normalize_flutter_sdk_module(namespace: argparse.Namespace) -> int:
 def _run_normalize_sdk_copy(namespace: argparse.Namespace) -> int:
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
-        executor=lambda document: flutter_ops.normalize_sdk_copy(document),
+        executor=lambda document: flutter.normalize_sdk_copy(document),
     )
     return _run_manifest_operation(operation)
 
@@ -230,7 +242,7 @@ def _run_normalize_sdk_copy(namespace: argparse.Namespace) -> int:
 def _run_convert_flutter_git_to_archive(namespace: argparse.Namespace) -> int:
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
-        executor=lambda document: flutter_ops.convert_flutter_git_to_archive(
+        executor=lambda document: flutter.convert_flutter_git_to_archive(
             document,
             archive_name=namespace.archive,
             sha256=namespace.sha256,
@@ -242,7 +254,7 @@ def _run_convert_flutter_git_to_archive(namespace: argparse.Namespace) -> int:
 def _run_rewrite_flutter_git_url(namespace: argparse.Namespace) -> int:
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
-        executor=lambda document: flutter_ops.rewrite_flutter_git_url(document),
+        executor=lambda document: flutter.rewrite_flutter_git_url(document),
     )
     return _run_manifest_operation(operation)
 
@@ -278,11 +290,10 @@ def _run_bundle_archive_sources(namespace: argparse.Namespace) -> int:
 def _run_bundle_app_archive(namespace: argparse.Namespace) -> int:
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
-        executor=lambda document: flutter_ops.bundle_app_archive(
+        executor=lambda document: flutter.bundle_app_archive(
             document,
-            archive_name=namespace.archive,
+            archive_path=str(Path(namespace.output_dir) / namespace.archive),
             sha256=namespace.sha256,
-            output_dir=namespace.output_dir,
         ),
     )
     return _run_manifest_operation(operation)
@@ -446,7 +457,7 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.remove_network_from_build_args(
+                executor=lambda document: flutter.remove_network_from_build_args(
                     document
                 ),
             )
@@ -464,7 +475,7 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.ensure_flutter_pub_get_offline(
+                executor=lambda document: flutter.ensure_flutter_pub_get_offline(
                     document
                 ),
             )
@@ -482,7 +493,7 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.remove_flutter_config_command(
+                executor=lambda document: flutter.remove_flutter_config_command(
                     document
                 ),
             )
@@ -500,7 +511,7 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.ensure_dart_pub_offline_in_build(
+                executor=lambda document: flutter.ensure_dart_pub_offline_in_build(
                     document
                 ),
             )
@@ -516,7 +527,7 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.add_sqlite3_source(document),
+                executor=lambda document: flutter.add_sqlite3_source(document),
             )
         )
     )
@@ -532,7 +543,7 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.add_media_kit_mimalloc_source(
+                executor=lambda document: flutter.add_media_kit_mimalloc_source(
                     document
                 ),
             )
@@ -550,7 +561,7 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.ensure_rust_sdk_env(document),
+                executor=lambda document: flutter.ensure_rust_sdk_env(document),
             )
         )
     )
@@ -565,7 +576,7 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.remove_rustup_install(document),
+                executor=lambda document: flutter.remove_rustup_install(document),
             )
         )
     )
@@ -702,9 +713,24 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.add_offline_build_patches(
-                    document
-                ),
+                executor=lambda document: flutter.add_offline_build_patches(document),
+            )
+        )
+    )
+
+    # Apply all offline fixes (setup-flutter removal, path fixes, patches)
+    parser_apply_offline_fixes = subparsers.add_parser(
+        "apply-offline-fixes",
+        help="Apply all offline fixes: remove setup-flutter.sh, fix paths, add patches.",
+    )
+    parser_apply_offline_fixes.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_apply_offline_fixes.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter.apply_all_offline_fixes(document),
             )
         )
     )
@@ -720,9 +746,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Import validation module
     try:
-        from . import validation
+        from .core import validation
     except ImportError:
-        import validation  # type: ignore
+        from core import validation  # type: ignore
 
     def _run_validation_check(namespace: argparse.Namespace) -> int:
         """Run validation and convert result to appropriate format."""
@@ -824,7 +850,7 @@ def build_parser() -> argparse.ArgumentParser:
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.add_sqlite3_patch(
+                executor=lambda document: flutter.add_sqlite3_patch(
                     document, version=ns.plugin_version, patch_path=ns.patch_path
                 ),
             )

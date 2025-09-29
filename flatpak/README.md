@@ -25,12 +25,24 @@ The Flatpak build process involves several stages:
    - `manifest_tool/` - Python utilities for manifest manipulation (see below)
    - `download_cargo_locks.sh` - Downloads Cargo.lock files from build cache
 
-3. **manifest_tool Python Utilities**
-   - **Core Operations**: Read, validate, and manipulate YAML manifests
-   - **Flutter Operations**: Handle Flutter SDK, pub packages, and plugin patches
-   - **Rust Operations**: Process Cargo dependencies and vendor configurations
-   - **Archive Operations**: Create and manage source archives
-   - **Compliance Operations**: Ensure Flathub requirements are met
+3. **manifest_tool Python Utilities** (modular architecture)
+   - **core/**: Core manifest operations and utilities
+     - `manifest.py`: Document handling, validation
+     - `utils.py`: Shared utilities (logging, YAML operations)
+     - `validation.py`: Flathub compliance checking
+   - **flutter/**: Flutter-specific operations
+     - `sdk.py`: Flutter SDK management
+     - `helpers.py`: Build helpers and commands
+     - `plugins.py`: Plugin dependency handling (SQLite, mimalloc)
+     - `patches.py`: Offline build patches
+     - `rust.py`: Rust/Cargo integration for Flutter
+     - `build.py`: Build configuration
+   - **operations/**: High-level manifest operations
+     - `manifest.py`: Complex manifest transformations
+     - `sources.py`: Source management
+     - `ci.py`: CI/CD integration
+   - **build/**: Build preparation utilities
+     - `utils.py`: Build-specific utilities
 
 4. **Dependencies**
    - Flutter SDK - Dart/Flutter framework
@@ -121,7 +133,7 @@ Flathub has strict requirements for security and reproducibility:
    ```
    The branch must be accessible from GitHub for the offline build tools to work.
 
-2. **Install Python dependencies**:
+2. **Install Python dependencies** (requires Python 3.10+):
    ```bash
    sudo apt-get install python3-packaging python3-toml python3-yaml python3-requests
    ```
@@ -154,7 +166,7 @@ Flathub has strict requirements for security and reproducibility:
    - Creates rustup configuration
 
    **Phase 4: Offline Patches**:
-   - Adds SQLite3 URL hash for offline verification
+   - Adds SQLite3 and mimalloc sources for CMake plugins
    - Patches cargokit scripts to use --offline flag
    - Configures Cargo to use vendored sources
    - Pre-places CMake FetchContent dependencies
@@ -209,16 +221,52 @@ The script includes fail-fast assertions that will exit with error if:
 
 ### Architecture
 
-The `manifest_tool/` directory contains modular Python utilities:
+The `manifest_tool/` directory contains modular Python utilities organized by functionality:
 
 ```
 manifest_tool/
-├── cli.py              # Command-line interface
-├── manifest_ops.py     # Core YAML manipulation
-├── flutter_ops.py      # Flutter-specific operations
-├── rust_ops.py         # Rust/Cargo operations
-├── archive_ops.py      # Source archive handling
-└── tests/             # Comprehensive test suite
+├── cli.py                  # Command-line interface
+├── core/                   # Core functionality
+│   ├── __init__.py
+│   ├── manifest.py        # Document operations, OperationResult
+│   ├── utils.py          # Logging, YAML handling
+│   └── validation.py     # Flathub compliance checks
+├── flutter/               # Flutter-specific operations
+│   ├── __init__.py
+│   ├── build.py         # Build configuration
+│   ├── helpers.py       # Setup helpers, commands
+│   ├── patches.py       # Offline patches (CMake, Cargo)
+│   ├── plugins.py       # Plugin dependencies (SQLite, mimalloc)
+│   ├── rust.py         # Rust/Cargo configuration
+│   └── sdk.py          # Flutter SDK management
+├── operations/           # High-level operations
+│   ├── __init__.py
+│   ├── ci.py           # CI/CD support
+│   ├── manifest.py     # Complex transformations
+│   └── sources.py      # Source management
+├── build/               # Build utilities
+│   ├── __init__.py
+│   └── utils.py       # Build helpers
+└── tests/              # Comprehensive test suite
+    ├── conftest.py    # Test fixtures
+    ├── flutter/       # Flutter operation tests
+    │   ├── test_build.py
+    │   ├── test_helpers.py
+    │   ├── test_patches.py
+    │   ├── test_patches_edge_cases.py
+    │   ├── test_plugins.py
+    │   ├── test_rust.py
+    │   └── test_sdk.py
+    ├── operations/    # Operations tests
+    │   ├── test_ci.py
+    │   ├── test_manifest.py
+    │   ├── test_manifest_helpers.py
+    │   └── test_sources.py
+    ├── core/         # Core tests
+    │   ├── test_manifest.py
+    │   ├── test_utils.py
+    │   └── test_validation.py
+    └── ...          # Integration and other tests
 ```
 
 ### Available Commands
@@ -244,30 +292,46 @@ python3 manifest_tool/cli.py ensure-dart-pub-offline-in-build --manifest output.
 python3 manifest_tool/cli.py check-flathub-compliance --manifest output.yml
 ```
 
-### Key Functions
+### Key Operations
 
-**add_offline_build_patches()**: Comprehensive offline patch that:
-- Adds SQLite3 URL hash for CMake verification
-- Patches all cargokit build scripts for offline pub
-- Configures Cargo vendor sources
-- Is fully idempotent (safe to run multiple times)
+**Offline Build Patches** (`flutter/patches.py`):
+- `add_cmake_offline_patches()`: Patches for CMake-based plugins
+- `add_cargokit_offline_patches()`: Cargo offline configuration
+- `add_offline_build_patches()`: Comprehensive offline setup
 
-**Plugin Dependency Handlers**:
-- Handle CMake FetchContent downloads
-- Pre-place archives at expected paths
-- Support multi-architecture builds
+**Plugin Dependencies** (`flutter/plugins.py`):
+- `add_sqlite3_source()`: Pre-places SQLite for sqlite3_flutter_libs
+- `add_media_kit_mimalloc_source()`: Handles mimalloc for media_kit
+- Supports bundled sources (using 'path' instead of 'url')
+- Multi-architecture support (x86_64, aarch64)
+
+**Flutter SDK Management** (`flutter/sdk.py`):
+- `ensure_nested_sdk()`: Manages nested Flutter SDK modules
+- `normalize_flutter_sdk_module()`: Cleans up SDK build commands
+- `convert_flutter_git_to_archive()`: Converts git to archive sources
+- Automatic removal of redundant flutter-sdk modules
+
+**Compliance Validation** (`core/validation.py`):
+- Checks for network access in build-args
+- Validates offline flags presence
+- Ensures no forbidden operations
+- Comprehensive violation reporting
 
 ## Testing
 
+### Requirements
+
+Python 3.10+ is required due to use of modern Python features (PEP 604 unions, str.removesuffix).
+
 ### Python Helper Tests
 
-The `manifest_tool/` includes comprehensive tests:
+The `manifest_tool/` includes comprehensive tests (220+ test cases):
 
 ```bash
 cd flatpak/manifest_tool
 python3 -m venv .venv
 source .venv/bin/activate
-pip install pytest pyyaml
+pip install pytest pyyaml toml packaging
 python -m pytest tests/ -v
 deactivate
 ```
@@ -278,6 +342,9 @@ Test coverage includes:
 - Command insertion and ordering
 - Edge cases and error handling
 - Compliance validation
+- Plugin dependency handling
+- SDK management
+- Offline patch application
 
 ### Integration Testing
 
@@ -301,6 +368,7 @@ ls -la flathub-build/output/
 - Check Python error output in console
 - Verify pubspec.lock files exist
 - Ensure Python dependencies installed
+- Check Python version is 3.10+
 
 **Build fails with network errors**
 - Check all --offline flags are present
@@ -359,7 +427,8 @@ When modifying the build system:
 2. Run `prepare_flathub_submission.sh` to verify offline build
 3. Check CI passes in pull request
 4. Update tests if adding new manifest operations
-5. Keep complexity low (< 10 cyclomatic complexity)
+5. Ensure Python 3.10+ compatibility
+6. Keep complexity low (< 10 cyclomatic complexity)
 
 ## Architecture Notes
 
@@ -382,3 +451,9 @@ When modifying the build system:
 - Plugins download during build
 - Everything must be pre-fetched and placed correctly
 - Multiple dependency systems (pub, cargo, cmake)
+
+**Modular code organization**:
+- Separation of concerns (core, flutter, operations, build)
+- Easier testing and maintenance
+- Clear dependency hierarchy
+- Reusable components

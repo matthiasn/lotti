@@ -7,9 +7,13 @@ from pathlib import Path
 from typing import Optional, Iterable
 
 try:  # pragma: no cover
-    from . import utils
+    from ..core import utils
 except ImportError:  # pragma: no cover
-    import utils  # type: ignore
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from core import utils  # type: ignore
 
 _LOGGER = utils.get_logger("build_utils")
 

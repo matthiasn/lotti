@@ -5,11 +5,13 @@ from __future__ import annotations
 from typing import Any, Iterable, Sequence, Optional
 
 try:  # pragma: no cover
-    from . import utils
-    from .manifest import ManifestDocument, OperationResult
+    from ..core import utils, ManifestDocument, OperationResult
 except ImportError:  # pragma: no cover
-    import utils  # type: ignore
-    from manifest import ManifestDocument, OperationResult  # type: ignore
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from core import utils, ManifestDocument, OperationResult  # type: ignore
 
 _DEFAULT_REPO_URLS: tuple[str, ...] = (
     "https://github.com/matthiasn/lotti",

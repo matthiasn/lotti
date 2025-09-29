@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from flatpak.manifest_tool import sources_ops
+from manifest_tool.operations import sources as sources_ops
 
 
 def test_replace_url_with_path_yaml_based(tmp_path: Path):

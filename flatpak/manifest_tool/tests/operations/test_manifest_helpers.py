@@ -1,10 +1,10 @@
-"""Tests for manifest_ops helper functions."""
+"""Tests for manifest operations internal helper functions."""
 
 from __future__ import annotations
 
 import pytest
 
-from flatpak.manifest_tool import manifest_ops
+from manifest_tool.operations import manifest as manifest_ops
 
 
 def test_is_lotti_module():

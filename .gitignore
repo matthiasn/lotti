@@ -159,6 +159,8 @@ var/
 fastwhisper_backup/
 **/fastwhisper_backup/
 **/build/
+!flatpak/manifest_tool/build/
+!flatpak/manifest_tool/build/**
 **/dist/
 
 # Python bytecode

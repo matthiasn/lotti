@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from flatpak.manifest_tool import build_utils
+from manifest_tool.build_utils import utils as build_utils
 
 
 def test_find_flutter_sdk(tmp_path: Path):
@@ -203,7 +203,7 @@ def test_prepare_build_directory_existing_foreign_deps(tmp_path: Path):
     assert foreign_deps.read_text() == '{"existing": "data"}'
 
 
-@patch("flatpak.manifest_tool.build_utils._LOGGER")
+@patch("manifest_tool.build_utils.utils._LOGGER")
 def test_prepare_build_directory_error_handling(mock_logger, tmp_path: Path):
     """Test error handling in prepare_build_directory."""
     # Create a file where we expect a directory
@@ -295,7 +295,7 @@ def test_copy_flutter_sdk_invalid_source(tmp_path: Path):
     assert result is False
 
 
-@patch("flatpak.manifest_tool.build_utils._LOGGER")
+@patch("manifest_tool.build_utils.utils._LOGGER")
 def test_copy_flutter_sdk_copy_error(mock_logger, tmp_path: Path):
     """Test error handling during SDK copy."""
     # Create source SDK

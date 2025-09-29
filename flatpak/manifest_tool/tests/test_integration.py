@@ -4,7 +4,7 @@ from pathlib import Path
 import textwrap
 import yaml
 
-from flatpak.manifest_tool import cli
+from manifest_tool import cli
 
 
 def write_manifest(path: Path, text: str) -> None:
@@ -133,21 +133,23 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
         for s in lotti["sources"]
     )
 
-    # Helper present in sources and command list contains invocation
+    # Helper is added to flutter-sdk sources, not lotti
+    flutter_sdk = next(m for m in data["modules"] if m["name"] == "flutter-sdk")
     assert any(
-        isinstance(s, dict) and s.get("path") == "setup-flutter.sh"
-        for s in lotti["sources"]
+        isinstance(s, dict) and s.get("dest-filename") == "setup-flutter.sh"
+        for s in flutter_sdk["sources"]
     )
+    # Command is added to lotti
     assert any("setup-flutter.sh" in c for c in lotti["build-commands"])
 
     # Build args and env updated (--share=network removed as it's not allowed on Flathub)
     assert "--share=network" not in lotti["build-options"].get("build-args", [])
     env = lotti["build-options"]["env"]
-    assert env["PATH"].startswith("/var/lib/rustup/bin")
-    assert "/usr/lib/sdk/rust-stable/bin" in env["PATH"]
+    assert env["PATH"].startswith("/usr/lib/sdk/rust-stable/bin")
+    assert "/run/build/lotti/.cargo/bin" in env["PATH"]
     assert (
-        lotti["build-options"]["append-path"].endswith("/var/lib/rustup/bin")
-        or "/var/lib/rustup/bin" in lotti["build-options"]["append-path"]
+        "/usr/lib/sdk/rust-stable/bin" in lotti["build-options"]["append-path"]
+        and "/run/build/lotti/.cargo/bin" in lotti["build-options"]["append-path"]
     )
 
     # rustup installer commands removed
@@ -267,9 +269,8 @@ def test_end_to_end_nested_sdk_pipeline(tmp_path: Path) -> None:
         for n in lotti.get("modules", [])
     )
     # Env and helper adjusted for nested layout
-    env = lotti["build-options"]["env"]
-    assert env["PATH"].startswith("/var/lib/flutter/bin")
-    assert "/var/lib/flutter/bin" in lotti["build-options"]["append-path"]
+    # When using --append-path flag, the path is added to append-path, not env.PATH
+    assert lotti["build-options"]["append-path"].startswith("/var/lib/flutter/bin")
     assert any(
         "setup-flutter.sh" in c and "-C /var/lib" in c for c in lotti["build-commands"]
     )
