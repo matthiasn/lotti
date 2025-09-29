@@ -764,9 +764,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser_prepare = subparsers.add_parser(
         "prepare-flathub",
-        help=(
-            "Prepare the offline Flathub payload using the Python orchestrator."
-        ),
+        help=("Prepare the offline Flathub payload using the Python orchestrator."),
     )
     parser_prepare.add_argument(
         "--repo-root",

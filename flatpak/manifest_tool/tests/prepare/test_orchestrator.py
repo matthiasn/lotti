@@ -31,7 +31,7 @@ def _make_context(base: Path) -> PrepareFlathubContext:
     repo_root = base / "repo"
     flatpak_dir = base / "flatpak"
     work_dir = base / "work"
-    output_dir = (base / "work" / "output")
+    output_dir = base / "work" / "output"
     for path in (repo_root, flatpak_dir, work_dir, output_dir):
         path.mkdir(parents=True, exist_ok=True)
 
@@ -95,12 +95,15 @@ class PrepareOrchestratorTests(unittest.TestCase):
                 _assert_commit_pinned(manifest, "test")
 
     def test_remove_flutter_sdk_module(self) -> None:
-        manifest = ManifestDocument(path=Path("manifest.yml"), data={
-            "modules": [
-                {"name": "flutter-sdk"},
-                {"name": "lotti"},
-            ]
-        })
+        manifest = ManifestDocument(
+            path=Path("manifest.yml"),
+            data={
+                "modules": [
+                    {"name": "flutter-sdk"},
+                    {"name": "lotti"},
+                ]
+            },
+        )
         changed = _remove_flutter_sdk_module(manifest)
         self.assertTrue(changed)
         self.assertEqual(manifest.data["modules"], [{"name": "lotti"}])
@@ -110,7 +113,11 @@ class PrepareOrchestratorTests(unittest.TestCase):
             base = Path(tmp)
             context = _make_context(base)
             package_dir = (
-                context.repo_root / ".pub-cache" / "hosted" / "pub.dev" / "example-1.0.0"
+                context.repo_root
+                / ".pub-cache"
+                / "hosted"
+                / "pub.dev"
+                / "example-1.0.0"
             )
             package_dir.mkdir(parents=True)
             (package_dir / "dummy.txt").write_text("hello", encoding="utf-8")
@@ -204,13 +211,23 @@ class PrepareOrchestratorTests(unittest.TestCase):
             _ensure_setup_helper_reference(context, printer)
             data = yaml.safe_load(context.manifest_work.read_text(encoding="utf-8"))
             sources = data["modules"][0]["sources"]
-            self.assertTrue(any(s.get("dest-filename") == "setup-flutter.sh" for s in sources))
+            self.assertTrue(
+                any(s.get("dest-filename") == "setup-flutter.sh" for s in sources)
+            )
 
     def test_stage_package_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             context = _make_context(base)
-            tools_dir = context.work_dir / ".flatpak-builder" / "build" / "tool" / "flutter" / "packages" / "flutter_tools"
+            tools_dir = (
+                context.work_dir
+                / ".flatpak-builder"
+                / "build"
+                / "tool"
+                / "flutter"
+                / "packages"
+                / "flutter_tools"
+            )
             tools_dir.mkdir(parents=True, exist_ok=True)
             (tools_dir / "pubspec.lock").write_text("", encoding="utf-8")
             pkg_dir = tools_dir / ".dart_tool"
@@ -242,7 +259,10 @@ class PrepareOrchestratorTests(unittest.TestCase):
             context.output_dir.joinpath(context.manifest_work.name).write_text(
                 yaml.safe_dump(manifest_data), encoding="utf-8"
             )
-            archive = context.output_dir / f"flutter_linux_{context.flutter_tag}-stable.tar.xz"
+            archive = (
+                context.output_dir
+                / f"flutter_linux_{context.flutter_tag}-stable.tar.xz"
+            )
             archive.write_bytes(b"dummy")
             document = ManifestDocument.load(
                 context.output_dir / context.manifest_work.name
@@ -279,9 +299,7 @@ class PrepareOrchestratorTests(unittest.TestCase):
             self.assertTrue(
                 (context.output_dir / "sqlite3_flutter_libs" / "dummy.patch").is_file()
             )
-            self.assertTrue(
-                (context.output_dir / "cargokit" / "Cargo.lock").is_file()
-            )
+            self.assertTrue((context.output_dir / "cargokit" / "Cargo.lock").is_file())
 
     def test_cleanup_removes_builder(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
