@@ -65,18 +65,6 @@ def _run_manifest_operation(operation: ManifestOperation) -> int:
     return 0
 
 
-def _run_pr_aware_pin(namespace: argparse.Namespace) -> int:
-    assignments = ci_ops.pr_aware_environment(
-        event_name=namespace.event_name,
-        event_path=namespace.event_path,
-    )
-    if not assignments:
-        return 0
-    sys.stdout.write(utils.format_shell_assignments(assignments))
-    sys.stdout.write("\n")
-    return 0
-
-
 def _run_replace_url_with_path(namespace: argparse.Namespace) -> int:
     result = sources_ops.replace_url_with_path(
         manifest_path=namespace.manifest,
@@ -302,17 +290,6 @@ def _run_bundle_app_archive(namespace: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Flatpak helper CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
-
-    parser_pr = subparsers.add_parser(
-        "pr-aware-pin", help="Emit shell assignments for PR-aware manifest pinning."
-    )
-    parser_pr.add_argument(
-        "--event-name", default=None, help="GitHub event name (e.g. pull_request)."
-    )
-    parser_pr.add_argument(
-        "--event-path", default=None, help="Path to the GitHub event payload JSON."
-    )
-    parser_pr.set_defaults(func=_run_pr_aware_pin)
 
     parser_replace = subparsers.add_parser(
         "replace-url-with-path",
@@ -702,22 +679,6 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
-    parser_offline_patches = subparsers.add_parser(
-        "add-offline-build-patches",
-        help="Add offline build patches to lotti module (sqlite3, cargokit, cargo config).",
-    )
-    parser_offline_patches.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
-    parser_offline_patches.set_defaults(
-        func=lambda ns: _run_manifest_operation(
-            ManifestOperation(
-                manifest=Path(ns.manifest),
-                executor=lambda document: flutter.add_offline_build_patches(document),
-            )
-        )
-    )
-
     # Apply all offline fixes (setup-flutter removal, path fixes, patches)
     parser_apply_offline_fixes = subparsers.add_parser(
         "apply-offline-fixes",
@@ -790,73 +751,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser_find_flutter.set_defaults(func=lambda ns: _run_find_flutter_sdk(ns))
 
-    parser_prepare_build = subparsers.add_parser(
-        "prepare-build-dir", help="Prepare build directory for flatpak-flutter."
-    )
-    parser_prepare_build.add_argument(
-        "--build-dir", required=True, help="Build directory to prepare."
-    )
-    parser_prepare_build.add_argument(
-        "--pubspec-yaml", help="Path to pubspec.yaml to copy."
-    )
-    parser_prepare_build.add_argument(
-        "--pubspec-lock", help="Path to pubspec.lock to copy."
-    )
-    parser_prepare_build.add_argument(
-        "--no-foreign-deps",
-        action="store_true",
-        help="Don't create empty foreign_deps.json.",
-    )
-    parser_prepare_build.set_defaults(func=lambda ns: _run_prepare_build_dir(ns))
-
-    # Generate the setup-flutter.sh helper script
-    parser_generate_helper = subparsers.add_parser(
-        "generate-setup-helper", help="Generate the setup-flutter.sh helper script."
-    )
-    parser_generate_helper.add_argument(
-        "--output",
-        default="setup-flutter.sh",
-        help="Output file path (default: setup-flutter.sh).",
-    )
-    parser_generate_helper.set_defaults(func=lambda ns: _run_generate_setup_helper(ns))
-
-    # Ensure sqlite3 CMake patch is present after bundling
-    parser_sqlite_patch = subparsers.add_parser(
-        "add-sqlite3-patch",
-        help=(
-            "Ensure sqlite3_flutter_libs CMake patch is present in sources. "
-            "Use after bundling when patch sources were dropped."
-        ),
-    )
-    parser_sqlite_patch.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
-    parser_sqlite_patch.add_argument(
-        "--plugin-version",
-        required=True,
-        dest="plugin_version",
-        help="sqlite3_flutter_libs version (e.g., 0.5.39)",
-    )
-    parser_sqlite_patch.add_argument(
-        "--patch",
-        required=True,
-        dest="patch_path",
-        help=(
-            "Path to CMakeLists.txt patch relative to manifest dir "
-            "(e.g., sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch)"
-        ),
-    )
-    parser_sqlite_patch.set_defaults(
-        func=lambda ns: _run_manifest_operation(
-            ManifestOperation(
-                manifest=Path(ns.manifest),
-                executor=lambda document: flutter.add_sqlite3_patch(
-                    document, version=ns.plugin_version, patch_path=ns.patch_path
-                ),
-            )
-        )
-    )
-
     return parser
 
 
@@ -875,46 +769,6 @@ def _run_find_flutter_sdk(namespace: argparse.Namespace) -> int:
         print(sdk_path)
         return 0
     return 1
-
-
-def _run_prepare_build_dir(namespace: argparse.Namespace) -> int:
-    """Run the prepare-build-dir command."""
-    build_dir = Path(namespace.build_dir)
-    pubspec_yaml = Path(namespace.pubspec_yaml) if namespace.pubspec_yaml else None
-    pubspec_lock = Path(namespace.pubspec_lock) if namespace.pubspec_lock else None
-
-    success = build_utils.prepare_build_directory(
-        build_dir=build_dir,
-        pubspec_yaml=pubspec_yaml,
-        pubspec_lock=pubspec_lock,
-        create_foreign_deps=not namespace.no_foreign_deps,
-    )
-
-    return 0 if success else 1
-
-
-def _run_generate_setup_helper(namespace: argparse.Namespace) -> int:
-    """Generate the setup-flutter.sh helper script."""
-    output_path = Path(namespace.output)
-
-    # Read the helper script from the helpers directory
-    helpers_dir = Path(__file__).parent.parent / "helpers"
-    helper_script = helpers_dir / "setup-flutter.sh"
-
-    if not helper_script.exists():
-        logger.error("Helper script not found at %s", helper_script)
-        return 1
-
-    try:
-        content = helper_script.read_text(encoding="utf-8")
-        output_path.write_text(content, encoding="utf-8")
-        # Make it executable
-        output_path.chmod(0o755)
-        logger.info("Generated helper script at %s", output_path)
-        return 0
-    except (OSError, IOError) as e:
-        logger.error("Failed to generate helper script: %s", e)
-        return 1
 
 
 def main(argv: list[str] | None = None) -> int:

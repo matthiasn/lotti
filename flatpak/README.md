@@ -297,7 +297,6 @@ python3 manifest_tool/cli.py check-flathub-compliance --manifest output.yml
 **Offline Build Patches** (`flutter/patches.py`):
 - `add_cmake_offline_patches()`: Patches for CMake-based plugins
 - `add_cargokit_offline_patches()`: Cargo offline configuration
-- `add_offline_build_patches()`: Comprehensive offline setup
 
 **Plugin Dependencies** (`flutter/plugins.py`):
 - `add_sqlite3_source()`: Pre-places SQLite for sqlite3_flutter_libs
