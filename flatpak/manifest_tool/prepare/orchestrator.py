@@ -33,7 +33,9 @@ except ImportError:  # pragma: no cover - colorama optional
     Fore = Style = None  # type: ignore
     _COLOR_ENABLED = False
 
-_SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400")
+_SQLITE_AUTOCONF_VERSION = os.getenv(
+    "SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400"
+)
 _SQLITE_AUTOCONF_SHA256 = os.getenv(
     "SQLITE_AUTOCONF_SHA256",
     "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
@@ -97,6 +99,7 @@ class PrepareFlathubOptions:
     flatpak_flutter_timeout: Optional[int] = None
     extra_env: Mapping[str, str] | None = None
     test_build: bool = False
+    flathub_dir: Optional[Path] = None
 
 
 class PrepareFlathubError(RuntimeError):
@@ -130,6 +133,7 @@ class PrepareFlathubContext:
     setup_helper_source: Path
     flatpak_flutter_status: int | None = None
     flutter_git_url: str = "https://github.com/flutter/flutter.git"
+    flathub_dir: Optional[Path] = None
 
 
 class _StatusPrinter:
@@ -220,6 +224,7 @@ def _build_context(
         flatpak_flutter_log=flatpak_flutter_log,
         setup_helper_basename=setup_helper_source.name,
         setup_helper_source=setup_helper_source,
+        flathub_dir=options.flathub_dir,
     )
 
     printer.info(f"Using version: {lotti_version}")
@@ -696,16 +701,18 @@ def _normalize_sqlite_patch(
         return
     content = patch_path.read_text(encoding="utf-8")
     new_content = re.sub(
-        r"sqlite-autoconf-350[0-9]{4}", "sqlite-autoconf-3500400", content
+        r"sqlite-autoconf-350[0-9]{4}", _SQLITE_AUTOCONF_VERSION, content
     )
     new_content = re.sub(
         r"SHA256=[0-9a-f]{64}",
-        "SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+        f"SHA256={_SQLITE_AUTOCONF_SHA256}",
         new_content,
     )
     if new_content != content:
         patch_path.write_text(new_content, encoding="utf-8")
-        printer.info("Normalized sqlite3 patch to 3.50.4 (3500400)")
+        printer.info(
+            "Normalized sqlite3 patch to target version " f"{_SQLITE_AUTOCONF_VERSION}"
+        )
 
 
 def _assert_commit_pinned(manifest_path: Path, label: str) -> None:
@@ -1763,14 +1770,18 @@ def _print_summary(context: PrepareFlathubContext, printer: _StatusPrinter) -> N
         print(f"  {entry.name}")
     print()
 
-    flathub_root = (context.repo_root.parent / "flathub").resolve()
+    flathub_root = (
+        context.flathub_dir.resolve()
+        if context.flathub_dir is not None
+        else (context.repo_root.parent / "flathub").resolve()
+    )
     if flathub_root.is_dir():
         printer.info("To copy to flathub repo:")
         print(f"  cp -r {context.output_dir}/* {flathub_root}/com.matthiasn.lotti/")
         print()
         printer.info("Then:")
         for step in (
-            "cd {root}".format(root=flathub_root),
+            f"cd {flathub_root}",
             "git checkout -b new-app-com.matthiasn.lotti",
             "git add com.matthiasn.lotti",
             'git commit -m "Add com.matthiasn.lotti"',
@@ -1781,8 +1792,8 @@ def _print_summary(context: PrepareFlathubContext, printer: _StatusPrinter) -> N
     else:
         printer.info("To prepare for Flathub submission:")
         print("  1. Fork https://github.com/flathub/flathub")
-        print("  2. Clone your fork to ../flathub")
-        print(f"  3. Copy {context.output_dir} to ../flathub/com.matthiasn.lotti")
+        print(f"  2. Clone your fork to {flathub_root}")
+        print(f"  3. Copy {context.output_dir} to {flathub_root}/com.matthiasn.lotti")
         print("  4. Create a pull request")
 
 

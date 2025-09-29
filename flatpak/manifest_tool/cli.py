@@ -787,6 +787,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Override output directory (defaults to work-dir/output)",
     )
+    parser_prepare.add_argument(
+        "--flathub-dir",
+        type=Path,
+        help="Path to local flathub checkout (defaults to repo-root/../flathub)",
+    )
     parser_prepare.set_defaults(func=_run_prepare_flathub)
 
     return parser
@@ -847,6 +852,9 @@ def _run_prepare_flathub(namespace: argparse.Namespace) -> int:
         flatpak_flutter_timeout=_env_optional_int("FLATPAK_FLUTTER_TIMEOUT"),
         extra_env={k: v for k, v in os.environ.items()},
         test_build=_env_bool("TEST_BUILD", False),
+        flathub_dir=(
+            namespace.flathub_dir.resolve() if namespace.flathub_dir else None
+        ),
     )
 
     try:

@@ -11,6 +11,7 @@ from contextlib import redirect_stdout
 from flatpak.manifest_tool.prepare.orchestrator import (
     PrepareFlathubContext,
     PrepareFlathubOptions,
+    PrepareFlathubError,
     _StatusPrinter,
     _assert_commit_pinned,
     _prepare_directories,
@@ -91,7 +92,7 @@ class PrepareOrchestratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = Path(tmp) / "manifest.yml"
             manifest.write_text("commit: COMMIT_PLACEHOLDER\n", encoding="utf-8")
-            with self.assertRaises(Exception):
+            with self.assertRaises(PrepareFlathubError):
                 _assert_commit_pinned(manifest, "test")
 
     def test_remove_flutter_sdk_module(self) -> None:
