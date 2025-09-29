@@ -1135,34 +1135,11 @@ if [ -z "$OUT_MANIFEST" ]; then
   OUT_MANIFEST="$OUTPUT_DIR/com.matthiasn.lotti.yml"
 fi
 
-# Check for forbidden --share=network in build-args
-if grep -qE '^\s*-\s*--share=network' "$OUT_MANIFEST"; then
-  print_error "FATAL: Final manifest still contains --share=network"
-  print_info "Network access is forbidden during builds on Flathub"
-  grep -nE '^\s*-\s*--share=network' "$OUT_MANIFEST" || true
+# Use Python manifest_tool for robust compliance checking
+if ! python3 "$PYTHON_CLI" check-flathub-compliance --manifest "$OUT_MANIFEST"; then
+  print_error "FATAL: Flathub compliance violations found in final manifest"
+  print_info "See details above for specific violations"
   exit 1
-fi
-
-# Check for flutter config invocations (should not configure during build)
-if grep -qE 'flutter\s+config' "$OUT_MANIFEST"; then
-  print_error "FATAL: Final manifest contains 'flutter config' commands"
-  print_info "Flutter configuration should not be modified during builds"
-  grep -nE 'flutter\s+config' "$OUT_MANIFEST" || true
-  exit 1
-fi
-
-# Check for pub get without --offline
-if grep -E 'pub\s+get' "$OUT_MANIFEST" | grep -v -- '--offline' | grep -q .; then
-  print_error "FATAL: Final manifest contains 'pub get' without --offline flag"
-  print_info "All pub get commands must use --offline for Flathub compliance"
-  grep -nE 'pub\s+get' "$OUT_MANIFEST" | grep -v -- '--offline' || true
-  exit 1
-fi
-
-# Check for flutter build without --no-pub (warning only)
-if grep -E 'flutter\s+build' "$OUT_MANIFEST" | grep -v -- '--no-pub' | grep -q .; then
-  print_warning "Final manifest contains 'flutter build' without --no-pub flag"
-  print_info "Consider adding --no-pub to prevent network access during build"
 fi
 
 print_status "Flathub compliance checks passed"

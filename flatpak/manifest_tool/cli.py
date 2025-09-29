@@ -709,6 +709,30 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    # Validation command
+    parser_check_compliance = subparsers.add_parser(
+        "check-flathub-compliance",
+        help="Check manifest for Flathub compliance violations.",
+    )
+    parser_check_compliance.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+
+    # Import validation module
+    try:
+        from . import validation
+    except ImportError:
+        import validation  # type: ignore
+
+    parser_check_compliance.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: validation.check_flathub_compliance(document),
+            )
+        )
+    )
+
     # Build utility commands
     parser_find_flutter = subparsers.add_parser(
         "find-flutter-sdk", help="Find a cached Flutter SDK installation."
