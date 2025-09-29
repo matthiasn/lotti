@@ -4,7 +4,7 @@ from pathlib import Path
 import textwrap
 import yaml
 
-from flatpak.manifest_tool import cli
+from manifest_tool import cli
 
 
 def write_manifest(path: Path, text: str) -> None:

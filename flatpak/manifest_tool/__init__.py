@@ -14,20 +14,9 @@ from .core.utils import (
 )
 from .core.validation import ValidationResult, check_flathub_compliance
 
-# Re-export for convenience
-from . import flutter
-from . import build
-from . import operations
-from . import core
-
 __version__ = "1.0.0"
 
 __all__ = [
-    # Modules
-    "flutter",
-    "build",
-    "operations",
-    "core",
     # Core exports
     "ManifestDocument",
     "OperationResult",
