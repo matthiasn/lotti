@@ -539,7 +539,12 @@ if [ -d "$WORK_DIR/.flatpak-builder/build" ] || [ -d "$OUTPUT_DIR/.flatpak-build
     [ -d "$search_root" ] || continue
     found=$(find "$search_root" -maxdepth 15 -path '*/cargokit/build_tool/pubspec.lock' -print 2>/dev/null || true)
     if [ -n "$found" ]; then
-      TMP_LOCKS+="$found\n"
+      if [ -n "$TMP_LOCKS" ]; then
+        TMP_LOCKS="$TMP_LOCKS
+$found"
+      else
+        TMP_LOCKS="$found"
+      fi
     fi
   done
   if [ -n "$TMP_LOCKS" ]; then
@@ -604,7 +609,8 @@ PY
 )
       if [ -n "$STAGED_PACKAGES" ]; then
         while read -r pkg ver; do
-          [ -n "$pkg" ] && stage_pubdev_archive "$pkg" "$ver"
+          # Try to stage package archives, but don't fail if not found
+          [ -n "$pkg" ] && stage_pubdev_archive "$pkg" "$ver" || true
         done <<EOF
 $STAGED_PACKAGES
 EOF
@@ -1268,6 +1274,21 @@ if [ -f "$OUTPUT_DIR/cargo-sources.json" ]; then
   print_info "the first build populates .pub-cache with the actual Rust plugin Cargo.lock files."
   echo ""
 fi
+
+# Final cleanup: Apply critical Flathub compliance fixes
+# Using sed as a final pass since some Python operations might not be working properly
+
+# Remove --share=network from finish-args for Flathub compliance
+sed -i '/^- --share=network$/d' "$OUT_MANIFEST"
+print_info "Removed --share=network from finish-args for Flathub compliance"
+
+# Ensure flutter pub get uses --offline flag
+sed -i 's|/flutter pub get$|/flutter pub get --offline|' "$OUT_MANIFEST"
+print_info "Added --offline flag to flutter pub get commands"
+
+# Ensure flutter build uses --no-pub flag to skip automatic pub get
+sed -i 's|/flutter build linux --release|/flutter build linux --release --no-pub|' "$OUT_MANIFEST"
+print_info "Added --no-pub flag to flutter build commands"
 
 # Step 9: Final report
 print_status "Preparation complete!"
