@@ -572,6 +572,17 @@ if [ -f "$APP_LOCK" ]; then
     PRESET_LIST=$(echo "$PRESET_CARGOKIT_LOCKS" | paste -sd, -)
     LOCK_INPUTS="$LOCK_INPUTS,$PRESET_LIST"
   fi
+else
+  print_error "FATAL: Application pubspec.lock not found at: $APP_LOCK"
+  print_info "Cannot generate pubspec-sources.json without the main application lockfile"
+  exit 1
+fi
+
+# Fail-fast if LOCK_INPUTS is still empty (should not happen with above check, but safety)
+if [ -z "$LOCK_INPUTS" ]; then
+  print_error "FATAL: No lockfiles found for pubspec-sources.json generation"
+  print_info "Expected at least: $APP_LOCK"
+  exit 1
 fi
 
 if [ -n "$LOCK_INPUTS" ]; then
@@ -580,15 +591,22 @@ if [ -n "$LOCK_INPUTS" ]; then
     LOCK_COUNT=$(echo "$CARGOKIT_LOCKS" | grep -c . || true)
     print_info "Including ${LOCK_COUNT} cargokit lockfile(s)"
   fi
-  if python3 "$FLATPAK_DIR/flatpak-flutter/pubspec_generator/pubspec_generator.py" \
-    "$LOCK_INPUTS" -o "$WORK_DIR/pubspec-sources.generated.json"; then
-    mv "$WORK_DIR/pubspec-sources.generated.json" "$OUTPUT_DIR/pubspec-sources.json"
-    cp -- "$OUTPUT_DIR/pubspec-sources.json" "$WORK_DIR/../pubspec-sources.json" 2>/dev/null || true
-    print_status "Regenerated pubspec-sources.json with build tool dependencies"
 
-    if [ -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
-      OUT_JSON="$OUTPUT_DIR/pubspec-sources.json"
-      STAGED_PACKAGES=$(OUT_JSON="$OUT_JSON" python3 - <<'PY'
+  # Capture Python errors for debugging
+  PYTHON_OUTPUT=$(python3 "$FLATPAK_DIR/flatpak-flutter/pubspec_generator/pubspec_generator.py" \
+    "$LOCK_INPUTS" -o "$WORK_DIR/pubspec-sources.generated.json" 2>&1)
+  PYTHON_EXIT_CODE=$?
+
+  if [ $PYTHON_EXIT_CODE -eq 0 ]; then
+    # Ensure output directory exists before moving
+    mkdir -p "$OUTPUT_DIR"
+    if mv "$WORK_DIR/pubspec-sources.generated.json" "$OUTPUT_DIR/pubspec-sources.json"; then
+      print_status "Regenerated pubspec-sources.json with build tool dependencies"
+
+      # Stage packages from the generated pubspec-sources.json
+      if [ -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
+        OUT_JSON="$OUTPUT_DIR/pubspec-sources.json"
+        STAGED_PACKAGES=$(OUT_JSON="$OUT_JSON" python3 - <<'PY'
 import json
 import os
 
@@ -607,17 +625,24 @@ for entry in data:
                     print(f"{pkg} {ver}")
 PY
 )
-      if [ -n "$STAGED_PACKAGES" ]; then
-        while read -r pkg ver; do
-          # Try to stage package archives, but don't fail if not found
-          [ -n "$pkg" ] && stage_pubdev_archive "$pkg" "$ver" || true
-        done <<EOF
+        if [ -n "$STAGED_PACKAGES" ]; then
+          while read -r pkg ver; do
+            # Try to stage package archives, but don't fail if not found
+            [ -n "$pkg" ] && stage_pubdev_archive "$pkg" "$ver" || true
+          done <<EOF
 $STAGED_PACKAGES
 EOF
+        fi
       fi
+    else
+      print_error "Failed to move pubspec-sources.json to output directory"
+      exit 1
     fi
   else
-    print_error "Failed to regenerate pubspec-sources.json"
+    print_error "Failed to generate pubspec-sources.json"
+    print_info "Python error output:"
+    echo "$PYTHON_OUTPUT"
+    exit 1
   fi
 else
   print_warning "Missing pubspec.lock inputs; cannot regenerate pubspec-sources.json"
