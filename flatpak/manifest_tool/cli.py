@@ -16,6 +16,7 @@ try:  # pragma: no cover - import fallback for direct execution
     from .core.manifest import ManifestDocument, OperationResult, merge_results
     from .operations import manifest as manifest_ops
     from .operations import sources as sources_ops
+
     # Create module-level aliases for backward compatibility
     flutter_ops = flutter
 except ImportError:  # pragma: no cover
@@ -29,6 +30,7 @@ except ImportError:  # pragma: no cover
     from core.manifest import ManifestDocument, OperationResult, merge_results  # type: ignore
     from operations import manifest as manifest_ops  # type: ignore
     from operations import sources as sources_ops  # type: ignore
+
     # Create module-level aliases for backward compatibility
     flutter_ops = flutter  # type: ignore
 
