@@ -1098,7 +1098,7 @@ if [ -f "$OUT_MANIFEST" ]; then
 
   # Add offline build patches (sqlite3, cargokit, cargo config)
   print_status "Adding offline build patches..."
-  "$PYTHON_CLI" add-offline-build-patches --manifest "$OUT_MANIFEST"
+  python3 "$PYTHON_CLI" add-offline-build-patches --manifest "$OUT_MANIFEST"
 
 fi
 
