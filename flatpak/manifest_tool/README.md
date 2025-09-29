@@ -427,12 +427,14 @@ python3 "$PYTHON_CLI" pin-commit \
   --commit "$COMMIT_HASH" \
   --output "$OUT_MANIFEST"
 
-# Ensure offline build
-python3 "$PYTHON_CLI" ensure-offline-flutter \
+# Ensure offline build flags are present
+python3 "$PYTHON_CLI" ensure-flutter-pub-get-offline \
+  --manifest "$OUT_MANIFEST"
+python3 "$PYTHON_CLI" ensure-dart-pub-offline-in-build \
   --manifest "$OUT_MANIFEST"
 
-# Remove network access
-python3 "$PYTHON_CLI" remove-network-from-build \
+# Remove network access from build arguments
+python3 "$PYTHON_CLI" remove-network-from-build-args \
   --manifest "$OUT_MANIFEST"
 
 # Add plugin sources

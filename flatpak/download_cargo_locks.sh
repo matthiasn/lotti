@@ -51,7 +51,7 @@ done
 # Now generate cargo-sources.json from the downloaded Cargo.lock files
 print_info "Generating cargo-sources.json from downloaded Cargo.lock files..."
 
-local lock_files=()
+lock_files=()
 for lock_file in *-Cargo.lock; do
   if [ -f "$lock_file" ]; then
     lock_files+=("$lock_file")
