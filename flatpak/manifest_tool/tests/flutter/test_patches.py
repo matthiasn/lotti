@@ -20,10 +20,7 @@ def test_add_offline_build_patches_adds_sources(make_document):
 
     assert result.changed
     # SQLite patches are handled by flatpak-flutter generated patches, not added here
-    assert (
-        "cargo offline config" in str(result.messages).lower()
-        or "cargokit patch" in str(result.messages).lower()
-    )
+    assert "cargokit patch" in str(result.messages).lower()
 
     sources = lotti.get("sources", [])
 
@@ -40,12 +37,7 @@ def test_add_offline_build_patches_adds_sources(make_document):
         len(cargokit_patches) >= 3
     )  # super_native_extensions, flutter_vodozemac, irondash_engine_context
 
-    # Check cargo config was added
-    assert any(
-        (s.get("dest") == ".cargo" and s.get("dest-filename") == "config.toml")
-        for s in sources
-        if isinstance(s, dict)
-    )
+    # Note: We don't add cargo config anymore - cargo-sources.json provides it
 
 
 def test_add_cmake_offline_patches(make_document):
@@ -62,35 +54,19 @@ def test_add_cmake_offline_patches(make_document):
 
 
 def test_add_cargokit_offline_patches(make_document):
-    """Test that add_cargokit_offline_patches adds cargo config and patch."""
+    """Test that add_cargokit_offline_patches adds cargokit patches."""
     document = make_document()
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
 
     result = flutter_patches.add_cargokit_offline_patches(document)
 
     assert result.changed
-    assert (
-        "cargo offline config" in str(result.messages).lower()
-        or "cargokit patch" in str(result.messages).lower()
-    )
+    assert "cargokit patch" in str(result.messages).lower()
 
     sources = lotti.get("sources", [])
 
-    # Check cargo config was added
-    cargo_config = next(
-        (
-            s
-            for s in sources
-            if isinstance(s, dict)
-            and s.get("dest") == ".cargo"
-            and s.get("dest-filename") == "config.toml"
-        ),
-        None,
-    )
-    assert cargo_config is not None
-    assert cargo_config["type"] == "inline"
-    assert "[net]" in cargo_config["contents"]
-    assert "offline = true" in cargo_config["contents"]
+    # Note: We don't add cargo config anymore - cargo-sources.json provides the
+    # correct vendor configuration with source replacements
 
     # Check cargokit patches were added for detected packages
     cargokit_patches = [
@@ -171,9 +147,4 @@ def test_add_offline_build_patches_no_sources(make_document):
     ]
     assert len(cargokit_patches) >= 3  # fallback packages
 
-    # Check cargo config was added
-    assert any(
-        (s.get("dest") == ".cargo" and s.get("dest-filename") == "config.toml")
-        for s in sources
-        if isinstance(s, dict)
-    )
+    # Note: We don't add cargo config anymore - cargo-sources.json provides it

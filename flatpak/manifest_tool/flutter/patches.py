@@ -179,26 +179,9 @@ def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
                 messages.append(f"Added cargokit patch for {package}")
                 changed = True
 
-        # Add cargo config as an inline source for offline mode
-        cargo_config = {
-            "type": "inline",
-            "dest": ".cargo",
-            "dest-filename": "config.toml",
-            "contents": "[net]\noffline = true\n\n[http]\nmax-retries = 0\n",
-        }
-
-        # Check if cargo config already exists
-        has_cargo_config = any(
-            (s.get("dest") == ".cargo" and s.get("dest-filename") == "config.toml")
-            or s.get("dest-filename") == ".cargo/config.toml"  # old format
-            for s in sources
-            if isinstance(s, dict)
-        )
-
-        if not has_cargo_config:
-            sources.append(cargo_config)
-            messages.append("Added cargo offline config")
-            changed = True
+        # Note: We do NOT add a cargo config here because cargo-sources.json
+        # already provides the correct vendor configuration with source replacements.
+        # Adding our own config would override the vendor paths and break offline builds.
 
         if changed:
             module["sources"] = sources

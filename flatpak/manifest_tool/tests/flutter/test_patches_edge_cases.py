@@ -80,8 +80,8 @@ def test_patches_with_malformed_sources_list(make_document):
     assert result.changed
     # Should replace the malformed sources with a proper list
     assert isinstance(lotti["sources"], list)
-    # Should have at least 4 items: 3 cargokit patches + cargo config
-    assert len(lotti["sources"]) >= 4
+    # Should have at least 3 cargokit patches
+    assert len(lotti["sources"]) >= 3
 
 
 def test_patches_preserve_other_sources(make_document):
@@ -112,8 +112,8 @@ def test_patches_preserve_other_sources(make_document):
     for orig in original_sources:
         assert orig in sources
 
-    # Plus the new patches (3 cargokit patches + cargo config)
-    assert len(sources) >= len(original_sources) + 4
+    # Plus the new patches (3 cargokit patches)
+    assert len(sources) >= len(original_sources) + 3
 
 
 def test_patches_with_module_missing_dict_type(make_document):
@@ -132,8 +132,8 @@ def test_patches_with_module_missing_dict_type(make_document):
     assert not result.changed
 
 
-def test_cargo_config_contents_format():
-    """Test that cargo config has correct format."""
+def test_cargo_config_not_added():
+    """Test that cargo config is NOT added (cargo-sources.json provides it)."""
     document = ManifestDocument(
         Path("test.yml"), {"modules": [{"name": "lotti", "sources": []}]}
     )
@@ -142,28 +142,16 @@ def test_cargo_config_contents_format():
 
     assert result.changed
     lotti = document.data["modules"][0]
-    cargo_config = next(
+
+    # No cargo config should be added
+    cargo_configs = [
         s
         for s in lotti["sources"]
         if isinstance(s, dict)
         and s.get("dest") == ".cargo"
         and s.get("dest-filename") == "config.toml"
-    )
-
-    # Verify the config has the right structure
-    contents = cargo_config["contents"]
-    assert "[net]" in contents
-    assert "offline = true" in contents
-    assert "[http]" in contents
-    assert "max-retries = 0" in contents
-
-    # Should be valid TOML
-    lines = contents.strip().split("\n")
-    assert lines[0] == "[net]"
-    assert lines[1] == "offline = true"
-    assert lines[2] == ""
-    assert lines[3] == "[http]"
-    assert lines[4] == "max-retries = 0"
+    ]
+    assert len(cargo_configs) == 0
 
 
 def test_patch_sources_have_required_fields():
@@ -193,19 +181,15 @@ def test_patch_sources_have_required_fields():
         assert "dest" in patch
         assert len(patch) == 3  # Only type, path, dest
 
-    # Check cargo config
-    cargo_config = next(
+    # No cargo config should be added (cargo-sources.json provides it)
+    cargo_configs = [
         s
         for s in lotti["sources"]
         if isinstance(s, dict)
         and s.get("dest") == ".cargo"
         and s.get("dest-filename") == "config.toml"
-    )
-    assert cargo_config["type"] == "inline"
-    assert "contents" in cargo_config
-    assert "dest" in cargo_config
-    assert "dest-filename" in cargo_config
-    assert len(cargo_config) == 4  # type, dest, dest-filename, contents
+    ]
+    assert len(cargo_configs) == 0
 
 
 def test_multiple_lotti_modules(make_document):
@@ -229,8 +213,8 @@ def test_multiple_lotti_modules(make_document):
     ]
     assert len(lotti_modules) == 2
 
-    # First should have patches (at least 4: 3 cargokit + cargo config)
-    assert len(lotti_modules[0].get("sources", [])) >= 4
+    # First should have patches (at least 3 cargokit patches)
+    assert len(lotti_modules[0].get("sources", [])) >= 3
     # Second should be unchanged
     assert len(lotti_modules[1].get("sources", [])) == 0
 
@@ -250,7 +234,7 @@ def test_patches_do_not_duplicate_on_repeated_calls(make_document):
 
     sources = lotti["sources"]
 
-    # Should only have one of each type
+    # No cargo config should be added
     cargo_configs = [
         s
         for s in sources
@@ -258,7 +242,7 @@ def test_patches_do_not_duplicate_on_repeated_calls(make_document):
         and s.get("dest") == ".cargo"
         and s.get("dest-filename") == "config.toml"
     ]
-    assert len(cargo_configs) == 1
+    assert len(cargo_configs) == 0
 
     # Check we have cargokit patches and they don't duplicate
     cargokit_patches = [

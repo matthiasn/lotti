@@ -249,6 +249,74 @@ def remove_flutter_sdk_source(document: ManifestDocument) -> OperationResult:
     return OperationResult.unchanged()
 
 
+def ensure_cargo_config_in_place(document: ManifestDocument) -> OperationResult:
+    """Ensure cargo vendor config is accessible to cargo.
+
+    The cargo-sources.json places config at cargo/config, but cargo needs it
+    at .cargo/config.toml. Since cargo runs from plugin subdirectories, we need
+    to ensure CARGO_HOME points to the main build directory where the config is.
+
+    Args:
+        document: The manifest document to modify
+
+    Returns:
+        OperationResult with details of changes made
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+
+        # Ensure CARGO_HOME is set to /run/build/lotti/.cargo in build-options
+        build_options = module.setdefault("build-options", {})
+        env = build_options.setdefault("env", {})
+
+        # Check if CARGO_HOME is already set correctly
+        if env.get("CARGO_HOME") != "/run/build/lotti/.cargo":
+            env["CARGO_HOME"] = "/run/build/lotti/.cargo"
+            messages.append("Set CARGO_HOME to /run/build/lotti/.cargo")
+            changed = True
+
+        commands = module.get("build-commands", [])
+        if not isinstance(commands, list):
+            commands = []
+            module["build-commands"] = commands
+
+        # Check if we already have the copy command
+        has_cargo_copy = any(
+            isinstance(cmd, str) and "cp cargo/config .cargo/config" in cmd
+            for cmd in commands
+        )
+
+        if not has_cargo_copy:
+            # Add command to copy the vendor config to where CARGO_HOME expects it
+            copy_cmd = "cp cargo/config .cargo/config.toml 2>/dev/null || true"
+
+            # Find the position after "Building Lotti from source..."
+            insert_pos = 0
+            for i, cmd in enumerate(commands):
+                if isinstance(cmd, str) and "Building Lotti from source" in cmd:
+                    insert_pos = i + 1
+                    break
+
+            # If not found, add at the beginning
+            if insert_pos == 0:
+                insert_pos = 3  # After SDK setup commands
+
+            commands.insert(insert_pos, copy_cmd)
+            messages.append("Added cargo config copy command")
+            changed = True
+        break
+
+    if changed:
+        document.mark_changed()
+        return OperationResult.changed_result("; ".join(messages))
+    return OperationResult.unchanged()
+
+
 def apply_all_offline_fixes(document: ManifestDocument) -> OperationResult:
     """Apply all offline build fixes to the manifest.
 
@@ -290,6 +358,11 @@ def apply_all_offline_fixes(document: ManifestDocument) -> OperationResult:
 
     # Ensure rustup is in PATH if rustup module is present
     result = ensure_rustup_in_path(document)
+    if result.changed:
+        results.append(result)
+
+    # Ensure cargo config is in the right place
+    result = ensure_cargo_config_in_place(document)
     if result.changed:
         results.append(result)
 

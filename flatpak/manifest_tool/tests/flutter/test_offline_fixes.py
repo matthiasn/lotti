@@ -348,9 +348,13 @@ def test_no_changes_needed():
                 "build-commands": [
                     "echo Building...",
                     "cp -r /var/lib/flutter /run/build/lotti/flutter_sdk",
+                    "cp cargo/config .cargo/config.toml 2>/dev/null || true",  # Already has cargo config copy
                 ],
                 "build-options": {
-                    "env": {"PATH": "/var/lib/flutter/bin:/usr/bin"},
+                    "env": {
+                        "PATH": "/var/lib/flutter/bin:/usr/bin",
+                        "CARGO_HOME": "/run/build/lotti/.cargo",  # Already set
+                    },
                 },
                 "sources": [
                     # Already has cargokit patches
@@ -369,13 +373,7 @@ def test_no_changes_needed():
                         "path": "cargokit/run_build_tool.sh.patch",
                         "dest": ".pub-cache/hosted/pub.dev/irondash_engine_context-0.5.5/cargokit",
                     },
-                    # Already has cargo config
-                    {
-                        "type": "inline",
-                        "dest": ".cargo",
-                        "dest-filename": "config.toml",
-                        "contents": "[net]\noffline = true\n\n[http]\nmax-retries = 0\n",
-                    },
+                    # Note: cargo config is provided by cargo-sources.json, not added manually
                 ],
             }
         ],
@@ -384,6 +382,144 @@ def test_no_changes_needed():
     result = offline_fixes.apply_all_offline_fixes(doc)
     assert not result.changed
     assert result.messages == []
+
+
+def test_ensure_cargo_config_in_place():
+    """Test that cargo config copy command is added and CARGO_HOME is set."""
+    doc = ManifestDocument(path=Path("test.yml"))
+    doc.data = {
+        "app-id": "com.test.app",
+        "modules": [
+            {
+                "name": "lotti",
+                "build-commands": [
+                    "echo Setting up Flutter SDK...",
+                    "cp -r /var/lib/flutter /run/build/lotti/flutter_sdk",
+                    "echo Building Lotti from source...",
+                    "flutter pub get --offline",
+                ],
+            }
+        ],
+    }
+
+    result = offline_fixes.ensure_cargo_config_in_place(doc)
+    assert result.changed
+    assert "Added cargo config copy command" in str(result.messages)
+    assert "Set CARGO_HOME to /run/build/lotti/.cargo" in str(result.messages)
+
+    lotti = next(m for m in doc.data["modules"] if m.get("name") == "lotti")
+    commands = lotti["build-commands"]
+
+    # Should have the cargo config copy command right after "Building Lotti from source..."
+    building_index = next(
+        i for i, cmd in enumerate(commands) if "Building Lotti from source" in cmd
+    )
+    assert (
+        commands[building_index + 1]
+        == "cp cargo/config .cargo/config.toml 2>/dev/null || true"
+    )
+
+    # Should have CARGO_HOME set
+    assert lotti["build-options"]["env"]["CARGO_HOME"] == "/run/build/lotti/.cargo"
+
+
+def test_cargo_config_copy_idempotent():
+    """Test that cargo config copy command is not added twice."""
+    doc = ManifestDocument(path=Path("test.yml"))
+    doc.data = {
+        "app-id": "com.test.app",
+        "modules": [
+            {
+                "name": "lotti",
+                "build-options": {
+                    "env": {"CARGO_HOME": "/run/build/lotti/.cargo"}  # Already set
+                },
+                "build-commands": [
+                    "echo Setting up Flutter SDK...",
+                    "cp cargo/config .cargo/config.toml 2>/dev/null || true",  # Already has it
+                    "flutter pub get --offline",
+                ],
+            }
+        ],
+    }
+
+    result = offline_fixes.ensure_cargo_config_in_place(doc)
+    assert not result.changed
+
+    lotti = next(m for m in doc.data["modules"] if m.get("name") == "lotti")
+    commands = lotti["build-commands"]
+
+    # Should only have one copy command
+    copy_commands = [
+        cmd for cmd in commands if "cp cargo/config .cargo/config.toml" in cmd
+    ]
+    assert len(copy_commands) == 1
+
+    # CARGO_HOME should still be set
+    assert lotti["build-options"]["env"]["CARGO_HOME"] == "/run/build/lotti/.cargo"
+
+
+def test_cargo_home_environment_set():
+    """Test that CARGO_HOME is set properly when not already present."""
+    doc = ManifestDocument(path=Path("test.yml"))
+    doc.data = {
+        "app-id": "com.test.app",
+        "modules": [
+            {
+                "name": "lotti",
+                "build-options": {
+                    "env": {
+                        "PATH": "/usr/bin:/bin",
+                        # No CARGO_HOME initially
+                    }
+                },
+                "build-commands": [
+                    "echo Building...",
+                ],
+            }
+        ],
+    }
+
+    result = offline_fixes.ensure_cargo_config_in_place(doc)
+    assert result.changed
+    assert "Set CARGO_HOME to /run/build/lotti/.cargo" in str(result.messages)
+
+    lotti = next(m for m in doc.data["modules"] if m.get("name") == "lotti")
+    env = lotti["build-options"]["env"]
+
+    # CARGO_HOME should be set
+    assert env["CARGO_HOME"] == "/run/build/lotti/.cargo"
+
+
+def test_cargo_home_not_changed_if_correct():
+    """Test that CARGO_HOME is not changed if already set correctly."""
+    doc = ManifestDocument(path=Path("test.yml"))
+    doc.data = {
+        "app-id": "com.test.app",
+        "modules": [
+            {
+                "name": "lotti",
+                "build-options": {
+                    "env": {
+                        "PATH": "/usr/bin:/bin",
+                        "CARGO_HOME": "/run/build/lotti/.cargo",  # Already correct
+                    }
+                },
+                "build-commands": [
+                    "cp cargo/config .cargo/config.toml 2>/dev/null || true",  # Has copy command
+                ],
+            }
+        ],
+    }
+
+    result = offline_fixes.ensure_cargo_config_in_place(doc)
+    assert not result.changed  # Should not change anything
+
+    lotti = next(m for m in doc.data["modules"] if m.get("name") == "lotti")
+    env = lotti["build-options"]["env"]
+
+    # CARGO_HOME should remain unchanged
+    assert env["CARGO_HOME"] == "/run/build/lotti/.cargo"
 
 
 def test_comprehensive_offline_fixes():
@@ -485,15 +621,7 @@ def test_comprehensive_offline_fixes():
     ]
     assert len(cargokit_patches) == 3
 
-    # Check cargo config was added
-    cargo_configs = [
-        s
-        for s in sources
-        if isinstance(s, dict)
-        and s.get("dest") == ".cargo"
-        and s.get("dest-filename") == "config.toml"
-    ]
-    assert len(cargo_configs) == 1
+    # Note: We don't add cargo config anymore - cargo-sources.json provides it
 
 
 if __name__ == "__main__":
@@ -530,6 +658,18 @@ if __name__ == "__main__":
 
     test_no_changes_needed()
     print("✓ test_no_changes_needed passed")
+
+    test_ensure_cargo_config_in_place()
+    print("✓ test_ensure_cargo_config_in_place passed")
+
+    test_cargo_config_copy_idempotent()
+    print("✓ test_cargo_config_copy_idempotent passed")
+
+    test_cargo_home_environment_set()
+    print("✓ test_cargo_home_environment_set passed")
+
+    test_cargo_home_not_changed_if_correct()
+    print("✓ test_cargo_home_not_changed_if_correct passed")
 
     test_comprehensive_offline_fixes()
     print("✓ test_comprehensive_offline_fixes passed")
