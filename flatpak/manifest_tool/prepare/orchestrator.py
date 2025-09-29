@@ -9,17 +9,35 @@ import lzma
 import os
 import re
 import shutil
+import socket
 import stat
 import subprocess
 import sys
 import tarfile
+import urllib.error
 import urllib.request
+from contextlib import closing
 from urllib.parse import urlparse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Mapping, MutableMapping, Optional
 
 import yaml
+
+try:  # pragma: no cover - optional dependency
+    from colorama import Fore, Style, init as colorama_init
+
+    colorama_init()
+    _COLOR_ENABLED = True
+except ImportError:  # pragma: no cover - colorama optional
+    Fore = Style = None  # type: ignore
+    _COLOR_ENABLED = False
+
+_SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400")
+_SQLITE_AUTOCONF_SHA256 = os.getenv(
+    "SQLITE_AUTOCONF_SHA256",
+    "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+)
 
 from .. import flutter
 from ..core import utils, validation as core_validation
@@ -118,11 +136,14 @@ class _StatusPrinter:
     """Utility to provide human-friendly status updates."""
 
     def __init__(self) -> None:
-        self._green = "\033[0;32m"
-        self._yellow = "\033[1;33m"
-        self._red = "\033[0;31m"
-        self._blue = "\033[0;34m"
-        self._nc = "\033[0m"
+        if _COLOR_ENABLED:
+            self._green = Fore.GREEN
+            self._yellow = Fore.YELLOW
+            self._red = Fore.RED
+            self._blue = Fore.BLUE
+            self._nc = Style.RESET_ALL
+        else:
+            self._green = self._yellow = self._red = self._blue = self._nc = ""
 
     def status(self, message: str) -> None:
         print(f"{self._green}[✓]{self._nc} {message}")
@@ -1382,17 +1403,27 @@ def _download_flutter_archive(
         "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/"
         f"flutter_linux_{tag}-stable.tar.xz"
     )
-    parsed = urlparse(url)
-    if parsed.scheme.lower() != "https":
-        raise PrepareFlathubError(f"Unsupported scheme for Flutter archive: {url}")
     printer.info(f"Downloading Flutter archive {archive_target.name}")
     try:
-        archive_target.parent.mkdir(parents=True, exist_ok=True)
-        urllib.request.urlretrieve(url, archive_target)
+        _download_https_resource(url, archive_target)
         return archive_target
-    except Exception as exc:  # pragma: no cover - network failure
+    except (
+        urllib.error.URLError,
+        socket.timeout,
+    ) as exc:  # pragma: no cover - network failure
         printer.warn(f"Failed to download Flutter archive from {url}: {exc}")
         return None
+
+
+def _download_https_resource(url: str, destination: Path) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme.lower() != "https":
+        raise PrepareFlathubError(f"Unsupported scheme for HTTPS download: {url}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    request = urllib.request.Request(url)
+    with closing(urllib.request.urlopen(request, timeout=60)) as response:  # nosec B310
+        with destination.open("wb") as handle:
+            shutil.copyfileobj(response, handle)
 
 
 def _resolve_cached_flutter_sdk(
@@ -1652,7 +1683,7 @@ def _bundle_sources_and_archives(
             check=False,
         )
         if result.returncode != 0:
-            error_output = (result.stderr or b"").decode("utf-8", "ignore")
+            error_output = (result.stderr or b"").decode("utf-8", "replace")
             raise PrepareFlathubError("Failed to create app archive: " + error_output)
         with lzma.open(app_archive_path, "wb") as archive_file:
             archive_file.write(result.stdout)
