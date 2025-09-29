@@ -431,16 +431,108 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser_helper.set_defaults(func=_run_ensure_lotti_setup_helper)
 
-    parser_net = subparsers.add_parser(
-        "ensure-lotti-network-share",
-        help="Ensure lotti build-args include --share=network.",
+    # Note: ensure-lotti-network-share command removed
+    # --share=network in build-args is NOT allowed on Flathub infrastructure
+    # Network access during builds violates Flathub policy
+
+    parser_remove_network = subparsers.add_parser(
+        "remove-network-from-build-args",
+        help="Remove --share=network from build-args for Flathub compliance.",
     )
-    parser_net.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser_net.set_defaults(
+    parser_remove_network.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_remove_network.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter_ops.ensure_lotti_network_share(
+                executor=lambda document: flutter_ops.remove_network_from_build_args(
+                    document
+                ),
+            )
+        )
+    )
+
+    parser_pub_offline = subparsers.add_parser(
+        "ensure-flutter-pub-get-offline",
+        help="Ensure flutter pub get commands use --offline flag.",
+    )
+    parser_pub_offline.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_pub_offline.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.ensure_flutter_pub_get_offline(
+                    document
+                ),
+            )
+        )
+    )
+
+    parser_remove_config = subparsers.add_parser(
+        "remove-flutter-config",
+        help="Remove flutter config commands from lotti build steps.",
+    )
+    parser_remove_config.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_remove_config.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.remove_flutter_config_command(
+                    document
+                ),
+            )
+        )
+    )
+
+    parser_dart_offline = subparsers.add_parser(
+        "ensure-dart-pub-offline-in-build",
+        help="Wrap flutter build to disable pub network access.",
+    )
+    parser_dart_offline.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_dart_offline.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.ensure_dart_pub_offline_in_build(
+                    document
+                ),
+            )
+        )
+    )
+
+    parser_sqlite = subparsers.add_parser(
+        "add-sqlite3-source",
+        help="Add SQLite source for sqlite3_flutter_libs plugin.",
+    )
+    parser_sqlite.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_sqlite.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.add_sqlite3_source(document),
+            )
+        )
+    )
+
+    parser_mimalloc = subparsers.add_parser(
+        "add-media-kit-mimalloc-source",
+        help="Add mimalloc source for media_kit_libs_linux plugin.",
+    )
+    parser_mimalloc.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_mimalloc.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.add_media_kit_mimalloc_source(
                     document
                 ),
             )
@@ -599,6 +691,59 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
+    parser_offline_patches = subparsers.add_parser(
+        "add-offline-build-patches",
+        help="Add offline build patches to lotti module (sqlite3, cargokit, cargo config).",
+    )
+    parser_offline_patches.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_offline_patches.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.add_offline_build_patches(
+                    document
+                ),
+            )
+        )
+    )
+
+    # Validation command
+    parser_check_compliance = subparsers.add_parser(
+        "check-flathub-compliance",
+        help="Check manifest for Flathub compliance violations.",
+    )
+    parser_check_compliance.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+
+    # Import validation module
+    try:
+        from . import validation
+    except ImportError:
+        import validation  # type: ignore
+
+    def _run_validation_check(namespace: argparse.Namespace) -> int:
+        """Run validation and convert result to appropriate format."""
+        document = ManifestDocument.load(namespace.manifest)
+        try:
+            result = validation.check_flathub_compliance(document)
+        except Exception as exc:  # pragma: no cover
+            logger.error("Validation failed: %s", exc)
+            return 1
+
+        # Print validation result
+        print(result.message)
+        if result.details:
+            for detail in result.details:
+                print(f"  - {detail}")
+
+        # Return appropriate exit code
+        return 0 if result.success else 1
+
+    parser_check_compliance.set_defaults(func=_run_validation_check)
+
     # Build utility commands
     parser_find_flutter = subparsers.add_parser(
         "find-flutter-sdk", help="Find a cached Flutter SDK installation."
@@ -648,6 +793,43 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output file path (default: setup-flutter.sh).",
     )
     parser_generate_helper.set_defaults(func=lambda ns: _run_generate_setup_helper(ns))
+
+    # Ensure sqlite3 CMake patch is present after bundling
+    parser_sqlite_patch = subparsers.add_parser(
+        "add-sqlite3-patch",
+        help=(
+            "Ensure sqlite3_flutter_libs CMake patch is present in sources. "
+            "Use after bundling when patch sources were dropped."
+        ),
+    )
+    parser_sqlite_patch.add_argument(
+        "--manifest", required=True, help="Manifest file path."
+    )
+    parser_sqlite_patch.add_argument(
+        "--plugin-version",
+        required=True,
+        dest="plugin_version",
+        help="sqlite3_flutter_libs version (e.g., 0.5.39)",
+    )
+    parser_sqlite_patch.add_argument(
+        "--patch",
+        required=True,
+        dest="patch_path",
+        help=(
+            "Path to CMakeLists.txt patch relative to manifest dir "
+            "(e.g., sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch)"
+        ),
+    )
+    parser_sqlite_patch.set_defaults(
+        func=lambda ns: _run_manifest_operation(
+            ManifestOperation(
+                manifest=Path(ns.manifest),
+                executor=lambda document: flutter_ops.add_sqlite3_patch(
+                    document, version=ns.plugin_version, patch_path=ns.patch_path
+                ),
+            )
+        )
+    )
 
     return parser
 

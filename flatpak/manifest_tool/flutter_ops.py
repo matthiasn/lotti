@@ -1,4 +1,8 @@
-"""Flutter-specific manifest operations."""
+"""Flutter-specific manifest operations.
+
+This module provides operations specific to Flutter applications in Flatpak manifests,
+including SDK setup, offline build configuration, and plugin dependency handling.
+"""
 
 from __future__ import annotations
 
@@ -170,39 +174,365 @@ def normalize_lotti_env(
     return OperationResult.unchanged()
 
 
-def ensure_lotti_network_share(document: ManifestDocument) -> OperationResult:
-    """Ensure the lotti module has build-args with --share=network.
+# Note: ensure_lotti_network_share function removed
+# --share=network in build-args is NOT allowed on Flathub infrastructure
+# Network access during builds violates Flathub policy for security and reproducibility
+# Builds must be completely offline with all dependencies pre-fetched
 
-    Some build environments rely on network access during setup (e.g., when
-    falling back from offline cache). This helper makes sure the final manifest
-    preserves that capability for the lotti build stage.
+
+def ensure_flutter_pub_get_offline(document: ManifestDocument) -> OperationResult:
+    """Ensure flutter pub get commands use --offline flag for Flathub compliance.
+
+    Flathub builds have no network access, so pub get must run in offline mode.
+    This function adds the --offline flag to flutter pub get commands.
+
+    Note: flutter build does not support --offline flag. The internal dart pub get
+    calls made by flutter build will need to be handled differently.
     """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+
+        build_commands = module.get("build-commands", [])
+        module_name = module.get("name", "unnamed")
+
+        for i, cmd in enumerate(build_commands):
+            if not isinstance(cmd, str):
+                continue
+
+            # Handle flutter pub get commands (only pub get supports --offline)
+            if "flutter pub get" in cmd and "--offline" not in cmd:
+                build_commands[i] = cmd.replace(
+                    "flutter pub get", "flutter pub get --offline"
+                )
+                messages.append(
+                    f"Added --offline flag to flutter pub get in {module_name}"
+                )
+                changed = True
+
+    if changed:
+        document.mark_changed()
+        message = "Ensured flutter pub get uses --offline mode"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
+    return OperationResult.unchanged()
+
+
+def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationResult:
+    """Add --no-pub flag to flutter build to skip internal dart pub get.
+
+    Flutter build internally calls 'dart pub get --example' which tries to
+    access the network. The --no-pub flag skips this automatic pub get,
+    since dependencies were already resolved by our explicit flutter pub get --offline.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+
+        # Only modify the lotti module
+        if module.get("name") != "lotti":
+            continue
+
+        build_commands = module.get("build-commands", [])
+
+        for i, cmd in enumerate(build_commands):
+            if not isinstance(cmd, str):
+                continue
+
+            # Find flutter build linux commands without --no-pub flag
+            if "flutter build linux" in cmd and "--no-pub" not in cmd:
+                # Add --no-pub flag to skip automatic pub get
+                build_commands[i] = cmd.replace(
+                    "flutter build linux", "flutter build linux --no-pub"
+                )
+                messages.append(
+                    "Added --no-pub flag to skip automatic pub get during build"
+                )
+                changed = True
+
+    if changed:
+        document.mark_changed()
+        message = "Configured flutter build to skip automatic pub get"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
+    return OperationResult.unchanged()
+
+
+def remove_flutter_config_command(document: ManifestDocument) -> OperationResult:
+    """Remove flutter config commands from lotti build-commands."""
 
     modules = document.ensure_modules()
     changed = False
+
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
-        build_opts = module.setdefault("build-options", {})
-        build_args = build_opts.get("build-args")
-        if isinstance(build_args, list):
-            if "--share=network" not in build_args:
-                build_args.insert(0, "--share=network")
+
+        commands = module.get("build-commands")
+        if not isinstance(commands, list):
+            continue
+
+        filtered: list[str] = []
+        for raw in commands:
+            command = str(raw)
+            if "flutter config" in command:
                 changed = True
-        elif build_args is None:
-            build_opts["build-args"] = ["--share=network"]
-            changed = True
-        else:
-            # Unexpected type; normalize to list including --share=network
-            build_opts["build-args"] = ["--share=network"]
-            changed = True
+                continue
+            filtered.append(command)
+
+        if changed:
+            module["build-commands"] = filtered
         break
 
     if changed:
         document.mark_changed()
-        message = "Ensured lotti build-args include --share=network"
+        message = "Removed flutter config command from lotti build steps"
         _LOGGER.debug(message)
         return OperationResult.changed_result(message)
+    return OperationResult.unchanged()
+
+
+def _sqlite_matches_version(source: dict, version: str) -> bool:
+    """Check if a source matches a specific SQLite version."""
+    if not isinstance(source, dict):
+        return False
+    version_tag = f"sqlite-autoconf-{version}"
+    for key in ("url", "path", "dest-filename"):
+        value = source.get(key)
+        if isinstance(value, str) and version_tag in value:
+            return True
+    return False
+
+
+def _remove_stale_sqlite_sources(
+    sources: list, dest_map: dict, old_version: str
+) -> tuple[list, bool]:
+    """Remove outdated SQLite sources from the sources list.
+
+    Returns:
+        Tuple of (filtered_sources, removed_any)
+    """
+    filtered_sources = []
+    removed_stale = False
+
+    for source in sources:
+        if (
+            isinstance(source, dict)
+            and source.get("type") == "file"
+            and source.get("dest") in dest_map.values()
+            and _sqlite_matches_version(source, old_version)
+        ):
+            removed_stale = True
+            continue
+        filtered_sources.append(source)
+
+    return filtered_sources, removed_stale
+
+
+def _add_sqlite_sources_for_architectures(
+    sources: list, dest_map: dict, current_version: str
+) -> tuple[bool, list]:
+    """Add SQLite sources for each architecture if not already present.
+
+    Returns:
+        Tuple of (changed, messages)
+    """
+    changed = False
+    messages = []
+
+    for arch, dest in dest_map.items():
+        if _has_sqlite_source(sources, dest, current_version):
+            continue
+
+        sqlite_source = _create_sqlite_source(arch, dest, current_version)
+        sources.append(sqlite_source)
+        messages.append(f"Added SQLite 3.50.4 file for {arch}")
+        changed = True
+
+    return changed, messages
+
+
+def _has_sqlite_source(sources: list, dest: str, version: str) -> bool:
+    """Check if sources already contains a SQLite source for the given destination and version."""
+    return any(
+        isinstance(src, dict)
+        and src.get("type") == "file"
+        and src.get("dest") == dest
+        and _sqlite_matches_version(src, version)
+        for src in sources
+    )
+
+
+def _create_sqlite_source(arch: str, dest: str, version: str) -> dict:
+    """Create a SQLite source dictionary for the given architecture."""
+    return {
+        "type": "file",
+        "only-arches": [arch],
+        "url": f"https://www.sqlite.org/2025/sqlite-autoconf-{version}.tar.gz",
+        "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+        "dest": dest,
+        "dest-filename": f"sqlite-autoconf-{version}.tar.gz",
+    }
+
+
+def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
+    """Add SQLite source for sqlite3_flutter_libs plugin.
+
+    The sqlite3_flutter_libs plugin's CMake tries to download SQLite during configure.
+    We pre-download it as a file that CMake will find and extract.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    dest_map = {
+        "x86_64": "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
+        "aarch64": "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
+    }
+
+    OLD_VERSION = "3500100"
+    CURRENT_VERSION = "3500400"
+
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+
+        if "sources" not in module:
+            module["sources"] = []
+        sources = module["sources"]
+
+        # Remove outdated SQLite sources
+        filtered_sources, removed_stale = _remove_stale_sqlite_sources(
+            sources, dest_map, OLD_VERSION
+        )
+        if removed_stale:
+            module["sources"] = filtered_sources
+            sources = module["sources"]
+            changed = True
+
+        # Add current SQLite sources for each architecture
+        sources_changed, arch_messages = _add_sqlite_sources_for_architectures(
+            sources, dest_map, CURRENT_VERSION
+        )
+        if sources_changed:
+            changed = True
+            messages.extend(arch_messages)
+
+    if changed:
+        document.mark_changed()
+        message = "Updated SQLite sources for sqlite3_flutter_libs plugin"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
+    return OperationResult.unchanged()
+
+
+def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult:
+    """Add mimalloc source for media_kit_libs_linux plugin.
+
+    The media_kit plugin's CMake tries to download mimalloc during configure.
+    We pre-download it and place it where CMake expects to find it.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+
+        # Only modify the lotti module
+        if module.get("name") != "lotti":
+            continue
+
+        # Ensure sources list exists
+        if "sources" not in module:
+            module["sources"] = []
+        sources = module["sources"]
+
+        # Check if mimalloc source already exists
+        has_mimalloc = any(
+            isinstance(src, dict)
+            and src.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
+            for src in sources
+        )
+
+        if not has_mimalloc:
+            # Add mimalloc source
+            mimalloc_source = {
+                "type": "file",
+                "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
+                "sha256": "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
+                "dest-filename": "mimalloc-2.1.2.tar.gz",
+            }
+            sources.append(mimalloc_source)
+            messages.append("Added mimalloc source for media_kit_libs_linux")
+            changed = True
+
+        # No need to add build commands to place the file
+        # The bundle-archive-sources operation will modify the source entry
+        # to use the 'dest' field which makes Flatpak place it directly
+        # in the build directories before the build starts
+
+    if changed:
+        document.mark_changed()
+        message = "Added mimalloc source for media_kit_libs_linux plugin"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
+    return OperationResult.unchanged()
+
+
+def remove_network_from_build_args(document: ManifestDocument) -> OperationResult:
+    """Remove --share=network from build-args in all modules for Flathub compliance.
+
+    Flathub strictly prohibits network access during builds. While the source
+    manifest may include --share=network for local development convenience,
+    it must be removed for Flathub submission.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages = []
+
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+
+        build_options = module.get("build-options", {})
+        build_args = build_options.get("build-args")
+
+        if isinstance(build_args, list) and "--share=network" in build_args:
+            # Remove all instances of --share=network
+            while "--share=network" in build_args:
+                build_args.remove("--share=network")
+
+            # If build-args is now empty, remove it
+            if not build_args:
+                del build_options["build-args"]
+                # If build-options is now empty, remove it
+                if not build_options:
+                    del module["build-options"]
+
+            module_name = module.get("name", "unnamed")
+            messages.append(f"Removed --share=network from {module_name}")
+            changed = True
+
+    if changed:
+        document.mark_changed()
+        message = "Removed network access from build-args for Flathub compliance"
+        _LOGGER.debug(message)
+        return OperationResult(changed, messages)
+
     return OperationResult.unchanged()
 
 
@@ -683,7 +1013,17 @@ def _process_lotti_module(
     if helper.exists():
         extra_sources.append({"type": "file", "path": helper.name})
 
-    # Replace ALL sources with fresh ones for the bundle
+    # Preserve existing sources required by plugins/tools
+    # - Keep ALL file sources (plugin blobs like mimalloc/sqlite archives)
+    # - Do NOT keep patch or git sources here to avoid version mismatches
+    #   (patches can be re-injected explicitly by the preparation script if needed)
+    existing_file_sources: list = []
+    if "sources" in module:
+        for src in module["sources"]:
+            if isinstance(src, dict) and src.get("type") == "file":
+                existing_file_sources.append(src)
+
+    # Replace sources but preserve ALL file sources for plugin dependencies
     module["sources"] = [
         {
             "type": "archive",
@@ -691,13 +1031,63 @@ def _process_lotti_module(
             "sha256": sha256,
             "strip-components": 1,
         }
-    ] + extra_sources
+    ]
+    # Attach generator outputs
+    module["sources"].extend(extra_sources)
+    # Preserve important existing sources for plugins/tools
+    module["sources"].extend(existing_file_sources)
+    # Intentionally drop patch/git/dir sources here; they can be added later by tooling
 
     # Add nested modules if they exist
     if extra_modules:
         module["modules"] = extra_modules
 
     return True
+
+
+def add_sqlite3_patch(
+    document: ManifestDocument, *, version: str, patch_path: str
+) -> OperationResult:
+    """Ensure sqlite3 plugin CMake patch is present for offline builds.
+
+    Args:
+        version: sqlite3_flutter_libs version string (e.g., "0.5.39")
+        patch_path: relative path to patch file staged in sources
+                    (e.g., "sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch")
+
+    Adds:
+      - type: patch
+        path: <patch_path>
+        dest: .pub-cache/hosted/pub.dev/sqlite3_flutter_libs-<version>
+    """
+    modules = document.ensure_modules()
+    target = None
+    for module in modules:
+        if isinstance(module, dict) and module.get("name") == "lotti":
+            target = module
+            break
+    if not target:
+        return OperationResult.unchanged()
+
+    sources = target.setdefault("sources", [])
+    dest_dir = f".pub-cache/hosted/pub.dev/sqlite3_flutter_libs-{version}"
+
+    # Already present?
+    for src in sources:
+        if (
+            isinstance(src, dict)
+            and src.get("type") == "patch"
+            and src.get("path") == patch_path
+            and src.get("dest") == dest_dir
+        ):
+            return OperationResult.unchanged()
+
+    sources.append({"type": "patch", "path": patch_path, "dest": dest_dir})
+    document.mark_changed()
+    _LOGGER.debug("Ensured sqlite3 patch %s targeting %s present", patch_path, dest_dir)
+    return OperationResult.changed_result(
+        f"Added sqlite3 patch {patch_path} for {dest_dir}"
+    )
 
 
 def bundle_app_archive(
@@ -740,4 +1130,175 @@ def bundle_app_archive(
         for message in messages:
             _LOGGER.debug(message)
         return OperationResult(changed=True, messages=messages)
+    return OperationResult.unchanged()
+
+
+def _create_sqlite_patch_command() -> str:
+    """Create the SQLite CMakeLists.txt patch command."""
+    from textwrap import dedent
+
+    return (
+        dedent(
+            """python3 - <<'PY'
+import pathlib
+
+base = pathlib.Path('.pub-cache/hosted/pub.dev')
+target = next(base.glob('sqlite3_flutter_libs-*/linux/CMakeLists.txt'), None)
+if target is None:
+    raise SystemExit('sqlite3_flutter_libs linux/CMakeLists.txt not found')
+content = target.read_text()
+needle = 'URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18'
+if needle not in content:
+    url_line = '    URL https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz\\n'
+    if url_line not in content:
+        raise SystemExit('sqlite3 URL stanza missing; unable to inject URL_HASH')
+    line = "    " + needle + "\\n"
+    updated = content.replace(url_line, url_line + line, 2)
+    if needle not in updated:
+        raise SystemExit('sqlite3 URL_HASH injection failed')
+    target.write_text(updated)
+PY
+"""
+        ).strip()
+        + "\n"
+    )
+
+
+def _create_cargokit_patch_command() -> str:
+    """Create the cargokit offline patch command."""
+    from textwrap import dedent
+
+    return (
+        dedent(
+            """python3 - <<'PY'
+import pathlib
+
+base = pathlib.Path('.pub-cache/hosted/pub.dev')
+patched = False
+# Try both one and two levels deep as package structures may vary
+for pattern in ['*/cargokit/run_build_tool.sh', '*/*/cargokit/run_build_tool.sh']:
+    for script in base.glob(pattern):
+        text = script.read_text()
+        if 'pub get --offline --no-precompile' in text:
+            print(f"Already patched: {script}")
+            continue
+        if 'pub get --no-precompile' not in text:
+            continue
+        script.write_text(text.replace('pub get --no-precompile', 'pub get --offline --no-precompile'))
+        print(f"Patched: {script}")
+        patched = True
+if not patched:
+    print('WARNING: No cargokit scripts found to patch!')
+PY
+"""
+        ).strip()
+        + "\n"
+    )
+
+
+def _create_cargo_config_command() -> str:
+    """Create the cargo vendor config command."""
+    from textwrap import dedent
+
+    return (
+        dedent(
+            """mkdir -p "$CARGO_HOME" && cat > "$CARGO_HOME/config" <<'CARGO_CFG'
+[source.vendored-sources]
+directory = "/run/build/lotti/cargo/vendor"
+
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source."https://github.com/knopp/mime_guess"]
+git = "https://github.com/knopp/mime_guess"
+replace-with = "vendored-sources"
+branch = "super_native_extensions"
+CARGO_CFG
+echo "Configured Cargo to use vendored sources"
+"""
+        ).strip()
+        + "\n"
+    )
+
+
+def _get_offline_patch_commands() -> list[tuple[str, str]]:
+    """Get all offline build patch commands with their markers."""
+    return [
+        ("sqlite3_flutter_libs-*/linux/CMakeLists.txt", _create_sqlite_patch_command()),
+        ("cargokit/run_build_tool.sh", _create_cargokit_patch_command()),
+        ("setup cargo vendor config", _create_cargo_config_command()),
+    ]
+
+
+def _remove_duplicate_patch_commands(
+    commands: list, commands_to_add: list[tuple[str, str]]
+) -> list:
+    """Remove existing commands with the same markers to avoid duplicates."""
+    filtered_commands = commands[:]
+    for marker, _ in commands_to_add:
+        if marker == "setup cargo vendor config":
+            # Special marker - don't filter based on it
+            continue
+        filtered_commands = [
+            value
+            for value in filtered_commands
+            if not (isinstance(value, str) and marker in value)
+        ]
+    return filtered_commands
+
+
+def _find_flutter_build_index(commands: list) -> int:
+    """Find the index where flutter build command is located."""
+    for idx, value in enumerate(commands):
+        if isinstance(value, str) and "flutter build linux" in value:
+            return idx
+    return len(commands)
+
+
+def _insert_patch_commands(
+    commands: list, commands_to_add: list[tuple[str, str]], insert_index: int
+) -> list:
+    """Insert patch commands at the specified index if not already present."""
+    for _, command in reversed(commands_to_add):
+        if command not in commands:
+            commands.insert(insert_index, command)
+    return commands
+
+
+def add_offline_build_patches(document: ManifestDocument) -> OperationResult:
+    """Add offline build patches to lotti module (sqlite3, cargokit, cargo config)."""
+    commands_to_add = _get_offline_patch_commands()
+    modules = document.ensure_modules()
+    modified = False
+
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+
+        commands = module.setdefault("build-commands", [])
+
+        # Check if all required commands are already present
+        all_present = all(command in commands for _, command in commands_to_add)
+        if all_present:
+            break
+
+        # Remove duplicates
+        commands = _remove_duplicate_patch_commands(commands, commands_to_add)
+
+        # Find insertion point
+        insert_index = _find_flutter_build_index(commands)
+
+        # Add patch commands
+        commands = _insert_patch_commands(commands, commands_to_add, insert_index)
+
+        module["build-commands"] = commands
+        modified = True
+        break
+
+    if modified:
+        document.mark_changed()
+        _LOGGER.debug("Added offline build patches to lotti module")
+        return OperationResult.changed_result(
+            "Added offline build patches (sqlite3, cargokit, cargo config)"
+        )
     return OperationResult.unchanged()

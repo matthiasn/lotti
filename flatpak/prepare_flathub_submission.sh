@@ -76,6 +76,37 @@ replace_source_url_with_path() {
     fi
 }
 
+# Stage a pub.dev archive locally from available caches when missing.
+stage_pubdev_archive() {
+  local package="$1"
+  local version="$2"
+  local dest="$FLATPAK_DIR/cache/pub.dev/${package}-${version}.tar.gz"
+
+  if [ -f "$dest" ]; then
+    return 0
+  fi
+
+  local candidates=(
+    "$LOTTI_ROOT/.pub-cache/hosted/pub.dev/${package}-${version}"
+    "$HOME/.pub-cache/hosted/pub.dev/${package}-${version}"
+  )
+  if [ -n "${PUB_CACHE:-}" ]; then
+    candidates+=("$PUB_CACHE/hosted/pub.dev/${package}-${version}")
+  fi
+
+  for candidate in "${candidates[@]}"; do
+    if [ -d "$candidate" ]; then
+      mkdir -p "$FLATPAK_DIR/cache/pub.dev"
+      ( cd "$(dirname "$candidate")" && tar -czf "$dest" "${package}-${version}" )
+      print_info "Staged pub.dev archive ${package}-${version} from ${candidate}"
+      return 0
+    fi
+  done
+
+  print_warning "Missing staged pub.dev archive for ${package}-${version}; offline bundling may fail"
+  return 1
+}
+
 # Get the script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOTTI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -367,6 +398,16 @@ else
   FLATPAK_FLUTTER_STATUS=124
 fi
 
+# Normalize sqlite3 plugin patch to 3.50.4 (3500400) so CMake uses local tarball
+# flatpak-flutter may ship a patch for an earlier sqlite version (e.g., 3500100).
+# Update it here to match our pre-fetched archive and SHA.
+SQLITE_PATCH_CANDIDATE="$WORK_DIR/sqlite3_flutter_libs/0.5.34-CMakeLists.txt.patch"
+if [ -f "$SQLITE_PATCH_CANDIDATE" ]; then
+  print_info "Normalizing sqlite3 patch to 3.50.4 (3500400) with SHA verification"
+  sed -i -E 's/sqlite-autoconf-3500[0-9]{2}00/sqlite-autoconf-3500400/g' "$SQLITE_PATCH_CANDIDATE" || true
+  sed -i -E 's/SHA256=[0-9a-f]{64}/SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18/g' "$SQLITE_PATCH_CANDIDATE" || true
+fi
+
 # Pin commit in the working manifest before submission/copy
 APP_COMMIT=$(cd "$LOTTI_ROOT" && git rev-parse HEAD)
 print_status "Pinning working manifest to commit: $APP_COMMIT"
@@ -438,9 +479,32 @@ done
 # Also: generate cargo-sources.json if cargo locks are present but the file is missing
 if [ ! -f "$OUTPUT_DIR/cargo-sources.json" ]; then
   print_warning "No cargo-sources.json; attempting to generate from Cargo.lock files..."
-  CARGO_LOCKS=$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 7 -path '*/.pub-cache/hosted/pub.dev/*/rust/Cargo.lock' -print 2>/dev/null || true)
+  # Look for Cargo.lock files in multiple possible locations within cargokit-based plugins
+  CARGO_LOCKS=""
+  for pattern in \
+    '*/.pub-cache/hosted/pub.dev/*/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/android/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/ios/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/linux/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/macos/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/windows/rust/Cargo.lock'; do
+    FOUND=$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 8 -path "$pattern" -print 2>/dev/null || true)
+    if [ -n "$FOUND" ]; then
+      if [ -n "$CARGO_LOCKS" ]; then
+        CARGO_LOCKS="$CARGO_LOCKS
+$FOUND"
+      else
+        CARGO_LOCKS="$FOUND"
+      fi
+    fi
+  done
+
   if [ -n "$CARGO_LOCKS" ]; then
-    LOCK_LIST=$(echo "$CARGO_LOCKS" | paste -sd, -)
+    # Remove duplicates and create comma-separated list
+    UNIQUE_LOCKS=$(echo "$CARGO_LOCKS" | sort -u | grep -v '^$')
+    LOCK_COUNT=$(echo "$UNIQUE_LOCKS" | wc -l)
+    print_info "Found $LOCK_COUNT Cargo.lock file(s) for cargo-sources generation"
+    LOCK_LIST=$(echo "$UNIQUE_LOCKS" | paste -sd, -)
     if python3 "$FLATPAK_DIR/flatpak-flutter/cargo_generator/cargo_generator.py" "$LOCK_LIST" -o "$WORK_DIR/cargo-sources.json"; then
       cp -- "$WORK_DIR/cargo-sources.json" "$OUTPUT_DIR/" 2>/dev/null && print_status "Generated cargo-sources.json from Cargo.lock"
     else
@@ -451,39 +515,160 @@ if [ ! -f "$OUTPUT_DIR/cargo-sources.json" ]; then
   fi
 fi
 
-if [ ! -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
-  print_warning "No pubspec-sources.json; generating from pubspec.lock files..."
-  APP_LOCK="$WORK_DIR/pubspec.lock"
-  TOOLS_LOCK=""
-  if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
-    TOOLS_LOCK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/pubspec.lock' -print -quit 2>/dev/null || true)"
-  fi
+APP_LOCK="$WORK_DIR/pubspec.lock"
+TOOLS_LOCK=""
+if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
+  TOOLS_LOCK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/pubspec.lock' -print -quit 2>/dev/null || true)"
+fi
 
-  if [ -z "$TOOLS_LOCK" ]; then
-    print_warning "Could not locate flutter_tools pubspec.lock within .flatpak-builder cache"
+if [ -z "$TOOLS_LOCK" ]; then
+  if [ -f "$FLATPAK_DIR/cache/flutter_tools/pubspec.lock" ]; then
+    TOOLS_LOCK="$FLATPAK_DIR/cache/flutter_tools/pubspec.lock"
+    print_info "Using staged flutter_tools pubspec.lock from cache/flutter_tools"
+  else
+  print_warning "Could not locate flutter_tools pubspec.lock within .flatpak-builder cache"
   fi
+fi
 
-  if [ -f "$APP_LOCK" ] && [ -n "$TOOLS_LOCK" ] && [ -f "$TOOLS_LOCK" ]; then
-    python3 "$FLATPAK_DIR/flatpak-flutter/pubspec_generator/pubspec_generator.py" \
-      "$APP_LOCK,$TOOLS_LOCK" -o "$OUTPUT_DIR/pubspec-sources.json" || print_error "Failed to generate pubspec-sources.json"
-    # Also stage the current package_config.json if available to speed offline bootstrap
-    TOOLS_DIR="$(dirname "$TOOLS_LOCK")"
-    PKG_CFG="$TOOLS_DIR/.dart_tool/package_config.json"
-    if [ -f "$PKG_CFG" ]; then
-      cp -- "$PKG_CFG" "$OUTPUT_DIR/package_config.json" || true
-    else
-      PKG_CFG_FALLBACK=""
-      if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
-        PKG_CFG_FALLBACK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/.dart_tool/package_config.json' -print -quit 2>/dev/null || true)"
-      fi
-      if [ -n "$PKG_CFG_FALLBACK" ] && [ -f "$PKG_CFG_FALLBACK" ]; then
-        cp -- "$PKG_CFG_FALLBACK" "$OUTPUT_DIR/package_config.json" || true
+CARGOKIT_LOCKS=""
+if [ -d "$WORK_DIR/.flatpak-builder/build" ] || [ -d "$OUTPUT_DIR/.flatpak-builder/build" ]; then
+  TMP_LOCKS=""
+  for search_root in \
+    "$WORK_DIR/.flatpak-builder/build" \
+    "$OUTPUT_DIR/.flatpak-builder/build"; do
+    [ -d "$search_root" ] || continue
+    found=$(find "$search_root" -maxdepth 15 -path '*/cargokit/build_tool/pubspec.lock' -print 2>/dev/null || true)
+    if [ -n "$found" ]; then
+      if [ -n "$TMP_LOCKS" ]; then
+        TMP_LOCKS="$TMP_LOCKS
+$found"
       else
-        print_warning "Could not locate flutter_tools package_config.json for offline cache"
+        TMP_LOCKS="$found"
       fi
     fi
+  done
+  if [ -n "$TMP_LOCKS" ]; then
+    CARGOKIT_LOCKS=$(printf "%s" "$TMP_LOCKS" | sort -u)
+  fi
+fi
+
+# Include any pre-staged cargokit lockfiles bundled with the repository
+PRESET_CARGOKIT_LOCKS=""
+if [ -d "$FLATPAK_DIR/cache/cargokit" ]; then
+  PRESET_CARGOKIT_LOCKS=$(find "$FLATPAK_DIR/cache/cargokit" -maxdepth 1 -name '*.pubspec.lock' -print 2>/dev/null | sort -u || true)
+fi
+
+LOCK_INPUTS=""
+if [ -f "$APP_LOCK" ]; then
+  LOCK_INPUTS="$APP_LOCK"
+  if [ -n "$TOOLS_LOCK" ] && [ -f "$TOOLS_LOCK" ]; then
+    LOCK_INPUTS="$LOCK_INPUTS,$TOOLS_LOCK"
+  fi
+  if [ -n "$CARGOKIT_LOCKS" ]; then
+    CARGOKIT_LIST=$(echo "$CARGOKIT_LOCKS" | paste -sd, -)
+    LOCK_INPUTS="$LOCK_INPUTS,$CARGOKIT_LIST"
+  fi
+  if [ -n "$PRESET_CARGOKIT_LOCKS" ]; then
+    PRESET_LIST=$(echo "$PRESET_CARGOKIT_LOCKS" | paste -sd, -)
+    LOCK_INPUTS="$LOCK_INPUTS,$PRESET_LIST"
+  fi
+else
+  print_error "FATAL: Application pubspec.lock not found at: $APP_LOCK"
+  print_info "Cannot generate pubspec-sources.json without the main application lockfile"
+  exit 1
+fi
+
+# Fail-fast if LOCK_INPUTS is still empty (should not happen with above check, but safety)
+if [ -z "$LOCK_INPUTS" ]; then
+  print_error "FATAL: No lockfiles found for pubspec-sources.json generation"
+  print_info "Expected at least: $APP_LOCK"
+  exit 1
+fi
+
+if [ -n "$LOCK_INPUTS" ]; then
+  print_info "Generating pubspec-sources.json from lockfiles"
+  if [ -n "$CARGOKIT_LOCKS" ]; then
+    LOCK_COUNT=$(echo "$CARGOKIT_LOCKS" | grep -c . || true)
+    print_info "Including ${LOCK_COUNT} cargokit lockfile(s)"
+  fi
+
+  # Capture Python errors for debugging
+  PYTHON_OUTPUT=$(python3 "$FLATPAK_DIR/flatpak-flutter/pubspec_generator/pubspec_generator.py" \
+    "$LOCK_INPUTS" -o "$WORK_DIR/pubspec-sources.generated.json" 2>&1)
+  PYTHON_EXIT_CODE=$?
+
+  if [ $PYTHON_EXIT_CODE -eq 0 ]; then
+    # Ensure output directory exists before moving
+    mkdir -p "$OUTPUT_DIR"
+    if mv "$WORK_DIR/pubspec-sources.generated.json" "$OUTPUT_DIR/pubspec-sources.json"; then
+      print_status "Regenerated pubspec-sources.json with build tool dependencies"
+
+      # Stage packages from the generated pubspec-sources.json
+      if [ -f "$OUTPUT_DIR/pubspec-sources.json" ]; then
+        OUT_JSON="$OUTPUT_DIR/pubspec-sources.json"
+        STAGED_PACKAGES=$(OUT_JSON="$OUT_JSON" python3 - <<'PY'
+import json
+import os
+
+path = os.environ["OUT_JSON"]
+data = json.loads(open(path, "r", encoding="utf-8").read())
+seen = set()
+for entry in data:
+    if isinstance(entry, dict):
+        dest = entry.get("dest", "")
+        if dest.startswith(".pub-cache/hosted/pub.dev/"):
+            name_version = dest.split("/")[-1]
+            if "-" in name_version:
+                pkg, ver = name_version.split("-", 1)
+                # Strip known archive suffixes from version
+                for suffix in [".tar.gz", ".tgz", ".tar", ".zip"]:
+                    if ver.endswith(suffix):
+                        ver = ver[:-len(suffix)]
+                        break
+                if pkg and ver and (pkg, ver) not in seen:
+                    seen.add((pkg, ver))
+                    print(f"{pkg} {ver}")
+PY
+)
+        if [ -n "$STAGED_PACKAGES" ]; then
+          while read -r pkg ver; do
+            # Try to stage package archives, but don't fail if not found
+            [ -n "$pkg" ] && stage_pubdev_archive "$pkg" "$ver" || true
+          done <<EOF
+$STAGED_PACKAGES
+EOF
+        fi
+      fi
+    else
+      print_error "Failed to move pubspec-sources.json to output directory"
+      exit 1
+    fi
   else
-    print_warning "Missing pubspec.lock paths; cannot generate pubspec-sources.json"
+    print_error "Failed to generate pubspec-sources.json"
+    print_info "Python error output:"
+    echo "$PYTHON_OUTPUT"
+    exit 1
+  fi
+else
+  print_warning "Missing pubspec.lock inputs; cannot regenerate pubspec-sources.json"
+fi
+
+# Also stage the current package_config.json if available to speed offline bootstrap
+if [ -n "$TOOLS_LOCK" ] && [ -f "$TOOLS_LOCK" ]; then
+  TOOLS_DIR="$(dirname "$TOOLS_LOCK")"
+  PKG_CFG="$TOOLS_DIR/.dart_tool/package_config.json"
+  if [ -f "$PKG_CFG" ]; then
+    cp -- "$PKG_CFG" "$OUTPUT_DIR/package_config.json" || true
+  else
+    PKG_CFG_FALLBACK=""
+    if [ -d "$WORK_DIR/.flatpak-builder/build" ]; then
+      PKG_CFG_FALLBACK="$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 5 -path '*/flutter/packages/flutter_tools/.dart_tool/package_config.json' -print -quit 2>/dev/null || true)"
+    fi
+    if [ -n "$PKG_CFG_FALLBACK" ] && [ -f "$PKG_CFG_FALLBACK" ]; then
+      cp -- "$PKG_CFG_FALLBACK" "$OUTPUT_DIR/package_config.json" || true
+    else
+      print_warning "Could not locate flutter_tools package_config.json for offline cache"
+    fi
   fi
 fi
 
@@ -518,18 +703,54 @@ fi
 # Check if files were generated in parent directory
 if [ -f "../pubspec-sources.json" ]; then
     print_info "Found generated files in parent directory, copying..."
-    cp -- ../flutter-sdk-*.json "$OUTPUT_DIR/" 2>/dev/null
-    cp -- ../pubspec-sources.json "$OUTPUT_DIR/" 2>/dev/null
-    cp -- ../cargo-sources.json "$OUTPUT_DIR/" 2>/dev/null
-    cp -- ../rustup-*.json "$OUTPUT_DIR/" 2>/dev/null || true
-    cp -- ../package_config.json "$OUTPUT_DIR/" 2>/dev/null
+    for candidate in ../flutter-sdk-*.json; do
+      [ -f "$candidate" ] || continue
+      cp -- "$candidate" "$OUTPUT_DIR/" 2>/dev/null || true
+    done
+    cp -- ../pubspec-sources.json "$OUTPUT_DIR/" 2>/dev/null || true
+    cp -- ../cargo-sources.json "$OUTPUT_DIR/" 2>/dev/null || true
+    for candidate in ../rustup-*.json; do
+      [ -f "$candidate" ] || continue
+      cp -- "$candidate" "$OUTPUT_DIR/" 2>/dev/null || true
+    done
+    cp -- ../package_config.json "$OUTPUT_DIR/" 2>/dev/null || true
 fi
 
-# Step 6: Copy additional required files
-print_status "Copying additional files..."
+# Step 6: Apply Flathub compliance fixes to the manifest
+print_status "Applying Flathub compliance fixes..."
 
 # Path to the output manifest for subsequent operations
 OUT_MANIFEST="$OUTPUT_DIR/com.matthiasn.lotti.yml"
+
+# Apply all necessary Flathub compliance fixes
+print_info "Removing network access from build-args..."
+python3 "$PYTHON_CLI" remove-network-from-build-args --manifest "$OUT_MANIFEST"
+
+print_info "Removing flutter config commands..."
+python3 "$PYTHON_CLI" remove-flutter-config --manifest "$OUT_MANIFEST"
+
+print_info "Ensuring flutter pub get uses --offline flag..."
+python3 "$PYTHON_CLI" ensure-flutter-pub-get-offline --manifest "$OUT_MANIFEST"
+
+print_info "Ensuring dart pub uses --offline in build..."
+python3 "$PYTHON_CLI" ensure-dart-pub-offline-in-build --manifest "$OUT_MANIFEST"
+
+print_info "Removing rustup install commands (using SDK extension instead)..."
+python3 "$PYTHON_CLI" remove-rustup-install --manifest "$OUT_MANIFEST"
+
+print_info "Adding offline build patches..."
+python3 "$PYTHON_CLI" add-offline-build-patches --manifest "$OUT_MANIFEST"
+
+# Validate the manifest for Flathub compliance
+print_info "Validating manifest for Flathub compliance..."
+if python3 "$PYTHON_CLI" check-flathub-compliance --manifest "$OUT_MANIFEST"; then
+    print_status "Manifest passes Flathub compliance checks"
+else
+    print_warning "Manifest has compliance issues - review the output above"
+fi
+
+# Step 7: Copy additional required files
+print_status "Copying additional files..."
 
 # Copy metadata files
 if [ -f "$FLATPAK_DIR/com.matthiasn.lotti.metainfo.xml" ]; then
@@ -582,6 +803,78 @@ if [ -d "$FLATPAK_DIR/patches" ]; then
     cp -r "$FLATPAK_DIR/patches" "$OUTPUT_DIR/"
 fi
 
+# Download Cargo.lock files from GitHub for cargokit-based plugins
+# Always run this to ensure we have the correct versions (overwriting flatpak-flutter's inadequate cargo-sources.json)
+print_info "Downloading Cargo.lock files from GitHub to generate correct cargo-sources.json..."
+if [ -x "$FLATPAK_DIR/download_cargo_locks.sh" ]; then
+  if bash "$FLATPAK_DIR/download_cargo_locks.sh" "$OUTPUT_DIR"; then
+    print_status "Generated cargo-sources.json from downloaded Cargo.lock files"
+  else
+    print_warning "Failed to generate cargo-sources.json from downloaded files"
+  fi
+else
+  print_warning "download_cargo_locks.sh not found or not executable"
+fi
+
+# Legacy fallback: Check for pre-saved Cargo.lock files (for known Rust plugins)
+if [ ! -f "$OUTPUT_DIR/cargo-sources.json" ] && [ -d "$FLATPAK_DIR/cargo-lock-files" ]; then
+  print_info "Using pre-saved Cargo.lock files for cargo-sources.json generation..."
+  CARGOKIT_CARGO_LOCKS=""
+  for lock_file in "$FLATPAK_DIR"/cargo-lock-files/*.lock; do
+    if [ -f "$lock_file" ]; then
+      if [ -n "$CARGOKIT_CARGO_LOCKS" ]; then
+        CARGOKIT_CARGO_LOCKS="$CARGOKIT_CARGO_LOCKS,$lock_file"
+      else
+        CARGOKIT_CARGO_LOCKS="$lock_file"
+      fi
+      print_info "Using Cargo.lock: $(basename "$lock_file")"
+    fi
+  done
+
+  if [ -n "$CARGOKIT_CARGO_LOCKS" ]; then
+    if python3 "$FLATPAK_DIR/flatpak-flutter/cargo_generator/cargo_generator.py" "$CARGOKIT_CARGO_LOCKS" -o "$WORK_DIR/cargo-sources-cargokit.json"; then
+      cp -- "$WORK_DIR/cargo-sources-cargokit.json" "$OUTPUT_DIR/cargo-sources.json" 2>/dev/null && print_status "Generated cargo-sources.json from pre-saved Cargo.lock files"
+    else
+      print_warning "Failed to generate cargo-sources.json from pre-saved Cargo.lock files"
+    fi
+  fi
+fi
+
+# Fallback to discovery if pre-saved files don't exist or cargo-sources.json wasn't generated
+if [ -d "$WORK_DIR/.flatpak-builder/build" ] && [ ! -f "$OUTPUT_DIR/cargo-sources.json" ]; then
+  print_info "Looking for cargokit Cargo.lock files to generate cargo-sources.json..."
+  CARGOKIT_CARGO_LOCKS=""
+  for pattern in \
+    '*/.pub-cache/hosted/pub.dev/*/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/android/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/ios/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/linux/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/macos/rust/Cargo.lock' \
+    '*/.pub-cache/hosted/pub.dev/*/windows/rust/Cargo.lock'; do
+    FOUND=$(find "$WORK_DIR/.flatpak-builder/build" -maxdepth 8 -path "$pattern" -print 2>/dev/null || true)
+    if [ -n "$FOUND" ]; then
+      if [ -n "$CARGOKIT_CARGO_LOCKS" ]; then
+        CARGOKIT_CARGO_LOCKS="$CARGOKIT_CARGO_LOCKS
+$FOUND"
+      else
+        CARGOKIT_CARGO_LOCKS="$FOUND"
+      fi
+    fi
+  done
+
+  if [ -n "$CARGOKIT_CARGO_LOCKS" ]; then
+    UNIQUE_CARGO_LOCKS=$(echo "$CARGOKIT_CARGO_LOCKS" | sort -u | grep -v '^$')
+    CARGO_LOCK_COUNT=$(echo "$UNIQUE_CARGO_LOCKS" | wc -l)
+    print_info "Found $CARGO_LOCK_COUNT cargokit Cargo.lock file(s)"
+    CARGO_LOCK_LIST=$(echo "$UNIQUE_CARGO_LOCKS" | paste -sd, -)
+    if python3 "$FLATPAK_DIR/flatpak-flutter/cargo_generator/cargo_generator.py" "$CARGO_LOCK_LIST" -o "$WORK_DIR/cargo-sources-cargokit.json"; then
+      cp -- "$WORK_DIR/cargo-sources-cargokit.json" "$OUTPUT_DIR/cargo-sources.json" 2>/dev/null && print_status "Generated cargo-sources.json from cargokit Cargo.lock files"
+    else
+      print_warning "Failed to generate cargo-sources.json from cargokit Cargo.lock files"
+    fi
+  fi
+fi
+
 # Copy any helper source directories generated by flatpak-flutter that are referenced by path
 for helper_dir in sqlite3_flutter_libs cargokit; do
   if [ -d "$WORK_DIR/$helper_dir" ]; then
@@ -599,8 +892,32 @@ if [ -f "$OUT_MANIFEST" ]; then
     --manifest "$OUT_MANIFEST" \
     --layout top
 
-  # Ensure network sharing is allowed for the lotti build stage
-  python3 "$PYTHON_CLI" ensure-lotti-network-share \
+  # Remove --share=network from build-args for Flathub compliance
+  # Flathub strictly prohibits network access during builds
+  python3 "$PYTHON_CLI" remove-network-from-build-args \
+    --manifest "$OUT_MANIFEST"
+
+  # Ensure flutter pub get uses --offline flag for Flathub compliance
+  python3 "$PYTHON_CLI" ensure-flutter-pub-get-offline \
+    --manifest "$OUT_MANIFEST"
+
+  # Remove flutter config invocations to avoid pub upgrade cycles offline
+  python3 "$PYTHON_CLI" remove-flutter-config \
+    --manifest "$OUT_MANIFEST"
+
+  # Add --no-pub flag to flutter build to skip automatic pub get
+  # This prevents the internal dart pub get --example from attempting network access
+  python3 "$PYTHON_CLI" ensure-dart-pub-offline-in-build \
+    --manifest "$OUT_MANIFEST"
+
+  # Add mimalloc source for media_kit_libs_linux plugin
+  # This provides the mimalloc archive that the plugin needs during build
+  python3 "$PYTHON_CLI" add-media-kit-mimalloc-source \
+    --manifest "$OUT_MANIFEST"
+
+  # Add SQLite source for sqlite3_flutter_libs plugin
+  # This provides the SQLite archive that the plugin needs during build
+  python3 "$PYTHON_CLI" add-sqlite3-source \
     --manifest "$OUT_MANIFEST"
 
   # Prefer Rust SDK extension over rustup installer
@@ -797,11 +1114,15 @@ if [ -f "$OUT_MANIFEST" ]; then
 
   # Bundle all archive and file sources for offline builds (required by Flathub)
   print_info "Bundling cached archive and file sources referenced by manifest..."
+  if [ -d "$FLATPAK_DIR/cache/pub.dev" ]; then
+    print_info "Using staged pub.dev cache from cache/pub.dev"
+  fi
   if [ "$DOWNLOAD_MISSING_SOURCES" = "true" ]; then
     python3 "$PYTHON_CLI" bundle-archive-sources \
       --manifest "$OUT_MANIFEST" \
       --output-dir "$OUTPUT_DIR" \
       --download-missing \
+      --search-root "$FLATPAK_DIR/cache/pub.dev" \
       --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
       --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
       --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
@@ -809,6 +1130,7 @@ if [ -f "$OUT_MANIFEST" ]; then
     python3 "$PYTHON_CLI" bundle-archive-sources \
       --manifest "$OUT_MANIFEST" \
       --output-dir "$OUTPUT_DIR" \
+      --search-root "$FLATPAK_DIR/cache/pub.dev" \
       --search-root "$FLATPAK_DIR/.flatpak-builder/downloads" \
       --search-root "$LOTTI_ROOT/.flatpak-builder/downloads" \
       --search-root "$(dirname "$LOTTI_ROOT")/.flatpak-builder/downloads"
@@ -833,7 +1155,32 @@ if [ -f "$OUT_MANIFEST" ]; then
     --archive "$LOTT_ARCHIVE_NAME" \
     --sha256 "$LOTT_ARCHIVE_SHA256" \
     --output-dir "$OUTPUT_DIR"
+
+  # Add offline build patches (sqlite3, cargokit, cargo config)
+  print_status "Adding offline build patches..."
+  python3 "$PYTHON_CLI" add-offline-build-patches --manifest "$OUT_MANIFEST"
+
 fi
+
+# CI Assertions: Check for Flathub compliance violations after all transformations
+print_status "Checking manifest for Flathub compliance..."
+
+# Ensure OUT_MANIFEST is defined (safety check)
+if [ -z "$OUT_MANIFEST" ]; then
+  OUT_MANIFEST="$OUTPUT_DIR/com.matthiasn.lotti.yml"
+fi
+
+# Use Python manifest_tool for robust compliance checking
+print_info "Running final Flathub compliance validation..."
+if python3 "$PYTHON_CLI" check-flathub-compliance --manifest "$OUT_MANIFEST"; then
+  print_status "✓ Final manifest passes all Flathub compliance checks"
+else
+  print_error "FATAL: Flathub compliance violations found in final manifest"
+  print_info "See details above for specific violations"
+  exit 1
+fi
+
+print_status "Flathub compliance checks passed"
 
 # Final validation: ensure the manifest to be submitted is commit-pinned (no branch:, no COMMIT_PLACEHOLDER)
 print_status "Validating output manifest is commit-pinned..."
@@ -866,6 +1213,13 @@ if [ "${TEST_BUILD:-false}" == "true" ]; then
         print_error "Test build failed"
     fi
 fi
+
+# cargo-sources.json is now automatically generated with correct dependencies from GitHub
+# No manual regeneration needed since we download Cargo.lock files directly from plugin repos
+# The manifest_tool commands earlier in the script handle:
+# - Removing --share=network (via remove-network-from-build-args)
+# - Adding --offline to flutter pub get (via ensure-flutter-pub-get-offline)
+# - Adding --no-pub to flutter build (via ensure-dart-pub-offline-in-build)
 
 # Step 9: Final report
 print_status "Preparation complete!"

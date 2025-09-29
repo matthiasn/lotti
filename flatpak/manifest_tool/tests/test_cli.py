@@ -342,6 +342,47 @@ def test_cli_ensure_rust_sdk_env_idempotent(tmp_path):
     assert parts.count("/usr/lib/sdk/rust-stable/bin") == 1
 
 
+def test_cli_remove_network_from_build_args(tmp_path):
+    """Test the remove-network-from-build-args CLI command."""
+    data = yaml.safe_load(SAMPLE_MANIFEST)
+
+    # Add --share=network to modules
+    for module in data["modules"]:
+        if isinstance(module, dict) and module.get("name") == "flutter-sdk":
+            module.setdefault("build-options", {})["build-args"] = ["--share=network"]
+        elif isinstance(module, dict) and module.get("name") == "lotti":
+            module["build-options"]["build-args"] = ["--share=network", "--allow=devel"]
+
+    manifest_path = tmp_path / "test.yml"
+    manifest_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+    exit_code = cli.main(
+        ["remove-network-from-build-args", "--manifest", str(manifest_path)]
+    )
+
+    assert exit_code == 0
+    updated = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+
+    # Check --share=network removed from flutter-sdk
+    flutter_sdk = next(
+        m
+        for m in updated["modules"]
+        if isinstance(m, dict) and m.get("name") == "flutter-sdk"
+    )
+    assert "--share=network" not in flutter_sdk.get("build-options", {}).get(
+        "build-args", []
+    )
+
+    # Check --share=network removed from lotti but other args remain
+    lotti = next(
+        m
+        for m in updated["modules"]
+        if isinstance(m, dict) and m.get("name") == "lotti"
+    )
+    assert "--share=network" not in lotti["build-options"]["build-args"]
+    assert "--allow=devel" in lotti["build-options"]["build-args"]
+
+
 def test_cli_remove_rustup_install(tmp_path):
     data = yaml.safe_load(SAMPLE_MANIFEST)
     for module in data["modules"]:

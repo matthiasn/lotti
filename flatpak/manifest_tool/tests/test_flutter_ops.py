@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 from flatpak.manifest_tool import flutter_ops
-from flatpak.manifest_tool.manifest import ManifestDocument
 
 
 def test_ensure_nested_sdk(make_document, tmp_path: Path):
@@ -61,11 +60,79 @@ def test_normalize_lotti_env_top_layout(make_document):
     assert append_path.endswith("/app/flutter/bin")
 
 
-def test_ensure_lotti_network_share(make_document):
+# test_ensure_lotti_network_share removed
+# --share=network in build-args is NOT allowed on Flathub infrastructure
+
+
+def test_remove_network_from_build_args(make_document):
+    # Create document with network access in build-args
     document = make_document()
-    result1 = flutter_ops.ensure_lotti_network_share(document)
-    assert result1.changed
-    result2 = flutter_ops.ensure_lotti_network_share(document)
+
+    # Add --share=network to both flutter-sdk and lotti modules
+    flutter_sdk = next(
+        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
+    )
+    flutter_sdk.setdefault("build-options", {})["build-args"] = [
+        "--share=network",
+        "--allow=devel",
+    ]
+
+    lotti = next(
+        module for module in document.data["modules"] if module["name"] == "lotti"
+    )
+    lotti["build-options"]["build-args"] = ["--share=network"]
+
+    # Remove network access
+    result = flutter_ops.remove_network_from_build_args(document)
+
+    assert result.changed
+    assert len(result.messages) == 2
+    assert "Removed --share=network from flutter-sdk" in result.messages
+    assert "Removed --share=network from lotti" in result.messages
+
+    # Verify --share=network is removed but other args remain
+    assert "--share=network" not in flutter_sdk["build-options"]["build-args"]
+    assert "--allow=devel" in flutter_sdk["build-options"]["build-args"]
+
+    # Verify empty build-args is removed
+    assert "build-args" not in lotti["build-options"]
+
+    # Should be idempotent
+    result2 = flutter_ops.remove_network_from_build_args(document)
+    assert not result2.changed
+
+
+def test_ensure_flutter_pub_get_offline(make_document):
+    """Test that flutter pub get commands get --offline flag added."""
+    document = make_document()
+
+    # Add flutter pub get commands to lotti module
+    lotti = next(
+        module for module in document.data["modules"] if module["name"] == "lotti"
+    )
+    lotti["build-commands"] = [
+        "echo Starting build",
+        "/run/build/lotti/flutter_sdk/bin/flutter pub get",
+        "flutter pub get --verbose",
+        "/app/flutter/bin/flutter pub get --offline",  # Already has offline
+        "flutter build linux",
+    ]
+
+    result = flutter_ops.ensure_flutter_pub_get_offline(document)
+
+    assert result.changed
+    assert len(result.messages) == 2  # Two commands without --offline
+
+    # Check commands were updated
+    commands = lotti["build-commands"]
+    assert commands[0] == "echo Starting build"  # Unchanged
+    assert commands[1] == "/run/build/lotti/flutter_sdk/bin/flutter pub get --offline"
+    assert commands[2] == "flutter pub get --offline --verbose"
+    assert commands[3] == "/app/flutter/bin/flutter pub get --offline"  # Already had it
+    assert commands[4] == "flutter build linux"  # Unchanged
+
+    # Should be idempotent
+    result2 = flutter_ops.ensure_flutter_pub_get_offline(document)
     assert not result2.changed
 
 
@@ -399,16 +466,24 @@ def test_ensure_setup_helper_command_idempotent(make_document):
     assert commands_after == commands_before
 
 
-def test_bundle_app_archive_replaces_all_sources(make_document, tmp_path):
-    """Test that bundle_app_archive replaces ALL sources to avoid version mismatches."""
+def test_bundle_app_archive_replaces_non_file_sources(make_document, tmp_path):
+    """Test that bundle_app_archive replaces non-file sources but preserves file sources.
+
+    File sources are preserved because they're often plugin dependencies needed
+    for offline builds. Non-file sources (git, patch) are replaced to avoid
+    version mismatches.
+    """
     document = make_document()
 
     # Add initial sources with a git source, file source, and patch
     lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
     lotti["sources"] = [
-        {"type": "file", "path": "existing-file.txt"},
-        {"type": "git", "url": "https://github.com/test/test.git"},
-        {"type": "patch", "path": "fix.patch"},  # This should be removed
+        {
+            "type": "file",
+            "path": "existing-file.txt",
+        },  # Should be preserved (plugin dep)
+        {"type": "git", "url": "https://github.com/test/test.git"},  # Should be removed
+        {"type": "patch", "path": "fix.patch"},  # Should be removed
     ]
 
     out_dir = tmp_path / "output"
@@ -435,8 +510,14 @@ def test_bundle_app_archive_replaces_all_sources(make_document, tmp_path):
 
     # Patch should NOT be preserved (to avoid version mismatches)
     assert {"type": "patch", "path": "fix.patch"} not in updated_sources
-    # Old file source should NOT be preserved
-    assert {"type": "file", "path": "existing-file.txt"} not in updated_sources
+    # Git source should NOT be preserved
+    git_sources = [
+        s for s in updated_sources if isinstance(s, dict) and s.get("type") == "git"
+    ]
+    assert len(git_sources) == 0
+
+    # File sources SHOULD be preserved (they're plugin dependencies)
+    assert {"type": "file", "path": "existing-file.txt"} in updated_sources
 
     # New sources should be added
     assert "pubspec-sources.json" in updated_sources
@@ -541,3 +622,496 @@ def test_bundle_app_archive_no_lotti_module(make_document, tmp_path):
 
     # Should not change anything
     assert not result.changed
+
+
+# Tests for newly added functions
+
+
+def test_ensure_flutter_pub_get_offline_no_changes_needed(make_document):
+    """Test when flutter pub get already has --offline."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Commands already have --offline
+    lotti["build-commands"] = [
+        "flutter pub get --offline",
+    ]
+
+    result = flutter_ops.ensure_flutter_pub_get_offline(document)
+    assert not result.changed
+
+
+def test_ensure_dart_pub_offline_in_build(make_document):
+    """Test adding --no-pub flag to flutter build commands."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Add flutter build commands without --no-pub
+    lotti["build-commands"] = [
+        "echo 'Preparing'",
+        "flutter build linux --release --verbose",
+        "/run/build/lotti/flutter_sdk/bin/flutter build linux",
+        "flutter build linux --debug",
+    ]
+
+    result = flutter_ops.ensure_dart_pub_offline_in_build(document)
+
+    assert result.changed
+    assert "Added --no-pub flag" in str(result.messages)
+
+    # Check that --no-pub was added to all flutter build linux commands
+    commands = lotti["build-commands"]
+    assert "flutter build linux --no-pub --release --verbose" in commands
+    assert "/run/build/lotti/flutter_sdk/bin/flutter build linux --no-pub" in commands
+    assert "flutter build linux --no-pub --debug" in commands
+    assert commands[0] == "echo 'Preparing'"  # Unchanged
+
+    # Run again - should not change
+    result2 = flutter_ops.ensure_dart_pub_offline_in_build(document)
+    assert not result2.changed
+
+
+def test_ensure_dart_pub_offline_in_build_already_has_flag(make_document):
+    """Test when flutter build already has --no-pub."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    lotti["build-commands"] = [
+        "flutter build linux --no-pub --release",
+    ]
+
+    result = flutter_ops.ensure_dart_pub_offline_in_build(document)
+    assert not result.changed
+
+
+def test_add_media_kit_mimalloc_source(make_document):
+    """Test adding mimalloc source for media_kit plugin."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Start with no sources and build commands
+    lotti["sources"] = []
+    lotti["build-commands"] = ["echo 'Starting build'", "flutter build linux --release"]
+
+    result = flutter_ops.add_media_kit_mimalloc_source(document)
+
+    assert result.changed
+    assert "mimalloc" in str(result.messages).lower()
+
+    # Check that mimalloc source was added
+    sources = lotti["sources"]
+    assert len(sources) == 1
+    mimalloc = sources[0]
+    assert mimalloc["type"] == "file"
+    assert "mimalloc/archive/refs/tags/v2.1.2.tar.gz" in mimalloc["url"]
+    assert (
+        mimalloc["sha256"]
+        == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
+    )
+    assert mimalloc["dest-filename"] == "mimalloc-2.1.2.tar.gz"
+
+    # Build commands should remain unchanged (no placement commands needed)
+    # The bundle-archive-sources will handle placement via the 'dest' field
+    commands = lotti.get("build-commands", [])
+    # Commands should be unchanged from original
+    assert "flutter build linux --release" in commands
+
+    # Run again - should not change
+    result2 = flutter_ops.add_media_kit_mimalloc_source(document)
+    assert not result2.changed
+
+
+def test_add_media_kit_mimalloc_source_preserves_existing(make_document):
+    """Test that adding mimalloc preserves existing sources."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Start with existing sources and build commands
+    lotti["sources"] = [
+        {"type": "git", "url": "https://github.com/test/test.git"},
+        {"type": "file", "path": "some-file.txt"},
+    ]
+    lotti["build-commands"] = ["flutter build linux --release"]
+
+    result = flutter_ops.add_media_kit_mimalloc_source(document)
+
+    assert result.changed
+    sources = lotti["sources"]
+    assert len(sources) == 3  # Original 2 + mimalloc
+
+    # Original sources still there
+    assert sources[0]["type"] == "git"
+    assert sources[1]["type"] == "file"
+    # New mimalloc source
+    assert sources[2]["dest-filename"] == "mimalloc-2.1.2.tar.gz"
+
+
+def test_remove_network_from_build_args_cleans_empty(make_document):
+    """Test that empty build-args and build-options are removed."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Only --share=network in build-args
+    lotti["build-options"] = {"build-args": ["--share=network"]}
+
+    result = flutter_ops.remove_network_from_build_args(document)
+
+    assert result.changed
+    # build-options should be completely removed when empty
+    assert "build-options" not in lotti or "build-args" not in lotti.get(
+        "build-options", {}
+    )
+
+
+def test_bundle_app_archive_preserves_mimalloc_source(make_document, tmp_path):
+    """Test that bundle_app_archive preserves the mimalloc source."""
+    document = make_document()
+
+    # Add mimalloc source first
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    lotti["sources"] = [
+        {"type": "git", "url": "https://github.com/test/test.git"},
+        {
+            "type": "file",
+            "url": "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
+            "sha256": "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
+            "dest-filename": "mimalloc-2.1.2.tar.gz",
+        },
+    ]
+
+    out_dir = tmp_path / "output"
+    out_dir.mkdir()
+    # Create required files
+    (out_dir / "pubspec-sources.json").write_text("[]", encoding="utf-8")
+    (out_dir / "setup-flutter.sh").write_text("#!/bin/bash", encoding="utf-8")
+
+    result = flutter_ops.bundle_app_archive(
+        document,
+        archive_name="lotti.tar.xz",
+        sha256="cafebabe",
+        output_dir=out_dir,
+    )
+
+    assert result.changed
+    updated_sources = lotti["sources"]
+
+    # Find the mimalloc source
+    mimalloc_sources = [
+        src
+        for src in updated_sources
+        if isinstance(src, dict) and src.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
+    ]
+
+    # Mimalloc source should be preserved
+    assert len(mimalloc_sources) == 1
+    assert mimalloc_sources[0]["type"] == "file"
+    assert (
+        mimalloc_sources[0]["sha256"]
+        == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
+    )
+
+
+def test_add_sqlite3_source(make_document):
+    """Test adding SQLite source for sqlite3_flutter_libs plugin."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Start with no sources
+    lotti["sources"] = []
+
+    result = flutter_ops.add_sqlite3_source(document)
+
+    assert result.changed
+    assert "sqlite" in str(result.messages).lower()
+
+    # Check that SQLite sources were added (one for each architecture)
+    sources = lotti["sources"]
+    assert len(sources) == 2
+
+    # Check x86_64 source
+    x64_source = next(s for s in sources if "x86_64" in s.get("only-arches", []))
+    assert x64_source["type"] == "file"
+    assert "sqlite-autoconf-3500400.tar.gz" in x64_source["url"]
+    assert (
+        x64_source["sha256"]
+        == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
+    )
+    assert (
+        x64_source["dest"]
+        == "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+    )
+    assert x64_source["dest-filename"] == "sqlite-autoconf-3500400.tar.gz"
+
+    # Check aarch64 source
+    arm64_source = next(s for s in sources if "aarch64" in s.get("only-arches", []))
+    assert arm64_source["type"] == "file"
+    assert "sqlite-autoconf-3500400.tar.gz" in arm64_source["url"]
+    assert (
+        arm64_source["sha256"]
+        == "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
+    )
+    assert (
+        arm64_source["dest"]
+        == "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+    )
+    assert arm64_source["dest-filename"] == "sqlite-autoconf-3500400.tar.gz"
+
+    # Run again - should not change
+    result2 = flutter_ops.add_sqlite3_source(document)
+    assert not result2.changed
+
+
+def test_add_offline_build_patches_adds_all_commands(make_document):
+    """Test that add_offline_build_patches adds all three required commands."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Start with basic build commands
+    lotti["build-commands"] = ["echo 'Starting build'", "flutter build linux --release"]
+
+    result = flutter_ops.add_offline_build_patches(document)
+
+    assert result.changed
+    assert "offline build patches" in str(result.messages).lower()
+
+    commands = lotti["build-commands"]
+
+    # Check that sqlite3 patch command was added
+    sqlite_cmd = next((cmd for cmd in commands if "sqlite3_flutter_libs" in cmd), None)
+    assert sqlite_cmd is not None
+    assert (
+        "URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
+        in sqlite_cmd
+    )
+    assert "sqlite-autoconf-3500400.tar.gz" in sqlite_cmd
+
+    # Check that cargokit patch command was added
+    cargokit_cmd = next(
+        (cmd for cmd in commands if "cargokit/run_build_tool.sh" in cmd), None
+    )
+    assert cargokit_cmd is not None
+    assert "pub get --offline --no-precompile" in cargokit_cmd
+
+    # Check that cargo config command was added
+    cargo_cmd = next(
+        (cmd for cmd in commands if "CARGO_HOME" in cmd and "vendored-sources" in cmd),
+        None,
+    )
+    assert cargo_cmd is not None
+    assert "/run/build/lotti/cargo/vendor" in cargo_cmd
+    assert "source.crates-io" in cargo_cmd
+    assert "super_native_extensions" in cargo_cmd
+
+
+def test_add_offline_build_patches_inserts_before_flutter_build(make_document):
+    """Test that patches are inserted before the flutter build command."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    lotti["build-commands"] = [
+        "echo 'Pre-build step'",
+        "flutter build linux --release --verbose",
+        "echo 'Post-build step'",
+    ]
+
+    result = flutter_ops.add_offline_build_patches(document)
+
+    assert result.changed
+
+    commands = lotti["build-commands"]
+
+    # Find the index of flutter build
+    flutter_build_idx = next(
+        idx
+        for idx, cmd in enumerate(commands)
+        if isinstance(cmd, str) and "flutter build linux" in cmd
+    )
+
+    # All three patches should be inserted before flutter build
+    sqlite_idx = next(
+        idx
+        for idx, cmd in enumerate(commands)
+        if isinstance(cmd, str) and "sqlite3_flutter_libs" in cmd
+    )
+    cargokit_idx = next(
+        idx
+        for idx, cmd in enumerate(commands)
+        if isinstance(cmd, str) and "cargokit" in cmd
+    )
+    cargo_config_idx = next(
+        idx
+        for idx, cmd in enumerate(commands)
+        if isinstance(cmd, str) and "CARGO_HOME" in cmd and "vendored-sources" in cmd
+    )
+
+    assert sqlite_idx < flutter_build_idx
+    assert cargokit_idx < flutter_build_idx
+    assert cargo_config_idx < flutter_build_idx
+
+    # Pre-build step should still be first
+    assert commands[0] == "echo 'Pre-build step'"
+    # Post-build step should still be after flutter build
+    assert commands[-1] == "echo 'Post-build step'"
+
+
+def test_add_offline_build_patches_idempotent(make_document):
+    """Test that add_offline_build_patches is idempotent."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    lotti["build-commands"] = ["flutter build linux --release"]
+
+    # First call
+    result1 = flutter_ops.add_offline_build_patches(document)
+    assert result1.changed
+
+    commands_after_first = lotti["build-commands"].copy()
+
+    # Second call
+    result2 = flutter_ops.add_offline_build_patches(document)
+    assert not result2.changed
+
+    commands_after_second = lotti["build-commands"]
+
+    # Commands should not have duplicates
+    assert commands_after_first == commands_after_second
+
+
+def test_add_offline_build_patches_replaces_existing_similar_commands(make_document):
+    """Test that existing similar commands are replaced, not duplicated."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Start with existing but outdated patch commands
+    lotti["build-commands"] = [
+        "echo 'Start'",
+        "python3 - <<'PY'\nimport pathlib\nbase = pathlib.Path('.pub-cache/hosted/pub.dev')\ntarget = next(base.glob('sqlite3_flutter_libs-*/linux/CMakeLists.txt'), None)\nprint('Old sqlite patch')\nPY\n",
+        "python3 - <<'PY'\nprint('Old cargokit patch')\nfor pattern in ['*/cargokit/run_build_tool.sh']:\n    pass\nPY\n",
+        "flutter build linux --release",
+    ]
+
+    result = flutter_ops.add_offline_build_patches(document)
+
+    assert result.changed
+
+    commands = lotti["build-commands"]
+
+    # Old sqlite command should be replaced
+    assert not any(
+        "Old sqlite patch" in cmd for cmd in commands if isinstance(cmd, str)
+    )
+    # Old cargokit command should be replaced
+    assert not any(
+        "Old cargokit patch" in cmd for cmd in commands if isinstance(cmd, str)
+    )
+
+    # New commands should be present
+    assert any(
+        "URL_HASH SHA256=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
+        in cmd
+        for cmd in commands
+        if isinstance(cmd, str)
+    )
+    assert any(
+        "pub get --offline --no-precompile" in cmd
+        for cmd in commands
+        if isinstance(cmd, str)
+    )
+
+    # Should not have duplicate sqlite3_flutter_libs references
+    sqlite_commands = [
+        cmd
+        for cmd in commands
+        if isinstance(cmd, str) and "sqlite3_flutter_libs" in cmd
+    ]
+    assert len(sqlite_commands) == 1
+
+
+def test_add_offline_build_patches_no_lotti_module(make_document):
+    """Test when lotti module doesn't exist."""
+    document = make_document()
+
+    # Remove lotti module
+    document.data["modules"] = [
+        m
+        for m in document.data["modules"]
+        if not (isinstance(m, dict) and m.get("name") == "lotti")
+    ]
+
+    result = flutter_ops.add_offline_build_patches(document)
+
+    # Should not change anything
+    assert not result.changed
+
+
+def test_add_offline_build_patches_no_build_commands(make_document):
+    """Test when lotti module has no build-commands."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    # Remove build-commands
+    if "build-commands" in lotti:
+        del lotti["build-commands"]
+
+    result = flutter_ops.add_offline_build_patches(document)
+
+    assert result.changed
+
+    # build-commands should be created
+    assert "build-commands" in lotti
+    commands = lotti["build-commands"]
+
+    # All three patches should be present
+    assert len(commands) == 3
+    assert any(
+        "sqlite3_flutter_libs" in cmd for cmd in commands if isinstance(cmd, str)
+    )
+    assert any("cargokit" in cmd for cmd in commands if isinstance(cmd, str))
+    assert any("vendored-sources" in cmd for cmd in commands if isinstance(cmd, str))
+
+
+def test_add_offline_build_patches_preserves_command_order(make_document):
+    """Test that non-patch commands maintain their relative order."""
+    document = make_document()
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+
+    lotti["build-commands"] = [
+        "echo 'Step 1'",
+        "echo 'Step 2'",
+        "flutter build linux --release",
+        "echo 'Step 3'",
+        "echo 'Step 4'",
+    ]
+
+    result = flutter_ops.add_offline_build_patches(document)
+
+    assert result.changed
+
+    commands = lotti["build-commands"]
+
+    # Find indices of original commands
+    step1_idx = commands.index("echo 'Step 1'")
+    step2_idx = commands.index("echo 'Step 2'")
+    flutter_idx = next(
+        idx for idx, cmd in enumerate(commands) if "flutter build linux" in cmd
+    )
+    step3_idx = commands.index("echo 'Step 3'")
+    step4_idx = commands.index("echo 'Step 4'")
+
+    # Original commands should maintain relative order
+    assert step1_idx < step2_idx < flutter_idx < step3_idx < step4_idx
+
+    # Patches should be between Step 2 and flutter build
+    patch_indices = [
+        idx
+        for idx, cmd in enumerate(commands)
+        if isinstance(cmd, str)
+        and (
+            "sqlite3_flutter_libs" in cmd
+            or "cargokit" in cmd
+            or "vendored-sources" in cmd
+        )
+    ]
+
+    for patch_idx in patch_indices:
+        assert step2_idx < patch_idx < flutter_idx

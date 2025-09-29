@@ -20,8 +20,17 @@ _LOGGER = utils.get_logger("manifest_ops")
 
 
 def _ensure_flutter_sdk_helper(module: dict, helper_name: str) -> bool:
-    """Ensure flutter-sdk module has the setup helper."""
+    """Ensure flutter-sdk module has the setup helper.
+
+    Args:
+        module: The flutter-sdk module dictionary to check and modify
+        helper_name: Name/path of the helper script to add
+
+    Returns:
+        True if the helper was added, False if already present
+    """
     sources = module.setdefault("sources", [])
+    # Check if setup-flutter.sh is already in the sources
     has_helper = any(
         isinstance(source, dict) and source.get("dest-filename") == "setup-flutter.sh"
         for source in sources
@@ -41,10 +50,18 @@ def _ensure_flutter_sdk_helper(module: dict, helper_name: str) -> bool:
 
 
 def _ensure_lotti_flutter_path(module: dict) -> bool:
-    """Ensure lotti module PATH includes /app/flutter/bin."""
+    """Ensure lotti module PATH includes /app/flutter/bin.
+
+    Args:
+        module: The lotti module dictionary to check and modify
+
+    Returns:
+        True if PATH was modified, False if already correct
+    """
     build_options = module.setdefault("build-options", {})
     env = build_options.setdefault("env", {})
     current_path = env.get("PATH", "")
+    # Split PATH and filter out empty entries
     entries = [entry for entry in current_path.split(":") if entry]
 
     if "/app/flutter/bin" not in entries:
@@ -60,7 +77,19 @@ def ensure_flutter_setup_helper(
     *,
     helper_name: str,
 ) -> OperationResult:
-    """Ensure flutter-sdk ships ``helper_name`` and lotti PATH includes /app/flutter/bin."""
+    """Ensure flutter-sdk ships the setup helper and lotti PATH is configured.
+
+    This function performs two critical tasks:
+    1. Adds the setup-flutter.sh helper script to flutter-sdk module
+    2. Ensures /app/flutter/bin is in the lotti module's PATH
+
+    Args:
+        document: The manifest document to modify
+        helper_name: Path to the setup-flutter.sh helper script
+
+    Returns:
+        OperationResult indicating if changes were made
+    """
 
     modules = document.ensure_modules()
     changed = False
@@ -92,18 +121,29 @@ def _get_normalized_targets(repo_urls: Sequence[str] | None) -> set[str]:
 
 
 def _should_pin_source(source: dict, normalized_targets: set[str], commit: str) -> bool:
-    """Check if a source should be pinned to a commit."""
+    """Check if a source should be pinned to a commit.
+
+    Args:
+        source: Source dictionary to check
+        normalized_targets: Set of target repository URLs (without .git)
+        commit: The commit SHA to check against
+
+    Returns:
+        True if the source needs pinning, False otherwise
+    """
+    # Skip non-dict sources (e.g., string references)
     if not isinstance(source, dict):
         return False
+    # Only process git sources
     if source.get("type") != "git":
         return False
 
-    # Normalize source URL by removing trailing .git
+    # Normalize source URL by removing trailing .git for comparison
     url = (source.get("url") or "").removesuffix(".git")
     if url not in normalized_targets:
         return False
 
-    # Already pinned correctly
+    # Check if already pinned correctly (has correct commit and no branch)
     if source.get("commit") == commit and "branch" not in source:
         return False
 
@@ -127,7 +167,20 @@ def pin_commit(
     commit: str,
     repo_urls: Sequence[str] | None = None,
 ) -> OperationResult:
-    """Replace lotti git source commit with ``commit`` and drop branch keys."""
+    """Pin lotti module's git sources to a specific commit.
+
+    Replaces branch references with commit SHA to ensure reproducible builds.
+    By default targets the official lotti repository URLs.
+
+    Args:
+        document: The manifest document to modify
+        commit: The commit SHA to pin to
+        repo_urls: Optional list of repository URLs to target
+                  (defaults to official lotti repos)
+
+    Returns:
+        OperationResult indicating if changes were made
+    """
 
     normalized_targets = _get_normalized_targets(repo_urls)
     modules = document.ensure_modules()
@@ -158,11 +211,21 @@ def _is_git_source(source: Any) -> bool:
 
 
 def _normalize_repo_url(url: str) -> str:
-    """Normalize a repository URL for comparison."""
-    # Remove trailing .git if present
+    """Normalize a repository URL for comparison.
+
+    Strips common prefixes and suffixes to allow comparison of different
+    URL formats pointing to the same repository.
+
+    Args:
+        url: The repository URL to normalize
+
+    Returns:
+        Normalized URL string (e.g., "matthiasn/lotti")
+    """
+    # Remove trailing .git suffix if present
     if url.endswith(".git"):
         url = url[:-4]
-    # Remove GitHub prefixes
+    # Remove GitHub prefixes (both HTTPS and SSH formats)
     url = url.replace("https://github.com/", "")
     url = url.replace("git@github.com:", "")
     return url
@@ -285,9 +348,16 @@ def ensure_module_include(
 ) -> OperationResult:
     """Ensure a string module include (e.g., rustup-1.83.0.json) is present.
 
-    If ``before_name`` is provided and a module with that name exists, the
-    include is inserted just before it to influence build order; otherwise it is
-    appended to the end of the modules list.
+    This is used to include external JSON module definitions in the manifest.
+    Build order can be controlled by inserting the include before a specific module.
+
+    Args:
+        document: The manifest document to modify
+        module_name: The module include string to add (e.g., "rustup-1.83.0.json")
+        before_name: Optional name of module to insert before (for build ordering)
+
+    Returns:
+        OperationResult indicating if the include was added
     """
 
     modules = document.ensure_modules()

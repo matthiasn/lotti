@@ -64,10 +64,8 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
         == 0
     )
 
-    # 2) Ensure network, rust env (PATH and RUSTUP_HOME), and drop rustup installer lines
-    assert (
-        cli.main(["ensure-lotti-network-share", "--manifest", str(manifest_path)]) == 0
-    )
+    # 2) Ensure rust env (PATH and RUSTUP_HOME), and drop rustup installer lines
+    # Note: --share=network is NOT allowed in build-args on Flathub
     assert cli.main(["ensure-rust-sdk-env", "--manifest", str(manifest_path)]) == 0
     assert cli.main(["remove-rustup-install", "--manifest", str(manifest_path)]) == 0
 
@@ -142,8 +140,8 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
     )
     assert any("setup-flutter.sh" in c for c in lotti["build-commands"])
 
-    # Build args and env updated
-    assert "--share=network" in lotti["build-options"].get("build-args", [])
+    # Build args and env updated (--share=network removed as it's not allowed on Flathub)
+    assert "--share=network" not in lotti["build-options"].get("build-args", [])
     env = lotti["build-options"]["env"]
     assert env["PATH"].startswith("/var/lib/rustup/bin")
     assert "/usr/lib/sdk/rust-stable/bin" in env["PATH"]

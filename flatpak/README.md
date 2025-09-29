@@ -1,6 +1,64 @@
 # Lotti Flatpak Build
 
-This directory contains the Flatpak manifest and related files for building Lotti as a Flatpak application.
+This directory contains the Flatpak manifest and build tooling for packaging Lotti as a Flatpak application for distribution on Flathub and other Flatpak repositories.
+
+## Overview
+
+The Flatpak build process involves several stages:
+1. **Local Development**: Building and testing locally with network access
+2. **Offline Preparation**: Converting to fully offline build for Flathub compliance
+3. **CI/CD Pipeline**: Automated builds and testing in GitHub Actions
+4. **Flathub Submission**: Final packaging for distribution
+
+## Build Architecture
+
+### Key Components
+
+1. **Manifest Files**
+   - `com.matthiasn.lotti.source.yml` - Source manifest template with placeholders
+   - `com.matthiasn.lotti.yml` - Generated manifest with pinned commit (local builds)
+   - Generated manifest in `flathub-build/output/` - Fully offline manifest for Flathub
+
+2. **Build Tools**
+   - `create_local_manifest.sh` - Pins commit for local builds
+   - `prepare_flathub_submission.sh` - Orchestrates entire offline build preparation
+   - `manifest_tool/` - Python utilities for manifest manipulation (see below)
+   - `download_cargo_locks.sh` - Downloads Cargo.lock files from build cache
+
+3. **manifest_tool Python Utilities**
+   - **Core Operations**: Read, validate, and manipulate YAML manifests
+   - **Flutter Operations**: Handle Flutter SDK, pub packages, and plugin patches
+   - **Rust Operations**: Process Cargo dependencies and vendor configurations
+   - **Archive Operations**: Create and manage source archives
+   - **Compliance Operations**: Ensure Flathub requirements are met
+
+4. **Dependencies**
+   - Flutter SDK - Dart/Flutter framework
+   - Rust toolchain - For native Rust dependencies
+   - Native libraries - libmpv, libsecret, libkeybinder, libplacebo, libass
+   - Flutter plugins - Various plugins with native components
+
+### Build Process Flow
+
+```
+[Source Code] → [Local Manifest] → [Local Build]
+       ↓
+[prepare_flathub_submission.sh]
+       ↓
+[Initial Build with Network]
+       ↓
+[Extract Dependencies from Build Cache]
+       ↓
+[Generate Offline Manifests]
+       ↓
+[Apply Compliance Patches]
+       ↓
+[Bundle All Sources]
+       ↓
+[CI/CD Testing]
+       ↓
+[Flathub Submission]
+```
 
 ## Building Locally
 
@@ -33,12 +91,10 @@ cd flatpak
 flatpak-builder --user --install --force-clean build-dir com.matthiasn.lotti.yml
 ```
 
-Note:
-- Always run `./create_local_manifest.sh` before building — it pins the manifest by replacing `commit: COMMIT_PLACEHOLDER` with your current git HEAD (or a commit you pass in) and writes the result to `com.matthiasn.lotti.yml`.
-- The script includes a guard: if it detects an empty `commit:` field or cannot find `COMMIT_PLACEHOLDER`, it will exit and print a clear message so you get immediate feedback.
-- The build tooling also fails fast if any `COMMIT_PLACEHOLDER` or `branch:` entries remain in the final manifest used for submission.
-
-You can also specify a different commit: `./create_local_manifest.sh <commit-hash>`
+**Important Notes:**
+- Always run `./create_local_manifest.sh` before building
+- This replaces `commit: COMMIT_PLACEHOLDER` with your current git HEAD
+- The script includes safety guards to prevent building with placeholders
 
 ### Running the App
 
@@ -47,40 +103,28 @@ After installation:
 flatpak run com.matthiasn.lotti
 ```
 
-### Notes for ARM64/Apple Silicon
+## Flathub Submission Process
 
-The manifest automatically handles architecture differences:
-- Flutter SDK is cloned from Git (architecture-independent)
-- Rust toolchain is installed during build
-- All native dependencies are compiled for the target architecture
+### Understanding Flathub Requirements
 
-## Flathub Submission
-
-### Prerequisites
-
-The Flathub build requires all dependencies to be available offline. We use `flatpak-flutter` to generate the offline manifest and dependencies.
-
-1. **Install Python dependencies**:
-   ```bash
-   sudo apt-get install python3-packaging python3-toml python3-yaml python3-requests
-   ```
+Flathub has strict requirements for security and reproducibility:
+- **No network access during build** - All dependencies must be pre-fetched
+- **Reproducible builds** - Same inputs must produce same outputs
+- **Source verification** - All sources must have checksums
+- **No binary blobs** - Everything built from source
 
 ### Preparation Process
 
-1. **flatpak-flutter**
-   - The preparation script will clone `flatpak-flutter` automatically if needed.
-   - Optional manual install:
-     ```bash
-     cd flatpak
-     git clone https://github.com/TheAppgineer/flatpak-flutter.git
-     ```
-
-2. **Ensure your branch is pushed**:
+1. **Ensure your branch is pushed**:
    ```bash
    git push origin <your-branch>
    ```
+   The branch must be accessible from GitHub for the offline build tools to work.
 
-   **Important**: Your branch must be pushed to GitHub before running the script, as flatpak-flutter needs to clone from the remote repository.
+2. **Install Python dependencies**:
+   ```bash
+   sudo apt-get install python3-packaging python3-toml python3-yaml python3-requests
+   ```
 
 3. **Run the preparation script**:
    ```bash
@@ -88,179 +132,253 @@ The Flathub build requires all dependencies to be available offline. We use `fla
    ./prepare_flathub_submission.sh
    ```
 
-   The script automatically:
-   - Extracts version from `pubspec.yaml` (e.g., `0.9.665+3266` → `0.9.665`)
-   - Uses the current git branch (must be pushed)
-   - Sets release date to today
+   The script performs these operations:
 
-   Or override with custom version/date:
-   ```bash
-   LOTTI_VERSION=1.0.0 LOTTI_RELEASE_DATE=2025-02-01 ./prepare_flathub_submission.sh
-   ```
+   **Phase 1: Initial Build with Network**:
+   - Performs test build to populate dependency cache
+   - Downloads all Dart packages via pub
+   - Downloads all Cargo crates
+   - Caches Flutter tools dependencies
 
-   To also test the build:
+   **Phase 2: Dependency Extraction**:
+   - Locates pubspec.lock files (app, flutter_tools, cargokit)
+   - Finds Cargo.lock files for Rust plugins
+   - Extracts dependency information from build cache
+   - Downloads missing source archives
+
+   **Phase 3: Manifest Generation**:
+   - Uses flatpak-flutter tool (or fallback generators)
+   - Creates flutter-sdk module manifest
+   - Generates pubspec-sources.json for Dart packages
+   - Generates cargo-sources.json for Rust crates
+   - Creates rustup configuration
+
+   **Phase 4: Offline Patches**:
+   - Adds SQLite3 URL hash for offline verification
+   - Patches cargokit scripts to use --offline flag
+   - Configures Cargo to use vendored sources
+   - Pre-places CMake FetchContent dependencies
+
+   **Phase 5: Compliance Enforcement**:
+   - Removes all --share=network from build-args (not finish-args)
+   - Adds --offline to all flutter pub get commands
+   - Adds --no-pub to flutter build commands
+   - Removes flutter config commands
+   - Validates no network access remains
+
+   **Phase 6: Source Bundling**:
+   - Creates app archive (`lotti-<commit>.tar.xz`)
+   - Downloads all referenced sources
+   - Verifies checksums
+   - Copies everything to output directory
+
+4. **Test the offline build** (optional but recommended):
    ```bash
    TEST_BUILD=true ./prepare_flathub_submission.sh
    ```
 
-The script will:
-   - Create a clean work directory at `flatpak/flathub-build/`
-   - Use version from pubspec.yaml (or override)
-   - Use current git HEAD commit
-   - Generate offline manifest and all dependencies using flatpak-flutter
-   - Always create fully offline builds as required by Flathub:
-     - Process Flutter SDK for offline use
-     - Bundle all archive/file sources locally
-     - Create app source archive (`lotti-<commit>.tar.xz`)
-   - Process the metainfo.xml with version substitution
-   - Output all files to `flatpak/flathub-build/output/`
+5. **Submit to Flathub**:
+   - Files are generated in `flatpak/flathub-build/output/`
+   - Fork [flathub/flathub](https://github.com/flathub/flathub)
+   - Copy generated files to your fork
+   - Create pull request
 
-#### Tuning & Env Vars
+### Environment Variables
 
-You can influence the preparation behavior with these environment variables:
+Fine-tune the preparation process:
 
-- `FLATPAK_FLUTTER_TIMEOUT` — seconds to allow `flatpak-flutter` to run; unset by default (no timeout). Example: `FLATPAK_FLUTTER_TIMEOUT=1800 ./prepare_flathub_submission.sh`
-- `NO_FLATPAK_FLUTTER` — set to `true` to skip running `flatpak-flutter` entirely and use the script’s fallback generators. Example: `NO_FLATPAK_FLUTTER=true ./prepare_flathub_submission.sh`
-- `PIN_COMMIT` — `true` (default) to pin the app source to the current commit in the output manifest.
-- `USE_NESTED_FLUTTER` — `false` (default). When `true`, references Flutter SDK JSONs as nested modules under the `lotti` module and removes the top-level `flutter-sdk` module when safe.
-- `DOWNLOAD_MISSING_SOURCES` — `true` (default) to allow downloading sources that aren't found in local caches; set to `false` for strictly offline generation.
-- `CLEAN_AFTER_GEN` — `true` (default) to remove the work `.flatpak-builder` directory after generation.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FLATPAK_FLUTTER_TIMEOUT` | None | Timeout for flatpak-flutter (seconds) |
+| `NO_FLATPAK_FLUTTER` | false | Skip flatpak-flutter, use fallback generators |
+| `PIN_COMMIT` | true | Pin app source to current commit |
+| `USE_NESTED_FLUTTER` | false | Use nested Flutter SDK modules |
+| `DOWNLOAD_MISSING_SOURCES` | true | Download sources not in cache |
+| `CLEAN_AFTER_GEN` | true | Remove work directory after generation |
+| `TEST_BUILD` | false | Run test build after preparation |
 
-Tips:
-- Logs are written to `flatpak/flathub-build/flatpak-flutter.log`. Use `tail -f` while preparing to monitor progress.
-- If network is constrained, try `NO_FLATPAK_FLUTTER=true` to rely on fallback generators; or keep `flatpak-flutter` and set a larger `FLATPAK_FLUTTER_TIMEOUT`.
+### CI Assertions
 
-4. **Submit to Flathub**:
-   - Fork the [Flathub repository](https://github.com/flathub/flathub)
-   - Copy the generated files from `flatpak/flathub-build/output/` to your fork
-   - Create a pull request
+The script includes fail-fast assertions that will exit with error if:
+- Application pubspec.lock is missing
+- Python manifest_tool operations fail
+- Flathub compliance violations are detected
+- Required source files cannot be generated
 
-### Key Files
+## manifest_tool Details
 
-- `com.matthiasn.lotti.source.yml` - Base manifest (kept pristine; still contains COMMIT_PLACEHOLDER)
-- `com.matthiasn.lotti.yml` - Generated manifest with a pinned commit (created by `create_local_manifest.sh`)
-- `com.matthiasn.lotti.metainfo.xml` - App metadata with version placeholders
-- `create_local_manifest.sh` - Updates COMMIT_PLACEHOLDER with actual commit hash in the manifest copy
-- `prepare_flathub_submission.sh` - Prepares everything for Flathub (generates offline manifest)
-- `check_complexity.sh` - Analyzes code complexity metrics for the manifest_tool Python code
-- `manifest_tool/` - Python tooling for manifest manipulation and build preparation
-  - `cli.py` - Command-line interface for all manifest operations
-  - `flutter_ops.py` - Flutter SDK and environment manipulation functions
-  - `manifest_ops.py` - Manifest modification operations (pinning, module management)
-  - `sources_ops.py` - Sources manipulation (bundling, URL replacement)
-  - `build_utils.py` - Build utilities (Flutter SDK copying, directory preparation)
+### Architecture
 
-## Creating a Bundle
+The `manifest_tool/` directory contains modular Python utilities:
 
-To create a distributable Flatpak bundle:
-```bash
-# First update the manifest with desired commit
-./create_local_manifest.sh
-
-# Build into a repo
-flatpak-builder --repo=repo build-dir com.matthiasn.lotti.yml
-
-# Create the bundle
-flatpak build-bundle repo lotti.flatpak com.matthiasn.lotti
+```
+manifest_tool/
+├── cli.py              # Command-line interface
+├── manifest_ops.py     # Core YAML manipulation
+├── flutter_ops.py      # Flutter-specific operations
+├── rust_ops.py         # Rust/Cargo operations
+├── archive_ops.py      # Source archive handling
+└── tests/             # Comprehensive test suite
 ```
 
-Users can then install with:
+### Available Commands
+
 ```bash
-flatpak install lotti.flatpak
+# Add offline build patches (SQLite3, cargokit, Cargo config)
+python3 manifest_tool/cli.py add-offline-build-patches --manifest output.yml
+
+# Add media kit mimalloc source
+python3 manifest_tool/cli.py add-media-kit-mimalloc-source --manifest output.yml
+
+# Add SQLite3 source for CMake
+python3 manifest_tool/cli.py add-sqlite3-source --manifest output.yml
+
+# Remove network access from build-args
+python3 manifest_tool/cli.py remove-network-from-build-args --manifest output.yml
+
+# Add offline flags
+python3 manifest_tool/cli.py ensure-flutter-pub-get-offline --manifest output.yml
+python3 manifest_tool/cli.py ensure-dart-pub-offline-in-build --manifest output.yml
+
+# Check Flathub compliance
+python3 manifest_tool/cli.py check-flathub-compliance --manifest output.yml
 ```
 
+### Key Functions
+
+**add_offline_build_patches()**: Comprehensive offline patch that:
+- Adds SQLite3 URL hash for CMake verification
+- Patches all cargokit build scripts for offline pub
+- Configures Cargo vendor sources
+- Is fully idempotent (safe to run multiple times)
+
+**Plugin Dependency Handlers**:
+- Handle CMake FetchContent downloads
+- Pre-place archives at expected paths
+- Support multi-architecture builds
+
+## Testing
+
+### Python Helper Tests
+
+The `manifest_tool/` includes comprehensive tests:
+
+```bash
+cd flatpak/manifest_tool
+python3 -m venv .venv
+source .venv/bin/activate
+pip install pytest pyyaml
+python -m pytest tests/ -v
+deactivate
+```
+
+Test coverage includes:
+- Manifest manipulation operations
+- Idempotency verification
+- Command insertion and ordering
+- Edge cases and error handling
+- Compliance validation
+
+### Integration Testing
+
+```bash
+# Full end-to-end test
+TEST_BUILD=true ./prepare_flathub_submission.sh
+
+# Verify generated files
+ls -la flathub-build/output/
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**"FATAL: Application pubspec.lock not found"**
+- Run a local build first to generate pubspec.lock
+- Ensure you're in the correct directory
+
+**"Failed to generate pubspec-sources.json"**
+- Check Python error output in console
+- Verify pubspec.lock files exist
+- Ensure Python dependencies installed
+
+**Build fails with network errors**
+- Check all --offline flags are present
+- Verify sources are properly bundled
+- Review CI assertions output
+
+**CMake can't find dependencies**
+- Check manifest_tool plugin handlers
+- Verify files placed at correct paths
+- Check architecture-specific paths
+
+### Debug Commands
+
+```bash
+# Check generated manifest
+python3 -c "import yaml; yaml.safe_load(open('flathub-build/output/com.matthiasn.lotti.yml'))"
+
+# Verify sources
+find flathub-build/output -name "*.tar.*" -o -name "*.zip" | sort
+
+# Check for network access
+grep -n "share=network" flathub-build/output/com.matthiasn.lotti.yml
+
+# Verify offline flags
+grep -n "pub get" flathub-build/output/com.matthiasn.lotti.yml
+```
 
 ## Permissions
 
-The app follows the **principle of least privilege** and requests only necessary permissions:
+The app follows the **principle of least privilege**:
 
 ### Network & System
-- `--share=network` - For sync features and online functionality
+- `--share=network` - Sync features and online functionality (runtime only - this is allowed in finish-args)
+  - Note: Network access is forbidden during build (build-args) but allowed at runtime (finish-args)
 - `--share=ipc` - Inter-process communication for GUI
-- `--socket=pulseaudio` - Audio recording/playback for voice notes
+- `--socket=pulseaudio` - Audio recording/playback
 - `--socket=wayland` + `--socket=fallback-x11` - Display protocols
 - `--device=dri` - Hardware-accelerated graphics
 
 ### Secure Filesystem Access
-- `--filesystem=xdg-documents:rw` - Read/write access to Documents folder for importing/exporting journal data
-- `--filesystem=xdg-pictures:ro` - Read-only access to Pictures for importing images
-- `--filesystem=xdg-download:rw` - Read/write access to Downloads for saving exports
-- **App data**: Automatically stored in `~/.var/app/com.matthiasn.lotti/` (secure default)
+- `--filesystem=xdg-documents/Lotti:create` - App's document folder
+- `--filesystem=xdg-pictures:ro` - Read-only Pictures access
+- `--filesystem=xdg-download/Lotti:create` - App's download folder
+- App data in `~/.var/app/com.matthiasn.lotti/` (sandboxed)
 
 ### Security Notes
-- ❌ **No `--filesystem=home`** - Removed broad home directory access for security
-- ❌ **No `--socket=gpg-agent`** - Removed unnecessary GPG access
-- ✅ **Minimal permissions** - Only specific directories needed for functionality
-- ✅ **Read-only where possible** - Pictures access is read-only for security
+- ❌ No broad home directory access
+- ❌ No unnecessary system access
+- ✅ Minimal permissions
+- ✅ Read-only where possible
 
-## Screenshot Support
+## Contributing
 
-### Portal-Based Screenshots (Recommended)
+When modifying the build system:
+1. Test locally first with `create_local_manifest.sh`
+2. Run `prepare_flathub_submission.sh` to verify offline build
+3. Check CI passes in pull request
+4. Update tests if adding new manifest operations
+5. Keep complexity low (< 10 cyclomatic complexity)
 
-When running in Flatpak, Lotti uses the XDG Desktop Portal for screenshots, which provides secure access without requiring additional tools inside the sandbox.
+## Architecture Notes
 
-**Requirements on the host system:**
-- `xdg-desktop-portal` - The portal service
-- A backend implementation:
-  - `xdg-desktop-portal-gtk` for GNOME/GTK desktops
-  - `xdg-desktop-portal-kde` for KDE Plasma
-  - `xdg-desktop-portal-wlr` for wlroots-based compositors
+### Why These Tools Exist
 
-### Screenshot Tools Outside Flatpak
+**manifest_tool/**: Custom Python utilities because:
+- `flatpak-flutter` doesn't handle all our specific needs
+- Need to manipulate manifest for Flathub compliance
+- Plugin dependencies require special handling
+- Automation of repetitive tasks
+- Ensure idempotent operations
 
-When running outside of Flatpak, Lotti can use traditional screenshot tools:
-- `spectacle` (KDE)
-- `gnome-screenshot` (GNOME)
-- `scrot` (lightweight)
-- `import` (ImageMagick)
+**Two-manifest approach**:
+- Source manifest stays clean with placeholders
+- Generated manifests are gitignored
+- Prevents accidental commits of generated files
 
-## Future Improvements
-
-### Icon Optimization
-Currently, the Flatpak uses a single 1024px icon file for all sizes. For better quality and performance:
-- Create pre-scaled icons: 512px, 256px, 128px, 64px, 48px, 32px, 16px
-- Update the manifest to use appropriately sized icons
-- This will improve rendering quality and reduce memory usage 
-
-## Python Helper Tests
-
-The helper scripts under `flatpak/manifest_tool/` now ship with a pytest suite. To run it locally without touching the system Python, create a virtual environment in the flatpak directory:
-
-```bash
-# Install the venv tooling once (Ubuntu/Debian only)
-sudo apt install python3-venv
-
-# Navigate to the flatpak directory (all commands should be run from here)
-cd flatpak
-
-# Create and activate the virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install test dependencies inside the venv
-python -m pip install --upgrade pip
-pip install pytest pyyaml
-
-# Run the tests
-python -m pytest manifest_tool/tests
-
-# When finished
-deactivate
-```
-
-> Tip: keep the `.venv/` directory out of version control (it is already covered by the root `.gitignore`).
-
-### Code Complexity Analysis
-
-To analyze code complexity (similar to CodeFactor):
-
-```bash
-# From the flatpak directory
-./check_complexity.sh
-```
-
-This will:
-- Check cyclomatic complexity (functions with complexity > 10)
-- Check cognitive complexity
-- Provide a summary of complex functions
-- Install required tools (radon, flake8) automatically if not present
+**Offline conversion complexity**:
+- Flutter's package system assumes network
+- Plugins download during build
+- Everything must be pre-fetched and placed correctly
+- Multiple dependency systems (pub, cargo, cmake)
