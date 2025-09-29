@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 import pytest
 
 from manifest_tool.flutter import helpers as flutter_helpers

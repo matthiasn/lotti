@@ -47,14 +47,23 @@ def test_normalize_flutter_sdk_module(make_document):
 
 
 def test_normalize_sdk_copy_replaces_command(make_document):
+    """Test normalizing SDK copy command."""
     document = make_document()
+
+    # First modify the lotti module to have the command we want to replace
+    lotti = next(
+        module for module in document.data["modules"] if module["name"] == "lotti"
+    )
+    lotti["build-commands"] = ["cp -r /var/lib/flutter .", "echo build"]
+
     result = flutter_sdk.normalize_sdk_copy(document)
 
     assert result.changed
-    commands = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )["build-commands"]
-    assert commands[0].startswith("if [ -d /var/lib/flutter ]")
+    commands = lotti["build-commands"]
+    assert (
+        commands[0] == "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
+    )
+    assert commands[1] == "echo build"  # Other commands preserved
 
 
 def test_convert_flutter_git_to_archive(make_document):
@@ -153,3 +162,59 @@ def test_flutter_sdk_not_removed_without_nested(tmp_path: Path):
     # flutter-sdk should still be there
     module_names = [m.get("name") for m in document.data["modules"]]
     assert "flutter-sdk" in module_names
+
+
+def test_flutter_sdk_removal_with_multiple_sdk_modules(tmp_path: Path):
+    """Test that ALL flutter-sdk modules are removed when nested SDKs exist."""
+    document = ManifestDocument(
+        Path("test.yml"),
+        {
+            "modules": [
+                {"name": "flutter-sdk", "sources": []},
+                {"name": "other-module", "sources": []},
+                {"name": "flutter-sdk", "sources": []},  # Duplicate flutter-sdk
+                {"name": "lotti", "sources": []},
+            ]
+        },
+    )
+
+    # Create flutter-sdk JSON files
+    (tmp_path / "flutter-sdk-stable.json").write_text("{}")
+
+    # Ensure nested Flutter SDK
+    result = flutter_sdk.ensure_nested_sdk(document, output_dir=tmp_path)
+
+    # Should have added nested SDK
+    assert result.changed
+
+    # Check that ALL flutter-sdk modules were removed
+    module_names = [m.get("name") for m in document.data["modules"]]
+    assert "flutter-sdk" not in module_names
+    assert module_names.count("flutter-sdk") == 0
+    assert "lotti" in module_names
+    assert "other-module" in module_names
+
+
+def test_nested_modules_type_safety(tmp_path: Path):
+    """Test that function handles non-list nested modules safely."""
+    document = ManifestDocument(
+        Path("test.yml"),
+        {
+            "modules": [
+                {"name": "flutter-sdk", "sources": []},
+                {"name": "lotti", "sources": [], "modules": "not-a-list"},  # Wrong type
+            ]
+        },
+    )
+
+    # Create flutter-sdk JSON files
+    (tmp_path / "flutter-sdk-stable.json").write_text("{}")
+
+    # Should handle the type error gracefully
+    result = flutter_sdk.ensure_nested_sdk(document, output_dir=tmp_path)
+
+    assert result.changed
+    # Should have fixed the modules to be a list
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    assert isinstance(lotti["modules"], list)
+    assert "flutter-sdk-stable.json" in lotti["modules"]

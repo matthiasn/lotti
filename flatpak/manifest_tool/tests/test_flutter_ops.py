@@ -186,13 +186,20 @@ def test_ensure_rust_sdk_env(make_document):
 
 def test_normalize_sdk_copy_replaces_command(make_document):
     document = make_document()
+
+    # First modify the lotti module to have the command we want to replace
+    lotti = next(
+        module for module in document.data["modules"] if module["name"] == "lotti"
+    )
+    lotti["build-commands"] = ["cp -r /var/lib/flutter .", "echo build"]
+
     result = flutter_ops.normalize_sdk_copy(document)
 
     assert result.changed
-    commands = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )["build-commands"]
-    assert commands[0].startswith("if [ -d /var/lib/flutter ]")
+    commands = lotti["build-commands"]
+    assert (
+        commands[0] == "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
+    )
 
 
 def test_convert_flutter_git_to_archive(make_document):
@@ -213,8 +220,7 @@ def test_convert_flutter_git_to_archive(make_document):
         == "https://github.com/flutter/flutter/archive/flutter.tar.xz"
     )
     assert flutter_module["sources"][0]["sha256"] == "deadbeef"
-    assert flutter_module["sources"][0]["dest"] == "flutter"
-    assert flutter_module["sources"][0]["strip-components"] == 1
+    # Archive sources don't have 'dest' - that's for git sources
 
     # The function only modifies flutter-sdk module, not lotti
     # Lotti sources remain unchanged

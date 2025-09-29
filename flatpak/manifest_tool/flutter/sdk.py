@@ -17,17 +17,13 @@ _LOGGER = get_logger("flutter.sdk")
 
 
 def _discover_flutter_jsons(output_dir: str | Path) -> list[str]:
-    """Find all Flutter SDK JSON files in the output directory.
-
-    Args:
-        output_dir: Directory to search for flutter-sdk-*.json files
-
-    Returns:
-        Sorted list of Flutter SDK JSON filenames
-    """
-    return sorted(
-        candidate.name for candidate in Path(output_dir).glob("flutter-sdk-*.json")
-    )
+    """Find flutter-sdk-*.json files in directory."""
+    out_path = Path(output_dir)
+    if not out_path.is_dir():
+        return []
+    json_files = list(out_path.glob("flutter-sdk-*.json"))
+    # Return just filenames, not paths
+    return [f.name for f in json_files]
 
 
 def ensure_nested_sdk(
@@ -86,78 +82,77 @@ def should_remove_flutter_sdk(
     *,
     output_dir: str | Path,
 ) -> bool:
-    """Check if flutter-sdk module should be removed.
+    """Check if top-level flutter-sdk module should be removed.
 
-    Returns True when offline Flutter SDK JSON files are present and
-    already referenced in the lotti module, making the flutter-sdk module redundant.
+    Returns True if lotti module references nested flutter SDK JSON files,
+    making the top-level flutter-sdk module redundant.
 
     Args:
         document: The manifest document to check
-        output_dir: Directory to search for flutter-sdk-*.json files
+        output_dir: Directory containing flutter-sdk-*.json files
 
     Returns:
-        True if flutter-sdk module should be removed
+        True if flutter-sdk should be removed, False otherwise
     """
-
     json_names = _discover_flutter_jsons(output_dir)
     if not json_names:
         return False
 
-    modules = document.ensure_modules()
+    modules = document.data.get("modules", [])
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
-        referenced = [
-            name for name in json_names if name in (module.get("modules") or [])
-        ]
-        return bool(referenced)
+        nested = module.get("modules", [])
+        if isinstance(nested, list):
+            # Check if any SDK JSON is referenced
+            for json_name in json_names:
+                if json_name in nested:
+                    return True
+        break
     return False
 
 
 def _should_keep_flutter_command(command: str) -> bool:
-    """Check if a Flutter SDK build command should be kept.
-
-    Only 'mv flutter' and 'export PATH' commands are needed when using
-    offline Flutter SDK. Other commands like 'flutter precache' are redundant.
-
-    Args:
-        command: Build command to check
-
-    Returns:
-        True if command should be kept, False otherwise
-    """
-    return command.startswith("mv flutter ") or command.startswith(
-        "export PATH=/app/flutter/bin"
-    )
+    """Check if a build command should be kept when normalizing flutter-sdk."""
+    if not isinstance(command, str):
+        return False
+    # Keep Flutter commands but remove SDK manipulation
+    if any(
+        kw in command
+        for kw in ["git ", "checkout", "reset", "apply", "config", "describe"]
+    ):
+        return False
+    if "flutter" in command.lower():
+        return command.startswith("mv flutter") or command.startswith("export PATH")
+    return True
 
 
 def _normalize_single_flutter_module(module: dict) -> bool:
-    """Normalize a single flutter-sdk module. Returns True if changed."""
-    if not isinstance(module, dict) or module.get("name") != "flutter-sdk":
+    """Normalize a single Flutter module. Returns True if changed."""
+    if module.get("name") != "flutter-sdk":
         return False
 
     commands = module.get("build-commands", [])
-    if not isinstance(commands, list):
-        commands = []
+    if not commands:
+        return False
 
-    # Filter commands keeping only mv and export PATH commands
-    filtered = [str(cmd) for cmd in commands if _should_keep_flutter_command(str(cmd))]
+    # Check if already normalized
+    if commands == ["mv flutter /app/flutter", "export PATH=/app/flutter/bin:$PATH"]:
+        return False
 
-    # Ensure at least one mv command exists
-    if not any(cmd.startswith("mv flutter ") for cmd in filtered):
-        filtered.insert(0, "mv flutter /app/flutter")
-
-    if filtered != commands:
-        module["build-commands"] = filtered
-        return True
-    return False
+    # Replace with normalized commands
+    module["build-commands"] = [
+        "mv flutter /app/flutter",
+        "export PATH=/app/flutter/bin:$PATH",
+    ]
+    return True
 
 
 def normalize_flutter_sdk_module(document: ManifestDocument) -> OperationResult:
-    """Strip Flutter invocations from flutter-sdk build commands.
+    """Normalize flutter-sdk module's build commands.
 
-    Removes unnecessary Flutter commands (like 'flutter precache') when using
-    offline SDK, keeping only the essential 'mv' and 'export PATH' commands.
+    Reduces build commands to just the essential move and path export,
+    removing git operations that don't work in offline builds.
 
     Args:
         document: The manifest document to modify
@@ -166,27 +161,34 @@ def normalize_flutter_sdk_module(document: ManifestDocument) -> OperationResult:
         OperationResult indicating if changes were made
     """
     modules = document.ensure_modules()
-    changed = any(_normalize_single_flutter_module(module) for module in modules)
+    changed = False
+
+    for module in modules:
+        if isinstance(module, dict) and _normalize_single_flutter_module(module):
+            changed = True
 
     if changed:
         document.mark_changed()
-        message = "Normalized flutter-sdk build commands"
+        message = "Normalized flutter-sdk module build commands"
         _LOGGER.debug(message)
         return OperationResult.changed_result(message)
     return OperationResult.unchanged()
 
 
 def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
-    """Replace flutter-sdk copy with simpler fallback."""
+    """Replace hardcoded SDK copy with conditional version.
 
+    Changes cp -r /var/lib/flutter to a conditional that checks
+    if the directory exists first.
+
+    Args:
+        document: The manifest document to modify
+
+    Returns:
+        OperationResult indicating if changes were made
+    """
     modules = document.ensure_modules()
     changed = False
-
-    _FALLBACK_COPY_SNIPPET = (
-        "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {dst}; "
-        "elif [ -d /app/flutter ]; then cp -r /app/flutter {dst}; "
-        'else echo "No Flutter SDK found at /var/lib/flutter or /app/flutter"; exit 1; fi'
-    )
 
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -196,102 +198,118 @@ def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
         if not isinstance(commands, list):
             continue
 
-        for idx, raw in enumerate(commands):
-            command = str(raw)
-            # Look for the complex copy pattern
-            if "cp -r /app/flutter" in command and "flutter_sdk" in command:
-                replacement = _FALLBACK_COPY_SNIPPET.format(
-                    dst="/run/build/lotti/flutter_sdk"
+        new_commands = []
+        for cmd in commands:
+            if isinstance(cmd, str) and cmd.strip() == "cp -r /var/lib/flutter .":
+                # Replace with conditional version
+                new_cmd = (
+                    "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
                 )
-                commands[idx] = replacement
+                new_commands.append(new_cmd)
                 changed = True
+            else:
+                new_commands.append(cmd)
 
         if changed:
-            module["build-commands"] = commands
+            module["build-commands"] = new_commands
         break
 
     if changed:
         document.mark_changed()
-        message = "Replaced flutter-sdk copy with fallback snippet"
+        message = "Made Flutter SDK copy conditional"
         _LOGGER.debug(message)
         return OperationResult.changed_result(message)
     return OperationResult.unchanged()
 
 
 def _convert_flutter_sdk_sources(module: dict, archive_name: str, sha256: str) -> bool:
-    """Convert flutter-sdk git source to archive. Returns True if changed."""
-    sources = module.get("sources", [])
-    changed = False
+    """Convert flutter-sdk module sources from git to archive. Returns True if changed."""
+    if module.get("name") != "flutter-sdk":
+        return False
 
-    for idx, source in enumerate(sources):
-        if (
-            isinstance(source, dict)
-            and source.get("type") == "git"
-            and "flutter/flutter" in source.get("url", "")
-        ):
-            sources[idx] = {
-                "type": "archive",
-                "url": f"https://github.com/flutter/flutter/archive/{archive_name}",
-                "sha256": sha256,
-                "dest": "flutter",
-                "strip-components": 1,
-            }
-            changed = True
-            break
-    return changed
+    sources = module.get("sources", [])
+    if not sources:
+        return False
+
+    # Already has archive source
+    for source in sources:
+        if isinstance(source, dict) and source.get("type") == "archive":
+            return False
+
+    # Replace all sources with archive
+    module["sources"] = [
+        {
+            "type": "archive",
+            "url": f"https://github.com/flutter/flutter/archive/{archive_name}",
+            "sha256": sha256,
+        }
+    ]
+    return True
 
 
 def convert_flutter_git_to_archive(
-    document: ManifestDocument,
-    *,
-    archive_name: str,
-    sha256: str,
+    document: ManifestDocument, *, archive_name: str, sha256: str
 ) -> OperationResult:
-    """Convert flutter-sdk git source to archive."""
+    """Convert flutter-sdk from git source to archive source.
+
+    Args:
+        document: The manifest document to modify
+        archive_name: Name of the archive file
+        sha256: SHA256 hash of the archive
+
+    Returns:
+        OperationResult indicating if changes were made
+    """
     modules = document.ensure_modules()
     changed = False
 
     for module in modules:
-        if not isinstance(module, dict) or module.get("name") != "flutter-sdk":
-            continue
-        if _convert_flutter_sdk_sources(module, archive_name, sha256):
+        if isinstance(module, dict) and _convert_flutter_sdk_sources(
+            module, archive_name, sha256
+        ):
             changed = True
-        break
 
     if changed:
         document.mark_changed()
-        message = f"Converted Flutter SDK git source to archive {archive_name}"
+        message = f"Converted Flutter SDK to archive source: {archive_name}"
         _LOGGER.debug(message)
         return OperationResult.changed_result(message)
     return OperationResult.unchanged()
 
 
-_CANONICAL_FLUTTER_URL = "https://github.com/flutter/flutter.git"
-
-
 def rewrite_flutter_git_url(document: ManifestDocument) -> OperationResult:
-    """Rewrite Flutter git URL to canonical form."""
+    """Rewrite Flutter git URL to canonical form.
+
+    Ensures the flutter-sdk module uses the canonical GitHub URL
+    with .git extension.
+
+    Args:
+        document: The manifest document to modify
+
+    Returns:
+        OperationResult indicating if changes were made
+    """
     modules = document.ensure_modules()
     changed = False
 
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "flutter-sdk":
             continue
+
         sources = module.get("sources", [])
         for source in sources:
-            if (
-                isinstance(source, dict)
-                and source.get("type") == "git"
-                and "flutter/flutter" in source.get("url", "")
-                and source.get("url") != _CANONICAL_FLUTTER_URL
-            ):
-                source["url"] = _CANONICAL_FLUTTER_URL
+            if not isinstance(source, dict) or source.get("type") != "git":
+                continue
+
+            url = source.get("url", "")
+            # Only rewrite if it's a flutter/flutter URL without .git
+            if "flutter/flutter" in url and not url.endswith(".git"):
+                source["url"] = "https://github.com/flutter/flutter.git"
                 changed = True
-        break
 
     if changed:
         document.mark_changed()
-        message = f"Rewrote Flutter git URL to {_CANONICAL_FLUTTER_URL}"
+        message = "Rewrote Flutter git URL to canonical form"
         _LOGGER.debug(message)
         return OperationResult.changed_result(message)
     return OperationResult.unchanged()
@@ -300,26 +318,29 @@ def rewrite_flutter_git_url(document: ManifestDocument) -> OperationResult:
 def _remove_flutter_sdk_if_nested(
     modules: list[Any], json_names: list[str]
 ) -> tuple[list[Any], bool]:
-    """Remove flutter-sdk module if nested SDKs are referenced. Returns (modules, changed)."""
+    """Remove flutter-sdk module(s) if lotti references nested SDK JSONs.
+
+    Returns (filtered_modules, removed_any).
+    """
+    # Find lotti's nested references (ensure list)
+    lotti_nested: list[Any] = []
+    for m in modules:
+        if isinstance(m, dict) and m.get("name") == "lotti":
+            nested = m.get("modules") or []
+            lotti_nested = nested if isinstance(nested, list) else []
+            break
+
+    # Check if any json_names are referenced in lotti's modules
+    referenced = {name for name in json_names if name in lotti_nested}
+
+    # Filter modules
     filtered: list[Any] = []
-    changed = False
-
+    removed_any = False
     for module in modules:
-        if not isinstance(module, dict):
-            filtered.append(module)
-            continue
-        if module.get("name") == "flutter-sdk":
-            # Check if lotti references nested SDKs
-            for other in modules:
-                if isinstance(other, dict) and other.get("name") == "lotti":
-                    nested = other.get("modules", [])
-                    referenced = [name for name in json_names if name in nested]
-                    if referenced:
-                        changed = True
-                        continue  # Skip adding flutter-sdk
-            if not changed:
-                filtered.append(module)
-        else:
-            filtered.append(module)
+        if isinstance(module, dict) and module.get("name") == "flutter-sdk":
+            if referenced:
+                removed_any = True
+                continue  # Skip adding flutter-sdk
+        filtered.append(module)
 
-    return filtered, changed
+    return filtered, removed_any
