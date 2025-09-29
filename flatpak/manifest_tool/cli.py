@@ -860,7 +860,7 @@ def _run_prepare_flathub(namespace: argparse.Namespace) -> int:
     try:
         prepare_flathub(options)
     except PrepareFlathubError as exc:
-        logger.error("prepare-flathub failed: %s", exc)
+        logger.exception("prepare-flathub failed: %s", exc)
         return 1
     return 0
 
