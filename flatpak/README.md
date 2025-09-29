@@ -240,8 +240,8 @@ python3 manifest_tool/cli.py remove-network-from-build-args --manifest output.ym
 python3 manifest_tool/cli.py ensure-flutter-pub-get-offline --manifest output.yml
 python3 manifest_tool/cli.py ensure-dart-pub-offline-in-build --manifest output.yml
 
-# Validate manifest
-python3 manifest_tool/cli.py validate --manifest output.yml
+# Check Flathub compliance
+python3 manifest_tool/cli.py check-flathub-compliance --manifest output.yml
 ```
 
 ### Key Functions
