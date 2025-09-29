@@ -1,4 +1,4 @@
-"""Tests for manifest_ops helper functions."""
+"""Tests for manifest operations internal helper functions."""
 
 from __future__ import annotations
 

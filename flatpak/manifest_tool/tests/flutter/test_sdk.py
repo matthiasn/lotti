@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from manifest_tool.flutter import sdk as flutter_sdk
+from manifest_tool.core.manifest import ManifestDocument
 
 
 def test_ensure_nested_sdk(make_document, tmp_path: Path):
@@ -93,3 +94,62 @@ def test_rewrite_flutter_git_url(make_document):
     for source in flutter_module["sources"]:
         if isinstance(source, dict) and source.get("type") == "git":
             assert source["url"] == "https://github.com/flutter/flutter.git"
+
+
+def test_flutter_sdk_removal_when_nested_exists(tmp_path: Path):
+    """Test that flutter-sdk module is removed when nested SDKs are added."""
+    # Create a manifest with both top-level flutter-sdk and lotti modules
+    document = ManifestDocument(
+        Path("test.yml"),
+        {
+            "modules": [
+                {"name": "flutter-sdk", "sources": []},
+                {"name": "lotti", "sources": []},
+                {"name": "other-module", "sources": []},
+            ]
+        },
+    )
+
+    # Create flutter-sdk JSON files
+    (tmp_path / "flutter-sdk-stable.json").write_text("{}")
+    (tmp_path / "flutter-sdk-beta.json").write_text("{}")
+
+    # Ensure nested Flutter SDK
+    result = flutter_sdk.ensure_nested_sdk(document, output_dir=tmp_path)
+
+    # Should have added nested SDKs
+    assert result.changed
+
+    # Check that flutter-sdk module was removed
+    module_names = [m.get("name") for m in document.data["modules"]]
+    assert "flutter-sdk" not in module_names
+    assert "lotti" in module_names
+    assert "other-module" in module_names
+
+    # Check that nested modules were added to lotti
+    lotti = next(m for m in document.data["modules"] if m["name"] == "lotti")
+    assert "flutter-sdk-stable.json" in lotti["modules"]
+    assert "flutter-sdk-beta.json" in lotti["modules"]
+
+
+def test_flutter_sdk_not_removed_without_nested(tmp_path: Path):
+    """Test that flutter-sdk is NOT removed when no nested SDKs exist."""
+    document = ManifestDocument(
+        Path("test.yml"),
+        {
+            "modules": [
+                {"name": "flutter-sdk", "sources": []},
+                {"name": "lotti", "sources": []},
+            ]
+        },
+    )
+
+    # Empty directory - no flutter-sdk JSON files
+    result = flutter_sdk.ensure_nested_sdk(document, output_dir=tmp_path)
+
+    # Should not have changed anything
+    assert not result.changed
+
+    # flutter-sdk should still be there
+    module_names = [m.get("name") for m in document.data["modules"]]
+    assert "flutter-sdk" in module_names

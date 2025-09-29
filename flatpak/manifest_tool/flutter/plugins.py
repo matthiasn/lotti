@@ -205,12 +205,20 @@ def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult
 
         for arch, dest in dest_map.items():
             # Check if mimalloc source already exists for this architecture
+            # Need to check both url and path fields, as sources can be bundled
             has_mimalloc = any(
                 isinstance(src, dict)
                 and src.get("type") == "file"
                 and src.get("dest") == dest
-                and "mimalloc" in src.get("url", "")
                 and arch in src.get("only-arches", [])
+                and (
+                    # Check URL field for unbundled sources
+                    "mimalloc" in src.get("url", "")
+                    # Check path field for bundled sources
+                    or "mimalloc" in src.get("path", "")
+                    # Check dest-filename which should be consistent
+                    or src.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
+                )
                 for src in sources
             )
 

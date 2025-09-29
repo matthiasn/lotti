@@ -1,4 +1,4 @@
-"""Comprehensive tests for offline build patch operations."""
+"""Edge case tests for offline build patch operations."""
 
 from __future__ import annotations
 
@@ -283,13 +283,14 @@ def test_empty_modules_list():
 
 def test_sources_not_modified_if_no_lotti():
     """Test that other modules' sources are not touched."""
-    document = ManifestDocument(Path("test.yml"),
+    document = ManifestDocument(
+        Path("test.yml"),
         {
             "modules": [
                 {"name": "other", "sources": [{"type": "git", "url": "test"}]},
                 {"name": "another", "sources": []},
             ]
-        }
+        },
     )
 
     original = document.data.copy()

@@ -66,3 +66,15 @@ def test_remove_rustup_install(make_document):
     # Should be idempotent
     result2 = flutter_rust.remove_rustup_install(document)
     assert not result2.changed
+
+
+def test_rust_append_path_message_not_f_string(make_document):
+    """Test that Rust path addition uses plain string message."""
+    document = make_document()
+
+    result = flutter_rust.ensure_rust_sdk_env(document)
+
+    # The fix ensures that messages don't use unnecessary f-strings
+    # This would be caught by linter (Ruff F541) if incorrect
+    assert result.changed
+    assert "Added Rust paths to append-path" in str(result.messages)

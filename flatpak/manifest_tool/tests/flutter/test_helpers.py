@@ -108,7 +108,7 @@ def test_ensure_setup_helper_command_with_resolver_paths(make_document):
     assert "-r /custom/path2" in helper_cmd
 
 
-def test_bundle_app_archive_updates_sources(make_document, tmp_path: Path):
+def test_bundle_app_archive_updates_sources(make_document):
     """Test bundling app archive and updating sources."""
     document = make_document()
 
@@ -130,7 +130,7 @@ def test_bundle_app_archive_updates_sources(make_document, tmp_path: Path):
     assert first_source["sha256"] == "cafebabe"
 
 
-def test_bundle_app_archive_no_lotti_module(make_document, tmp_path):
+def test_bundle_app_archive_no_lotti_module(make_document):
     """Test bundle_app_archive when lotti module doesn't exist."""
     document = make_document()
 

@@ -68,7 +68,7 @@ def ensure_nested_sdk(
         break
 
     # Also remove top-level flutter-sdk module if nested SDKs are present
-    if changed and json_names:
+    if changed:
         filtered_modules, removed = _remove_flutter_sdk_if_nested(modules, json_names)
         if removed:
             document.data["modules"] = filtered_modules

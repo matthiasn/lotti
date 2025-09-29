@@ -85,7 +85,7 @@ def ensure_rust_sdk_env(document: ManifestDocument) -> OperationResult:
 
         # Update append-path
         if _update_append_path(build_options, rust_bin, rustup_bin):
-            messages.append(f"Added Rust paths to append-path")
+            messages.append("Added Rust paths to append-path")
             changed = True
 
         # Update env
