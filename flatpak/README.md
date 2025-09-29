@@ -21,13 +21,21 @@ The Flatpak build process involves several stages:
 
 2. **Build Tools**
    - `create_local_manifest.sh` - Pins commit for local builds
-   - `prepare_flathub_submission.sh` - Generates offline build artifacts
-   - `manifest_tool/` - Python utilities for manifest manipulation
+   - `prepare_flathub_submission.sh` - Orchestrates entire offline build preparation
+   - `manifest_tool/` - Python utilities for manifest manipulation (see below)
+   - `download_cargo_locks.sh` - Downloads Cargo.lock files from build cache
 
-3. **Dependencies**
+3. **manifest_tool Python Utilities**
+   - **Core Operations**: Read, validate, and manipulate YAML manifests
+   - **Flutter Operations**: Handle Flutter SDK, pub packages, and plugin patches
+   - **Rust Operations**: Process Cargo dependencies and vendor configurations
+   - **Archive Operations**: Create and manage source archives
+   - **Compliance Operations**: Ensure Flathub requirements are met
+
+4. **Dependencies**
    - Flutter SDK - Dart/Flutter framework
    - Rust toolchain - For native Rust dependencies
-   - Native libraries - libmpv, libsecret, libkeybinder, etc.
+   - Native libraries - libmpv, libsecret, libkeybinder, libplacebo, libass
    - Flutter plugins - Various plugins with native components
 
 ### Build Process Flow
@@ -37,9 +45,15 @@ The Flatpak build process involves several stages:
        ↓
 [prepare_flathub_submission.sh]
        ↓
-[Offline Manifest Generation]
+[Initial Build with Network]
        ↓
-[Bundle All Dependencies]
+[Extract Dependencies from Build Cache]
+       ↓
+[Generate Offline Manifests]
+       ↓
+[Apply Compliance Patches]
+       ↓
+[Bundle All Sources]
        ↓
 [CI/CD Testing]
        ↓
@@ -120,27 +134,43 @@ Flathub has strict requirements for security and reproducibility:
 
    The script performs these operations:
 
-   **Version and Metadata**:
-   - Extracts version from `pubspec.yaml`
-   - Uses current git branch and commit
-   - Substitutes version placeholders in metainfo.xml
+   **Phase 1: Initial Build with Network**:
+   - Performs test build to populate dependency cache
+   - Downloads all Dart packages via pub
+   - Downloads all Cargo crates
+   - Caches Flutter tools dependencies
 
-   **Offline Conversion**:
-   - Clones `flatpak-flutter` tool if needed
-   - Generates offline Flutter SDK manifest
-   - Creates pubspec-sources.json for Dart packages
-   - Creates cargo-sources.json for Rust crates
+   **Phase 2: Dependency Extraction**:
+   - Locates pubspec.lock files (app, flutter_tools, cargokit)
+   - Finds Cargo.lock files for Rust plugins
+   - Extracts dependency information from build cache
+   - Downloads missing source archives
 
-   **Source Bundling**:
+   **Phase 3: Manifest Generation**:
+   - Uses flatpak-flutter tool (or fallback generators)
+   - Creates flutter-sdk module manifest
+   - Generates pubspec-sources.json for Dart packages
+   - Generates cargo-sources.json for Rust crates
+   - Creates rustup configuration
+
+   **Phase 4: Offline Patches**:
+   - Adds SQLite3 URL hash for offline verification
+   - Patches cargokit scripts to use --offline flag
+   - Configures Cargo to use vendored sources
+   - Pre-places CMake FetchContent dependencies
+
+   **Phase 5: Compliance Enforcement**:
+   - Removes all --share=network from finish-args
+   - Adds --offline to all flutter pub get commands
+   - Adds --no-pub to flutter build commands
+   - Removes flutter config commands
+   - Validates no network access remains
+
+   **Phase 6: Source Bundling**:
    - Creates app archive (`lotti-<commit>.tar.xz`)
-   - Downloads and caches all archive sources
-   - Bundles everything locally with checksums
-
-   **Flathub Compliance**:
-   - Removes `--share=network` from build-args
-   - Adds `--offline` flag to `flutter pub get`
-   - Adds `--no-pub` flag to `flutter build`
-   - Handles plugin dependencies (mimalloc, SQLite)
+   - Downloads all referenced sources
+   - Verifies checksums
+   - Copies everything to output directory
 
 4. **Test the offline build** (optional but recommended):
    ```bash
@@ -167,69 +197,135 @@ Fine-tune the preparation process:
 | `CLEAN_AFTER_GEN` | true | Remove work directory after generation |
 | `TEST_BUILD` | false | Run test build after preparation |
 
-### Debugging Tips
+### CI Assertions
 
-- Monitor progress: `tail -f flatpak/flathub-build/flatpak-flutter.log`
-- Check generated manifest: `flatpak/flathub-build/output/com.matthiasn.lotti.yml`
-- Verify sources: `ls -la flatpak/flathub-build/output/`
+The script includes fail-fast assertions that will exit with error if:
+- Application pubspec.lock is missing
+- Python manifest_tool operations fail
+- Flathub compliance violations are detected
+- Required source files cannot be generated
 
-## CI/CD Pipeline
+## manifest_tool Details
 
-### GitHub Actions Workflow
+### Architecture
 
-The `.github/workflows/flatpak-offline-build.yml` workflow:
-1. Sets up Flatpak build environment
-2. Runs manifest_tool tests
-3. Prepares Flathub build artifacts
-4. Attempts offline build to verify everything works
+The `manifest_tool/` directory contains modular Python utilities:
 
-### Common CI Issues and Solutions
+```
+manifest_tool/
+├── cli.py              # Command-line interface
+├── manifest_ops.py     # Core YAML manipulation
+├── flutter_ops.py      # Flutter-specific operations
+├── rust_ops.py         # Rust/Cargo operations
+├── archive_ops.py      # Source archive handling
+└── tests/             # Comprehensive test suite
+```
 
-**Issue: Flutter pub get hangs**
-- **Cause**: No network in sandbox, pub trying to fetch
-- **Solution**: Added `--offline` flag to `flutter pub get`
+### Available Commands
 
-**Issue: dart pub get --example during build**
-- **Cause**: Flutter build internally runs pub get
-- **Solution**: Added `--no-pub` flag to `flutter build linux`
+```bash
+# Add offline build patches (SQLite3, cargokit, Cargo config)
+python3 manifest_tool/cli.py add-offline-build-patches --manifest output.yml
 
-**Issue: Plugin downloads during build (mimalloc, SQLite)**
-- **Cause**: CMake FetchContent trying to download
-- **Solution**: Pre-place files where CMake expects them
+# Add media kit mimalloc source
+python3 manifest_tool/cli.py add-media-kit-mimalloc-source --manifest output.yml
 
-## Plugin Dependencies Challenge
+# Add SQLite3 source for CMake
+python3 manifest_tool/cli.py add-sqlite3-source --manifest output.yml
 
-### The Problem
+# Remove network access
+python3 manifest_tool/cli.py remove-finish-arg --manifest output.yml --arg "--share=network"
 
-Some Flutter plugins use CMake FetchContent to download dependencies during build:
-- `media_kit_libs_linux` → downloads mimalloc
-- `sqlite3_flutter_libs` → downloads SQLite
+# Add offline flags
+python3 manifest_tool/cli.py add-offline-flag --manifest output.yml
+python3 manifest_tool/cli.py add-no-pub-flag --manifest output.yml
 
-This violates Flathub's no-network policy.
+# Validate manifest
+python3 manifest_tool/cli.py validate --manifest output.yml
+```
 
-### Current Solution
+### Key Functions
 
-The `manifest_tool` includes functions to handle these:
+**add_offline_build_patches()**: Comprehensive offline patch that:
+- Adds SQLite3 URL hash for CMake verification
+- Patches all cargokit build scripts for offline pub
+- Configures Cargo vendor sources
+- Is fully idempotent (safe to run multiple times)
 
-1. **add_media_kit_mimalloc_source()**
-   - Adds mimalloc tar.gz as a file source
-   - CMake finds and extracts it during build
+**Plugin Dependency Handlers**:
+- Handle CMake FetchContent downloads
+- Pre-place archives at expected paths
+- Support multi-architecture builds
 
-2. **add_sqlite3_source()**
-   - Adds SQLite tar.gz for both architectures
-   - Places at exact path CMake expects
-   - Handles x86_64 and aarch64 separately
+## Testing
 
-### Implementation Details
+### Python Helper Tests
 
-```yaml
-# Generated manifest includes:
-- type: file
-  only-arches: [x86_64]
-  url: https://www.sqlite.org/2025/sqlite-autoconf-3500400.tar.gz
-  sha256: a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18
-  dest: ./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src
-  dest-filename: sqlite-autoconf-3500400.tar.gz
+The `manifest_tool/` includes comprehensive tests:
+
+```bash
+cd flatpak/manifest_tool
+python3 -m venv .venv
+source .venv/bin/activate
+pip install pytest pyyaml
+python -m pytest tests/ -v
+deactivate
+```
+
+Test coverage includes:
+- Manifest manipulation operations
+- Idempotency verification
+- Command insertion and ordering
+- Edge cases and error handling
+- Compliance validation
+
+### Integration Testing
+
+```bash
+# Full end-to-end test
+TEST_BUILD=true ./prepare_flathub_submission.sh
+
+# Verify generated files
+ls -la flathub-build/output/
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**"FATAL: Application pubspec.lock not found"**
+- Run a local build first to generate pubspec.lock
+- Ensure you're in the correct directory
+
+**"Failed to generate pubspec-sources.json"**
+- Check Python error output in console
+- Verify pubspec.lock files exist
+- Ensure Python dependencies installed
+
+**Build fails with network errors**
+- Check all --offline flags are present
+- Verify sources are properly bundled
+- Review CI assertions output
+
+**CMake can't find dependencies**
+- Check manifest_tool plugin handlers
+- Verify files placed at correct paths
+- Check architecture-specific paths
+
+### Debug Commands
+
+```bash
+# Check generated manifest
+python3 -c "import yaml; yaml.safe_load(open('flathub-build/output/com.matthiasn.lotti.yml'))"
+
+# Verify sources
+find flathub-build/output -name "*.tar.*" -o -name "*.zip" | sort
+
+# Check for network access
+grep -n "share=network" flathub-build/output/com.matthiasn.lotti.yml
+
+# Verify offline flags
+grep -n "pub get" flathub-build/output/com.matthiasn.lotti.yml
 ```
 
 ## Permissions
@@ -237,7 +333,7 @@ The `manifest_tool` includes functions to handle these:
 The app follows the **principle of least privilege**:
 
 ### Network & System
-- `--share=network` - Sync features and online functionality
+- `--share=network` - Sync features and online functionality (runtime only, not build)
 - `--share=ipc` - Inter-process communication for GUI
 - `--socket=pulseaudio` - Audio recording/playback
 - `--socket=wayland` + `--socket=fallback-x11` - Display protocols
@@ -254,66 +350,6 @@ The app follows the **principle of least privilege**:
 - ❌ No unnecessary system access
 - ✅ Minimal permissions
 - ✅ Read-only where possible
-
-## Testing
-
-### Python Helper Tests
-
-The `manifest_tool/` includes comprehensive tests:
-
-```bash
-cd flatpak
-python3 -m venv .venv
-source .venv/bin/activate
-pip install pytest pyyaml
-python -m pytest manifest_tool/tests
-deactivate
-```
-
-### Code Quality
-
-Check code complexity:
-```bash
-./check_complexity.sh
-```
-
-This analyzes:
-- Cyclomatic complexity (target: < 10)
-- Cognitive complexity
-- Code quality metrics
-
-## Troubleshooting
-
-### Common Issues
-
-**Build fails with "Could not resolve host"**
-- The build is trying network access
-- Check for missing offline flags
-- Verify all sources are bundled
-
-**CMake can't find dependencies**
-- Plugin trying to download during build
-- Check manifest_tool plugin handlers
-- Verify files placed at correct paths
-
-**Flutter SDK not found**
-- Check Flutter SDK module in manifest
-- Verify offline SDK generation worked
-- Check build environment paths
-
-### Debug Commands
-
-```bash
-# Check what's in the build directory
-flatpak run --command=bash com.matthiasn.lotti
-ls -la /app/
-
-# Check build logs
-flatpak-builder --verbose --keep-build-dirs ...
-
-# Verify manifest syntax
-python3 -c "import yaml; yaml.safe_load(open('com.matthiasn.lotti.yml'))"
-```
 
 ## Contributing
 
@@ -333,6 +369,7 @@ When modifying the build system:
 - Need to manipulate manifest for Flathub compliance
 - Plugin dependencies require special handling
 - Automation of repetitive tasks
+- Ensure idempotent operations
 
 **Two-manifest approach**:
 - Source manifest stays clean with placeholders
@@ -343,3 +380,4 @@ When modifying the build system:
 - Flutter's package system assumes network
 - Plugins download during build
 - Everything must be pre-fetched and placed correctly
+- Multiple dependency systems (pub, cargo, cmake)
