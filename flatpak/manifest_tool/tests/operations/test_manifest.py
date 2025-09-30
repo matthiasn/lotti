@@ -44,3 +44,51 @@ def test_pin_commit_no_change_when_already_pinned(make_document):
 
     result = manifest_ops.pin_commit(document, commit="abc123")
     assert not result.changed
+
+
+def test_ensure_screenshot_asset_adds_entries(make_document):
+    manifest_text = """
+modules:
+  - name: flutter-common
+    build-commands:
+      - echo existing
+    sources:
+      - type: file
+        path: existing.txt
+"""
+    document = make_document(manifest_text)
+
+    result = manifest_ops.ensure_screenshot_asset(
+        document,
+        screenshot_source="screenshot.png",
+        install_path="/app/share/app-info/screenshots/com.matthiasn.lotti/main.png",
+    )
+
+    assert result.changed
+    module = document.data["modules"][0]
+    assert (
+        "install -D screenshot.png /app/share/app-info/screenshots/com.matthiasn.lotti/main.png"
+        in module["build-commands"]
+    )
+    assert any(source.get("path") == "screenshot.png" for source in module["sources"])
+
+
+def test_ensure_screenshot_asset_idempotent(make_document):
+    manifest_text = """
+modules:
+  - name: flutter-common
+    build-commands:
+      - install -D screenshot.png /app/share/app-info/screenshots/com.matthiasn.lotti/main.png
+    sources:
+      - type: file
+        path: screenshot.png
+"""
+    document = make_document(manifest_text)
+
+    result = manifest_ops.ensure_screenshot_asset(
+        document,
+        screenshot_source="screenshot.png",
+        install_path="/app/share/app-info/screenshots/com.matthiasn.lotti/main.png",
+    )
+
+    assert not result.changed

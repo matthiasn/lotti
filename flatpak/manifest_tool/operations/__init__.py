@@ -5,6 +5,7 @@ from .manifest import (
     ensure_flutter_setup_helper,
     ensure_module_include,
     update_manifest_for_build,
+    ensure_screenshot_asset,
 )
 
 from .sources import (
@@ -26,6 +27,7 @@ __all__ = [
     "ensure_flutter_setup_helper",
     "ensure_module_include",
     "update_manifest_for_build",
+    "ensure_screenshot_asset",
     # Source operations
     "replace_url_with_path",
     "replace_url_with_path_in_manifest",

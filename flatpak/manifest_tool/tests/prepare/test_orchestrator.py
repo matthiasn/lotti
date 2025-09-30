@@ -75,6 +75,7 @@ def _make_context(base: Path) -> PrepareFlathubContext:
         flatpak_flutter_log=work_dir / "flatpak-flutter.log",
         setup_helper_basename="setup-flutter.sh",
         setup_helper_source=flatpak_dir / "helpers" / "setup-flutter.sh",
+        screenshot_source=flatpak_dir / "screenshot.png",
         flatpak_flutter_status=None,
     )
     context.setup_helper_source.parent.mkdir(parents=True, exist_ok=True)

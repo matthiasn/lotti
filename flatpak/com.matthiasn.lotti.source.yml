@@ -196,6 +196,7 @@ modules:
       - install -D app_icon_48.png /app/share/icons/hicolor/48x48/apps/com.matthiasn.lotti.png
       - install -D app_icon_32.png /app/share/icons/hicolor/32x32/apps/com.matthiasn.lotti.png
       - install -D app_icon_16.png /app/share/icons/hicolor/16x16/apps/com.matthiasn.lotti.png
+      - install -D screenshot.png /app/share/app-info/screenshots/com.matthiasn.lotti/main.png
     sources:
       - type: file
         path: com.matthiasn.lotti.desktop
@@ -215,3 +216,5 @@ modules:
         path: app_icon_32.png
       - type: file
         path: app_icon_16.png
+      - type: file
+        path: screenshot.png

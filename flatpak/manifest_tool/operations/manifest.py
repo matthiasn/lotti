@@ -74,6 +74,57 @@ def _ensure_lotti_flutter_path(module: dict) -> bool:
     return False
 
 
+def ensure_screenshot_asset(
+    document: ManifestDocument,
+    *,
+    screenshot_source: str,
+    install_path: str,
+) -> OperationResult:
+    """Ensure the flutter-common module installs the provided screenshot.
+
+    Args:
+        document: Manifest document to operate on.
+        screenshot_source: Relative path to the screenshot asset in the manifest context.
+        install_path: Absolute path where the screenshot should be installed inside the Flatpak.
+    """
+
+    modules = document.ensure_modules()
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "flutter-common":
+            continue
+
+        commands = module.setdefault("build-commands", [])
+        if not isinstance(commands, list):
+            return OperationResult.unchanged()
+        install_command = f"install -D {screenshot_source} {install_path}"
+
+        changed = False
+        if install_command not in commands:
+            commands.append(install_command)
+            changed = True
+
+        sources = module.setdefault("sources", [])
+        if not isinstance(sources, list):
+            return OperationResult.unchanged()
+        if not any(
+            isinstance(entry, dict)
+            and entry.get("type") == "file"
+            and entry.get("path") == screenshot_source
+            for entry in sources
+        ):
+            sources.append({"type": "file", "path": screenshot_source})
+            changed = True
+
+        if changed:
+            document.mark_changed()
+            return OperationResult.changed_result(
+                f"Ensured screenshot asset {screenshot_source} is installed",
+            )
+        return OperationResult.unchanged()
+
+    return OperationResult.unchanged()
+
+
 def ensure_flutter_setup_helper(
     document: ManifestDocument,
     *,
