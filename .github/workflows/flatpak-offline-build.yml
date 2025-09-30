@@ -71,6 +71,7 @@ jobs:
             --sandbox \
             --user \
             --install \
+            --repo=repo \
             --force-clean \
             build-dir com.matthiasn.lotti.yml
 
@@ -84,5 +85,6 @@ jobs:
         run: |
           flatpak install --user --noninteractive -y flathub app/org.flatpak.Builder
           dbus-run-session -- flatpak run --user --command=flatpak-builder-lint org.flatpak.Builder//stable manifest com.matthiasn.lotti.yml
+          dbus-run-session -- flatpak run --user --command=flatpak-builder-lint org.flatpak.Builder repo repo
 
       # Removed artifact upload step; no useful binaries in build output
