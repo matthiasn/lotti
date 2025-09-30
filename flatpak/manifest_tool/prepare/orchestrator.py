@@ -305,14 +305,9 @@ def _derive_lotti_version(repo_root: Path, printer: _StatusPrinter) -> str:
                 if "+" in version:
                     version = version.split("+", 1)[0]
                 return version
-    printer.warn("Falling back to git describe for version")
-    try:
-        return _run_git(["describe", "--tags", "--abbrev=0"], cwd=repo_root)
-    except PrepareFlathubError as exc:
-        raise PrepareFlathubError(
-            "Unable to determine Lotti version. Define it in pubspec.yaml or "
-            "ensure the repository has a valid tag."
-        ) from exc
+    raise PrepareFlathubError(
+        "Unable to determine Lotti version. Define it in pubspec.yaml before running the orchestrator."
+    )
 
 
 def _determine_branch(
@@ -392,6 +387,12 @@ def _ensure_flutter_tag_from_modules(
     if context.flutter_tag:
         return
 
+    fvm_tag = _read_fvm_flutter_tag(context.repo_root)
+    has_fvm_tag = False
+    if fvm_tag:
+        context.flutter_tag = fvm_tag
+        has_fvm_tag = True
+
     detected = None
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "flutter-sdk":
@@ -403,8 +404,20 @@ def _ensure_flutter_tag_from_modules(
         if detected:
             break
 
+    if detected and context.flutter_tag:
+        if detected != context.flutter_tag:
+            printer.warn(
+                "Manifest flutter-sdk tag %s differs from FVM (%s); using FVM"
+                % (detected, context.flutter_tag)
+            )
+        return
+
     if detected:
         context.flutter_tag = detected
+        return
+
+    if has_fvm_tag and context.flutter_tag:
+        printer.info(f"Using Flutter tag from FVM configuration: {context.flutter_tag}")
         return
 
     printer.warn(f"Could not detect Flutter tag; defaulting to {_DEFAULT_FLUTTER_TAG}")
@@ -977,6 +990,20 @@ def _split_package_version(dest: str) -> tuple[str, str]:
             version = version[: -len(suffix)]
             break
     return package, version
+
+
+def _read_fvm_flutter_tag(repo_root: Path) -> Optional[str]:
+    config_path = repo_root / ".fvm" / "fvm_config.json"
+    if not config_path.is_file():
+        return None
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    candidate = data.get("flutterSdkVersion") or data.get("flutterSdk")
+    if isinstance(candidate, str) and candidate.strip():
+        return candidate.strip()
+    return None
 
 
 def _regenerate_pubspec_sources_if_needed(

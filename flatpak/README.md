@@ -134,6 +134,9 @@ Flathub has strict requirements for security and reproducibility:
 
    Ensure `pubspec.yaml` contains a `version:` entry—the orchestrator now
    derives the release number from that field and will fail if it is missing.
+   If you manage Flutter with [FVM](https://fvm.app/), the orchestrator reads
+   `.fvm/fvm_config.json` to determine the Flutter SDK tag; keep that file in
+   sync with your desired release channel.
 
 2. **Install Python dependencies** (requires Python 3.10+):
    ```bash
