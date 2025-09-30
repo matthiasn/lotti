@@ -590,7 +590,8 @@ class GemmaModelManager:
                 try:
                     mps_allocated = torch.mps.current_allocated_memory() / (1024**3)
                     mps_reserved = torch.mps.driver_allocated_memory() / (1024**3)
-                except:
+                except (RuntimeError, AttributeError):
+                    # MPS not available or not supported
                     pass
 
             logger.info(
@@ -615,7 +616,8 @@ class GemmaModelManager:
         try:
             system_mem = psutil.virtual_memory()
             return system_mem.percent > 80
-        except:
+        except (OSError, AttributeError):
+            # psutil not available or system info inaccessible
             return False
 
     def _force_cleanup(self):

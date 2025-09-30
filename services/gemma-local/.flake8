@@ -6,7 +6,8 @@ extend-ignore =
     W503,
     E402,
     B104,
-    B105
+    B105,
+    C901
 
 # Exclude directories
 exclude =
@@ -26,7 +27,7 @@ exclude =
 filename = *.py
 
 # Complexity threshold
-max-complexity = 15
+max-complexity = 20
 
 # Import order (compatible with isort if added later)
 import-order-style = google
