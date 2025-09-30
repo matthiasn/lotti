@@ -100,5 +100,6 @@ jobs:
     - name: Lint Flatpak manifest
       working-directory: flatpak
       run: |
+        flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
         flatpak install --user --noninteractive -y flathub app/org.flatpak.Builder
         dbus-run-session -- flatpak run --user --command=flatpak-builder-lint org.flatpak.Builder//stable manifest com.matthiasn.lotti.yml
