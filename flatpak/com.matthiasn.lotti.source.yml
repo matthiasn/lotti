@@ -10,7 +10,7 @@ add-extensions:
     directory: lib/ffmpeg
     version: '24.08'
     add-ld-path: .
-command: /app/lotti-wrapper
+command: lotti
 finish-args:
   - --share=network
   - --share=ipc
@@ -23,9 +23,6 @@ finish-args:
   - --filesystem=xdg-pictures:ro # Read-only access to pictures for import
   - --filesystem=xdg-download/Lotti:create # Only create Lotti folder in downloads
   # App data is automatically available in ~/.var/app/com.matthiasn.lotti/
-  # Portal access for sandboxed functionality
-  - --talk-name=org.freedesktop.portal.Desktop
-  - --talk-name=org.freedesktop.portal.Screenshot
   # Note: No microphone portal exists yet - audio access via --socket=pulseaudio above
 # Build options moved to Flutter module
 modules:
@@ -165,10 +162,11 @@ modules:
       - find /app -name "*1024*" -type f -delete
       - chmod +x /app/lotti
       # Create directories
+      - mkdir -p /app/bin
       - mkdir -p /app/lib/ffmpeg
-      # Create wrapper script
+      # Create wrapper script in $FLATPAK_DEST/bin so command isn't a path
       - |
-        cat > /app/lotti-wrapper << 'EOF'
+        cat > /app/bin/lotti << 'EOF'
         #!/bin/bash
         export LD_LIBRARY_PATH=/app/lib:/app/lib64:$LD_LIBRARY_PATH
 
@@ -180,7 +178,7 @@ modules:
         cd /app
         exec ./lotti "$@"
         EOF
-      - chmod +x /app/lotti-wrapper
+      - chmod +x /app/bin/lotti
     sources:
       - type: git
         url: https://github.com/matthiasn/lotti
@@ -198,6 +196,7 @@ modules:
       - install -D app_icon_48.png /app/share/icons/hicolor/48x48/apps/com.matthiasn.lotti.png
       - install -D app_icon_32.png /app/share/icons/hicolor/32x32/apps/com.matthiasn.lotti.png
       - install -D app_icon_16.png /app/share/icons/hicolor/16x16/apps/com.matthiasn.lotti.png
+      - install -D screenshot.png /app/share/app-info/screenshots/com.matthiasn.lotti/main.png
     sources:
       - type: file
         path: com.matthiasn.lotti.desktop
@@ -217,3 +216,5 @@ modules:
         path: app_icon_32.png
       - type: file
         path: app_icon_16.png
+      - type: file
+        path: screenshot.png

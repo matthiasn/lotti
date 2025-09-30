@@ -148,6 +148,7 @@ class PrepareFlathubContext:
     flatpak_flutter_log: Path
     setup_helper_basename: str
     setup_helper_source: Path
+    screenshot_source: Path
     flatpak_flutter_status: int | None = None
     flutter_git_url: str = "https://github.com/flutter/flutter.git"
     flathub_dir: Optional[Path] = None
@@ -202,6 +203,7 @@ def _build_context(
     flatpak_flutter_repo = flatpak_dir / "flatpak-flutter"
     flatpak_flutter_log = work_dir / "flatpak-flutter.log"
     setup_helper_source = flatpak_dir / "helpers" / "setup-flutter.sh"
+    screenshot_source = flatpak_dir / "screenshot.png"
 
     env: MutableMapping[str, str] = dict(options.extra_env or {})
 
@@ -239,6 +241,7 @@ def _build_context(
         flatpak_flutter_log=flatpak_flutter_log,
         setup_helper_basename=setup_helper_source.name,
         setup_helper_source=setup_helper_source,
+        screenshot_source=screenshot_source,
         flathub_dir=options.flathub_dir,
     )
 
@@ -1025,6 +1028,13 @@ def _apply_core_manifest_fixes(
     _apply_operation(document, printer, flutter.ensure_dart_pub_offline_in_build)
     _apply_operation(document, printer, flutter.remove_rustup_install)
     _apply_operation(document, printer, flutter.apply_all_offline_fixes)
+    _apply_operation(
+        document,
+        printer,
+        manifest_ops.ensure_screenshot_asset,
+        screenshot_source="screenshot.png",
+        install_path="/app/share/app-info/screenshots/com.matthiasn.lotti/main.png",
+    )
 
 
 def _collect_rustup_json_names(context: PrepareFlathubContext) -> list[str]:
@@ -1277,6 +1287,7 @@ def _copy_assets_and_metadata(
     _write_metainfo_files(context)
     _copy_desktop_file(context, printer)
     _copy_icons(context)
+    _copy_screenshots(context)
     _copy_flutter_patches(context, printer)
     _copy_prebuilt_patches(context)
     _copy_helper_directories(context)
@@ -1314,6 +1325,13 @@ def _copy_icons(context: PrepareFlathubContext) -> None:
         if icon.is_file():
             _copyfile(icon, context.output_dir / icon.name)
             _copyfile(icon, context.work_dir / icon.name)
+
+
+def _copy_screenshots(context: PrepareFlathubContext) -> None:
+    screenshot = context.screenshot_source
+    if screenshot.is_file():
+        _copyfile(screenshot, context.output_dir / screenshot.name)
+        _copyfile(screenshot, context.work_dir / screenshot.name)
 
 
 def _copy_flutter_patches(

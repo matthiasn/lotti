@@ -71,6 +71,7 @@ jobs:
             --sandbox \
             --user \
             --install \
+            --repo=repo \
             --force-clean \
             build-dir com.matthiasn.lotti.yml
 
@@ -78,5 +79,24 @@ jobs:
         run: |
           flatpak --version
           flatpak list
+
+      - name: Lint prepared manifest
+        working-directory: flatpak/flathub-build/output
+        run: |
+          flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user --noninteractive -y flathub app/org.flatpak.Builder
+          export XDG_RUNTIME_DIR="${RUNNER_TEMP}/xdg-runtime"
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          dbus-run-session -- flatpak run --user --command=flatpak-builder-lint org.flatpak.Builder//stable manifest com.matthiasn.lotti.yml
+
+      - name: Lint prepared repo (informational)
+        working-directory: flatpak/flathub-build/output
+        continue-on-error: true
+        run: |
+          export XDG_RUNTIME_DIR="${RUNNER_TEMP}/xdg-runtime"
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          dbus-run-session -- flatpak run --user --command=flatpak-builder-lint org.flatpak.Builder//stable repo repo
 
       # Removed artifact upload step; no useful binaries in build output
