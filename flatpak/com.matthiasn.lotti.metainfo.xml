@@ -37,12 +37,13 @@
   <content_rating type="oars-1.1" />
   <categories>
     <category>Office</category>
-    <category>Utility</category>
+    <category>ProjectManagement</category>
+    <category>Calendar</category>
   </categories>
   <screenshots>
     <screenshot type="default">
       <caption>Lotti application interface</caption>
-      <image>https://dl.flathub.org/repo/screenshots/com.matthiasn.lotti/main.png</image>
+      <image type="source" width="536" height="999">https://dl.flathub.org/repo/screenshots/com.matthiasn.lotti/main.png</image>
     </screenshot>
   </screenshots>
 </component> 

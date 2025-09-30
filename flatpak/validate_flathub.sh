@@ -20,20 +20,24 @@ if [[ ! -d "${OUTPUT_DIR}" ]]; then
   exit 1
 fi
 
-echo "[3/5] Building from offline manifest"
+echo "[3/6] Building from offline manifest"
 pushd "${OUTPUT_DIR}" >/dev/null
 flatpak-builder \
   --sandbox \
   --user \
   --install \
+  --mirror-screenshots-url=https://dl.flathub.org/media \
   --force-clean \
   --repo=repo \
   build-dir com.matthiasn.lotti.yml
 
-echo "[4/5] Linting manifest"
+echo "[4/6] Updating local repo metadata"
+flatpak build-update-repo repo >/dev/null
+
+echo "[5/6] Linting manifest"
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder//stable manifest com.matthiasn.lotti.yml
 
-echo "[5/5] Linting repo"
+echo "[6/6] Linting repo"
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder//stable repo repo
 popd >/dev/null
 

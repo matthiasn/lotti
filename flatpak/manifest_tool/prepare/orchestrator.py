@@ -1329,9 +1329,15 @@ def _copy_icons(context: PrepareFlathubContext) -> None:
 
 def _copy_screenshots(context: PrepareFlathubContext) -> None:
     screenshot = context.screenshot_source
-    if screenshot.is_file():
-        _copyfile(screenshot, context.output_dir / screenshot.name)
-        _copyfile(screenshot, context.work_dir / screenshot.name)
+    if not screenshot.is_file():
+        raise PrepareFlathubError(
+            "Screenshot asset is missing: "
+            f"expected {screenshot} relative to {context.flatpak_dir}. "
+            "Provide flatpak/screenshot.png before running the Flathub prep."
+        )
+
+    _copyfile(screenshot, context.output_dir / screenshot.name)
+    _copyfile(screenshot, context.work_dir / screenshot.name)
 
 
 def _copy_flutter_patches(
