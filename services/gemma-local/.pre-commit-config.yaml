@@ -59,7 +59,7 @@ repos:
     hooks:
       - id: bandit
         name: Security check with Bandit
-        args: [-r, src/, tests/, --format, json, --severity-level, medium]
+        args: [--format, json, --severity-level, medium]
         files: \.py$
 
 # Global settings

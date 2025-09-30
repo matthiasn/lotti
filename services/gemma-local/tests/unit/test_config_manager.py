@@ -7,7 +7,6 @@ from unittest.mock import patch
 
 from src.services.config_manager import ConfigManager
 from src.core.exceptions import ConfigurationError
-from typing import Any
 
 
 @pytest.mark.unit
@@ -115,7 +114,7 @@ class TestConfigManager:
         config = ConfigManager()
         original = os.environ.pop("PORT", None)
         try:
-            assert config.get_port() == 8000
+            assert config.get_port() == 11343  # Gemma service default port
         finally:
             if original:
                 os.environ["PORT"] = original

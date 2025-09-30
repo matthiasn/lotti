@@ -63,7 +63,7 @@ jobs:
     - name: Run unit tests
       working-directory: services/gemma-local
       run: |
-        pytest tests/unit -v --cov=src --cov-report=xml --cov-report=term-missing
+        pytest tests/unit  # Uses pytest.ini configuration
       env:
         # Set test environment variables
         GEMMA_CACHE_DIR: /tmp/test-cache
@@ -72,7 +72,7 @@ jobs:
     - name: Run integration tests
       working-directory: services/gemma-local
       run: |
-        pytest tests/integration -v
+        pytest tests/integration  # Uses pytest.ini configuration
       env:
         GEMMA_CACHE_DIR: /tmp/test-cache
         LOG_LEVEL: DEBUG
