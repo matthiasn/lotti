@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/ui/gemma_model_install_dialog.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -42,6 +47,29 @@ class FakeAiConfigInferenceProvider extends Fake
 
   @override
   String get name => GemmaTestConstants.testProviderName;
+}
+
+class _FakeStreamingClient extends http.BaseClient {
+  _FakeStreamingClient({required this.onSend});
+
+  final Future<http.StreamedResponse> Function(http.BaseRequest request) onSend;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+      onSend(request);
+}
+
+Future<void> _pumpUntilVisible(
+  WidgetTester tester,
+  Finder finder, {
+  int maxTries = 50,
+}) async {
+  for (var i = 0; i < maxTries; i++) {
+    if (finder.evaluate().isNotEmpty) {
+      return;
+    }
+    await tester.pump(const Duration(milliseconds: 10));
+  }
 }
 
 void main() {
@@ -208,12 +236,7 @@ void main() {
           findsOneWidget);
     });
 
-    // NOTE: The following tests that require HTTP mocking are commented out
-    // because the GemmaModelInstallDialog creates its own http.Client internally.
-    // To properly test these scenarios, the widget should be refactored to accept
-    // an http.Client as a dependency injection parameter.
-    //
-    // Best Practice: Always inject dependencies that need to be mocked in tests.
+    // HTTP-dependent scenarios are covered below by overriding httpClientProvider.
 
     testWidgets('displays model name in error message', (tester) async {
       // This test verifies that the model name is displayed correctly
@@ -337,6 +360,303 @@ void main() {
           find.text(
               'To install it manually, run this command in the services/gemma-local directory:'),
           findsOneWidget);
+    });
+
+    testWidgets('installs model successfully and invokes callback',
+        (tester) async {
+      final controller = StreamController<List<int>>();
+      addTearDown(() async {
+        if (!controller.isClosed) {
+          await controller.close();
+        }
+      });
+
+      final client = _FakeStreamingClient(onSend: (request) async {
+        expect(request.method, equals('POST'));
+        expect(
+          request.url.toString(),
+          equals('${GemmaTestConstants.testBaseUrl}/v1/models/pull'),
+        );
+
+        unawaited(Future.microtask(() {
+          controller.add(
+            utf8.encode(
+                'data: {"status":"downloading","total":250,"completed":100}\n'),
+          );
+        }));
+
+        unawaited(Future<void>.delayed(const Duration(milliseconds: 20), () {
+          if (!controller.isClosed) {
+            controller
+              ..add(
+                utf8.encode('data: {"status":"success"}\n'),
+              )
+              ..add(utf8.encode('\n'))
+              ..close();
+          }
+        }));
+
+        return http.StreamedResponse(controller.stream, 200);
+      });
+
+      var callbackCalled = false;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute(
+              builder: (_) => GemmaModelInstallDialog(
+                modelName: GemmaTestConstants.modelE4B,
+                onModelInstalled: () {
+                  callbackCalled = true;
+                },
+              ),
+            ),
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController([testGemmaProvider]),
+            ),
+            httpClientProvider.overrideWithValue(client),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(GemmaTestConstants.installButtonText));
+      await tester.pump();
+
+      await tester.pump();
+      final indicator = tester.widget<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(indicator.value, closeTo(100 / 250, 0.001));
+
+      await tester.pump(const Duration(milliseconds: 40));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(callbackCalled, isTrue);
+      expect(
+        find.textContaining('installed successfully'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows error when streamed response reports failure',
+        (tester) async {
+      final controller = StreamController<List<int>>();
+      addTearDown(() async {
+        if (!controller.isClosed) {
+          await controller.close();
+        }
+      });
+
+      final client = _FakeStreamingClient(onSend: (_) async {
+        unawaited(Future.microtask(() async {
+          controller
+            ..add(
+              utf8.encode('data: {"status":"error","error":"Test failure"}\n'),
+            )
+            ..add(utf8.encode('\n'));
+          await controller.close();
+        }));
+        return http.StreamedResponse(controller.stream, 200);
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const GemmaModelInstallDialog(
+            modelName: GemmaTestConstants.modelE4B,
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController([testGemmaProvider]),
+            ),
+            httpClientProvider.overrideWithValue(client),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(GemmaTestConstants.installButtonText));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      await _pumpUntilVisible(
+        tester,
+        find.textContaining('Error: Test failure'),
+      );
+      final texts = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((widget) => widget.data)
+          .whereType<String>()
+          .toList();
+      expect(texts.any((t) => t.contains('Error: Test failure')), isTrue);
+      expect(find.text(GemmaTestConstants.installButtonText), findsOneWidget);
+    });
+
+    testWidgets('surfaces error when download ends without success',
+        (tester) async {
+      final controller = StreamController<List<int>>();
+      addTearDown(() async {
+        if (!controller.isClosed) {
+          await controller.close();
+        }
+      });
+
+      final client = _FakeStreamingClient(onSend: (_) async {
+        unawaited(Future.microtask(() async {
+          controller
+            ..add(
+              utf8.encode(
+                  'data: {"status":"downloading","total":200,"completed":50}\n'),
+            )
+            ..add(utf8.encode('\n'));
+          await controller.close();
+        }));
+        return http.StreamedResponse(controller.stream, 200);
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const GemmaModelInstallDialog(
+            modelName: GemmaTestConstants.modelE2B,
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController([testGemmaProvider]),
+            ),
+            httpClientProvider.overrideWithValue(client),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(GemmaTestConstants.installButtonText));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      await _pumpUntilVisible(
+        tester,
+        find.textContaining(
+            'Download completed unexpectedly without success status'),
+      );
+      final unexpectedTexts = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((widget) => widget.data)
+          .whereType<String>()
+          .toList();
+      expect(
+        unexpectedTexts.any(
+          (t) => t.contains(
+            'Download completed unexpectedly without success status',
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('surfaces HTTP errors to the user', (tester) async {
+      final client = _FakeStreamingClient(onSend: (_) async {
+        final stream = Stream<List<int>>.fromIterable(
+          [utf8.encode('Internal error')],
+        );
+        return http.StreamedResponse(stream, 500);
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const GemmaModelInstallDialog(
+            modelName: GemmaTestConstants.modelE4B,
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController([testGemmaProvider]),
+            ),
+            httpClientProvider.overrideWithValue(client),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(GemmaTestConstants.installButtonText));
+      await tester.pump();
+      await tester.pump();
+
+      await _pumpUntilVisible(
+        tester,
+        find.textContaining('Failed to start model download (HTTP 500)'),
+      );
+      final httpErrorTexts = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((widget) => widget.data)
+          .whereType<String>()
+          .toList();
+      expect(
+        httpErrorTexts.any(
+            (t) => t.contains('Failed to start model download (HTTP 500)')),
+        isTrue,
+      );
+    });
+
+    testWidgets('reports timeout exceptions from the HTTP client',
+        (tester) async {
+      final client = _FakeStreamingClient(onSend: (_) async {
+        return Future<http.StreamedResponse>.error(
+          TimeoutException(
+            'Request timed out',
+            const Duration(minutes: 30),
+          ),
+        );
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const GemmaModelInstallDialog(
+            modelName: GemmaTestConstants.modelE2B,
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController([testGemmaProvider]),
+            ),
+            httpClientProvider.overrideWithValue(client),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(GemmaTestConstants.installButtonText));
+      await tester.pump();
+      await tester.pump();
+
+      await _pumpUntilVisible(
+        tester,
+        find.textContaining('TimeoutException after'),
+      );
+      final timeoutTexts = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((widget) => widget.data)
+          .whereType<String>()
+          .toList();
+      expect(
+        timeoutTexts.any((t) => t.contains('TimeoutException after')),
+        isTrue,
+      );
     });
   });
 }

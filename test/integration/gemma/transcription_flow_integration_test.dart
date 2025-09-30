@@ -245,7 +245,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(
           GemmaModelInstallDialog(
-            modelName: TranscriptionTestConstants.e4bModelId.replaceFirst('google/', ''),
+            modelName: TranscriptionTestConstants.e4bModelId
+                .replaceFirst('google/', ''),
           ),
           overrides: [
             aiConfigByTypeControllerProvider(
@@ -503,7 +504,8 @@ void main() {
           )).thenAnswer((_) async {
         attemptCount++;
         if (attemptCount == 1) {
-          throw http.ClientException(TranscriptionTestConstants.temporaryNetworkError);
+          throw http.ClientException(
+              TranscriptionTestConstants.temporaryNetworkError);
         }
         return http.Response(
           jsonEncode({
