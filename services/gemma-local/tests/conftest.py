@@ -7,6 +7,15 @@ from unittest.mock import Mock, AsyncMock
 import tempfile
 import shutil
 
+
+def pytest_configure(config):
+    """Register custom markers to avoid warnings in CI"""
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "slow: mark test as slow")
+    config.addinivalue_line("markers", "model: mark test as requiring model loading")
+
+
 from src.core.interfaces import (
     IConfigManager,
     IModelManager,
