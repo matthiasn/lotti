@@ -19,6 +19,9 @@
       <li>Customizable dashboards and analytics</li>
     </ul>
   </description>
+  <developer id="com.matthiasn">
+    <name>Matthias Nehlsen</name>
+  </developer>
   <url type="homepage">https://github.com/matthiasn/lotti</url>
   <url type="bugtracker">https://github.com/matthiasn/lotti/issues</url>
   <url type="help">https://github.com/matthiasn/lotti</url>
@@ -33,8 +36,8 @@
   </releases>
   <content_rating type="oars-1.1" />
   <categories>
-    <category>Productivity</category>
     <category>Office</category>
+    <category>Utility</category>
   </categories>
   <screenshots>
     <screenshot type="default">
