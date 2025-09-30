@@ -1,0 +1,76 @@
+name: Manifest Tool Quality Check
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'flatpak/manifest_tool/**'
+      - '.github/workflows/manifest-tool-quality-check.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'flatpak/manifest_tool/**'
+      - '.github/workflows/manifest-tool-quality-check.yml'
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-manifest-tool-${{ hashFiles('flatpak/manifest_tool/**/*.py') }}
+        restore-keys: |
+          ${{ runner.os }}-manifest-tool-
+
+    - name: Install dependencies
+      working-directory: flatpak/manifest_tool
+      run: |
+        python -m pip install --upgrade pip
+        # Install core dependencies (PyYAML likely needed based on conftest.py)
+        pip install pyyaml
+        # Install testing dependencies
+        pip install pytest pytest-cov
+
+    - name: Lint with flake8
+      working-directory: flatpak/manifest_tool
+      run: |
+        pip install flake8 flake8-bugbear flake8-comprehensions
+        # Run flake8 with Black-compatible settings (120 char line length)
+        flake8 . \
+          --count \
+          --max-line-length=120 \
+          --extend-ignore=E203,W503 \
+          --statistics \
+          --show-source \
+          --exclude=.git,__pycache__,.pytest_cache,venv,.venv,build,dist,*.egg-info
+
+    - name: Check code formatting with Black
+      working-directory: flatpak/manifest_tool
+      run: |
+        pip install black
+        # --check: Don't write files, exit with code 1 if reformatting needed
+        # --diff: Show what would change
+        # Build FAILS if any files need formatting
+        black --check --line-length=120 --diff .
+
+    - name: Run all tests
+      working-directory: flatpak/manifest_tool
+      run: |
+        # Run all tests with verbose output
+        pytest tests/ -v --tb=short --color=yes
+      env:
+        # Ensure Python can find the manifest_tool package
+        PYTHONPATH: /home/runner/work/lotti/lotti/flatpak
