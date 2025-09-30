@@ -82,7 +82,7 @@ class AudioProcessor:
             # (prefer torchaudio for speed; fallback to librosa)
             resample_time = 0.0
             if original_sr != self.sample_rate:
-                audio_array, resample_time = self._resample_audio(audio_array, original_sr)
+                audio_array, resample_time = self._resample_audio(audio_array, int(original_sr))
 
             # Check duration and apply chunking if needed
             duration = len(audio_array) / self.sample_rate
@@ -164,7 +164,7 @@ class AudioProcessor:
             # (prefer torchaudio for speed; fallback to librosa)
             resample_time = 0.0
             if original_sr != self.sample_rate:
-                audio_array, resample_time = self._resample_audio(audio_array, original_sr)
+                audio_array, resample_time = self._resample_audio(audio_array, int(original_sr))
 
             # Check duration and apply chunking if needed
             duration = len(audio_array) / self.sample_rate

@@ -44,6 +44,8 @@ class StreamGenerator:
                 audio_array = audio_array[0]
 
             # Generate transcription using the working method
+            if audio_array is None:
+                raise ValueError("Audio array is None")
             transcription = await generate_transcription_optimized(
                 prompt=prompt,
                 audio_array=audio_array,
