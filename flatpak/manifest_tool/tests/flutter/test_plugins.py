@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-import pytest
+from pathlib import Path  # noqa: F401
+import pytest  # noqa: F401
 
 from manifest_tool.flutter import plugins as flutter_plugins
 from manifest_tool.core.manifest import ManifestDocument

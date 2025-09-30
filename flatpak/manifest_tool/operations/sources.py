@@ -22,7 +22,6 @@ try:  # pragma: no cover
     from ..core import utils, ManifestDocument, OperationResult
 except ImportError:  # pragma: no cover
     import sys
-    from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from core import utils, ManifestDocument, OperationResult  # type: ignore
@@ -132,8 +131,8 @@ def replace_url_with_path(
 
         return changed
 
-    except (FileNotFoundError, OSError) as e:
-        _LOGGER.warning("Failed to process manifest %s: %s", manifest_path, e)
+    except OSError as exc:
+        _LOGGER.warning("Failed to process manifest %s: %s", manifest_path, exc)
         return None
     except yaml.YAMLError:
         _LOGGER.exception("Failed to parse YAML in %s", manifest_path)

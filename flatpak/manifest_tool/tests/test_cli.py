@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import yaml
 
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 
 from manifest_tool import cli
 from manifest_tool.tests.conftest import SAMPLE_MANIFEST
@@ -391,7 +391,10 @@ def test_cli_remove_rustup_install(tmp_path):
         if module.get("name") == "lotti":
             module["build-commands"] = [
                 "echo Installing Rust...",
-                "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal",
+                (
+                    "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- "
+                    "-y --default-toolchain stable --profile minimal"
+                ),
                 'export PATH="$HOME/.cargo/bin:$PATH"',
                 "echo done",
             ]

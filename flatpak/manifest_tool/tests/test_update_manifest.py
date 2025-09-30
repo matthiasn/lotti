@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
-import pytest
 import yaml
 
 from manifest_tool.operations import manifest as manifest_ops

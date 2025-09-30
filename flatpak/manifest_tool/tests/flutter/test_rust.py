@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
+import pytest  # noqa: F401
 
 from manifest_tool.flutter import rust as flutter_rust
 

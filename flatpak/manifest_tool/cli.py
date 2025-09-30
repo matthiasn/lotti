@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -135,8 +136,6 @@ def _run_update_manifest(namespace: argparse.Namespace) -> int:
     if not commit and not pr_commit:
         try:
             # Use absolute path to git for security (B607)
-            import shutil
-
             git_path = shutil.which("git")
             if not git_path:
                 raise FileNotFoundError("git executable not found in PATH")
@@ -145,7 +144,7 @@ def _run_update_manifest(namespace: argparse.Namespace) -> int:
                 [git_path, "rev-parse", "HEAD"], text=True, stderr=subprocess.STDOUT
             ).strip()
             print(f"No commit specified, using current HEAD: {commit}")
-        except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
+        except (subprocess.CalledProcessError, OSError) as exc:
             print(
                 f"Error: Unable to determine current HEAD commit: {exc}",
                 file=sys.stderr,

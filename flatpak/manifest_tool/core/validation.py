@@ -5,7 +5,7 @@ Flathub requirements, particularly around network access restrictions during bui
 """
 
 import re
-from typing import List, Tuple, Optional
+from typing import List, Optional
 from dataclasses import dataclass, field
 
 try:

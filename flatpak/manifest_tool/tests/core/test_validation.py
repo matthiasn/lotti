@@ -1,6 +1,6 @@
 """Tests for validation operations."""
 
-import pytest
+import pytest  # noqa: F401
 from pathlib import Path
 from manifest_tool.core import ManifestDocument, check_flathub_compliance
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 
-import pytest
+import pytest  # noqa: F401
 
 from manifest_tool.operations import sources as sources_ops
 from manifest_tool.core import ManifestDocument

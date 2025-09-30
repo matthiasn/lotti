@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
+import pytest  # noqa: F401
 import yaml
 
 from manifest_tool.operations import sources as sources_ops

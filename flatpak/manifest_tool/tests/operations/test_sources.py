@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 
-import pytest
+import pytest  # noqa: F401
 
 from manifest_tool.operations import sources as sources_ops
-from manifest_tool.core import ManifestDocument
+from manifest_tool.core import ManifestDocument  # noqa: F401
 
 
 def test_replace_url_with_path_text_rewrites_lines():

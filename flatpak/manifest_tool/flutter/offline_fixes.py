@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Iterable, Optional, Tuple
 
 try:  # pragma: no cover
     from ..core import ManifestDocument, OperationResult, get_logger
