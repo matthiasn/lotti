@@ -62,7 +62,7 @@ class ModelDownloader(IModelDownloader):
 
             await loop.run_in_executor(
                 None,
-                lambda: snapshot_download(
+                lambda: snapshot_download(  # nosec B615 - revision pinned via config
                     repo_id=model_id,
                     revision=revision,  # Pin to specific revision for security
                     cache_dir=self.config_manager.get_cache_dir() / "models",

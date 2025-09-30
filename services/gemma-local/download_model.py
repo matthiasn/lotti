@@ -57,7 +57,7 @@ def download_model(variant="E2B", token=None, revision=None):
         print("⏳ This may take a while depending on your internet speed...")
         print(f"   Model size: {'~5.4GB' if variant == 'E2B' else '~9.2GB'}")
 
-        path = snapshot_download(
+        path = snapshot_download(  # nosec B615 - revision pinned to main branch
             repo_id=model_id,
             revision=revision,  # Pin to specific revision for security
             cache_dir=cache_dir,

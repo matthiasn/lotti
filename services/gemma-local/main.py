@@ -479,7 +479,7 @@ async def download_model_files(model_id: str) -> Path:
     revision = get_model_revision(model_id)
     download_path = ServiceConfig.CACHE_DIR / "models" / model_id.replace("/", "--")
 
-    result = snapshot_download(
+    result = snapshot_download(  # nosec B615 - revision pinned via config
         repo_id=model_id,
         revision=revision,
         cache_dir=ServiceConfig.CACHE_DIR / "models",
@@ -835,7 +835,8 @@ async def generate_transcription_with_chat_context(
             load_success = await model_manager.load_model()
             if not load_success or not model_manager.is_model_loaded():
                 raise Exception(
-                    f"Failed to load model for chunk processing. Load success: {load_success}, Is loaded: {model_manager.is_model_loaded()}"
+                    f"Failed to load model for chunk processing. "
+                    f"Load success: {load_success}, Is loaded: {model_manager.is_model_loaded()}"
                 )
 
         prefix = f"[REQ {request_id}] " if request_id else ""
