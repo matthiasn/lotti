@@ -82,7 +82,7 @@ jobs:
       - name: Lint prepared manifest
         working-directory: flatpak/flathub-build/output
         run: |
-          sudo flatpak install -y flathub app/org.flatpak.Builder
-          flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest com.matthiasn.lotti.yml
+          flatpak install --user --noninteractive -y flathub app/org.flatpak.Builder
+          dbus-run-session -- flatpak run --user --command=flatpak-builder-lint org.flatpak.Builder//stable manifest com.matthiasn.lotti.yml
 
       # Removed artifact upload step; no useful binaries in build output
