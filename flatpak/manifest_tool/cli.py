@@ -839,6 +839,8 @@ def _run_prepare_flathub(namespace: argparse.Namespace) -> int:
     work_dir = (namespace.work_dir or flatpak_dir / "flathub-build").resolve()
     output_dir = (namespace.output_dir or work_dir / "output").resolve()
 
+    extra_env = {k: os.environ[k] for k in ("PUB_CACHE", "PYTHON") if k in os.environ}
+
     options = PrepareFlathubOptions(
         repository_root=repo_root,
         flatpak_dir=flatpak_dir,
@@ -850,7 +852,7 @@ def _run_prepare_flathub(namespace: argparse.Namespace) -> int:
         download_missing_sources=_env_bool("DOWNLOAD_MISSING_SOURCES", True),
         no_flatpak_flutter=_env_bool("NO_FLATPAK_FLUTTER", False),
         flatpak_flutter_timeout=_env_optional_int("FLATPAK_FLUTTER_TIMEOUT"),
-        extra_env={k: v for k, v in os.environ.items()},
+        extra_env=extra_env,
         test_build=_env_bool("TEST_BUILD", False),
         flathub_dir=(
             namespace.flathub_dir.resolve() if namespace.flathub_dir else None

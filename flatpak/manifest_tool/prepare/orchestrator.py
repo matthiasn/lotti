@@ -16,7 +16,6 @@ import sys
 import tarfile
 import urllib.error
 import urllib.request
-from contextlib import closing
 from urllib.parse import urlparse
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,6 +31,9 @@ try:  # pragma: no cover - optional dependency
 except ImportError:  # pragma: no cover - colorama optional
     Fore = Style = None  # type: ignore
     _COLOR_ENABLED = False
+
+_DEFAULT_FLUTTER_TAG = "3.35.4"
+_ALLOWED_URL_SCHEMES = {"https"}
 
 _SQLITE_AUTOCONF_VERSION = os.getenv(
     "SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400"
@@ -201,9 +203,7 @@ def _build_context(
     flatpak_flutter_log = work_dir / "flatpak-flutter.log"
     setup_helper_source = flatpak_dir / "helpers" / "setup-flutter.sh"
 
-    env: MutableMapping[str, str] = (
-        dict(options.extra_env) if options.extra_env is not None else dict(os.environ)
-    )
+    env: MutableMapping[str, str] = dict(options.extra_env or {})
 
     lotti_version = env.get("LOTTI_VERSION") or _derive_lotti_version(
         repo_root, printer
@@ -308,9 +308,11 @@ def _derive_lotti_version(repo_root: Path, printer: _StatusPrinter) -> str:
     printer.warn("Falling back to git describe for version")
     try:
         return _run_git(["describe", "--tags", "--abbrev=0"], cwd=repo_root)
-    except PrepareFlathubError:
-        printer.warn("git describe failed; defaulting to 0.9.645")
-        return "0.9.645"
+    except PrepareFlathubError as exc:
+        raise PrepareFlathubError(
+            "Unable to determine Lotti version. Define it in pubspec.yaml or "
+            "ensure the repository has a valid tag."
+        ) from exc
 
 
 def _determine_branch(
@@ -369,8 +371,10 @@ def _extract_flutter_tag(
             for source in sources:
                 if isinstance(source, dict) and "tag" in source:
                     return str(source["tag"]).strip()
-    printer.warn("Could not detect Flutter tag from manifest; defaulting to 3.35.4")
-    return "3.35.4"
+    printer.warn(
+        f"Could not detect Flutter tag from manifest; defaulting to {_DEFAULT_FLUTTER_TAG}"
+    )
+    return _DEFAULT_FLUTTER_TAG
 
 
 def _copy_manifest_template(context: PrepareFlathubContext) -> None:
@@ -403,9 +407,8 @@ def _ensure_flutter_tag_from_modules(
         context.flutter_tag = detected
         return
 
-    default_tag = "3.35.4"
-    printer.warn(f"Could not detect Flutter tag; defaulting to {default_tag}")
-    context.flutter_tag = default_tag
+    printer.warn(f"Could not detect Flutter tag; defaulting to {_DEFAULT_FLUTTER_TAG}")
+    context.flutter_tag = _DEFAULT_FLUTTER_TAG
 
 
 def _ensure_branch_for_lotti_sources(sources: list[object], branch: str) -> bool:
@@ -1439,11 +1442,11 @@ def _download_flutter_archive(
 
 def _download_https_resource(url: str, destination: Path) -> None:
     parsed = urlparse(url)
-    if parsed.scheme.lower() != "https":
+    if parsed.scheme.lower() not in _ALLOWED_URL_SCHEMES:
         raise PrepareFlathubError(f"Unsupported scheme for HTTPS download: {url}")
     destination.parent.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(url)
-    with closing(urllib.request.urlopen(request, timeout=60)) as response:  # nosec B310
+    with urllib.request.urlopen(request, timeout=60) as response:  # nosec B310
         with destination.open("wb") as handle:
             shutil.copyfileobj(response, handle)
 
