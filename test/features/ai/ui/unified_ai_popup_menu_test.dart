@@ -359,7 +359,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) {},
+            onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
             availablePromptsProvider(entity: testTaskEntity)
@@ -385,7 +385,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) {},
+            onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
             availablePromptsProvider(entity: testTaskEntity)
@@ -427,7 +427,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) {},
+            onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
             availablePromptsProvider(entity: testTaskEntity).overrideWith(
@@ -456,7 +456,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) {
+            onPromptSelected: (prompt, index) async {
               selectedPrompt = prompt;
               selectedIndex = index;
             },
@@ -487,7 +487,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) {},
+            onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
             availablePromptsProvider(entity: testTaskEntity)
@@ -525,7 +525,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) {},
+            onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
             availablePromptsProvider(entity: testTaskEntity)
@@ -893,7 +893,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) {},
+            onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
             availablePromptsProvider(entity: testTaskEntity)
@@ -921,7 +921,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testImageEntity,
-            onPromptSelected: (prompt, index) {},
+            onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
             availablePromptsProvider(entity: testImageEntity)
@@ -949,7 +949,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testAudioEntity,
-            onPromptSelected: (prompt, index) {},
+            onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
             availablePromptsProvider(entity: testAudioEntity)
@@ -976,7 +976,7 @@ void main() {
         buildTestWidget(
           UnifiedAiPromptsList(
             journalEntity: testJournalEntry,
-            onPromptSelected: (prompt, index) {},
+            onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
             availablePromptsProvider(entity: testJournalEntry)

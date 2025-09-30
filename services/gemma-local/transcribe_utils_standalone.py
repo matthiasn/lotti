@@ -16,10 +16,9 @@ def transcribe_file(audio_path: str, server_url: str = "http://localhost:11343")
     try:
         # Prepare audio
         wav_bytes, duration_seconds = prepare_audio_for_transcription(
-            audio_path,
-            max_duration_seconds=240  # 4 minute limit
+            audio_path, max_duration_seconds=240  # 4 minute limit
         )
-        audio_base64 = base64.b64encode(wav_bytes).decode('utf-8')
+        audio_base64 = base64.b64encode(wav_bytes).decode("utf-8")
 
         print(f"⏱️  Audio duration: {duration_seconds:.1f} seconds")
         print(f"📊 Audio size: {len(wav_bytes):,} bytes")
@@ -29,20 +28,20 @@ def transcribe_file(audio_path: str, server_url: str = "http://localhost:11343")
 
         # Send to server
         response = requests.post(
-            f'{server_url}/v1/chat/completions',
+            f"{server_url}/v1/chat/completions",
             json={
-                'model': 'gemma-3n-E2B-it',
-                'messages': [{'role': 'user', 'content': 'Transcribe this audio'}],
-                'audio': audio_base64,
-                'temperature': 0.1,
-                'max_tokens': 2000
+                "model": "gemma-3n-E2B-it",
+                "messages": [{"role": "user", "content": "Transcribe this audio"}],
+                "audio": audio_base64,
+                "temperature": 0.1,
+                "max_tokens": 2000,
             },
-            timeout=600  # 10 minute timeout
+            timeout=600,  # 10 minute timeout
         )
 
         if response.status_code == 200:
             result = response.json()
-            transcription = result['choices'][0]['message']['content']
+            transcription = result["choices"][0]["message"]["content"]
 
             print("=" * 80)
             print("📝 TRANSCRIPTION RESULT")
@@ -65,7 +64,7 @@ def transcribe_file(audio_path: str, server_url: str = "http://localhost:11343")
         return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python transcribe_utils_standalone.py <audio_file>")
         sys.exit(1)

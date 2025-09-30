@@ -239,6 +239,31 @@ void main() {
         );
       });
 
+      test('should throw ModelNotAvailableException when model is missing',
+          () async {
+        when(() => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            )).thenAnswer((_) async => http.Response(
+              'Model not found',
+              404,
+            ));
+
+        final stream = repository.transcribeAudio(
+          model: model,
+          audioBase64: audioBase64,
+          baseUrl: baseUrl,
+        );
+
+        expect(
+          stream.first,
+          throwsA(isA<ModelNotAvailableException>()
+              .having((e) => e.modelName, 'modelName', 'gemma-3n-E2B-it')
+              .having((e) => e.statusCode, 'statusCode', 404)),
+        );
+      });
+
       test('should handle timeout', () async {
         // Arrange
         when(() => mockHttpClient.post(
@@ -600,6 +625,38 @@ void main() {
           throwsA(isA<Gemma3nInferenceException>()
               .having((e) => e.message, 'message', contains('HTTP 500'))
               .having((e) => e.statusCode, 'statusCode', 500)),
+        );
+      });
+
+      test(
+          'should throw ModelNotAvailableException when streaming model missing',
+          () async {
+        final mockStreamedResponse = MockStreamedResponse();
+
+        when(() => mockStreamedResponse.statusCode).thenReturn(404);
+        when(() => mockStreamedResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream<List<int>>.fromIterable(
+              [utf8.encode('Model missing')],
+            ),
+          ),
+        );
+
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return mockStreamedResponse;
+        });
+
+        final stream = repository.generateText(
+          prompt: prompt,
+          model: model,
+          baseUrl: baseUrl,
+        );
+
+        await expectLater(
+          stream.toList(),
+          throwsA(isA<ModelNotAvailableException>()
+              .having((e) => e.modelName, 'modelName', 'gemma-3n-E2B-it')
+              .having((e) => e.statusCode, 'statusCode', 404)),
         );
       });
 

@@ -1,23 +1,26 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/ai/ui/gemma_model_install_dialog.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../test_utils.dart';
 
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
@@ -30,6 +33,34 @@ class MockCloudInferenceRepository extends Mock
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
+
+class _TestUnifiedAiController extends UnifiedAiController {
+  _TestUnifiedAiController(this.initialState);
+
+  final UnifiedAiState initialState;
+
+  @override
+  UnifiedAiState build({
+    required String entityId,
+    required String promptId,
+  }) {
+    return initialState;
+  }
+}
+
+class _TestInferenceStatusController extends InferenceStatusController {
+  _TestInferenceStatusController(this.initialStatus);
+
+  final InferenceStatus initialStatus;
+
+  @override
+  InferenceStatus build({
+    required String id,
+    required AiResponseType aiResponseType,
+  }) {
+    return initialStatus;
+  }
+}
 
 void main() {
   late AiConfigPrompt testPromptConfig;
@@ -527,6 +558,214 @@ void main() {
         // The dispose method should have cleaned up the subscription
         expect(find.byType(UnifiedAiProgressContent), findsNothing);
       });
+    });
+  });
+
+  group('UnifiedAiProgressContent - Error dialogs', () {
+    const entityId = 'dialog-entity';
+    const promptId = 'dialog-prompt';
+
+    testWidgets('shows Gemma install dialog when Gemma provider is configured',
+        (tester) async {
+      final gemmaProvider = AiTestDataFactory.createTestProvider(
+        id: 'gemma-provider',
+        name: 'Gemma Provider',
+        type: InferenceProviderType.gemma3n,
+        baseUrl: 'http://localhost:11434/',
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: promptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController([gemmaProvider]),
+            ),
+            unifiedAiControllerProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith(
+              () => _TestUnifiedAiController(
+                UnifiedAiState(
+                  message: '',
+                  error: ModelNotAvailableException(
+                    'Missing model',
+                    modelName: 'gemma-3n-E2B-it',
+                    statusCode: 404,
+                  ),
+                ),
+              ),
+            ),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: testPromptConfig.aiResponseType,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.error),
+            ),
+            triggerNewInferenceProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith((ref) async {}),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GemmaModelInstallDialog), findsOneWidget);
+    });
+
+    testWidgets('shows Ollama install dialog when Gemma provider is absent',
+        (tester) async {
+      final ollamaProvider = AiTestDataFactory.createTestProvider(
+        id: 'ollama-provider',
+        name: 'Ollama Provider',
+        type: InferenceProviderType.ollama,
+        baseUrl: 'http://localhost:11435/',
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: promptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController([ollamaProvider]),
+            ),
+            unifiedAiControllerProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith(
+              () => _TestUnifiedAiController(
+                const UnifiedAiState(
+                  message: '',
+                  error: ModelNotInstalledException('llama3'),
+                ),
+              ),
+            ),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: testPromptConfig.aiResponseType,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.error),
+            ),
+            triggerNewInferenceProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith((ref) async {}),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
+    });
+
+    testWidgets('uses string fallback to show Ollama install dialog',
+        (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: promptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(const <AiConfig>[]),
+            ),
+            unifiedAiControllerProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith(
+              () => _TestUnifiedAiController(
+                const UnifiedAiState(
+                  message:
+                      'Model "llama3" is not installed. Please install it first.',
+                ),
+              ),
+            ),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: testPromptConfig.aiResponseType,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.error),
+            ),
+            triggerNewInferenceProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith((ref) async {}),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
+    });
+
+    testWidgets('shows running animation when inference is in progress',
+        (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: promptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(const <AiConfig>[]),
+            ),
+            unifiedAiControllerProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith(
+              () => _TestUnifiedAiController(
+                const UnifiedAiState(message: ''),
+              ),
+            ),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: testPromptConfig.aiResponseType,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.running),
+            ),
+            triggerNewInferenceProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith((ref) async {}),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(AiRunningAnimationWrapper), findsOneWidget);
     });
   });
 

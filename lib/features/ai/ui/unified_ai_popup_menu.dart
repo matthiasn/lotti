@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/index.dart';
@@ -60,17 +63,31 @@ class UnifiedAiModal {
       builder: (modalSheetContext) => UnifiedAiPromptsList(
         journalEntity: journalEntity,
         linkedFromId: linkedFromId,
-        onPromptSelected: (prompt, index) {
-          // Trigger inference in the background
-          ref.read(
-            triggerNewInferenceProvider(
-              entityId: journalEntity.id,
-              promptId: prompt.id,
-              linkedEntityId: linkedFromId,
-            ).future,
-          );
-          // Close the modal
+        onPromptSelected: (prompt, index) async {
+          // Close the current modal first
           Navigator.of(modalSheetContext).pop();
+
+          // Trigger inference in the background
+          unawaited(
+            ref.read(
+              triggerNewInferenceProvider(
+                entityId: journalEntity.id,
+                promptId: prompt.id,
+                linkedEntityId: linkedFromId,
+              ).future,
+            ),
+          );
+
+          // Show the progress modal immediately
+          await ModalUtils.showSingleSliverPageModal<void>(
+            context: context,
+            builder: (ctx) => UnifiedAiProgressUtils.progressPage(
+              context: ctx,
+              prompt: prompt,
+              entityId: journalEntity.id,
+              onTapBack: () => Navigator.of(ctx).pop(),
+            ),
+          );
         },
       ),
       title: context.messages.aiAssistantTitle,
@@ -90,7 +107,8 @@ class UnifiedAiPromptsList extends ConsumerWidget {
 
   final JournalEntity journalEntity;
   final String? linkedFromId;
-  final void Function(AiConfigPrompt prompt, int index) onPromptSelected;
+  final Future<void> Function(AiConfigPrompt prompt, int index)
+      onPromptSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -3,9 +3,9 @@
 import asyncio
 import logging
 import os
-from pathlib import Path
+import psutil
+import gc
 from typing import Optional, AsyncGenerator, Dict, Any
-import json
 
 import torch
 from transformers import (
@@ -14,11 +14,8 @@ from transformers import (
     AutoProcessor,
     BitsAndBytesConfig,
 )
-from torch.quantization import quantize_dynamic, QConfig, default_qconfig
-from torch.quantization.qconfig import get_default_qconfig
 import torch.nn as nn
-from huggingface_hub import snapshot_download, HfFileSystem
-from accelerate import init_empty_weights, load_checkpoint_and_dispatch
+from huggingface_hub import snapshot_download
 
 from config import ServiceConfig
 
@@ -27,8 +24,8 @@ logger = logging.getLogger(__name__)
 
 class ModelStatus:
     """Model download/installation status."""
-    
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.status: str = "idle"
         self.progress: float = 0.0
         self.total_size: int = 0
@@ -39,8 +36,8 @@ class ModelStatus:
 
 class GemmaModelManager:
     """Manages Gemma model downloading, loading, and inference."""
-    
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.model: Optional[AutoModelForImageTextToText] = None
         self.processor: Optional[AutoProcessor] = None
         self.tokenizer: Optional[AutoTokenizer] = None
@@ -49,15 +46,18 @@ class GemmaModelManager:
         self.cache_dir = ServiceConfig.CACHE_DIR
         self.download_status = ModelStatus()
         self._lock = asyncio.Lock()
-        
+
         logger.info(f"Initialized GemmaModelManager with device: {self.device}")
         logger.info(f"Model ID: {self.model_id}")
         logger.info(f"Cache directory: {self.cache_dir}")
-    
+
+        # Log initial memory state
+        self._log_memory_usage("startup")
+
     async def download_model(self, progress_callback=None) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Download model from Hugging Face with progress tracking.
-        
+
         Yields progress updates as dictionaries with keys:
         - status: Current status message
         - progress: Progress percentage (0-100)
@@ -68,43 +68,43 @@ class GemmaModelManager:
             try:
                 self.download_status.status = "checking"
                 self.download_status.message = "Checking if model exists locally..."
-                
+
                 yield {
                     "status": self.download_status.message,
                     "progress": 0,
                     "total": 0,
-                    "completed": 0
+                    "completed": 0,
                 }
-                
+
                 # Check if model already exists
                 if ServiceConfig.is_model_cached():
                     self.download_status.status = "cached"
                     self.download_status.message = "Model already downloaded"
                     self.download_status.progress = 100.0
-                    
+
                     yield {
                         "status": "Model already downloaded",
                         "progress": 100,
                         "total": 100,
-                        "completed": 100
+                        "completed": 100,
                     }
                     return
-                
+
                 # Get model info from HuggingFace
                 self.download_status.status = "preparing"
                 self.download_status.message = "Preparing to download model..."
-                
+
                 yield {
                     "status": self.download_status.message,
                     "progress": 0,
                     "total": 0,
-                    "completed": 0
+                    "completed": 0,
                 }
-                
+
                 # Start download with progress tracking
                 self.download_status.status = "downloading"
                 self.download_status.message = f"Downloading {self.model_id}..."
-                
+
                 def progress_hook(progress):
                     """Hook to track download progress."""
                     if progress.get("total"):
@@ -113,12 +113,12 @@ class GemmaModelManager:
                         self.download_status.progress = (
                             self.download_status.downloaded_size / self.download_status.total_size * 100
                         )
-                
+
                 # Download in a thread to avoid blocking
                 loop = asyncio.get_event_loop()
 
                 # Get HuggingFace token from environment
-                hf_token = os.environ.get('HF_TOKEN') or os.environ.get('HUGGING_FACE_HUB_TOKEN')
+                hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
                 if not hf_token:
                     logger.warning("No HuggingFace token found. Set HF_TOKEN environment variable.")
                     logger.warning("Gemma models require authentication. Please:")
@@ -136,61 +136,67 @@ class GemmaModelManager:
                         local_dir_use_symlinks=False,
                         resume_download=True,
                         token=hf_token,
-                    )
+                    ),
                 )
-                
+
                 self.download_status.status = "complete"
                 self.download_status.message = "Model downloaded successfully"
                 self.download_status.progress = 100.0
-                
+
                 yield {
                     "status": "Download complete",
                     "progress": 100,
                     "total": self.download_status.total_size,
-                    "completed": self.download_status.total_size
+                    "completed": self.download_status.total_size,
                 }
-                
+
             except Exception as e:
                 self.download_status.status = "error"
                 self.download_status.error = str(e)
                 self.download_status.message = f"Download failed: {e}"
                 logger.error(f"Model download failed: {e}")
-                logger.error(f"Full traceback:", exc_info=True)
-                
+                logger.error("Full traceback:", exc_info=True)
+
                 yield {
                     "status": "Error: Model download failed.",
                     "progress": 0,
                     "total": 0,
                     "completed": 0,
-                    "error": "Model download failed."
+                    "error": "Model download failed.",
                 }
                 raise
-    
+
     async def load_model(self) -> bool:
         """
         Load model into memory with optimizations.
-        
+
         Returns True if successful, False otherwise.
         """
         if self.model is not None:
             logger.info("Model already loaded")
             return True
-        
+
         async with self._lock:
             try:
                 logger.info(f"Loading model {self.model_id}...")
-                
+                self._log_memory_usage("pre-load")
+
+                # Check memory pressure before loading
+                if self._check_memory_pressure():
+                    logger.warning("System under memory pressure - attempting cleanup")
+                    self._force_cleanup()
+
                 # Ensure model is downloaded
                 if not ServiceConfig.is_model_cached():
                     logger.error("Model not downloaded. Please download first.")
                     return False
-                
+
                 model_path = ServiceConfig.get_model_path()
-                
+
                 # Configure quantization for memory efficiency
                 quantization_config = None
                 use_cpu_quantization = self.device == "cpu"
-                
+
                 # Only attempt GPU quantization if we're actually using GPU
                 if self.device in ["cuda", "mps"]:
                     # GPU quantization with BitsAndBytesConfig (only works with CUDA)
@@ -209,21 +215,21 @@ class GemmaModelManager:
                 elif self.device == "cpu":
                     logger.info("CPU mode selected - will optimize after loading")
                     use_cpu_quantization = True
-                
+
                 # Load in thread to avoid blocking
                 loop = asyncio.get_event_loop()
-                
+
                 def load_model_sync():
                     # Determine if we should use CPU quantization
                     nonlocal use_cpu_quantization
-                    
+
                     # Load tokenizer and processor
                     self.tokenizer = AutoTokenizer.from_pretrained(
                         model_path,
                         local_files_only=True,
                         trust_remote_code=True,
                     )
-                    
+
                     # Try to load processor for multimodal support
                     try:
                         self.processor = AutoProcessor.from_pretrained(
@@ -235,7 +241,7 @@ class GemmaModelManager:
                     except Exception as e:
                         logger.info(f"No processor found (text-only model): {e}")
                         self.processor = None
-                    
+
                     # Load model with multiple fallback strategies
                     model_loaded = False
                     load_attempts = [
@@ -268,48 +274,48 @@ class GemmaModelManager:
                             "low_cpu_mem_usage": False,
                         },
                     ]
-                    
+
                     last_error = None
                     for attempt_num, config in enumerate(load_attempts, 1):
                         try:
                             logger.info(f"Model load attempt {attempt_num}/{len(load_attempts)}...")
                             self.model = AutoModelForImageTextToText.from_pretrained(
-                                model_path,
-                                local_files_only=True,
-                                trust_remote_code=True,
-                                **config
+                                model_path, local_files_only=True, trust_remote_code=True, **config
                             )
                             model_loaded = True
-                            
+
                             # Update device if we fell back to CPU
                             if config["device_map"] is None and self.device != "cpu":
                                 logger.warning(f"Fell back to CPU from {self.device}")
                                 self.device = "cpu"
                                 use_cpu_quantization = True
-                            
+
                             break
                         except Exception as e:
                             last_error = e
                             logger.warning(f"Attempt {attempt_num} failed: {e}")
-                            
+
                             # Clear cache between attempts
                             import gc
+
                             gc.collect()
                             if torch.cuda.is_available():
                                 torch.cuda.empty_cache()
-                    
+
                     if not model_loaded:
-                        raise Exception(f"Failed to load model after {len(load_attempts)} attempts. Last error: {last_error}")
-                    
+                        raise Exception(
+                            f"Failed to load model after {len(load_attempts)} attempts. Last error: {last_error}"
+                        )
+
                     # (Attention implementation override removed; default attention is used on MPS.)
 
                     # Move model to device if needed
-                    if self.device == "cpu" and not hasattr(self.model, 'device'):
+                    if self.device == "cpu" and not hasattr(self.model, "device"):
                         try:
                             self.model = self.model.to(self.device)
                         except RuntimeError as e:
                             logger.warning(f"Could not move model to {self.device}: {e}")
-                        
+
                     # Apply CPU-specific optimizations
                     if self.device == "cpu":
                         if use_cpu_quantization and ServiceConfig.ENABLE_CPU_QUANTIZATION:
@@ -321,20 +327,20 @@ class GemmaModelManager:
                                 else:
                                     # Apply dynamic quantization for CPU inference
                                     self.model = torch.quantization.quantize_dynamic(
-                                        self.model, 
-                                        {nn.Linear, nn.MultiheadAttention, nn.LSTM, nn.GRU}, 
-                                        dtype=torch.qint8
+                                        self.model,
+                                        {nn.Linear, nn.MultiheadAttention, nn.LSTM, nn.GRU},
+                                        dtype=torch.qint8,
                                     )
                                     logger.info("CPU int8 quantization applied successfully")
                             except Exception as e:
                                 logger.warning(f"CPU quantization failed, continuing without: {e}")
-                        
+
                         # Enable CPU-specific optimizations
                         torch.set_num_threads(min(8, torch.get_num_threads()))
                         logger.info(f"Set torch threads to {torch.get_num_threads()}")
-                        
+
                         # Try to compile model for faster inference
-                        if hasattr(torch, 'compile') and ServiceConfig.ENABLE_TORCH_COMPILE:
+                        if hasattr(torch, "compile") and ServiceConfig.ENABLE_TORCH_COMPILE:
                             try:
                                 # Skip torch.compile for Gemma 3n models due to compatibility issues
                                 if "gemma-3n" in self.model_id.lower():
@@ -344,7 +350,7 @@ class GemmaModelManager:
                                     logger.info("Model compiled with torch.compile for optimization")
                             except Exception as e:
                                 logger.warning(f"Failed to compile model: {e}")
-                    
+
                     # Set to evaluation mode
                     self.model.eval()
                     # Log model details
@@ -352,93 +358,108 @@ class GemmaModelManager:
                         try:
                             param_dtype = next(self.model.parameters()).dtype
                         except Exception:
-                            param_dtype = 'unknown'
+                            param_dtype = "unknown"
                         try:
                             n_params = sum(p.numel() for p in self.model.parameters())
                         except Exception:
                             n_params = -1
-                        cfg = getattr(self.model, 'config', None)
-                        attn_impl = getattr(cfg, 'attn_implementation', 'default') if cfg else 'default'
+                        cfg = getattr(self.model, "config", None)
+                        attn_impl = getattr(cfg, "attn_implementation", "default") if cfg else "default"
                         logger.info(
-                            f"Model loaded successfully on {self.device}; params={n_params/1e6:.1f}M; dtype={param_dtype}; attn={attn_impl}"
+                            f"Model loaded successfully on {self.device}; params={n_params / 1e6:.1f}M; "
+                            f"dtype={param_dtype}; attn={attn_impl}"
                         )
                         if cfg is not None:
                             try:
-                                text_cfg = getattr(cfg, 'text_config', None)
+                                text_cfg = getattr(cfg, "text_config", None)
+
                                 def pick(*vals):
                                     for v in vals:
-                                        if v is not None and v != '?':
+                                        if v is not None and v != "?":
                                             return v
-                                    return '?'
+                                    return "?"
+
                                 hidden = pick(
-                                    getattr(cfg, 'hidden_size', None),
-                                    getattr(text_cfg, 'hidden_size', None),
+                                    getattr(cfg, "hidden_size", None),
+                                    getattr(text_cfg, "hidden_size", None),
                                 )
                                 layers = pick(
-                                    getattr(cfg, 'num_hidden_layers', None),
-                                    getattr(text_cfg, 'num_hidden_layers', None),
+                                    getattr(cfg, "num_hidden_layers", None),
+                                    getattr(text_cfg, "num_hidden_layers", None),
                                 )
                                 ff = pick(
-                                    getattr(cfg, 'intermediate_size', None),
-                                    getattr(text_cfg, 'intermediate_size', None),
-                                    getattr(cfg, 'ffn_dim', None),
-                                    getattr(text_cfg, 'ffn_dim', None),
+                                    getattr(cfg, "intermediate_size", None),
+                                    getattr(text_cfg, "intermediate_size", None),
+                                    getattr(cfg, "ffn_dim", None),
+                                    getattr(text_cfg, "ffn_dim", None),
                                 )
-                                logger.info(
-                                    f"cfg: hidden={hidden}, layers={layers}, ff={ff}"
-                                )
+                                logger.info(f"cfg: hidden={hidden}, layers={layers}, ff={ff}")
                             except Exception as e:
                                 logger.debug(f"Could not log detailed config fields: {e}")
                     except Exception as _e:
                         logger.info(f"Model loaded successfully on {self.device} (details unavailable: {_e})")
-                
+
                 await loop.run_in_executor(None, load_model_sync)
-                
+
+                # Log memory usage after successful load
+                self._log_memory_usage("post-load")
+
                 return True
-                
+
             except Exception as e:
                 logger.error(f"Failed to load model: {e}")
                 self.model = None
                 self.tokenizer = None
                 self.processor = None
                 return False
-    
+
+    def _unload_model_unsafe(self):
+        """Free memory by unloading model without acquiring lock."""
+        self._log_memory_usage("pre-unload")
+
+        if self.model is not None:
+            del self.model
+            self.model = None
+        if self.tokenizer is not None:
+            del self.tokenizer
+            self.tokenizer = None
+        if self.processor is not None:
+            del self.processor
+            self.processor = None
+
+        # Aggressive memory cleanup for large models
+        self._force_cleanup()
+
+        logger.info("Model unloaded from memory")
+        self._log_memory_usage("post-unload")
+
     async def unload_model(self):
         """Free memory by unloading model."""
         async with self._lock:
-            if self.model is not None:
-                del self.model
-                self.model = None
-            if self.tokenizer is not None:
-                del self.tokenizer
-                self.tokenizer = None
-            if self.processor is not None:
-                del self.processor
-                self.processor = None
-            
-            # Force garbage collection
-            import gc
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            
-            logger.info("Model unloaded from memory")
-    
+            self._unload_model_unsafe()
+
+    def refresh_config(self):
+        """Refresh configuration after model download/change."""
+        old_model_id = self.model_id
+        self.model_id = ServiceConfig.MODEL_ID
+        self.device = ServiceConfig.DEFAULT_DEVICE
+        logger.info(f"Configuration refreshed: {old_model_id} -> {self.model_id}, device: {self.device}")
+
     def is_model_available(self) -> bool:
         """Check if model files exist locally."""
         return ServiceConfig.is_model_cached()
-    
+
     def is_model_loaded(self) -> bool:
         """Check if model is loaded in memory."""
         return self.model is not None
-    
+
     async def warm_up(self):
         """Warm up the model with a simple request."""
         if not self.is_model_loaded():
             success = await self.load_model()
             if not success:
                 raise Exception("Failed to load model for warm-up")
-        
+
         try:
             # Simple warm-up prompt optimized for CPU
             inputs = self.tokenizer("Hello", return_tensors="pt").to(self.device)
@@ -463,7 +484,67 @@ class GemmaModelManager:
         except Exception as e:
             logger.error(f"Warm-up failed: {e}")
             raise
-    
+
+    async def switch_model(self, model_id: str, variant: str) -> bool:
+        """
+        Thread-safe model switching that handles configuration updates.
+
+        Args:
+            model_id: The new model ID to switch to
+            variant: The model variant (E2B, E4B, etc.)
+
+        Returns:
+            True if switch was successful, False otherwise
+        """
+        async with self._lock:
+            try:
+                # Construct full model name with variant
+                full_model_id = f"google/gemma-3n-{variant}-it"
+
+                logger.info(f"Switching from {self.model_id} to {full_model_id}")
+                self._log_memory_usage("pre-switch")
+
+                # Check if we're switching to the same model
+                if self.model_id == full_model_id and self.is_model_loaded():
+                    logger.info("Requested model already loaded, no switch needed")
+                    return True
+
+                # Check memory pressure before switching to larger model
+                if variant == "E4B" and self._check_memory_pressure():
+                    logger.warning("High memory usage detected before loading E4B model")
+                    self._force_cleanup()
+
+                # Unload current model to free memory
+                if self.is_model_loaded():
+                    logger.info("Unloading current model to switch...")
+                    self._unload_model_unsafe()
+
+                # Update instance configuration
+                old_model_id = self.model_id
+                self.model_id = full_model_id
+
+                # Update ServiceConfig in a thread-safe way
+                # Note: We avoid modifying os.environ directly in concurrent context
+                ServiceConfig.MODEL_ID = full_model_id
+
+                # Update cache directory for new model
+                self.cache_dir = ServiceConfig.CACHE_DIR
+
+                # Verify the new model files exist
+                if not ServiceConfig.is_model_cached():
+                    logger.error(f"Model files for {full_model_id} not found after switch")
+                    return False
+
+                logger.info(f"Model switched successfully: {old_model_id} -> {full_model_id}")
+                logger.info(f"Model ready for loading: {ServiceConfig.is_model_cached()}")
+                self._log_memory_usage("post-switch")
+                return True
+
+            except Exception as e:
+                logger.error(f"Failed to switch model: {e}")
+                self._log_memory_usage("switch-error")
+                return False
+
     async def get_model_info(self) -> Dict[str, Any]:
         """Get information about the current model."""
         info = {
@@ -474,19 +555,99 @@ class GemmaModelManager:
             "cache_dir": str(self.cache_dir),
             "supports_multimodal": self.processor is not None,
             "torch_threads": torch.get_num_threads() if self.device == "cpu" else None,
-            "quantized": hasattr(self.model, "_modules") and any(
-                "quantized" in str(type(m)).lower() for m in self.model.modules()
-            ) if self.is_model_loaded() else False,
+            "quantized": (
+                self.model is not None
+                and hasattr(self.model, "modules")
+                and any("quantized" in str(type(m)).lower() for m in self.model.modules())
+                if self.is_model_loaded()
+                else False
+            ),
         }
-        
+
         if self.is_model_available():
             model_path = ServiceConfig.get_model_path()
             # Get size of model files
             total_size = sum(f.stat().st_size for f in model_path.rglob("*") if f.is_file())
             info["size_bytes"] = total_size
             info["size_gb"] = round(total_size / (1024**3), 2)
-        
+
         return info
+
+    def _log_memory_usage(self, context: str = ""):
+        """Log current memory usage for debugging."""
+        try:
+            process = psutil.Process()
+            mem_info = process.memory_info()
+            mem_percent = process.memory_percent()
+
+            # System memory
+            system_mem = psutil.virtual_memory()
+
+            # MPS memory if available
+            mps_allocated = 0.0
+            mps_reserved = 0.0
+            if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                try:
+                    mps_allocated = torch.mps.current_allocated_memory() / (1024**3)
+                    mps_reserved = torch.mps.driver_allocated_memory() / (1024**3)
+                except (RuntimeError, AttributeError):
+                    # MPS not available or not supported
+                    pass
+
+            logger.info(
+                f"Memory usage [{context}]: "
+                f"Process={mem_info.rss / (1024**3):.2f}GB ({mem_percent:.1f}%), "
+                f"System={system_mem.used / (1024**3):.1f}GB/{system_mem.total / (1024**3):.1f}GB "
+                f"({system_mem.percent:.1f}%), "
+                f"MPS={mps_allocated:.2f}GB allocated, {mps_reserved:.2f}GB reserved"
+            )
+
+            # Check for memory pressure
+            if system_mem.percent > 85:
+                logger.warning(f"High system memory usage: {system_mem.percent:.1f}%")
+            if mem_percent > 30:
+                logger.warning(f"High process memory usage: {mem_percent:.1f}%")
+
+        except Exception as e:
+            logger.debug(f"Failed to log memory usage: {e}")
+
+    def _check_memory_pressure(self) -> bool:
+        """Check if system is under memory pressure."""
+        try:
+            system_mem = psutil.virtual_memory()
+            return system_mem.percent > 80
+        except (OSError, AttributeError):
+            # psutil not available or system info inaccessible
+            return False
+
+    def _force_cleanup(self):
+        """Force aggressive memory cleanup."""
+        try:
+            # Clear MPS cache
+            if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+                torch.mps.synchronize()
+
+            # Clear CUDA cache
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+
+            # Force Python garbage collection multiple times
+            for _ in range(3):
+                gc.collect()
+
+            # Set aggressive GC thresholds temporarily
+            old_thresholds = gc.get_threshold()
+            gc.set_threshold(100, 5, 5)
+            gc.collect()
+            gc.set_threshold(*old_thresholds)
+
+            logger.info("Aggressive memory cleanup completed")
+            self._log_memory_usage("post-cleanup")
+
+        except Exception as e:
+            logger.warning(f"Memory cleanup failed: {e}")
 
 
 # Global instance

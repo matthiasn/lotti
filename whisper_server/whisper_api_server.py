@@ -20,19 +20,18 @@ import numpy as np
 # Import our modules
 from config import WhisperConfig
 from validators import (
-    validate_base64_audio, 
-    validate_model_name, 
+    validate_base64_audio,
+    validate_model_name,
     validate_audio_format,
     sanitize_filename,
     ValidationError,
     AudioValidationError,
-    SecurityValidationError
+    SecurityValidationError,
 )
 
 # Configure logging
 logging.basicConfig(
-    level=getattr(logging, WhisperConfig.LOG_LEVEL),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=getattr(logging, WhisperConfig.LOG_LEVEL), format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -41,9 +40,7 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 
 app = FastAPI(
-    title="Whisper API Server",
-    description="Local Whisper API server with OpenAI-compatible interface",
-    version="1.0.0"
+    title="Whisper API Server", description="Local Whisper API server with OpenAI-compatible interface", version="1.0.0"
 )
 
 # Validate configuration on startup
@@ -64,19 +61,17 @@ app.add_middleware(
 )
 
 # Add trusted host middleware
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=WhisperConfig.ALLOWED_HOSTS
-)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=WhisperConfig.ALLOWED_HOSTS)
 
 # Supported local models mapping to OpenAI model names (optimized for speed)
 SUPPORTED_MODELS = {
-    'whisper-1': 'openai/whisper-large-v3',  # Use large for similar accuracy as hosted version
-    'whisper-tiny': 'openai/whisper-tiny',
-    'whisper-small': 'openai/whisper-small',
-    'whisper-medium': 'openai/whisper-medium',
-    'whisper-large': 'openai/whisper-large-v3'
+    "whisper-1": "openai/whisper-large-v3",  # Use large for similar accuracy as hosted version
+    "whisper-tiny": "openai/whisper-tiny",
+    "whisper-small": "openai/whisper-small",
+    "whisper-medium": "openai/whisper-medium",
+    "whisper-large": "openai/whisper-large-v3",
 }
+
 
 def get_optimal_device() -> str:
     """Determine the best device for Whisper inference."""
@@ -90,6 +85,7 @@ def get_optimal_device() -> str:
         logger.info("No GPU acceleration available, falling back to CPU")
         return "cpu"
 
+
 def get_optimal_batch_size(device: str) -> int:
     """Determine optimal batch size based on device (optimized for speed)."""
     if device == "mps":
@@ -99,61 +95,65 @@ def get_optimal_batch_size(device: str) -> int:
     else:
         return 2  # Increased from 1 for better throughput
 
+
 def validate_model_name(model: str) -> tuple[bool, Optional[str]]:
     """
     Validate Whisper model name
-    
+
     Args:
         model: Model name to validate
-        
+
     Returns:
         Tuple of (is_valid, error_message)
     """
     if not model:
         return False, "Model name is required"
-    
+
     # Allow OpenAI model names and local model names
     allowed_models = list(SUPPORTED_MODELS.keys())
     if model not in allowed_models:
         return False, f"Invalid model. Allowed models: {', '.join(allowed_models)}"
-    
+
     return True, None
+
 
 def preprocess_audio(audio_path: str) -> str:
     """
     Preprocess audio for optimal Whisper performance.
-    
+
     Args:
         audio_path: Path to the audio file
-        
+
     Returns:
         Path to the preprocessed audio file
     """
     try:
         # Load audio with explicit format handling and suppress warnings
         import warnings
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             audio, sr = librosa.load(audio_path, sr=None, mono=True)
-        
+
         # Resample to 16kHz (Whisper's optimal sample rate)
         if sr != 16000:
             audio = librosa.resample(audio, orig_sr=sr, target_sr=16000)
-        
+
         # Normalize audio
         audio = librosa.util.normalize(audio)
-        
+
         # Trim silence
         audio, _ = librosa.effects.trim(audio, top_db=20)
-        
+
         # Save preprocessed audio as WAV (most compatible format)
-        preprocessed_path = audio_path.replace('.', '_preprocessed.wav')
-        sf.write(preprocessed_path, audio, 16000, format='WAV')
-        
+        preprocessed_path = audio_path.replace(".", "_preprocessed.wav")
+        sf.write(preprocessed_path, audio, 16000, format="WAV")
+
         return preprocessed_path
     except Exception as e:
         logger.warning(f"Audio preprocessing failed: {str(e)}, using original file")
         return audio_path
+
 
 # Cache for loaded models to avoid reloading them for each request
 @lru_cache(maxsize=4)
@@ -164,9 +164,9 @@ def get_model(model_name: str):
         local_model_name = SUPPORTED_MODELS.get(model_name, model_name)
         device = get_optimal_device()
         batch_size = get_optimal_batch_size(device)
-        
+
         logger.info(f"Loading model {local_model_name} on {device} with batch size {batch_size}")
-        
+
         # Configure quantization (only for CUDA, not MPS)
         quantization_config = None
         use_quantization = False
@@ -182,7 +182,7 @@ def get_model(model_name: str):
                 logger.info("8-bit quantization enabled for CUDA GPU")
         except Exception as e:
             logger.warning(f"Quantization setup failed: {str(e)}, continuing without quantization")
-        
+
         # Optimized model loading with quantization and flash attention
         if device == "cpu":
             pipe = pipeline(
@@ -191,18 +191,19 @@ def get_model(model_name: str):
                 device=device,
                 model_kwargs={
                     "use_cache": True,
-                }
+                },
             )
         else:
             model_kwargs = {
                 "use_cache": True,
                 "torch_dtype": torch.float16,
             }
-            
+
             # Add flash attention if available and compatible (CUDA only)
             if device.startswith("cuda"):
                 try:
                     import flash_attn
+
                     model_kwargs["attn_implementation"] = "flash_attention_2"
                     logger.info("Flash attention 2 enabled for CUDA")
                 except ImportError:
@@ -211,7 +212,7 @@ def get_model(model_name: str):
                     logger.warning(f"Flash attention setup failed: {str(e)}, using standard attention")
             else:
                 logger.info("Flash attention not available for MPS, using standard attention")
-            
+
             # Create pipeline with or without quantization config
             if use_quantization and quantization_config is not None:
                 pipe = pipeline(
@@ -219,32 +220,27 @@ def get_model(model_name: str):
                     local_model_name,
                     device=device,
                     quantization_config=quantization_config,
-                    model_kwargs=model_kwargs
+                    model_kwargs=model_kwargs,
                 )
             else:
                 pipe = pipeline(
-                    "automatic-speech-recognition",
-                    local_model_name,
-                    device=device,
-                    model_kwargs=model_kwargs
+                    "automatic-speech-recognition", local_model_name, device=device, model_kwargs=model_kwargs
                 )
-        
+
         # Enable torch compile for additional speedup
         try:
             pipe.model = torch.compile(pipe.model, mode="reduce-overhead")
             logger.info("Torch compile enabled for model optimization")
         except Exception as e:
             logger.warning(f"Torch compile failed: {str(e)}, continuing without it")
-            
+
         logger.info(f"Model {local_model_name} loaded successfully with optimizations")
         return pipe, batch_size
-        
+
     except Exception as e:
         logger.error(f"Failed to load model: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to initialize pipeline: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to initialize pipeline: {str(e)}")
+
 
 class TranscribeRequest(BaseModel):
     audio: Optional[str] = None
@@ -266,7 +262,7 @@ class TranscribeRequest(BaseModel):
         raise ValueError("No audio data found in request")
 
     def _extract_audio_from_message(self, msg: dict) -> str:
-        content = msg.get('content')
+        content = msg.get("content")
         if isinstance(content, list):
             for part in content:
                 if part.get("type") in ["audio", "input_audio"]:
@@ -281,84 +277,85 @@ class TranscribeRequest(BaseModel):
                 return content["data"]
         return None
 
+
 @app.post("/v1/audio/transcriptions")
 async def transcribe(request: TranscribeRequest, client_request: Request):
     temp_file_path = None
     preprocessed_path = None
-    
+
     try:
         # Log request for monitoring
         client_ip = client_request.client.host if client_request.client else "unknown"
         logger.info(f"Transcription request from {client_ip} with model {request.model}")
-        
+
         # Validate model
         is_valid_model, model_error = validate_model_name(request.model)
         if not is_valid_model:
             raise HTTPException(status_code=400, detail=model_error)
-        
+
         # Get and validate audio data
         try:
             audio_data = request.get_audio()
         except ValueError as e:
             logger.error("Invalid audio data format: %s", str(e))
             raise HTTPException(status_code=400, detail="Invalid audio data format")
-        
+
         # Validate base64 audio
         is_valid_audio, audio_error = validate_base64_audio(audio_data)
         if not is_valid_audio:
             raise HTTPException(status_code=400, detail=audio_error)
-        
+
         # Decode audio
         try:
             audio_bytes = base64.b64decode(audio_data)
         except Exception as e:
             logger.error(f"Failed to decode base64 audio: {str(e)}")
             raise HTTPException(status_code=400, detail="Invalid audio data format")
-        
+
         # Validate audio format
         is_valid_format, format_error = validate_audio_format(audio_bytes)
         if not is_valid_format:
             raise HTTPException(status_code=400, detail=format_error)
-        
+
         # Detect format for file extension
         detected_format = None
         for signature, format_name in {
-            b'\xff\xfb': 'mp3',
-            b'\xff\xf3': 'mp3',
-            b'\xff\xf2': 'mp3',
-            b'ID3': 'mp3',
-            b'ftyp': 'mp4',
-            b'moov': 'mp4',
-            b'mdat': 'mp4',
-            b'RIFF': 'wav',
-            b'fLaC': 'flac',
-            b'OggS': 'ogg',
-            b'\x1a\x45\xdf\xa3': 'webm',
+            b"\xff\xfb": "mp3",
+            b"\xff\xf3": "mp3",
+            b"\xff\xf2": "mp3",
+            b"ID3": "mp3",
+            b"ftyp": "mp4",
+            b"moov": "mp4",
+            b"mdat": "mp4",
+            b"RIFF": "wav",
+            b"fLaC": "flac",
+            b"OggS": "ogg",
+            b"\x1a\x45\xdf\xa3": "webm",
         }.items():
             if audio_bytes.startswith(signature):
                 detected_format = format_name
                 break
-        
+
         # Check for ID3 tag at different positions (MP3)
-        if not detected_format and b'ID3' in audio_bytes[:128]:
-            detected_format = 'mp3'
-        
+        if not detected_format and b"ID3" in audio_bytes[:128]:
+            detected_format = "mp3"
+
         # Check for MP4 signatures at different positions
-        if not detected_format and (b'ftyp' in audio_bytes[:32] or b'moov' in audio_bytes[:32]):
-            detected_format = 'mp4'
-        
+        if not detected_format and (b"ftyp" in audio_bytes[:32] or b"moov" in audio_bytes[:32]):
+            detected_format = "mp4"
+
         # Use detected format or default to mp3
         if detected_format == "mp4":
             file_extension = "m4a"
         else:
             file_extension = detected_format or "mp3"
-        
+
         if not detected_format:
             logger.warning(f"Could not detect audio format, using default: {file_extension}")
-        
+
         # Save to a temporary file with proper extension
         try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}') as temp_file:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_extension}") as temp_file:
                 temp_file.write(audio_bytes)
                 temp_file_path = temp_file.name
         except Exception as e:
@@ -375,15 +372,15 @@ async def transcribe(request: TranscribeRequest, client_request: Request):
         # Transcribe using local Whisper model
         try:
             start_time = time.time()
-            
+
             # Get the local model
             pipe, batch_size = get_model(request.model)
-            
+
             # Set language if specified (not "auto")
             language = request.language if request.language != "auto" else None
-            
+
             logger.info(f"Transcribing with model {request.model}, format: {file_extension}")
-            
+
             # Perform transcription with optimized parameters
             result = pipe(
                 preprocessed_path,
@@ -393,11 +390,11 @@ async def transcribe(request: TranscribeRequest, client_request: Request):
                     "language": language,
                     "do_sample": False,  # Deterministic for speed
                     "num_beams": 1,  # Greedy decoding for speed
-                }
+                },
             )
-            
+
             processing_time = time.time() - start_time
-            
+
             # Extract text from result
             if isinstance(result, dict):
                 text = result.get("text", "")
@@ -405,15 +402,10 @@ async def transcribe(request: TranscribeRequest, client_request: Request):
                 text = result[0].get("text", "")
             else:
                 text = str(result)
-            
+
             logger.info(f"Transcription completed in {processing_time:.2f}s")
-            
-            return {
-                "text": text,
-                "processing_time": processing_time,
-                "model": request.model,
-                "format": file_extension
-            }
+
+            return {"text": text, "processing_time": processing_time, "model": request.model, "format": file_extension}
 
         except Exception as e:
             logger.error(f"Transcription failed: {str(e)}")
@@ -434,15 +426,18 @@ async def transcribe(request: TranscribeRequest, client_request: Request):
                 except Exception as e:
                     logger.warning(f"Failed to clean up temporary file {file_path}: {str(e)}")
 
+
 @app.post("/v1/chat/completions")
 async def chat_completions(request: TranscribeRequest, client_request: Request):
     """OpenAI-style compatibility endpoint that proxies to /v1/audio/transcriptions."""
     return await transcribe(request, client_request)
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "whisper-api-server"}
+
 
 @app.post("/debug/audio-info")
 async def debug_audio_info(request: TranscribeRequest):
@@ -450,22 +445,19 @@ async def debug_audio_info(request: TranscribeRequest):
     try:
         audio_data = request.get_audio()
         audio_bytes = base64.b64decode(audio_data)
-        
+
         return {
             "audio_size_bytes": len(audio_bytes),
             "audio_size_mb": len(audio_bytes) / (1024 * 1024),
             "base64_length": len(audio_data),
             "model": request.model,
-            "language": request.language
+            "language": request.language,
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        app, 
-        host=WhisperConfig.HOST, 
-        port=WhisperConfig.PORT,
-        log_level=WhisperConfig.LOG_LEVEL.lower()
-    ) 
+
+    uvicorn.run(app, host=WhisperConfig.HOST, port=WhisperConfig.PORT, log_level=WhisperConfig.LOG_LEVEL.lower())

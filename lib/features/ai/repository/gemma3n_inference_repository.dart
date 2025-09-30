@@ -114,7 +114,20 @@ class Gemma3nInferenceRepository {
             },
           );
 
-          if (response.statusCode != 200) {
+          if (response.statusCode == 404) {
+            // Model not found - this indicates the model hasn't been downloaded yet
+            developer.log(
+              'Model not downloaded: HTTP 404',
+              name: 'Gemma3nInferenceRepository',
+              error: response.body,
+            );
+            // Model not available - needs to be downloaded
+            throw ModelNotAvailableException(
+              'Model "$normalizedModel" is not available and needs to be downloaded',
+              modelName: normalizedModel,
+              statusCode: response.statusCode,
+            );
+          } else if (response.statusCode != 200) {
             developer.log(
               'Failed to transcribe audio: HTTP ${response.statusCode}',
               name: 'Gemma3nInferenceRepository',
@@ -195,6 +208,11 @@ class Gemma3nInferenceRepository {
             originalError: e,
           );
         } catch (e) {
+          // Let ModelNotAvailableException bubble up for UI handling
+          if (e is ModelNotAvailableException) {
+            rethrow;
+          }
+
           // Wrap other exceptions
           developer.log(
             'Unexpected error during audio transcription',
@@ -291,7 +309,15 @@ class Gemma3nInferenceRepository {
         },
       );
 
-      if (streamedResponse.statusCode != 200) {
+      if (streamedResponse.statusCode == 404) {
+        await streamedResponse.stream.bytesToString(); // Consume the stream
+        // Model not available - needs to be downloaded
+        throw ModelNotAvailableException(
+          'Model "$normalizedModel" is not available and needs to be downloaded',
+          modelName: normalizedModel,
+          statusCode: streamedResponse.statusCode,
+        );
+      } else if (streamedResponse.statusCode != 200) {
         final body = await streamedResponse.stream.bytesToString();
         throw Gemma3nInferenceException(
           'Failed to generate text (HTTP ${streamedResponse.statusCode}): $body',
@@ -373,7 +399,7 @@ class Gemma3nInferenceRepository {
         name: 'Gemma3nInferenceRepository',
         error: e,
       );
-      if (e is Gemma3nInferenceException) {
+      if (e is Gemma3nInferenceException || e is ModelNotAvailableException) {
         rethrow;
       }
       throw Gemma3nInferenceException(
@@ -398,4 +424,19 @@ class Gemma3nInferenceException implements Exception {
 
   @override
   String toString() => 'Gemma3nInferenceException: $message';
+}
+
+/// Exception thrown when a Gemma 3n model is not available and needs to be downloaded
+class ModelNotAvailableException extends Gemma3nInferenceException {
+  ModelNotAvailableException(
+    super.message, {
+    required this.modelName,
+    super.statusCode,
+    super.originalError,
+  });
+
+  final String modelName;
+
+  @override
+  String toString() => 'ModelNotAvailableException: $message';
 }

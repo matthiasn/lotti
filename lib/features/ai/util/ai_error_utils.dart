@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/features/ai/model/inference_error.dart';
+import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 
 /// Utility class for AI feature error handling.
@@ -177,6 +178,16 @@ class AiErrorUtils {
 
     // Check for ModelNotInstalledException first (most specific)
     if (error is ModelNotInstalledException) {
+      return InferenceError(
+        message: error.toString(),
+        type: InferenceErrorType.invalidRequest,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    // Check for ModelNotAvailableException (Gemma models)
+    if (error is ModelNotAvailableException) {
       return InferenceError(
         message: error.toString(),
         type: InferenceErrorType.invalidRequest,
