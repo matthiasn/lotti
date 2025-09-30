@@ -21,9 +21,8 @@ The Flatpak build process involves several stages:
 
 2. **Build Tools**
    - `create_local_manifest.sh` - Pins commit for local builds
-   - `prepare_flathub_submission.sh` - Orchestrates entire offline build preparation
-   - `manifest_tool/` - Python utilities for manifest manipulation (see below)
-   - `download_cargo_locks.sh` - Downloads Cargo.lock files from build cache
+   - `prepare_flathub_submission.sh` - Thin wrapper over the Python orchestrator
+   - `manifest_tool/` - Python utilities and CLI for manifest manipulation (see below)
 
 3. **manifest_tool Python Utilities** (modular architecture)
    - **core/**: Core manifest operations and utilities
@@ -133,6 +132,12 @@ Flathub has strict requirements for security and reproducibility:
    ```
    The branch must be accessible from GitHub for the offline build tools to work.
 
+   Ensure `pubspec.yaml` contains a `version:` entry—the orchestrator now
+   derives the release number from that field and will fail if it is missing.
+   If you manage Flutter with [FVM](https://fvm.app/), the orchestrator reads
+   `.fvm/fvm_config.json` to determine the Flutter SDK tag; keep that file in
+   sync with your desired release channel.
+
 2. **Install Python dependencies** (requires Python 3.10+):
    ```bash
    sudo apt-get install python3-packaging python3-toml python3-yaml python3-requests
@@ -142,7 +147,7 @@ Flathub has strict requirements for security and reproducibility:
    ```bash
    cd flatpak
    ./prepare_flathub_submission.sh
-   ```
+  ```
 
    The script performs these operations:
 
@@ -154,7 +159,7 @@ Flathub has strict requirements for security and reproducibility:
 
    **Phase 2: Dependency Extraction**:
    - Locates pubspec.lock files (app, flutter_tools, cargokit)
-   - Finds Cargo.lock files for Rust plugins
+   - Fetches pinned Cargo.lock files for Rust plugins directly from upstream
    - Extracts dependency information from build cache
    - Downloads missing source archives
 
@@ -208,6 +213,8 @@ Fine-tune the preparation process:
 | `DOWNLOAD_MISSING_SOURCES` | true | Download sources not in cache |
 | `CLEAN_AFTER_GEN` | true | Remove work directory after generation |
 | `TEST_BUILD` | false | Run test build after preparation |
+| `SQLITE_AUTOCONF_VERSION` | sqlite-autoconf-3500400 | Overrides the SQLite version applied to plugin patches |
+| `SQLITE_AUTOCONF_SHA256` | hash for sqlite-autoconf-3500400 | Overrides the expected SHA256 for the SQLite archive |
 
 ### CI Assertions
 
@@ -456,3 +463,11 @@ When modifying the build system:
 - Easier testing and maintenance
 - Clear dependency hierarchy
 - Reusable components
+## Additional tooling
+
+- To invoke the orchestrator directly without the shell wrapper:
+  ```bash
+  python3 flatpak/manifest_tool/cli.py prepare-flathub \
+    --repo-root <repo> --flatpak-dir <repo>/flatpak
+  ```
+  Available options include `--work-dir`, `--output-dir`, and `--flathub-dir` to override defaults.
