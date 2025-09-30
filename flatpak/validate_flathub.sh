@@ -31,13 +31,19 @@ flatpak-builder \
   --repo=repo \
   build-dir com.matthiasn.lotti.yml
 
-echo "[4/6] Updating local repo metadata"
+echo "[4/6] Exporting icons and screenshots"
+flatpak build-export \
+  --include-icons \
+  --include-screenshots \
+  repo build-dir >/dev/null
+
+echo "[5/6] Updating local repo metadata"
 flatpak build-update-repo repo >/dev/null
 
-echo "[5/6] Linting manifest"
+echo "[6/6] Linting manifest"
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder//stable manifest com.matthiasn.lotti.yml
 
-echo "[6/6] Linting repo"
+echo "[7/6] Linting repo"
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder//stable repo repo
 popd >/dev/null
 
