@@ -15,7 +15,7 @@ repos:
     hooks:
       - id: flake8
         name: Lint Python code with Flake8
-        args: [--config=.flake8]  # Use the project's flake8 config
+        args: [--config=services/gemma-local/.flake8]  # Use the project's flake8 config
         additional_dependencies:
           - bandit[toml]  # Security linting
           - flake8-bugbear  # Additional bug detection
