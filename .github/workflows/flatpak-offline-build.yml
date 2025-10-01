@@ -71,10 +71,19 @@ jobs:
             --sandbox \
             --user \
             --install \
-            --mirror-screenshots-url=https://dl.flathub.org/media \
-            --repo=repo \
             --force-clean \
+            --repo=repo \
+            --mirror-screenshots-url=https://dl.flathub.org/media \
             build-dir com.matthiasn.lotti.yml
+
+      - name: Commit screenshots to OSTree
+        working-directory: flatpak/flathub-build/output
+        run: |
+          ostree commit \
+            --repo=repo \
+            --canonical-permissions \
+            --branch=screenshots/x86_64 \
+            build-dir/files/share/app-info/media
 
       - name: Verify Flatpak (post-build)
         run: |
