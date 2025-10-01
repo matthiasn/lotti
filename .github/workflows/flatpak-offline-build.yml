@@ -71,10 +71,9 @@ jobs:
             --sandbox \
             --user \
             --install \
-            --mirror-screenshots-url=https://dl.flathub.org/media \
-            --repo=repo \
             --force-clean \
-            --mirror-screenshots-url=https://dl.flathub.org/repo/screenshots \
+            --repo=repo \
+            --mirror-screenshots-url=https://dl.flathub.org/media \
             build-dir com.matthiasn.lotti.yml
 
       - name: Commit screenshots to OSTree
