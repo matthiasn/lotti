@@ -1,6 +1,5 @@
 """Tests for validation operations."""
 
-import pytest
 from pathlib import Path
 from manifest_tool.core import ManifestDocument, check_flathub_compliance
 

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from manifest_tool.core.manifest import ManifestDocument
 from manifest_tool.flutter import patches as flutter_patches
 

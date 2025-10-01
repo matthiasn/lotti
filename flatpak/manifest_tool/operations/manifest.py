@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Sequence, Optional
+from typing import Any, Sequence, Optional
 
 try:  # pragma: no cover
     from ..core import utils, ManifestDocument, OperationResult

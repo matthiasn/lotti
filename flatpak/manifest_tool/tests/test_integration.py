@@ -40,8 +40,10 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
               env:
                 PATH: /usr/bin
             build-commands:
-              - echo "Installing Rust..."
-              - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+          - echo "Installing Rust..."
+          - >-
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s --
+              -y --default-toolchain stable --profile minimal
               - export PATH=\"$HOME/.cargo/bin:$PATH\"
               - cp -r /app/flutter /run/build/lotti/flutter_sdk
               - echo build

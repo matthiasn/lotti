@@ -16,12 +16,18 @@ import sys
 import tarfile
 import urllib.error
 import urllib.request
-from urllib.parse import urlparse
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Mapping, MutableMapping, Optional
+from urllib.parse import urlparse
 
 import yaml
+from .. import flutter
+from ..build_utils import utils as build_utils
+from ..core import utils, validation as core_validation
+from ..core.manifest import ManifestDocument
+from ..operations import manifest as manifest_ops
+from ..operations import sources as sources_ops
 
 try:  # pragma: no cover - optional dependency
     from colorama import Fore, Style, init as colorama_init
@@ -46,25 +52,27 @@ _SQLITE_AUTOCONF_SHA256 = os.getenv(
 CARGO_LOCK_SOURCES: tuple[tuple[str, str], ...] = (
     (
         "flutter_vodozemac",
-        "https://raw.githubusercontent.com/famedly/dart-vodozemac/a3446206da432a3a48dedf39bb57604a376b3582/rust/Cargo.lock",
+        (
+            "https://raw.githubusercontent.com/famedly/dart-vodozemac/"
+            "a3446206da432a3a48dedf39bb57604a376b3582/rust/Cargo.lock"
+        ),
     ),
     (
         "super_native_extensions",
-        "https://raw.githubusercontent.com/superlistapp/super_native_extensions/super_native_extensions-v0.9.1/super_native_extensions/rust/Cargo.lock",
+        (
+            "https://raw.githubusercontent.com/superlistapp/"
+            "super_native_extensions/super_native_extensions-v0.9.1/"
+            "super_native_extensions/rust/Cargo.lock"
+        ),
     ),
     (
         "irondash_engine_context",
-        "https://raw.githubusercontent.com/irondash/irondash/65343873472d6796c0388362a8e04b6e9a499044/Cargo.lock",
+        (
+            "https://raw.githubusercontent.com/irondash/irondash/"
+            "65343873472d6796c0388362a8e04b6e9a499044/Cargo.lock"
+        ),
     ),
 )
-
-from .. import flutter
-from ..core import utils, validation as core_validation
-from ..core.manifest import ManifestDocument
-from ..operations import manifest as manifest_ops
-from ..operations import sources as sources_ops
-from ..operations import ci as ci_ops
-from ..build_utils import utils as build_utils
 
 _LOGGER = utils.get_logger("prepare_flathub")
 

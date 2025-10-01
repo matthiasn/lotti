@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from manifest_tool.operations import manifest as manifest_ops
 
 

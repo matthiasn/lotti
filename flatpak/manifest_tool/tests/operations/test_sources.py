@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from manifest_tool.operations import sources as sources_ops
-from manifest_tool.core import ManifestDocument
 
 
 def test_replace_url_with_path_text_rewrites_lines():
