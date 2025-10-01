@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import yaml
 
-from pathlib import Path  # noqa: F401
-
 from manifest_tool import cli
 from manifest_tool.tests.conftest import SAMPLE_MANIFEST
 
