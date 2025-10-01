@@ -6,8 +6,9 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from manifest_tool.core.manifest import ManifestDocument
-from manifest_tool.flutter import offline_fixes
+# Import after sys.path modification
+from manifest_tool.core.manifest import ManifestDocument  # noqa: E402
+from manifest_tool.flutter import offline_fixes  # noqa: E402
 
 
 def create_test_manifest():

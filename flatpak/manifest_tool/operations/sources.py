@@ -132,6 +132,7 @@ def replace_url_with_path(*, manifest_path: str, identifier: str, path_value: st
         _LOGGER.exception("Failed to parse YAML in %s", manifest_path)
         return None
 
+
 # Keep the old text-based function for backward compatibility but mark as deprecated
 def replace_url_with_path_text(text: str, identifier: str, path_value: str) -> tuple[str, bool]:
     """Replace ``url:`` lines containing ``identifier`` with ``path:`` entries.
