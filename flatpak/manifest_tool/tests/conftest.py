@@ -10,9 +10,9 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[3]
 if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
-import pytest  # noqa: E402
+import pytest
 
-from manifest_tool.core.manifest import ManifestDocument  # noqa: E402
+from manifest_tool.core.manifest import ManifestDocument
 
 SAMPLE_MANIFEST = textwrap.dedent(
     """
