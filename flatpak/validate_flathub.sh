@@ -20,7 +20,7 @@ if [[ ! -d "${OUTPUT_DIR}" ]]; then
   exit 1
 fi
 
-echo "[3/6] Building from offline manifest"
+echo "[3/5] Building from offline manifest"
 pushd "${OUTPUT_DIR}" >/dev/null
 flatpak-builder \
   --sandbox \
@@ -29,21 +29,30 @@ flatpak-builder \
   --mirror-screenshots-url=https://dl.flathub.org/media \
   --force-clean \
   --repo=repo \
+  --mirror-screenshots-url=https://dl.flathub.org/repo/screenshots \
   build-dir com.matthiasn.lotti.yml
 
-echo "[4/6] Exporting icons and screenshots"
-flatpak build-export \
-  --include-icons \
-  --include-screenshots \
-  repo build-dir >/dev/null
+echo "[3.5/5] Committing screenshots to OSTree"
+ARCH="$(uname -m)"
+if [[ "${ARCH}" == "x86_64" ]]; then
+  OSTREE_ARCH="x86_64"
+elif [[ "${ARCH}" == "aarch64" || "${ARCH}" == "arm64" ]]; then
+  OSTREE_ARCH="aarch64"
+else
+  echo "Warning: Unknown architecture ${ARCH}, defaulting to x86_64" >&2
+  OSTREE_ARCH="x86_64"
+fi
 
-echo "[5/6] Updating local repo metadata"
-flatpak build-update-repo repo >/dev/null
+ostree commit \
+  --repo=repo \
+  --canonical-permissions \
+  --branch=screenshots/${OSTREE_ARCH} \
+  build-dir/files/share/app-info/media
 
-echo "[6/6] Linting manifest"
+echo "[4/5] Linting manifest"
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder//stable manifest com.matthiasn.lotti.yml
 
-echo "[7/6] Linting repo"
+echo "[5/5] Linting repo"
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder//stable repo repo
 popd >/dev/null
 
