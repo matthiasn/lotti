@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from manifest_tool.flutter import plugins as flutter_plugins
-from manifest_tool.core.manifest import ManifestDocument
 
 
 def test_add_media_kit_mimalloc_source_basic(make_document):
@@ -160,10 +159,7 @@ def test_add_media_kit_mimalloc_wrong_dest_not_detected(make_document):
 
     # Check that correct ones were added
     correct_x64 = [
-        s
-        for s in sources
-        if s.get("dest") == "./build/linux/x64/release"
-        and "x86_64" in s.get("only-arches", [])
+        s for s in sources if s.get("dest") == "./build/linux/x64/release" and "x86_64" in s.get("only-arches", [])
     ]
     assert len(correct_x64) == 1
 
@@ -174,9 +170,7 @@ def test_add_media_kit_mimalloc_no_lotti_module(make_document):
 
     # Remove lotti module
     document.data["modules"] = [
-        m
-        for m in document.data["modules"]
-        if not (isinstance(m, dict) and m.get("name") == "lotti")
+        m for m in document.data["modules"] if not (isinstance(m, dict) and m.get("name") == "lotti")
     ]
 
     result = flutter_plugins.add_media_kit_mimalloc_source(document)

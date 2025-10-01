@@ -40,10 +40,10 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
               env:
                 PATH: /usr/bin
             build-commands:
-          - echo "Installing Rust..."
-          - >-
-              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s --
-              -y --default-toolchain stable --profile minimal
+              - echo "Installing Rust..."
+              - >
+                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
+                sh -s -- -y --default-toolchain stable --profile minimal
               - export PATH=\"$HOME/.cargo/bin:$PATH\"
               - cp -r /app/flutter /run/build/lotti/flutter_sdk
               - echo build
@@ -109,14 +109,8 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
     data = load(manifest_path)
 
     # Assert rustup module is included before lotti
-    idx_mod = next(
-        i for i, m in enumerate(data["modules"]) if m == "rustup-1.83.0.json"
-    )
-    idx_lotti = next(
-        i
-        for i, m in enumerate(data["modules"])
-        if isinstance(m, dict) and m.get("name") == "lotti"
-    )
+    idx_mod = next(i for i, m in enumerate(data["modules"]) if m == "rustup-1.83.0.json")
+    idx_lotti = next(i for i, m in enumerate(data["modules"]) if isinstance(m, dict) and m.get("name") == "lotti")
     assert idx_mod < idx_lotti
 
     lotti = data["modules"][idx_lotti]
@@ -124,23 +118,16 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
     # Offline sources present and sanitized
     assert "pubspec-sources.json" in lotti["sources"]
     assert "cargo-sources.json" in lotti["sources"]
-    assert any(
-        isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.4.json"
-        for s in lotti["sources"]
-    )
+    assert any(isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.4.json" for s in lotti["sources"])
     # No rustup JSON under sources
     assert not any(
-        (s == "rustup-1.83.0.json")
-        or (isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json")
+        (s == "rustup-1.83.0.json") or (isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json")
         for s in lotti["sources"]
     )
 
     # Helper is added to flutter-sdk sources, not lotti
     flutter_sdk = next(m for m in data["modules"] if m["name"] == "flutter-sdk")
-    assert any(
-        isinstance(s, dict) and s.get("dest-filename") == "setup-flutter.sh"
-        for s in flutter_sdk["sources"]
-    )
+    assert any(isinstance(s, dict) and s.get("dest-filename") == "setup-flutter.sh" for s in flutter_sdk["sources"])
     # Command is added to lotti
     assert any("setup-flutter.sh" in c for c in lotti["build-commands"])
 
@@ -155,9 +142,7 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
     )
 
     # rustup installer commands removed
-    assert all(
-        "rustup.rs" not in c and "cargo/bin" not in c for c in lotti["build-commands"]
-    )
+    assert all("rustup.rs" not in c and "cargo/bin" not in c for c in lotti["build-commands"])
 
 
 def test_end_to_end_nested_sdk_pipeline(tmp_path: Path) -> None:
@@ -261,18 +246,11 @@ def test_end_to_end_nested_sdk_pipeline(tmp_path: Path) -> None:
     data = load(manifest_path)
     modules = data["modules"]
     # Top-level flutter-sdk removed
-    assert not any(
-        isinstance(m, dict) and m.get("name") == "flutter-sdk" for m in modules
-    )
+    assert not any(isinstance(m, dict) and m.get("name") == "flutter-sdk" for m in modules)
     lotti = next(m for m in modules if isinstance(m, dict) and m.get("name") == "lotti")
     # Nested modules include flutter JSON
-    assert any(
-        isinstance(n, str) and n.startswith("flutter-sdk-")
-        for n in lotti.get("modules", [])
-    )
+    assert any(isinstance(n, str) and n.startswith("flutter-sdk-") for n in lotti.get("modules", []))
     # Env and helper adjusted for nested layout
     # When using --append-path flag, the path is added to append-path, not env.PATH
     assert lotti["build-options"]["append-path"].startswith("/var/lib/flutter/bin")
-    assert any(
-        "setup-flutter.sh" in c and "-C /var/lib" in c for c in lotti["build-commands"]
-    )
+    assert any("setup-flutter.sh" in c and "-C /var/lib" in c for c in lotti["build-commands"])

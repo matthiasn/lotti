@@ -17,9 +17,7 @@ def test_ensure_nested_sdk(make_document, tmp_path: Path):
     result = flutter_sdk.ensure_nested_sdk(document, output_dir=out_dir)
 
     assert result.changed
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     assert "flutter-sdk-offline.json" in lotti["modules"]
 
 
@@ -39,9 +37,7 @@ def test_normalize_flutter_sdk_module(make_document):
     result = flutter_sdk.normalize_flutter_sdk_module(document)
 
     assert result.changed
-    commands = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )["build-commands"]
+    commands = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")["build-commands"]
     assert commands == ["mv flutter /app/flutter", "export PATH=/app/flutter/bin:$PATH"]
 
 
@@ -50,18 +46,14 @@ def test_normalize_sdk_copy_replaces_command(make_document):
     document = make_document()
 
     # First modify the lotti module to have the command we want to replace
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     lotti["build-commands"] = ["cp -r /var/lib/flutter .", "echo build"]
 
     result = flutter_sdk.normalize_sdk_copy(document)
 
     assert result.changed
     commands = lotti["build-commands"]
-    assert (
-        commands[0] == "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
-    )
+    assert commands[0] == "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
     assert commands[1] == "echo build"  # Other commands preserved
 
 
@@ -74,22 +66,15 @@ def test_convert_flutter_git_to_archive(make_document):
     )
 
     assert result.changed
-    flutter_module = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )
+    flutter_module = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")
     assert flutter_module["sources"][0]["type"] == "archive"
-    assert (
-        flutter_module["sources"][0]["url"]
-        == "https://github.com/flutter/flutter/archive/flutter.tar.xz"
-    )
+    assert flutter_module["sources"][0]["url"] == "https://github.com/flutter/flutter/archive/flutter.tar.xz"
     assert flutter_module["sources"][0]["sha256"] == "deadbeef"
 
 
 def test_rewrite_flutter_git_url(make_document):
     document = make_document()
-    flutter_module = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )
+    flutter_module = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")
     # Modify the URL to test rewriting - must contain flutter/flutter to be rewritten
     for source in flutter_module["sources"]:
         if isinstance(source, dict) and source.get("type") == "git":

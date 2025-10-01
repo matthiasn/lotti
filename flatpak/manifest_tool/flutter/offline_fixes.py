@@ -211,9 +211,7 @@ def _fix_append_path(build_options: dict) -> Tuple[bool, list[str]]:
     if not isinstance(append_value, str) or "/app/flutter/bin" not in append_value:
         return False, []
 
-    build_options["append-path"] = append_value.replace(
-        "/app/flutter/bin", "/var/lib/flutter/bin"
-    )
+    build_options["append-path"] = append_value.replace("/app/flutter/bin", "/var/lib/flutter/bin")
     return True, ["Fixed append-path"]
 
 
@@ -364,10 +362,7 @@ def remove_flutter_sdk_source(document: ManifestDocument) -> OperationResult:
         # Remove setup-flutter.sh source
         filtered_sources = []
         for source in sources:
-            if (
-                isinstance(source, dict)
-                and source.get("dest-filename") == "setup-flutter.sh"
-            ):
+            if isinstance(source, dict) and source.get("dest-filename") == "setup-flutter.sh":
                 messages.append("Removed setup-flutter.sh source from flutter-sdk")
                 changed = True
             else:

@@ -7,14 +7,10 @@ from manifest_tool.flutter import build as flutter_build
 
 def test_normalize_lotti_env_top_layout(make_document):
     document = make_document()
-    result = flutter_build.normalize_lotti_env(
-        document, flutter_bin="/app/flutter/bin", ensure_append_path=True
-    )
+    result = flutter_build.normalize_lotti_env(document, flutter_bin="/app/flutter/bin", ensure_append_path=True)
 
     assert result.changed
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     # When ensure_append_path=True, only append-path is updated
     append_path = lotti["build-options"]["append-path"]
     assert "/app/flutter/bin" in append_path
@@ -25,17 +21,13 @@ def test_remove_network_from_build_args(make_document):
     document = make_document()
 
     # Add --share=network to both flutter-sdk and lotti modules
-    flutter_sdk = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )
+    flutter_sdk = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")
     flutter_sdk.setdefault("build-options", {})["build-args"] = [
         "--share=network",
         "--allow=devel",
     ]
 
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     lotti["build-options"]["build-args"] = ["--share=network"]
 
     # Remove network access
@@ -70,9 +62,7 @@ def test_remove_network_from_build_args_cleans_empty(make_document):
 
     assert result.changed
     # build-options should be completely removed when empty
-    assert "build-options" not in lotti or "build-args" not in lotti.get(
-        "build-options", {}
-    )
+    assert "build-options" not in lotti or "build-args" not in lotti.get("build-options", {})
 
 
 def test_ensure_flutter_pub_get_offline(make_document):
@@ -80,9 +70,7 @@ def test_ensure_flutter_pub_get_offline(make_document):
     document = make_document()
 
     # Add flutter pub get commands to lotti module
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     lotti["build-commands"] = [
         "echo Starting build",
         "/run/build/lotti/flutter_sdk/bin/flutter pub get",

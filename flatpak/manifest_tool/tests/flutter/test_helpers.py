@@ -9,15 +9,11 @@ def test_ensure_setup_helper_source(make_document):
     """Test adding setup helper source to flutter-sdk module."""
     document = make_document()
 
-    result = flutter_helpers.ensure_setup_helper_source(
-        document, helper_name="setup-flutter.sh"
-    )
+    result = flutter_helpers.ensure_setup_helper_source(document, helper_name="setup-flutter.sh")
 
     assert result.changed
 
-    flutter_sdk = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )
+    flutter_sdk = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")
     sources = flutter_sdk["sources"]
 
     # Check that helper source was added
@@ -29,9 +25,7 @@ def test_ensure_setup_helper_source(make_document):
     )
 
     # Should be idempotent
-    result2 = flutter_helpers.ensure_setup_helper_source(
-        document, helper_name="setup-flutter.sh"
-    )
+    result2 = flutter_helpers.ensure_setup_helper_source(document, helper_name="setup-flutter.sh")
     assert not result2.changed
 
 
@@ -46,9 +40,7 @@ def test_ensure_setup_helper_command(make_document):
 
     assert result.changed
 
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     commands = lotti["build-commands"]
 
     # Check that helper command was added
@@ -117,9 +109,7 @@ def test_bundle_app_archive_updates_sources(make_document):
 
     assert result.changed
 
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     first_source = lotti["sources"][0]
 
     assert first_source["type"] == "file"
@@ -133,9 +123,7 @@ def test_bundle_app_archive_no_lotti_module(make_document):
 
     # Remove lotti module
     document.data["modules"] = [
-        m
-        for m in document.data["modules"]
-        if not (isinstance(m, dict) and m.get("name") == "lotti")
+        m for m in document.data["modules"] if not (isinstance(m, dict) and m.get("name") == "lotti")
     ]
 
     result = flutter_helpers.bundle_app_archive(
@@ -174,9 +162,7 @@ def test_bundle_app_archive_removes_git_sources(make_document):
 
     # Only Flutter git sources are removed, not all git sources
     # Non-Flutter git source should still be there
-    git_sources = [
-        s for s in updated_sources if isinstance(s, dict) and s.get("type") == "git"
-    ]
+    git_sources = [s for s in updated_sources if isinstance(s, dict) and s.get("type") == "git"]
     assert len(git_sources) == 1  # The non-Flutter git source remains
 
     # File source should be preserved

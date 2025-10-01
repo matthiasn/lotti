@@ -41,9 +41,7 @@ def test_check_flathub_compliance_network_in_build_args():
             "modules": [
                 {
                     "name": "test-module",
-                    "build-options": {
-                        "build-args": ["--share=network"]  # This is forbidden
-                    },
+                    "build-options": {"build-args": ["--share=network"]},  # This is forbidden
                 }
             ],
         },
@@ -176,11 +174,7 @@ def test_check_flathub_compliance_nested_modules():
                     "modules": [
                         {
                             "name": "child-module",
-                            "build-options": {
-                                "build-args": [
-                                    "--share=network"
-                                ]  # Forbidden in nested module
-                            },
+                            "build-options": {"build-args": ["--share=network"]},  # Forbidden in nested module
                             "build-commands": [
                                 "flutter config --no-analytics",  # Also forbidden
                                 "pub get",  # Missing --offline

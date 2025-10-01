@@ -175,9 +175,7 @@ def _run_ensure_nested_sdk(namespace: argparse.Namespace) -> int:
 
 
 def _run_normalize_lotti_env(namespace: argparse.Namespace) -> int:
-    flutter_bin = (
-        "/var/lib/flutter/bin" if namespace.layout == "nested" else "/app/flutter/bin"
-    )
+    flutter_bin = "/var/lib/flutter/bin" if namespace.layout == "nested" else "/app/flutter/bin"
     operation = ManifestOperation(
         manifest=Path(namespace.manifest),
         executor=lambda document: flutter.normalize_lotti_env(
@@ -306,12 +304,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Replace a manifest source url with a local path entry.",
     )
     parser_replace.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser_replace.add_argument(
-        "--identifier", required=True, help="Identifier to match within the url line."
-    )
-    parser_replace.add_argument(
-        "--path", required=True, dest="path_value", help="Replacement path value."
-    )
+    parser_replace.add_argument("--identifier", required=True, help="Identifier to match within the url line.")
+    parser_replace.add_argument("--path", required=True, dest="path_value", help="Replacement path value.")
     parser_replace.set_defaults(func=_run_replace_url_with_path)
 
     parser_setup = subparsers.add_parser(
@@ -319,14 +313,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Ensure flutter-sdk module ships the setup helper script.",
     )
     parser_setup.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser_setup.add_argument(
-        "--helper", default="setup-flutter.sh", help="Helper script basename to embed."
-    )
+    parser_setup.add_argument("--helper", default="setup-flutter.sh", help="Helper script basename to embed.")
     parser_setup.set_defaults(func=_run_ensure_setup_helper)
 
-    parser_pin = subparsers.add_parser(
-        "pin-commit", help="Pin the lotti source to a specific commit."
-    )
+    parser_pin = subparsers.add_parser("pin-commit", help="Pin the lotti source to a specific commit.")
     parser_pin.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_pin.add_argument("--commit", required=True, help="Commit SHA to pin.")
     parser_pin.add_argument(
@@ -364,12 +354,8 @@ def build_parser() -> argparse.ArgumentParser:
         "ensure-module-include",
         help="Ensure a string module include is present (e.g., rustup JSON module).",
     )
-    parser_mod_include.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
-    parser_mod_include.add_argument(
-        "--name", required=True, help="Module include name (e.g., rustup-1.83.0.json)"
-    )
+    parser_mod_include.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_mod_include.add_argument("--name", required=True, help="Module include name (e.g., rustup-1.83.0.json)")
     parser_mod_include.add_argument(
         "--before",
         dest="before_name",
@@ -387,18 +373,12 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
-    parser_nested = subparsers.add_parser(
-        "ensure-nested-sdk", help="Attach flutter-sdk JSON modules under lotti."
-    )
+    parser_nested = subparsers.add_parser("ensure-nested-sdk", help="Attach flutter-sdk JSON modules under lotti.")
     parser_nested.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser_nested.add_argument(
-        "--output-dir", required=True, help="Directory containing flutter jsons."
-    )
+    parser_nested.add_argument("--output-dir", required=True, help="Directory containing flutter jsons.")
     parser_nested.set_defaults(func=_run_ensure_nested_sdk)
 
-    parser_env = subparsers.add_parser(
-        "normalize-lotti-env", help="Normalize PATH settings for the lotti module."
-    )
+    parser_env = subparsers.add_parser("normalize-lotti-env", help="Normalize PATH settings for the lotti module.")
     parser_env.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_env.add_argument(
         "--layout",
@@ -424,9 +404,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="top",
         help="SDK layout to target.",
     )
-    parser_helper.add_argument(
-        "--helper", default="setup-flutter.sh", help="Helper script basename."
-    )
+    parser_helper.add_argument("--helper", default="setup-flutter.sh", help="Helper script basename.")
     parser_helper.set_defaults(func=_run_ensure_lotti_setup_helper)
 
     # Note: ensure-lotti-network-share command removed
@@ -437,16 +415,12 @@ def build_parser() -> argparse.ArgumentParser:
         "remove-network-from-build-args",
         help="Remove --share=network from build-args for Flathub compliance.",
     )
-    parser_remove_network.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_remove_network.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_remove_network.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter.remove_network_from_build_args(
-                    document
-                ),
+                executor=lambda document: flutter.remove_network_from_build_args(document),
             )
         )
     )
@@ -455,16 +429,12 @@ def build_parser() -> argparse.ArgumentParser:
         "ensure-flutter-pub-get-offline",
         help="Ensure flutter pub get commands use --offline flag.",
     )
-    parser_pub_offline.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_pub_offline.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_pub_offline.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter.ensure_flutter_pub_get_offline(
-                    document
-                ),
+                executor=lambda document: flutter.ensure_flutter_pub_get_offline(document),
             )
         )
     )
@@ -473,16 +443,12 @@ def build_parser() -> argparse.ArgumentParser:
         "remove-flutter-config",
         help="Remove flutter config commands from lotti build steps.",
     )
-    parser_remove_config.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_remove_config.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_remove_config.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter.remove_flutter_config_command(
-                    document
-                ),
+                executor=lambda document: flutter.remove_flutter_config_command(document),
             )
         )
     )
@@ -491,16 +457,12 @@ def build_parser() -> argparse.ArgumentParser:
         "ensure-dart-pub-offline-in-build",
         help="Wrap flutter build to disable pub network access.",
     )
-    parser_dart_offline.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_dart_offline.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_dart_offline.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter.ensure_dart_pub_offline_in_build(
-                    document
-                ),
+                executor=lambda document: flutter.ensure_dart_pub_offline_in_build(document),
             )
         )
     )
@@ -523,16 +485,12 @@ def build_parser() -> argparse.ArgumentParser:
         "add-media-kit-mimalloc-source",
         help="Add mimalloc source for media_kit_libs_linux plugin.",
     )
-    parser_mimalloc.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_mimalloc.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_mimalloc.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
                 manifest=Path(ns.manifest),
-                executor=lambda document: flutter.add_media_kit_mimalloc_source(
-                    document
-                ),
+                executor=lambda document: flutter.add_media_kit_mimalloc_source(document),
             )
         )
     )
@@ -541,9 +499,7 @@ def build_parser() -> argparse.ArgumentParser:
         "ensure-rust-sdk-env",
         help="Ensure Rust SDK extension bin is on PATH for lotti.",
     )
-    parser_rust_env.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_rust_env.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_rust_env.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
@@ -553,12 +509,8 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
 
-    parser_rm_rustup = subparsers.add_parser(
-        "remove-rustup-install", help="Remove rustup install commands from lotti."
-    )
-    parser_rm_rustup.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_rm_rustup = subparsers.add_parser("remove-rustup-install", help="Remove rustup install commands from lotti.")
+    parser_rm_rustup.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_rm_rustup.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
@@ -573,27 +525,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Check if the top-level flutter-sdk module can be removed.",
     )
     parser_remove.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser_remove.add_argument(
-        "--output-dir", required=True, help="Directory containing flutter jsons."
-    )
+    parser_remove.add_argument("--output-dir", required=True, help="Directory containing flutter jsons.")
     parser_remove.set_defaults(func=_run_should_remove_flutter_sdk)
 
     parser_sdk_module = subparsers.add_parser(
         "normalize-flutter-sdk-module",
         help="Prune flutter-sdk build commands to safe operations.",
     )
-    parser_sdk_module.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_sdk_module.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_sdk_module.set_defaults(func=_run_normalize_flutter_sdk_module)
 
     parser_sdk_copy = subparsers.add_parser(
         "normalize-sdk-copy",
         help="Normalize the Flutter SDK copy command with fallbacks.",
     )
-    parser_sdk_copy.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_sdk_copy.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_sdk_copy.set_defaults(func=_run_normalize_sdk_copy)
 
     parser_convert = subparsers.add_parser(
@@ -615,18 +561,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser_offline_sources = subparsers.add_parser(
         "add-offline-sources", help="Attach offline JSON sources to the lotti module."
     )
-    parser_offline_sources.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
-    parser_offline_sources.add_argument(
-        "--pubspec", help="pubspec JSON filename to include."
-    )
-    parser_offline_sources.add_argument(
-        "--cargo", help="cargo JSON filename to include."
-    )
-    parser_offline_sources.add_argument(
-        "--flutter-json", dest="flutter_json", help="Flutter SDK JSON filename."
-    )
+    parser_offline_sources.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_offline_sources.add_argument("--pubspec", help="pubspec JSON filename to include.")
+    parser_offline_sources.add_argument("--cargo", help="cargo JSON filename to include.")
+    parser_offline_sources.add_argument("--flutter-json", dest="flutter_json", help="Flutter SDK JSON filename.")
     parser_offline_sources.add_argument(
         "--rustup",
         action="append",
@@ -640,9 +578,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Bundle archive/file sources referenced in the manifest.",
     )
     parser_bundle.add_argument("--manifest", required=True, help="Manifest file path.")
-    parser_bundle.add_argument(
-        "--output-dir", required=True, help="Directory for cached artifacts."
-    )
+    parser_bundle.add_argument("--output-dir", required=True, help="Directory for cached artifacts.")
     parser_bundle.add_argument(
         "--download-missing",
         action="store_true",
@@ -660,26 +596,16 @@ def build_parser() -> argparse.ArgumentParser:
         "bundle-app-archive",
         help="Bundle the application source archive and attach metadata.",
     )
-    parser_bundle_app.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
-    parser_bundle_app.add_argument(
-        "--archive", required=True, help="Archive filename (relative to output dir)."
-    )
-    parser_bundle_app.add_argument(
-        "--sha256", required=True, help="Archive SHA256 hash."
-    )
-    parser_bundle_app.add_argument(
-        "--output-dir", required=True, help="Directory containing offline artifacts."
-    )
+    parser_bundle_app.add_argument("--manifest", required=True, help="Manifest file path.")
+    parser_bundle_app.add_argument("--archive", required=True, help="Archive filename (relative to output dir).")
+    parser_bundle_app.add_argument("--sha256", required=True, help="Archive SHA256 hash.")
+    parser_bundle_app.add_argument("--output-dir", required=True, help="Directory containing offline artifacts.")
     parser_bundle_app.set_defaults(func=_run_bundle_app_archive)
 
     parser_rm_rustup = subparsers.add_parser(
         "remove-rustup-sources", help="Remove rustup-*.json references from sources."
     )
-    parser_rm_rustup.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_rm_rustup.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_rm_rustup.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
@@ -694,9 +620,7 @@ def build_parser() -> argparse.ArgumentParser:
         "apply-offline-fixes",
         help="Apply all offline fixes: remove setup-flutter.sh, fix paths, add patches.",
     )
-    parser_apply_offline_fixes.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_apply_offline_fixes.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_apply_offline_fixes.set_defaults(
         func=lambda ns: _run_manifest_operation(
             ManifestOperation(
@@ -711,9 +635,7 @@ def build_parser() -> argparse.ArgumentParser:
         "check-flathub-compliance",
         help="Check manifest for Flathub compliance violations.",
     )
-    parser_check_compliance.add_argument(
-        "--manifest", required=True, help="Manifest file path."
-    )
+    parser_check_compliance.add_argument("--manifest", required=True, help="Manifest file path.")
 
     # Import validation module
     try:
@@ -742,9 +664,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser_check_compliance.set_defaults(func=_run_validation_check)
 
     # Build utility commands
-    parser_find_flutter = subparsers.add_parser(
-        "find-flutter-sdk", help="Find a cached Flutter SDK installation."
-    )
+    parser_find_flutter = subparsers.add_parser("find-flutter-sdk", help="Find a cached Flutter SDK installation.")
     parser_find_flutter.add_argument(
         "--search-root",
         action="append",
@@ -756,9 +676,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         help="Path to exclude from search (can be repeated).",
     )
-    parser_find_flutter.add_argument(
-        "--max-depth", type=int, default=6, help="Maximum search depth (default: 6)."
-    )
+    parser_find_flutter.add_argument("--max-depth", type=int, default=6, help="Maximum search depth (default: 6).")
     parser_find_flutter.set_defaults(func=lambda ns: _run_find_flutter_sdk(ns))
 
     parser_prepare = subparsers.add_parser(
@@ -853,9 +771,7 @@ def _run_prepare_flathub(namespace: argparse.Namespace) -> int:
         flatpak_flutter_timeout=_env_optional_int("FLATPAK_FLUTTER_TIMEOUT"),
         extra_env=extra_env,
         test_build=_env_bool("TEST_BUILD", False),
-        flathub_dir=(
-            namespace.flathub_dir.resolve() if namespace.flathub_dir else None
-        ),
+        flathub_dir=(namespace.flathub_dir.resolve() if namespace.flathub_dir else None),
     )
 
     try:

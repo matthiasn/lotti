@@ -34,8 +34,7 @@ def _ensure_flutter_sdk_helper(module: dict, helper_name: str) -> bool:
     sources = module.setdefault("sources", [])
     # Check if setup-flutter.sh is already in the sources
     has_helper = any(
-        isinstance(source, dict) and source.get("dest-filename") == "setup-flutter.sh"
-        for source in sources
+        isinstance(source, dict) and source.get("dest-filename") == "setup-flutter.sh" for source in sources
     )
 
     if not has_helper:
@@ -67,9 +66,7 @@ def _ensure_lotti_flutter_path(module: dict) -> bool:
     entries = [entry for entry in current_path.split(":") if entry]
 
     if "/app/flutter/bin" not in entries:
-        env["PATH"] = (
-            f"/app/flutter/bin:{current_path}" if current_path else "/app/flutter/bin"
-        )
+        env["PATH"] = f"/app/flutter/bin:{current_path}" if current_path else "/app/flutter/bin"
         return True
     return False
 

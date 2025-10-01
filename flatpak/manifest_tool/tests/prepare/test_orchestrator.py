@@ -4,7 +4,6 @@ import unittest
 from pathlib import Path
 
 import io
-import shutil
 import yaml
 from contextlib import redirect_stdout
 
@@ -118,13 +117,7 @@ class PrepareOrchestratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             context = _make_context(base)
-            package_dir = (
-                context.repo_root
-                / ".pub-cache"
-                / "hosted"
-                / "pub.dev"
-                / "example-1.0.0"
-            )
+            package_dir = context.repo_root / ".pub-cache" / "hosted" / "pub.dev" / "example-1.0.0"
             package_dir.mkdir(parents=True)
             (package_dir / "dummy.txt").write_text("hello", encoding="utf-8")
 
@@ -217,22 +210,14 @@ class PrepareOrchestratorTests(unittest.TestCase):
             _ensure_setup_helper_reference(context, printer)
             data = yaml.safe_load(context.manifest_work.read_text(encoding="utf-8"))
             sources = data["modules"][0]["sources"]
-            self.assertTrue(
-                any(s.get("dest-filename") == "setup-flutter.sh" for s in sources)
-            )
+            self.assertTrue(any(s.get("dest-filename") == "setup-flutter.sh" for s in sources))
 
     def test_stage_package_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             context = _make_context(base)
             tools_dir = (
-                context.work_dir
-                / ".flatpak-builder"
-                / "build"
-                / "tool"
-                / "flutter"
-                / "packages"
-                / "flutter_tools"
+                context.work_dir / ".flatpak-builder" / "build" / "tool" / "flutter" / "packages" / "flutter_tools"
             )
             tools_dir.mkdir(parents=True, exist_ok=True)
             (tools_dir / "pubspec.lock").write_text("", encoding="utf-8")
@@ -265,19 +250,12 @@ class PrepareOrchestratorTests(unittest.TestCase):
             context.output_dir.joinpath(context.manifest_work.name).write_text(
                 yaml.safe_dump(manifest_data), encoding="utf-8"
             )
-            archive = (
-                context.output_dir
-                / f"flutter_linux_{context.flutter_tag}-stable.tar.xz"
-            )
+            archive = context.output_dir / f"flutter_linux_{context.flutter_tag}-stable.tar.xz"
             archive.write_bytes(b"dummy")
-            document = ManifestDocument.load(
-                context.output_dir / context.manifest_work.name
-            )
+            document = ManifestDocument.load(context.output_dir / context.manifest_work.name)
             printer = _StatusPrinter()
             _ensure_flutter_archive(context, printer, document)
-            document = ManifestDocument.load(
-                context.output_dir / context.manifest_work.name
-            )
+            document = ManifestDocument.load(context.output_dir / context.manifest_work.name)
             sources = document.data["modules"][0]["sources"]
             self.assertEqual(sources[0]["type"], "archive")
 
@@ -288,9 +266,7 @@ class PrepareOrchestratorTests(unittest.TestCase):
             context.manifest_work.parent.mkdir(parents=True, exist_ok=True)
             outgoing_manifest = context.output_dir / context.manifest_work.name
             outgoing_manifest.parent.mkdir(parents=True, exist_ok=True)
-            outgoing_manifest.write_text(
-                yaml.safe_dump({"modules": []}), encoding="utf-8"
-            )
+            outgoing_manifest.write_text(yaml.safe_dump({"modules": []}), encoding="utf-8")
 
             helper_root = context.work_dir / "sqlite3_flutter_libs"
             helper_root.mkdir(parents=True, exist_ok=True)
@@ -302,9 +278,7 @@ class PrepareOrchestratorTests(unittest.TestCase):
             printer = _StatusPrinter()
             _copy_assets_and_metadata(context, printer)
 
-            self.assertTrue(
-                (context.output_dir / "sqlite3_flutter_libs" / "dummy.patch").is_file()
-            )
+            self.assertTrue((context.output_dir / "sqlite3_flutter_libs" / "dummy.patch").is_file())
             self.assertTrue((context.output_dir / "cargokit" / "Cargo.lock").is_file())
 
     def test_copy_screenshots_missing_raises(self) -> None:

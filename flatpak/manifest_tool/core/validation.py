@@ -93,9 +93,7 @@ def _check_network_in_build_args(data: dict) -> List[str]:
                     # Check each build argument for network sharing
                     for arg in build_args:
                         if arg == "--share=network":
-                            violations.append(
-                                f"{path}: --share=network in build-args (network forbidden during build)"
-                            )
+                            violations.append(f"{path}: --share=network in build-args (network forbidden during build)")
 
         # Check nested modules
         if "modules" in module:
@@ -183,9 +181,7 @@ def _check_pub_get_offline(data: dict) -> List[str]:
         for i, cmd in enumerate(commands):
             if isinstance(cmd, str) and "pub get" in cmd:
                 if "--offline" not in cmd:
-                    violations.append(
-                        f"{path}[{i}]: 'pub get' without --offline flag (network access forbidden)"
-                    )
+                    violations.append(f"{path}[{i}]: 'pub get' without --offline flag (network access forbidden)")
 
     def check_module(module: dict, path: str):
         """Recursively check a module."""

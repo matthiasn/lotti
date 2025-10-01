@@ -72,9 +72,7 @@ def test_replace_url_with_path_no_match(tmp_path: Path):
 
     # Verify nothing changed
     updated = yaml.safe_load(manifest_path.read_text())
-    assert (
-        updated["modules"][0]["sources"][0]["url"] == "https://github.com/user/repo.git"
-    )
+    assert updated["modules"][0]["sources"][0]["url"] == "https://github.com/user/repo.git"
 
 
 def test_replace_url_with_path_multiple_matches(tmp_path: Path):
@@ -84,9 +82,7 @@ def test_replace_url_with_path_multiple_matches(tmp_path: Path):
         "modules": [
             {
                 "name": "module1",
-                "sources": [
-                    {"type": "file", "url": "https://example.com/myfile.tar.gz"}
-                ],
+                "sources": [{"type": "file", "url": "https://example.com/myfile.tar.gz"}],
             },
             {
                 "name": "module2",
@@ -158,14 +154,9 @@ def test_replace_url_with_path_in_manifest_direct():
         ]
     }
 
-    changed = sources_ops.replace_url_with_path_in_manifest(
-        manifest_data, "data.zip", "local/data.zip"
-    )
+    changed = sources_ops.replace_url_with_path_in_manifest(manifest_data, "data.zip", "local/data.zip")
 
     assert changed is True
     assert manifest_data["modules"][0]["sources"][0]["path"] == "local/data.zip"
     assert "url" not in manifest_data["modules"][0]["sources"][0]
-    assert (
-        manifest_data["modules"][0]["sources"][1]["url"]
-        == "https://github.com/test/repo"
-    )
+    assert manifest_data["modules"][0]["sources"][1]["url"] == "https://github.com/test/repo"
