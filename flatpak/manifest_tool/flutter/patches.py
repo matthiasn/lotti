@@ -83,9 +83,7 @@ def _load_pubspec_sources(document: ManifestDocument) -> Optional[List[Any]]:
         return None
 
 
-def _find_package_in_pubspec(
-    package_base: str, entries: Iterable[Any]
-) -> Optional[str]:
+def _find_package_in_pubspec(package_base: str, entries: Iterable[Any]) -> Optional[str]:
     """Return ``package-version`` entry for ``package_base`` if available."""
 
     for item in entries:
@@ -101,9 +99,7 @@ def _find_package_in_pubspec(
     return None
 
 
-def _match_packages_with_versions(
-    package_bases: Iterable[str], pubspec_entries: Iterable[Any]
-) -> List[str]:
+def _match_packages_with_versions(package_bases: Iterable[str], pubspec_entries: Iterable[Any]) -> List[str]:
     """Return versioned package names when pubspec data provides them."""
 
     matched: List[str] = []
@@ -119,11 +115,7 @@ def _has_cargokit_patch(sources: Iterable[Any], package: str) -> bool:
 
     dest_path = f".pub-cache/hosted/pub.dev/{package}/cargokit"
     for source in sources:
-        if (
-            isinstance(source, dict)
-            and source.get("type") == "patch"
-            and source.get("dest") == dest_path
-        ):
+        if isinstance(source, dict) and source.get("type") == "patch" and source.get("dest") == dest_path:
             return True
     return False
 

@@ -140,10 +140,7 @@ def _should_keep_flutter_command(command: str) -> bool:
     if not isinstance(command, str):
         return False
     # Keep Flutter commands but remove SDK manipulation
-    if any(
-        kw in command
-        for kw in ["git ", "checkout", "reset", "apply", "config", "describe"]
-    ):
+    if any(kw in command for kw in ["git ", "checkout", "reset", "apply", "config", "describe"]):
         return False
     if "flutter" in command.lower():
         return command.startswith("mv flutter") or command.startswith("export PATH")
@@ -225,9 +222,7 @@ def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
         for cmd in commands:
             if isinstance(cmd, str) and cmd.strip() == "cp -r /var/lib/flutter .":
                 # Replace with conditional version
-                new_cmd = (
-                    "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
-                )
+                new_cmd = "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
                 new_commands.append(new_cmd)
                 changed = True
             else:
@@ -270,9 +265,7 @@ def _convert_flutter_sdk_sources(module: dict, archive_name: str, sha256: str) -
     return True
 
 
-def convert_flutter_git_to_archive(
-    document: ManifestDocument, *, archive_name: str, sha256: str
-) -> OperationResult:
+def convert_flutter_git_to_archive(document: ManifestDocument, *, archive_name: str, sha256: str) -> OperationResult:
     """Convert flutter-sdk from git source to archive source.
 
     Args:
@@ -287,9 +280,7 @@ def convert_flutter_git_to_archive(
     changed = False
 
     for module in modules:
-        if isinstance(module, dict) and _convert_flutter_sdk_sources(
-            module, archive_name, sha256
-        ):
+        if isinstance(module, dict) and _convert_flutter_sdk_sources(module, archive_name, sha256):
             changed = True
 
     if changed:
@@ -338,9 +329,7 @@ def rewrite_flutter_git_url(document: ManifestDocument) -> OperationResult:
     return OperationResult.unchanged()
 
 
-def _collect_lotti_nested_references(
-    modules: Iterable[Any], candidates: Iterable[str]
-) -> set[str]:
+def _collect_lotti_nested_references(modules: Iterable[Any], candidates: Iterable[str]) -> set[str]:
     """Return candidate names referenced in the lotti module."""
 
     lotti_module = _get_lotti_module(modules)
@@ -355,9 +344,7 @@ def _collect_lotti_nested_references(
     return {candidate for candidate in candidates if candidate in nested_set}
 
 
-def _remove_flutter_sdk_if_nested(
-    modules: list[Any], json_names: list[str]
-) -> tuple[list[Any], bool]:
+def _remove_flutter_sdk_if_nested(modules: list[Any], json_names: list[str]) -> tuple[list[Any], bool]:
     """Remove flutter-sdk module(s) when nested SDKs are referenced."""
 
     referenced = _collect_lotti_nested_references(modules, json_names)

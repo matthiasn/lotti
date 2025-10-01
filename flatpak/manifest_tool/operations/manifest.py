@@ -104,9 +104,7 @@ def ensure_screenshot_asset(
         if not isinstance(sources, list):
             return OperationResult.unchanged()
         if not any(
-            isinstance(entry, dict)
-            and entry.get("type") == "file"
-            and entry.get("path") == screenshot_source
+            isinstance(entry, dict) and entry.get("type") == "file" and entry.get("path") == screenshot_source
             for entry in sources
         ):
             sources.append({"type": "file", "path": screenshot_source})
