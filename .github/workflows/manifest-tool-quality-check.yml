@@ -73,4 +73,4 @@ jobs:
         pytest tests/ -v --tb=short --color=yes
       env:
         # Ensure Python can find the manifest_tool package
-        PYTHONPATH: /home/runner/work/lotti/lotti/flatpak
+        PYTHONPATH: ${{ github.workspace }}/flatpak
