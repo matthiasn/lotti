@@ -210,12 +210,13 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
     screenshot_source = flatpak_dir / "screenshot.png"
 
     env: MutableMapping[str, str] = dict(options.extra_env or {})
-    pr_env = ci_ops.pr_aware_environment(
-        event_name=os.getenv("GITHUB_EVENT_NAME"),
-        event_path=os.getenv("GITHUB_EVENT_PATH"),
+    pr_env = dict(
+        ci_ops.pr_aware_environment(
+            event_name=os.getenv("GITHUB_EVENT_NAME"),
+            event_path=os.getenv("GITHUB_EVENT_PATH"),
+        )
     )
-    if pr_env:
-        env.update(pr_env)
+    env.update(pr_env)
 
     lotti_version = env.get("LOTTI_VERSION") or _derive_lotti_version(repo_root, printer)
     release_date = env.get("LOTTI_RELEASE_DATE") or datetime.date.today().isoformat()
@@ -249,8 +250,8 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
         setup_helper_source=setup_helper_source,
         screenshot_source=screenshot_source,
         flathub_dir=options.flathub_dir,
-        pr_head_commit=pr_env.get("PR_HEAD_SHA") if pr_env else None,
-        pr_head_url=pr_env.get("PR_HEAD_URL") if pr_env else None,
+        pr_head_commit=pr_env.get("PR_HEAD_SHA"),
+        pr_head_url=pr_env.get("PR_HEAD_URL"),
     )
 
     printer.info(f"Using version: {lotti_version}")
