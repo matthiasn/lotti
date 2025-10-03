@@ -29,9 +29,7 @@ SliverWoltModalSheetPage roomConfigPage({
             child: OutlinedButton(
               onPressed: () =>
                   pageIndexNotifier.value = pageIndexNotifier.value - 1,
-              child: Center(
-                child: Text(context.messages.settingsMatrixPreviousPage),
-              ),
+              child: Text(context.messages.settingsMatrixPreviousPage),
             ),
           ),
           const SizedBox(width: 8),

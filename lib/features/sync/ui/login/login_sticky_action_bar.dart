@@ -65,7 +65,7 @@ class LoginStickyActionBar extends ConsumerWidget {
                 onPressed: deleteConfig,
               ),
             ),
-          const SizedBox(width: 8),
+          if (config != null) const SizedBox(width: 8),
           Flexible(
             child: LottiPrimaryButton(
               key: const Key('matrix_login'),
