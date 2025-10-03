@@ -1245,10 +1245,10 @@ packages:
     dependency: "direct main"
     description:
       name: glass_kit
-      sha256: ccb7c31b07403d757bd338901a0f4859c081db05a6593916be87d7c20f07d9b7
+      sha256: ca071693b6b1c5ddc628aee030df0eb99a4063b55b5928cf84bb82f9bc32595f
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.1"
+    version: "4.0.2"
   glob:
     dependency: transitive
     description:
@@ -2330,26 +2330,26 @@ packages:
     dependency: "direct main"
     description:
       name: record
-      sha256: "9dbc6ff3e784612f90a9b001373c45ff76b7a08abd2bd9fdf72c242320c8911c"
+      sha256: "6bad72fb3ea6708d724cf8b6c97c4e236cf9f43a52259b654efeb6fd9b737f1f"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.1"
+    version: "6.1.2"
   record_android:
     dependency: transitive
     description:
       name: record_android
-      sha256: "854627cd78d8d66190377f98477eee06ca96ab7c9f2e662700daf33dbf7e6673"
+      sha256: f05677eeed074898327f890f232f9eb49cd99d1c20d0daaf22b5612f4b2301bb
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.2"
+    version: "1.4.3"
   record_ios:
     dependency: transitive
     description:
       name: record_ios
-      sha256: "13e241ed9cbc220534a40ae6b66222e21288db364d96dd66fb762ebd3cb77c71"
+      sha256: "67ccec4b0026304f236e59076f90682ee1911cd28907a877367ce9d61cb13a80"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.2"
+    version: "1.1.3"
   record_linux:
     dependency: transitive
     description:
@@ -2362,10 +2362,10 @@ packages:
     dependency: transitive
     description:
       name: record_macos
-      sha256: "2849068bb59072f300ad63ed146e543d66afaef8263edba4de4834fc7c8d4d35"
+      sha256: "842ea4b7e95f4dd237aacffc686d1b0ff4277e3e5357865f8d28cd28bc18ed95"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.1.2"
   record_platform_interface:
     dependency: transitive
     description:
@@ -2555,10 +2555,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_android
-      sha256: bd14436108211b0d4ee5038689a56d4ae3620fd72fd6036e113bf1345bc74d9e
+      sha256: "0b0f98d535319cb5cdd4f65783c2a54ee6d417a2f093dbb18be3e36e4c3d181f"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.13"
+    version: "2.4.14"
   shared_preferences_foundation:
     dependency: transitive
     description:
@@ -2768,18 +2768,18 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3
-      sha256: f393d92c71bdcc118d6203d07c991b9be0f84b1a6f89dd4f7eed348131329924
+      sha256: "5c225083e72ea56c96d94ba1dd14fb89c8bb7731c8496ee840ab77be9bb67ae2"
       url: "https://pub.dev"
     source: hosted
-    version: "2.9.0"
+    version: "2.9.1"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
       name: sqlite3_flutter_libs
-      sha256: "2b03273e71867a8a4d030861fc21706200debe5c5858a4b9e58f4a1c129586a4"
+      sha256: "69c80d812ef2500202ebd22002cbfc1b6565e9ff56b2f971e757fac5d42294df"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.39"
+    version: "0.5.40"
   sqlparser:
     dependency: transitive
     description:
@@ -2888,10 +2888,10 @@ packages:
     dependency: transitive
     description:
       name: system_info2
-      sha256: "65206bbef475217008b5827374767550a5420ce70a04d2d7e94d1d2253f3efc9"
+      sha256: b937736ecfa63c45b10dde1ceb6bb30e5c0c340e14c441df024150679d65ac43
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "4.1.0"
   term_glyph:
     dependency: transitive
     description:
@@ -3024,10 +3024,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_android
-      sha256: "199bc33e746088546a39cc5f36bac5a278c5e53b40cb3196f99e7345fdcfae6b"
+      sha256: c0fb544b9ac7efa10254efaf00a951615c362d1ea1877472f8f6c0fa00fcf15b
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.22"
+    version: "6.3.23"
   url_launcher_ios:
     dependency: transitive
     description:
@@ -3144,10 +3144,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: "59e5a457ddcc1688f39e9aef0efb62aa845cf0cbbac47e44ac9730dc079a2385"
+      sha256: "6cfe0b1e102522eda1e139b82bf00602181c5844fd2885340f595fb213d74842"
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.13"
+    version: "2.8.14"
   video_player_avfoundation:
     dependency: transitive
     description:
@@ -3200,10 +3200,10 @@ packages:
     dependency: transitive
     description:
       name: watcher
-      sha256: "5bf046f41320ac97a469d506261797f35254fa61c641741ef32dacda98b7d39c"
+      sha256: "592ab6e2892f67760543fb712ff0177f4ec76c031f02f5b4ff8d3fc5eb9fb61a"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.3"
+    version: "1.1.4"
   web:
     dependency: transitive
     description:
@@ -3272,10 +3272,10 @@ packages:
     dependency: "direct main"
     description:
       name: widgetbook
-      sha256: "881ff2a83d8575375fc16104fd9cff4e804eb0bdbdda9e86340fb9b25c0839c8"
+      sha256: "82915588d0348dc6434cb16b0d34a793910b824b61c8eaf48282a99efad456d6"
       url: "https://pub.dev"
     source: hosted
-    version: "3.17.0"
+    version: "3.17.1"
   widgetbook_annotation:
     dependency: transitive
     description:
