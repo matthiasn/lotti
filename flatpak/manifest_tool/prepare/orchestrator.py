@@ -26,6 +26,7 @@ from .. import flutter
 from ..build_utils import utils as build_utils
 from ..core import utils, validation as core_validation
 from ..core.manifest import ManifestDocument
+from ..operations import ci as ci_ops
 from ..operations import manifest as manifest_ops
 from ..operations import sources as sources_ops
 
@@ -155,6 +156,8 @@ class PrepareFlathubContext:
     flatpak_flutter_status: int | None = None
     flutter_git_url: str = "https://github.com/flutter/flutter.git"
     flathub_dir: Optional[Path] = None
+    pr_head_commit: Optional[str] = None
+    pr_head_url: Optional[str] = None
 
 
 class _StatusPrinter:
@@ -207,6 +210,12 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
     screenshot_source = flatpak_dir / "screenshot.png"
 
     env: MutableMapping[str, str] = dict(options.extra_env or {})
+    pr_env = ci_ops.pr_aware_environment(
+        event_name=os.getenv("GITHUB_EVENT_NAME"),
+        event_path=os.getenv("GITHUB_EVENT_PATH"),
+    )
+    if pr_env:
+        env.update(pr_env)
 
     lotti_version = env.get("LOTTI_VERSION") or _derive_lotti_version(repo_root, printer)
     release_date = env.get("LOTTI_RELEASE_DATE") or datetime.date.today().isoformat()
@@ -240,6 +249,8 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
         setup_helper_source=setup_helper_source,
         screenshot_source=screenshot_source,
         flathub_dir=options.flathub_dir,
+        pr_head_commit=pr_env.get("PR_HEAD_SHA") if pr_env else None,
+        pr_head_url=pr_env.get("PR_HEAD_URL") if pr_env else None,
     )
 
     printer.info(f"Using version: {lotti_version}")
@@ -435,19 +446,35 @@ def _ensure_flutter_source_in_lotti(sources: list[object], context: PrepareFlath
     return True
 
 
+def _ensure_lotti_repo_url(sources: list[object], target_url: str) -> bool:
+    changed = False
+    for source in sources:
+        if not isinstance(source, dict) or source.get("type") != "git":
+            continue
+        if source.get("dest") == "flutter":
+            continue
+        if source.get("url") != target_url:
+            source["url"] = target_url
+            changed = True
+    return changed
+
+
 def _prepare_lotti_module_for_flatpak_flutter(
     modules: Iterable[object],
     context: PrepareFlathubContext,
-) -> tuple[bool, bool]:
+) -> tuple[bool, bool, bool]:
     branch_applied = False
     flutter_added = False
+    repo_overridden = False
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
         sources = module.setdefault("sources", [])
         branch_applied = _ensure_branch_for_lotti_sources(sources, context.current_branch) or branch_applied
         flutter_added = _ensure_flutter_source_in_lotti(sources, context) or flutter_added
-    return branch_applied, flutter_added
+        if context.pr_head_url:
+            repo_overridden = _ensure_lotti_repo_url(sources, context.pr_head_url) or repo_overridden
+    return branch_applied, flutter_added, repo_overridden
 
 
 def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
@@ -503,9 +530,9 @@ def _prepare_manifest_for_flatpak_flutter(context: PrepareFlathubContext, printe
 
     _ensure_flutter_tag_from_modules(context, modules, printer)
 
-    branch_applied, flutter_added = _prepare_lotti_module_for_flatpak_flutter(modules, context)
+    branch_applied, flutter_added, repo_overridden = _prepare_lotti_module_for_flatpak_flutter(modules, context)
 
-    if branch_applied or flutter_added:
+    if branch_applied or flutter_added or repo_overridden:
         document.mark_changed()
     document.save()
 
@@ -515,6 +542,8 @@ def _prepare_manifest_for_flatpak_flutter(context: PrepareFlathubContext, printe
         printer.info(f"Replaced app source with branch {context.current_branch}")
     if flutter_added:
         printer.info("Injected Flutter SDK git source into lotti module")
+    if repo_overridden:
+        printer.info(f"Using PR fork URL: {context.pr_head_url}")
 
 
 def _ensure_setup_helper_reference(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
@@ -690,9 +719,10 @@ def _assert_commit_pinned(manifest_path: Path, label: str) -> None:
 
 
 def _pin_working_manifest(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
-    printer.status(f"Pinning working manifest to commit: {context.app_commit}")
+    target_commit = context.pr_head_commit or context.app_commit
+    printer.status(f"Pinning working manifest to commit: {target_commit}")
     document = ManifestDocument.load(context.manifest_work)
-    result = manifest_ops.pin_commit(document, commit=context.app_commit)
+    result = manifest_ops.pin_commit(document, commit=target_commit)
     if result.changed:
         document.save()
     _assert_commit_pinned(context.manifest_work, "Working")
