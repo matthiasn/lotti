@@ -247,32 +247,40 @@ class _HabitDialogState extends State<HabitDialog> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                LottiTertiaryButton(
-                                  key: const Key('habit_fail'),
-                                  onPressed: () =>
-                                      saveHabit(HabitCompletionType.fail),
-                                  label:
-                                      context.messages.completeHabitFailButton,
-                                ),
-                                LottiTertiaryButton(
-                                  key: const Key('habit_skip'),
-                                  onPressed: () =>
-                                      saveHabit(HabitCompletionType.skip),
-                                  label:
-                                      context.messages.completeHabitSkipButton,
-                                ),
-                                LottiTertiaryButton(
-                                  key: const Key('habit_save'),
-                                  onPressed: () => saveHabit(
-                                    HabitCompletionType.success,
+                                Flexible(
+                                  child: LottiTertiaryButton(
+                                    key: const Key('habit_fail'),
+                                    onPressed: () =>
+                                        saveHabit(HabitCompletionType.fail),
+                                    label: context
+                                        .messages.completeHabitFailButton,
                                   ),
-                                  label: context
-                                      .messages.completeHabitSuccessButton,
-                                ).animate(autoPlay: true).shimmer(
-                                      delay: 1.seconds,
-                                      duration: .7.seconds,
-                                      color: Theme.of(context).cardColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: LottiTertiaryButton(
+                                    key: const Key('habit_skip'),
+                                    onPressed: () =>
+                                        saveHabit(HabitCompletionType.skip),
+                                    label: context
+                                        .messages.completeHabitSkipButton,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: LottiTertiaryButton(
+                                    key: const Key('habit_save'),
+                                    onPressed: () => saveHabit(
+                                      HabitCompletionType.success,
                                     ),
+                                    label: context
+                                        .messages.completeHabitSuccessButton,
+                                  ).animate(autoPlay: true).shimmer(
+                                        delay: 1.seconds,
+                                        duration: .7.seconds,
+                                        color: Theme.of(context).cardColor,
+                                      ),
+                                ),
                               ],
                             ),
                           ),

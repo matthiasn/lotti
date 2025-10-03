@@ -23,17 +23,21 @@ SliverWoltModalSheetPage unverifiedDevicesPage({
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          LottiSecondaryButton(
-            label: context.messages.settingsMatrixPreviousPage,
-            onPressed: () =>
-                pageIndexNotifier.value = pageIndexNotifier.value - 1,
+          Flexible(
+            child: LottiSecondaryButton(
+              label: context.messages.settingsMatrixPreviousPage,
+              onPressed: () =>
+                  pageIndexNotifier.value = pageIndexNotifier.value - 1,
+            ),
           ),
-          const SizedBox(height: 8),
-          LottiPrimaryButton(
-            onPressed: () =>
-                pageIndexNotifier.value = pageIndexNotifier.value + 1,
-            label: context.messages.settingsMatrixNextPage,
-            icon: MdiIcons.arrowRight,
+          const SizedBox(width: 8),
+          Flexible(
+            child: LottiPrimaryButton(
+              onPressed: () =>
+                  pageIndexNotifier.value = pageIndexNotifier.value + 1,
+              label: context.messages.settingsMatrixNextPage,
+              icon: MdiIcons.arrowRight,
+            ),
           ),
         ],
       ),

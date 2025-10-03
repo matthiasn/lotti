@@ -20,15 +20,19 @@ SliverWoltModalSheetPage matrixStatsPage({
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          LottiSecondaryButton(
-            label: context.messages.settingsMatrixPreviousPage,
-            onPressed: () =>
-                pageIndexNotifier.value = pageIndexNotifier.value - 1,
+          Flexible(
+            child: LottiSecondaryButton(
+              label: context.messages.settingsMatrixPreviousPage,
+              onPressed: () =>
+                  pageIndexNotifier.value = pageIndexNotifier.value - 1,
+            ),
           ),
-          const SizedBox(height: 8),
-          LottiPrimaryButton(
-            onPressed: () => Navigator.of(context).pop(),
-            label: context.messages.settingsMatrixDone,
+          const SizedBox(width: 8),
+          Flexible(
+            child: LottiPrimaryButton(
+              onPressed: () => Navigator.of(context).pop(),
+              label: context.messages.settingsMatrixDone,
+            ),
           ),
         ],
       ),

@@ -42,17 +42,21 @@ class LoggedInPageStickyActionBar extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          LottiSecondaryButton(
-            label: context.messages.settingsMatrixLogoutButtonLabel,
-            onPressed: () async {
-              await ref.read(matrixLoginControllerProvider.notifier).logout();
-              pageIndexNotifier.value = 0;
-            },
+          Flexible(
+            child: LottiSecondaryButton(
+              label: context.messages.settingsMatrixLogoutButtonLabel,
+              onPressed: () async {
+                await ref.read(matrixLoginControllerProvider.notifier).logout();
+                pageIndexNotifier.value = 0;
+              },
+            ),
           ),
-          const SizedBox(height: 8),
-          LottiPrimaryButton(
-            onPressed: () => pageIndexNotifier.value = 2,
-            label: context.messages.settingsMatrixNextPage,
+          const SizedBox(width: 8),
+          Flexible(
+            child: LottiPrimaryButton(
+              onPressed: () => pageIndexNotifier.value = 2,
+              label: context.messages.settingsMatrixNextPage,
+            ),
           ),
         ],
       ),

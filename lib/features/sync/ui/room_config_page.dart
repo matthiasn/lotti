@@ -25,18 +25,22 @@ SliverWoltModalSheetPage roomConfigPage({
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          OutlinedButton(
-            onPressed: () =>
-                pageIndexNotifier.value = pageIndexNotifier.value - 1,
-            child: Center(
-              child: Text(context.messages.settingsMatrixPreviousPage),
+          Flexible(
+            child: OutlinedButton(
+              onPressed: () =>
+                  pageIndexNotifier.value = pageIndexNotifier.value - 1,
+              child: Center(
+                child: Text(context.messages.settingsMatrixPreviousPage),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          LottiPrimaryButton(
-            onPressed: () =>
-                pageIndexNotifier.value = pageIndexNotifier.value + 1,
-            label: context.messages.settingsMatrixNextPage,
+          const SizedBox(width: 8),
+          Flexible(
+            child: LottiPrimaryButton(
+              onPressed: () =>
+                  pageIndexNotifier.value = pageIndexNotifier.value + 1,
+              label: context.messages.settingsMatrixNextPage,
+            ),
           ),
         ],
       ),
