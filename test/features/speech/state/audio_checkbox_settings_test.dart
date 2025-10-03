@@ -165,7 +165,7 @@ void main() {
       expect(state.enableTaskSummary, false);
     });
 
-    test('checkbox states reset when starting new recording', () async {
+    test('checkbox states persist when starting new recording', () async {
       final controller =
           container.read(audioRecorderControllerProvider.notifier);
 
@@ -191,12 +191,12 @@ void main() {
                 duration: Duration.zero,
               ));
 
-      // Start new recording (checkbox states should reset to null)
+      // Start new recording (checkbox states should remain as set)
       await controller.record();
 
       state = container.read(audioRecorderControllerProvider);
-      expect(state.enableSpeechRecognition, null);
-      expect(state.enableTaskSummary, null);
+      expect(state.enableSpeechRecognition, true);
+      expect(state.enableTaskSummary, false);
     });
 
     test('state preserves other fields when updating checkboxes', () {

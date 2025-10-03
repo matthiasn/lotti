@@ -221,14 +221,10 @@ class AudioRecorderController extends _$AudioRecorderController {
         } else {
           _audioNote = await _recorderRepository.startRecording();
           if (_audioNote != null) {
-            // Update state to recording, reset inference preferences for new recording
+            // Update state to recording while keeping existing inference preferences
             state = state.copyWith(
               status: AudioRecorderStatus.recording,
               linkedId: linkedId,
-              // Reset inference preferences for new recording (null by default)
-              enableSpeechRecognition: null,
-              enableTaskSummary: null,
-              enableChecklistUpdates: null,
             );
           }
         }
