@@ -22,6 +22,7 @@ from flatpak.manifest_tool.prepare.orchestrator import (
     _copy_assets_and_metadata,
     _copy_screenshots,
     _remove_flutter_sdk_module,
+    _pin_working_manifest,
     _stage_pubdev_archive,
     _cleanup,
     _print_summary,
@@ -77,6 +78,8 @@ def _make_context(base: Path) -> PrepareFlathubContext:
         setup_helper_source=flatpak_dir / "helpers" / "setup-flutter.sh",
         screenshot_source=flatpak_dir / "screenshot.png",
         flatpak_flutter_status=None,
+        pr_head_commit=None,
+        pr_head_url=None,
     )
     context.setup_helper_source.parent.mkdir(parents=True, exist_ok=True)
     context.setup_helper_source.write_text("#!/bin/bash\n", encoding="utf-8")
@@ -183,6 +186,73 @@ class PrepareOrchestratorTests(unittest.TestCase):
             self.assertEqual(lotti_sources[1]["branch"], context.current_branch)
             flutter_entry = lotti_sources[0]
             self.assertEqual(flutter_entry.get("dest"), "flutter")
+            self.assertEqual(lotti_sources[1]["url"], "https://github.com/matthiasn/lotti")
+
+    def test_prepare_manifest_for_flatpak_flutter_pr_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            context = _make_context(base)
+            context.pr_head_url = "https://github.com/example/lotti-fork.git"
+            context.manifest_template.parent.mkdir(parents=True, exist_ok=True)
+            context.manifest_template.write_text(
+                yaml.safe_dump(
+                    {
+                        "modules": [
+                            {
+                                "name": "lotti",
+                                "sources": [
+                                    {
+                                        "type": "git",
+                                        "url": "https://github.com/matthiasn/lotti",
+                                        "commit": "COMMIT_PLACEHOLDER",
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            printer = _StatusPrinter()
+            _prepare_manifest_for_flatpak_flutter(context, printer)
+            data = yaml.safe_load(context.manifest_work.read_text(encoding="utf-8"))
+            lotti_sources = data["modules"][0]["sources"]
+            repo_source = next(src for src in lotti_sources if src.get("dest") != "flutter")
+            self.assertEqual(repo_source["url"], context.pr_head_url)
+            self.assertIn("branch", repo_source)
+            self.assertEqual(repo_source["branch"], context.current_branch)
+
+    def test_pin_working_manifest_prefers_pr_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            context = _make_context(base)
+            context.pr_head_commit = "1234567890abcdef"
+            context.manifest_work.parent.mkdir(parents=True, exist_ok=True)
+            context.manifest_work.write_text(
+                yaml.safe_dump(
+                    {
+                        "modules": [
+                            {
+                                "name": "lotti",
+                                "sources": [
+                                    {
+                                        "type": "git",
+                                        "url": "https://github.com/matthiasn/lotti",
+                                        "branch": context.current_branch,
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            printer = _StatusPrinter()
+            _pin_working_manifest(context, printer)
+            data = yaml.safe_load(context.manifest_work.read_text(encoding="utf-8"))
+            source = data["modules"][0]["sources"][0]
+            self.assertEqual(source["commit"], context.pr_head_commit)
+            self.assertNotIn("branch", source)
 
     def test_ensure_setup_helper_reference(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
