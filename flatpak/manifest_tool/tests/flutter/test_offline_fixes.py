@@ -1,15 +1,14 @@
 """Tests for offline build fixes."""
 
-import pytest
 from pathlib import Path
 import sys
-import tempfile
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from manifest_tool.core.manifest import ManifestDocument
-from manifest_tool.flutter import offline_fixes
+# Import after sys.path modification
+from manifest_tool.core.manifest import ManifestDocument  # noqa: E402
+from manifest_tool.flutter import offline_fixes  # noqa: E402
 
 
 def create_test_manifest():
@@ -106,11 +105,7 @@ def test_remove_flutter_sdk_source():
 
     flutter_sdk = next(m for m in doc.data["modules"] if m.get("name") == "flutter-sdk")
     sources = flutter_sdk["sources"]
-    assert not any(
-        s.get("dest-filename") == "setup-flutter.sh"
-        for s in sources
-        if isinstance(s, dict)
-    )
+    assert not any(s.get("dest-filename") == "setup-flutter.sh" for s in sources if isinstance(s, dict))
 
 
 def test_apply_all_offline_fixes():
@@ -136,11 +131,7 @@ def test_apply_all_offline_fixes():
 
     # No setup-flutter.sh source
     sources = flutter_sdk["sources"]
-    assert not any(
-        s.get("dest-filename") == "setup-flutter.sh"
-        for s in sources
-        if isinstance(s, dict)
-    )
+    assert not any(s.get("dest-filename") == "setup-flutter.sh" for s in sources if isinstance(s, dict))
 
 
 def test_idempotency():
@@ -184,11 +175,7 @@ def test_ensure_rustup_in_path():
     assert "Added /var/lib/rustup/bin to append-path" in str(result.messages)
     assert "Set RUSTUP_HOME to /var/lib/rustup" in str(result.messages)
 
-    lotti = next(
-        m
-        for m in doc.data["modules"]
-        if isinstance(m, dict) and m.get("name") == "lotti"
-    )
+    lotti = next(m for m in doc.data["modules"] if isinstance(m, dict) and m.get("name") == "lotti")
     env = lotti["build-options"]["env"]
     append_path = lotti["build-options"]["append-path"]
 
@@ -224,11 +211,7 @@ def test_rustup_path_not_added_without_module():
     result = offline_fixes.ensure_rustup_in_path(doc)
     assert not result.changed
 
-    lotti = next(
-        m
-        for m in doc.data["modules"]
-        if isinstance(m, dict) and m.get("name") == "lotti"
-    )
+    lotti = next(m for m in doc.data["modules"] if isinstance(m, dict) and m.get("name") == "lotti")
     env = lotti["build-options"]["env"]
 
     # PATH should be unchanged
@@ -258,11 +241,7 @@ def test_rustup_path_idempotent():
     result = offline_fixes.ensure_rustup_in_path(doc)
     assert not result.changed  # Should not change if already present
 
-    lotti = next(
-        m
-        for m in doc.data["modules"]
-        if isinstance(m, dict) and m.get("name") == "lotti"
-    )
+    lotti = next(m for m in doc.data["modules"] if isinstance(m, dict) and m.get("name") == "lotti")
     env = lotti["build-options"]["env"]
 
     # Should have rustup bin only once
@@ -294,11 +273,7 @@ def test_rustup_home_conflict_fix():
     assert result.changed
     assert "Fixed RUSTUP_HOME to /var/lib/rustup" in str(result.messages)
 
-    lotti = next(
-        m
-        for m in doc.data["modules"]
-        if isinstance(m, dict) and m.get("name") == "lotti"
-    )
+    lotti = next(m for m in doc.data["modules"] if isinstance(m, dict) and m.get("name") == "lotti")
     env = lotti["build-options"]["env"]
 
     # RUSTUP_HOME should be fixed to /var/lib/rustup
@@ -416,18 +391,13 @@ def test_ensure_cargo_config_in_place():
     commands = lotti["build-commands"]
 
     # Should have the helper commands immediately after the build marker
-    building_index = next(
-        i for i, cmd in enumerate(commands) if "Building Lotti from source" in cmd
-    )
+    building_index = next(i for i, cmd in enumerate(commands) if "Building Lotti from source" in cmd)
     expected_commands = [
         "mkdir -p .cargo",
         "ln -sfn ../cargo .cargo/cargo",
         "cp cargo/config .cargo/config.toml 2>/dev/null || true",
     ]
-    assert (
-        commands[building_index + 1 : building_index + 1 + len(expected_commands)]
-        == expected_commands
-    )
+    assert commands[building_index + 1 : building_index + 1 + len(expected_commands)] == expected_commands
 
     # Should have CARGO_HOME set
     assert lotti["build-options"]["env"]["CARGO_HOME"] == "/run/build/lotti/.cargo"
@@ -441,9 +411,7 @@ def test_cargo_config_copy_idempotent():
         "modules": [
             {
                 "name": "lotti",
-                "build-options": {
-                    "env": {"CARGO_HOME": "/run/build/lotti/.cargo"}  # Already set
-                },
+                "build-options": {"env": {"CARGO_HOME": "/run/build/lotti/.cargo"}},  # Already set
                 "build-commands": [
                     "echo Setting up Flutter SDK...",
                     "mkdir -p .cargo",
@@ -464,10 +432,7 @@ def test_cargo_config_copy_idempotent():
     # Should only have one set of helper commands
     assert len([cmd for cmd in commands if "mkdir -p .cargo" in cmd]) == 1
     assert len([cmd for cmd in commands if "ln -sfn ../cargo .cargo/cargo" in cmd]) == 1
-    assert (
-        len([cmd for cmd in commands if "cp cargo/config .cargo/config.toml" in cmd])
-        == 1
-    )
+    assert len([cmd for cmd in commands if "cp cargo/config .cargo/config.toml" in cmd]) == 1
 
     # CARGO_HOME should still be set
     assert lotti["build-options"]["env"]["CARGO_HOME"] == "/run/build/lotti/.cargo"
@@ -588,22 +553,10 @@ def test_comprehensive_offline_fixes():
     assert result.changed
 
     # Check setup-flutter.sh was removed
-    flutter_sdk = next(
-        m
-        for m in doc.data["modules"]
-        if isinstance(m, dict) and m.get("name") == "flutter-sdk"
-    )
-    assert not any(
-        s.get("dest-filename") == "setup-flutter.sh"
-        for s in flutter_sdk["sources"]
-        if isinstance(s, dict)
-    )
+    flutter_sdk = next(m for m in doc.data["modules"] if isinstance(m, dict) and m.get("name") == "flutter-sdk")
+    assert not any(s.get("dest-filename") == "setup-flutter.sh" for s in flutter_sdk["sources"] if isinstance(s, dict))
 
-    lotti = next(
-        m
-        for m in doc.data["modules"]
-        if isinstance(m, dict) and m.get("name") == "lotti"
-    )
+    lotti = next(m for m in doc.data["modules"] if isinstance(m, dict) and m.get("name") == "lotti")
 
     # Check setup-flutter.sh command was removed
     commands = lotti["build-commands"]
@@ -621,19 +574,12 @@ def test_comprehensive_offline_fixes():
     assert env["RUSTUP_HOME"] == "/var/lib/rustup"
 
     # Check append-path is fixed and has rustup
-    assert (
-        lotti["build-options"]["append-path"]
-        == "/var/lib/rustup/bin:/var/lib/flutter/bin:/usr/bin"
-    )
+    assert lotti["build-options"]["append-path"] == "/var/lib/rustup/bin:/var/lib/flutter/bin:/usr/bin"
 
     # Check all cargokit patches are present
     sources = lotti["sources"]
     cargokit_patches = [
-        s
-        for s in sources
-        if isinstance(s, dict)
-        and s.get("type") == "patch"
-        and "cargokit" in s.get("dest", "")
+        s for s in sources if isinstance(s, dict) and s.get("type") == "patch" and "cargokit" in s.get("dest", "")
     ]
     assert len(cargokit_patches) == 3
 

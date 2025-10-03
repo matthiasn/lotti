@@ -29,9 +29,7 @@ def test_update_manifest_for_build_non_pr(tmp_path):
 
     # Load and update
     doc = ManifestDocument.load(manifest_path)
-    result = manifest_ops.update_manifest_for_build(
-        doc, commit="abc123", pr_url=None, pr_commit=None
-    )
+    result = manifest_ops.update_manifest_for_build(doc, commit="abc123", pr_url=None, pr_commit=None)
 
     assert result.changed
     assert any("Updated commit to abc123" in msg for msg in result.messages)
@@ -78,10 +76,7 @@ def test_update_manifest_for_build_pr(tmp_path):
     # Save and verify
     doc.save()
     updated = yaml.safe_load(manifest_path.read_text())
-    assert (
-        updated["modules"][0]["sources"][0]["url"]
-        == "https://github.com/someuser/lotti"
-    )
+    assert updated["modules"][0]["sources"][0]["url"] == "https://github.com/someuser/lotti"
     assert updated["modules"][0]["sources"][0]["commit"] == "def456"
 
 
@@ -106,9 +101,7 @@ def test_update_manifest_for_build_no_change(tmp_path):
 
     # Load and update with same commit
     doc = ManifestDocument.load(manifest_path)
-    result = manifest_ops.update_manifest_for_build(
-        doc, commit="abc123", pr_url=None, pr_commit=None
-    )
+    result = manifest_ops.update_manifest_for_build(doc, commit="abc123", pr_url=None, pr_commit=None)
 
     assert not result.changed
     assert result.messages == []
@@ -139,9 +132,7 @@ def test_update_manifest_ignores_non_git_sources(tmp_path):
 
     # Load and update
     doc = ManifestDocument.load(manifest_path)
-    result = manifest_ops.update_manifest_for_build(
-        doc, commit="abc123", pr_url=None, pr_commit=None
-    )
+    result = manifest_ops.update_manifest_for_build(doc, commit="abc123", pr_url=None, pr_commit=None)
 
     assert result.changed
     doc.save()

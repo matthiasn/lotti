@@ -56,9 +56,7 @@ def test_cli_bundle_archive_sources(tmp_path, capsys):
     data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     lotti = next(module for module in data["modules"] if module["name"] == "lotti")
     archive_source = next(
-        source
-        for source in lotti["sources"]
-        if isinstance(source, dict) and source.get("type") == "archive"
+        source for source in lotti["sources"] if isinstance(source, dict) and source.get("type") == "archive"
     )
     assert archive_source.get("path") == "archive.tar.gz"
     assert "url" not in archive_source
@@ -84,9 +82,7 @@ def test_cli_pin_commit(tmp_path, capsys):
 
     data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     lotti = next(module for module in data["modules"] if module["name"] == "lotti")
-    commits = [
-        source.get("commit") for source in lotti["sources"] if isinstance(source, dict)
-    ]
+    commits = [source.get("commit") for source in lotti["sources"] if isinstance(source, dict)]
     assert "abc123" in commits
 
 
@@ -118,9 +114,7 @@ def test_cli_remove_rustup_sources(tmp_path):
     lotti = next(module for module in new_data["modules"] if module["name"] == "lotti")
     sources = lotti["sources"]
     assert "rustup-1.83.0.json" not in [s for s in sources if isinstance(s, str)]
-    assert not any(
-        isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json" for s in sources
-    )
+    assert not any(isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json" for s in sources)
 
 
 def test_cli_ensure_module_include_before_lotti(tmp_path):
@@ -144,11 +138,7 @@ def test_cli_ensure_module_include_before_lotti(tmp_path):
     data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     modules = data["modules"]
     idx_mod = next(i for i, m in enumerate(modules) if m == mod_name)
-    idx_lotti = next(
-        i
-        for i, m in enumerate(modules)
-        if isinstance(m, dict) and m.get("name") == "lotti"
-    )
+    idx_lotti = next(i for i, m in enumerate(modules) if isinstance(m, dict) and m.get("name") == "lotti")
     assert idx_mod < idx_lotti
 
 
@@ -275,10 +265,7 @@ def test_cli_add_offline_sources(tmp_path):
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
     assert "pubspec-sources.json" in lotti["sources"]
     assert "cargo-sources.json" in lotti["sources"]
-    assert any(
-        isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.4.json"
-        for s in lotti["sources"]
-    )
+    assert any(isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.4.json" for s in lotti["sources"])
 
 
 def test_cli_normalize_lotti_env_idempotent(tmp_path):
@@ -356,29 +343,17 @@ def test_cli_remove_network_from_build_args(tmp_path):
     manifest_path = tmp_path / "test.yml"
     manifest_path.write_text(yaml.safe_dump(data), encoding="utf-8")
 
-    exit_code = cli.main(
-        ["remove-network-from-build-args", "--manifest", str(manifest_path)]
-    )
+    exit_code = cli.main(["remove-network-from-build-args", "--manifest", str(manifest_path)])
 
     assert exit_code == 0
     updated = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
 
     # Check --share=network removed from flutter-sdk
-    flutter_sdk = next(
-        m
-        for m in updated["modules"]
-        if isinstance(m, dict) and m.get("name") == "flutter-sdk"
-    )
-    assert "--share=network" not in flutter_sdk.get("build-options", {}).get(
-        "build-args", []
-    )
+    flutter_sdk = next(m for m in updated["modules"] if isinstance(m, dict) and m.get("name") == "flutter-sdk")
+    assert "--share=network" not in flutter_sdk.get("build-options", {}).get("build-args", [])
 
     # Check --share=network removed from lotti but other args remain
-    lotti = next(
-        m
-        for m in updated["modules"]
-        if isinstance(m, dict) and m.get("name") == "lotti"
-    )
+    lotti = next(m for m in updated["modules"] if isinstance(m, dict) and m.get("name") == "lotti")
     assert "--share=network" not in lotti["build-options"]["build-args"]
     assert "--allow=devel" in lotti["build-options"]["build-args"]
 
@@ -390,8 +365,8 @@ def test_cli_remove_rustup_install(tmp_path):
             module["build-commands"] = [
                 "echo Installing Rust...",
                 (
-                    "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- "
-                    "-y --default-toolchain stable --profile minimal"
+                    "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | "
+                    "sh -s -- -y --default-toolchain stable --profile minimal"
                 ),
                 'export PATH="$HOME/.cargo/bin:$PATH"',
                 "echo done",
@@ -408,9 +383,7 @@ def test_cli_remove_rustup_install(tmp_path):
     )
     assert exit_code == 0
     new_data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
-    cmds = next(m for m in new_data["modules"] if m.get("name") == "lotti")[
-        "build-commands"
-    ]
+    cmds = next(m for m in new_data["modules"] if m.get("name") == "lotti")["build-commands"]
     # Only installation commands are removed, not all rustup references
     assert not any("rustup.rs" in c or "rustup.sh" in c for c in cmds)
 
@@ -455,10 +428,7 @@ def test_cli_remove_rustup_sources_global(tmp_path):
     for module in new["modules"]:
         sources = module.get("sources", [])
         assert "rustup-1.83.0.json" not in [s for s in sources if isinstance(s, str)]
-        assert not any(
-            isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json"
-            for s in sources
-        )
+        assert not any(isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json" for s in sources)
 
 
 def test_cli_find_flutter_sdk(tmp_path):
@@ -480,18 +450,14 @@ def test_cli_find_flutter_sdk(tmp_path):
     packages_dir.mkdir()
 
     # Test finding the SDK
-    exit_code = cli.main(
-        ["find-flutter-sdk", "--search-root", str(tmp_path), "--max-depth", "5"]
-    )
+    exit_code = cli.main(["find-flutter-sdk", "--search-root", str(tmp_path), "--max-depth", "5"])
 
     assert exit_code == 0
 
 
 def test_cli_find_flutter_sdk_not_found(tmp_path):
     """Test find-flutter-sdk when SDK is not found."""
-    exit_code = cli.main(
-        ["find-flutter-sdk", "--search-root", str(tmp_path), "--max-depth", "2"]
-    )
+    exit_code = cli.main(["find-flutter-sdk", "--search-root", str(tmp_path), "--max-depth", "2"])
 
     assert exit_code == 1  # Should fail when SDK not found
 
@@ -507,9 +473,7 @@ def test_cli_update_manifest_head_fallback(tmp_path, monkeypatch, capsys):
     manifest_path.write_text(yaml.safe_dump(data), encoding="utf-8")
 
     # Mock shutil.which to return a fake git path
-    monkeypatch.setattr(
-        shutil, "which", lambda cmd: "/usr/bin/git" if cmd == "git" else None
-    )
+    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/git" if cmd == "git" else None)
 
     # Mock subprocess to return a fake HEAD commit
     def mock_check_output(cmd, **_kwargs):
@@ -524,9 +488,7 @@ def test_cli_update_manifest_head_fallback(tmp_path, monkeypatch, capsys):
 
     assert exit_code == 0
     captured = capsys.readouterr()
-    assert (
-        "No commit specified, using current HEAD: fake-head-commit-sha" in captured.out
-    )
+    assert "No commit specified, using current HEAD: fake-head-commit-sha" in captured.out
 
     # Verify the manifest was updated with the HEAD commit
     updated_data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))

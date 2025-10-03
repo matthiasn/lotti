@@ -10,9 +10,7 @@ def test_ensure_rust_sdk_env(make_document):
     result = flutter_rust.ensure_rust_sdk_env(document)
 
     assert result.changed
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     build_opts = lotti["build-options"]
 
     # Check append-path
@@ -34,9 +32,7 @@ def test_ensure_rust_sdk_env(make_document):
 
 def test_remove_rustup_install(make_document):
     document = make_document()
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
 
     # Add rustup installation commands
     lotti["build-commands"] = [

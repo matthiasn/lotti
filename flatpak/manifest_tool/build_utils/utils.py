@@ -42,9 +42,7 @@ def _is_valid_flutter_sdk(current_path: Path) -> bool:
     return dart_bin.exists() and packages_dir.is_dir()
 
 
-def _search_flutter_in_root(
-    root: Path, exclude_set: set[Path], max_depth: int
-) -> Optional[Path]:
+def _search_flutter_in_root(root: Path, exclude_set: set[Path], max_depth: int) -> Optional[Path]:
     """Search ``root`` recursively for a valid Flutter SDK."""
 
     if not root.exists():

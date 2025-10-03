@@ -10,9 +10,7 @@ from typing import Dict, Mapping
 _LOGGER = logging.getLogger(__name__)
 
 
-def pr_aware_environment(
-    *, event_name: str | None, event_path: str | None
-) -> Mapping[str, str]:
+def pr_aware_environment(*, event_name: str | None, event_path: str | None) -> Mapping[str, str]:
     """Extract head repo metadata for pull request events.
 
     Returns a mapping of shell assignments suitable for ``eval`` in bash.

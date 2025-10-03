@@ -31,9 +31,7 @@ _LOGGER = utils.get_logger("sources_ops")
 _ALLOWED_URL_SCHEMES = {"https"}
 
 
-def replace_url_with_path_in_manifest(
-    manifest_data: dict, identifier: str, path_value: str
-) -> bool:
+def replace_url_with_path_in_manifest(manifest_data: dict, identifier: str, path_value: str) -> bool:
     """Replace URL containing identifier with path in manifest data structure.
 
     Searches through all sources in the manifest (both root-level and module-level)
@@ -89,9 +87,7 @@ def replace_url_with_path_in_manifest(
     return changed
 
 
-def replace_url_with_path(
-    *, manifest_path: str, identifier: str, path_value: str
-) -> Optional[bool]:
+def replace_url_with_path(*, manifest_path: str, identifier: str, path_value: str) -> Optional[bool]:
     """File-based helper used by shell scripts to rewrite sources inline.
 
     This now uses proper YAML parsing instead of text manipulation.
@@ -113,9 +109,7 @@ def replace_url_with_path(
             return False
 
         # Replace URLs with paths in the data structure
-        changed = replace_url_with_path_in_manifest(
-            manifest_data, identifier, path_value
-        )
+        changed = replace_url_with_path_in_manifest(manifest_data, identifier, path_value)
 
         if changed:
             # Write back as YAML
@@ -131,8 +125,8 @@ def replace_url_with_path(
 
         return changed
 
-    except OSError as exc:
-        _LOGGER.warning("Failed to process manifest %s: %s", manifest_path, exc)
+    except OSError as e:
+        _LOGGER.warning("Failed to process manifest %s: %s", manifest_path, e)
         return None
     except yaml.YAMLError:
         _LOGGER.exception("Failed to parse YAML in %s", manifest_path)
@@ -140,9 +134,7 @@ def replace_url_with_path(
 
 
 # Keep the old text-based function for backward compatibility but mark as deprecated
-def replace_url_with_path_text(
-    text: str, identifier: str, path_value: str
-) -> tuple[str, bool]:
+def replace_url_with_path_text(text: str, identifier: str, path_value: str) -> tuple[str, bool]:
     """Replace ``url:`` lines containing ``identifier`` with ``path:`` entries.
 
     DEPRECATED: This function uses text manipulation which is fragile.
@@ -183,9 +175,7 @@ class ArtifactCache:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.search_roots = [Path(root) for root in self.search_roots]
 
-    def ensure_local(
-        self, filename: str, source_url: str
-    ) -> tuple[Optional[Path], list[str]]:
+    def ensure_local(self, filename: str, source_url: str) -> tuple[Optional[Path], list[str]]:
         """Ensure an artifact is available locally.
 
         Attempts to find the artifact in:
@@ -233,9 +223,7 @@ class ArtifactCache:
         destination.parent.mkdir(parents=True, exist_ok=True)
         try:
             # nosec B310: urlopen is guarded by strict scheme whitelist above
-            with urllib.request.urlopen(
-                source_url, timeout=30
-            ) as response, open(  # nosec B310
+            with urllib.request.urlopen(source_url, timeout=30) as response, open(  # nosec B310
                 destination, "wb"
             ) as handle:
                 shutil.copyfileobj(response, handle)
@@ -295,15 +283,11 @@ def _add_string_sources(
     return added_strings
 
 
-def _build_result_messages(
-    added_strings: list[str], flutter_file: Optional[str]
-) -> list[str]:
+def _build_result_messages(added_strings: list[str], flutter_file: Optional[str]) -> list[str]:
     """Build result messages for the operation."""
     messages: list[str] = []
     if added_strings:
-        messages.append(
-            f"Added offline source references: {', '.join([s for s in added_strings if s])}"
-        )
+        messages.append(f"Added offline source references: {', '.join([s for s in added_strings if s])}")
     if flutter_file:
         messages.append(f"Ensured helper file {flutter_file} available in sources")
     return messages
@@ -347,17 +331,13 @@ def add_offline_sources(
 
     sources = target.setdefault("sources", [])
     entries = _prepare_offline_entries(pubspec, cargo, rustup)
-    added_strings, file_changed = _process_offline_sources(
-        sources, entries, flutter_file
-    )
+    added_strings, file_changed = _process_offline_sources(sources, entries, flutter_file)
 
     if not added_strings and not file_changed:
         return OperationResult.unchanged()
 
     document.mark_changed()
-    messages = _build_result_messages(
-        added_strings, flutter_file if file_changed else None
-    )
+    messages = _build_result_messages(added_strings, flutter_file if file_changed else None)
     for message in messages:
         _LOGGER.debug(message)
     return OperationResult(changed=True, messages=messages)
@@ -481,9 +461,7 @@ def remove_rustup_sources(document: ManifestDocument) -> OperationResult:
         if module_changed:
             changed = True
             module_name = module.get("name", "<unnamed>")
-            messages.append(
-                f"Removed {removed} rustup JSON reference(s) from module {module_name}"
-            )
+            messages.append(f"Removed {removed} rustup JSON reference(s) from module {module_name}")
 
     if changed:
         document.mark_changed()
@@ -513,10 +491,7 @@ def _ensure_file_entry(sources: list[object], path: Optional[str]) -> bool:
     if not path:
         return False
     present = any(
-        isinstance(source, dict)
-        and source.get("type") == "file"
-        and source.get("path") == path
-        for source in sources
+        isinstance(source, dict) and source.get("type") == "file" and source.get("path") == path for source in sources
     )
     if present:
         return False

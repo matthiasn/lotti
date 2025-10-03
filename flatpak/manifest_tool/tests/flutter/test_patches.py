@@ -20,9 +20,7 @@ def test_add_cmake_offline_patches_is_noop(make_document):
 def test_add_cargokit_offline_patches_inserts_patches(make_document):
     """add_cargokit_offline_patches injects cargokit patch entries for known packages."""
     document = make_document()
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
 
     result = flutter_patches.add_cargokit_offline_patches(document)
 
@@ -33,9 +31,7 @@ def test_add_cargokit_offline_patches_inserts_patches(make_document):
     cargokit_patches = [
         source
         for source in sources
-        if isinstance(source, dict)
-        and source.get("type") == "patch"
-        and "cargokit" in source.get("dest", "")
+        if isinstance(source, dict) and source.get("type") == "patch" and "cargokit" in source.get("dest", "")
     ]
     # fallback list adds three packages by default
     assert len(cargokit_patches) >= 3
@@ -51,21 +47,10 @@ def test_add_cargokit_offline_patches_inserts_patches(make_document):
 def test_add_cargokit_offline_patches_idempotent(make_document, existing_dest):
     """Existing cargokit patches are preserved without duplication."""
     document = make_document()
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
-    lotti.setdefault("sources", []).append(
-        {"type": "patch", "dest": existing_dest, "path": "foo.patch"}
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
+    lotti.setdefault("sources", []).append({"type": "patch", "dest": existing_dest, "path": "foo.patch"})
 
     result = flutter_patches.add_cargokit_offline_patches(document)
 
     assert result.changed  # other packages still added
-    assert (
-        sum(
-            1
-            for s in lotti["sources"]
-            if isinstance(s, dict) and s.get("dest") == existing_dest
-        )
-        == 1
-    )
+    assert sum(1 for s in lotti["sources"] if isinstance(s, dict) and s.get("dest") == existing_dest) == 1

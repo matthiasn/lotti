@@ -29,28 +29,18 @@ def test_is_git_source():
 def test_normalize_repo_url():
     """Test _normalize_repo_url helper."""
     # HTTPS URLs
-    assert (
-        manifest_ops._normalize_repo_url("https://github.com/user/repo") == "user/repo"
-    )
-    assert (
-        manifest_ops._normalize_repo_url("https://github.com/user/repo.git")
-        == "user/repo"
-    )
+    assert manifest_ops._normalize_repo_url("https://github.com/user/repo") == "user/repo"
+    assert manifest_ops._normalize_repo_url("https://github.com/user/repo.git") == "user/repo"
 
     # SSH URLs
     assert manifest_ops._normalize_repo_url("git@github.com:user/repo") == "user/repo"
-    assert (
-        manifest_ops._normalize_repo_url("git@github.com:user/repo.git") == "user/repo"
-    )
+    assert manifest_ops._normalize_repo_url("git@github.com:user/repo.git") == "user/repo"
 
     # Already normalized
     assert manifest_ops._normalize_repo_url("user/repo") == "user/repo"
 
     # Other URLs
-    assert (
-        manifest_ops._normalize_repo_url("https://gitlab.com/user/repo")
-        == "https://gitlab.com/user/repo"
-    )
+    assert manifest_ops._normalize_repo_url("https://gitlab.com/user/repo") == "https://gitlab.com/user/repo"
 
 
 def test_is_lotti_repo_url():
@@ -67,26 +57,20 @@ def test_is_lotti_repo_url():
 
     # Non-lotti URLs
     assert not manifest_ops._is_lotti_repo_url("https://github.com/user/other-repo")
-    assert not manifest_ops._is_lotti_repo_url(
-        "https://github.com/matthiasn/lotti-fork"
-    )
+    assert not manifest_ops._is_lotti_repo_url("https://github.com/matthiasn/lotti-fork")
     assert not manifest_ops._is_lotti_repo_url("https://github.com/matthiasn/other")
 
     # Edge cases
     assert not manifest_ops._is_lotti_repo_url("")
     assert not manifest_ops._is_lotti_repo_url("lotti")  # Missing github.com prefix
-    assert not manifest_ops._is_lotti_repo_url(
-        "https://gitlab.com/matthiasn/lotti"
-    )  # Wrong host
+    assert not manifest_ops._is_lotti_repo_url("https://gitlab.com/matthiasn/lotti")  # Wrong host
 
 
 def test_update_source_for_pr():
     """Test _update_source_for_pr helper."""
     # URL needs updating
     source = {"url": "https://github.com/matthiasn/lotti", "commit": "old-commit"}
-    changes = manifest_ops._update_source_for_pr(
-        source, "https://github.com/fork/lotti", "new-commit"
-    )
+    changes = manifest_ops._update_source_for_pr(source, "https://github.com/fork/lotti", "new-commit")
     assert source["url"] == "https://github.com/fork/lotti"
     assert source["commit"] == "new-commit"
     assert len(changes) == 2
@@ -95,25 +79,19 @@ def test_update_source_for_pr():
 
     # URL already correct, only commit needs updating
     source = {"url": "https://github.com/fork/lotti", "commit": "old-commit"}
-    changes = manifest_ops._update_source_for_pr(
-        source, "https://github.com/fork/lotti", "new-commit"
-    )
+    changes = manifest_ops._update_source_for_pr(source, "https://github.com/fork/lotti", "new-commit")
     assert source["commit"] == "new-commit"
     assert len(changes) == 1
     assert "Pinned to PR commit new-commit" in changes
 
     # Everything already correct
     source = {"url": "https://github.com/fork/lotti", "commit": "new-commit"}
-    changes = manifest_ops._update_source_for_pr(
-        source, "https://github.com/fork/lotti", "new-commit"
-    )
+    changes = manifest_ops._update_source_for_pr(source, "https://github.com/fork/lotti", "new-commit")
     assert len(changes) == 0
 
     # Branch should be removed
     source = {"url": "https://github.com/fork/lotti", "commit": "old", "branch": "main"}
-    changes = manifest_ops._update_source_for_pr(
-        source, "https://github.com/fork/lotti", "new-commit"
-    )
+    changes = manifest_ops._update_source_for_pr(source, "https://github.com/fork/lotti", "new-commit")
     assert "branch" not in source
     assert source["commit"] == "new-commit"
 

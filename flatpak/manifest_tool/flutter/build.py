@@ -45,12 +45,8 @@ def ensure_flutter_pub_get_offline(document: ManifestDocument) -> OperationResul
             # Handle flutter pub get commands - only pub get supports --offline flag
             # (flutter build has --no-pub instead)
             if "flutter pub get" in cmd and "--offline" not in cmd:
-                build_commands[i] = cmd.replace(
-                    "flutter pub get", "flutter pub get --offline"
-                )
-                messages.append(
-                    f"Added --offline flag to flutter pub get in {module_name}"
-                )
+                build_commands[i] = cmd.replace("flutter pub get", "flutter pub get --offline")
+                messages.append(f"Added --offline flag to flutter pub get in {module_name}")
                 changed = True
 
     if changed:
@@ -96,12 +92,8 @@ def ensure_dart_pub_offline_in_build(document: ManifestDocument) -> OperationRes
             # Find flutter build linux commands without --no-pub flag
             if "flutter build linux" in cmd and "--no-pub" not in cmd:
                 # Add --no-pub flag to skip automatic pub get
-                build_commands[i] = cmd.replace(
-                    "flutter build linux", "flutter build linux --no-pub"
-                )
-                messages.append(
-                    "Added --no-pub flag to skip automatic pub get during build"
-                )
+                build_commands[i] = cmd.replace("flutter build linux", "flutter build linux --no-pub")
+                messages.append("Added --no-pub flag to skip automatic pub get during build")
                 changed = True
 
     if changed:

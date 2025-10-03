@@ -32,9 +32,7 @@ def ensure_setup_helper_source(
 
         sources = module.setdefault("sources", [])
         has_helper = any(
-            isinstance(source, dict)
-            and source.get("dest-filename") == "setup-flutter.sh"
-            for source in sources
+            isinstance(source, dict) and source.get("dest-filename") == "setup-flutter.sh" for source in sources
         )
 
         if not has_helper:
@@ -82,9 +80,7 @@ def _build_setup_helper_command(
     return command
 
 
-def _update_lotti_build_commands(
-    module: dict, command: str, before_position: int = 1
-) -> bool:
+def _update_lotti_build_commands(module: dict, command: str, before_position: int = 1) -> bool:
     """Update lotti module build commands with setup helper."""
     commands = module.get("build-commands", [])
     if not isinstance(commands, list):
@@ -130,9 +126,7 @@ def ensure_setup_helper_command(
     changed = False
 
     # Build the command
-    command = _build_setup_helper_command(
-        layout, enable_debug, resolver_paths, working_dir
-    )
+    command = _build_setup_helper_command(layout, enable_debug, resolver_paths, working_dir)
 
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -164,11 +158,7 @@ def _remove_lotti_flutter_git_sources(module: dict) -> bool:
     filtered = [
         source
         for source in sources
-        if not (
-            isinstance(source, dict)
-            and source.get("type") == "git"
-            and "flutter/flutter" in source.get("url", "")
-        )
+        if not (isinstance(source, dict) and source.get("type") == "git" and "flutter/flutter" in source.get("url", ""))
     ]
 
     if len(filtered) != len(sources):
@@ -187,18 +177,12 @@ def _ensure_lotti_sources(module: dict) -> list:
     return module["sources"]
 
 
-def _ensure_app_archive_source(
-    sources: list, archive_path: str, sha256: str
-) -> tuple[bool, list[str]]:
+def _ensure_app_archive_source(sources: list, archive_path: str, sha256: str) -> tuple[bool, list[str]]:
     """Add the app archive to sources when missing."""
 
     messages: list[str] = []
     for src in sources:
-        if (
-            isinstance(src, dict)
-            and src.get("type") == "file"
-            and src.get("path") == archive_path
-        ):
+        if isinstance(src, dict) and src.get("type") == "file" and src.get("path") == archive_path:
             return False, messages
 
     sources.insert(
@@ -231,9 +215,7 @@ def _warn_missing_dependency_sources(sources: list) -> None:
             _LOGGER.warning("Missing %s for %s", source_name, description)
 
 
-def _process_lotti_module(
-    module: dict, archive_path: str, sha256: str
-) -> tuple[bool, list[str]]:
+def _process_lotti_module(module: dict, archive_path: str, sha256: str) -> tuple[bool, list[str]]:
     """Process lotti module for app archive bundling."""
     messages = []
     changed = False
@@ -246,9 +228,7 @@ def _process_lotti_module(
         sources = _ensure_lotti_sources(module)
         changed = True
 
-    archive_changed, archive_messages = _ensure_app_archive_source(
-        sources, archive_path, sha256
-    )
+    archive_changed, archive_messages = _ensure_app_archive_source(sources, archive_path, sha256)
     if archive_changed:
         changed = True
         messages.extend(archive_messages)
@@ -274,9 +254,7 @@ def bundle_app_archive(
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
 
-        module_changed, module_messages = _process_lotti_module(
-            module, archive_path, sha256
-        )
+        module_changed, module_messages = _process_lotti_module(module, archive_path, sha256)
         if module_changed:
             changed = True
             messages.extend(module_messages)
