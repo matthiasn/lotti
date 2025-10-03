@@ -270,9 +270,23 @@ class _AudioRecordingModalContentState
         category.automaticPrompts!.containsKey(AiResponseType.taskSummary) &&
             category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
 
-    // Always show the section to display warnings or checkboxes
-    // Only hide if not linked to task and no ASR prompts
-    if (!hasAutomaticTranscriptionPrompts && widget.linkedId == null) {
+    final showSpeechRecognitionCheckbox = hasAutomaticTranscriptionPrompts;
+
+    final isSpeechRecognitionEnabled =
+        (state.enableSpeechRecognition ?? true) &&
+            hasAutomaticTranscriptionPrompts;
+
+    final showChecklistUpdatesCheckbox = widget.linkedId != null &&
+        hasAutomaticChecklistPrompts &&
+        isSpeechRecognitionEnabled;
+
+    final showTaskSummaryCheckbox = widget.linkedId != null &&
+        hasAutomaticTaskSummaryPrompts &&
+        isSpeechRecognitionEnabled;
+
+    if (!showSpeechRecognitionCheckbox &&
+        !showChecklistUpdatesCheckbox &&
+        !showTaskSummaryCheckbox) {
       return const SizedBox.shrink();
     }
 
@@ -280,68 +294,32 @@ class _AudioRecordingModalContentState
       padding: const EdgeInsets.only(top: 8),
       child: Wrap(
         children: [
-          // Speech recognition option
-          LottiAnimatedCheckbox(
-            label: 'Speech Recognition',
-            value: state.enableSpeechRecognition ?? true,
-            enabled: hasAutomaticTranscriptionPrompts,
-            subtitle: hasAutomaticTranscriptionPrompts
-                ? null
-                : 'No prompt configured',
-            disabledIcon: Icons.mic_off_outlined,
-            onChanged: hasAutomaticTranscriptionPrompts
-                ? (value) {
-                    controller.setEnableSpeechRecognition(enable: value);
-                  }
-                : null,
-          ),
-
-          // Checklist updates option (only show if linked to task AND speech recognition will run)
-          // It doesn't make sense to offer checklist updates when there's no transcription to update the task context
-          // Speech recognition will run if:
-          // - It's explicitly enabled (true), OR
-          // - It's not set (null) AND there are automatic transcription prompts configured
-          if (widget.linkedId != null &&
-              (state.enableSpeechRecognition ??
-                  hasAutomaticTranscriptionPrompts)) ...[
+          if (showSpeechRecognitionCheckbox)
+            LottiAnimatedCheckbox(
+              label: 'Speech Recognition',
+              value: state.enableSpeechRecognition ?? true,
+              onChanged: (value) {
+                controller.setEnableSpeechRecognition(enable: value);
+              },
+            ),
+          if (showChecklistUpdatesCheckbox) ...[
             const SizedBox(height: 4),
             LottiAnimatedCheckbox(
               label: 'Checklist Updates',
               value: state.enableChecklistUpdates ?? true,
-              enabled: hasAutomaticChecklistPrompts,
-              subtitle:
-                  hasAutomaticChecklistPrompts ? null : 'No prompt configured',
-              disabledIcon: Icons.checklist_rtl_outlined,
-              onChanged: hasAutomaticChecklistPrompts
-                  ? (value) {
-                      controller.setEnableChecklistUpdates(enable: value);
-                    }
-                  : null,
+              onChanged: (value) {
+                controller.setEnableChecklistUpdates(enable: value);
+              },
             ),
           ],
-
-          // Task summary option (only show if linked to task AND speech recognition will run)
-          // It doesn't make sense to offer task summary when there's no transcription to update the task context
-          // Speech recognition will run if:
-          // - It's explicitly enabled (true), OR
-          // - It's not set (null) AND there are automatic transcription prompts configured
-          if (widget.linkedId != null &&
-              (state.enableSpeechRecognition ??
-                  hasAutomaticTranscriptionPrompts)) ...[
+          if (showTaskSummaryCheckbox) ...[
             const SizedBox(height: 4),
             LottiAnimatedCheckbox(
               label: 'Task Summary',
               value: state.enableTaskSummary ?? true,
-              enabled: hasAutomaticTaskSummaryPrompts,
-              subtitle: hasAutomaticTaskSummaryPrompts
-                  ? null
-                  : 'No prompt configured',
-              disabledIcon: Icons.summarize_outlined,
-              onChanged: hasAutomaticTaskSummaryPrompts
-                  ? (value) {
-                      controller.setEnableTaskSummary(enable: value);
-                    }
-                  : null,
+              onChanged: (value) {
+                controller.setEnableTaskSummary(enable: value);
+              },
             ),
           ],
         ],

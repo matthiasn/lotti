@@ -27,9 +27,15 @@ class MockAudioRecorderRepository extends Mock
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {
-  FakeCategoryDefinition({this.includeChecklistPrompts = true});
+  FakeCategoryDefinition({
+    this.includeTranscriptionPrompts = true,
+    this.includeChecklistPrompts = true,
+    this.includeTaskSummaryPrompts = true,
+  });
 
+  final bool includeTranscriptionPrompts;
   final bool includeChecklistPrompts;
+  final bool includeTaskSummaryPrompts;
 
   @override
   String get id => 'test-category';
@@ -62,12 +68,23 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
   List<String>? get allowedPromptIds => null;
 
   @override
-  Map<AiResponseType, List<String>>? get automaticPrompts => {
-        AiResponseType.audioTranscription: ['transcription-prompt'],
-        AiResponseType.taskSummary: ['summary-prompt'],
-        if (includeChecklistPrompts)
-          AiResponseType.checklistUpdates: ['checklist-prompt'],
-      };
+  Map<AiResponseType, List<String>>? get automaticPrompts {
+    final prompts = <AiResponseType, List<String>>{};
+
+    if (includeTranscriptionPrompts) {
+      prompts[AiResponseType.audioTranscription] = ['transcription-prompt'];
+    }
+
+    if (includeTaskSummaryPrompts) {
+      prompts[AiResponseType.taskSummary] = ['summary-prompt'];
+    }
+
+    if (includeChecklistPrompts) {
+      prompts[AiResponseType.checklistUpdates] = ['checklist-prompt'];
+    }
+
+    return prompts;
+  }
 
   @override
   CategoryIcon? get icon => null;
@@ -184,6 +201,33 @@ void main() {
       ),
     );
   }
+
+  group('AudioRecordingModal - Speech Recognition Checkbox', () {
+    testWidgets('shows checkbox when transcription prompts exist',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides checkbox when transcription prompts are absent',
+        (tester) async {
+      final category =
+          FakeCategoryDefinition(includeTranscriptionPrompts: false);
+
+      await tester.pumpWidget(createTestWidget(category: category));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        findsNothing,
+      );
+    });
+  });
 
   group('AudioRecordingModal - Checklist Updates Checkbox', () {
     testWidgets(
@@ -361,6 +405,38 @@ void main() {
       expect(checkboxWidget.value, isFalse);
     });
 
+    testWidgets(
+        'should not render when category lacks transcription prompts despite having checklist prompts',
+        (tester) async {
+      final category = FakeCategoryDefinition(
+        includeTranscriptionPrompts: false,
+      );
+
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        vu: 0,
+        dBFS: -60,
+        progress: Duration.zero,
+        showIndicator: false,
+        modalVisible: true,
+        language: 'en',
+        linkedId: 'task-123',
+        enableSpeechRecognition: true,
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        state: state,
+        linkedTaskId: 'task-123',
+        category: category,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
+        findsNothing,
+      );
+    });
+
     testWidgets('should call setEnableChecklistUpdates when toggled',
         (tester) async {
       final state = AudioRecorderState(
@@ -397,7 +473,7 @@ void main() {
       expect(updatedState.enableChecklistUpdates, isFalse);
     });
 
-    testWidgets('should be disabled when category has no checklist prompts',
+    testWidgets('should not render when category has no checklist prompts',
         (tester) async {
       // Create a category without checklist prompts
       final category = FakeCategoryDefinition(includeChecklistPrompts: false);
@@ -420,16 +496,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Find the LottiAnimatedCheckbox
+      // Checkbox should not be rendered without prompts
       final checkboxFinder = find.widgetWithText(
         LottiAnimatedCheckbox,
         'Checklist Updates',
       );
-      final checkboxWidget =
-          tester.widget<LottiAnimatedCheckbox>(checkboxFinder);
-
-      // Should be disabled
-      expect(checkboxWidget.enabled, isFalse);
+      expect(checkboxFinder, findsNothing);
     });
 
     testWidgets('should show correct label text', (tester) async {
@@ -500,6 +572,91 @@ void main() {
       );
       checkboxWidget = tester.widget<LottiAnimatedCheckbox>(checkboxFinder);
       expect(checkboxWidget.value, isTrue);
+    });
+  });
+
+  group('AudioRecordingModal - Task Summary Checkbox', () {
+    testWidgets('shows checkbox when prompts exist and task is linked',
+        (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        vu: 0,
+        dBFS: -60,
+        progress: Duration.zero,
+        showIndicator: false,
+        modalVisible: true,
+        language: 'en',
+        linkedId: 'task-123',
+        enableSpeechRecognition: true,
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        state: state,
+        linkedTaskId: 'task-123',
+      ));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides checkbox when category has no task summary prompts',
+        (tester) async {
+      final category = FakeCategoryDefinition(
+        includeTaskSummaryPrompts: false,
+      );
+
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        vu: 0,
+        dBFS: -60,
+        progress: Duration.zero,
+        showIndicator: false,
+        modalVisible: true,
+        language: 'en',
+        linkedId: 'task-123',
+        enableSpeechRecognition: true,
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        state: state,
+        linkedTaskId: 'task-123',
+        category: category,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('hides checkbox when speech recognition is disabled',
+        (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        vu: 0,
+        dBFS: -60,
+        progress: Duration.zero,
+        showIndicator: false,
+        modalVisible: true,
+        language: 'en',
+        linkedId: 'task-123',
+        enableSpeechRecognition: false,
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        state: state,
+        linkedTaskId: 'task-123',
+      ));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
+        findsNothing,
+      );
     });
   });
 }
