@@ -177,5 +177,40 @@ void main() {
       expect(textField.decoration?.prefixIcon, isNotNull);
       expect(find.byIcon(Icons.search), findsOneWidget);
     });
+
+    testWidgets('lists languages alphabetically by display name',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: LanguageSelectionModalContent(
+            onLanguageSelected: (_) {},
+          ),
+        ),
+      );
+
+      final cards =
+          tester.widgetList<SettingsCard>(find.byType(SettingsCard)).toList();
+
+      final titles = cards.map((card) => card.title).toList();
+      final sorted = List.of(titles)
+        ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+      expect(titles, equals(sorted));
+    });
+
+    testWidgets('shows Nigeria flag for Nigerian language codes',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: LanguageSelectionModalContent(
+            onLanguageSelected: (_) {},
+          ),
+        ),
+      );
+
+      for (final code in ['ig', 'pcm', 'yo']) {
+        expect(find.byKey(ValueKey('flag-$code')), findsOneWidget);
+      }
+    });
   });
 }

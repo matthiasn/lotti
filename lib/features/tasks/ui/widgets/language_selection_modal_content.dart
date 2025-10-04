@@ -25,6 +25,8 @@ class LanguageSelectionModalContent extends ConsumerStatefulWidget {
 
 class LanguageSelectionModalContentState
     extends ConsumerState<LanguageSelectionModalContent> {
+  static const _nigerianLanguageCodes = {'ig', 'pcm', 'yo'};
+
   final searchController = TextEditingController();
   String searchQuery = '';
 
@@ -47,7 +49,13 @@ class LanguageSelectionModalContentState
                   .toLowerCase()
                   .contains(searchQuery.toLowerCase()),
         )
-        .toList();
+        .toList()
+      ..sort(
+        (a, b) => a
+            .localizedName(context)
+            .toLowerCase()
+            .compareTo(b.localizedName(context).toLowerCase()),
+      );
 
     final selectedLanguage = widget.initialLanguageCode != null
         ? SupportedLanguage.fromCode(widget.initialLanguageCode!)
@@ -97,11 +105,7 @@ class LanguageSelectionModalContentState
                           leading: SizedBox(
                             width: 32,
                             height: 24,
-                            child: CountryFlag.fromLanguageCode(
-                              selectedLanguage.code,
-                              height: 24,
-                              width: 32,
-                            ),
+                            child: _buildFlag(selectedLanguage.code),
                           ),
                         ),
                       ...languagesWithoutSelected.map(
@@ -111,11 +115,7 @@ class LanguageSelectionModalContentState
                           leading: SizedBox(
                             width: 32,
                             height: 24,
-                            child: CountryFlag.fromLanguageCode(
-                              language.code,
-                              height: 24,
-                              width: 32,
-                            ),
+                            child: _buildFlag(language.code),
                           ),
                         ),
                       ),
@@ -137,6 +137,24 @@ class LanguageSelectionModalContentState
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFlag(String languageCode) {
+    if (_nigerianLanguageCodes.contains(languageCode)) {
+      return CountryFlag.fromCountryCode(
+        'ng',
+        height: 24,
+        width: 32,
+        key: ValueKey('flag-$languageCode'),
+      );
+    }
+
+    return CountryFlag.fromLanguageCode(
+      languageCode,
+      height: 24,
+      width: 32,
+      key: ValueKey('flag-$languageCode'),
     );
   }
 }

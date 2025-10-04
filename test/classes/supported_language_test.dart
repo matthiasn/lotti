@@ -13,6 +13,9 @@ void main() {
       expect(SupportedLanguage.fromCode('ar'), equals(SupportedLanguage.ar));
       expect(SupportedLanguage.fromCode('ja'), equals(SupportedLanguage.ja));
       expect(SupportedLanguage.fromCode('pt'), equals(SupportedLanguage.pt));
+      expect(SupportedLanguage.fromCode('ig'), equals(SupportedLanguage.ig));
+      expect(SupportedLanguage.fromCode('pcm'), equals(SupportedLanguage.pcm));
+      expect(SupportedLanguage.fromCode('yo'), equals(SupportedLanguage.yo));
     });
 
     test('fromCode returns null for invalid codes', () {
@@ -38,12 +41,18 @@ void main() {
       expect(SupportedLanguage.en.code, equals('en'));
       expect(SupportedLanguage.de.code, equals('de'));
       expect(SupportedLanguage.es.code, equals('es'));
+      expect(SupportedLanguage.ig.code, equals('ig'));
+      expect(SupportedLanguage.pcm.code, equals('pcm'));
+      expect(SupportedLanguage.yo.code, equals('yo'));
     });
 
     test('name property returns expected values', () {
       expect(SupportedLanguage.en.name, equals('English'));
       expect(SupportedLanguage.de.name, equals('German'));
       expect(SupportedLanguage.es.name, equals('Spanish'));
+      expect(SupportedLanguage.ig.name, equals('Igbo'));
+      expect(SupportedLanguage.pcm.name, equals('Nigerian Pidgin'));
+      expect(SupportedLanguage.yo.name, equals('Yoruba'));
     });
 
     test('all languages can be looked up by their code', () {

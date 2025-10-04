@@ -14,6 +14,8 @@ class TaskLanguageWidget extends StatelessWidget {
     super.key,
   });
 
+  static const _nigerianLanguageCodes = {'ig', 'pcm', 'yo'};
+
   final Task task;
   final LanguageCallback onLanguageChanged;
 
@@ -51,11 +53,7 @@ class TaskLanguageWidget extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(2),
-                  child: CountryFlag.fromLanguageCode(
-                    language.code,
-                    height: 20,
-                    width: 30,
-                  ),
+                  child: _buildFlag(language),
                 ),
               )
             else
@@ -91,6 +89,24 @@ class TaskLanguageWidget extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _buildFlag(SupportedLanguage language) {
+    if (_nigerianLanguageCodes.contains(language.code)) {
+      return CountryFlag.fromCountryCode(
+        'ng',
+        height: 20,
+        width: 30,
+        key: ValueKey('flag-${language.code}'),
+      );
+    }
+
+    return CountryFlag.fromLanguageCode(
+      language.code,
+      height: 20,
+      width: 30,
+      key: ValueKey('flag-${language.code}'),
     );
   }
 }
