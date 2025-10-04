@@ -628,10 +628,10 @@ void main() {
         final state = container.read(audioRecorderControllerProvider);
         expect(state.status, equals(AudioRecorderStatus.recording));
         expect(state.linkedId, equals('test-linked-id'));
-        // Preferences should be reset to null when starting new recording
-        expect(state.enableSpeechRecognition, isNull);
-        expect(state.enableTaskSummary, isNull);
-        expect(state.enableChecklistUpdates, isNull);
+        // Preferences should be preserved when starting recording
+        expect(state.enableSpeechRecognition, isTrue);
+        expect(state.enableTaskSummary, isFalse);
+        expect(state.enableChecklistUpdates, isTrue);
       });
 
       test('should capture exceptions during record()', () async {
