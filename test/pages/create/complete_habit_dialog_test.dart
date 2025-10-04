@@ -1,7 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -42,7 +42,7 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('Habit completion can be recorded', (tester) async {
+    Future<void> pumpHabitDialog(WidgetTester tester) async {
       final delegate = BeamerDelegate(
         locationBuilder: RoutesLocationBuilder(
           routes: {
@@ -50,16 +50,6 @@ void main() {
           },
         ).call,
       );
-
-      Future<HabitCompletionEntry?> mockCompleteHabitEntry() {
-        return mockPersistenceLogic.createHabitCompletionEntry(
-          data: any(named: 'data'),
-          comment: any(named: 'comment'),
-          habitDefinition: habitFlossing,
-        );
-      }
-
-      when(mockCompleteHabitEntry).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         makeTestableWidget(
@@ -82,6 +72,18 @@ void main() {
       );
 
       await tester.pumpAndSettle();
+    }
+
+    testWidgets('Habit completion can be recorded', (tester) async {
+      when(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: habitFlossing,
+        ),
+      ).thenAnswer((_) async => null);
+
+      await pumpHabitDialog(tester);
 
       expect(find.text(habitFlossing.name), findsOneWidget);
 
@@ -93,6 +95,83 @@ void main() {
 
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('Fail button records a failed completion', (tester) async {
+      when(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: habitFlossing,
+        ),
+      ).thenAnswer((_) async => null);
+
+      await pumpHabitDialog(tester);
+
+      await tester.tap(find.byKey(const Key('habit_fail')));
+      await tester.pumpAndSettle();
+
+      final captured = verify(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: captureAny(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: habitFlossing,
+        ),
+      ).captured;
+
+      final completion = captured.single as HabitCompletionData;
+      expect(completion.completionType, HabitCompletionType.fail);
+    });
+
+    testWidgets('Skip button records a skipped completion', (tester) async {
+      when(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: habitFlossing,
+        ),
+      ).thenAnswer((_) async => null);
+
+      await pumpHabitDialog(tester);
+
+      await tester.tap(find.byKey(const Key('habit_skip')));
+      await tester.pumpAndSettle();
+
+      final captured = verify(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: captureAny(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: habitFlossing,
+        ),
+      ).captured;
+
+      final completion = captured.single as HabitCompletionData;
+      expect(completion.completionType, HabitCompletionType.skip);
+    });
+
+    testWidgets('Shows dashboard preview when habit has dashboard id',
+        (tester) async {
+      final habitWithDashboard = habitFlossing.copyWith(dashboardId: 'dash-1');
+
+      when(
+        () => mockEntitiesCacheService.getHabitById(habitFlossing.id),
+      ).thenAnswer((_) => habitWithDashboard);
+
+      when(
+        () => mockEntitiesCacheService.getDashboardById(any()),
+      ).thenReturn(null);
+
+      when(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: habitWithDashboard,
+        ),
+      ).thenAnswer((_) async => null);
+
+      await pumpHabitDialog(tester);
+
+      expect(find.byType(SingleChildScrollView).evaluate().length, 2);
     });
   });
 }
