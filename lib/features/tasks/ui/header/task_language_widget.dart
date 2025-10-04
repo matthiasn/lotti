@@ -1,10 +1,10 @@
-import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class TaskLanguageWidget extends StatelessWidget {
@@ -13,8 +13,6 @@ class TaskLanguageWidget extends StatelessWidget {
     required this.onLanguageChanged,
     super.key,
   });
-
-  static const _nigerianLanguageCodes = {'ig', 'pcm', 'yo'};
 
   final Task task;
   final LanguageCallback onLanguageChanged;
@@ -53,7 +51,12 @@ class TaskLanguageWidget extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(2),
-                  child: _buildFlag(language),
+                  child: buildLanguageFlag(
+                    languageCode: language.code,
+                    height: 20,
+                    width: 30,
+                    key: ValueKey('flag-${language.code}'),
+                  ),
                 ),
               )
             else
@@ -110,23 +113,5 @@ class TaskLanguageWidget extends StatelessWidget {
       searchController.dispose();
       searchQuery.dispose();
     }
-  }
-
-  Widget _buildFlag(SupportedLanguage language) {
-    if (_nigerianLanguageCodes.contains(language.code)) {
-      return CountryFlag.fromCountryCode(
-        'ng',
-        height: 20,
-        width: 30,
-        key: ValueKey('flag-${language.code}'),
-      );
-    }
-
-    return CountryFlag.fromLanguageCode(
-      language.code,
-      height: 20,
-      width: 30,
-      key: ValueKey('flag-${language.code}'),
-    );
   }
 }

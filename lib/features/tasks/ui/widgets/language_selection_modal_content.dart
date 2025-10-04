@@ -1,4 +1,3 @@
-import 'package:country_flags/country_flags.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 typedef LanguageCallback = void Function(SupportedLanguage?);
@@ -21,8 +21,6 @@ class LanguageSelectionModalContent extends ConsumerWidget {
   final LanguageCallback onLanguageSelected;
   final ValueListenable<String> searchQuery;
   final String? initialLanguageCode;
-
-  static const _nigerianLanguageCodes = {'ig', 'pcm', 'yo'};
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -75,7 +73,12 @@ class LanguageSelectionModalContent extends ConsumerWidget {
                 leading: SizedBox(
                   width: 32,
                   height: 24,
-                  child: _buildFlag(selectedLanguage.code),
+                  child: buildLanguageFlag(
+                    languageCode: selectedLanguage.code,
+                    height: 24,
+                    width: 32,
+                    key: ValueKey('flag-${selectedLanguage.code}'),
+                  ),
                 ),
                 trailing: Icon(
                   Icons.check_rounded,
@@ -90,7 +93,12 @@ class LanguageSelectionModalContent extends ConsumerWidget {
                 leading: SizedBox(
                   width: 32,
                   height: 24,
-                  child: _buildFlag(language.code),
+                  child: buildLanguageFlag(
+                    languageCode: language.code,
+                    height: 24,
+                    width: 32,
+                    key: ValueKey('flag-${language.code}'),
+                  ),
                 ),
               ),
             ),
@@ -121,24 +129,6 @@ class LanguageSelectionModalContent extends ConsumerWidget {
       hintText: '',
       onChanged: (value) => queryNotifier.value = value,
       onClear: () => queryNotifier.value = '',
-    );
-  }
-
-  static Widget _buildFlag(String languageCode) {
-    if (_nigerianLanguageCodes.contains(languageCode)) {
-      return CountryFlag.fromCountryCode(
-        'ng',
-        height: 24,
-        width: 32,
-        key: ValueKey('flag-$languageCode'),
-      );
-    }
-
-    return CountryFlag.fromLanguageCode(
-      languageCode,
-      height: 24,
-      width: 32,
-      key: ValueKey('flag-$languageCode'),
     );
   }
 }
