@@ -83,8 +83,11 @@ class TaskLanguageWidget extends StatelessWidget {
       builder: (BuildContext context) {
         return LanguageSelectionModalContent(
           initialLanguageCode: task.data.languageCode,
-          onLanguageSelected: (language) {
-            onLanguageChanged(language);
+          onLanguageSelected: (language) async {
+            await Future<void>.sync(() => onLanguageChanged(language));
+            if (!context.mounted) {
+              return;
+            }
             Navigator.pop(context);
           },
         );

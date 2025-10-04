@@ -462,8 +462,11 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       builder: (BuildContext context) {
         return LanguageSelectionModalContent(
           initialLanguageCode: currentLanguageCode,
-          onLanguageSelected: (language) {
+          onLanguageSelected: (language) async {
             controller.updateFormField(defaultLanguageCode: language?.code);
+            if (!context.mounted) {
+              return;
+            }
             Navigator.pop(context);
           },
         );

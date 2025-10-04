@@ -129,8 +129,9 @@ void main() {
       find.byType(TaskLanguageWidget),
     );
 
-    return widget.onLanguageChanged as Future<void> Function(
-        SupportedLanguage?);
+    return (SupportedLanguage? language) async {
+      await Future<void>.sync(() => widget.onLanguageChanged(language));
+    };
   }
 
   testWidgets('triggers task summary refresh when language changes',
