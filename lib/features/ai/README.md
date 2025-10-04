@@ -439,6 +439,7 @@ When users interact with checklists (adding items, checking/unchecking items, up
    - `createChecklistItem()`: Triggers refresh when new items are added
    - `updateChecklistItem()`: Triggers refresh when items are modified
    - `addItemToChecklist()`: Triggers refresh for batch additions
+   - Task language selection: Manual language changes in the task header trigger a refresh so summaries regenerate in the newly selected language
 
 #### How It Works
 
@@ -599,6 +600,7 @@ The AI system supports multilingual task summary generation in 38 languages, all
 2. **Language Setting**: Sets detected language with confidence level
 3. **Summary Generation**: All content generated in selected language
 4. **Manual Override**: Users can change language via task header
+   - Selecting a new language immediately regenerates the AI task summary in that language
 
 ## Configuration System
 
