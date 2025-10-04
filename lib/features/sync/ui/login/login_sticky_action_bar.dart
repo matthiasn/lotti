@@ -58,24 +58,28 @@ class LoginStickyActionBar extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (config != null)
-            LottiSecondaryButton(
-              key: const Key('matrix_config_delete'),
-              label: context.messages.settingsMatrixDeleteLabel,
-              onPressed: deleteConfig,
+            Flexible(
+              child: LottiSecondaryButton(
+                key: const Key('matrix_config_delete'),
+                label: context.messages.settingsMatrixDeleteLabel,
+                onPressed: deleteConfig,
+              ),
             ),
-          const SizedBox(height: 8),
-          LottiPrimaryButton(
-            key: const Key('matrix_login'),
-            onPressed: enableLoginButton
-                ? () async {
-                    final isLoggedIn = await loginNotifier.login();
-                    if (isLoggedIn) {
-                      pageIndexNotifier.value = 1;
+          if (config != null) const SizedBox(width: 8),
+          Flexible(
+            child: LottiPrimaryButton(
+              key: const Key('matrix_login'),
+              onPressed: enableLoginButton
+                  ? () async {
+                      final isLoggedIn = await loginNotifier.login();
+                      if (isLoggedIn) {
+                        pageIndexNotifier.value = 1;
+                      }
                     }
-                  }
-                : null,
-            label: context.messages.settingsMatrixLoginButtonLabel,
-            semanticsLabel: context.messages.settingsMatrixLoginButtonLabel,
+                  : null,
+              label: context.messages.settingsMatrixLoginButtonLabel,
+              semanticsLabel: context.messages.settingsMatrixLoginButtonLabel,
+            ),
           ),
         ],
       ),

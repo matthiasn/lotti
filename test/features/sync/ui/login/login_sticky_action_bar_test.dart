@@ -109,6 +109,10 @@ void main() {
 
       // Verify that the delete button is rendered
       expect(find.byKey(const Key('matrix_config_delete')), findsOneWidget);
+      final spacing = tester
+          .widgetList<SizedBox>(find.byType(SizedBox))
+          .where((box) => box.width == 8 && box.height == null);
+      expect(spacing, isNotEmpty);
     });
 
     testWidgets('delete button shows confirmation dialog when pressed',
@@ -148,6 +152,26 @@ void main() {
 
       // Verify that deleteConfig was called on the MatrixService
       verify(() => mockMatrixService.deleteConfig()).called(1);
+    });
+
+    testWidgets('omits spacing when no config is present', (tester) async {
+      when(() => mockMatrixService.loadConfig())
+          .thenAnswer((_) => Future.value());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: LoginStickyActionBar(pageIndexNotifier: pageIndexNotifier),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final spacing = tester
+          .widgetList<SizedBox>(find.byType(SizedBox))
+          .where((box) => box.width == 8 && box.height == null);
+      expect(spacing, isEmpty);
     });
   });
 }

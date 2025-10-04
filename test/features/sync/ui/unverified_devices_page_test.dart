@@ -1,0 +1,85 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/widgets/sync/matrix/device_card.dart';
+import 'package:lotti/widgets/sync/matrix/status_indicator.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+
+class _FakeMatrixUnverifiedController extends MatrixUnverifiedController {
+  _FakeMatrixUnverifiedController(this.devices);
+
+  final List<DeviceKeys> devices;
+
+  @override
+  Future<List<DeviceKeys>> build() async => devices;
+}
+
+class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late MockMatrixService mockMatrixService;
+
+  setUp(() {
+    mockMatrixService = MockMatrixService();
+    getIt.allowReassignment = true;
+    getIt.registerSingleton<MatrixService>(mockMatrixService);
+  });
+
+  tearDown(getIt.reset);
+
+  testWidgets('shows status indicator when there are no unverified devices',
+      (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const UnverifiedDevices(),
+        overrides: [
+          matrixUnverifiedControllerProvider
+              .overrideWith(() => _FakeMatrixUnverifiedController(const [])),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('No unverified devices'), findsOneWidget);
+    expect(find.byType(StatusIndicator), findsOneWidget);
+  });
+
+  testWidgets('renders device list and refresh action', (tester) async {
+    final device = MockDeviceKeys();
+    when(() => device.deviceDisplayName).thenReturn('Pixel 7');
+    when(() => device.deviceId).thenReturn('DEVICE1');
+    when(() => device.userId).thenReturn('@user:server');
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const UnverifiedDevices(),
+        overrides: [
+          matrixUnverifiedControllerProvider.overrideWith(
+            () => _FakeMatrixUnverifiedController([device]),
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unverified devices'), findsOneWidget);
+    expect(find.byType(DeviceCard), findsOneWidget);
+
+    final refreshButton = find.byIcon(MdiIcons.refresh);
+    expect(refreshButton, findsOneWidget);
+
+    await tester.tap(refreshButton);
+    await tester.pumpAndSettle();
+  });
+}

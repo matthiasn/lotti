@@ -153,21 +153,26 @@ class _ModelManagementStickyActionBar extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              LottiTertiaryButton(
-                label: context.messages.cancelButton,
-                onPressed: () => Navigator.pop(context),
+              Flexible(
+                child: LottiTertiaryButton(
+                  label: context.messages.cancelButton,
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
-              LottiPrimaryButton(
-                onPressed: (selectedIds.isNotEmpty &&
-                        defaultId.isNotEmpty &&
-                        selectedIds.contains(defaultId))
-                    ? () {
-                        onSave(selectedIds.toList(), defaultId);
-                        Navigator.of(context).pop();
-                      }
-                    : null,
-                label: context.messages.saveButtonLabel,
-                icon: Icons.save_rounded,
+              const SizedBox(width: 8),
+              Flexible(
+                child: LottiPrimaryButton(
+                  onPressed: (selectedIds.isNotEmpty &&
+                          defaultId.isNotEmpty &&
+                          selectedIds.contains(defaultId))
+                      ? () {
+                          onSave(selectedIds.toList(), defaultId);
+                          Navigator.of(context).pop();
+                        }
+                      : null,
+                  label: context.messages.saveButtonLabel,
+                  icon: Icons.save_rounded,
+                ),
               ),
             ],
           ),

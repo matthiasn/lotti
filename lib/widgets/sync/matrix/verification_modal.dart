@@ -130,19 +130,24 @@ class _VerificationModalState extends State<VerificationModal> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      LottiPrimaryButton(
-                        key: const Key('matrix_cancel_verification'),
-                        onPressed: () async {
-                          await runner?.cancelVerification();
-                          pop();
-                        },
-                        label: context
-                            .messages.settingsMatrixCancelVerificationLabel,
-                        isDestructive: true,
+                      Flexible(
+                        child: LottiPrimaryButton(
+                          key: const Key('matrix_cancel_verification'),
+                          onPressed: () async {
+                            await runner?.cancelVerification();
+                            pop();
+                          },
+                          label: context
+                              .messages.settingsMatrixCancelVerificationLabel,
+                          isDestructive: true,
+                        ),
                       ),
-                      LottiPrimaryButton(
-                        onPressed: runner?.acceptEmojiVerification,
-                        label: 'They match',
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: LottiPrimaryButton(
+                          onPressed: runner?.acceptEmojiVerification,
+                          label: 'They match',
+                        ),
                       ),
                     ],
                   ),
