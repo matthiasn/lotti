@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -14,6 +17,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' show Amplitude;
 
@@ -29,17 +33,28 @@ class MockAudioRecorderRepository extends Mock
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockCategoryRepository extends Mock implements CategoryRepository {}
+
 // Custom AudioRecorderController for testing
 class TestAudioRecorderController extends AudioRecorderController {
-  TestAudioRecorderController(this._testState);
+  TestAudioRecorderController(
+    this._testState, {
+    this.stopResult = 'test-entry-id',
+  });
 
   final AudioRecorderState _testState;
+  final String? stopResult;
+
+  final modalVisibleValues = <bool>[];
+  final recordLinkedIds = <String?>[];
+  String? lastCategoryId;
 
   @override
   AudioRecorderState build() => _testState;
 
   @override
   Future<void> record({String? linkedId}) async {
+    recordLinkedIds.add(linkedId);
     state = state.copyWith(
       status: AudioRecorderStatus.recording,
       linkedId: linkedId,
@@ -49,18 +64,18 @@ class TestAudioRecorderController extends AudioRecorderController {
   @override
   Future<String?> stop() async {
     state = state.copyWith(status: AudioRecorderStatus.stopped);
-    return 'test-entry-id';
+    return stopResult;
   }
 
   @override
   void setModalVisible({required bool modalVisible}) {
+    modalVisibleValues.add(modalVisible);
     state = state.copyWith(modalVisible: modalVisible);
   }
 
   @override
   void setCategoryId(String? categoryId) {
-    // In the real implementation, this updates persistence
-    // For testing, we don't need to do anything
+    lastCategoryId = categoryId;
   }
 
   @override
@@ -193,7 +208,7 @@ void main() {
 
     testWidgets('record button calls record method with correct linkedId',
         (tester) async {
-      TestAudioRecorderController? controller;
+      late TestAudioRecorderController controller;
       const testLinkedId = 'test-linked-id';
 
       await tester.pumpWidget(
@@ -201,8 +216,8 @@ void main() {
           overrides: [
             audioRecorderRepositoryProvider
                 .overrideWithValue(mockRecorderRepository),
-            audioRecorderControllerProvider.overrideWith(() {
-              controller = TestAudioRecorderController(
+            audioRecorderControllerProvider.overrideWith(
+              () => controller = TestAudioRecorderController(
                 AudioRecorderState(
                   status: AudioRecorderStatus.initializing,
                   vu: 0,
@@ -212,9 +227,8 @@ void main() {
                   modalVisible: false,
                   language: 'en',
                 ),
-              );
-              return controller!;
-            }),
+              ),
+            ),
           ],
           child: makeTestableWidgetWithScaffold(
             const AudioRecordingModalContent(
@@ -226,16 +240,16 @@ void main() {
       await tester.pumpAndSettle();
 
       // Initially should not be recording
-      expect(controller!.state.status, AudioRecorderStatus.initializing);
-      expect(controller!.state.linkedId, isNull);
+      expect(controller.state.status, AudioRecorderStatus.initializing);
+      expect(controller.state.linkedId, isNull);
 
       // Tap record button
       await tester.tap(find.text('RECORD'));
       await tester.pump();
 
       // Verify record was called with correct linkedId
-      expect(controller!.state.status, AudioRecorderStatus.recording);
-      expect(controller!.state.linkedId, testLinkedId);
+      expect(controller.state.status, AudioRecorderStatus.recording);
+      expect(controller.state.linkedId, testLinkedId);
     });
 
     testWidgets('shows stop button when recording', (tester) async {
@@ -335,6 +349,116 @@ void main() {
     });
   });
 
+  group('AudioRecordingModal.show', () {
+    late MockJournalDb mockJournalDb;
+    late MockNavService mockNavService;
+    late MockPersistenceLogic mockPersistenceLogic;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockCategoryRepository mockCategoryRepository;
+    late MockAudioRecorderRepository mockRecorderRepository;
+
+    setUp(() {
+      getIt.reset();
+
+      mockJournalDb = MockJournalDb();
+      mockNavService = MockNavService();
+      mockPersistenceLogic = MockPersistenceLogic();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+      mockCategoryRepository = MockCategoryRepository();
+      mockRecorderRepository = MockAudioRecorderRepository();
+
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<NavService>(mockNavService)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+
+      when(() => mockJournalDb.getConfigFlag(any()))
+          .thenAnswer((_) async => false);
+      when(() => mockRecorderRepository.amplitudeStream)
+          .thenAnswer((_) => const Stream<Amplitude>.empty());
+      when(() => mockRecorderRepository.dispose()).thenAnswer((_) async {});
+
+      // Mock category repository to return a stream with a category that has automatic prompts
+      final now = DateTime(2024);
+      final category = CategoryDefinition(
+        id: 'cat-id',
+        createdAt: now,
+        updatedAt: now,
+        name: 'Test Category',
+        vectorClock: null,
+        private: false,
+        active: true,
+        automaticPrompts: {
+          AiResponseType.audioTranscription: ['prompt-1'],
+        },
+      );
+      when(() => mockCategoryRepository.watchCategory('cat-id'))
+          .thenAnswer((_) => Stream.value(category));
+    });
+
+    tearDown(getIt.reset);
+
+    testWidgets('sets modal visibility around modal lifecycle', (tester) async {
+      late TestAudioRecorderController controller;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioRecorderRepositoryProvider
+                .overrideWithValue(mockRecorderRepository),
+            categoryRepositoryProvider
+                .overrideWithValue(mockCategoryRepository),
+            audioRecorderControllerProvider.overrideWith(
+              () => controller = TestAudioRecorderController(
+                AudioRecorderState(
+                  status: AudioRecorderStatus.stopped,
+                  vu: 0,
+                  dBFS: -60,
+                  progress: Duration.zero,
+                  showIndicator: false,
+                  modalVisible: false,
+                  language: 'en',
+                ),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await AudioRecordingModal.show(
+                        context,
+                        categoryId: 'cat-id',
+                        useRootNavigator: false,
+                      );
+                    },
+                    child: const Text('open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(controller.modalVisibleValues.first, isTrue);
+      expect(controller.lastCategoryId, 'cat-id');
+
+      final modalContext =
+          tester.element(find.byType(AudioRecordingModalContent));
+      Navigator.of(modalContext).pop();
+      await tester.pumpAndSettle();
+
+      expect(controller.modalVisibleValues, [true, false]);
+    });
+  });
+
   group('Stop Button and Transcription Tests', () {
     late MockJournalDb mockJournalDb;
     late MockNavService mockNavService;
@@ -363,15 +487,15 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('stop button calls stop() and navigates back', (tester) async {
-      TestAudioRecorderController? controller;
+      late TestAudioRecorderController controller;
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             audioRecorderRepositoryProvider
                 .overrideWithValue(mockRecorderRepository),
-            audioRecorderControllerProvider.overrideWith(() {
-              controller = TestAudioRecorderController(
+            audioRecorderControllerProvider.overrideWith(
+              () => controller = TestAudioRecorderController(
                 AudioRecorderState(
                   status: AudioRecorderStatus.recording,
                   vu: -10,
@@ -381,9 +505,8 @@ void main() {
                   modalVisible: false,
                   language: 'en',
                 ),
-              );
-              return controller!;
-            }),
+              ),
+            ),
           ],
           child: makeTestableWidgetWithScaffold(
             const AudioRecordingModalContent(),
@@ -393,19 +516,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify initial state is recording
-      expect(controller!.state.status, AudioRecorderStatus.recording);
+      expect(controller.state.status, AudioRecorderStatus.recording);
 
       // Tap stop button
       await tester.tap(find.text('STOP'));
       await tester.pump();
 
       // Verify controller state changed to stopped
-      expect(controller!.state.status, AudioRecorderStatus.stopped);
+      expect(controller.state.status, AudioRecorderStatus.stopped);
     });
 
     testWidgets('navigates to entry when linkedId is null after recording',
         (tester) async {
-      TestAudioRecorderController? controller;
       String? capturedNavigationPath;
 
       // Mock navigation to capture the path
@@ -418,8 +540,8 @@ void main() {
           overrides: [
             audioRecorderRepositoryProvider
                 .overrideWithValue(mockRecorderRepository),
-            audioRecorderControllerProvider.overrideWith(() {
-              controller = TestAudioRecorderController(
+            audioRecorderControllerProvider.overrideWith(
+              () => TestAudioRecorderController(
                 AudioRecorderState(
                   status: AudioRecorderStatus.recording,
                   vu: -10,
@@ -429,9 +551,8 @@ void main() {
                   modalVisible: false,
                   language: 'en',
                 ),
-              );
-              return controller!;
-            }),
+              ),
+            ),
           ],
           child: makeTestableWidgetWithScaffold(
             const AudioRecordingModalContent(),
@@ -449,7 +570,6 @@ void main() {
     });
 
     testWidgets('does not navigate when linkedId is provided', (tester) async {
-      TestAudioRecorderController? controller;
       var navigationCalled = false;
 
       // Mock navigation to detect if it's called
@@ -462,8 +582,8 @@ void main() {
           overrides: [
             audioRecorderRepositoryProvider
                 .overrideWithValue(mockRecorderRepository),
-            audioRecorderControllerProvider.overrideWith(() {
-              controller = TestAudioRecorderController(
+            audioRecorderControllerProvider.overrideWith(
+              () => TestAudioRecorderController(
                 AudioRecorderState(
                   status: AudioRecorderStatus.recording,
                   vu: -10,
@@ -473,9 +593,8 @@ void main() {
                   modalVisible: false,
                   language: 'en',
                 ),
-              );
-              return controller!;
-            }),
+              ),
+            ),
           ],
           child: makeTestableWidgetWithScaffold(
             const AudioRecordingModalContent(
@@ -528,11 +647,14 @@ void main() {
 
     tearDown(getIt.reset);
 
-    Widget makeTestableWidget({
+    Future<ExtendedTestAudioRecorderController> pumpModal(
+      WidgetTester tester, {
       String? linkedId,
       String? categoryId,
+      CategoryDefinition? category,
       AudioRecorderState? state,
-    }) {
+    }) async {
+      late ExtendedTestAudioRecorderController controller;
       final testState = state ??
           AudioRecorderState(
             status: AudioRecorderStatus.initializing,
@@ -544,53 +666,186 @@ void main() {
             language: 'en',
           );
 
-      return ProviderScope(
-        overrides: [
-          audioRecorderRepositoryProvider
-              .overrideWithValue(mockRecorderRepository),
-          audioRecorderControllerProvider.overrideWith(() {
-            return ExtendedTestAudioRecorderController(testState);
-          }),
-        ],
-        child: makeTestableWidgetWithScaffold(
-          AudioRecordingModalContent(
-            linkedId: linkedId,
-            categoryId: categoryId,
+      // Create a local mock for category repository
+      final localMockCategoryRepository = MockCategoryRepository();
+
+      final overrides = <Override>[
+        audioRecorderRepositoryProvider.overrideWithValue(
+          mockRecorderRepository,
+        ),
+        categoryRepositoryProvider
+            .overrideWithValue(localMockCategoryRepository),
+        audioRecorderControllerProvider.overrideWith(
+          () => controller = ExtendedTestAudioRecorderController(testState),
+        ),
+      ];
+
+      if (categoryId != null && category != null) {
+        when(() => localMockCategoryRepository.watchCategory(categoryId))
+            .thenAnswer((_) => Stream.value(category));
+      }
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: overrides,
+          child: makeTestableWidgetWithScaffold(
+            AudioRecordingModalContent(
+              linkedId: linkedId,
+              categoryId: categoryId,
+            ),
           ),
         ),
+      );
+
+      await tester.pumpAndSettle();
+      return controller;
+    }
+
+    CategoryDefinition categoryDefinitionWithPrompts({
+      bool transcription = false,
+      bool checklist = false,
+      bool summary = false,
+    }) {
+      final prompts = <AiResponseType, List<String>>{};
+
+      if (transcription) {
+        prompts[AiResponseType.audioTranscription] = ['prompt-transcription'];
+      }
+      if (checklist) {
+        prompts[AiResponseType.checklistUpdates] = ['prompt-checklist'];
+      }
+      if (summary) {
+        prompts[AiResponseType.taskSummary] = ['prompt-summary'];
+      }
+
+      final now = DateTime(2024);
+      return CategoryDefinition(
+        id: 'cat-id',
+        createdAt: now,
+        updatedAt: now,
+        name: 'Audio Category',
+        vectorClock: null,
+        private: false,
+        active: true,
+        automaticPrompts: prompts.isEmpty ? null : prompts,
       );
     }
 
     testWidgets('does not show checkboxes when categoryId is null',
         (tester) async {
-      await tester.pumpWidget(makeTestableWidget());
-      await tester.pumpAndSettle();
+      await pumpModal(tester);
 
-      // Should not find any checkbox widgets
-      expect(find.text('Speech Recognition'), findsNothing);
+      expect(find.byType(LottiAnimatedCheckbox), findsNothing);
+    });
+
+    testWidgets('hides checkboxes when category has no automatic prompts',
+        (tester) async {
+      await pumpModal(
+        tester,
+        categoryId: 'cat-id',
+        category: categoryDefinitionWithPrompts(),
+      );
+
+      expect(find.byType(LottiAnimatedCheckbox), findsNothing);
+    });
+
+    testWidgets(
+        'shows only speech recognition option when transcription prompts exist and entry is not linked to a task',
+        (tester) async {
+      final controller = await pumpModal(
+        tester,
+        categoryId: 'cat-id',
+        category: categoryDefinitionWithPrompts(transcription: true),
+      );
+
+      expect(find.text('Speech Recognition'), findsOneWidget);
+      expect(find.text('Checklist Updates'), findsNothing);
+      expect(find.text('Task Summary'), findsNothing);
+
+      await tester.tap(find.text('Speech Recognition'));
+      await tester.pump();
+
+      expect(controller.speechRecognitionValues, contains(false));
+    });
+
+    testWidgets(
+        'hides checklist and task summary when speech recognition is disabled',
+        (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.stopped,
+        vu: 0,
+        dBFS: -60,
+        progress: Duration.zero,
+        showIndicator: false,
+        modalVisible: false,
+        language: 'en',
+        enableSpeechRecognition: false,
+        enableChecklistUpdates: true,
+        enableTaskSummary: true,
+      );
+
+      await pumpModal(
+        tester,
+        linkedId: 'task-1',
+        categoryId: 'cat-id',
+        category: categoryDefinitionWithPrompts(
+          transcription: true,
+          checklist: true,
+          summary: true,
+        ),
+        state: state,
+      );
+
+      expect(find.text('Speech Recognition'), findsOneWidget);
+      expect(find.text('Checklist Updates'), findsNothing);
       expect(find.text('Task Summary'), findsNothing);
     });
 
-    // NOTE: The checkbox visibility and interaction tests have been removed
-    // because they require complex mocking of categoryDetailsControllerProvider
-    // and its dependencies. These scenarios are covered by:
-    //
-    // 1. Integration tests that test the full recording flow with real category data
-    // 2. Unit tests in recorder_controller_test.dart that verify the state management
-    //    for enableSpeechRecognition and enableTaskSummary
-    //
-    // The controller tests ensure that:
-    // - setEnableSpeechRecognition() correctly updates the state
-    // - setEnableTaskSummary() correctly updates the state
-    // - The state is preserved across recording lifecycle
-    //
-    // The integration tests ensure that:
-    // - Checkboxes appear when category has automatic prompts configured
-    // - Checkboxes are hidden when no automatic prompts are configured
-    // - Checkbox interaction triggers the correct AI prompts after recording
-    //
-    // Adding mock-based tests here would provide minimal additional value
-    // while making the test suite more brittle and harder to maintain.
+    testWidgets(
+        'shows and toggles all automatic prompt checkboxes when prerequisites are met',
+        (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.stopped,
+        vu: 0,
+        dBFS: -60,
+        progress: Duration.zero,
+        showIndicator: false,
+        modalVisible: false,
+        language: 'en',
+        enableSpeechRecognition: true,
+        enableChecklistUpdates: true,
+        enableTaskSummary: true,
+      );
+
+      final controller = await pumpModal(
+        tester,
+        linkedId: 'task-1',
+        categoryId: 'cat-id',
+        category: categoryDefinitionWithPrompts(
+          transcription: true,
+          checklist: true,
+          summary: true,
+        ),
+        state: state,
+      );
+
+      expect(find.text('Speech Recognition'), findsOneWidget);
+      expect(find.text('Checklist Updates'), findsOneWidget);
+      expect(find.text('Task Summary'), findsOneWidget);
+
+      await tester.tap(find.text('Checklist Updates'));
+      await tester.pump();
+      await tester.tap(find.text('Task Summary'));
+      await tester.pump();
+      await tester.tap(find.text('Speech Recognition'));
+      await tester.pumpAndSettle();
+
+      expect(controller.checklistValues, contains(false));
+      expect(controller.taskSummaryValues, contains(false));
+      expect(controller.speechRecognitionValues, contains(false));
+      expect(find.text('Checklist Updates'), findsNothing);
+      expect(find.text('Task Summary'), findsNothing);
+    });
   });
 
   group('Utility Method Tests', () {
@@ -703,13 +958,25 @@ void main() {
 class ExtendedTestAudioRecorderController extends TestAudioRecorderController {
   ExtendedTestAudioRecorderController(super._testState);
 
+  final speechRecognitionValues = <bool?>[];
+  final checklistValues = <bool?>[];
+  final taskSummaryValues = <bool?>[];
+
   @override
   void setEnableSpeechRecognition({required bool? enable}) {
+    speechRecognitionValues.add(enable);
     state = state.copyWith(enableSpeechRecognition: enable);
   }
 
   @override
+  void setEnableChecklistUpdates({required bool? enable}) {
+    checklistValues.add(enable);
+    state = state.copyWith(enableChecklistUpdates: enable);
+  }
+
+  @override
   void setEnableTaskSummary({required bool? enable}) {
+    taskSummaryValues.add(enable);
     state = state.copyWith(enableTaskSummary: enable);
   }
 }
