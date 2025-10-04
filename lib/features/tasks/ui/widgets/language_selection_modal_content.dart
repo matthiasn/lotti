@@ -65,78 +65,57 @@ class LanguageSelectionModalContentState
         .where((language) => language.code != widget.initialLanguageCode)
         .toList();
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: constraints.maxHeight.isFinite
-                ? constraints.maxHeight
-                : MediaQuery.of(context).size.height * 0.8,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: TextField(
+            controller: searchController,
+            decoration: InputDecoration(
+              hintText: context.messages.categorySearchPlaceholder,
+              prefixIcon: const Icon(Icons.search),
+            ),
+            onChanged: (value) {
+              setState(() {
+                searchQuery = value;
+              });
+            },
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextField(
-                  controller: searchController,
-                  decoration: InputDecoration(
-                    hintText: context.messages.categorySearchPlaceholder,
-                    prefixIcon: const Icon(Icons.search),
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      searchQuery = value;
-                    });
-                  },
-                ),
-              ),
-              Flexible(
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (selectedLanguage != null)
-                        SettingsCard(
-                          onTap: () => Navigator.pop(context),
-                          title: selectedLanguage.localizedName(context),
-                          leading: SizedBox(
-                            width: 32,
-                            height: 24,
-                            child: _buildFlag(selectedLanguage.code),
-                          ),
-                        ),
-                      ...languagesWithoutSelected.map(
-                        (language) => SettingsCard(
-                          onTap: () => widget.onLanguageSelected(language),
-                          title: language.localizedName(context),
-                          leading: SizedBox(
-                            width: 32,
-                            height: 24,
-                            child: _buildFlag(language.code),
-                          ),
-                        ),
-                      ),
-                      if (widget.initialLanguageCode != null)
-                        SettingsCard(
-                          onTap: () => widget.onLanguageSelected(null),
-                          title: context.messages.aiSettingsClearFiltersButton,
-                          titleColor: context.colorScheme.outline,
-                          leading: Icon(
-                            Icons.clear,
-                            color: context.colorScheme.outline,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+        ),
+        if (selectedLanguage != null)
+          SettingsCard(
+            onTap: () => Navigator.pop(context),
+            title: selectedLanguage.localizedName(context),
+            leading: SizedBox(
+              width: 32,
+              height: 24,
+              child: _buildFlag(selectedLanguage.code),
+            ),
           ),
-        );
-      },
+        ...languagesWithoutSelected.map(
+          (language) => SettingsCard(
+            onTap: () => widget.onLanguageSelected(language),
+            title: language.localizedName(context),
+            leading: SizedBox(
+              width: 32,
+              height: 24,
+              child: _buildFlag(language.code),
+            ),
+          ),
+        ),
+        if (widget.initialLanguageCode != null)
+          SettingsCard(
+            onTap: () => widget.onLanguageSelected(null),
+            title: context.messages.aiSettingsClearFiltersButton,
+            titleColor: context.colorScheme.outline,
+            leading: Icon(
+              Icons.clear,
+              color: context.colorScheme.outline,
+            ),
+          ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 
