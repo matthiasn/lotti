@@ -77,22 +77,39 @@ class TaskLanguageWidget extends StatelessWidget {
   }
 
   Future<void> _showLanguageSelector(BuildContext context) async {
-    await ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.taskLanguageLabel,
-      builder: (BuildContext context) {
-        return LanguageSelectionModalContent(
-          initialLanguageCode: task.data.languageCode,
-          onLanguageSelected: (language) async {
-            await Future<void>.sync(() => onLanguageChanged(language));
-            if (!context.mounted) {
-              return;
-            }
-            Navigator.pop(context);
-          },
-        );
-      },
-    );
+    final searchQuery = ValueNotifier<String>('');
+    final searchController = TextEditingController();
+
+    try {
+      await ModalUtils.showSinglePageModal<void>(
+        context: context,
+        titleWidget: Padding(
+          padding: const EdgeInsets.only(top: 10, bottom: 10),
+          child: LanguageSelectionModalContent.buildHeader(
+            context: context,
+            controller: searchController,
+            queryNotifier: searchQuery,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        builder: (BuildContext context) {
+          return LanguageSelectionModalContent(
+            initialLanguageCode: task.data.languageCode,
+            searchQuery: searchQuery,
+            onLanguageSelected: (language) {
+              onLanguageChanged(language);
+              if (!context.mounted) {
+                return;
+              }
+              Navigator.pop(context);
+            },
+          );
+        },
+      );
+    } finally {
+      searchController.dispose();
+      searchQuery.dispose();
+    }
   }
 
   Widget _buildFlag(SupportedLanguage language) {

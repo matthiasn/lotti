@@ -2061,6 +2061,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskLanguageYoruba => 'Yoruba';
 
   @override
+  String get taskLanguageSearchPlaceholder => 'Buscar idiomas...';
+
+  @override
+  String get taskLanguageSelectedLabel => 'Idioma actual';
+
+  @override
   String get taskLanguageVietnamese => 'Vietnamita';
 
   @override

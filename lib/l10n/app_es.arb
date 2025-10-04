@@ -352,6 +352,8 @@
   "taskLanguageIgbo": "Igbo",
   "taskLanguageNigerianPidgin": "Pidgin nigeriano",
   "taskLanguageYoruba": "Yoruba",
+  "taskLanguageSearchPlaceholder": "Buscar idiomas...",
+  "taskLanguageSelectedLabel": "Idioma actual",
   "taskLanguageVietnamese": "Vietnamita",
   "timeByCategoryChartTitle": "Tiempo por categoría",
   "timeByCategoryChartTotalLabel": "Total",

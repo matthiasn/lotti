@@ -3898,6 +3898,18 @@ abstract class AppLocalizations {
   /// **'Yoruba'**
   String get taskLanguageYoruba;
 
+  /// No description provided for @taskLanguageSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search languages...'**
+  String get taskLanguageSearchPlaceholder;
+
+  /// No description provided for @taskLanguageSelectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently selected'**
+  String get taskLanguageSelectedLabel;
+
   /// No description provided for @taskLanguageVietnamese.
   ///
   /// In en, this message translates to:

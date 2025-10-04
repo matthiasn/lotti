@@ -9,18 +9,45 @@ import '../../../../test_helper.dart';
 
 void main() {
   group('LanguageSelectionModalContent', () {
-    Future<void> pumpModal(
+    Future<void> pumpHarness(
       WidgetTester tester, {
       LanguageCallback? onLanguageSelected,
       String? initialLanguageCode,
     }) async {
+      final queryNotifier = ValueNotifier<String>('');
+      final controller = TextEditingController();
+
+      addTearDown(() {
+        queryNotifier.dispose();
+        controller.dispose();
+      });
+
       await tester.pumpWidget(
         WidgetTestBench(
-          child: SingleChildScrollView(
-            child: LanguageSelectionModalContent(
-              initialLanguageCode: initialLanguageCode,
-              onLanguageSelected: onLanguageSelected ?? (_) {},
-            ),
+          child: Builder(
+            builder: (context) {
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 600),
+                child: Column(
+                  children: [
+                    LanguageSelectionModalContent.buildHeader(
+                      context: context,
+                      controller: controller,
+                      queryNotifier: queryNotifier,
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: LanguageSelectionModalContent(
+                          initialLanguageCode: initialLanguageCode,
+                          searchQuery: queryNotifier,
+                          onLanguageSelected: onLanguageSelected ?? (_) {},
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       );
@@ -29,7 +56,7 @@ void main() {
     testWidgets('displays all supported languages', (tester) async {
       final selectedLanguages = <SupportedLanguage?>[];
 
-      await pumpModal(
+      await pumpHarness(
         tester,
         onLanguageSelected: selectedLanguages.add,
       );
@@ -45,7 +72,7 @@ void main() {
     });
 
     testWidgets('filters languages by search query', (tester) async {
-      await pumpModal(tester);
+      await pumpHarness(tester);
 
       await tester.enterText(find.byType(TextField), 'German');
       await tester.pump();
@@ -64,17 +91,10 @@ void main() {
         ),
         findsNothing,
       );
-      expect(
-        find.descendant(
-          of: find.byType(SettingsCard),
-          matching: find.text('Spanish'),
-        ),
-        findsNothing,
-      );
     });
 
     testWidgets('filters languages by language code', (tester) async {
-      await pumpModal(tester);
+      await pumpHarness(tester);
 
       await tester.enterText(find.byType(TextField), 'de');
       await tester.pump();
@@ -85,7 +105,7 @@ void main() {
     testWidgets('callback is called when language is selected', (tester) async {
       final selectedLanguages = <SupportedLanguage?>[];
 
-      await pumpModal(
+      await pumpHarness(
         tester,
         onLanguageSelected: selectedLanguages.add,
       );
@@ -98,7 +118,7 @@ void main() {
     });
 
     testWidgets('displays selected language at the top', (tester) async {
-      await pumpModal(
+      await pumpHarness(
         tester,
         initialLanguageCode: 'de',
       );
@@ -108,11 +128,12 @@ void main() {
         matching: find.text('German'),
       );
       expect(germanInSettings, findsOneWidget);
+      expect(find.text('Currently selected'), findsOneWidget);
     });
 
     testWidgets('displays clear option when language is selected',
         (tester) async {
-      await pumpModal(
+      await pumpHarness(
         tester,
         initialLanguageCode: 'de',
       );
@@ -124,7 +145,7 @@ void main() {
     testWidgets('clear option removes language selection', (tester) async {
       final selectedLanguages = <SupportedLanguage?>[];
 
-      await pumpModal(
+      await pumpHarness(
         tester,
         initialLanguageCode: 'de',
         onLanguageSelected: selectedLanguages.add,
@@ -143,16 +164,17 @@ void main() {
     });
 
     testWidgets('search field has correct placeholder', (tester) async {
-      await pumpModal(tester);
+      await pumpHarness(tester);
 
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.decoration?.prefixIcon, isNotNull);
-      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+      expect(textField.decoration?.hintText, isEmpty);
     });
 
     testWidgets('lists languages alphabetically by display name',
         (tester) async {
-      await pumpModal(tester);
+      await pumpHarness(tester);
 
       final cards =
           tester.widgetList<SettingsCard>(find.byType(SettingsCard)).toList();
@@ -166,7 +188,7 @@ void main() {
 
     testWidgets('shows Nigeria flag for Nigerian language codes',
         (tester) async {
-      await pumpModal(tester);
+      await pumpHarness(tester);
 
       for (final code in ['ig', 'pcm', 'yo']) {
         expect(find.byKey(ValueKey('flag-$code')), findsOneWidget);

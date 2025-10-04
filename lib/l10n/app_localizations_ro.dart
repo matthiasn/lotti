@@ -2052,6 +2052,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskLanguageYoruba => 'Yoruba';
 
   @override
+  String get taskLanguageSearchPlaceholder => 'Caută limbi...';
+
+  @override
+  String get taskLanguageSelectedLabel => 'Limba curentă';
+
+  @override
   String get taskLanguageVietnamese => 'Vietnameză';
 
   @override

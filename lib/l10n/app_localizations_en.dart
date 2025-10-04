@@ -2042,6 +2042,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskLanguageYoruba => 'Yoruba';
 
   @override
+  String get taskLanguageSearchPlaceholder => 'Search languages...';
+
+  @override
+  String get taskLanguageSelectedLabel => 'Currently selected';
+
+  @override
   String get taskLanguageVietnamese => 'Vietnamese';
 
   @override
@@ -3214,6 +3220,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get taskLanguageYoruba => 'Yoruba';
+
+  @override
+  String get taskLanguageSearchPlaceholder => 'Search languages...';
+
+  @override
+  String get taskLanguageSelectedLabel => 'Currently selected';
 
   @override
   String get taskLanguageVietnamese => 'Vietnamese';

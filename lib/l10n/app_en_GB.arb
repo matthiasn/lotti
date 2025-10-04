@@ -360,6 +360,8 @@
   "taskLanguageIgbo": "Igbo",
   "taskLanguageNigerianPidgin": "Nigerian Pidgin",
   "taskLanguageYoruba": "Yoruba",
+  "taskLanguageSearchPlaceholder": "Search languages...",
+  "taskLanguageSelectedLabel": "Currently selected",
   "taskLanguageVietnamese": "Vietnamese",
   "timeByCategoryChartTitle": "Time by Category",
   "timeByCategoryChartTotalLabel": "Total",
