@@ -221,5 +221,33 @@ void main() {
       );
       expect(clipRRect.borderRadius, equals(BorderRadius.circular(2)));
     });
+
+    testWidgets('uses Nigeria flag for Nigerian languages', (tester) async {
+      const nigerianCodes = ['ig', 'pcm', 'yo'];
+
+      for (final code in nigerianCodes) {
+        final task = testTaskData.copyWith(
+          data: testTaskData.data.copyWith(languageCode: code),
+        );
+
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: TaskLanguageWidget(
+              task: task,
+              onLanguageChanged: (_) {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final flagFinder = find.byKey(ValueKey('flag-$code'));
+        expect(flagFinder, findsOneWidget, reason: 'code: $code');
+
+        expect(
+          tester.widget<CountryFlag>(flagFinder),
+          isA<CountryFlag>(),
+        );
+      }
+    });
   });
 }

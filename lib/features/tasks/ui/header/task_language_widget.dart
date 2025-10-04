@@ -1,10 +1,10 @@
-import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class TaskLanguageWidget extends StatelessWidget {
@@ -51,10 +51,11 @@ class TaskLanguageWidget extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(2),
-                  child: CountryFlag.fromLanguageCode(
-                    language.code,
+                  child: buildLanguageFlag(
+                    languageCode: language.code,
                     height: 20,
                     width: 30,
+                    key: ValueKey('flag-${language.code}'),
                   ),
                 ),
               )
@@ -79,18 +80,38 @@ class TaskLanguageWidget extends StatelessWidget {
   }
 
   Future<void> _showLanguageSelector(BuildContext context) async {
-    await ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.taskLanguageLabel,
-      builder: (BuildContext context) {
-        return LanguageSelectionModalContent(
-          initialLanguageCode: task.data.languageCode,
-          onLanguageSelected: (language) {
-            onLanguageChanged(language);
-            Navigator.pop(context);
-          },
-        );
-      },
-    );
+    final searchQuery = ValueNotifier<String>('');
+    final searchController = TextEditingController();
+
+    try {
+      await ModalUtils.showSinglePageModal<void>(
+        context: context,
+        titleWidget: Padding(
+          padding: const EdgeInsets.only(top: 10, bottom: 10),
+          child: LanguageSelectionModalContent.buildHeader(
+            context: context,
+            controller: searchController,
+            queryNotifier: searchQuery,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        builder: (BuildContext context) {
+          return LanguageSelectionModalContent(
+            initialLanguageCode: task.data.languageCode,
+            searchQuery: searchQuery,
+            onLanguageSelected: (language) {
+              onLanguageChanged(language);
+              if (!context.mounted) {
+                return;
+              }
+              Navigator.pop(context);
+            },
+          );
+        },
+      );
+    } finally {
+      searchController.dispose();
+      searchQuery.dispose();
+    }
   }
 }

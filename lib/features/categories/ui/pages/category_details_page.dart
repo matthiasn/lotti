@@ -456,19 +456,39 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     CategoryDetailsController controller,
     String? currentLanguageCode,
   ) async {
-    await ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.defaultLanguage,
-      builder: (BuildContext context) {
-        return LanguageSelectionModalContent(
-          initialLanguageCode: currentLanguageCode,
-          onLanguageSelected: (language) {
-            controller.updateFormField(defaultLanguageCode: language?.code);
-            Navigator.pop(context);
-          },
-        );
-      },
-    );
+    final searchQuery = ValueNotifier<String>('');
+    final searchController = TextEditingController();
+
+    try {
+      await ModalUtils.showSinglePageModal<void>(
+        context: context,
+        titleWidget: Padding(
+          padding:
+              const EdgeInsets.only(left: 16, right: 16, top: 20, bottom: 16),
+          child: LanguageSelectionModalContent.buildHeader(
+            context: context,
+            controller: searchController,
+            queryNotifier: searchQuery,
+          ),
+        ),
+        builder: (BuildContext context) {
+          return LanguageSelectionModalContent(
+            initialLanguageCode: currentLanguageCode,
+            searchQuery: searchQuery,
+            onLanguageSelected: (language) {
+              controller.updateFormField(defaultLanguageCode: language?.code);
+              if (!context.mounted) {
+                return;
+              }
+              Navigator.pop(context);
+            },
+          );
+        },
+      );
+    } finally {
+      searchController.dispose();
+      searchQuery.dispose();
+    }
   }
 
   Widget _buildPromptSelection(CategoryDefinition category) {

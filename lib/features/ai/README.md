@@ -439,6 +439,7 @@ When users interact with checklists (adding items, checking/unchecking items, up
    - `createChecklistItem()`: Triggers refresh when new items are added
    - `updateChecklistItem()`: Triggers refresh when items are modified
    - `addItemToChecklist()`: Triggers refresh for batch additions
+   - Task language selection: Manual language changes in the task header trigger a refresh so summaries regenerate in the newly selected language
 
 #### How It Works
 
@@ -568,7 +569,7 @@ AI can automatically create new checklist items based on content analysis:
 
 Automatic language detection for multilingual support:
 
-- **38 Languages Supported**: All major world languages
+- **41 Languages Supported**: Many major world languages
 - **Automatic Detection**: AI analyzes content to detect primary language
 - **Confidence Levels**: High, medium, or low confidence ratings
 - **Persistence**: Language preference saved with task
@@ -584,14 +585,14 @@ Automatic language detection for multilingual support:
 
 ### Overview
 
-The AI system supports multilingual task summary generation in 38 languages, allowing users to receive AI-generated content in their preferred language.
+The AI system supports multilingual task summary generation in 41 languages, allowing users to receive AI-generated content in their preferred language.
 
 ### Supported Languages
 
 - **European**: English, Spanish, French, German, Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Czech, Bulgarian, Croatian, Danish, Estonian, Finnish, Greek, Hungarian, Latvian, Lithuanian, Norwegian, Romanian, Serbian, Slovak, Slovenian, Swedish
 - **Asian**: Chinese, Japanese, Korean, Hindi, Bengali, Indonesian, Thai, Vietnamese, Turkish
 - **Middle Eastern**: Arabic, Hebrew
-- **African**: Swahili
+- **African**: Swahili, Igbo, Nigerian Pidgin, Yoruba
 
 ### How It Works
 
@@ -599,6 +600,7 @@ The AI system supports multilingual task summary generation in 38 languages, all
 2. **Language Setting**: Sets detected language with confidence level
 3. **Summary Generation**: All content generated in selected language
 4. **Manual Override**: Users can change language via task header
+   - Selecting a new language immediately regenerates the AI task summary in that language
 
 ## Configuration System
 

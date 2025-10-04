@@ -22,7 +22,7 @@ Tests covered:
 Tests covered:
 - ✅ getTools returns language detection function
 - ✅ set_task_language function has correct schema
-- ✅ languageCode parameter accepts all supported languages (38 languages)
+- ✅ languageCode parameter accepts all supported languages (41 languages)
 - ✅ confidence parameter has correct values (high, medium, low)
 - ✅ reason parameter is a string
 - ✅ SetTaskLanguageResult can be created from JSON

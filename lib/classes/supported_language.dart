@@ -18,6 +18,7 @@ enum SupportedLanguage {
   el('el', 'Greek'),
   he('he', 'Hebrew'),
   hi('hi', 'Hindi'),
+  ig('ig', 'Igbo'),
   hu('hu', 'Hungarian'),
   id('id', 'Indonesian'),
   it('it', 'Italian'),
@@ -39,7 +40,9 @@ enum SupportedLanguage {
   th('th', 'Thai'),
   tr('tr', 'Turkish'),
   uk('uk', 'Ukrainian'),
-  vi('vi', 'Vietnamese');
+  vi('vi', 'Vietnamese'),
+  pcm('pcm', 'Nigerian Pidgin'),
+  yo('yo', 'Yoruba');
 
   const SupportedLanguage(this.code, this.name);
   final String code;
@@ -71,6 +74,7 @@ enum SupportedLanguage {
       SupportedLanguage.el => context.messages.taskLanguageGreek,
       SupportedLanguage.he => context.messages.taskLanguageHebrew,
       SupportedLanguage.hi => context.messages.taskLanguageHindi,
+      SupportedLanguage.ig => context.messages.taskLanguageIgbo,
       SupportedLanguage.hu => context.messages.taskLanguageHungarian,
       SupportedLanguage.id => context.messages.taskLanguageIndonesian,
       SupportedLanguage.it => context.messages.taskLanguageItalian,
@@ -93,6 +97,8 @@ enum SupportedLanguage {
       SupportedLanguage.tr => context.messages.taskLanguageTurkish,
       SupportedLanguage.uk => context.messages.taskLanguageUkrainian,
       SupportedLanguage.vi => context.messages.taskLanguageVietnamese,
+      SupportedLanguage.pcm => context.messages.taskLanguageNigerianPidgin,
+      SupportedLanguage.yo => context.messages.taskLanguageYoruba,
     };
   }
 }

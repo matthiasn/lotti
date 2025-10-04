@@ -2043,6 +2043,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskLanguageUkrainian => 'Ucraineană';
 
   @override
+  String get taskLanguageIgbo => 'Igbo';
+
+  @override
+  String get taskLanguageNigerianPidgin => 'Pidgin nigerian';
+
+  @override
+  String get taskLanguageYoruba => 'Yoruba';
+
+  @override
+  String get taskLanguageSearchPlaceholder => 'Caută limbi...';
+
+  @override
+  String get taskLanguageSelectedLabel => 'Limba curentă';
+
+  @override
   String get taskLanguageVietnamese => 'Vietnameză';
 
   @override

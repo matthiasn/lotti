@@ -2052,6 +2052,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskLanguageUkrainian => 'Ucraniano';
 
   @override
+  String get taskLanguageIgbo => 'Igbo';
+
+  @override
+  String get taskLanguageNigerianPidgin => 'Pidgin nigeriano';
+
+  @override
+  String get taskLanguageYoruba => 'Yoruba';
+
+  @override
+  String get taskLanguageSearchPlaceholder => 'Buscar idiomas...';
+
+  @override
+  String get taskLanguageSelectedLabel => 'Idioma actual';
+
+  @override
   String get taskLanguageVietnamese => 'Vietnamita';
 
   @override

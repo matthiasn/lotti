@@ -2033,6 +2033,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskLanguageUkrainian => 'Ukrainian';
 
   @override
+  String get taskLanguageIgbo => 'Igbo';
+
+  @override
+  String get taskLanguageNigerianPidgin => 'Nigerian Pidgin';
+
+  @override
+  String get taskLanguageYoruba => 'Yoruba';
+
+  @override
+  String get taskLanguageSearchPlaceholder => 'Search languages...';
+
+  @override
+  String get taskLanguageSelectedLabel => 'Currently selected';
+
+  @override
   String get taskLanguageVietnamese => 'Vietnamese';
 
   @override
@@ -3196,6 +3211,21 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get taskLanguageUkrainian => 'Ukrainian';
+
+  @override
+  String get taskLanguageIgbo => 'Igbo';
+
+  @override
+  String get taskLanguageNigerianPidgin => 'Nigerian Pidgin';
+
+  @override
+  String get taskLanguageYoruba => 'Yoruba';
+
+  @override
+  String get taskLanguageSearchPlaceholder => 'Search languages...';
+
+  @override
+  String get taskLanguageSelectedLabel => 'Currently selected';
 
   @override
   String get taskLanguageVietnamese => 'Vietnamese';

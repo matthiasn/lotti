@@ -66,7 +66,7 @@ Tasks support multilingual AI-generated summaries in 38 different languages. Thi
    
 2. **Manual Language Selection**: Users can manually set their preferred language:
    - Click the language indicator in the task header
-   - Search and select from 38 supported languages
+   - Search and select from 41 supported languages
    - Visual country flags for easy identification
 
 3. **Language Persistence**: Once set (manually or automatically), the language preference:
@@ -83,18 +83,18 @@ Tasks support multilingual AI-generated summaries in 38 different languages. Thi
 - Flag in rounded frame for dark mode visibility
 
 **LanguageSelectionModalContent**: Language selection interface
-- Searchable list of 38 languages
+- Searchable list of 41 languages
 - Country flags for visual identification
 - Selected language appears at the top
 - Clear option to remove language preference
 
 ### Supported Languages
 
-All 38 languages from Gemini Code Assist are supported:
+All 41 languages from Gemini Code Assist are supported:
 - **European**: English, Spanish, French, German, Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Czech, Bulgarian, Croatian, Danish, Estonian, Finnish, Greek, Hungarian, Latvian, Lithuanian, Norwegian, Romanian, Serbian, Slovak, Slovenian, Swedish
 - **Asian**: Chinese, Japanese, Korean, Hindi, Bengali, Indonesian, Thai, Vietnamese, Turkish
 - **Middle Eastern**: Arabic, Hebrew
-- **African**: Swahili
+- **African**: Swahili, Igbo, Nigerian Pidgin, Yoruba
 
 ## AI-Powered Features
 

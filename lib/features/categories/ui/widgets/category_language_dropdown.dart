@@ -1,7 +1,7 @@
-import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/flags/language_flag.dart';
 
 /// A dropdown widget for selecting category default language.
 ///
@@ -37,8 +37,8 @@ class CategoryLanguageDropdown extends StatelessWidget {
         child: Row(
           children: [
             if (language != null) ...[
-              CountryFlag.fromLanguageCode(
-                language.code,
+              buildLanguageFlag(
+                languageCode: language.code,
                 height: 20,
                 width: 30,
               ),
