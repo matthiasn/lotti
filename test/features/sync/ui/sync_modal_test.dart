@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
+import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -16,6 +18,18 @@ class MockSyncMaintenanceRepository extends Mock
 
 // Mock for LoggingService
 class MockLoggingService extends Mock implements LoggingService {}
+
+class SpySyncController extends SyncMaintenanceController {
+  SpySyncController();
+
+  static void Function(Set<SyncStep> steps)? onSyncAll;
+
+  @override
+  Future<void> syncAll({required Set<SyncStep> selectedSteps}) {
+    onSyncAll?.call(selectedSteps);
+    return super.syncAll(selectedSteps: selectedSteps);
+  }
+}
 
 void main() {
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
@@ -85,6 +99,8 @@ void main() {
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenReturn(null); // Or some other appropriate response
+
+    SpySyncController.onSyncAll = null;
   });
 
   tearDown(() {
@@ -92,6 +108,7 @@ void main() {
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
+    SpySyncController.onSyncAll = null;
   });
 
   Widget createTestApp(Widget child) {
@@ -99,6 +116,7 @@ void main() {
       overrides: [
         syncMaintenanceRepositoryProvider
             .overrideWithValue(mockSyncMaintenanceRepository),
+        syncControllerProvider.overrideWith(SpySyncController.new),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -135,16 +153,45 @@ void main() {
     expect(find.text(messages.syncEntitiesMessage), findsOneWidget);
     expect(find.text(messages.syncEntitiesConfirm), findsOneWidget);
 
-    // Re-apply select all to ensure the confirm button is enabled
-    await tester.pump();
-
     // Tap the confirm button
-    await tester.ensureVisible(find.text(messages.syncEntitiesConfirm));
-    await tester.tap(
-      find.text(messages.syncEntitiesConfirm),
-      warnIfMissed: false,
+    var syncInvoked = false;
+    Set<SyncStep>? capturedSteps;
+    SpySyncController.onSyncAll = (steps) {
+      syncInvoked = true;
+      capturedSteps = steps;
+    };
+
+    final confirmButtonFinder = find.widgetWithText(
+      LottiPrimaryButton,
+      messages.syncEntitiesConfirm,
     );
+
+    await tester.ensureVisible(confirmButtonFinder);
+    final confirmButton =
+        tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+    expect(confirmButton.onPressed, isNotNull);
+    confirmButton.onPressed!.call();
+
+    await tester.pump();
     await tester.pumpAndSettle();
+
+    expect(syncInvoked, isTrue);
+    expect(
+      capturedSteps,
+      equals(
+        {
+          SyncStep.tags,
+          SyncStep.measurables,
+          SyncStep.categories,
+          SyncStep.dashboards,
+          SyncStep.habits,
+          SyncStep.aiSettings,
+        },
+      ),
+    );
+
+    expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
+    expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
   });
 
   testWidgets(
