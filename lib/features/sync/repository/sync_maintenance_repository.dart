@@ -5,6 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -156,28 +157,8 @@ class SyncMaintenanceRepository {
     void Function(double)? onProgress,
     void Function(int processed, int total)? onDetailedProgress,
   }) async {
-    Future<List<AiConfig>> fetchConfigsSafely() async {
-      try {
-        final configGroups = await Future.wait([
-          _aiConfigRepository.getConfigsByType(AiConfigType.inferenceProvider),
-          _aiConfigRepository.getConfigsByType(AiConfigType.model),
-          _aiConfigRepository.getConfigsByType(AiConfigType.prompt),
-        ]);
-
-        return configGroups.expand((group) => group).toList();
-      } catch (e, stackTrace) {
-        _loggingService.captureException(
-          e,
-          domain: 'SYNC_SERVICE',
-          subDomain: 'syncAiSettings_fetch',
-          stackTrace: stackTrace,
-        );
-        rethrow;
-      }
-    }
-
     return syncEntities<AiConfig>(
-      fetchEntities: fetchConfigsSafely,
+      fetchEntities: _fetchAiConfigsSafely,
       enqueueSync: (config) => _outboxService.enqueueMessage(
         SyncMessage.aiConfig(
           aiConfig: config,
@@ -188,6 +169,87 @@ class SyncMaintenanceRepository {
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
     );
+  }
+  Future<Map<SyncStep, int>> fetchTotalsForSteps(Set<SyncStep> steps) async {
+    final totals = <SyncStep, int>{};
+    for (final step in steps) {
+      totals[step] = await _calculateTotalForStep(step);
+    }
+    return totals;
+  }
+
+  Future<int> _calculateTotalForStep(SyncStep step) async {
+    Future<int> wrapWithLogging(
+      Future<int> Function() fetch,
+      String subDomain,
+    ) async {
+      try {
+        return await fetch();
+      } catch (e, stackTrace) {
+        _loggingService.captureException(
+          e,
+          domain: 'SYNC_SERVICE',
+          subDomain: subDomain,
+          stackTrace: stackTrace,
+        );
+        rethrow;
+      }
+    }
+
+    switch (step) {
+      case SyncStep.tags:
+        return wrapWithLogging(
+          () async => (await _journalDb.watchTags().first).length,
+          'fetchTotals_tags',
+        );
+      case SyncStep.measurables:
+        return wrapWithLogging(
+          () async => (await _journalDb.watchMeasurableDataTypes().first).length,
+          'fetchTotals_measurables',
+        );
+      case SyncStep.categories:
+        return wrapWithLogging(
+          () async => (await _journalDb.watchCategories().first).length,
+          'fetchTotals_categories',
+        );
+      case SyncStep.dashboards:
+        return wrapWithLogging(
+          () async => (await _journalDb.watchDashboards().first).length,
+          'fetchTotals_dashboards',
+        );
+      case SyncStep.habits:
+        return wrapWithLogging(
+          () async => (await _journalDb.watchHabitDefinitions().first).length,
+          'fetchTotals_habits',
+        );
+      case SyncStep.aiSettings:
+        return wrapWithLogging(
+          () async => (await _fetchAiConfigsSafely()).length,
+          'fetchTotals_aiSettings',
+        );
+      case SyncStep.complete:
+        return 0;
+    }
+  }
+
+  Future<List<AiConfig>> _fetchAiConfigsSafely() async {
+    try {
+      final configGroups = await Future.wait([
+        _aiConfigRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        _aiConfigRepository.getConfigsByType(AiConfigType.model),
+        _aiConfigRepository.getConfigsByType(AiConfigType.prompt),
+      ]);
+
+      return configGroups.expand((group) => group).toList();
+    } catch (e, stackTrace) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_SERVICE',
+        subDomain: 'syncAiSettings_fetch',
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 }
 

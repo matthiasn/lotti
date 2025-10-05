@@ -32,6 +32,9 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       return;
     }
 
+    final initialTotals =
+        await _repository.fetchTotalsForSteps(orderedSteps.toSet());
+
     state = state.copyWith(
       isSyncing: true,
       progress: 0,
@@ -39,7 +42,10 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       selectedSteps: selectedSteps,
       stepProgress: {
         for (final step in orderedSteps)
-          step: const StepProgress(processed: 0, total: 0),
+          step: StepProgress(
+            processed: 0,
+            total: initialTotals[step] ?? 0,
+          ),
       },
     );
 
@@ -97,6 +103,17 @@ class SyncMaintenanceController extends Notifier<SyncState> {
         // Update total progress after operation completes
         totalProgress += operationWeight;
         state = state.copyWith(progress: (totalProgress * 100).round());
+
+        final currentStepProgress = state.stepProgress[operation.step];
+        if (currentStepProgress != null &&
+            currentStepProgress.processed < currentStepProgress.total) {
+          final updatedProgress =
+              Map<SyncStep, StepProgress>.from(state.stepProgress)
+                ..[operation.step] = currentStepProgress.copyWith(
+                  processed: currentStepProgress.total,
+                );
+          state = state.copyWith(stepProgress: updatedProgress);
+        }
       }
 
       // Mark as complete

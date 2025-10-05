@@ -90,6 +90,24 @@ void main() {
       ),
     ).thenAnswer((_) => Future<void>.value());
 
+    when(
+      () => mockSyncMaintenanceRepository.fetchTotalsForSteps(any()),
+    ).thenAnswer((invocation) async {
+      final steps = invocation.positionalArguments.first as Set<SyncStep>;
+      const totalsByStep = <SyncStep, int>{
+        SyncStep.tags: 4,
+        SyncStep.measurables: 5,
+        SyncStep.categories: 6,
+        SyncStep.dashboards: 7,
+        SyncStep.habits: 8,
+        SyncStep.aiSettings: 9,
+      };
+
+      return {
+        for (final step in steps) step: totalsByStep[step] ?? 0,
+      };
+    });
+
     // Stub logging service methods (optional, but good practice)
     when(
       () => mockLoggingService.captureException(
@@ -192,6 +210,12 @@ void main() {
 
     expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
     expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
+    expect(find.text('4 / 4'), findsOneWidget);
+    expect(find.text('5 / 5'), findsOneWidget);
+    expect(find.text('6 / 6'), findsOneWidget);
+    expect(find.text('7 / 7'), findsOneWidget);
+    expect(find.text('8 / 8'), findsOneWidget);
+    expect(find.text('9 / 9'), findsOneWidget);
   });
 
   testWidgets(
