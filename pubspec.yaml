@@ -81,12 +81,7 @@ dependencies:
   material_design_icons_flutter: ^7.0.7096
   matrix: ^2.0.1
   media_kit: ^1.0.2
-  media_kit_libs_android_audio: ^1.0.3
-  media_kit_libs_ios_audio: ^1.0.4
-  media_kit_libs_linux: ^1.0.2
-  media_kit_libs_macos_audio: ^1.0.5
-  media_kit_libs_windows_audio: ^1.0.3
-  media_kit_native_event_loop: ^1.0.3
+  media_kit_libs_audio: ^1.0.7
   meta: ^1.12.0
   mobile_scanner: ^7.0.0
   multi_select_flutter: ^4.0.0
@@ -105,6 +100,7 @@ dependencies:
     git:
       url: https://github.com/matthiasn/research.package
       ref: fc229b9d
+  riverpod: ^2.6.1
   riverpod_annotation: ^2.3.5
   rxdart: ^0.28.0
   share_plus: ^12.0.0
@@ -159,7 +155,6 @@ dev_dependencies:
   msix: ^3.7.0
   path_provider_platform_interface: any
   plugin_platform_interface: any
-  riverpod: ^2.6.1
   riverpod_generator: ^2.4.0
   riverpod_lint: ^2.6.5
   very_good_analysis: ^10.0.0
