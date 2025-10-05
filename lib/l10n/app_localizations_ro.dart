@@ -1865,16 +1865,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncEntitiesConfirm => 'YES, SYNC ALL';
 
   @override
-  String get syncEntitiesMessage => 'Choose the data you want to sync.';
+  String get syncEntitiesMessage =>
+      'Alege datele pe care vrei să le sincronizezi.';
 
   @override
-  String get syncEntitiesSuccessDescription => 'Everything is up to date.';
+  String get syncEntitiesSuccessDescription => 'Totul este actualizat.';
 
   @override
-  String get syncEntitiesSuccessTitle => 'Sync complete';
+  String get syncEntitiesSuccessTitle => 'Sincronizare finalizată';
 
   @override
-  String get syncStepAiSettings => 'AI settings';
+  String get syncStepAiSettings => 'Setări AI';
 
   @override
   String get syncStepCategories => 'Categories';

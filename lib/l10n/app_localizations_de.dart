@@ -1867,16 +1867,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncEntitiesConfirm => 'YES, SYNC ALL';
 
   @override
-  String get syncEntitiesMessage => 'Choose the data you want to sync.';
+  String get syncEntitiesMessage =>
+      'Wähle die Daten, die du synchronisieren möchtest.';
 
   @override
-  String get syncEntitiesSuccessDescription => 'Everything is up to date.';
+  String get syncEntitiesSuccessDescription =>
+      'Alles ist auf dem neuesten Stand.';
 
   @override
-  String get syncEntitiesSuccessTitle => 'Sync complete';
+  String get syncEntitiesSuccessTitle => 'Synchronisierung abgeschlossen';
 
   @override
-  String get syncStepAiSettings => 'AI settings';
+  String get syncStepAiSettings => 'KI-Einstellungen';
 
   @override
   String get syncStepCategories => 'Categories';

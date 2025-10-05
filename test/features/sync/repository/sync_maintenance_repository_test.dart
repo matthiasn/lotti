@@ -541,7 +541,10 @@ void main() {
       when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt))
           .thenAnswer((_) async => const []);
 
-      await syncMaintenanceRepository.syncAiSettings();
+      await expectLater(
+        syncMaintenanceRepository.syncAiSettings(),
+        throwsA(exception),
+      );
 
       verify(
         () => mockLoggingService.captureException(

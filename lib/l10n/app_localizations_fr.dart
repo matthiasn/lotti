@@ -1876,16 +1876,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncEntitiesConfirm => 'YES, SYNC ALL';
 
   @override
-  String get syncEntitiesMessage => 'Choose the data you want to sync.';
+  String get syncEntitiesMessage => 'Choisissez les données à synchroniser.';
 
   @override
-  String get syncEntitiesSuccessDescription => 'Everything is up to date.';
+  String get syncEntitiesSuccessDescription => 'Tout est à jour.';
 
   @override
-  String get syncEntitiesSuccessTitle => 'Sync complete';
+  String get syncEntitiesSuccessTitle => 'Synchronisation terminée';
 
   @override
-  String get syncStepAiSettings => 'AI settings';
+  String get syncStepAiSettings => 'Paramètres IA';
 
   @override
   String get syncStepCategories => 'Categories';

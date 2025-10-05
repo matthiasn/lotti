@@ -172,7 +172,7 @@ class SyncMaintenanceRepository {
           subDomain: 'syncAiSettings_fetch',
           stackTrace: stackTrace,
         );
-        return const <AiConfig>[];
+        rethrow;
       }
     }
 

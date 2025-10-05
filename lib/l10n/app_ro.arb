@@ -358,7 +358,8 @@
   "timeByCategoryChartTitle": "Timp pe categorie",
   "timeByCategoryChartTotalLabel": "Total",
   "viewMenuTitle": "Vizualizare",
-  "syncEntitiesSuccessTitle": "Sync complete",
-  "syncEntitiesSuccessDescription": "Everything is up to date.",
-  "syncEntitiesMessage": "Choose the data you want to sync."
+  "syncEntitiesSuccessTitle": "Sincronizare finalizată",
+  "syncEntitiesSuccessDescription": "Totul este actualizat.",
+  "syncEntitiesMessage": "Alege datele pe care vrei să le sincronizezi.",
+  "syncStepAiSettings": "Setări AI"
 }

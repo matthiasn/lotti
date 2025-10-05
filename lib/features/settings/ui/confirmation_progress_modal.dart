@@ -31,6 +31,16 @@ class ConfirmationProgressModal {
       context: context,
       pageIndexNotifier: pageIndexNotifier,
       pageListBuilder: (modalSheetContext) {
+        Future<void> onConfirm() async {
+          confirmed = true;
+          pageIndexNotifier.value = 1;
+          await _executeOperation(
+            modalSheetContext,
+            operation,
+            closeOnComplete,
+          );
+        }
+
         return [
           // Confirmation Page
           ModalUtils.modalSheetPage(
@@ -100,15 +110,7 @@ class ConfirmationProgressModal {
                                   return _buildConfirmButton(
                                     modalSheetContext,
                                     isConfirmEnabled,
-                                    () async {
-                                      confirmed = true;
-                                      pageIndexNotifier.value = 1;
-                                      await _executeOperation(
-                                        modalSheetContext,
-                                        operation,
-                                        closeOnComplete,
-                                      );
-                                    },
+                                    onConfirm,
                                     confirmLabel,
                                     isDestructive,
                                   );
@@ -117,15 +119,7 @@ class ConfirmationProgressModal {
                             : _buildConfirmButton(
                                 modalSheetContext,
                                 isConfirmEnabled,
-                                () async {
-                                  confirmed = true;
-                                  pageIndexNotifier.value = 1;
-                                  await _executeOperation(
-                                    modalSheetContext,
-                                    operation,
-                                    closeOnComplete,
-                                  );
-                                },
+                                onConfirm,
                                 confirmLabel,
                                 isDestructive,
                               ),
@@ -148,7 +142,7 @@ class ConfirmationProgressModal {
     );
 
     return confirmed;
-}
+  }
 
   static Future<void> _executeOperation(
     BuildContext modalSheetContext,

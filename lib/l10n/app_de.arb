@@ -359,7 +359,8 @@
   "timeByCategoryChartTitle": "Zeit nach Kategorie",
   "timeByCategoryChartTotalLabel": "Gesamt",
   "viewMenuTitle": "Ansicht",
-  "syncEntitiesSuccessTitle": "Sync complete",
-  "syncEntitiesSuccessDescription": "Everything is up to date.",
-  "syncEntitiesMessage": "Choose the data you want to sync."
+  "syncEntitiesSuccessTitle": "Synchronisierung abgeschlossen",
+  "syncEntitiesSuccessDescription": "Alles ist auf dem neuesten Stand.",
+  "syncEntitiesMessage": "Wähle die Daten, die du synchronisieren möchtest.",
+  "syncStepAiSettings": "KI-Einstellungen"
 }

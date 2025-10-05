@@ -1874,16 +1874,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncEntitiesConfirm => 'YES, SYNC ALL';
 
   @override
-  String get syncEntitiesMessage => 'Choose the data you want to sync.';
+  String get syncEntitiesMessage => 'Elige los datos que quieres sincronizar.';
 
   @override
-  String get syncEntitiesSuccessDescription => 'Everything is up to date.';
+  String get syncEntitiesSuccessDescription => 'Todo está al día.';
 
   @override
-  String get syncEntitiesSuccessTitle => 'Sync complete';
+  String get syncEntitiesSuccessTitle => 'Sincronización completada';
 
   @override
-  String get syncStepAiSettings => 'AI settings';
+  String get syncStepAiSettings => 'Configuración de IA';
 
   @override
   String get syncStepCategories => 'Categories';

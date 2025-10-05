@@ -359,7 +359,8 @@
   "timeByCategoryChartTitle": "Temps par catégorie",
   "timeByCategoryChartTotalLabel": "Total",
   "viewMenuTitle": "Affichage",
-  "syncEntitiesSuccessTitle": "Sync complete",
-  "syncEntitiesSuccessDescription": "Everything is up to date.",
-  "syncEntitiesMessage": "Choose the data you want to sync."
+  "syncEntitiesSuccessTitle": "Synchronisation terminée",
+  "syncEntitiesSuccessDescription": "Tout est à jour.",
+  "syncEntitiesMessage": "Choisissez les données à synchroniser.",
+  "syncStepAiSettings": "Paramètres IA"
 }
