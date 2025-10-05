@@ -114,7 +114,7 @@ packages:
     source: hosted
     version: "9.0.1"
   bloc_test:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: bloc_test
       sha256: "1dd549e58be35148bc22a9135962106aa29334bc1e3f285994946a1057b29d7b"
@@ -642,14 +642,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.7"
-  exif:
-    dependency: "direct main"
-    description:
-      name: exif
-      sha256: a7980fdb3b7ffcd0b035e5b8a5e1eef7cadfe90ea6a4e85ebb62f87b96c7a172
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.3.0"
   extended_image:
     dependency: transitive
     description:
@@ -2272,7 +2264,7 @@ packages:
     source: hosted
     version: "1.0.5"
   riverpod:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: riverpod
       sha256: "59062512288d3056b2321804332a13ffdd1bf16df70dcc8e506e411280a72959"
