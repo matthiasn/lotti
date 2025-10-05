@@ -14,14 +14,15 @@ class EditorWidget extends ConsumerWidget {
     super.key,
     this.minHeight = 40,
     this.maxHeight = double.maxFinite,
-    this.padding = 10,
+    this.contentPadding =
+        const EdgeInsets.only(top: 5, bottom: 15, left: 10, right: 10),
     this.margin,
   });
 
   final String entryId;
   final double maxHeight;
   final double minHeight;
-  final double padding;
+  final EdgeInsets contentPadding;
   final EdgeInsets? margin;
 
   @override
@@ -42,7 +43,7 @@ class EditorWidget extends ConsumerWidget {
           ? context.colorScheme.surface.brighten()
           : Colors.transparent,
       elevation: 0,
-      clipBehavior: Clip.hardEdge,
+      clipBehavior: shouldShowEditorToolBar ? Clip.hardEdge : Clip.none,
       shape: RoundedRectangleBorder(
         borderRadius:
             const BorderRadius.all(Radius.circular(inputBorderRadius)),
@@ -83,12 +84,9 @@ class EditorWidget extends ConsumerWidget {
                   ],
                   minHeight: minHeight,
                   placeholder: context.messages.editorPlaceholder,
-                  padding: EdgeInsets.only(
-                    top: 8,
-                    bottom: shouldShowEditorToolBar ? 16 : 0,
-                    left: shouldShowEditorToolBar ? padding : 0,
-                    right: padding,
-                  ),
+                  padding: shouldShowEditorToolBar
+                      ? contentPadding
+                      : EdgeInsets.zero,
                   keyboardAppearance: Theme.of(context).brightness,
                   customStyles: customEditorStyles(
                     themeData: Theme.of(context),
