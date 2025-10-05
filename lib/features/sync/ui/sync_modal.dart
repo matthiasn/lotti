@@ -198,7 +198,8 @@ class SyncModal extends ConsumerWidget {
     final processed = stepProgress?.processed ?? 0;
     final total = stepProgress?.total ?? 0;
     final countText = '$processed / $total';
-    final labelColor = isCompleted ? colorScheme.primary : colorScheme.onSurface;
+    final labelColor =
+        isCompleted ? colorScheme.primary : colorScheme.onSurface;
     final countColor =
         isCompleted ? colorScheme.primary : colorScheme.onSurfaceVariant;
 
@@ -212,19 +213,19 @@ class SyncModal extends ConsumerWidget {
             child: Text(
               _getStepName(context, step),
               style: theme.textTheme.bodyMedium?.copyWith(
-                    color: labelColor,
-                    fontWeight: isCompleted ? FontWeight.w600 : null,
-                  ),
+                color: labelColor,
+                fontWeight: isCompleted ? FontWeight.w600 : null,
+              ),
             ),
           ),
           const SizedBox(width: 12),
           Text(
             countText,
             style: theme.textTheme.bodySmall?.copyWith(
-                  color: countColor,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                  fontWeight: isCompleted ? FontWeight.w600 : null,
-                ),
+              color: countColor,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              fontWeight: isCompleted ? FontWeight.w600 : null,
+            ),
           ),
         ],
       ),

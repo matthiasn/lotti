@@ -170,12 +170,20 @@ class SyncMaintenanceRepository {
       onDetailedProgress: onDetailedProgress,
     );
   }
+
   Future<Map<SyncStep, int>> fetchTotalsForSteps(Set<SyncStep> steps) async {
-    final totals = <SyncStep, int>{};
-    for (final step in steps) {
-      totals[step] = await _calculateTotalForStep(step);
+    if (steps.isEmpty) {
+      return const {};
     }
-    return totals;
+
+    final entries = await Future.wait(
+      steps.map((step) async {
+        final total = await _calculateTotalForStep(step);
+        return MapEntry(step, total);
+      }),
+    );
+
+    return Map<SyncStep, int>.fromEntries(entries);
   }
 
   Future<int> _calculateTotalForStep(SyncStep step) async {
@@ -204,7 +212,8 @@ class SyncMaintenanceRepository {
         );
       case SyncStep.measurables:
         return wrapWithLogging(
-          () async => (await _journalDb.watchMeasurableDataTypes().first).length,
+          () async =>
+              (await _journalDb.watchMeasurableDataTypes().first).length,
           'fetchTotals_measurables',
         );
       case SyncStep.categories:

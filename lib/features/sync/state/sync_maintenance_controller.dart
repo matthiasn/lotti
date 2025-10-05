@@ -103,17 +103,6 @@ class SyncMaintenanceController extends Notifier<SyncState> {
         // Update total progress after operation completes
         totalProgress += operationWeight;
         state = state.copyWith(progress: (totalProgress * 100).round());
-
-        final currentStepProgress = state.stepProgress[operation.step];
-        if (currentStepProgress != null &&
-            currentStepProgress.processed < currentStepProgress.total) {
-          final updatedProgress =
-              Map<SyncStep, StepProgress>.from(state.stepProgress)
-                ..[operation.step] = currentStepProgress.copyWith(
-                  processed: currentStepProgress.total,
-                );
-          state = state.copyWith(stepProgress: updatedProgress);
-        }
       }
 
       // Mark as complete
