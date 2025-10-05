@@ -52,8 +52,6 @@ PODS:
   - Mantle/extobjc (2.2.0)
   - media_kit_libs_ios_audio (1.0.4):
     - Flutter
-  - media_kit_native_event_loop (1.0.0):
-    - Flutter
   - mobile_scanner (7.0.0):
     - Flutter
     - FlutterMacOS
@@ -137,7 +135,6 @@ DEPENDENCIES:
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - location (from `.symlinks/plugins/location/ios`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
-  - media_kit_native_event_loop (from `.symlinks/plugins/media_kit_native_event_loop/ios`)
   - mobile_scanner (from `.symlinks/plugins/mobile_scanner/darwin`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
@@ -197,8 +194,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/location/ios"
   media_kit_libs_ios_audio:
     :path: ".symlinks/plugins/media_kit_libs_ios_audio/ios"
-  media_kit_native_event_loop:
-    :path: ".symlinks/plugins/media_kit_native_event_loop/ios"
   mobile_scanner:
     :path: ".symlinks/plugins/mobile_scanner/darwin"
   package_info_plus:
@@ -248,7 +243,6 @@ SPEC CHECKSUMS:
   location: 155caecf9da4f280ab5fe4a55f94ceccfab838f8
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
   media_kit_libs_ios_audio: 905e6323b72e65c63ab9262b2e473f52c024a3a8
-  media_kit_native_event_loop: 73662a859a79301a2dc7f05e086189b7818f80b4
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
   OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
