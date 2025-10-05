@@ -17,4 +17,6 @@ analyzer:
   errors:
     invalid_annotation_target: ignore
   language:
-    strict-raw-types: true 
+    strict-raw-types: true
+  plugins:
+    - custom_lint
