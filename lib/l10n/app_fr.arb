@@ -358,5 +358,9 @@
   "taskLanguageVietnamese": "Vietnamien",
   "timeByCategoryChartTitle": "Temps par catégorie",
   "timeByCategoryChartTotalLabel": "Total",
-  "viewMenuTitle": "Affichage"
+  "viewMenuTitle": "Affichage",
+  "syncEntitiesSuccessTitle": "Synchronisation terminée",
+  "syncEntitiesSuccessDescription": "Tout est à jour.",
+  "syncEntitiesMessage": "Choisissez les données à synchroniser.",
+  "syncStepAiSettings": "Paramètres IA"
 }

@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
@@ -16,6 +19,8 @@ class MockJournalDb extends Mock implements JournalDb {}
 class MockOutboxService extends Mock implements OutboxService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 // Fake classes for EntityDefinition parts
 class FakeMeasurableDataType extends Fake implements MeasurableDataType {
@@ -54,6 +59,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockOutboxService mockOutboxService;
   late MockLoggingService mockLoggingService;
+  late MockAiConfigRepository mockAiConfigRepository;
   late SyncMaintenanceRepository syncMaintenanceRepository;
 
   setUpAll(() {
@@ -66,6 +72,7 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockOutboxService = MockOutboxService();
     mockLoggingService = MockLoggingService();
+    mockAiConfigRepository = MockAiConfigRepository();
 
     // Clear previous registrations if any, to avoid conflicts during re-runs.
     if (getIt.isRegistered<JournalDb>()) {
@@ -77,11 +84,24 @@ void main() {
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
+    if (getIt.isRegistered<AiConfigRepository>()) {
+      getIt.unregister<AiConfigRepository>();
+    }
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<OutboxService>(mockOutboxService)
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<AiConfigRepository>(mockAiConfigRepository);
+
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) async {});
 
     syncMaintenanceRepository = SyncMaintenanceRepository();
   });
@@ -424,6 +444,118 @@ void main() {
         expect(id, isNot(deletedHabit.id));
       }
     });
+
+    test('syncAiSettings enqueues active AI configs for sync', () async {
+      final createdAt = DateTime.now();
+      final provider = AiConfig.inferenceProvider(
+        id: 'provider-1',
+        baseUrl: 'https://example.com',
+        apiKey: 'secret',
+        name: 'Provider',
+        createdAt: createdAt,
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+      final model = AiConfig.model(
+        id: 'model-1',
+        name: 'Model',
+        providerModelId: 'gpt',
+        inferenceProviderId: provider.id,
+        createdAt: createdAt,
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      );
+      final prompt = AiConfig.prompt(
+        id: 'prompt-1',
+        name: 'Prompt',
+        systemMessage: 'system',
+        userMessage: 'user',
+        defaultModelId: model.id,
+        modelIds: const ['model-1'],
+        createdAt: createdAt,
+        useReasoning: false,
+        requiredInputData: const <InputDataType>[],
+        aiResponseType: AiResponseType.taskSummary,
+      );
+
+      when(() => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider)).thenAnswer((_) async => [provider]);
+      when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => [model]);
+      when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => [prompt]);
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncMaintenanceRepository.syncAiSettings();
+
+      final captured =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(captured.length, 3);
+
+      expect(
+        captured
+            .whereType<SyncMessage>()
+            .where(
+              (message) => message.maybeMap(
+                aiConfig: (config) => config.aiConfig == provider,
+                orElse: () => false,
+              ),
+            )
+            .length,
+        1,
+      );
+      expect(
+        captured
+            .whereType<SyncMessage>()
+            .where(
+              (message) => message.maybeMap(
+                aiConfig: (config) => config.aiConfig == model,
+                orElse: () => false,
+              ),
+            )
+            .length,
+        1,
+      );
+      expect(
+        captured
+            .whereType<SyncMessage>()
+            .where(
+              (message) => message.maybeMap(
+                aiConfig: (config) => config.aiConfig == prompt,
+                orElse: () => false,
+              ),
+            )
+            .length,
+        1,
+      );
+    });
+
+    test('syncAiSettings logs and skips when fetching configs fails', () async {
+      final exception = Exception('db failure');
+
+      when(() => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider)).thenThrow(exception);
+      when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => const []);
+      when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => const []);
+
+      await expectLater(
+        syncMaintenanceRepository.syncAiSettings(),
+        throwsA(exception),
+      );
+
+      verify(
+        () => mockLoggingService.captureException(
+          exception,
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+          domain: 'SYNC_SERVICE',
+          subDomain: 'syncAiSettings_fetch',
+        ),
+      ).called(1);
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
   });
 
   group('SyncMaintenanceRepository - Logging Tests', () {
@@ -646,6 +778,7 @@ void main() {
 
       // Track progress updates
       final progressUpdates = <double>[];
+      final detailedProgress = <List<int>>[];
 
       // Mock the fetch function
       when(() => mockJournalDb.watchTags())
@@ -656,6 +789,9 @@ void main() {
       // Test the sync
       await syncMaintenanceRepository.syncTags(
         onProgress: progressUpdates.add,
+        onDetailedProgress: (processed, total) {
+          detailedProgress.add([processed, total]);
+        },
       );
 
       // Progress should be reported for all entities
@@ -663,6 +799,16 @@ void main() {
       expect(progressUpdates[0], closeTo(1 / 3, 0.001));
       expect(progressUpdates[1], closeTo(2 / 3, 0.001));
       expect(progressUpdates[2], closeTo(1.0, 0.001));
+
+      expect(
+        detailedProgress,
+        [
+          [0, 3],
+          [1, 3],
+          [2, 3],
+          [3, 3],
+        ],
+      );
 
       // Only non-deleted entities should be synced
       verify(() => mockOutboxService.enqueueMessage(any())).called(2);
@@ -716,8 +862,9 @@ void main() {
         onProgress: progressUpdates.add,
       );
 
-      // Verify no progress updates for empty list
-      expect(progressUpdates.isEmpty, true);
+      // Verify completion progress reported once
+      expect(progressUpdates.length, 1);
+      expect(progressUpdates.first, 1);
     });
 
     test('handles errors correctly', () async {

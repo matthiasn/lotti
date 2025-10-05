@@ -58,8 +58,11 @@ void main() {
       expect(find.text('Delete Editor Database'), findsOneWidget);
       expect(find.text('Delete Sync Database'), findsOneWidget);
       expect(
-          find.text('Sync tags, measurables, dashboards, habits, categories'),
-          findsAtLeastNWidgets(1));
+        find.text(
+          'Sync tags, measurables, dashboards, habits, categories, AI settings',
+        ),
+        findsAtLeastNWidgets(1),
+      );
       expect(find.text('Purge deleted items'), findsAtLeastNWidgets(1));
       expect(find.text('Recreate full-text index'), findsAtLeastNWidgets(1));
       expect(find.text('Re-sync messages'), findsAtLeastNWidgets(1));
@@ -249,7 +252,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final syncButton = find
-          .text('Sync tags, measurables, dashboards, habits, categories')
+          .text(
+            'Sync tags, measurables, dashboards, habits, categories, AI settings',
+          )
           .first;
       expect(syncButton, findsOneWidget);
       await tester.ensureVisible(syncButton);
@@ -257,8 +262,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-          find.text('Sync tags, measurables, dashboards, habits, categories'),
-          findsAtLeastNWidgets(1));
+        find.text(
+          'Sync tags, measurables, dashboards, habits, categories, AI settings',
+        ),
+        findsAtLeastNWidgets(1),
+      );
     });
 
     testWidgets('purge deleted entries button opens purge modal',

@@ -36,28 +36,50 @@ void main() {
     void stubSuccess(Invocation invocation) {
       final onProgress = invocation.namedArguments[const Symbol('onProgress')]
           as void Function(double)?;
+      final onDetailedProgress =
+          invocation.namedArguments[const Symbol('onDetailedProgress')] as void
+              Function(int, int)?;
+      onDetailedProgress?.call(0, 1);
+      onDetailedProgress?.call(1, 1);
       onProgress?.call(1);
     }
 
-    when(() => mockRepository.syncTags(onProgress: any(named: 'onProgress')))
-        .thenAnswer((invocation) async => stubSuccess(invocation));
+    when(
+      () => mockRepository.syncTags(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer((invocation) async => stubSuccess(invocation));
     when(
       () => mockRepository.syncMeasurables(
         onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
     ).thenAnswer((invocation) async => stubSuccess(invocation));
     when(
       () => mockRepository.syncCategories(
         onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
     ).thenAnswer((invocation) async => stubSuccess(invocation));
     when(
       () => mockRepository.syncDashboards(
         onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
     ).thenAnswer((invocation) async => stubSuccess(invocation));
-    when(() => mockRepository.syncHabits(onProgress: any(named: 'onProgress')))
-        .thenAnswer((invocation) async => stubSuccess(invocation));
+    when(
+      () => mockRepository.syncHabits(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer((invocation) async => stubSuccess(invocation));
+    when(
+      () => mockRepository.syncAiSettings(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer((invocation) async => stubSuccess(invocation));
 
     when(
       () => mockLoggingService.captureException(
@@ -87,7 +109,14 @@ void main() {
         fireImmediately: true,
       );
 
-      await controller.syncAll();
+      await controller.syncAll(selectedSteps: {
+        SyncStep.tags,
+        SyncStep.measurables,
+        SyncStep.categories,
+        SyncStep.dashboards,
+        SyncStep.habits,
+        SyncStep.aiSettings,
+      });
 
       expect(states.first, const SyncState());
       expect(states.last.isSyncing, isFalse);
@@ -96,28 +125,106 @@ void main() {
       expect(states.last.error, isNull);
 
       verify(
-        () => mockRepository.syncTags(onProgress: any(named: 'onProgress')),
+        () => mockRepository.syncTags(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
       ).called(1);
       verify(
         () => mockRepository.syncMeasurables(
           onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       ).called(1);
       verify(
         () => mockRepository.syncCategories(
           onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       ).called(1);
       verify(
         () => mockRepository.syncDashboards(
           onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       ).called(1);
       verify(
-        () => mockRepository.syncHabits(onProgress: any(named: 'onProgress')),
+        () => mockRepository.syncHabits(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).called(1);
+      verify(
+        () => mockRepository.syncAiSettings(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
       ).called(1);
 
+      final lastState = container.read(syncControllerProvider);
+      for (final step in {
+        SyncStep.tags,
+        SyncStep.measurables,
+        SyncStep.categories,
+        SyncStep.dashboards,
+        SyncStep.habits,
+        SyncStep.aiSettings,
+      }) {
+        final progress = lastState.stepProgress[step];
+        expect(progress?.processed, 1);
+        expect(progress?.total, 1);
+      }
+
       sub.close();
+    });
+
+    test('syncAll runs only selected steps', () async {
+      await controller.syncAll(selectedSteps: {
+        SyncStep.tags,
+        SyncStep.aiSettings,
+      });
+
+      verify(
+        () => mockRepository.syncTags(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).called(1);
+      verify(
+        () => mockRepository.syncAiSettings(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).called(1);
+
+      verifyNever(
+        () => mockRepository.syncMeasurables(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      );
+      verifyNever(
+        () => mockRepository.syncCategories(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      );
+      verifyNever(
+        () => mockRepository.syncDashboards(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      );
+      verifyNever(
+        () => mockRepository.syncHabits(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      );
+
+      final state = container.read(syncControllerProvider);
+      expect(state.selectedSteps, {SyncStep.tags, SyncStep.aiSettings});
+      expect(state.stepProgress.keys, {SyncStep.tags, SyncStep.aiSettings});
     });
 
     test('syncAll handles errors and updates state', () async {
@@ -131,6 +238,7 @@ void main() {
       when(
         () => mockRepository.syncCategories(
           onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       ).thenThrow(exception);
 
@@ -140,7 +248,17 @@ void main() {
         (previous, next) => states.add(next),
       );
 
-      await expectLater(controller.syncAll(), throwsA(exception));
+      await expectLater(
+        controller.syncAll(selectedSteps: {
+          SyncStep.tags,
+          SyncStep.measurables,
+          SyncStep.categories,
+          SyncStep.dashboards,
+          SyncStep.habits,
+          SyncStep.aiSettings,
+        }),
+        throwsA(exception),
+      );
 
       final lastState = container.read(syncControllerProvider);
       expect(lastState.isSyncing, isFalse);
@@ -148,25 +266,40 @@ void main() {
       expect(lastState.currentStep, SyncStep.categories);
 
       verify(
-        () => mockRepository.syncTags(onProgress: any(named: 'onProgress')),
+        () => mockRepository.syncTags(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
       ).called(1);
       verify(
         () => mockRepository.syncMeasurables(
           onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       ).called(1);
       verify(
         () => mockRepository.syncCategories(
           onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       ).called(1);
       verifyNever(
         () => mockRepository.syncDashboards(
           onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       );
       verifyNever(
-        () => mockRepository.syncHabits(onProgress: any(named: 'onProgress')),
+        () => mockRepository.syncHabits(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      );
+      verifyNever(
+        () => mockRepository.syncAiSettings(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
       );
       verify(
         () => mockLoggingService.captureException(
@@ -180,7 +313,14 @@ void main() {
     });
 
     test('reset sets state to initial', () async {
-      await controller.syncAll();
+      await controller.syncAll(selectedSteps: {
+        SyncStep.tags,
+        SyncStep.measurables,
+        SyncStep.categories,
+        SyncStep.dashboards,
+        SyncStep.habits,
+        SyncStep.aiSettings,
+      });
       expect(container.read(syncControllerProvider).progress, 100);
 
       controller.reset();

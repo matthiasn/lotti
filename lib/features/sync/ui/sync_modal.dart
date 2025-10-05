@@ -4,20 +4,67 @@ import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 class SyncModal extends ConsumerWidget {
   const SyncModal({super.key});
 
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
+    const orderedSteps = <SyncStep>[
+      SyncStep.tags,
+      SyncStep.measurables,
+      SyncStep.categories,
+      SyncStep.dashboards,
+      SyncStep.habits,
+      SyncStep.aiSettings,
+    ];
+    final selectedStepsNotifier =
+        ValueNotifier<Set<SyncStep>>(orderedSteps.toSet());
+
+    bool hasSelection() => selectedStepsNotifier.value.isNotEmpty;
 
     await ConfirmationProgressModal.show(
       context: context,
       message: context.messages.syncEntitiesMessage,
       confirmLabel: context.messages.syncEntitiesConfirm,
       isDestructive: false,
-      operation: () =>
-          container.read(syncControllerProvider.notifier).syncAll(),
+      closeOnComplete: false,
+      confirmationContent: ValueListenableBuilder<Set<SyncStep>>(
+        valueListenable: selectedStepsNotifier,
+        builder: (context, selectedSteps, _) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final step in orderedSteps)
+                CheckboxListTile(
+                  value: selectedSteps.contains(step),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.trailing,
+                  title: Text(_getStepName(context, step)),
+                  onChanged: (value) {
+                    final updated =
+                        Set<SyncStep>.from(selectedStepsNotifier.value);
+                    if (value ?? false) {
+                      updated.add(step);
+                    } else {
+                      updated.remove(step);
+                    }
+                    selectedStepsNotifier.value = updated;
+                  },
+                ),
+            ],
+          );
+        },
+      ),
+      isConfirmEnabled: hasSelection,
+      confirmEnabledListenable: selectedStepsNotifier,
+      operation: () {
+        final selection = Set<SyncStep>.from(selectedStepsNotifier.value);
+        return container
+            .read(syncControllerProvider.notifier)
+            .syncAll(selectedSteps: selection);
+      },
       progressBuilder: (context) {
         return Consumer(
           builder: (context, ref, _) {
@@ -25,17 +72,55 @@ class SyncModal extends ConsumerWidget {
             final currentStep = syncState.currentStep;
             final progress = syncState.progress;
             final isSyncing = syncState.isSyncing;
+            final selectedSteps = syncState.selectedSteps.isEmpty
+                ? selectedStepsNotifier.value
+                : syncState.selectedSteps;
+            final stepsToShow =
+                orderedSteps.where(selectedSteps.contains).toList();
 
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (progress == 100 && !isSyncing)
+                if (progress == 100 && !isSyncing) ...[
                   Icon(
                     Icons.check_circle_outline,
                     size: 48,
                     color: Theme.of(context).colorScheme.primary,
-                  )
-                else
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    context.messages.syncEntitiesSuccessTitle,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.messages.syncEntitiesSuccessDescription,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: LottiPrimaryButton(
+                      label: context.messages.doneButton.toUpperCase(),
+                      onPressed: () {
+                        if (context.mounted) {
+                          container
+                              .read(syncControllerProvider.notifier)
+                              .reset();
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      icon: Icons.check_circle_rounded,
+                    ),
+                  ),
+                ] else
                   Row(
                     children: [
                       Expanded(
@@ -67,42 +152,21 @@ class SyncModal extends ConsumerWidget {
                     ],
                   ),
                 const SizedBox(height: 16),
-                _buildStepIndicator(
-                  context,
-                  SyncStep.tags,
-                  currentStep,
-                  isSyncing,
-                ),
-                _buildStepIndicator(
-                  context,
-                  SyncStep.measurables,
-                  currentStep,
-                  isSyncing,
-                ),
-                _buildStepIndicator(
-                  context,
-                  SyncStep.categories,
-                  currentStep,
-                  isSyncing,
-                ),
-                _buildStepIndicator(
-                  context,
-                  SyncStep.dashboards,
-                  currentStep,
-                  isSyncing,
-                ),
-                _buildStepIndicator(
-                  context,
-                  SyncStep.habits,
-                  currentStep,
-                  isSyncing,
-                ),
+                for (final step in stepsToShow)
+                  _buildStepIndicator(
+                    context,
+                    step,
+                    currentStep,
+                    isSyncing,
+                    syncState.stepProgress[step],
+                  ),
               ],
             );
           },
         );
       },
     );
+    selectedStepsNotifier.dispose();
   }
 
   static Widget _buildStepIndicator(
@@ -110,6 +174,7 @@ class SyncModal extends ConsumerWidget {
     SyncStep step,
     SyncStep currentStep,
     bool isSyncing,
+    StepProgress? stepProgress,
   ) {
     final isCompleted = !isSyncing && currentStep.index > step.index;
     final isCurrent = currentStep == step;
@@ -128,6 +193,10 @@ class SyncModal extends ConsumerWidget {
       color = Theme.of(context).colorScheme.outline;
     }
 
+    final processed = stepProgress?.processed ?? 0;
+    final total = stepProgress?.total ?? 0;
+    final countText = '$processed / $total';
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -140,6 +209,14 @@ class SyncModal extends ConsumerWidget {
                   color: color,
                 ),
           ),
+          const Spacer(),
+          Text(
+            countText,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
         ],
       ),
     );
@@ -151,12 +228,14 @@ class SyncModal extends ConsumerWidget {
         return context.messages.syncStepTags;
       case SyncStep.measurables:
         return context.messages.syncStepMeasurables;
+      case SyncStep.categories:
+        return context.messages.syncStepCategories;
       case SyncStep.dashboards:
         return context.messages.syncStepDashboards;
       case SyncStep.habits:
         return context.messages.syncStepHabits;
-      case SyncStep.categories:
-        return context.messages.syncStepCategories;
+      case SyncStep.aiSettings:
+        return context.messages.syncStepAiSettings;
       case SyncStep.complete:
         return context.messages.syncStepComplete;
     }

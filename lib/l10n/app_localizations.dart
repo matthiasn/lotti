@@ -2142,13 +2142,13 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceSyncDefinitions.
   ///
   /// In en, this message translates to:
-  /// **'Sync tags, measurables, dashboards, habits, categories'**
+  /// **'Sync tags, measurables, dashboards, habits, categories, AI settings'**
   String get maintenanceSyncDefinitions;
 
   /// No description provided for @maintenanceSyncDefinitionsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Sync tags, measurables, dashboards, habits, categories'**
+  /// **'Sync tags, measurables, dashboards, habits, categories, and AI settings'**
   String get maintenanceSyncDefinitionsDescription;
 
   /// No description provided for @measurableDeleteConfirm.
@@ -3529,8 +3529,26 @@ abstract class AppLocalizations {
   /// No description provided for @syncEntitiesMessage.
   ///
   /// In en, this message translates to:
-  /// **'This will sync all tags, measurables, and categories. Do you want to continue?'**
+  /// **'Choose the entities you want to sync.'**
   String get syncEntitiesMessage;
+
+  /// No description provided for @syncEntitiesSuccessDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is up to date.'**
+  String get syncEntitiesSuccessDescription;
+
+  /// No description provided for @syncEntitiesSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync complete'**
+  String get syncEntitiesSuccessTitle;
+
+  /// No description provided for @syncStepAiSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'AI settings'**
+  String get syncStepAiSettings;
 
   /// No description provided for @syncStepCategories.
   ///

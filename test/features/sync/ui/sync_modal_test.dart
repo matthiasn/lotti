@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
+import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock for SyncMaintenanceRepository
@@ -15,6 +18,18 @@ class MockSyncMaintenanceRepository extends Mock
 
 // Mock for LoggingService
 class MockLoggingService extends Mock implements LoggingService {}
+
+class SpySyncController extends SyncMaintenanceController {
+  SpySyncController();
+
+  static void Function(Set<SyncStep> steps)? onSyncAll;
+
+  @override
+  Future<void> syncAll({required Set<SyncStep> selectedSteps}) {
+    onSyncAll?.call(selectedSteps);
+    return super.syncAll(selectedSteps: selectedSteps);
+  }
+}
 
 void main() {
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
@@ -41,26 +56,37 @@ void main() {
     when(
       () => mockSyncMaintenanceRepository.syncTags(
         onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
     ).thenAnswer((_) => Future<void>.value());
     when(
       () => mockSyncMaintenanceRepository.syncMeasurables(
         onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
     ).thenAnswer((_) => Future<void>.value());
     when(
       () => mockSyncMaintenanceRepository.syncCategories(
         onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
     ).thenAnswer((_) => Future<void>.value());
     when(
       () => mockSyncMaintenanceRepository.syncDashboards(
         onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
     ).thenAnswer((_) => Future<void>.value());
     when(
       () => mockSyncMaintenanceRepository.syncHabits(
         onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer((_) => Future<void>.value());
+    when(
+      () => mockSyncMaintenanceRepository.syncAiSettings(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
     ).thenAnswer((_) => Future<void>.value());
 
@@ -73,6 +99,8 @@ void main() {
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenReturn(null); // Or some other appropriate response
+
+    SpySyncController.onSyncAll = null;
   });
 
   tearDown(() {
@@ -80,6 +108,7 @@ void main() {
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
+    SpySyncController.onSyncAll = null;
   });
 
   Widget createTestApp(Widget child) {
@@ -87,6 +116,7 @@ void main() {
       overrides: [
         syncMaintenanceRepositoryProvider
             .overrideWithValue(mockSyncMaintenanceRepository),
+        syncControllerProvider.overrideWith(SpySyncController.new),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -124,42 +154,49 @@ void main() {
     expect(find.text(messages.syncEntitiesConfirm), findsOneWidget);
 
     // Tap the confirm button
-    await tester.tap(find.text(messages.syncEntitiesConfirm));
-    await tester
-        .pumpAndSettle(); // Wait for dialog to close and async operations
+    var syncInvoked = false;
+    Set<SyncStep>? capturedSteps;
+    SpySyncController.onSyncAll = (steps) {
+      syncInvoked = true;
+      capturedSteps = steps;
+    };
 
-    // Verify that all sync methods on the repository were called
-    verify(
-      () => mockSyncMaintenanceRepository.syncTags(
-        onProgress: any(named: 'onProgress'),
+    final confirmButtonFinder = find.widgetWithText(
+      LottiPrimaryButton,
+      messages.syncEntitiesConfirm,
+    );
+
+    await tester.ensureVisible(confirmButtonFinder);
+    final confirmButton =
+        tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+    expect(confirmButton.onPressed, isNotNull);
+    confirmButton.onPressed!.call();
+
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(syncInvoked, isTrue);
+    expect(
+      capturedSteps,
+      equals(
+        {
+          SyncStep.tags,
+          SyncStep.measurables,
+          SyncStep.categories,
+          SyncStep.dashboards,
+          SyncStep.habits,
+          SyncStep.aiSettings,
+        },
       ),
-    ).called(1);
-    verify(
-      () => mockSyncMaintenanceRepository.syncMeasurables(
-        onProgress: any(named: 'onProgress'),
-      ),
-    ).called(1);
-    verify(
-      () => mockSyncMaintenanceRepository.syncCategories(
-        onProgress: any(named: 'onProgress'),
-      ),
-    ).called(1);
-    verify(
-      () => mockSyncMaintenanceRepository.syncDashboards(
-        onProgress: any(named: 'onProgress'),
-      ),
-    ).called(1);
-    verify(
-      () => mockSyncMaintenanceRepository.syncHabits(
-        onProgress: any(named: 'onProgress'),
-      ),
-    ).called(1);
+    );
+
+    expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
+    expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
   });
 
   testWidgets(
-    'SyncModal shows categories step in sync indicator',
+    'SyncModal lists selectable sync steps on confirmation page',
     (WidgetTester tester) async {
-      // Build a simple widget that can show the dialog
       await tester.pumpWidget(
         createTestApp(
           Builder(
@@ -173,27 +210,59 @@ void main() {
         ),
       );
 
-      // Tap the button to show the modal
       await tester.tap(find.text('Show Sync Modal'));
       await tester.pumpAndSettle();
 
-      // Verify the confirmation dialog is shown with the correct message
-      expect(find.text(messages.syncEntitiesMessage), findsOneWidget);
-      expect(find.text(messages.syncEntitiesConfirm), findsOneWidget);
-
-      // Tap the confirm button to proceed to progress page
-      await tester.tap(find.text(messages.syncEntitiesConfirm));
-      await tester.pump();
-
-      // Now check for the categories step in the progress page
+      // Verify the confirmation dialog is shown with the checkboxes for each step
+      expect(find.text(messages.syncStepTags), findsOneWidget);
+      expect(find.text(messages.syncStepMeasurables), findsOneWidget);
       expect(find.text(messages.syncStepCategories), findsOneWidget);
-
-      // Verify that the sync operation for categories was called
-      verify(
-        () => mockSyncMaintenanceRepository.syncCategories(
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).called(1);
+      expect(find.text(messages.syncStepDashboards), findsOneWidget);
+      expect(find.text(messages.syncStepHabits), findsOneWidget);
+      expect(find.text(messages.syncStepAiSettings), findsOneWidget);
     },
   );
+
+  testWidgets('SyncModal disables confirm when no steps selected',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      createTestApp(
+        Builder(
+          builder: (context) {
+            return ElevatedButton(
+              onPressed: () => SyncModal.show(context),
+              child: const Text('Show Sync Modal'),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Show Sync Modal'));
+    await tester.pumpAndSettle();
+
+    final confirmFinder = find.widgetWithText(
+      LottiPrimaryButton,
+      messages.syncEntitiesConfirm.toUpperCase(),
+    );
+
+    var confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+    expect(confirmButton.onPressed, isNotNull);
+
+    final checkboxFinder = find.byType(CheckboxListTile);
+    final totalCheckboxes = checkboxFinder.evaluate().length;
+    for (var i = 0; i < totalCheckboxes; i++) {
+      await tester.tap(checkboxFinder.at(i));
+      await tester.pump();
+    }
+
+    confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+    expect(confirmButton.onPressed, isNull);
+
+    // Re-enable by selecting the first option again.
+    await tester.tap(checkboxFinder.first);
+    await tester.pump();
+    confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+    expect(confirmButton.onPressed, isNotNull);
+  });
 }

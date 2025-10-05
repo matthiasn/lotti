@@ -357,5 +357,9 @@
   "taskLanguageVietnamese": "Vietnameză",
   "timeByCategoryChartTitle": "Timp pe categorie",
   "timeByCategoryChartTotalLabel": "Total",
-  "viewMenuTitle": "Vizualizare"
+  "viewMenuTitle": "Vizualizare",
+  "syncEntitiesSuccessTitle": "Sincronizare finalizată",
+  "syncEntitiesSuccessDescription": "Totul este actualizat.",
+  "syncEntitiesMessage": "Alege datele pe care vrei să le sincronizezi.",
+  "syncStepAiSettings": "Setări AI"
 }

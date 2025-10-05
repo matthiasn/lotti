@@ -1122,11 +1122,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get maintenanceSyncDefinitions =>
-      'Sync tags, measurables, dashboards, habits, categories';
+      'Sync tags, measurables, dashboards, habits, categories, AI settings';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
-      'Sync tags, measurables, dashboards, habits, categories';
+      'Sync tags, measurables, dashboards, habits, categories, and AI settings';
 
   @override
   String get measurableDeleteConfirm => 'DA, CONFIRM STERGEREA';
@@ -1866,7 +1866,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncEntitiesMessage =>
-      'This will sync all tags, measurables, and categories. Do you want to continue?';
+      'Alege datele pe care vrei să le sincronizezi.';
+
+  @override
+  String get syncEntitiesSuccessDescription => 'Totul este actualizat.';
+
+  @override
+  String get syncEntitiesSuccessTitle => 'Sincronizare finalizată';
+
+  @override
+  String get syncStepAiSettings => 'Setări AI';
 
   @override
   String get syncStepCategories => 'Categories';
