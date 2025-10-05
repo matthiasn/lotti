@@ -18,36 +18,62 @@ class SyncMaintenanceController extends Notifier<SyncState> {
     return const SyncState();
   }
 
-  Future<void> syncAll() async {
-    state = state.copyWith(isSyncing: true, progress: 0);
+  Future<void> syncAll({required Set<SyncStep> selectedSteps}) async {
+    final orderedSteps = <SyncStep>[
+      SyncStep.tags,
+      SyncStep.measurables,
+      SyncStep.categories,
+      SyncStep.dashboards,
+      SyncStep.habits,
+      SyncStep.aiSettings,
+    ].where(selectedSteps.contains).toList();
 
-    // Define all sync operations with their weight in the total progress
-    final syncOperations = [
-      (step: SyncStep.tags, operation: _repository.syncTags, weight: 0.2),
-      (
-        step: SyncStep.measurables,
-        operation: _repository.syncMeasurables,
-        weight: 0.2
-      ),
-      (
-        step: SyncStep.categories,
-        operation: _repository.syncCategories,
-        weight: 0.2
-      ),
-      (
-        step: SyncStep.dashboards,
-        operation: _repository.syncDashboards,
-        weight: 0.2
-      ),
-      (step: SyncStep.habits, operation: _repository.syncHabits, weight: 0.2),
-    ];
+    if (orderedSteps.isEmpty) {
+      return;
+    }
+
+    state = state.copyWith(
+      isSyncing: true,
+      progress: 0,
+      currentStep: orderedSteps.first,
+      selectedSteps: selectedSteps,
+      stepProgress: {
+        for (final step in orderedSteps)
+          step: const StepProgress(processed: 0, total: 0),
+      },
+    );
+
+    // Define all sync operations using equal weighting
+    final allOperations = <SyncStep,
+        Future<void> Function({
+      void Function(double)? onProgress,
+      void Function(int processed, int total)? onDetailedProgress,
+    })>{
+      SyncStep.tags: _repository.syncTags,
+      SyncStep.measurables: _repository.syncMeasurables,
+      SyncStep.categories: _repository.syncCategories,
+      SyncStep.dashboards: _repository.syncDashboards,
+      SyncStep.habits: _repository.syncHabits,
+      SyncStep.aiSettings: _repository.syncAiSettings,
+    };
+
+    final syncOperations = orderedSteps
+        .map(
+          (step) => (
+            step: step,
+            operation: allOperations[step]!,
+          ),
+        )
+        .toList();
+
+    final operationWeight =
+        syncOperations.isEmpty ? 0.0 : 1 / syncOperations.length;
 
     try {
       var totalProgress = 0.0;
 
       // Execute each sync operation
-      for (var i = 0; i < syncOperations.length; i++) {
-        final operation = syncOperations[i];
+      for (final operation in syncOperations) {
         state = state.copyWith(currentStep: operation.step);
 
         // Calculate the base progress for this operation
@@ -55,15 +81,21 @@ class SyncMaintenanceController extends Notifier<SyncState> {
 
         await operation.operation(
           onProgress: (progress) {
-            // Calculate the weighted progress for this operation
             final weightedProgress =
-                baseProgress + (progress * operation.weight);
+                baseProgress + (progress * operationWeight);
             state = state.copyWith(progress: (weightedProgress * 100).round());
+          },
+          onDetailedProgress: (processed, total) {
+            final updatedProgress =
+                Map<SyncStep, StepProgress>.from(state.stepProgress)
+                  ..[operation.step] =
+                      StepProgress(processed: processed, total: total);
+            state = state.copyWith(stepProgress: updatedProgress);
           },
         );
 
         // Update total progress after operation completes
-        totalProgress += operation.weight;
+        totalProgress += operationWeight;
         state = state.copyWith(progress: (totalProgress * 100).round());
       }
 

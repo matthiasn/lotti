@@ -17,6 +17,10 @@ class ConfirmationProgressModal {
     required Widget Function(BuildContext) progressBuilder,
     required Future<void> Function() operation,
     bool isDestructive = true,
+    bool closeOnComplete = true,
+    Widget? confirmationContent,
+    bool Function()? isConfirmEnabled,
+    Listenable? confirmEnabledListenable,
   }) async {
     final pageIndexNotifier = ValueNotifier(0);
     final theme = Theme.of(context);
@@ -67,7 +71,12 @@ class ConfirmationProgressModal {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: ModalTheme.spacing40),
+                const SizedBox(height: ModalTheme.spacing24),
+                if (confirmationContent != null) ...[
+                  confirmationContent,
+                  const SizedBox(height: ModalTheme.spacing24),
+                ],
+                const SizedBox(height: AppTheme.spacingLarge),
                 Row(
                   children: [
                     SizedBox(
@@ -84,29 +93,42 @@ class ConfirmationProgressModal {
                     Expanded(
                       child: SizedBox(
                         height: ModalTheme.buttonHeight,
-                        child: LottiPrimaryButton(
-                          onPressed: () async {
-                            confirmed = true;
-                            pageIndexNotifier.value = 1;
-                            try {
-                              await operation();
-                            } catch (e, stackTrace) {
-                              getIt<LoggingService>().captureException(
-                                e,
-                                domain: 'ConfirmationProgressModal',
-                                subDomain: 'operation',
-                                stackTrace: stackTrace,
-                              );
-                            } finally {
-                              if (modalSheetContext.mounted) {
-                                Navigator.of(modalSheetContext).pop();
-                              }
-                            }
-                          },
-                          label: confirmLabel.toUpperCase(),
-                          icon: Icons.check_circle_rounded,
-                          isDestructive: isDestructive,
-                        ),
+                        child: confirmEnabledListenable != null
+                            ? ListenableBuilder(
+                                listenable: confirmEnabledListenable,
+                                builder: (context, _) {
+                                  return _buildConfirmButton(
+                                    modalSheetContext,
+                                    isConfirmEnabled,
+                                    () async {
+                                      confirmed = true;
+                                      pageIndexNotifier.value = 1;
+                                      await _executeOperation(
+                                        modalSheetContext,
+                                        operation,
+                                        closeOnComplete,
+                                      );
+                                    },
+                                    confirmLabel,
+                                    isDestructive,
+                                  );
+                                },
+                              )
+                            : _buildConfirmButton(
+                                modalSheetContext,
+                                isConfirmEnabled,
+                                () async {
+                                  confirmed = true;
+                                  pageIndexNotifier.value = 1;
+                                  await _executeOperation(
+                                    modalSheetContext,
+                                    operation,
+                                    closeOnComplete,
+                                  );
+                                },
+                                confirmLabel,
+                                isDestructive,
+                              ),
                       ),
                     ),
                   ],
@@ -126,5 +148,42 @@ class ConfirmationProgressModal {
     );
 
     return confirmed;
+}
+
+  static Future<void> _executeOperation(
+    BuildContext modalSheetContext,
+    Future<void> Function() operation,
+    bool closeOnComplete,
+  ) async {
+    try {
+      await operation();
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'ConfirmationProgressModal',
+        subDomain: 'operation',
+        stackTrace: stackTrace,
+      );
+    } finally {
+      if (closeOnComplete && modalSheetContext.mounted) {
+        Navigator.of(modalSheetContext).pop();
+      }
+    }
+  }
+
+  static LottiPrimaryButton _buildConfirmButton(
+    BuildContext context,
+    bool Function()? isConfirmEnabled,
+    Future<void> Function() onConfirm,
+    String confirmLabel,
+    bool isDestructive,
+  ) {
+    final enabled = isConfirmEnabled?.call() ?? true;
+    return LottiPrimaryButton(
+      onPressed: enabled ? onConfirm : null,
+      label: confirmLabel.toUpperCase(),
+      icon: Icons.check_circle_rounded,
+      isDestructive: isDestructive,
+    );
   }
 }

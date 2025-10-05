@@ -357,5 +357,8 @@
   "taskLanguageVietnamese": "Vietnameză",
   "timeByCategoryChartTitle": "Timp pe categorie",
   "timeByCategoryChartTotalLabel": "Total",
-  "viewMenuTitle": "Vizualizare"
+  "viewMenuTitle": "Vizualizare",
+  "syncEntitiesSuccessTitle": "Sync complete",
+  "syncEntitiesSuccessDescription": "Everything is up to date.",
+  "syncEntitiesMessage": "Choose the data you want to sync."
 }

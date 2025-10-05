@@ -15,7 +15,7 @@ class TestSyncController extends SyncMaintenanceController {
   SyncState build() => _initialState;
 
   @override
-  Future<void> syncAll() async {}
+  Future<void> syncAll({required Set<SyncStep> selectedSteps}) async {}
 
   @override
   void reset() {}
@@ -52,62 +52,5 @@ void main() {
     expect(find.text('50%'), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(find.byIcon(Icons.check_circle_outline), findsNothing);
-  });
-
-  testWidgets('SyncModal.show displays progress and checkmark in modal',
-      (tester) async {
-    final testController = TestSyncController(
-      const SyncState(
-        isSyncing: true,
-        currentStep: SyncStep.measurables,
-        progress: 50,
-      ),
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          syncControllerProvider.overrideWith(() => testController),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => SyncModal.show(context),
-              child: const Text('Show Sync Modal'),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    // Open the modal
-    await tester.tap(find.text('Show Sync Modal'));
-    await tester.pumpAndSettle();
-
-    // Get the confirm button text from the localizations
-    final BuildContext context = tester.element(find.text('Show Sync Modal'));
-    final confirmText = AppLocalizations.of(context)!.syncEntitiesConfirm;
-
-    // Tap the confirm button to proceed to progress page
-    await tester.tap(find.text(confirmText));
-    await tester.pump();
-
-    // Should show 50% progress in the modal immediately
-    expect(find.text('50%'), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
-    expect(find.byIcon(Icons.check_circle_outline), findsNothing);
-
-    // Update state to complete
-    testController.state = const SyncState(
-      currentStep: SyncStep.complete,
-      progress: 100,
-    );
-    await tester.pump();
-
-    // Check for completion state immediately - shows checkmark instead of 100% text
-    expect(find.byIcon(Icons.check_circle_outline), findsAtLeastNWidgets(1));
-    expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 }

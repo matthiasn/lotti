@@ -357,5 +357,8 @@
   "taskLanguageVietnamese": "Vietnamita",
   "timeByCategoryChartTitle": "Tiempo por categoría",
   "timeByCategoryChartTotalLabel": "Total",
-  "viewMenuTitle": "Vista"
+  "viewMenuTitle": "Vista",
+  "syncEntitiesSuccessTitle": "Sync complete",
+  "syncEntitiesSuccessDescription": "Everything is up to date.",
+  "syncEntitiesMessage": "Choose the data you want to sync."
 }

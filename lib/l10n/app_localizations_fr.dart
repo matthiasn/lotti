@@ -1131,11 +1131,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get maintenanceSyncDefinitions =>
-      'Sync tags, measurables, dashboards, habits, categories';
+      'Sync tags, measurables, dashboards, habits, categories, AI settings';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
-      'Sync tags, measurables, dashboards, habits, categories';
+      'Sync tags, measurables, dashboards, habits, categories, and AI settings';
 
   @override
   String get measurableDeleteConfirm => 'OUI, SUPPRIMER CET ÉLÉMENT MESURABLE';
@@ -1876,8 +1876,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncEntitiesConfirm => 'YES, SYNC ALL';
 
   @override
-  String get syncEntitiesMessage =>
-      'This will sync all tags, measurables, and categories. Do you want to continue?';
+  String get syncEntitiesMessage => 'Choose the data you want to sync.';
+
+  @override
+  String get syncEntitiesSuccessDescription => 'Everything is up to date.';
+
+  @override
+  String get syncEntitiesSuccessTitle => 'Sync complete';
+
+  @override
+  String get syncStepAiSettings => 'AI settings';
 
   @override
   String get syncStepCategories => 'Categories';

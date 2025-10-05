@@ -266,6 +266,68 @@ void main() {
       expect(confirmed, isTrue);
     });
 
+    testWidgets('keeps modal open when closeOnComplete is false',
+        (tester) async {
+      var confirmed = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MediaQuery(
+            data: const MediaQueryData(size: Size(800, 600)),
+            child: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  return ElevatedButton(
+                    onPressed: () async {
+                      confirmed = await ConfirmationProgressModal.show(
+                        context: context,
+                        message: 'Test message',
+                        confirmLabel: 'Confirm',
+                        closeOnComplete: false,
+                        progressBuilder: (progressContext) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Operation done'),
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              onPressed: () =>
+                                  Navigator.of(progressContext).pop(),
+                              child: const Text('Dismiss'),
+                            ),
+                          ],
+                        ),
+                        operation: () async {},
+                      );
+                    },
+                    child: const Text('Show Modal'),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('CONFIRM'));
+      await tester.pump();
+
+      expect(find.text('Operation done'), findsOneWidget);
+      expect(find.text('Dismiss'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Dismiss'));
+
+      await tester.tap(find.text('Dismiss'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Operation done'), findsNothing);
+      expect(confirmed, isTrue);
+    });
+
     testWidgets('uses correct styling for destructive operations',
         (tester) async {
       await tester.pumpWidget(
