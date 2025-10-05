@@ -17,8 +17,6 @@ PODS:
     - Flutter
   - flutter_native_splash (2.4.3):
     - Flutter
-  - flutter_olm (3.2.15):
-    - Flutter
   - flutter_openssl_crypto (0.0.1):
     - Flutter
     - OpenSSL-Universal
@@ -27,8 +25,6 @@ PODS:
   - flutter_vodozemac (0.0.1):
     - Flutter
   - health (13.1.4):
-    - Flutter
-  - image_picker_ios (0.0.1):
     - Flutter
   - integration_test (0.0.1):
     - Flutter
@@ -132,12 +128,10 @@ DEPENDENCIES:
   - flutter_keyboard_visibility_temp_fork (from `.symlinks/plugins/flutter_keyboard_visibility_temp_fork/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
-  - flutter_olm (from `.symlinks/plugins/flutter_olm/ios`)
   - flutter_openssl_crypto (from `.symlinks/plugins/flutter_openssl_crypto/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - flutter_vodozemac (from `.symlinks/plugins/flutter_vodozemac/ios`)
   - health (from `.symlinks/plugins/health/ios`)
-  - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - irondash_engine_context (from `.symlinks/plugins/irondash_engine_context/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
@@ -185,8 +179,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_native_splash:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
-  flutter_olm:
-    :path: ".symlinks/plugins/flutter_olm/ios"
   flutter_openssl_crypto:
     :path: ".symlinks/plugins/flutter_openssl_crypto/ios"
   flutter_secure_storage:
@@ -195,8 +187,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_vodozemac/ios"
   health:
     :path: ".symlinks/plugins/health/ios"
-  image_picker_ios:
-    :path: ".symlinks/plugins/image_picker_ios/ios"
   integration_test:
     :path: ".symlinks/plugins/integration_test/ios"
   irondash_engine_context:
@@ -247,12 +237,10 @@ SPEC CHECKSUMS:
   flutter_keyboard_visibility_temp_fork: 95b2d534bacf6ac62e7fcbe5c2a9e2c2a17ce06f
   flutter_local_notifications: a5a732f069baa862e728d839dd2ebb904737effb
   flutter_native_splash: 6cad9122ea0fad137d23137dd14b937f3e90b145
-  flutter_olm: 381bdf22eaeb0b5120539a79fb45199e2dbef163
   flutter_openssl_crypto: 73dcefff7611c3ac324d82726047d8335d0b6e57
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
   flutter_vodozemac: 46015daf07988356d46784d05ab0c7afca00ff36
   health: 32d2fbc7f26f9a2388d1a514ce168adbfa5bda65
-  image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   irondash_engine_context: 8e58ca8e0212ee9d1c7dc6a42121849986c88486
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
