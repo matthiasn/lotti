@@ -161,6 +161,20 @@ void main() {
         ),
       ).called(1);
 
+      final lastState = container.read(syncControllerProvider);
+      for (final step in {
+        SyncStep.tags,
+        SyncStep.measurables,
+        SyncStep.categories,
+        SyncStep.dashboards,
+        SyncStep.habits,
+        SyncStep.aiSettings,
+      }) {
+        final progress = lastState.stepProgress[step];
+        expect(progress?.processed, 1);
+        expect(progress?.total, 1);
+      }
+
       sub.close();
     });
 
@@ -207,6 +221,10 @@ void main() {
           onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       );
+
+      final state = container.read(syncControllerProvider);
+      expect(state.selectedSteps, {SyncStep.tags, SyncStep.aiSettings});
+      expect(state.stepProgress.keys, {SyncStep.tags, SyncStep.aiSettings});
     });
 
     test('syncAll handles errors and updates state', () async {

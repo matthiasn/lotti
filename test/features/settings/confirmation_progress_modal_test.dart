@@ -266,6 +266,66 @@ void main() {
       expect(confirmed, isTrue);
     });
 
+    testWidgets('confirm button listens to enable notifier', (tester) async {
+      final enabledNotifier = ValueNotifier<bool>(false);
+      var operationRan = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MediaQuery(
+            data: const MediaQueryData(size: Size(800, 600)),
+            child: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  return ElevatedButton(
+                    onPressed: () async {
+                      await ConfirmationProgressModal.show(
+                        context: context,
+                        message: 'Enable sync?',
+                        confirmLabel: 'Confirm',
+                        progressBuilder: (context) => const SizedBox.shrink(),
+                        operation: () async {
+                          operationRan = true;
+                        },
+                        isDestructive: false,
+                        isConfirmEnabled: () => enabledNotifier.value,
+                        confirmEnabledListenable: enabledNotifier,
+                      );
+                    },
+                    child: const Text('Show Modal'),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
+
+      final confirmFinder = find.widgetWithText(
+        LottiPrimaryButton,
+        'CONFIRM',
+      );
+
+      var confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      expect(confirmButton.onPressed, isNull);
+
+      enabledNotifier.value = true;
+      await tester.pump();
+
+      confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      expect(confirmButton.onPressed, isNotNull);
+
+      await tester.tap(find.text('CONFIRM'));
+      await tester.pumpAndSettle();
+
+      expect(operationRan, isTrue);
+    });
+
     testWidgets('keeps modal open when closeOnComplete is false',
         (tester) async {
       var confirmed = false;
