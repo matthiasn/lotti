@@ -35,8 +35,8 @@ class EditorWidget extends ConsumerWidget {
         entryState.value?.shouldShowEditorToolBar ?? false;
 
     final contentPadding = shouldShowEditorToolBar
-        ? const EdgeInsets.only(top: 10, bottom: 10, left: 10, right: 10)
-        : const EdgeInsets.only(top: 10);
+        ? const EdgeInsets.only(top: 5, bottom: 15, left: 10, right: 10)
+        : EdgeInsets.zero;
 
     return Card(
       margin: margin,
