@@ -17,20 +17,18 @@ class SyncOperation<T> {
   const SyncOperation({
     required this.step,
     required this.syncDomain,
+    required this.totalsDomain,
     required this.fetchEntities,
     required this.enqueueEntity,
-    this.shouldSync,
-    this.fetchTotalCount,
-    String? totalCountDomain,
-  }) : totalCountDomain = totalCountDomain ?? syncDomain;
+    required this.shouldSync,
+  });
 
   final SyncStep step;
   final String syncDomain;
-  final String totalCountDomain;
+  final String totalsDomain;
   final Future<List<T>> Function() fetchEntities;
   final Future<void> Function(T entity) enqueueEntity;
-  final bool Function(T entity)? shouldSync;
-  final Future<int> Function()? fetchTotalCount;
+  final bool Function(T entity) shouldSync;
 }
 
 class SyncMaintenanceRepository {
@@ -50,10 +48,8 @@ class SyncMaintenanceRepository {
   final AiConfigRepository _aiConfigRepository;
 
   late final SyncOperation<TagEntity> _tagSyncOperation =
-      SyncOperation<TagEntity>(
+      _createOperation<TagEntity>(
     step: SyncStep.tags,
-    syncDomain: 'syncTags',
-    totalCountDomain: 'fetchTotals_tags',
     fetchEntities: () => _journalDb.watchTags().first,
     enqueueEntity: (tag) => _outboxService.enqueueMessage(
       SyncMessage.tagEntity(
@@ -65,10 +61,8 @@ class SyncMaintenanceRepository {
   );
 
   late final SyncOperation<MeasurableDataType> _measurableSyncOperation =
-      SyncOperation<MeasurableDataType>(
+      _createOperation<MeasurableDataType>(
     step: SyncStep.measurables,
-    syncDomain: 'syncMeasurables',
-    totalCountDomain: 'fetchTotals_measurables',
     fetchEntities: () => _journalDb.watchMeasurableDataTypes().first,
     enqueueEntity: (measurable) => _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
@@ -80,10 +74,8 @@ class SyncMaintenanceRepository {
   );
 
   late final SyncOperation<CategoryDefinition> _categorySyncOperation =
-      SyncOperation<CategoryDefinition>(
+      _createOperation<CategoryDefinition>(
     step: SyncStep.categories,
-    syncDomain: 'syncCategories',
-    totalCountDomain: 'fetchTotals_categories',
     fetchEntities: () => _journalDb.watchCategories().first,
     enqueueEntity: (category) => _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
@@ -95,10 +87,8 @@ class SyncMaintenanceRepository {
   );
 
   late final SyncOperation<DashboardDefinition> _dashboardSyncOperation =
-      SyncOperation<DashboardDefinition>(
+      _createOperation<DashboardDefinition>(
     step: SyncStep.dashboards,
-    syncDomain: 'syncDashboards',
-    totalCountDomain: 'fetchTotals_dashboards',
     fetchEntities: () => _journalDb.watchDashboards().first,
     enqueueEntity: (dashboard) => _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
@@ -110,10 +100,8 @@ class SyncMaintenanceRepository {
   );
 
   late final SyncOperation<HabitDefinition> _habitSyncOperation =
-      SyncOperation<HabitDefinition>(
+      _createOperation<HabitDefinition>(
     step: SyncStep.habits,
-    syncDomain: 'syncHabits',
-    totalCountDomain: 'fetchTotals_habits',
     fetchEntities: () => _journalDb.watchHabitDefinitions().first,
     enqueueEntity: (habit) => _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
@@ -125,10 +113,8 @@ class SyncMaintenanceRepository {
   );
 
   late final SyncOperation<AiConfig> _aiConfigSyncOperation =
-      SyncOperation<AiConfig>(
+      _createOperation<AiConfig>(
     step: SyncStep.aiSettings,
-    syncDomain: 'syncAiSettings',
-    totalCountDomain: 'fetchTotals_aiSettings',
     fetchEntities: _fetchAiConfigsSafely,
     enqueueEntity: (config) => _outboxService.enqueueMessage(
       SyncMessage.aiConfig(
@@ -136,6 +122,7 @@ class SyncMaintenanceRepository {
         status: SyncEntryStatus.update,
       ),
     ),
+    shouldSync: (_) => true,
   );
 
   late final Map<SyncStep, SyncOperation<dynamic>> _operations = {
@@ -240,14 +227,10 @@ class SyncMaintenanceRepository {
 
     return _runWithLogging<int>(
       () async {
-        final fetchTotal = operation.fetchTotalCount;
-        if (fetchTotal != null) {
-          return fetchTotal();
-        }
         final entities = await operation.fetchEntities();
         return entities.length;
       },
-      operation.totalCountDomain,
+      operation.totalsDomain,
     );
   }
 
@@ -271,7 +254,7 @@ class SyncMaintenanceRepository {
 
         var processed = 0;
         for (final entity in entities) {
-          if (_shouldSyncEntity(operation, entity)) {
+          if (operation.shouldSync(entity)) {
             await operation.enqueueEntity(entity);
           }
 
@@ -282,27 +265,6 @@ class SyncMaintenanceRepository {
       },
       operation.syncDomain,
     );
-  }
-
-  bool _shouldSyncEntity<T>(SyncOperation<T> operation, T entity) {
-    final predicate = operation.shouldSync;
-    if (predicate != null) {
-      return predicate(entity);
-    }
-    return _defaultShouldSync(entity);
-  }
-
-  bool _defaultShouldSync(Object? entity) {
-    if (entity == null) {
-      return true;
-    }
-    if (entity is TagEntity) {
-      return entity.deletedAt == null;
-    }
-    if (entity is EntityDefinition) {
-      return entity.deletedAt == null;
-    }
-    return true;
   }
 
   Future<T> _runWithLogging<T>(
@@ -337,6 +299,60 @@ class SyncMaintenanceRepository {
       },
       'syncAiSettings_fetch',
     );
+  }
+
+  SyncOperation<T> _createOperation<T>({
+    required SyncStep step,
+    required Future<List<T>> Function() fetchEntities,
+    required Future<void> Function(T entity) enqueueEntity,
+    required bool Function(T entity) shouldSync,
+  }) {
+    return SyncOperation<T>(
+      step: step,
+      syncDomain: _syncDomainFor(step),
+      totalsDomain: _totalsDomainFor(step),
+      fetchEntities: fetchEntities,
+      enqueueEntity: enqueueEntity,
+      shouldSync: shouldSync,
+    );
+  }
+
+  String _syncDomainFor(SyncStep step) {
+    switch (step) {
+      case SyncStep.tags:
+        return 'syncTags';
+      case SyncStep.measurables:
+        return 'syncMeasurables';
+      case SyncStep.categories:
+        return 'syncCategories';
+      case SyncStep.dashboards:
+        return 'syncDashboards';
+      case SyncStep.habits:
+        return 'syncHabits';
+      case SyncStep.aiSettings:
+        return 'syncAiSettings';
+      case SyncStep.complete:
+        return 'syncComplete';
+    }
+  }
+
+  String _totalsDomainFor(SyncStep step) {
+    switch (step) {
+      case SyncStep.tags:
+        return 'fetchTotals_tags';
+      case SyncStep.measurables:
+        return 'fetchTotals_measurables';
+      case SyncStep.categories:
+        return 'fetchTotals_categories';
+      case SyncStep.dashboards:
+        return 'fetchTotals_dashboards';
+      case SyncStep.habits:
+        return 'fetchTotals_habits';
+      case SyncStep.aiSettings:
+        return 'fetchTotals_aiSettings';
+      case SyncStep.complete:
+        return 'fetchTotals_complete';
+    }
   }
 }
 
