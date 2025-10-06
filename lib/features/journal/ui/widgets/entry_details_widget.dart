@@ -133,7 +133,8 @@ class EntryDetailsContent extends ConsumerWidget {
       WorkoutEntry() ||
       Checklist() ||
       ChecklistItem() ||
-      AiResponseEntry() => true,
+      AiResponseEntry() =>
+        true,
       _ => false,
     };
 
