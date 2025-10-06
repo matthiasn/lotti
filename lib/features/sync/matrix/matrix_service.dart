@@ -147,10 +147,10 @@ class MatrixService {
         return;
       }
 
-      // Room not found yet, wait before retry
+      // Room not found yet, wait before retry with exponential backoff
       if (attempt < _kLoadSyncRoomMaxAttempts - 1) {
         final delay =
-            Duration(milliseconds: _kLoadSyncRoomBaseDelayMs * (attempt + 1));
+            Duration(milliseconds: _kLoadSyncRoomBaseDelayMs * (1 << attempt));
         getIt<LoggingService>().captureEvent(
           'Room $savedRoomId not found, retrying in ${delay.inMilliseconds}ms '
           '(attempt ${attempt + 1}/$_kLoadSyncRoomMaxAttempts)',
