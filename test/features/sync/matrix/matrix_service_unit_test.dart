@@ -462,7 +462,6 @@ void main() {
       fakeAsync((async) {
         final mockRoom = MockRoom();
         const roomId = '!test:room';
-        var attempt = 0;
         final onLoginStateController =
             CachedStreamController<LoginState>(LoginState.loggedIn);
         final onRoomStateController = CachedStreamController<
@@ -475,25 +474,25 @@ void main() {
             .thenAnswer((_) async => roomId);
 
         // Return null on first attempt, room on second
-        when(() => mockClient.getRoomById(roomId)).thenAnswer((_) {
-          attempt++;
-          return attempt == 1 ? null : mockRoom;
-        });
+        final responses = [null, mockRoom];
+        when(() => mockClient.getRoomById(roomId))
+            .thenAnswer((_) => responses.removeAt(0));
         when(() => mockRoom.id).thenReturn(roomId);
 
         final stubService = StubMatrixService(
           client: mockClient,
           journalDb: mockJournalDb,
           settingsDb: mockSettingsDb,
-        )
+        );
 
-          // Start init (don't await in fakeAsync)
-          ..init();
+        // Start init (don't await in fakeAsync)
+        // ignore: cascade_invocations
+        stubService.init();
 
         // Advance time to complete the retry delay (1 second)
-        async
-          ..elapse(const Duration(seconds: 1))
-          ..flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        // ignore: cascade_invocations
+        async.flushMicrotasks();
 
         expect(stubService.syncRoom, equals(mockRoom));
         expect(stubService.syncRoomId, equals(roomId));
@@ -539,27 +538,28 @@ void main() {
           client: mockClient,
           journalDb: mockJournalDb,
           settingsDb: mockSettingsDb,
-        )
+        );
 
-          // Start init (don't await in fakeAsync)
-          ..init();
+        // Start init (don't await in fakeAsync)
+        // ignore: cascade_invocations
+        stubService.init();
 
-        // Advance time to complete all retry delays (1s + 2s = 3s)
-        async
-          ..elapse(const Duration(seconds: 3))
-          ..flushMicrotasks();
+        // Advance time to complete all retry delays (1s + 2s + 4s = 7s)
+        async.elapse(const Duration(seconds: 7));
+        // ignore: cascade_invocations
+        async.flushMicrotasks();
 
         expect(stubService.syncRoom, isNull);
         expect(stubService.syncRoomId, isNull);
 
-        // Should log 2 retry messages (attempts 1 and 2, attempt 3 doesn't log retry)
+        // Should log 3 retry messages (attempts 1, 2, and 3; attempt 4 doesn't log retry)
         verify(
           () => mockLoggingService.captureEvent(
             contains('not found, retrying'),
             domain: 'MATRIX_SERVICE',
             subDomain: '_loadSyncRoom',
           ),
-        ).called(2);
+        ).called(3);
 
         // Should log final failure
         verify(
