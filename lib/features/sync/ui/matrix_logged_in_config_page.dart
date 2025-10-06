@@ -166,7 +166,7 @@ class DiagnosticInfoButton extends StatelessWidget {
                   await Clipboard.setData(ClipboardData(text: prettyJson));
                   if (dialogContext.mounted) {
                     Navigator.of(dialogContext).pop();
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Diagnostic info copied to clipboard'),
                       ),

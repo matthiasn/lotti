@@ -107,9 +107,7 @@ Sends data to sync room:
 **File:** `lib/features/sync/matrix/room.dart:111-146`
 
 **Problem:**
-The `listenToMatrixRoomInvites()` function listens to `client.onRoomState.stream` which fires for *
-*ANY** room state change in **ANY** room, not just invite events. When `syncRoom?.id == null`, it
-automatically saves and joins the **first** room that emits a state event.
+The `listenToMatrixRoomInvites()` function listens to `client.onRoomState.stream` which fires for **ANY** room state change in **ANY** room, not just invite events. When `syncRoom?.id == null`, it automatically saves and joins the **first** room that emits a state event.
 
 **Symptoms:**
 
