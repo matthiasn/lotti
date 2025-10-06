@@ -5,10 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/send_message.dart';
-import 'package:lotti/features/sync/matrix/stats.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -16,6 +13,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -36,6 +34,10 @@ class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 class MockRoomSummary extends Mock implements RoomSummary {}
 
+class MockTimeline extends Mock implements Timeline {}
+
+class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
+
 class TestMatrixService extends MatrixService {
   TestMatrixService({
     required super.client,
@@ -51,6 +53,30 @@ class TestMatrixService extends MatrixService {
 
   @override
   List<DeviceKeys> getUnverifiedDevices() => unverifiedDevices;
+}
+
+class StubMatrixService extends MatrixService {
+  StubMatrixService({
+    required super.client,
+    JournalDb? journalDb,
+    SettingsDb? settingsDb,
+  }) : super(
+          overriddenJournalDb: journalDb,
+          overriddenSettingsDb: settingsDb,
+        );
+
+  int startKeyVerificationCount = 0;
+  int listenToTimelineCount = 0;
+
+  @override
+  Future<void> startKeyVerificationListener() async {
+    startKeyVerificationCount++;
+  }
+
+  @override
+  Future<void> listenToTimeline() async {
+    listenToTimelineCount++;
+  }
 }
 
 void main() {
@@ -121,6 +147,23 @@ void main() {
       ..registerSingleton<SettingsDb>(mockSettingsDb)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<Directory>(Directory.systemTemp);
+
+    when(
+      () => mockLoggingService.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
+
+    when(
+      () => mockLoggingService.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) {});
 
     service = TestMatrixService(
       client: mockClient,
@@ -262,6 +305,60 @@ void main() {
       expect(service.sentCount, 1);
       await Future<void>.delayed(Duration.zero);
       expect(stats.single.sentCount, 1);
+    });
+  });
+
+  group('listener utilities', () {
+    test('publishIncomingRunnerState triggers publish on runner', () {
+      final runner = MockKeyVerificationRunner();
+      service
+        ..incomingKeyVerificationRunner = runner
+        ..publishIncomingRunnerState();
+
+      verify(runner.publishState).called(1);
+    });
+
+    test('logout cancels timeline and logs out client', () async {
+      final mockTimeline = MockTimeline();
+      service
+        ..timeline = mockTimeline
+        ..syncRoom = MockRoom();
+
+      when(mockTimeline.cancelSubscriptions).thenAnswer((_) {});
+      when(() => mockClient.logout()).thenAnswer((_) async {});
+
+      await service.logout();
+
+      verify(mockTimeline.cancelSubscriptions).called(1);
+      verify(() => mockClient.logout()).called(1);
+    });
+
+    test('disposeClient calls client.dispose when logged in', () async {
+      when(() => mockClient.dispose()).thenAnswer((_) async {});
+
+      await service.disposeClient();
+
+      verify(() => mockClient.dispose()).called(1);
+    });
+
+    test('listen starts key verification and timeline listeners', () async {
+      final stubService = StubMatrixService(
+        client: mockClient,
+        journalDb: mockJournalDb,
+        settingsDb: mockSettingsDb,
+      );
+      final onRoomStateController =
+          CachedStreamController<({String roomId, StrippedStateEvent state})>();
+
+      when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
+      when(() => mockClient.rooms).thenReturn(const []);
+
+      await stubService.listen();
+
+      expect(stubService.startKeyVerificationCount, 1);
+      expect(stubService.listenToTimelineCount, 1);
+
+      await onRoomStateController.close();
     });
   });
 

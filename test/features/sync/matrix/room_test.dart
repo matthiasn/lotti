@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -130,6 +131,46 @@ void main() {
       );
 
       verify(() => mockRoom.invite('@user:server')).called(1);
+    });
+
+    test('listenToMatrixRoomInvites auto-joins when no room set', () async {
+      final matrixService = MatrixService(client: mockClient);
+      final roomController =
+          CachedStreamController<({String roomId, StrippedStateEvent state})>();
+      final joinedRoom = MockRoom();
+
+      when(() => mockClient.onRoomState).thenReturn(roomController);
+      when(() => mockClient.joinRoom('!room:server'))
+          .thenAnswer((_) async => '!room:server');
+      when(() => mockClient.getRoomById('!room:server')).thenReturn(joinedRoom);
+      when(() => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'))
+          .thenAnswer((_) async => 1);
+
+      listenToMatrixRoomInvites(service: matrixService);
+
+      roomController.add(
+        (
+          roomId: '!room:server',
+          state: StrippedStateEvent.fromJson(
+            {
+              'type': 'm.room.member',
+              'sender': '@user:server',
+              'state_key': '@user:server',
+              'content': const <String, Object?>{},
+            },
+          ),
+        ),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+
+      verify(() =>
+              mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'))
+          .called(1);
+      verify(() => mockClient.joinRoom('!room:server')).called(1);
+      expect(matrixService.syncRoom, joinedRoom);
+
+      await roomController.close();
     });
   });
 }
