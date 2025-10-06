@@ -1864,7 +1864,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchten Sie die Synchronisierungskonfiguration löschen?';
 
   @override
-  String get syncEntitiesConfirm => 'YES, SYNC ALL';
+  String get syncEntitiesConfirm => 'START SYNC';
 
   @override
   String get syncEntitiesMessage =>

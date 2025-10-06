@@ -4,7 +4,6 @@ import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -24,16 +23,14 @@ void main() {
     registerFallbackValue(<SyncStep>{});
   });
 
-  setUp(() async {
+  setUp(() {
     mockRepository = MockSyncMaintenanceRepository();
     mockLoggingService = MockLoggingService();
-
-    await getIt.reset();
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     container = ProviderContainer(
       overrides: [
         syncMaintenanceRepositoryProvider.overrideWithValue(mockRepository),
+        syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
       ],
     );
     controller = container.read(syncControllerProvider.notifier);
@@ -105,9 +102,8 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  tearDown(() async {
+  tearDown(() {
     container.dispose();
-    await getIt.reset();
   });
 
   group('SyncMaintenanceController', () {

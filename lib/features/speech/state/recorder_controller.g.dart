@@ -7,7 +7,7 @@ part of 'recorder_controller.dart';
 // **************************************************************************
 
 String _$audioRecorderControllerHash() =>
-    r'27205521d557573c4f39824ac8668f2e5256a36a';
+    r'e5a961b70444f370e7c0f6833d67cdc3981e518a';
 
 /// Main controller for audio recording functionality.
 ///

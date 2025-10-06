@@ -1852,7 +1852,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Do you want to delete the sync configuration?';
 
   @override
-  String get syncEntitiesConfirm => 'YES, SYNC ALL';
+  String get syncEntitiesConfirm => 'START SYNC';
 
   @override
   String get syncEntitiesMessage => 'Choose the entities you want to sync.';

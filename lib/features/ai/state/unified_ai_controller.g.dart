@@ -636,7 +636,7 @@ class _TriggerNewInferenceProviderElement
 }
 
 String _$unifiedAiControllerHash() =>
-    r'7d130cbd4bd24f78155d41e78fea7323abdd0fd3';
+    r'00fef65afa16b766e88316fa852c13a8c37e71fb';
 
 abstract class _$UnifiedAiController
     extends BuildlessAutoDisposeNotifier<UnifiedAiState> {

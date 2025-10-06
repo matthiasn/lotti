@@ -10,162 +10,204 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
+typedef SyncProgressCallback = void Function(double progress);
+typedef SyncDetailedProgressCallback = void Function(int processed, int total);
+
+class SyncOperation<T> {
+  const SyncOperation({
+    required this.step,
+    required this.syncDomain,
+    required this.fetchEntities,
+    required this.enqueueEntity,
+    this.shouldSync,
+    this.fetchTotalCount,
+    String? totalCountDomain,
+  }) : totalCountDomain = totalCountDomain ?? syncDomain;
+
+  final SyncStep step;
+  final String syncDomain;
+  final String totalCountDomain;
+  final Future<List<T>> Function() fetchEntities;
+  final Future<void> Function(T entity) enqueueEntity;
+  final bool Function(T entity)? shouldSync;
+  final Future<int> Function()? fetchTotalCount;
+}
+
 class SyncMaintenanceRepository {
-  final JournalDb _journalDb = getIt<JournalDb>();
-  final OutboxService _outboxService = getIt<OutboxService>();
-  final LoggingService _loggingService = getIt<LoggingService>();
-  final AiConfigRepository _aiConfigRepository = getIt<AiConfigRepository>();
+  SyncMaintenanceRepository({
+    JournalDb? journalDb,
+    OutboxService? outboxService,
+    LoggingService? loggingService,
+    AiConfigRepository? aiConfigRepository,
+  })  : _journalDb = journalDb ?? getIt<JournalDb>(),
+        _outboxService = outboxService ?? getIt<OutboxService>(),
+        _loggingService = loggingService ?? getIt<LoggingService>(),
+        _aiConfigRepository = aiConfigRepository ?? getIt<AiConfigRepository>();
 
-  /// Generic method to sync any type of entity
-  Future<void> syncEntities<T>({
-    required Future<List<T>> Function() fetchEntities,
-    required Future<void> Function(T) enqueueSync,
-    required String domain,
-    void Function(double)? onProgress,
-    void Function(int processed, int total)? onDetailedProgress,
-  }) async {
-    try {
-      final entities = await fetchEntities();
-      final total = entities.length;
-      var processed = 0;
+  final JournalDb _journalDb;
+  final OutboxService _outboxService;
+  final LoggingService _loggingService;
+  final AiConfigRepository _aiConfigRepository;
 
-      if (total == 0) {
-        onDetailedProgress?.call(0, 0);
-        onProgress?.call(1);
-        return;
-      }
+  late final SyncOperation<TagEntity> _tagSyncOperation =
+      SyncOperation<TagEntity>(
+    step: SyncStep.tags,
+    syncDomain: 'syncTags',
+    totalCountDomain: 'fetchTotals_tags',
+    fetchEntities: () => _journalDb.watchTags().first,
+    enqueueEntity: (tag) => _outboxService.enqueueMessage(
+      SyncMessage.tagEntity(
+        tagEntity: tag,
+        status: SyncEntryStatus.update,
+      ),
+    ),
+    shouldSync: (tag) => tag.deletedAt == null,
+  );
 
-      onDetailedProgress?.call(0, total);
+  late final SyncOperation<MeasurableDataType> _measurableSyncOperation =
+      SyncOperation<MeasurableDataType>(
+    step: SyncStep.measurables,
+    syncDomain: 'syncMeasurables',
+    totalCountDomain: 'fetchTotals_measurables',
+    fetchEntities: () => _journalDb.watchMeasurableDataTypes().first,
+    enqueueEntity: (measurable) => _outboxService.enqueueMessage(
+      SyncMessage.entityDefinition(
+        entityDefinition: measurable,
+        status: SyncEntryStatus.update,
+      ),
+    ),
+    shouldSync: (measurable) => measurable.deletedAt == null,
+  );
 
-      for (final entity in entities) {
-        final isDeleted =
-            entity is EntityDefinition && entity.deletedAt != null ||
-                entity is TagEntity && entity.deletedAt != null;
+  late final SyncOperation<CategoryDefinition> _categorySyncOperation =
+      SyncOperation<CategoryDefinition>(
+    step: SyncStep.categories,
+    syncDomain: 'syncCategories',
+    totalCountDomain: 'fetchTotals_categories',
+    fetchEntities: () => _journalDb.watchCategories().first,
+    enqueueEntity: (category) => _outboxService.enqueueMessage(
+      SyncMessage.entityDefinition(
+        entityDefinition: category,
+        status: SyncEntryStatus.update,
+      ),
+    ),
+    shouldSync: (category) => category.deletedAt == null,
+  );
 
-        if (!isDeleted) {
-          await enqueueSync(entity);
-        }
+  late final SyncOperation<DashboardDefinition> _dashboardSyncOperation =
+      SyncOperation<DashboardDefinition>(
+    step: SyncStep.dashboards,
+    syncDomain: 'syncDashboards',
+    totalCountDomain: 'fetchTotals_dashboards',
+    fetchEntities: () => _journalDb.watchDashboards().first,
+    enqueueEntity: (dashboard) => _outboxService.enqueueMessage(
+      SyncMessage.entityDefinition(
+        entityDefinition: dashboard,
+        status: SyncEntryStatus.update,
+      ),
+    ),
+    shouldSync: (dashboard) => dashboard.deletedAt == null,
+  );
 
-        processed++;
-        onDetailedProgress?.call(processed, total);
-        if (onProgress != null) {
-          onProgress(processed / total);
-        }
-      }
-    } catch (e, stackTrace) {
-      _loggingService.captureException(
-        e,
-        domain: 'SYNC_SERVICE',
-        subDomain: domain,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
+  late final SyncOperation<HabitDefinition> _habitSyncOperation =
+      SyncOperation<HabitDefinition>(
+    step: SyncStep.habits,
+    syncDomain: 'syncHabits',
+    totalCountDomain: 'fetchTotals_habits',
+    fetchEntities: () => _journalDb.watchHabitDefinitions().first,
+    enqueueEntity: (habit) => _outboxService.enqueueMessage(
+      SyncMessage.entityDefinition(
+        entityDefinition: habit,
+        status: SyncEntryStatus.update,
+      ),
+    ),
+    shouldSync: (habit) => habit.deletedAt == null,
+  );
+
+  late final SyncOperation<AiConfig> _aiConfigSyncOperation =
+      SyncOperation<AiConfig>(
+    step: SyncStep.aiSettings,
+    syncDomain: 'syncAiSettings',
+    totalCountDomain: 'fetchTotals_aiSettings',
+    fetchEntities: _fetchAiConfigsSafely,
+    enqueueEntity: (config) => _outboxService.enqueueMessage(
+      SyncMessage.aiConfig(
+        aiConfig: config,
+        status: SyncEntryStatus.update,
+      ),
+    ),
+  );
+
+  late final Map<SyncStep, SyncOperation<dynamic>> _operations = {
+    SyncStep.tags: _tagSyncOperation,
+    SyncStep.measurables: _measurableSyncOperation,
+    SyncStep.categories: _categorySyncOperation,
+    SyncStep.dashboards: _dashboardSyncOperation,
+    SyncStep.habits: _habitSyncOperation,
+    SyncStep.aiSettings: _aiConfigSyncOperation,
+  };
 
   Future<void> syncTags({
-    void Function(double)? onProgress,
-    void Function(int processed, int total)? onDetailedProgress,
-  }) async {
-    return syncEntities<TagEntity>(
-      fetchEntities: () => _journalDb.watchTags().first,
-      enqueueSync: (tag) => _outboxService.enqueueMessage(
-        SyncMessage.tagEntity(
-          tagEntity: tag,
-          status: SyncEntryStatus.update,
-        ),
-      ),
-      domain: 'syncTags',
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<TagEntity>(
+      _tagSyncOperation,
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
     );
   }
 
   Future<void> syncMeasurables({
-    void Function(double)? onProgress,
-    void Function(int processed, int total)? onDetailedProgress,
-  }) async {
-    return syncEntities<EntityDefinition>(
-      fetchEntities: () => _journalDb.watchMeasurableDataTypes().first,
-      enqueueSync: (measurable) => _outboxService.enqueueMessage(
-        SyncMessage.entityDefinition(
-          entityDefinition: measurable,
-          status: SyncEntryStatus.update,
-        ),
-      ),
-      domain: 'syncMeasurables',
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<MeasurableDataType>(
+      _measurableSyncOperation,
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
     );
   }
 
   Future<void> syncCategories({
-    void Function(double)? onProgress,
-    void Function(int processed, int total)? onDetailedProgress,
-  }) async {
-    return syncEntities<EntityDefinition>(
-      fetchEntities: () => _journalDb.watchCategories().first,
-      enqueueSync: (category) => _outboxService.enqueueMessage(
-        SyncMessage.entityDefinition(
-          entityDefinition: category,
-          status: SyncEntryStatus.update,
-        ),
-      ),
-      domain: 'syncCategories',
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<CategoryDefinition>(
+      _categorySyncOperation,
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
     );
   }
 
   Future<void> syncDashboards({
-    void Function(double)? onProgress,
-    void Function(int processed, int total)? onDetailedProgress,
-  }) async {
-    return syncEntities<EntityDefinition>(
-      fetchEntities: () => _journalDb.watchDashboards().first,
-      enqueueSync: (dashboard) => _outboxService.enqueueMessage(
-        SyncMessage.entityDefinition(
-          entityDefinition: dashboard,
-          status: SyncEntryStatus.update,
-        ),
-      ),
-      domain: 'syncDashboards',
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<DashboardDefinition>(
+      _dashboardSyncOperation,
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
     );
   }
 
   Future<void> syncHabits({
-    void Function(double)? onProgress,
-    void Function(int processed, int total)? onDetailedProgress,
-  }) async {
-    return syncEntities<EntityDefinition>(
-      fetchEntities: () => _journalDb.watchHabitDefinitions().first,
-      enqueueSync: (habit) => _outboxService.enqueueMessage(
-        SyncMessage.entityDefinition(
-          entityDefinition: habit,
-          status: SyncEntryStatus.update,
-        ),
-      ),
-      domain: 'syncHabits',
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<HabitDefinition>(
+      _habitSyncOperation,
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
     );
   }
 
   Future<void> syncAiSettings({
-    void Function(double)? onProgress,
-    void Function(int processed, int total)? onDetailedProgress,
-  }) async {
-    return syncEntities<AiConfig>(
-      fetchEntities: _fetchAiConfigsSafely,
-      enqueueSync: (config) => _outboxService.enqueueMessage(
-        SyncMessage.aiConfig(
-          aiConfig: config,
-          status: SyncEntryStatus.update,
-        ),
-      ),
-      domain: 'syncAiSettings',
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<AiConfig>(
+      _aiConfigSyncOperation,
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
     );
@@ -187,78 +229,114 @@ class SyncMaintenanceRepository {
   }
 
   Future<int> _calculateTotalForStep(SyncStep step) async {
-    Future<int> wrapWithLogging(
-      Future<int> Function() fetch,
-      String subDomain,
-    ) async {
-      try {
-        return await fetch();
-      } catch (e, stackTrace) {
-        _loggingService.captureException(
-          e,
-          domain: 'SYNC_SERVICE',
-          subDomain: subDomain,
-          stackTrace: stackTrace,
-        );
-        rethrow;
-      }
+    if (step == SyncStep.complete) {
+      return 0;
     }
 
-    switch (step) {
-      case SyncStep.tags:
-        return wrapWithLogging(
-          () async => (await _journalDb.watchTags().first).length,
-          'fetchTotals_tags',
-        );
-      case SyncStep.measurables:
-        return wrapWithLogging(
-          () async =>
-              (await _journalDb.watchMeasurableDataTypes().first).length,
-          'fetchTotals_measurables',
-        );
-      case SyncStep.categories:
-        return wrapWithLogging(
-          () async => (await _journalDb.watchCategories().first).length,
-          'fetchTotals_categories',
-        );
-      case SyncStep.dashboards:
-        return wrapWithLogging(
-          () async => (await _journalDb.watchDashboards().first).length,
-          'fetchTotals_dashboards',
-        );
-      case SyncStep.habits:
-        return wrapWithLogging(
-          () async => (await _journalDb.watchHabitDefinitions().first).length,
-          'fetchTotals_habits',
-        );
-      case SyncStep.aiSettings:
-        return wrapWithLogging(
-          () async => (await _fetchAiConfigsSafely()).length,
-          'fetchTotals_aiSettings',
-        );
-      case SyncStep.complete:
-        return 0;
+    final operation = _operations[step];
+    if (operation == null) {
+      return 0;
     }
+
+    return _runWithLogging<int>(
+      () async {
+        final fetchTotal = operation.fetchTotalCount;
+        if (fetchTotal != null) {
+          return fetchTotal();
+        }
+        final entities = await operation.fetchEntities();
+        return entities.length;
+      },
+      operation.totalCountDomain,
+    );
   }
 
-  Future<List<AiConfig>> _fetchAiConfigsSafely() async {
-    try {
-      final configGroups = await Future.wait([
-        _aiConfigRepository.getConfigsByType(AiConfigType.inferenceProvider),
-        _aiConfigRepository.getConfigsByType(AiConfigType.model),
-        _aiConfigRepository.getConfigsByType(AiConfigType.prompt),
-      ]);
+  Future<void> _runOperation<T>(
+    SyncOperation<T> operation, {
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runWithLogging<void>(
+      () async {
+        final entities = await operation.fetchEntities();
+        final total = entities.length;
 
-      return configGroups.expand((group) => group).toList();
+        if (total == 0) {
+          onDetailedProgress?.call(0, 0);
+          onProgress?.call(1);
+          return;
+        }
+
+        onDetailedProgress?.call(0, total);
+
+        var processed = 0;
+        for (final entity in entities) {
+          if (_shouldSyncEntity(operation, entity)) {
+            await operation.enqueueEntity(entity);
+          }
+
+          processed++;
+          onDetailedProgress?.call(processed, total);
+          onProgress?.call(processed / total);
+        }
+      },
+      operation.syncDomain,
+    );
+  }
+
+  bool _shouldSyncEntity<T>(SyncOperation<T> operation, T entity) {
+    final predicate = operation.shouldSync;
+    if (predicate != null) {
+      return predicate(entity);
+    }
+    return _defaultShouldSync(entity);
+  }
+
+  bool _defaultShouldSync(Object? entity) {
+    if (entity == null) {
+      return true;
+    }
+    if (entity is TagEntity) {
+      return entity.deletedAt == null;
+    }
+    if (entity is EntityDefinition) {
+      return entity.deletedAt == null;
+    }
+    return true;
+  }
+
+  Future<T> _runWithLogging<T>(
+    Future<T> Function() run,
+    String subDomain,
+  ) async {
+    try {
+      return await run();
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
         domain: 'SYNC_SERVICE',
-        subDomain: 'syncAiSettings_fetch',
+        subDomain: subDomain,
         stackTrace: stackTrace,
       );
       rethrow;
     }
+  }
+
+  Future<List<AiConfig>> _fetchAiConfigsSafely() async {
+    return _runWithLogging<List<AiConfig>>(
+      () async {
+        final configGroups = await Future.wait([
+          _aiConfigRepository.getConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+          _aiConfigRepository.getConfigsByType(AiConfigType.model),
+          _aiConfigRepository.getConfigsByType(AiConfigType.prompt),
+        ]);
+
+        return configGroups.expand((group) => group).toList();
+      },
+      'syncAiSettings_fetch',
+    );
   }
 }
 

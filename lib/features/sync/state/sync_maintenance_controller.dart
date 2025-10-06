@@ -14,7 +14,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
   @override
   SyncState build() {
     _repository = ref.watch(syncMaintenanceRepositoryProvider);
-    _loggingService = getIt<LoggingService>();
+    _loggingService = ref.watch(syncLoggingServiceProvider);
     return const SyncState();
   }
 
@@ -135,3 +135,7 @@ final syncControllerProvider =
     NotifierProvider<SyncMaintenanceController, SyncState>(
   SyncMaintenanceController.new,
 );
+
+final syncLoggingServiceProvider = Provider<LoggingService>((ref) {
+  return getIt<LoggingService>();
+});

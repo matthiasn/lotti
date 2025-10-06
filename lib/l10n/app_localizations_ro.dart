@@ -1862,7 +1862,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Doriți să ștergeți configurația de sincronizare?';
 
   @override
-  String get syncEntitiesConfirm => 'YES, SYNC ALL';
+  String get syncEntitiesConfirm => 'START SYNC';
 
   @override
   String get syncEntitiesMessage =>

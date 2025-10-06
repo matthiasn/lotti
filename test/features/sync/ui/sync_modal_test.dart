@@ -5,7 +5,6 @@ import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -74,12 +73,6 @@ void main() {
       }
       onProgress?.call(1);
     }
-
-    // Register mock LoggingService with GetIt
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     // Stub all repository methods to return successful futures
     when(
@@ -151,10 +144,6 @@ void main() {
   });
 
   tearDown(() {
-    // Unregister LoggingService after each test to ensure a clean state
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
     SpySyncController.onSyncAll = null;
   });
 
@@ -163,6 +152,7 @@ void main() {
       overrides: [
         syncMaintenanceRepositoryProvider
             .overrideWithValue(mockSyncMaintenanceRepository),
+        syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
         syncControllerProvider.overrideWith(SpySyncController.new),
       ],
       child: MaterialApp(
