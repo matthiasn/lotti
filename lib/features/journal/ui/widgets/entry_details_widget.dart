@@ -127,6 +127,47 @@ class EntryDetailsContent extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final shouldHideEditor = switch (item) {
+      JournalEvent() ||
+      QuantitativeEntry() ||
+      WorkoutEntry() ||
+      Checklist() ||
+      ChecklistItem() ||
+      AiResponseEntry() => true,
+      _ => false,
+    };
+
+    final detailSection = switch (item) {
+      JournalAudio() => AudioPlayerWidget(item),
+      WorkoutEntry() => WorkoutSummary(item),
+      SurveyEntry() => SurveySummary(item),
+      QuantitativeEntry() => HealthSummary(item),
+      MeasurementEntry() => MeasurementSummary(item),
+      JournalEvent() => EventForm(item),
+      HabitCompletionEntry() => HabitSummary(
+          item,
+          paddingLeft: 10,
+          paddingBottom: 5,
+          showIcon: true,
+          showText: false,
+        ),
+      AiResponseEntry() => AiResponseSummary(
+          item,
+          linkedFromId: linkedFrom?.id,
+          fadeOut: true,
+        ),
+      Checklist() => ChecklistWrapper(
+          entryId: item.meta.id,
+          taskId: item.data.linkedTasks.first,
+        ),
+      ChecklistItem() => ChecklistItemWrapper(
+          item.id,
+          checklistId: '',
+          taskId: '',
+        ),
+      _ => null,
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -137,71 +178,9 @@ class EntryDetailsContent extends ConsumerWidget {
           link: link,
         ),
         TagsListWidget(entryId: itemId, parentTags: parentTags),
-        () {
-          if (item is JournalImage) {
-            return EntryImageWidget(item);
-          }
-          return const SizedBox.shrink();
-        }(),
-        () {
-          switch (item) {
-            //case Task():
-            case JournalEvent():
-            case QuantitativeEntry():
-            case WorkoutEntry():
-            case Checklist():
-            case ChecklistItem():
-            case AiResponseEntry():
-              return const SizedBox.shrink();
-            default:
-              return EditorWidget(entryId: itemId);
-          }
-        }(),
-        () {
-          if (item is JournalAudio) {
-            return AudioPlayerWidget(item);
-          } else if (item is WorkoutEntry) {
-            return WorkoutSummary(item);
-          } else if (item is SurveyEntry) {
-            return SurveySummary(item);
-          } else if (item is QuantitativeEntry) {
-            return HealthSummary(item);
-          } else if (item is MeasurementEntry) {
-            return MeasurementSummary(item);
-          } else if (item is Task) {
-            return const SizedBox.shrink();
-          } else if (item is JournalEvent) {
-            return EventForm(item);
-          } else if (item is HabitCompletionEntry) {
-            return HabitSummary(
-              item,
-              paddingLeft: 10,
-              paddingBottom: 5,
-              showIcon: true,
-              showText: false,
-            );
-          } else if (item is JournalEntry || item is JournalImage) {
-            return const SizedBox.shrink();
-          } else if (item is AiResponseEntry) {
-            return AiResponseSummary(
-              item,
-              linkedFromId: linkedFrom?.id,
-              fadeOut: true,
-            );
-          } else if (item is Checklist) {
-            return ChecklistWrapper(
-              entryId: item.meta.id,
-              taskId: item.data.linkedTasks.first,
-            );
-          } else if (item is ChecklistItem) {
-            return ChecklistItemWrapper(
-              item.id,
-              checklistId: '',
-              taskId: '',
-            );
-          }
-          return const SizedBox.shrink();
-        }(),
+        if (item is JournalImage) EntryImageWidget(item),
+        if (!shouldHideEditor) EditorWidget(entryId: itemId),
+        if (detailSection != null) detailSection,
         EntryDetailFooter(
           entryId: itemId,
           linkedFrom: linkedFrom,
