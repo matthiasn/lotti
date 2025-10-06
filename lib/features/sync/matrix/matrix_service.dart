@@ -13,6 +13,9 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
+const int _kLoadSyncRoomMaxAttempts = 3;
+const int _kLoadSyncRoomBaseDelayMs = 1000;
+
 class MatrixService {
   MatrixService({
     required this.client,
@@ -126,7 +129,7 @@ class MatrixService {
     }
 
     // Try to get the room, with retries if not immediately available
-    for (var attempt = 0; attempt < 3; attempt++) {
+    for (var attempt = 0; attempt < _kLoadSyncRoomMaxAttempts; attempt++) {
       // Ensure client has synced at least once
       await client.sync();
 
@@ -145,11 +148,12 @@ class MatrixService {
       }
 
       // Room not found yet, wait before retry
-      if (attempt < 2) {
-        final delay = Duration(milliseconds: 1000 * (attempt + 1));
+      if (attempt < _kLoadSyncRoomMaxAttempts - 1) {
+        final delay =
+            Duration(milliseconds: _kLoadSyncRoomBaseDelayMs * (attempt + 1));
         getIt<LoggingService>().captureEvent(
           'Room $savedRoomId not found, retrying in ${delay.inMilliseconds}ms '
-          '(attempt ${attempt + 1}/3)',
+          '(attempt ${attempt + 1}/$_kLoadSyncRoomMaxAttempts)',
           domain: 'MATRIX_SERVICE',
           subDomain: '_loadSyncRoom',
         );
@@ -159,7 +163,7 @@ class MatrixService {
 
     // Room still not found after retries
     getIt<LoggingService>().captureEvent(
-      '⚠️ Failed to load room $savedRoomId after 3 attempts. '
+      '⚠️ Failed to load room $savedRoomId after $_kLoadSyncRoomMaxAttempts attempts. '
       'Room may not exist or device may not be invited.',
       domain: 'MATRIX_SERVICE',
       subDomain: '_loadSyncRoom',
