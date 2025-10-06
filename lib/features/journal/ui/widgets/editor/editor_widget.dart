@@ -14,15 +14,12 @@ class EditorWidget extends ConsumerWidget {
     super.key,
     this.minHeight = 40,
     this.maxHeight = double.maxFinite,
-    this.contentPadding =
-        const EdgeInsets.only(top: 5, bottom: 15, left: 10, right: 10),
     this.margin,
   });
 
   final String entryId;
   final double maxHeight;
   final double minHeight;
-  final EdgeInsets contentPadding;
   final EdgeInsets? margin;
 
   @override
@@ -36,6 +33,10 @@ class EditorWidget extends ConsumerWidget {
 
     final shouldShowEditorToolBar =
         entryState.value?.shouldShowEditorToolBar ?? false;
+
+    final contentPadding = shouldShowEditorToolBar
+        ? const EdgeInsets.only(top: 10, bottom: 10, left: 10, right: 10)
+        : const EdgeInsets.only(top: 10);
 
     return Card(
       margin: margin,
@@ -84,9 +85,7 @@ class EditorWidget extends ConsumerWidget {
                   ],
                   minHeight: minHeight,
                   placeholder: context.messages.editorPlaceholder,
-                  padding: shouldShowEditorToolBar
-                      ? contentPadding
-                      : EdgeInsets.zero,
+                  padding: contentPadding,
                   keyboardAppearance: Theme.of(context).brightness,
                   customStyles: customEditorStyles(
                     themeData: Theme.of(context),
