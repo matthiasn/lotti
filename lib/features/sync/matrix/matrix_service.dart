@@ -105,8 +105,65 @@ class MatrixService {
     );
 
     if (client.onLoginStateChanged.value == LoginState.loggedIn) {
+      // Load syncRoom from saved room ID before attaching listeners
+      await _loadSyncRoom();
       await listen();
     }
+  }
+
+  /// Loads the sync room from saved settings after login.
+  /// Waits for client sync and retries if room not immediately available.
+  Future<void> _loadSyncRoom() async {
+    final savedRoomId = await getMatrixRoom(client: client);
+
+    if (savedRoomId == null) {
+      getIt<LoggingService>().captureEvent(
+        'No saved room ID found',
+        domain: 'MATRIX_SERVICE',
+        subDomain: '_loadSyncRoom',
+      );
+      return;
+    }
+
+    // Try to get the room, with retries if not immediately available
+    for (var attempt = 0; attempt < 3; attempt++) {
+      // Ensure client has synced at least once
+      await client.sync();
+
+      final room = client.getRoomById(savedRoomId);
+
+      if (room != null) {
+        syncRoom = room;
+        syncRoomId = savedRoomId;
+
+        getIt<LoggingService>().captureEvent(
+          'Loaded syncRoom: $savedRoomId (attempt ${attempt + 1})',
+          domain: 'MATRIX_SERVICE',
+          subDomain: '_loadSyncRoom',
+        );
+        return;
+      }
+
+      // Room not found yet, wait before retry
+      if (attempt < 2) {
+        final delay = Duration(milliseconds: 1000 * (attempt + 1));
+        getIt<LoggingService>().captureEvent(
+          'Room $savedRoomId not found, retrying in ${delay.inMilliseconds}ms '
+          '(attempt ${attempt + 1}/3)',
+          domain: 'MATRIX_SERVICE',
+          subDomain: '_loadSyncRoom',
+        );
+        await Future<void>.delayed(delay);
+      }
+    }
+
+    // Room still not found after retries
+    getIt<LoggingService>().captureEvent(
+      '⚠️ Failed to load room $savedRoomId after 3 attempts. '
+      'Room may not exist or device may not be invited.',
+      domain: 'MATRIX_SERVICE',
+      subDomain: '_loadSyncRoom',
+    );
   }
 
   Future<void> listen() async {

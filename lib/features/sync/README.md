@@ -146,9 +146,43 @@ Replace `listenToMatrixRoomInvites()` with proper invite handling:
 - Prompt user before auto-joining
 - Add room validation/verification
 
+### Major: syncRoom Not Loaded on Restart - FIXED ✅
+
+**File:** `lib/features/sync/matrix/matrix_service.dart:96-167`
+
+**Problem (FIXED):**
+After login/restart, `syncRoom` was never loaded from the saved room ID. The `init()` method called
+`connect()` then immediately called `listen()`, but `syncRoom` remained null. Timeline listeners
+silently failed because they tried to call `syncRoom?.getTimeline()` on a null object.
+
+**Symptoms:**
+- "Works after the Nth restart" - classic race condition
+- One-way sync after fresh restart
+- No timeline events received even though outbox sends successfully
+- Logs showed `Timeline is null` errors
+
+**Root Cause:**
+The Matrix client needs time after `connect()` to sync with the server and populate the `client.rooms`
+list. Calling `listen()` immediately meant `getRoomById(savedRoomId)` returned null.
+
+**Fix Applied:**
+Added `_loadSyncRoom()` method that:
+1. Runs after `connect()` but before `listen()`
+2. Calls `client.sync()` to ensure rooms are loaded
+3. Gets the Room object via `getRoomById(savedRoomId)`
+4. Sets `syncRoom` and `syncRoomId`
+5. Retries up to 3 times with exponential backoff if room not found
+6. Logs detailed diagnostics at each step
+
+Added defensive checks in `listenToTimelineEvents()`:
+- Returns early if `syncRoom` is null
+- Logs warning with diagnostic information
+
+**Status:** ✅ **FIXED** - Sync now works reliably on first restart
+
 ### Major: Listeners Not Attached After Fresh Login
 
-**File:** `lib/features/sync/matrix/matrix_service.dart:96-132`
+**File:** `lib/features/sync/matrix/matrix_service.dart`
 
 **Problem:**
 `MatrixService.login()` only calls `matrixConnect()`. When a device logs in during the current app

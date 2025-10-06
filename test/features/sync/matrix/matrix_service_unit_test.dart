@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
@@ -78,6 +79,13 @@ class StubMatrixService extends MatrixService {
   @override
   Future<void> listenToTimeline() async {
     listenToTimelineCount++;
+  }
+
+  @override
+  Future<void> listen() async {
+    await startKeyVerificationListener();
+    await listenToTimeline();
+    // Skip the room state logging that would access GetIt
   }
 
   @override
@@ -372,6 +380,244 @@ void main() {
       expect(stubService.listenToTimelineCount, 1);
 
       await onRoomStateController.close();
+    });
+  });
+
+  group('race condition fix - _loadSyncRoom', () {
+    test('successfully loads room on first attempt', () async {
+      final mockRoom = MockRoom();
+      const roomId = '!test:room';
+      final onLoginStateController =
+          CachedStreamController<LoginState>(LoginState.loggedIn);
+      final onRoomStateController =
+          CachedStreamController<({String roomId, StrippedStateEvent state})>();
+
+      when(() => mockClient.onLoginStateChanged)
+          .thenReturn(onLoginStateController);
+      when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
+      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
+          .thenAnswer((_) async => roomId);
+      when(() => mockClient.getRoomById(roomId)).thenReturn(mockRoom);
+      when(() => mockRoom.id).thenReturn(roomId);
+
+      final stubService = StubMatrixService(
+        client: mockClient,
+        journalDb: mockJournalDb,
+        settingsDb: mockSettingsDb,
+      );
+
+      await stubService.init();
+
+      expect(stubService.syncRoom, equals(mockRoom));
+      expect(stubService.syncRoomId, equals(roomId));
+
+      verify(
+        () => mockLoggingService.captureEvent(
+          contains('Loaded syncRoom'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: '_loadSyncRoom',
+        ),
+      ).called(1);
+
+      await onLoginStateController.close();
+      await onRoomStateController.close();
+    });
+
+    test('returns early when no saved room ID exists', () async {
+      final onLoginStateController =
+          CachedStreamController<LoginState>(LoginState.loggedIn);
+      final onRoomStateController =
+          CachedStreamController<({String roomId, StrippedStateEvent state})>();
+
+      when(() => mockClient.onLoginStateChanged)
+          .thenReturn(onLoginStateController);
+      when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
+      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
+          .thenAnswer((_) async => null);
+
+      final stubService = StubMatrixService(
+        client: mockClient,
+        journalDb: mockJournalDb,
+        settingsDb: mockSettingsDb,
+      );
+
+      await stubService.init();
+
+      expect(stubService.syncRoom, isNull);
+      expect(stubService.syncRoomId, isNull);
+
+      verify(
+        () => mockLoggingService.captureEvent(
+          'No saved room ID found',
+          domain: 'MATRIX_SERVICE',
+          subDomain: '_loadSyncRoom',
+        ),
+      ).called(1);
+
+      await onLoginStateController.close();
+      await onRoomStateController.close();
+    });
+
+    test('retries when room not found initially but succeeds', () {
+      fakeAsync((async) {
+        final mockRoom = MockRoom();
+        const roomId = '!test:room';
+        var attempt = 0;
+        final onLoginStateController =
+            CachedStreamController<LoginState>(LoginState.loggedIn);
+        final onRoomStateController = CachedStreamController<
+            ({String roomId, StrippedStateEvent state})>();
+
+        when(() => mockClient.onLoginStateChanged)
+            .thenReturn(onLoginStateController);
+        when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
+        when(() => mockSettingsDb.itemByKey(matrixRoomKey))
+            .thenAnswer((_) async => roomId);
+
+        // Return null on first attempt, room on second
+        when(() => mockClient.getRoomById(roomId)).thenAnswer((_) {
+          attempt++;
+          return attempt == 1 ? null : mockRoom;
+        });
+        when(() => mockRoom.id).thenReturn(roomId);
+
+        final stubService = StubMatrixService(
+          client: mockClient,
+          journalDb: mockJournalDb,
+          settingsDb: mockSettingsDb,
+        )
+
+          // Start init (don't await in fakeAsync)
+          ..init();
+
+        // Advance time to complete the retry delay (1 second)
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        expect(stubService.syncRoom, equals(mockRoom));
+        expect(stubService.syncRoomId, equals(roomId));
+
+        // Should log retry message and success
+        verify(
+          () => mockLoggingService.captureEvent(
+            contains('not found, retrying'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: '_loadSyncRoom',
+          ),
+        ).called(1);
+
+        verify(
+          () => mockLoggingService.captureEvent(
+            contains('Loaded syncRoom'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: '_loadSyncRoom',
+          ),
+        ).called(1);
+
+        onLoginStateController.close();
+        onRoomStateController.close();
+      });
+    });
+
+    test('fails after 3 attempts and logs warning', () {
+      fakeAsync((async) {
+        const roomId = '!test:room';
+        final onLoginStateController =
+            CachedStreamController<LoginState>(LoginState.loggedIn);
+        final onRoomStateController = CachedStreamController<
+            ({String roomId, StrippedStateEvent state})>();
+
+        when(() => mockClient.onLoginStateChanged)
+            .thenReturn(onLoginStateController);
+        when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
+        when(() => mockSettingsDb.itemByKey(matrixRoomKey))
+            .thenAnswer((_) async => roomId);
+        when(() => mockClient.getRoomById(roomId)).thenReturn(null);
+
+        final stubService = StubMatrixService(
+          client: mockClient,
+          journalDb: mockJournalDb,
+          settingsDb: mockSettingsDb,
+        )
+
+          // Start init (don't await in fakeAsync)
+          ..init();
+
+        // Advance time to complete all retry delays (1s + 2s = 3s)
+        async
+          ..elapse(const Duration(seconds: 3))
+          ..flushMicrotasks();
+
+        expect(stubService.syncRoom, isNull);
+        expect(stubService.syncRoomId, isNull);
+
+        // Should log 2 retry messages (attempts 1 and 2, attempt 3 doesn't log retry)
+        verify(
+          () => mockLoggingService.captureEvent(
+            contains('not found, retrying'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: '_loadSyncRoom',
+          ),
+        ).called(2);
+
+        // Should log final failure
+        verify(
+          () => mockLoggingService.captureEvent(
+            contains('⚠️ Failed to load room'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: '_loadSyncRoom',
+          ),
+        ).called(1);
+
+        onLoginStateController.close();
+        onRoomStateController.close();
+      });
+    });
+  });
+
+  group('race condition fix - listenToTimelineEvents', () {
+    test('returns early when syncRoom is null', () async {
+      service.syncRoom = null;
+
+      await listenToTimelineEvents(service: service);
+
+      verify(
+        () => mockLoggingService.captureEvent(
+          contains('⚠️ Cannot listen to timeline: syncRoom is null'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'listenToTimelineEvents',
+        ),
+      ).called(1);
+
+      // Should not try to get timeline
+      expect(service.timeline, isNull);
+    });
+
+    test('proceeds normally when syncRoom is not null', () async {
+      final mockRoom = MockRoom();
+      final mockTimeline = MockTimeline();
+      const roomId = '!test:room';
+
+      when(() => mockRoom.id).thenReturn(roomId);
+      when(() => mockRoom.getTimeline(onNewEvent: any(named: 'onNewEvent')))
+          .thenAnswer((_) async => mockTimeline);
+
+      service
+        ..syncRoom = mockRoom
+        ..syncRoomId = roomId;
+
+      await listenToTimelineEvents(service: service);
+
+      verify(
+        () => mockLoggingService.captureEvent(
+          contains('Attempting to listen'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'listenToTimelineEvents',
+        ),
+      ).called(1);
+
+      expect(service.timeline, equals(mockTimeline));
     });
   });
 
