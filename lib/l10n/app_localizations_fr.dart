@@ -1873,7 +1873,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Voulez-vous supprimer la configuration de synchronisation ?';
 
   @override
-  String get syncEntitiesConfirm => 'YES, SYNC ALL';
+  String get syncEntitiesConfirm => 'START SYNC';
 
   @override
   String get syncEntitiesMessage => 'Choisissez les données à synchroniser.';

@@ -9,7 +9,6 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
@@ -75,26 +74,6 @@ void main() {
     mockLoggingService = MockLoggingService();
     mockAiConfigRepository = MockAiConfigRepository();
 
-    // Clear previous registrations if any, to avoid conflicts during re-runs.
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<OutboxService>()) {
-      getIt.unregister<OutboxService>();
-    }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
-    if (getIt.isRegistered<AiConfigRepository>()) {
-      getIt.unregister<AiConfigRepository>();
-    }
-
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<OutboxService>(mockOutboxService)
-      ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<AiConfigRepository>(mockAiConfigRepository);
-
     when(
       () => mockLoggingService.captureException(
         any<dynamic>(),
@@ -104,10 +83,13 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
-    syncMaintenanceRepository = SyncMaintenanceRepository();
+    syncMaintenanceRepository = SyncMaintenanceRepository(
+      journalDb: mockJournalDb,
+      outboxService: mockOutboxService,
+      loggingService: mockLoggingService,
+      aiConfigRepository: mockAiConfigRepository,
+    );
   });
-
-  tearDown(getIt.reset);
 
   group('SyncMaintenanceRepository - Original Tests', () {
     test('syncTags enqueues tags for sync', () async {
@@ -1014,8 +996,8 @@ void main() {
       when(() => mockJournalDb.watchTags()).thenThrow(Exception('Test error'));
 
       // Test the sync
-      expect(
-        () => syncMaintenanceRepository.syncTags(),
+      await expectLater(
+        syncMaintenanceRepository.syncTags(),
         throwsException,
       );
 

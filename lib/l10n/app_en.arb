@@ -651,7 +651,7 @@
   "speechModalTranscriptionProgress": "Transcription Progress",
   "syncDeleteConfigConfirm": "YES, I'M SURE",
   "syncDeleteConfigQuestion": "Do you want to delete the sync configuration?",
-  "syncEntitiesConfirm": "YES, SYNC ALL",
+  "syncEntitiesConfirm": "START SYNC",
   "syncEntitiesMessage": "Choose the entities you want to sync.",
   "syncEntitiesSuccessDescription": "Everything is up to date.",
   "syncEntitiesSuccessTitle": "Sync complete",
