@@ -238,6 +238,10 @@ class EntryController extends _$EntryController {
         });
       }
 
+      if (isDesktop) {
+        unawaited(hotKeyManager.unregister(saveHotKey));
+      }
+
       focusNode.unfocus();
 
       _isFocused = false;
