@@ -46,12 +46,14 @@ class EntryController extends _$EntryController {
 
     if (isDesktop) {
       if (focusNode.hasFocus) {
-        hotKeyManager.register(
-          saveHotKey,
-          keyDownHandler: (hotKey) => save(),
+        unawaited(
+          hotKeyManager.register(
+            saveHotKey,
+            keyDownHandler: (hotKey) => save(),
+          ),
         );
       } else {
-        hotKeyManager.unregister(saveHotKey);
+        unawaited(hotKeyManager.unregister(saveHotKey));
       }
     }
   }
@@ -59,12 +61,14 @@ class EntryController extends _$EntryController {
   void taskTitleFocusNodeListener() {
     if (isDesktop) {
       if (taskTitleFocusNode.hasFocus) {
-        hotKeyManager.register(
-          saveHotKey,
-          keyDownHandler: (hotKey) => save(),
+        unawaited(
+          hotKeyManager.register(
+            saveHotKey,
+            keyDownHandler: (hotKey) => save(),
+          ),
         );
       } else {
-        hotKeyManager.unregister(saveHotKey);
+        unawaited(hotKeyManager.unregister(saveHotKey));
       }
     }
   }
@@ -240,7 +244,6 @@ class EntryController extends _$EntryController {
 
       focusNode.unfocus();
 
-      _isFocused = false;
       _shouldShowEditorToolBar = false;
       _dirty = false;
 
