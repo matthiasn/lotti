@@ -169,6 +169,20 @@ void main() {
           .called(1);
       verify(() => mockClient.joinRoom('!room:server')).called(1);
       expect(matrixService.syncRoom, joinedRoom);
+      verify(
+        () => mockLoggingService.captureEvent(
+          contains('onRoomState triggered'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'listenToMatrixRoomInvites',
+        ),
+      ).called(1);
+      verify(
+        () => mockLoggingService.captureEvent(
+          contains('⚠️ AUTO-JOINING room'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'listenToMatrixRoomInvites',
+        ),
+      ).called(1);
 
       await roomController.close();
     });

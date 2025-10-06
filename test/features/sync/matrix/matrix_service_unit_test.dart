@@ -67,6 +67,8 @@ class StubMatrixService extends MatrixService {
 
   int startKeyVerificationCount = 0;
   int listenToTimelineCount = 0;
+  bool loadConfigCalled = false;
+  bool connectCalled = false;
 
   @override
   Future<void> startKeyVerificationListener() async {
@@ -76,6 +78,17 @@ class StubMatrixService extends MatrixService {
   @override
   Future<void> listenToTimeline() async {
     listenToTimelineCount++;
+  }
+
+  @override
+  Future<MatrixConfig?> loadConfig() async {
+    loadConfigCalled = true;
+    return matrixConfig;
+  }
+
+  @override
+  Future<void> connect() async {
+    connectCalled = true;
   }
 }
 
@@ -363,6 +376,48 @@ void main() {
   });
 
   group('sendMatrixMsg guard rails', () {
+    test('logs send attempts and successes', () async {
+      final mockRoom = MockRoom();
+      when(() => mockRoom.id).thenReturn('!room:server');
+
+      service
+        ..syncRoom = mockRoom
+        ..syncRoomId = '!room:server'
+        ..unverifiedDevices = const [];
+
+      when(
+        () => mockRoom.sendTextEvent(
+          any(),
+          msgtype: any(named: 'msgtype'),
+          parseCommands: any(named: 'parseCommands'),
+          parseMarkdown: any(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((_) async => 'event');
+
+      final result = await service.sendMatrixMsg(
+        SyncMessage.aiConfig(
+          aiConfig: fallbackAiConfig,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => mockLoggingService.captureEvent(
+          contains('Sending message - using roomId'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg',
+        ),
+      ).called(1);
+      verify(
+        () => mockLoggingService.captureEvent(
+          contains('sent text message'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg',
+        ),
+      ).called(1);
+    });
+
     test('throws when unverified devices are present', () async {
       final mockDeviceKeys = MockDeviceKeys();
       service.unverifiedDevices = [mockDeviceKeys];

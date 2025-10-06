@@ -20,6 +20,10 @@ class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockRoom extends Mock implements Room {}
+
+class MockTimeline extends Mock implements Timeline {}
+
 class TestMatrixService extends MatrixService {
   TestMatrixService({
     required super.client,
@@ -39,22 +43,21 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
-  });
-
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(connectivityMethodChannel,
-          (MethodCall call) async {
-    if (call.method == 'check') {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(connectivityMethodChannel,
+            (MethodCall call) async {
+      if (call.method == 'check') {
+        return 'wifi';
+      }
       return 'wifi';
-    }
-    return 'wifi';
-  });
+    });
 
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMessageHandler(
-    'dev.fluttercommunity.plus/connectivity_status',
-    (ByteData? message) async => null,
-  );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMessageHandler(
+      'dev.fluttercommunity.plus/connectivity_status',
+      (ByteData? message) async => null,
+    );
+  });
 
   late MockMatrixClient mockClient;
   late MockJournalDb mockJournalDb;
@@ -85,6 +88,13 @@ void main() {
 
     when(() => mockSettingsDb.itemByKey(any<String>()))
         .thenAnswer((_) async => null);
+    when(
+      () => mockLoggingService.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
 
     service = TestMatrixService(
       client: mockClient,
@@ -119,6 +129,57 @@ void main() {
     verify(
       () => mockLoggingService.captureEvent(
         'Timeline is null',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processNewTimelineEvents',
+      ),
+    ).called(1);
+  });
+
+  test('processNewTimelineEvents logs event processing details', () async {
+    final mockRoom = MockRoom();
+    final mockTimeline = MockTimeline();
+    when(() => mockRoom.id).thenReturn('!room:server');
+
+    final event = Event.fromJson(
+      {
+        'event_id': 'event',
+        'sender': '@other:server',
+        'room_id': '!room:server',
+        'type': 'm.room.message',
+        'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
+        'content': {
+          'body': 'hi',
+          'msgtype': 'm.text',
+        },
+      },
+      mockRoom,
+    );
+
+    service
+      ..syncRoom = mockRoom
+      ..syncRoomId = '!room:server'
+      ..lastReadEventContextId = 'start';
+
+    when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
+    when(() =>
+            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
+        .thenAnswer((_) async => mockTimeline);
+    when(() => mockTimeline.events).thenReturn([event]);
+    when(() => mockTimeline.setReadMarker(eventId: any(named: 'eventId')))
+        .thenAnswer((_) async {});
+
+    await processNewTimelineEvents(service: service);
+
+    verify(
+      () => mockLoggingService.captureEvent(
+        contains('Processing timeline events'),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processNewTimelineEvents',
+      ),
+    ).called(1);
+    verify(
+      () => mockLoggingService.captureEvent(
+        contains('Received message from @other:server'),
         domain: 'MATRIX_SERVICE',
         subDomain: 'processNewTimelineEvents',
       ),
