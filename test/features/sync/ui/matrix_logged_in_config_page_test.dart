@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
@@ -36,9 +37,18 @@ void main() {
     mockMatrixService = MockMatrixService();
     getIt.allowReassignment = true;
     getIt.registerSingleton<MatrixService>(mockMatrixService);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall methodCall) async => null,
+    );
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null);
+    getIt.reset();
+  });
 
   group('LoggedInPageStickyActionBar', () {
     testWidgets('invokes logout and updates page index', (tester) async {
@@ -142,6 +152,47 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('null'), findsOneWidget);
+    });
+  });
+
+  group('DiagnosticInfoButton', () {
+    testWidgets('shows diagnostics dialog and copies to clipboard',
+        (tester) async {
+      final diagnostics = {'roomId': '!room:server'};
+      when(() => mockMatrixService.getDiagnosticInfo())
+          .thenAnswer((_) async => diagnostics);
+
+      String? clipboardText;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'Clipboard.setData') {
+            final arguments = methodCall.arguments as Map<dynamic, dynamic>?;
+            clipboardText = arguments?['text'] as String?;
+          }
+          return null;
+        },
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DiagnosticInfoButton(),
+        ),
+      );
+
+      await tester.tap(find.text('Show Diagnostic Info'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.textContaining('"roomId"'), findsOneWidget);
+
+      await tester.tap(find.text('Copy to Clipboard'));
+      await tester.pumpAndSettle();
+
+      expect(clipboardText, contains('!room:server'));
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
     });
   });
 }
