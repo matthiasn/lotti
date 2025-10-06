@@ -32,6 +32,9 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       return;
     }
 
+    final initialTotals =
+        await _repository.fetchTotalsForSteps(orderedSteps.toSet());
+
     state = state.copyWith(
       isSyncing: true,
       progress: 0,
@@ -39,7 +42,10 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       selectedSteps: selectedSteps,
       stepProgress: {
         for (final step in orderedSteps)
-          step: const StepProgress(processed: 0, total: 0),
+          step: StepProgress(
+            processed: 0,
+            total: initialTotals[step] ?? 0,
+          ),
       },
     );
 

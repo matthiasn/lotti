@@ -19,6 +19,11 @@ void main() {
   late ProviderContainer container;
   late SyncMaintenanceController controller;
 
+  setUpAll(() {
+    registerFallbackValue(StackTrace.current);
+    registerFallbackValue(<SyncStep>{});
+  });
+
   setUp(() async {
     mockRepository = MockSyncMaintenanceRepository();
     mockLoggingService = MockLoggingService();
@@ -80,6 +85,15 @@ void main() {
         onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
     ).thenAnswer((invocation) async => stubSuccess(invocation));
+
+    when(
+      () => mockRepository.fetchTotalsForSteps(any()),
+    ).thenAnswer((invocation) async {
+      final steps = invocation.positionalArguments.first as Set<SyncStep>;
+      return {
+        for (final step in steps) step: 1,
+      };
+    });
 
     when(
       () => mockLoggingService.captureException(

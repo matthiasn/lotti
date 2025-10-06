@@ -39,12 +39,41 @@ void main() {
   setUpAll(() {
     // Register a fallback value for StackTrace if it's used by the mock
     registerFallbackValue(StackTrace.current);
+    registerFallbackValue(<SyncStep>{});
   });
 
   setUp(() {
     mockSyncMaintenanceRepository = MockSyncMaintenanceRepository();
     mockLoggingService = MockLoggingService();
     messages = AppLocalizationsEn(); // Using English for tests
+
+    const totalsByStep = <SyncStep, int>{
+      SyncStep.tags: 4,
+      SyncStep.measurables: 5,
+      SyncStep.categories: 6,
+      SyncStep.dashboards: 7,
+      SyncStep.habits: 8,
+      SyncStep.aiSettings: 9,
+    };
+
+    Future<void> simulateStep(
+      SyncStep step,
+      Invocation invocation,
+    ) async {
+      final onProgress = invocation.namedArguments[const Symbol('onProgress')]
+          as void Function(double)?;
+      final onDetailedProgress =
+          invocation.namedArguments[const Symbol('onDetailedProgress')] as void
+              Function(int processed, int total)?;
+      final total = totalsByStep[step] ?? 0;
+
+      onDetailedProgress?.call(0, total);
+      if (total > 0) {
+        onProgress?.call(0);
+        onDetailedProgress?.call(total, total);
+      }
+      onProgress?.call(1);
+    }
 
     // Register mock LoggingService with GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -58,37 +87,55 @@ void main() {
         onProgress: any(named: 'onProgress'),
         onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
-    ).thenAnswer((_) => Future<void>.value());
+    ).thenAnswer((invocation) => simulateStep(SyncStep.tags, invocation));
     when(
       () => mockSyncMaintenanceRepository.syncMeasurables(
         onProgress: any(named: 'onProgress'),
         onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
-    ).thenAnswer((_) => Future<void>.value());
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.measurables, invocation),
+    );
     when(
       () => mockSyncMaintenanceRepository.syncCategories(
         onProgress: any(named: 'onProgress'),
         onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
-    ).thenAnswer((_) => Future<void>.value());
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.categories, invocation),
+    );
     when(
       () => mockSyncMaintenanceRepository.syncDashboards(
         onProgress: any(named: 'onProgress'),
         onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
-    ).thenAnswer((_) => Future<void>.value());
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.dashboards, invocation),
+    );
     when(
       () => mockSyncMaintenanceRepository.syncHabits(
         onProgress: any(named: 'onProgress'),
         onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
-    ).thenAnswer((_) => Future<void>.value());
+    ).thenAnswer((invocation) => simulateStep(SyncStep.habits, invocation));
     when(
       () => mockSyncMaintenanceRepository.syncAiSettings(
         onProgress: any(named: 'onProgress'),
         onDetailedProgress: any(named: 'onDetailedProgress'),
       ),
-    ).thenAnswer((_) => Future<void>.value());
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.aiSettings, invocation),
+    );
+
+    when(
+      () => mockSyncMaintenanceRepository.fetchTotalsForSteps(any()),
+    ).thenAnswer((invocation) async {
+      final steps = invocation.positionalArguments.first as Set<SyncStep>;
+
+      return {
+        for (final step in steps) step: totalsByStep[step] ?? 0,
+      };
+    });
 
     // Stub logging service methods (optional, but good practice)
     when(
@@ -192,6 +239,12 @@ void main() {
 
     expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
     expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
+    expect(find.text('4 / 4'), findsOneWidget);
+    expect(find.text('5 / 5'), findsOneWidget);
+    expect(find.text('6 / 6'), findsOneWidget);
+    expect(find.text('7 / 7'), findsOneWidget);
+    expect(find.text('8 / 8'), findsOneWidget);
+    expect(find.text('9 / 9'), findsOneWidget);
   });
 
   testWidgets(

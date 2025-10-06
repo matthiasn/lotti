@@ -176,45 +176,55 @@ class SyncModal extends ConsumerWidget {
     bool isSyncing,
     StepProgress? stepProgress,
   ) {
-    final isCompleted = !isSyncing && currentStep.index > step.index;
-    final isCurrent = currentStep == step;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isCompleted = currentStep.index > step.index;
+    final isCurrent = currentStep == step && isSyncing;
 
     IconData icon;
-    Color color;
+    Color iconColor;
 
     if (isCompleted) {
       icon = Icons.check_circle_outline;
-      color = Theme.of(context).colorScheme.primary;
+      iconColor = colorScheme.primary;
     } else if (isCurrent) {
       icon = Icons.sync;
-      color = Theme.of(context).colorScheme.primary;
+      iconColor = colorScheme.primary;
     } else {
       icon = Icons.circle_outlined;
-      color = Theme.of(context).colorScheme.outline;
+      iconColor = colorScheme.outline;
     }
 
     final processed = stepProgress?.processed ?? 0;
     final total = stepProgress?.total ?? 0;
     final countText = '$processed / $total';
+    final labelColor =
+        isCompleted ? colorScheme.primary : colorScheme.onSurface;
+    final countColor =
+        isCompleted ? colorScheme.primary : colorScheme.onSurfaceVariant;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: color),
+          Icon(icon, size: 20, color: iconColor),
           const SizedBox(width: 8),
-          Text(
-            _getStepName(context, step),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                ),
+          Expanded(
+            child: Text(
+              _getStepName(context, step),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: labelColor,
+                fontWeight: isCompleted ? FontWeight.w600 : null,
+              ),
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
           Text(
             countText,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: countColor,
               fontFeatures: const [FontFeature.tabularFigures()],
+              fontWeight: isCompleted ? FontWeight.w600 : null,
             ),
           ),
         ],

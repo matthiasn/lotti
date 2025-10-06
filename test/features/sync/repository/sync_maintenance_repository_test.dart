@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -664,6 +665,147 @@ void main() {
           ),
         ).called(1);
       });
+    });
+  });
+
+  group('fetchTotalsForSteps', () {
+    test('returns empty map when no steps provided', () async {
+      final totals = await syncMaintenanceRepository.fetchTotalsForSteps({});
+
+      expect(totals, isEmpty);
+      verifyNever(() => mockJournalDb.watchTags());
+      verifyZeroInteractions(mockAiConfigRepository);
+    });
+
+    test('returns totals for each requested step', () async {
+      final tagOne = TagEntity.genericTag(
+        id: 'tag-1',
+        tag: 'Tag1',
+        private: false,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        inactive: false,
+      );
+      final tagTwo = TagEntity.genericTag(
+        id: 'tag-2',
+        tag: 'Tag2',
+        private: false,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        inactive: false,
+      );
+      when(() => mockJournalDb.watchTags())
+          .thenAnswer((_) => Stream.value([tagOne, tagTwo]));
+      when(() => mockJournalDb.watchMeasurableDataTypes()).thenAnswer(
+        (_) => Stream.value([FakeMeasurableDataType(id: 'm-1')]),
+      );
+      when(() => mockJournalDb.watchCategories()).thenAnswer(
+        (_) => Stream.value([FakeCategoryDefinition(id: 'c-1')]),
+      );
+      when(() => mockJournalDb.watchDashboards()).thenAnswer(
+        (_) => Stream.value([FakeDashboardDefinition(id: 'd-1')]),
+      );
+      when(() => mockJournalDb.watchHabitDefinitions()).thenAnswer(
+        (_) => Stream.value(
+            [FakeHabitDefinition(id: 'h-1'), FakeHabitDefinition(id: 'h-2')]),
+      );
+
+      final providerConfig = AiConfig.inferenceProvider(
+        id: 'provider',
+        baseUrl: 'https://example.com',
+        apiKey: 'key',
+        name: 'Provider',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+      final modelConfig = AiConfig.model(
+        id: 'model',
+        name: 'Model',
+        providerModelId: 'provider-model',
+        inferenceProviderId: providerConfig.id,
+        createdAt: DateTime(2024),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      );
+      final promptConfig = AiConfig.prompt(
+        id: 'prompt',
+        name: 'Prompt',
+        systemMessage: 'system',
+        userMessage: 'user',
+        defaultModelId: modelConfig.id,
+        modelIds: const ['model'],
+        createdAt: DateTime(2024),
+        useReasoning: false,
+        requiredInputData: const [],
+        aiResponseType: AiResponseType.taskSummary,
+      );
+
+      when(
+        () => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [providerConfig]);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [modelConfig]);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => [promptConfig]);
+
+      final totals = await syncMaintenanceRepository.fetchTotalsForSteps({
+        SyncStep.tags,
+        SyncStep.measurables,
+        SyncStep.categories,
+        SyncStep.dashboards,
+        SyncStep.habits,
+        SyncStep.aiSettings,
+      });
+
+      expect(totals, {
+        SyncStep.tags: 2,
+        SyncStep.measurables: 1,
+        SyncStep.categories: 1,
+        SyncStep.dashboards: 1,
+        SyncStep.habits: 2,
+        SyncStep.aiSettings: 3,
+      });
+
+      verify(() => mockJournalDb.watchTags()).called(1);
+      verify(() => mockJournalDb.watchMeasurableDataTypes()).called(1);
+      verify(() => mockJournalDb.watchCategories()).called(1);
+      verify(() => mockJournalDb.watchDashboards()).called(1);
+      verify(() => mockJournalDb.watchHabitDefinitions()).called(1);
+      verify(
+        () => mockAiConfigRepository
+            .getConfigsByType(AiConfigType.inferenceProvider),
+      ).called(1);
+      verify(
+        () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).called(1);
+      verify(
+        () => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt),
+      ).called(1);
+    });
+
+    test('logs and rethrows when fetching totals fails', () async {
+      final exception = Exception('tag fetch failed');
+      when(() => mockJournalDb.watchTags()).thenThrow(exception);
+
+      await expectLater(
+        syncMaintenanceRepository.fetchTotalsForSteps({SyncStep.tags}),
+        throwsA(exception),
+      );
+
+      verify(
+        () => mockLoggingService.captureException(
+          exception,
+          domain: 'SYNC_SERVICE',
+          subDomain: 'fetchTotals_tags',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
   });
 
