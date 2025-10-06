@@ -332,7 +332,7 @@ class SyncMaintenanceRepository {
       case SyncStep.aiSettings:
         return 'syncAiSettings';
       case SyncStep.complete:
-        return 'syncComplete';
+        throw UnsupportedError('SyncStep.complete has no sync domain.');
     }
   }
 
@@ -351,7 +351,7 @@ class SyncMaintenanceRepository {
       case SyncStep.aiSettings:
         return 'fetchTotals_aiSettings';
       case SyncStep.complete:
-        return 'fetchTotals_complete';
+        throw UnsupportedError('SyncStep.complete has no totals domain.');
     }
   }
 }
