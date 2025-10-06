@@ -114,7 +114,24 @@ void listenToMatrixRoomInvites({
   final client = service.client;
   client.onRoomState.stream.listen((event) async {
     final roomIdFromEvent = event.roomId;
+
+    getIt<LoggingService>().captureEvent(
+      'onRoomState triggered - eventType: ${event.state.type}, '
+      'roomId: $roomIdFromEvent, '
+      'current syncRoom: ${service.syncRoom?.id}, '
+      'will auto-join: ${service.syncRoom?.id == null}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'listenToMatrixRoomInvites',
+    );
+
     if (service.syncRoom?.id == null) {
+      getIt<LoggingService>().captureEvent(
+        '⚠️ AUTO-JOINING room $roomIdFromEvent due to room state event '
+        '(eventType: ${event.state.type})',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'listenToMatrixRoomInvites',
+      );
+
       await saveMatrixRoom(
         client: client,
         roomId: roomIdFromEvent,

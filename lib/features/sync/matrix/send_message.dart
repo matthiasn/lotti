@@ -60,7 +60,10 @@ extension SendExtension on MatrixService {
     }
 
     loggingService.captureEvent(
-      'trying to send text message to $syncRoom',
+      'Sending message - using roomId: $roomId, '
+      'syncRoomId: $syncRoomId, '
+      'syncRoom.id: ${syncRoom?.id}, '
+      'messageType: ${syncMessage.runtimeType}',
       domain: 'MATRIX_SERVICE',
       subDomain: 'sendMatrixMsg',
     );

@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -116,6 +121,8 @@ class _HomeserverLoggedInWidgetState
               context.messages.settingsMatrixQrTextPage,
               style: context.textTheme.bodySmall,
             ),
+            const SizedBox(height: 20),
+            const DiagnosticInfoButton(),
             const SizedBox(height: 80),
           ],
         );
@@ -125,6 +132,56 @@ class _HomeserverLoggedInWidgetState
       },
       loading: (loading) {
         return const CircularProgressIndicator();
+      },
+    );
+  }
+}
+
+class DiagnosticInfoButton extends StatelessWidget {
+  const DiagnosticInfoButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LottiSecondaryButton(
+      label: 'Show Diagnostic Info',
+      onPressed: () async {
+        final info = await getIt<MatrixService>().getDiagnosticInfo();
+        final prettyJson = const JsonEncoder.withIndent('  ').convert(info);
+
+        if (!context.mounted) return;
+
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Sync Diagnostic Info'),
+            content: SingleChildScrollView(
+              child: SelectableText(
+                prettyJson,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: prettyJson));
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Diagnostic info copied to clipboard'),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Copy to Clipboard'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
       },
     );
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
@@ -94,6 +96,14 @@ class MatrixService {
   Future<void> init() async {
     await loadConfig();
     await connect();
+
+    getIt<LoggingService>().captureEvent(
+      'MatrixService initialized - deviceId: ${client.deviceID}, '
+      'deviceName: ${client.deviceName}, userId: ${client.userID}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'init',
+    );
+
     if (client.onLoginStateChanged.value == LoginState.loggedIn) {
       await listen();
     }
@@ -103,6 +113,16 @@ class MatrixService {
     await startKeyVerificationListener();
     await listenToTimeline();
     listenToMatrixRoomInvites(service: this);
+
+    final savedRoomId = await getMatrixRoom(client: client);
+    final joinedRooms = client.rooms.map((r) => r.id).toList();
+    getIt<LoggingService>().captureEvent(
+      'Sync state - savedRoomId: $savedRoomId, '
+      'syncRoomId: $syncRoomId, '
+      'joinedRooms: $joinedRooms',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'listen',
+    );
   }
 
   Future<bool> login() => matrixConnect(
@@ -238,6 +258,39 @@ class MatrixService {
     if (client.isLogged()) {
       await client.dispose();
     }
+  }
+
+  Future<Map<String, dynamic>> getDiagnosticInfo() async {
+    final savedRoomId = await getMatrixRoom(client: client);
+    final joinedRooms = client.rooms
+        .map(
+          (r) => {
+            'id': r.id,
+            'name': r.name,
+            'encrypted': r.encrypted,
+            'memberCount': r.summary.mJoinedMemberCount,
+          },
+        )
+        .toList();
+
+    final diagnostics = {
+      'deviceId': client.deviceID,
+      'deviceName': client.deviceName,
+      'userId': client.userID,
+      'savedRoomId': savedRoomId,
+      'syncRoomId': syncRoomId,
+      'syncRoom.id': syncRoom?.id,
+      'joinedRooms': joinedRooms,
+      'isLoggedIn': isLoggedIn(),
+    };
+
+    getIt<LoggingService>().captureEvent(
+      'Sync diagnostics: ${json.encode(diagnostics)}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'diagnostics',
+    );
+
+    return diagnostics;
   }
 
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(service: this);

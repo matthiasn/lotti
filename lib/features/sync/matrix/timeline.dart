@@ -89,6 +89,13 @@ Future<void> processNewTimelineEvents({
     );
     final newEvents = eventsAfter ?? events;
 
+    loggingService.captureEvent(
+      'Processing timeline events - roomId: ${service.syncRoom?.id}, '
+      'eventCount: ${newEvents.length}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'processNewTimelineEvents',
+    );
+
     for (final event in newEvents) {
       await service.client.sync();
       final eventId = event.eventId;
@@ -97,6 +104,12 @@ Future<void> processNewTimelineEvents({
       // as it would be a waste of battery to try to ingest what the device
       // already knows.
       if (event.senderId != service.client.userID) {
+        loggingService.captureEvent(
+          'Received message from ${event.senderId} in room ${service.syncRoom?.id}, '
+          'eventType: ${event.type}',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'processNewTimelineEvents',
+        );
         if (event.messageType == syncMessageType) {
           await processMatrixMessage(
             event: event,
