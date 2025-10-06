@@ -15,6 +15,24 @@ Future<void> listenToTimelineEvents({
   final loggingDb = getIt<LoggingService>();
 
   try {
+    // Defensive check: Ensure syncRoom is loaded before attempting to listen
+    if (service.syncRoom == null) {
+      loggingDb.captureEvent(
+        '⚠️ Cannot listen to timeline: syncRoom is null. '
+        'syncRoomId: ${service.syncRoomId}',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'listenToTimelineEvents',
+      );
+      return;
+    }
+
+    loggingDb.captureEvent(
+      'Attempting to listen - syncRoom: ${service.syncRoom?.id}, '
+      'syncRoomId: ${service.syncRoomId}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'listenToTimelineEvents',
+    );
+
     final previousTimeline = service.timeline;
 
     if (previousTimeline != null) {

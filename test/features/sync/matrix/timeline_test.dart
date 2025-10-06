@@ -105,14 +105,14 @@ void main() {
 
   tearDown(getIt.reset);
 
-  test('listenToTimelineEvents logs when timeline is null', () async {
+  test('listenToTimelineEvents logs when syncRoom is null', () async {
     service.syncRoom = null;
 
     await listenToTimelineEvents(service: service);
 
     verify(
       () => mockLoggingService.captureEvent(
-        'Timeline is null',
+        contains('Cannot listen to timeline: syncRoom is null'),
         domain: 'MATRIX_SERVICE',
         subDomain: 'listenToTimelineEvents',
       ),
