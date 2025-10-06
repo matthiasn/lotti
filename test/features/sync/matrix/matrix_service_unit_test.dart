@@ -544,22 +544,22 @@ void main() {
         // ignore: cascade_invocations
         stubService.init();
 
-        // Advance time to complete all retry delays (1s + 2s = 3s)
-        async.elapse(const Duration(seconds: 3));
+        // Advance time to complete all retry delays (1s + 2s + 4s = 7s)
+        async.elapse(const Duration(seconds: 7));
         // ignore: cascade_invocations
         async.flushMicrotasks();
 
         expect(stubService.syncRoom, isNull);
         expect(stubService.syncRoomId, isNull);
 
-        // Should log 2 retry messages (attempts 1 and 2, attempt 3 doesn't log retry)
+        // Should log 3 retry messages (attempts 1, 2, and 3; attempt 4 doesn't log retry)
         verify(
           () => mockLoggingService.captureEvent(
             contains('not found, retrying'),
             domain: 'MATRIX_SERVICE',
             subDomain: '_loadSyncRoom',
           ),
-        ).called(2);
+        ).called(3);
 
         // Should log final failure
         verify(

@@ -13,7 +13,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
-const int _kLoadSyncRoomMaxAttempts = 3;
+const int _kLoadSyncRoomMaxAttempts = 4;
 const int _kLoadSyncRoomBaseDelayMs = 1000;
 
 class MatrixService {

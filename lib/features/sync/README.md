@@ -171,7 +171,7 @@ Added `_loadSyncRoom()` method that:
 2. Calls `client.sync()` to ensure rooms are loaded
 3. Gets the Room object via `getRoomById(savedRoomId)`
 4. Sets `syncRoom` and `syncRoomId`
-5. Retries up to 3 times with exponential backoff (1s, 2s, 4s delays) if room not found
+5. Retries up to 4 times with exponential backoff (1s, 2s, 4s delays) if room not found
 6. Logs detailed diagnostics at each step
 
 Added defensive checks in `listenToTimelineEvents()`:
