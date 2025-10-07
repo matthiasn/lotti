@@ -83,9 +83,10 @@
    - Create `SyncRoomManager` using filtered `gateway.invites`, validate room IDs, prompt user, update persisted room.
    - Delete `listenToMatrixRoomInvites`; manual multi-device testing for invites.
 
-7. **SyncEngine Assembly**
+7. **SyncEngine Assembly** *(Completed — SyncLifecycleCoordinator + SyncEngine shipped)*
    - Compose all services, integrate lifecycle coordinator, expose diagnostics.
    - Add integration tests with fake gateway to simulate multi-device scenarios.
+   - Outcome: `SyncEngine` now owns lifecycle orchestration for `MatrixService`, with dedicated unit/integration coverage.
 
 8. **Dependency Injection Cleanup**
    - Replace `getIt` usage in sync modules with constructor injection/provider overrides.

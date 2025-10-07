@@ -25,6 +25,8 @@ class MatrixService {
     SyncRoomManager? roomManager,
     MatrixSessionManager? sessionManager,
     MatrixTimelineListener? timelineListener,
+    SyncLifecycleCoordinator? lifecycleCoordinator,
+    SyncEngine? syncEngine,
   })  : _gateway = gateway,
         _loggingService = overriddenLoggingService ?? getIt<LoggingService>(),
         _activityGate = activityGate ??
@@ -73,6 +75,25 @@ class MatrixService {
           overriddenSettingsDb: settingsDb,
         );
 
+    _lifecycleCoordinator = lifecycleCoordinator ??
+        syncEngine?.lifecycleCoordinator ??
+        SyncLifecycleCoordinator(
+          gateway: _gateway,
+          sessionManager: _sessionManager,
+          timelineListener: _timelineListener,
+          roomManager: _roomManager,
+          loggingService: _loggingService,
+        );
+
+    _syncEngine = syncEngine ??
+        SyncEngine(
+          sessionManager: _sessionManager,
+          roomManager: _roomManager,
+          timelineListener: _timelineListener,
+          lifecycleCoordinator: _lifecycleCoordinator,
+          loggingService: _loggingService,
+        );
+
     incomingKeyVerificationRunnerController =
         StreamController<KeyVerificationRunner>.broadcast(
       onListen: publishIncomingRunnerState,
@@ -103,6 +124,8 @@ class MatrixService {
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;
   late final MatrixTimelineListener _timelineListener;
+  late final SyncLifecycleCoordinator _lifecycleCoordinator;
+  late final SyncEngine _syncEngine;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
@@ -149,7 +172,10 @@ class MatrixService {
   }
 
   Future<void> init() async {
-    await _timelineListener.initialize();
+    await _syncEngine.initialize(
+      onLogin: listen,
+      onLogout: _onLifecycleLogout,
+    );
     await loadConfig();
     await connect();
 
@@ -159,16 +185,10 @@ class MatrixService {
       domain: 'MATRIX_SERVICE',
       subDomain: 'init',
     );
-
-    if (client.onLoginStateChanged.value == LoginState.loggedIn) {
-      await _roomManager.hydrateRoomSnapshot(client: client);
-      await listen();
-    }
   }
 
   Future<void> listen() async {
     await startKeyVerificationListener();
-    await listenToTimeline();
     final savedRoomId = await _roomManager.loadPersistedRoomId();
     final joinedRooms = client.rooms.map((r) => r.id).toList();
     _loggingService.captureEvent(
@@ -180,9 +200,17 @@ class MatrixService {
     );
   }
 
-  Future<bool> login() => _sessionManager.connect(shouldAttemptLogin: true);
+  Future<void> _onLifecycleLogout() async {
+    _loggingService.captureEvent(
+      'Sync lifecycle paused (logged out).',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'logoutLifecycle',
+    );
+  }
 
-  Future<bool> connect() => _sessionManager.connect(shouldAttemptLogin: false);
+  Future<bool> login() => _syncEngine.connect(shouldAttemptLogin: true);
+
+  Future<bool> connect() => _syncEngine.connect(shouldAttemptLogin: false);
 
   Future<String?> joinRoom(String roomId) async {
     final room = await _roomManager.joinRoom(roomId);
@@ -268,8 +296,7 @@ class MatrixService {
       listenForKeyVerificationRequests(service: this);
 
   Future<void> logout() async {
-    _timelineListener.timeline?.cancelSubscriptions();
-    await _sessionManager.logout();
+    await _syncEngine.logout();
   }
 
   Future<void> disposeClient() async {
@@ -284,6 +311,7 @@ class MatrixService {
     await incomingKeyVerificationRunnerController.close();
     await incomingKeyVerificationController.close();
     await _connectivitySubscription?.cancel();
+    await _syncEngine.dispose();
     await _timelineListener.dispose();
     await _roomManager.dispose();
     if (_ownsActivityGate) {
@@ -293,35 +321,12 @@ class MatrixService {
   }
 
   Future<Map<String, dynamic>> getDiagnosticInfo() async {
-    final savedRoomId = await _roomManager.loadPersistedRoomId();
-    final joinedRooms = client.rooms
-        .map(
-          (r) => {
-            'id': r.id,
-            'name': r.name,
-            'encrypted': r.encrypted,
-            'memberCount': r.summary.mJoinedMemberCount,
-          },
-        )
-        .toList();
-
-    final diagnostics = {
-      'deviceId': client.deviceID,
-      'deviceName': client.deviceName,
-      'userId': client.userID,
-      'savedRoomId': savedRoomId,
-      'syncRoomId': _roomManager.currentRoomId,
-      'syncRoom.id': _roomManager.currentRoom?.id,
-      'joinedRooms': joinedRooms,
-      'isLoggedIn': isLoggedIn(),
-    };
-
+    final diagnostics = await _syncEngine.diagnostics(log: false);
     _loggingService.captureEvent(
       'Sync diagnostics: ${json.encode(diagnostics)}',
       domain: 'MATRIX_SERVICE',
       subDomain: 'diagnostics',
     );
-
     return diagnostics;
   }
 

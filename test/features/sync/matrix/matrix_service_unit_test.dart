@@ -41,8 +41,6 @@ class MockClient extends Mock implements Client {}
 
 class FakeMatrixClient extends Fake implements Client {}
 
-class MockTimeline extends Mock implements Timeline {}
-
 class MockRoomSummary extends Mock implements RoomSummary {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
@@ -139,6 +137,7 @@ void main() {
   late MockLoggingService mockLoggingService;
   late MockUserActivityGate mockActivityGate;
   late MockClient mockClient;
+  late StreamController<LoginState> loginStateController;
   late MatrixService service;
 
   setUp(() {
@@ -156,11 +155,15 @@ void main() {
     when(() => mockTimelineListener.initialize()).thenAnswer((_) async {});
     when(() => mockTimelineListener.start()).thenAnswer((_) async {});
     when(() => mockTimelineListener.dispose()).thenAnswer((_) async {});
+    when(() => mockRoomManager.initialize()).thenAnswer((_) async {});
     when(() => mockRoomManager.dispose()).thenAnswer((_) async {});
     when(() => mockSessionManager.dispose()).thenAnswer((_) async {});
     when(() => mockActivityGate.dispose()).thenAnswer((_) async {});
     when(() => mockRoomManager.inviteRequests)
         .thenAnswer((_) => const Stream<SyncRoomInvite>.empty());
+    loginStateController = StreamController<LoginState>.broadcast();
+    when(() => mockGateway.loginStateChanges)
+        .thenAnswer((_) => loginStateController.stream);
 
     getIt
       ..reset()
@@ -181,7 +184,10 @@ void main() {
     );
   });
 
-  tearDown(getIt.reset);
+  tearDown(() async {
+    await loginStateController.close();
+    await getIt.reset();
+  });
 
   test('createRoom delegates to SyncRoomManager', () async {
     when(
@@ -276,15 +282,11 @@ void main() {
         .called(1);
   });
 
-  test('logout cancels timeline and invokes session manager', () async {
-    final mockTimeline = MockTimeline();
-    when(() => mockTimeline.cancelSubscriptions()).thenAnswer((_) async {});
-    when(() => mockTimelineListener.timeline).thenReturn(mockTimeline);
+  test('logout delegates to session manager', () async {
     when(() => mockSessionManager.logout()).thenAnswer((_) async {});
 
     await service.logout();
 
-    verify(() => mockTimeline.cancelSubscriptions()).called(1);
     verify(() => mockSessionManager.logout()).called(1);
   });
 
@@ -316,6 +318,13 @@ void main() {
     when(() => mockRoom.summary).thenReturn(mockSummary);
     when(() => mockSummary.mJoinedMemberCount).thenReturn(2);
     when(() => mockClient.rooms).thenReturn([mockRoom]);
+    final diagnosticsLoginController = CachedStreamController<LoginState>()
+      ..add(LoginState.loggedIn);
+    addTearDown(() => diagnosticsLoginController.close());
+    when(() => mockClient.onLoginStateChanged)
+        .thenReturn(diagnosticsLoginController);
+    when(() => mockClient.onLoginStateChanged.value)
+        .thenReturn(LoginState.loggedIn);
     when(
       () => mockLoggingService.captureEvent(
         any<String>(),
@@ -743,6 +752,9 @@ void main() {
     setUp(() {
       startKeyCalled = false;
       listenTimelineCalled = false;
+      when(() => mockTimelineListener.start()).thenAnswer((_) async {
+        listenTimelineCalled = true;
+      });
       when(() => mockRoomManager.loadPersistedRoomId())
           .thenAnswer((_) async => '!room:server');
       final mockRoom = MockRoom();
@@ -783,11 +795,11 @@ void main() {
       await loginController.close();
     });
 
-    test('listen triggers startKey and timeline listeners', () async {
+    test('listen triggers startKey listener', () async {
       await testService.listen();
 
       expect(startKeyCalled, isTrue);
-      expect(listenTimelineCalled, isTrue);
+      expect(listenTimelineCalled, isFalse);
       verify(() => mockRoomManager.loadPersistedRoomId()).called(1);
     });
 
