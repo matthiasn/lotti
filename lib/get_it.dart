@@ -113,7 +113,6 @@ Future<void> registerSingletons() async {
   final client = await createMatrixClient();
   final matrixGateway = MatrixSdkGateway(client: client);
   final matrixService = MatrixService(
-    client: client,
     gateway: matrixGateway,
   );
 

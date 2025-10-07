@@ -19,14 +19,13 @@ const int _kLoadSyncRoomBaseDelayMs = 1000;
 
 class MatrixService {
   MatrixService({
-    required Client client,
-    MatrixSyncGateway? gateway,
+    required MatrixSyncGateway gateway,
     UserActivityGate? activityGate,
     this.matrixConfig,
     this.deviceDisplayName,
     JournalDb? overriddenJournalDb,
     SettingsDb? overriddenSettingsDb,
-  })  : _gateway = gateway ?? MatrixSdkGateway(client: client),
+  })  : _gateway = gateway,
         _activityGate = activityGate ??
             (getIt.isRegistered<UserActivityGate>()
                 ? getIt<UserActivityGate>()

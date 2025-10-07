@@ -45,13 +45,11 @@ class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
 
 class TestMatrixService extends MatrixService {
   TestMatrixService({
-    required Client client,
     required this.fakeGateway,
     MatrixConfig? matrixConfig,
     JournalDb? journalDb,
     SettingsDb? settingsDb,
   }) : super(
-          client: client,
           gateway: fakeGateway,
           matrixConfig: matrixConfig,
           overriddenJournalDb: journalDb,
@@ -73,7 +71,6 @@ class StubMatrixService extends MatrixService {
     SettingsDb? settingsDb,
     FakeMatrixGateway? fakeGateway,
   }) : super(
-          client: client,
           gateway: fakeGateway ?? FakeMatrixGateway(client: client),
           overriddenJournalDb: journalDb,
           overriddenSettingsDb: settingsDb,
@@ -208,7 +205,6 @@ void main() {
     final fakeGateway = FakeMatrixGateway(client: mockClient);
 
     service = TestMatrixService(
-      client: mockClient,
       fakeGateway: fakeGateway,
       matrixConfig: const MatrixConfig(
         homeServer: 'https://server',
@@ -242,7 +238,6 @@ void main() {
 
     test('throws StateError when config is missing', () async {
       final serviceWithoutConfig = TestMatrixService(
-        client: mockClient,
         fakeGateway: FakeMatrixGateway(client: mockClient),
         journalDb: mockJournalDb,
         settingsDb: mockSettingsDb,

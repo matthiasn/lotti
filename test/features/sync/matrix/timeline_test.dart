@@ -1,11 +1,10 @@
-// ignore_for_file: use_super_parameters
-
 import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -32,11 +31,11 @@ class MockTimeline extends Mock implements Timeline {}
 class TestMatrixService extends MatrixService {
   TestMatrixService({
     required Client client,
+    MatrixSyncGateway? gateway,
     JournalDb? journalDb,
     SettingsDb? settingsDb,
   }) : super(
-          client: client,
-          gateway: FakeMatrixGateway(client: client),
+          gateway: gateway ?? FakeMatrixGateway(client: client),
           overriddenJournalDb: journalDb,
           overriddenSettingsDb: settingsDb,
         );

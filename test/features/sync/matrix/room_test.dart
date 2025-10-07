@@ -130,7 +130,6 @@ void main() {
 
     test('inviteToMatrixRoom calls room invite when syncRoom set', () async {
       final matrixService = MatrixService(
-        client: mockClient,
         gateway: FakeMatrixGateway(client: mockClient),
       )..syncRoom = mockRoom;
 
@@ -146,7 +145,6 @@ void main() {
 
     test('listenToMatrixRoomInvites auto-joins when no room set', () async {
       final matrixService = MatrixService(
-        client: mockClient,
         gateway: FakeMatrixGateway(client: mockClient),
       );
       final roomController =
