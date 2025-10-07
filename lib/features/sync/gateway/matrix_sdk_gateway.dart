@@ -6,6 +6,11 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
 class MatrixSdkGateway implements MatrixSyncGateway {
+  /// Creates a new [MatrixSdkGateway].
+  ///
+  /// The gateway assumes ownership of the provided [client] instance and will
+  /// call [Client.dispose] during [dispose]. Callers must not dispose the
+  /// client separately once it is passed here.
   MatrixSdkGateway({required Client client}) : _client = client {
     _inviteSubscription = _client.onRoomState.stream.listen(_handleRoomState);
   }

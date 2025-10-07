@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -10,8 +9,6 @@ import 'package:mocktail/mocktail.dart';
 class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockLoggingService extends Mock implements LoggingService {}
-
-class MockMatrixService extends Mock implements MatrixService {}
 
 class MockTimeline extends Mock implements Timeline {}
 
@@ -24,7 +21,6 @@ void main() {
     late MockSettingsDb settingsDb;
     late MockLoggingService loggingService;
     late SyncReadMarkerService service;
-    late MockMatrixService matrixService;
     late MockTimeline timeline;
     late MockClient client;
     late CachedStreamController<LoginState> loginStateStream;
@@ -36,14 +32,13 @@ void main() {
         settingsDb: settingsDb,
         loggingService: loggingService,
       );
-      matrixService = MockMatrixService();
       timeline = MockTimeline();
       client = MockClient();
       loginStateStream =
           CachedStreamController<LoginState>(LoginState.loggedIn);
 
-      when(() => matrixService.client).thenReturn(client);
       when(() => client.onLoginStateChanged).thenReturn(loginStateStream);
+      when(() => client.deviceName).thenReturn('device');
       when(() => timeline.setReadMarker(eventId: any(named: 'eventId')))
           .thenAnswer((_) async {});
       when(() => settingsDb.saveSettingsItem(any(), any()))
@@ -56,7 +51,7 @@ void main() {
 
     test('updates read marker when logged in', () async {
       await service.updateReadMarker(
-        service: matrixService,
+        client: client,
         timeline: timeline,
         eventId: r'$event',
       );
@@ -71,7 +66,7 @@ void main() {
       when(() => client.onLoginStateChanged).thenReturn(loginStateStream);
 
       await service.updateReadMarker(
-        service: matrixService,
+        client: client,
         timeline: timeline,
         eventId: r'$event',
       );
@@ -81,7 +76,7 @@ void main() {
       );
     });
 
-    test('logs and rethrows when timeline update fails', () async {
+    test('logs and continues when timeline update fails', () async {
       await loginStateStream.close();
       loginStateStream =
           CachedStreamController<LoginState>(LoginState.loggedIn);
@@ -100,12 +95,12 @@ void main() {
       ).thenAnswer((_) {});
 
       final future = service.updateReadMarker(
-        service: matrixService,
+        client: client,
         timeline: timeline,
         eventId: r'$event',
       );
 
-      await expectLater(future, throwsA(same(exception)));
+      await expectLater(future, completes);
 
       verify(
         () => loggingService.captureException(

@@ -82,7 +82,7 @@ Future<void> processNewTimelineEvents({
   final loggingService = overriddenLoggingService ?? getIt<LoggingService>();
   final markerService = readMarkerService ??
       SyncReadMarkerService(
-        settingsDb: getIt<SettingsDb>(),
+        settingsDb: overriddenSettingsDb ?? getIt<SettingsDb>(),
         loggingService: loggingService,
       );
 
@@ -146,8 +146,9 @@ Future<void> processNewTimelineEvents({
       }
 
       if (eventId.startsWith(r'$')) {
+        service.lastReadEventContextId = eventId;
         await markerService.updateReadMarker(
-          service: service,
+          client: service.client,
           timeline: timeline,
           eventId: eventId,
           overriddenSettingsDb: overriddenSettingsDb,
