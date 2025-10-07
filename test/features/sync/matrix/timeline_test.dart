@@ -7,6 +7,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -31,6 +32,12 @@ class MockTimeline extends Mock implements Timeline {}
 
 class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
 
+class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
+
+class FakeMatrixEvent extends Fake implements Event {}
+
+class FakeJournalDb extends Fake implements JournalDb {}
+
 class TestMatrixService extends MatrixService {
   TestMatrixService({
     required Client client,
@@ -52,6 +59,8 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(FakeMatrixEvent());
+    registerFallbackValue(FakeJournalDb());
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel,
             (MethodCall call) async {
@@ -74,6 +83,7 @@ void main() {
   late MockLoggingService mockLoggingService;
   late TestMatrixService service;
   late MockSyncReadMarkerService mockReadMarkerService;
+  late MockSyncEventProcessor mockEventProcessor;
 
   setUp(() {
     mockClient = MockMatrixClient();
@@ -118,6 +128,13 @@ void main() {
       settingsDb: mockSettingsDb,
     );
     mockReadMarkerService = MockSyncReadMarkerService();
+    mockEventProcessor = MockSyncEventProcessor();
+    when(
+      () => mockEventProcessor.process(
+        event: any<Event>(named: 'event'),
+        journalDb: mockJournalDb,
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(getIt.reset);
@@ -151,7 +168,7 @@ void main() {
         'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
         'content': {
           'body': 'hello',
-          'msgtype': 'm.text',
+          'msgtype': 'com.lotti.sync.message',
         },
       },
       mockRoom,
@@ -184,6 +201,7 @@ void main() {
     await processNewTimelineEvents(
       service: service,
       readMarkerService: mockReadMarkerService,
+      eventProcessor: mockEventProcessor,
     );
 
     verify(
@@ -194,6 +212,12 @@ void main() {
         overriddenSettingsDb: any(named: 'overriddenSettingsDb'),
       ),
     ).called(1);
+    verify(
+      () => mockEventProcessor.process(
+        event: any<Event>(named: 'event'),
+        journalDb: mockJournalDb,
+      ),
+    ).called(1);
   });
 
   test('processNewTimelineEvents logs when fetched timeline is null', () async {
@@ -201,7 +225,10 @@ void main() {
       ..syncRoom = null
       ..lastReadEventContextId = 'event-id';
 
-    await processNewTimelineEvents(service: service);
+    await processNewTimelineEvents(
+      service: service,
+      eventProcessor: mockEventProcessor,
+    );
 
     verify(
       () => mockLoggingService.captureEvent(
@@ -226,7 +253,7 @@ void main() {
         'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
         'content': {
           'body': 'hi',
-          'msgtype': 'm.text',
+          'msgtype': 'com.lotti.sync.message',
         },
       },
       mockRoom,
@@ -245,7 +272,10 @@ void main() {
     when(() => mockTimeline.setReadMarker(eventId: any(named: 'eventId')))
         .thenAnswer((_) async {});
 
-    await processNewTimelineEvents(service: service);
+    await processNewTimelineEvents(
+      service: service,
+      eventProcessor: mockEventProcessor,
+    );
 
     verify(
       () => mockLoggingService.captureEvent(
@@ -259,6 +289,12 @@ void main() {
         contains('Received message from @other:server'),
         domain: 'MATRIX_SERVICE',
         subDomain: 'processNewTimelineEvents',
+      ),
+    ).called(1);
+    verify(
+      () => mockEventProcessor.process(
+        event: any<Event>(named: 'event'),
+        journalDb: mockJournalDb,
       ),
     ).called(1);
   });
