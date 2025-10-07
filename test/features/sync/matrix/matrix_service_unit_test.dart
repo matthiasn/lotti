@@ -34,6 +34,8 @@ class MockUserActivityGate extends Mock implements UserActivityGate {}
 
 class MockClient extends Mock implements Client {}
 
+class FakeMatrixClient extends Fake implements Client {}
+
 class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -47,6 +49,7 @@ void main() {
       MethodChannel('dev.fluttercommunity.plus/connectivity');
 
   setUpAll(() {
+    registerFallbackValue(FakeMatrixClient());
     registerFallbackValue(
       const MatrixConfig(
         homeServer: 'https://example.org',
@@ -196,6 +199,7 @@ void main() {
     late MockClient sessionClient;
     late bool connectCalled;
     late bool loginCalled;
+    late bool isLogged;
 
     setUp(() {
       sessionRoomManager = MockSyncRoomManager();
@@ -203,8 +207,14 @@ void main() {
       sessionLogging = MockLoggingService();
       sessionClient = MockClient();
       when(() => sessionGateway.client).thenReturn(sessionClient);
-      when(() => sessionClient.isLogged()).thenReturn(false);
+      isLogged = false;
+      when(() => sessionClient.isLogged()).thenAnswer((_) => isLogged);
       when(() => sessionRoomManager.initialize()).thenAnswer((_) async {});
+      when(
+        () => sessionRoomManager.hydrateRoomSnapshot(
+          client: any<Client>(named: 'client'),
+        ),
+      ).thenAnswer((_) async {});
       connectCalled = false;
       loginCalled = false;
       when(() => sessionGateway.connect(any<MatrixConfig>()))
@@ -225,6 +235,7 @@ void main() {
         ),
       ).thenAnswer((_) async {
         loginCalled = true;
+        isLogged = true;
         return LoginResponse(
           accessToken: 'token',
           deviceId: 'device',
@@ -298,7 +309,7 @@ void main() {
         user: '@user:server',
         password: 'pw',
       );
-      when(() => sessionClient.isLogged()).thenReturn(true);
+      isLogged = true;
 
       await sessionManager.connect(shouldAttemptLogin: true);
 
@@ -312,6 +323,7 @@ void main() {
         user: '@user:server',
         password: 'pw',
       );
+      isLogged = true;
       when(() => sessionRoomManager.loadPersistedRoomId())
           .thenAnswer((_) async => '!already:room');
       final hydratedRoom = MockRoom();

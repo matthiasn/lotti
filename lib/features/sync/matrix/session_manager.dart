@@ -61,17 +61,20 @@ class MatrixSessionManager {
 
       await _roomManager.initialize();
 
-      final savedRoomId = await _roomManager.loadPersistedRoomId();
-      if (savedRoomId != null && client.getRoomById(savedRoomId) == null) {
-        try {
-          await _roomManager.joinRoom(savedRoomId);
-        } catch (error, stackTrace) {
-          _loggingService.captureException(
-            error,
-            domain: 'MATRIX_SESSION_MANAGER',
-            subDomain: 'connect.join',
-            stackTrace: stackTrace,
-          );
+      if (client.isLogged()) {
+        await _roomManager.hydrateRoomSnapshot(client: client);
+        final savedRoomId = await _roomManager.loadPersistedRoomId();
+        if (savedRoomId != null && client.getRoomById(savedRoomId) == null) {
+          try {
+            await _roomManager.joinRoom(savedRoomId);
+          } catch (error, stackTrace) {
+            _loggingService.captureException(
+              error,
+              domain: 'MATRIX_SESSION_MANAGER',
+              subDomain: 'connect.join',
+              stackTrace: stackTrace,
+            );
+          }
         }
       }
 

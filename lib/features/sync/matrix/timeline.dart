@@ -136,7 +136,6 @@ Future<void> processNewTimelineEvents({
     );
 
     for (final event in newEvents) {
-      await listener.client.sync();
       final eventId = event.eventId;
 
       // Terminates early when the message was emitted by the device itself,

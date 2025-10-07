@@ -115,17 +115,26 @@ class SyncRoomManager {
       return;
     }
 
-    await _settingsDb.removeSettingsItem(matrixRoomKey);
-    await _gateway.leaveRoom(roomId);
+    try {
+      await _gateway.leaveRoom(roomId);
+      await _settingsDb.removeSettingsItem(matrixRoomKey);
+      _currentRoom = null;
+      _currentRoomId = null;
 
-    _currentRoom = null;
-    _currentRoomId = null;
-
-    _loggingService.captureEvent(
-      'Left sync room $roomId and cleared persisted state.',
-      domain: 'SYNC_ROOM_MANAGER',
-      subDomain: 'leaveRoom',
-    );
+      _loggingService.captureEvent(
+        'Left sync room $roomId and cleared persisted state.',
+        domain: 'SYNC_ROOM_MANAGER',
+        subDomain: 'leaveRoom',
+      );
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'SYNC_ROOM_MANAGER',
+        subDomain: 'leaveRoom',
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 
   /// Accepts a pending invite by joining the room and persisting the room ID.
