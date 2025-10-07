@@ -7,15 +7,22 @@ on:
 
 jobs:
   test:
-    name: Flutter Test on Linux
+    name: Flutter Test
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Update apt-get
+        if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update
       - name: Install libraries
+        if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install network-manager libmpv-dev
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
