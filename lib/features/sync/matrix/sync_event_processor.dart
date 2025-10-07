@@ -10,6 +10,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
+import 'package:path/path.dart' as path;
 
 /// Abstraction for loading journal entities and related attachments when
 /// processing sync messages.
@@ -24,7 +25,9 @@ class FileSyncJournalEntityLoader implements SyncJournalEntityLoader {
   @override
   Future<JournalEntity> load(String jsonPath) async {
     final docDir = getDocumentsDirectory();
-    final fullPath = '${docDir.path}$jsonPath';
+    final relativePath =
+        jsonPath.startsWith('/') ? jsonPath.substring(1) : jsonPath;
+    final fullPath = path.join(docDir.path, relativePath);
     return readEntityFromJson(fullPath);
   }
 }
