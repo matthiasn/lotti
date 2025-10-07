@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters
+
 import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
@@ -18,6 +20,7 @@ import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/matrix/fake_matrix_gateway.dart';
 
 class MockMatrixClient extends Mock implements Client {}
 
@@ -41,14 +44,20 @@ class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
 
 class TestMatrixService extends MatrixService {
   TestMatrixService({
-    required super.client,
-    super.matrixConfig,
+    required Client client,
+    required this.fakeGateway,
+    MatrixConfig? matrixConfig,
     JournalDb? journalDb,
     SettingsDb? settingsDb,
   }) : super(
+          client: client,
+          gateway: fakeGateway,
+          matrixConfig: matrixConfig,
           overriddenJournalDb: journalDb,
           overriddenSettingsDb: settingsDb,
         );
+
+  final FakeMatrixGateway fakeGateway;
 
   List<DeviceKeys> unverifiedDevices = const [];
 
@@ -58,10 +67,13 @@ class TestMatrixService extends MatrixService {
 
 class StubMatrixService extends MatrixService {
   StubMatrixService({
-    required super.client,
+    required Client client,
     JournalDb? journalDb,
     SettingsDb? settingsDb,
+    FakeMatrixGateway? fakeGateway,
   }) : super(
+          client: client,
+          gateway: fakeGateway ?? FakeMatrixGateway(client: client),
           overriddenJournalDb: journalDb,
           overriddenSettingsDb: settingsDb,
         );
@@ -186,8 +198,11 @@ void main() {
       ),
     ).thenAnswer((_) {});
 
+    final fakeGateway = FakeMatrixGateway(client: mockClient);
+
     service = TestMatrixService(
       client: mockClient,
+      fakeGateway: fakeGateway,
       matrixConfig: const MatrixConfig(
         homeServer: 'https://server',
         user: '@user:server',
@@ -221,6 +236,7 @@ void main() {
     test('throws StateError when config is missing', () async {
       final serviceWithoutConfig = TestMatrixService(
         client: mockClient,
+        fakeGateway: FakeMatrixGateway(client: mockClient),
         journalDb: mockJournalDb,
         settingsDb: mockSettingsDb,
       );
@@ -351,7 +367,7 @@ void main() {
       await service.logout();
 
       verify(mockTimeline.cancelSubscriptions).called(1);
-      verify(() => mockClient.logout()).called(1);
+      expect(service.fakeGateway.logoutCalled, isTrue);
     });
 
     test('disposeClient calls client.dispose when logged in', () async {
@@ -365,6 +381,7 @@ void main() {
     test('listen starts key verification and timeline listeners', () async {
       final stubService = StubMatrixService(
         client: mockClient,
+        fakeGateway: FakeMatrixGateway(client: mockClient),
         journalDb: mockJournalDb,
         settingsDb: mockSettingsDb,
       );
@@ -402,6 +419,7 @@ void main() {
 
       final stubService = StubMatrixService(
         client: mockClient,
+        fakeGateway: FakeMatrixGateway(client: mockClient),
         journalDb: mockJournalDb,
         settingsDb: mockSettingsDb,
       );
@@ -437,6 +455,7 @@ void main() {
 
       final stubService = StubMatrixService(
         client: mockClient,
+        fakeGateway: FakeMatrixGateway(client: mockClient),
         journalDb: mockJournalDb,
         settingsDb: mockSettingsDb,
       );
@@ -481,6 +500,7 @@ void main() {
 
         final stubService = StubMatrixService(
           client: mockClient,
+          fakeGateway: FakeMatrixGateway(client: mockClient),
           journalDb: mockJournalDb,
           settingsDb: mockSettingsDb,
         );
@@ -536,6 +556,7 @@ void main() {
 
         final stubService = StubMatrixService(
           client: mockClient,
+          fakeGateway: FakeMatrixGateway(client: mockClient),
           journalDb: mockJournalDb,
           settingsDb: mockSettingsDb,
         );

@@ -18,12 +18,14 @@ const int _kLoadSyncRoomBaseDelayMs = 1000;
 
 class MatrixService {
   MatrixService({
-    required this.client,
+    required Client client,
+    MatrixSyncGateway? gateway,
     this.matrixConfig,
     this.deviceDisplayName,
     JournalDb? overriddenJournalDb,
     SettingsDb? overriddenSettingsDb,
-  }) : keyVerificationController =
+  })  : _gateway = gateway ?? MatrixSdkGateway(client: client),
+        keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
     clientRunner = ClientRunner<void>(
       callback: (event) async {
@@ -52,7 +54,7 @@ class MatrixService {
     incomingKeyVerificationRunnerStream =
         incomingKeyVerificationRunnerController.stream;
 
-    Connectivity()
+    _connectivitySubscription = Connectivity()
         .onConnectivityChanged
         .listen((List<ConnectivityResult> result) {
       if ({
@@ -65,12 +67,14 @@ class MatrixService {
     });
   }
 
+  final MatrixSyncGateway _gateway;
+  Client get client => _gateway.client;
+
   void publishIncomingRunnerState() {
     incomingKeyVerificationRunner?.publishState();
   }
 
   final String? deviceDisplayName;
-  final Client client;
   MatrixConfig? matrixConfig;
   LoginResponse? loginResponse;
   String? syncRoomId;
@@ -79,6 +83,7 @@ class MatrixService {
   String? lastReadEventContextId;
 
   late final ClientRunner<void> clientRunner;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   final Map<String, int> messageCounts = {};
   int sentCount = 0;
@@ -233,17 +238,7 @@ class MatrixService {
       );
 
   List<DeviceKeys> getUnverifiedDevices() {
-    final unverifiedDevices = <DeviceKeys>[];
-
-    for (final deviceKeysList in client.userDeviceKeys.values) {
-      for (final deviceKeys in deviceKeysList.deviceKeys.values) {
-        if (!deviceKeys.verified) {
-          unverifiedDevices.add(deviceKeys);
-        }
-      }
-    }
-
-    return unverifiedDevices;
+    return _gateway.unverifiedDevices();
   }
 
   Future<void> verifyDevice(DeviceKeys deviceKeys) => verifyMatrixDevice(
@@ -309,16 +304,25 @@ class MatrixService {
       listenForKeyVerificationRequests(service: this);
 
   Future<void> logout() async {
-    if (client.isLogged()) {
-      timeline?.cancelSubscriptions();
-      await client.logout();
-    }
+    timeline?.cancelSubscriptions();
+    await _gateway.logout();
   }
 
   Future<void> disposeClient() async {
     if (client.isLogged()) {
       await client.dispose();
     }
+  }
+
+  Future<void> dispose() async {
+    clientRunner.close();
+    await messageCountsController.close();
+    await keyVerificationController.close();
+    await incomingKeyVerificationRunnerController.close();
+    await incomingKeyVerificationController.close();
+    await _connectivitySubscription?.cancel();
+    timeline?.cancelSubscriptions();
+    await _gateway.dispose();
   }
 
   Future<Map<String, dynamic>> getDiagnosticInfo() async {

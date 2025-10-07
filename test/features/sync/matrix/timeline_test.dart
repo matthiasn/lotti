@@ -12,6 +12,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/matrix/fake_matrix_gateway.dart';
+
 class MockMatrixClient extends Mock implements Client {}
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -26,10 +28,12 @@ class MockTimeline extends Mock implements Timeline {}
 
 class TestMatrixService extends MatrixService {
   TestMatrixService({
-    required super.client,
+    required Client client,
     JournalDb? journalDb,
     SettingsDb? settingsDb,
   }) : super(
+          client: client,
+          gateway: FakeMatrixGateway(client: client),
           overriddenJournalDb: journalDb,
           overriddenSettingsDb: settingsDb,
         );

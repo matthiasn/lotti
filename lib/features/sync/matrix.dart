@@ -1,3 +1,5 @@
+export 'gateway/matrix_sdk_gateway.dart';
+export 'gateway/matrix_sync_gateway.dart';
 export 'matrix/client.dart';
 export 'matrix/config.dart';
 export 'matrix/consts.dart';

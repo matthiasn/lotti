@@ -15,6 +15,8 @@ import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/matrix/fake_matrix_gateway.dart';
+
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
@@ -120,8 +122,10 @@ void main() {
     });
 
     test('inviteToMatrixRoom calls room invite when syncRoom set', () async {
-      final matrixService = MatrixService(client: mockClient)
-        ..syncRoom = mockRoom;
+      final matrixService = MatrixService(
+        client: mockClient,
+        gateway: FakeMatrixGateway(client: mockClient),
+      )..syncRoom = mockRoom;
 
       when(() => mockRoom.invite('@user:server')).thenAnswer((_) async {});
 
@@ -134,7 +138,10 @@ void main() {
     });
 
     test('listenToMatrixRoomInvites auto-joins when no room set', () async {
-      final matrixService = MatrixService(client: mockClient);
+      final matrixService = MatrixService(
+        client: mockClient,
+        gateway: FakeMatrixGateway(client: mockClient),
+      );
       final roomController =
           CachedStreamController<({String roomId, StrippedStateEvent state})>();
       final joinedRoom = MockRoom();
