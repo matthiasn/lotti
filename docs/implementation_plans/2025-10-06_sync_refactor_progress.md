@@ -25,6 +25,7 @@
   - Introduced `SyncEventProcessor` with injectable `SyncJournalEntityLoader` abstraction.
   - Replaced `processMatrixMessage` usage in the timeline pipeline and added comprehensive unit coverage for each message type.
   - Added targeted timeline tests to ensure the processor is invoked prior to read-marker updates.
+  - Deleted legacy `processMatrixMessage` wrapper (no call sites remaining after timeline migration).
 
 ## Recent Fixes & Enhancements
 
@@ -36,6 +37,5 @@
 ## Next Up
 
 - **Milestone 6:** Split session & room management (SessionManager, TimelineListener, SyncRoomManager with invite filtering) and remove the legacy `listenToMatrixRoomInvites` path; prepare characterization/integration tests for invite flows beforehand.
-- Cleanup: remove legacy `processMatrixMessage` wrapper once all call sites are migrated to `SyncEventProcessor`.
 
 This progress log will be updated as each milestone is completed.
