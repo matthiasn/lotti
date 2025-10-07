@@ -257,7 +257,7 @@ void main() {
     tearDown(() async {
       await getIt.reset();
       if (tempDir.existsSync()) {
-        await tempDir.delete(recursive: true);
+        tempDir.deleteSync(recursive: true);
       }
     });
 

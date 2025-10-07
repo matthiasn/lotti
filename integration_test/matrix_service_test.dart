@@ -12,6 +12,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/database/ai_config_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -65,6 +67,7 @@ void main() {
       overriddenFilename: 'bob_db.sqlite',
       inMemoryDatabase: true,
     );
+    late AiConfigDb aiConfigDb;
 
     const testSlowNetwork = bool.fromEnvironment(testSlowNetworkEnv);
 
@@ -115,6 +118,8 @@ void main() {
         ..createSync(recursive: true);
       debugPrint('Created temporary docDir ${docDir.path}');
 
+      aiConfigDb = AiConfigDb(inMemoryDatabase: true);
+
       // Register essential dependencies
       getIt
         ..registerSingleton<Directory>(docDir)
@@ -124,7 +129,9 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
-        ..registerSingleton<SecureStorage>(secureStorageMock);
+        ..registerSingleton<SecureStorage>(secureStorageMock)
+        ..registerSingleton<AiConfigDb>(aiConfigDb)
+        ..registerSingleton<AiConfigRepository>(AiConfigRepository(aiConfigDb));
 
       // Ensure all GetIt instances are properly initialized
       // Give time for any async initializations to complete
@@ -138,6 +145,7 @@ void main() {
       try {
         await aliceDb.close();
         await bobDb.close();
+        await aiConfigDb.close();
       } catch (e) {
         debugPrint('Error during database cleanup: $e');
       }
