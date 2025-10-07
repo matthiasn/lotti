@@ -237,6 +237,45 @@ void main() {
     await expectation;
   });
 
+  test('saveRoom delegates to room manager', () async {
+    when(() => mockRoomManager.saveRoomId('!room:server'))
+        .thenAnswer((_) async {});
+
+    await service.saveRoom('!room:server');
+
+    verify(() => mockRoomManager.saveRoomId('!room:server')).called(1);
+  });
+
+  test('leaveRoom delegates to room manager', () async {
+    when(() => mockRoomManager.leaveCurrentRoom()).thenAnswer((_) async {});
+
+    await service.leaveRoom();
+
+    verify(() => mockRoomManager.leaveCurrentRoom()).called(1);
+  });
+
+  test('connect delegates to session manager without login attempt', () async {
+    when(() => mockSessionManager.connect(shouldAttemptLogin: false))
+        .thenAnswer((_) async => true);
+
+    final result = await service.connect();
+
+    expect(result, isTrue);
+    verify(() => mockSessionManager.connect(shouldAttemptLogin: false))
+        .called(1);
+  });
+
+  test('login delegates to session manager with login attempt', () async {
+    when(() => mockSessionManager.connect(shouldAttemptLogin: true))
+        .thenAnswer((_) async => true);
+
+    final result = await service.login();
+
+    expect(result, isTrue);
+    verify(() => mockSessionManager.connect(shouldAttemptLogin: true))
+        .called(1);
+  });
+
   test('logout cancels timeline and invokes session manager', () async {
     final mockTimeline = MockTimeline();
     when(() => mockTimeline.cancelSubscriptions()).thenAnswer((_) async {});
@@ -750,6 +789,27 @@ void main() {
       expect(startKeyCalled, isTrue);
       expect(listenTimelineCalled, isTrue);
       verify(() => mockRoomManager.loadPersistedRoomId()).called(1);
+    });
+
+    test('listen logs sync state with persisted and joined rooms', () async {
+      final roomA = MockRoom();
+      final roomB = MockRoom();
+      when(() => roomA.id).thenReturn('!roomA:server');
+      when(() => roomB.id).thenReturn('!roomB:server');
+      when(() => mockClient.rooms).thenReturn([roomA, roomB]);
+      when(() => mockRoomManager.currentRoomId).thenReturn('!roomA:server');
+      when(() => mockRoomManager.loadPersistedRoomId())
+          .thenAnswer((_) async => '!roomPersisted:server');
+
+      await testService.listen();
+
+      verify(
+        () => mockLoggingService.captureEvent(
+          contains('savedRoomId: !roomPersisted:server'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'listen',
+        ),
+      ).called(1);
     });
 
     test('init connects, hydrates, and listens when logged in', () async {
