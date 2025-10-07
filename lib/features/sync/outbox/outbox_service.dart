@@ -33,6 +33,7 @@ class OutboxService {
     OutboxMessageSender? messageSender,
     OutboxProcessor? processor,
     int? maxRetries,
+    MatrixService? matrixService,
   })  : _syncDatabase = syncDatabase ?? getIt<SyncDatabase>(),
         _loggingService = loggingService ?? getIt<LoggingService>(),
         _activityGate = activityGate ??
@@ -48,7 +49,7 @@ class OutboxService {
           maxRetries: maxRetries ?? 10,
         );
     _messageSender =
-        messageSender ?? MatrixOutboxMessageSender(getIt<MatrixService>());
+        messageSender ?? MatrixOutboxMessageSender(matrixService ?? getIt<MatrixService>());
     _processor = processor ??
         OutboxProcessor(
           repository: _repository,

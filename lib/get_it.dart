@@ -107,8 +107,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<VectorClockService>(VectorClockService())
-    ..registerSingleton<TimeService>(TimeService())
-    ..registerSingleton<OutboxService>(OutboxService());
+    ..registerSingleton<TimeService>(TimeService());
 
   await vod.init();
   final client = await createMatrixClient();
@@ -121,6 +120,14 @@ Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<MatrixSyncGateway>(matrixGateway)
     ..registerSingleton<MatrixService>(matrixService)
+    ..registerSingleton<OutboxService>(
+      OutboxService(
+        syncDatabase: getIt<SyncDatabase>(),
+        loggingService: getIt<LoggingService>(),
+        activityGate: getIt<UserActivityGate>(),
+        matrixService: matrixService,
+      ),
+    )
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<HealthImport>(
