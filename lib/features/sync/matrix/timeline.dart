@@ -77,8 +77,14 @@ Future<void> processNewTimelineEvents({
   JournalDb? overriddenJournalDb,
   LoggingService? overriddenLoggingService,
   SettingsDb? overriddenSettingsDb,
+  SyncReadMarkerService? readMarkerService,
 }) async {
   final loggingService = overriddenLoggingService ?? getIt<LoggingService>();
+  final markerService = readMarkerService ??
+      SyncReadMarkerService(
+        settingsDb: getIt<SettingsDb>(),
+        loggingService: loggingService,
+      );
 
   try {
     final lastReadEventContextId = service.lastReadEventContextId;
@@ -139,21 +145,12 @@ Future<void> processNewTimelineEvents({
         await saveAttachment(event);
       }
 
-      try {
-        if (eventId.startsWith(r'$')) {
-          service.lastReadEventContextId = eventId;
-          await setLastReadMatrixEventId(eventId, overriddenSettingsDb);
-          final loginState = service.client.onLoginStateChanged.value;
-          if (loginState == LoginState.loggedIn) {
-            await timeline.setReadMarker(eventId: eventId);
-          }
-        }
-      } catch (e, stackTrace) {
-        loggingService.captureException(
-          e,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'setReadMarker ${service.client.deviceName}',
-          stackTrace: stackTrace,
+      if (eventId.startsWith(r'$')) {
+        await markerService.updateReadMarker(
+          service: service,
+          timeline: timeline,
+          eventId: eventId,
+          overriddenSettingsDb: overriddenSettingsDb,
         );
       }
     }

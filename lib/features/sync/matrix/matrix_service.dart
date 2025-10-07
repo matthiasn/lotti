@@ -33,6 +33,7 @@ class MatrixService {
                 : UserActivityGate(
                     activityService: getIt<UserActivityService>(),
                   )),
+        _ownsActivityGate = activityGate == null,
         keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
     clientRunner = ClientRunner<void>(
@@ -75,6 +76,7 @@ class MatrixService {
 
   final MatrixSyncGateway _gateway;
   final UserActivityGate _activityGate;
+  final bool _ownsActivityGate;
   Client get client => _gateway.client;
 
   void publishIncomingRunnerState() {
@@ -329,6 +331,9 @@ class MatrixService {
     await incomingKeyVerificationController.close();
     await _connectivitySubscription?.cancel();
     timeline?.cancelSubscriptions();
+    if (_ownsActivityGate) {
+      await _activityGate.dispose();
+    }
     await _gateway.dispose();
   }
 

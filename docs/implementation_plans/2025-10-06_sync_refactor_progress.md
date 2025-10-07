@@ -17,6 +17,10 @@
   - Added `OutboxProcessor` and `MatrixOutboxMessageSender`, refactoring `OutboxService` to delegate queue handling.
   - Added `OutboxProcessingResult` for scheduling decisions and a suite of processor tests covering success, retry, and error scenarios.
 
+- **Sync Read Marker Service** (Milestone 4)
+  - Extracted read-marker persistence into `SyncReadMarkerService` with dedicated unit tests.
+  - `processNewTimelineEvents` now delegates marker updates instead of inlining persistence and Matrix API calls.
+
 ## Recent Fixes & Enhancements
 
 - `UserActivityGate` now initializes `canProcess` correctly and only emits meaningful transitions.
@@ -26,7 +30,6 @@
 
 ## Next Up
 
-- **Milestone 4:** Extract `SyncReadMarkerService` to own persistence + read-marker updates with unit coverage.
 - **Milestone 5:** Build `SyncEventProcessor` (per-entity handlers + attachment reader abstraction) and cover with targeted tests.
 - **Milestone 6:** Split session & room management (SessionManager, TimelineListener, SyncRoomManager with invite filtering) and remove the legacy `listenToMatrixRoomInvites` path; prepare characterization/integration tests for invite flows beforehand.
 

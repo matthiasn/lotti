@@ -25,13 +25,6 @@ class OutboxProcessingResult {
 }
 
 class OutboxProcessor {
-  final OutboxRepository _repository;
-  final OutboxMessageSender _messageSender;
-  final LoggingService _loggingService;
-  final int batchSize;
-  final Duration retryDelay;
-  final Duration errorDelay;
-
   OutboxProcessor({
     required OutboxRepository repository,
     required OutboxMessageSender messageSender,
@@ -45,6 +38,13 @@ class OutboxProcessor {
         batchSize = batchSizeOverride ?? 10,
         retryDelay = retryDelayOverride ?? const Duration(seconds: 5),
         errorDelay = errorDelayOverride ?? const Duration(seconds: 15);
+
+  final OutboxRepository _repository;
+  final OutboxMessageSender _messageSender;
+  final LoggingService _loggingService;
+  final int batchSize;
+  final Duration retryDelay;
+  final Duration errorDelay;
 
   Future<OutboxProcessingResult> processQueue() async {
     final pendingItems = await _repository.fetchPending(limit: batchSize);

@@ -48,8 +48,8 @@ class OutboxService {
           _syncDatabase,
           maxRetries: maxRetries ?? 10,
         );
-    _messageSender =
-        messageSender ?? MatrixOutboxMessageSender(matrixService ?? getIt<MatrixService>());
+    _messageSender = messageSender ??
+        MatrixOutboxMessageSender(matrixService ?? getIt<MatrixService>());
     _processor = processor ??
         OutboxProcessor(
           repository: _repository,
