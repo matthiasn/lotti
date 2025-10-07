@@ -65,6 +65,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockSecureStorage extends Mock implements SecureStorage {}
 
+class MockOutboxService extends Mock implements OutboxService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -110,7 +112,7 @@ void main() {
       ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
       ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
       ..registerSingleton<SecureStorage>(mockSecureStorage)
-      ..registerSingleton<OutboxService>(OutboxService())
+      ..registerSingleton<OutboxService>(MockOutboxService())
       ..registerSingleton<VectorClockService>(VectorClockService())
       ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
       ..registerSingleton<EditorStateService>(mockEditorStateService);

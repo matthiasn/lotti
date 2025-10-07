@@ -63,6 +63,8 @@ class FakeEventData extends Fake implements EventData {}
 class MockDirectTaskSummaryRefreshController extends Mock
     implements DirectTaskSummaryRefreshController {}
 
+class MockOutboxService extends Mock implements OutboxService {}
+
 // Adapter to wrap the mock in a Notifier
 class DirectTaskSummaryRefreshControllerAdapter extends Notifier<void>
     implements DirectTaskSummaryRefreshController {
@@ -245,6 +247,7 @@ void main() {
   final mockNavService = MockNavService();
   final mockNotificationService = MockNotificationService();
   final mockEditorStateService = MockEditorStateService();
+  final mockOutboxService = MockOutboxService();
   var vcMockNext =
       '1'; // This was used by secureStorageMock for vector clock testing
 
@@ -303,7 +306,7 @@ void main() {
       ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
       ..registerSingleton<LoggingService>(LoggingService())
       ..registerSingleton<SecureStorage>(secureStorageMock)
-      ..registerSingleton<OutboxService>(OutboxService())
+      ..registerSingleton<OutboxService>(mockOutboxService)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<VectorClockService>(VectorClockService())
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)

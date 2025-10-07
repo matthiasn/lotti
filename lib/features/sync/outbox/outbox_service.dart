@@ -9,8 +9,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
-import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/send_message.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_processor.dart';
+import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -22,10 +25,39 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 
 class OutboxService {
-  OutboxService() {
+  OutboxService({
+    SyncDatabase? syncDatabase,
+    LoggingService? loggingService,
+    UserActivityGate? activityGate,
+    OutboxRepository? repository,
+    OutboxMessageSender? messageSender,
+    OutboxProcessor? processor,
+    int? maxRetries,
+  })  : _syncDatabase = syncDatabase ?? getIt<SyncDatabase>(),
+        _loggingService = loggingService ?? getIt<LoggingService>(),
+        _activityGate = activityGate ??
+            (getIt.isRegistered<UserActivityGate>()
+                ? getIt<UserActivityGate>()
+                : UserActivityGate(
+                    activityService: getIt<UserActivityService>(),
+                  )) {
+    _repository = repository ??
+        DatabaseOutboxRepository(
+          _syncDatabase,
+          maxRetries: maxRetries ?? 10,
+        );
+    _messageSender =
+        messageSender ?? MatrixOutboxMessageSender(getIt<MatrixService>());
+    _processor = processor ??
+        OutboxProcessor(
+          repository: _repository,
+          messageSender: _messageSender,
+          loggingService: _loggingService,
+        );
+
     _startRunner();
 
-    Connectivity()
+    _connectivitySubscription = Connectivity()
         .onConnectivityChanged
         .listen((List<ConnectivityResult> result) {
       if ({
@@ -37,21 +69,21 @@ class OutboxService {
       }
     });
   }
-  final LoggingService _loggingService = getIt<LoggingService>();
-  final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
-  final UserActivityGate _userActivityGate =
-      getIt.isRegistered<UserActivityGate>()
-          ? getIt<UserActivityGate>()
-          : UserActivityGate(
-              activityService: getIt<UserActivityService>(),
-            );
+
+  final LoggingService _loggingService;
+  final SyncDatabase _syncDatabase;
+  final UserActivityGate _activityGate;
+  late final OutboxRepository _repository;
+  late final OutboxMessageSender _messageSender;
+  late final OutboxProcessor _processor;
 
   late ClientRunner<int> _clientRunner;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
-        await _userActivityGate.waitUntilIdle();
+        await _activityGate.waitUntilIdle();
         await sendNext();
       },
     );
@@ -166,66 +198,11 @@ class OutboxService {
         return;
       }
 
-      final unprocessed = await getNextItems();
-      if (unprocessed.isNotEmpty) {
-        final nextPending = unprocessed.first;
-
-        _loggingService.captureEvent(
-          'trying ${nextPending.subject} ',
-          domain: 'OUTBOX',
-          subDomain: 'sendNext()',
+      final result = await _processor.processQueue();
+      if (result.shouldSchedule) {
+        await enqueueNextSendRequest(
+          delay: result.nextDelay ?? Duration.zero,
         );
-
-        try {
-          final success = await getIt<MatrixService>().sendMatrixMsg(
-            SyncMessage.fromJson(
-              json.decode(nextPending.message) as Map<String, dynamic>,
-            ),
-          );
-
-          if (!success) {
-            await enqueueNextSendRequest(delay: const Duration(seconds: 5));
-            return;
-          }
-
-          await _syncDatabase.updateOutboxItem(
-            OutboxCompanion(
-              id: Value(nextPending.id),
-              status: Value(OutboxStatus.sent.index),
-              updatedAt: Value(DateTime.now()),
-            ),
-          );
-          if (unprocessed.length > 1) {
-            await enqueueNextSendRequest();
-          }
-
-          _loggingService.captureEvent(
-            '${nextPending.subject} done',
-            domain: 'OUTBOX',
-            subDomain: 'sendNext()',
-          );
-        } catch (e, stackTrace) {
-          getIt<LoggingService>().captureException(
-            e,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'sendMatrixMsg',
-            stackTrace: stackTrace,
-          );
-
-          await _syncDatabase.updateOutboxItem(
-            OutboxCompanion(
-              id: Value(nextPending.id),
-              status: Value(
-                nextPending.retries < 10
-                    ? OutboxStatus.pending.index
-                    : OutboxStatus.error.index,
-              ),
-              retries: Value(nextPending.retries + 1),
-              updatedAt: Value(DateTime.now()),
-            ),
-          );
-          await enqueueNextSendRequest(delay: const Duration(seconds: 15));
-        }
       }
     } catch (exception, stackTrace) {
       _loggingService.captureException(
@@ -247,5 +224,21 @@ class OutboxService {
         _loggingService.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
       }),
     );
+  }
+
+  Future<void> dispose() async {
+    _clientRunner.close();
+    await _connectivitySubscription?.cancel();
+  }
+}
+
+class MatrixOutboxMessageSender implements OutboxMessageSender {
+  MatrixOutboxMessageSender(this._matrixService);
+
+  final MatrixService _matrixService;
+
+  @override
+  Future<bool> send(SyncMessage message) {
+    return _matrixService.sendMatrixMsg(message);
   }
 }
