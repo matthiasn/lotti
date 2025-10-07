@@ -103,11 +103,12 @@ Future<void> processNewTimelineEvents({
 
   try {
     final lastReadEventContextId = listener.lastReadEventContextId;
-
     await listener.client.sync();
     final syncRoom = listener.roomManager.currentRoom;
-    final hasMessage =
-        await syncRoom?.getEventById(lastReadEventContextId.toString()) != null;
+    var hasMessage = false;
+    if (lastReadEventContextId != null && syncRoom != null) {
+      hasMessage = await syncRoom.getEventById(lastReadEventContextId) != null;
+    }
 
     final timeline = await syncRoom?.getTimeline(
       eventContextId: hasMessage ? lastReadEventContextId : null,
