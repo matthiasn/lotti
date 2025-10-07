@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -10,10 +11,12 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as path;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../test_data/test_data.dart';
@@ -239,5 +242,47 @@ void main() {
           subDomain: 'SyncEventProcessor',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         )).called(1);
+  });
+
+  group('FileSyncJournalEntityLoader', () {
+    late Directory tempDir;
+
+    setUp(() async {
+      await getIt.reset();
+      getIt.allowReassignment = true;
+      tempDir = await Directory.systemTemp.createTemp('sync_loader_test');
+      getIt.registerSingleton<Directory>(tempDir);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    Future<void> writeEntity(String relativePath) async {
+      final file = File(path.join(tempDir.path, relativePath));
+      await file.create(recursive: true);
+      await file.writeAsString(jsonEncode(fallbackJournalEntity.toJson()));
+    }
+
+    test('loads entity when jsonPath starts with leading slash', () async {
+      await writeEntity('entity.json');
+
+      const loader = FileSyncJournalEntityLoader();
+      final entity = await loader.load('/entity.json');
+
+      expect(entity.meta.id, fallbackJournalEntity.meta.id);
+    });
+
+    test('loads entity when jsonPath is relative', () async {
+      await writeEntity('nested/entity.json');
+
+      const loader = FileSyncJournalEntityLoader();
+      final entity = await loader.load('nested/entity.json');
+
+      expect(entity.meta.id, fallbackJournalEntity.meta.id);
+    });
   });
 }

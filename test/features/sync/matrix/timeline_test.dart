@@ -298,4 +298,94 @@ void main() {
       ),
     ).called(1);
   });
+
+  test('skips processing for events emitted by current user', () async {
+    final mockRoom = MockRoom();
+    final mockTimeline = MockTimeline();
+    when(() => mockRoom.id).thenReturn('!room:server');
+
+    final event = Event.fromJson(
+      {
+        'event_id': '\u0001self',
+        'sender': '@user:server',
+        'room_id': '!room:server',
+        'type': 'm.room.message',
+        'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
+        'content': {
+          'body': 'self',
+          'msgtype': 'com.lotti.sync.message',
+        },
+      },
+      mockRoom,
+    );
+
+    service
+      ..syncRoom = mockRoom
+      ..syncRoomId = '!room:server'
+      ..lastReadEventContextId = '\u0001start';
+
+    when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
+    when(() =>
+            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
+        .thenAnswer((_) async => mockTimeline);
+    when(() => mockTimeline.events).thenReturn([event]);
+
+    await processNewTimelineEvents(
+      service: service,
+      eventProcessor: mockEventProcessor,
+      readMarkerService: mockReadMarkerService,
+    );
+
+    verifyNever(
+      () => mockEventProcessor.process(
+        event: any<Event>(named: 'event'),
+        journalDb: mockJournalDb,
+      ),
+    );
+  });
+
+  test('skips non-sync message types', () async {
+    final mockRoom = MockRoom();
+    final mockTimeline = MockTimeline();
+    when(() => mockRoom.id).thenReturn('!room:server');
+
+    final event = Event.fromJson(
+      {
+        'event_id': '\u0001text',
+        'sender': '@other:server',
+        'room_id': '!room:server',
+        'type': 'm.room.message',
+        'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
+        'content': {
+          'body': 'hi',
+          'msgtype': 'm.text',
+        },
+      },
+      mockRoom,
+    );
+
+    service
+      ..syncRoom = mockRoom
+      ..syncRoomId = '!room:server'
+      ..lastReadEventContextId = '\u0001start';
+
+    when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
+    when(() =>
+            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
+        .thenAnswer((_) async => mockTimeline);
+    when(() => mockTimeline.events).thenReturn([event]);
+
+    await processNewTimelineEvents(
+      service: service,
+      eventProcessor: mockEventProcessor,
+      readMarkerService: mockReadMarkerService,
+    );
+
+    verifyNever(
+      () => mockEventProcessor.process(
+        event: any<Event>(named: 'event'),
+        journalDb: mockJournalDb,
+      ),
+    );
+  });
 }
