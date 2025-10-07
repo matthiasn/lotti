@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -27,6 +28,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 class MockRoom extends Mock implements Room {}
 
 class MockTimeline extends Mock implements Timeline {}
+
+class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
 
 class TestMatrixService extends MatrixService {
   TestMatrixService({
@@ -70,6 +73,7 @@ void main() {
   late MockSettingsDb mockSettingsDb;
   late MockLoggingService mockLoggingService;
   late TestMatrixService service;
+  late MockSyncReadMarkerService mockReadMarkerService;
 
   setUp(() {
     mockClient = MockMatrixClient();
@@ -113,6 +117,7 @@ void main() {
       journalDb: mockJournalDb,
       settingsDb: mockSettingsDb,
     );
+    mockReadMarkerService = MockSyncReadMarkerService();
   });
 
   tearDown(getIt.reset);
@@ -127,6 +132,66 @@ void main() {
         contains('Cannot listen to timeline: syncRoom is null'),
         domain: 'MATRIX_SERVICE',
         subDomain: 'listenToTimelineEvents',
+      ),
+    ).called(1);
+  });
+
+  test('processNewTimelineEvents updates last read before marker call',
+      () async {
+    final mockRoom = MockRoom();
+    final mockTimeline = MockTimeline();
+    when(() => mockRoom.id).thenReturn('!room:server');
+    const eventId = r'$event';
+    final event = Event.fromJson(
+      {
+        'event_id': eventId,
+        'sender': '@other:server',
+        'room_id': '!room:server',
+        'type': 'm.room.message',
+        'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
+        'content': {
+          'body': 'hello',
+          'msgtype': 'm.text',
+        },
+      },
+      mockRoom,
+    );
+
+    service
+      ..syncRoom = mockRoom
+      ..syncRoomId = '!room:server'
+      ..lastReadEventContextId = 'initial';
+
+    when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
+    when(() =>
+            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
+        .thenAnswer((_) async => mockTimeline);
+    when(() => mockTimeline.events).thenReturn([event]);
+    when(() => mockTimeline.setReadMarker(eventId: any(named: 'eventId')))
+        .thenAnswer((_) async {});
+
+    when(
+      () => mockReadMarkerService.updateReadMarker(
+        client: service.client,
+        timeline: mockTimeline,
+        eventId: eventId,
+        overriddenSettingsDb: any(named: 'overriddenSettingsDb'),
+      ),
+    ).thenAnswer((_) async {
+      expect(service.lastReadEventContextId, eventId);
+    });
+
+    await processNewTimelineEvents(
+      service: service,
+      readMarkerService: mockReadMarkerService,
+    );
+
+    verify(
+      () => mockReadMarkerService.updateReadMarker(
+        client: service.client,
+        timeline: mockTimeline,
+        eventId: eventId,
+        overriddenSettingsDb: any(named: 'overriddenSettingsDb'),
       ),
     ).called(1);
   });

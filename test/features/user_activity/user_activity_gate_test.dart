@@ -74,5 +74,34 @@ void main() {
         service.dispose();
       });
     });
+
+    test('initial state stays busy until idle threshold elapses', () {
+      fakeAsync((async) {
+        final service = UserActivityService()..updateActivity();
+
+        final gate = UserActivityGate(
+          activityService: service,
+          idleThreshold: const Duration(milliseconds: 200),
+        );
+
+        final events = <bool>[];
+        final sub = gate.canProcessStream.listen(events.add);
+
+        expect(gate.canProcess, isFalse);
+
+        async.flushMicrotasks();
+        expect(events, isEmpty);
+
+        async
+          ..elapse(const Duration(milliseconds: 200))
+          ..flushTimers();
+
+        expect(events, [true]);
+
+        sub.cancel();
+        gate.dispose();
+        service.dispose();
+      });
+    });
   });
 }

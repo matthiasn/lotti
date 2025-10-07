@@ -16,6 +16,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -42,6 +43,10 @@ class MockRoomSummary extends Mock implements RoomSummary {}
 class MockTimeline extends Mock implements Timeline {}
 
 class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
+
+class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
+
+class MockUserActivityGate extends Mock implements UserActivityGate {}
 
 class TestMatrixService extends MatrixService {
   TestMatrixService({
@@ -218,6 +223,88 @@ void main() {
 
   tearDown(getIt.reset);
 
+  test('client getter proxies gateway client instance', () {
+    expect(service.client, mockClient);
+  });
+
+  group('dispose lifecycle', () {
+    test('dispose closes owned activity gate and gateway', () async {
+      final ownedGate = MockUserActivityGate();
+      when(ownedGate.waitUntilIdle).thenAnswer((_) async {});
+      when(ownedGate.dispose).thenAnswer((_) async {});
+
+      await getIt.unregister<UserActivityGate>(disposingFunction: (gate) async {
+        await gate.dispose();
+      });
+      getIt.registerSingleton<UserActivityGate>(ownedGate);
+
+      final mockGateway = MockMatrixSyncGateway();
+      final loginStateStream =
+          CachedStreamController<LoginState>(LoginState.loggedIn);
+      when(() => mockGateway.client).thenReturn(mockClient);
+      when(mockGateway.dispose).thenAnswer((_) async {});
+      when(() => mockClient.onLoginStateChanged).thenReturn(loginStateStream);
+      when(mockClient.isLogged).thenReturn(true);
+      when(() => mockClient.rooms).thenReturn(const []);
+      when(() => mockClient.userDeviceKeys).thenReturn({});
+      when(mockClient.sync)
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => mockClient.deviceID).thenReturn('device-id');
+      when(() => mockClient.deviceName).thenReturn('device-name');
+      when(() => mockClient.userID).thenReturn('@user:server');
+
+      final ownedService = MatrixService(
+        gateway: mockGateway,
+        overriddenJournalDb: mockJournalDb,
+        overriddenSettingsDb: mockSettingsDb,
+      );
+
+      await ownedService.dispose();
+      await loginStateStream.close();
+
+      verify(ownedGate.dispose).called(1);
+      verify(mockGateway.dispose).called(1);
+    });
+
+    test('dispose skips external activity gate but disposes gateway', () async {
+      final externalGate = MockUserActivityGate();
+      when(externalGate.waitUntilIdle).thenAnswer((_) async {});
+      when(externalGate.dispose).thenAnswer((_) async {});
+
+      await getIt.unregister<UserActivityGate>(disposingFunction: (gate) async {
+        await gate.dispose();
+      });
+
+      final mockGateway = MockMatrixSyncGateway();
+      final loginStateStream =
+          CachedStreamController<LoginState>(LoginState.loggedIn);
+      when(() => mockGateway.client).thenReturn(mockClient);
+      when(mockGateway.dispose).thenAnswer((_) async {});
+      when(() => mockClient.onLoginStateChanged).thenReturn(loginStateStream);
+      when(mockClient.isLogged).thenReturn(true);
+      when(() => mockClient.rooms).thenReturn(const []);
+      when(() => mockClient.userDeviceKeys).thenReturn({});
+      when(mockClient.sync)
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => mockClient.deviceID).thenReturn('device-id');
+      when(() => mockClient.deviceName).thenReturn('device-name');
+      when(() => mockClient.userID).thenReturn('@user:server');
+
+      final externalService = MatrixService(
+        gateway: mockGateway,
+        activityGate: externalGate,
+        overriddenJournalDb: mockJournalDb,
+        overriddenSettingsDb: mockSettingsDb,
+      );
+
+      await externalService.dispose();
+      await loginStateStream.close();
+
+      verifyNever(externalGate.dispose);
+      verify(mockGateway.dispose).called(1);
+    });
+  });
+
   group('deleteDevice', () {
     late MockDeviceKeys deviceKeys;
 
@@ -355,6 +442,34 @@ void main() {
         ..publishIncomingRunnerState();
 
       verify(runner.publishState).called(1);
+    });
+
+    test('listen early exits when not logged in', () async {
+      final onLoginStateController =
+          CachedStreamController<LoginState>(LoginState.loggedOut);
+      final roomStateController =
+          CachedStreamController<({String roomId, StrippedStateEvent state})>();
+      final keyVerificationController =
+          CachedStreamController<KeyVerification>();
+      when(() => mockClient.onLoginStateChanged)
+          .thenReturn(onLoginStateController);
+      when(() => mockClient.onRoomState).thenReturn(roomStateController);
+      when(() => mockClient.onKeyVerificationRequest)
+          .thenReturn(keyVerificationController);
+
+      await service.listen();
+
+      verify(
+        () => mockLoggingService.captureEvent(
+          contains('Cannot listen to timeline'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'listenToTimelineEvents',
+        ),
+      ).called(1);
+
+      await onLoginStateController.close();
+      await roomStateController.close();
+      await keyVerificationController.close();
     });
 
     test('logout cancels timeline and logs out client', () async {
