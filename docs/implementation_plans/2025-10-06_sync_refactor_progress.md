@@ -21,6 +21,12 @@
   - Extracted read-marker persistence into `SyncReadMarkerService` with dedicated unit tests.
   - `processNewTimelineEvents` now delegates marker updates instead of inlining persistence and Matrix API calls.
 
+- **Sync Event Processor** (Milestone 5)
+  - Introduced `SyncEventProcessor` with injectable `SyncJournalEntityLoader` abstraction.
+  - Replaced `processMatrixMessage` usage in the timeline pipeline and added comprehensive unit coverage for each message type.
+  - Added targeted timeline tests to ensure the processor is invoked prior to read-marker updates.
+  - Deleted legacy `processMatrixMessage` wrapper (no call sites remaining after timeline migration).
+
 ## Recent Fixes & Enhancements
 
 - `UserActivityGate` now initializes `canProcess` correctly and only emits meaningful transitions.
@@ -30,7 +36,6 @@
 
 ## Next Up
 
-- **Milestone 5:** Build `SyncEventProcessor` (per-entity handlers + attachment reader abstraction) and cover with targeted tests.
 - **Milestone 6:** Split session & room management (SessionManager, TimelineListener, SyncRoomManager with invite filtering) and remove the legacy `listenToMatrixRoomInvites` path; prepare characterization/integration tests for invite flows beforehand.
 
 This progress log will be updated as each milestone is completed.

@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/list_extension.dart';
 import 'package:matrix/matrix.dart';
@@ -78,6 +81,7 @@ Future<void> processNewTimelineEvents({
   LoggingService? overriddenLoggingService,
   SettingsDb? overriddenSettingsDb,
   SyncReadMarkerService? readMarkerService,
+  SyncEventProcessor? eventProcessor,
 }) async {
   final loggingService = overriddenLoggingService ?? getIt<LoggingService>();
   final markerService = readMarkerService ??
@@ -85,6 +89,13 @@ Future<void> processNewTimelineEvents({
         settingsDb: overriddenSettingsDb ?? getIt<SettingsDb>(),
         loggingService: loggingService,
       );
+  final processor = eventProcessor ??
+      SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: getIt<UpdateNotifications>(),
+        aiConfigRepository: getIt<AiConfigRepository>(),
+      );
+  final journalDb = overriddenJournalDb ?? getIt<JournalDb>();
 
   try {
     final lastReadEventContextId = service.lastReadEventContextId;
@@ -135,10 +146,9 @@ Future<void> processNewTimelineEvents({
           subDomain: 'processNewTimelineEvents',
         );
         if (event.messageType == syncMessageType) {
-          await processMatrixMessage(
+          await processor.process(
             event: event,
-            service: service,
-            overriddenJournalDb: overriddenJournalDb,
+            journalDb: journalDb,
           );
         }
 
