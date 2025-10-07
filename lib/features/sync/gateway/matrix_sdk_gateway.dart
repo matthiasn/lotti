@@ -161,23 +161,16 @@ class MatrixSdkGateway implements MatrixSyncGateway {
 
   @override
   List<DeviceKeys> unverifiedDevices() {
-    final result = <DeviceKeys>[];
-    for (final deviceKeysList in _client.userDeviceKeys.values) {
-      for (final device in deviceKeysList.deviceKeys.values) {
-        if (!device.verified) {
-          result.add(device);
-        }
-      }
-    }
-    return result;
+    return _client.userDeviceKeys.values
+        .expand((deviceKeysList) => deviceKeysList.deviceKeys.values)
+        .where((device) => !device.verified)
+        .toList();
   }
 
   @override
   Future<void> dispose() async {
     await _inviteSubscription.cancel();
     await _inviteController.close();
-    if (_client.isLogged()) {
-      await _client.dispose();
-    }
+    await _client.dispose();
   }
 }

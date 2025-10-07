@@ -8,12 +8,12 @@ class UserActivityGate {
     this.idleThreshold = const Duration(seconds: 1),
   })  : _activityService = activityService,
         _controller = StreamController<bool>.broadcast() {
-    _canProcess = true;
+    final elapsed = DateTime.now().difference(_activityService.lastActivity);
+    final isIdle = elapsed >= idleThreshold;
+    _canProcess = isIdle;
     _controller.add(_canProcess);
 
-    final elapsed = DateTime.now().difference(_activityService.lastActivity);
-    if (elapsed < idleThreshold) {
-      _setCanProcess(false);
+    if (!isIdle) {
       _scheduleTimer(idleThreshold - elapsed);
     }
 

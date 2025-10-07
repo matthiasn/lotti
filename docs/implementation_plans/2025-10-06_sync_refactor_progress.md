@@ -1,0 +1,32 @@
+# Sync Refactor Progress – 2025-10-06
+
+## Completed Milestones
+
+- **Gateway & Lifecycle Foundation** (Milestone 1)
+  - Added `MatrixSyncGateway` interface, `MatrixSdkGateway` concrete implementation, and `FakeMatrixGateway` for tests.
+  - Refactored `MatrixService` to consume the gateway, introduced a `dispose()` method, and wired through `get_it`.
+  - Added dedicated tests to confirm compatibility with existing code paths.
+
+- **UserActivityGate** (Milestone 2)
+  - Enhanced `UserActivityService` with a broadcast stream and `dispose()`.
+  - Introduced `UserActivityGate` for reactive idle gating and integrated it into `MatrixService` and `OutboxService`.
+  - Added comprehensive gate unit tests and adjusted existing sync tests to use the new abstractions.
+
+- **Outbox Processor Extraction** (Milestone 3)
+  - Created `OutboxRepository` abstraction (`DatabaseOutboxRepository`) with configurable retry limits.
+  - Added `OutboxProcessor` and `MatrixOutboxMessageSender`, refactoring `OutboxService` to delegate queue handling.
+  - Added `OutboxProcessingResult` for scheduling decisions and a suite of processor tests covering success, retry, and error scenarios.
+
+## Recent Fixes & Enhancements
+
+- `UserActivityGate` now initializes `canProcess` correctly and only emits meaningful transitions.
+- `OutboxService.dispose()` disposes the gate when the service owns it, preventing leaks.
+- `MatrixSdkGateway.dispose()` now always disposes the underlying Matrix client.
+- Added configurable `maxRetries` support in the repository and corresponding tests.
+
+## Next Up
+
+- **Milestone 4:** Split session & room management (SessionManager, TimelineListener, SyncRoomManager with proper invite handling) and remove the legacy `listenToMatrixRoomInvites` path.
+- Continue writing characterization/integration tests for invite flow before refactoring.
+
+This progress log will be updated as each milestone is completed.

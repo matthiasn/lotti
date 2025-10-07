@@ -40,7 +40,8 @@ class OutboxService {
                 ? getIt<UserActivityGate>()
                 : UserActivityGate(
                     activityService: getIt<UserActivityService>(),
-                  )) {
+                  )),
+        _ownsActivityGate = activityGate == null {
     _repository = repository ??
         DatabaseOutboxRepository(
           _syncDatabase,
@@ -73,6 +74,7 @@ class OutboxService {
   final LoggingService _loggingService;
   final SyncDatabase _syncDatabase;
   final UserActivityGate _activityGate;
+  final bool _ownsActivityGate;
   late final OutboxRepository _repository;
   late final OutboxMessageSender _messageSender;
   late final OutboxProcessor _processor;
@@ -229,6 +231,9 @@ class OutboxService {
   Future<void> dispose() async {
     _clientRunner.close();
     await _connectivitySubscription?.cancel();
+    if (_ownsActivityGate) {
+      await _activityGate.dispose();
+    }
   }
 }
 
