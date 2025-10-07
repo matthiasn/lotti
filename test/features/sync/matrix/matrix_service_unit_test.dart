@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -175,6 +176,12 @@ void main() {
       ..reset()
       ..allowReassignment = true
       ..registerSingleton<UserActivityService>(UserActivityService())
+      ..registerSingleton<UserActivityGate>(
+        UserActivityGate(
+          activityService: getIt<UserActivityService>(),
+          idleThreshold: Duration.zero,
+        ),
+      )
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<SettingsDb>(mockSettingsDb)

@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters
+
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -6,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -85,6 +88,12 @@ void main() {
       ..reset()
       ..allowReassignment = true
       ..registerSingleton<UserActivityService>(UserActivityService())
+      ..registerSingleton<UserActivityGate>(
+        UserActivityGate(
+          activityService: getIt<UserActivityService>(),
+          idleThreshold: Duration.zero,
+        ),
+      )
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<SettingsDb>(mockSettingsDb)

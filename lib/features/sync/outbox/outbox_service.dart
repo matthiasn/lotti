@@ -11,6 +11,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -38,15 +39,19 @@ class OutboxService {
   }
   final LoggingService _loggingService = getIt<LoggingService>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
+  final UserActivityGate _userActivityGate =
+      getIt.isRegistered<UserActivityGate>()
+          ? getIt<UserActivityGate>()
+          : UserActivityGate(
+              activityService: getIt<UserActivityService>(),
+            );
 
   late ClientRunner<int> _clientRunner;
 
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
-        while (getIt<UserActivityService>().msSinceLastActivity < 1000) {
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-        }
+        await _userActivityGate.waitUntilIdle();
         await sendNext();
       },
     );

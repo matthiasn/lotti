@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -20,18 +21,23 @@ class MatrixService {
   MatrixService({
     required Client client,
     MatrixSyncGateway? gateway,
+    UserActivityGate? activityGate,
     this.matrixConfig,
     this.deviceDisplayName,
     JournalDb? overriddenJournalDb,
     SettingsDb? overriddenSettingsDb,
   })  : _gateway = gateway ?? MatrixSdkGateway(client: client),
+        _activityGate = activityGate ??
+            (getIt.isRegistered<UserActivityGate>()
+                ? getIt<UserActivityGate>()
+                : UserActivityGate(
+                    activityService: getIt<UserActivityService>(),
+                  )),
         keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
     clientRunner = ClientRunner<void>(
       callback: (event) async {
-        while (getIt<UserActivityService>().msSinceLastActivity < 1000) {
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-        }
+        await _activityGate.waitUntilIdle();
 
         await processNewTimelineEvents(
           service: this,
@@ -68,6 +74,7 @@ class MatrixService {
   }
 
   final MatrixSyncGateway _gateway;
+  final UserActivityGate _activityGate;
   Client get client => _gateway.client;
 
   void publishIncomingRunnerState() {
