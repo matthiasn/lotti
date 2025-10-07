@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_lambdas
+
 import 'dart:async';
 import 'dart:io';
 
@@ -35,6 +37,10 @@ class MockUserActivityGate extends Mock implements UserActivityGate {}
 class MockClient extends Mock implements Client {}
 
 class FakeMatrixClient extends Fake implements Client {}
+
+class MockTimeline extends Mock implements Timeline {}
+
+class MockRoomSummary extends Mock implements RoomSummary {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
 
@@ -93,6 +99,7 @@ void main() {
 
     when(() => mockGateway.client).thenReturn(mockClient);
     when(() => mockSessionManager.client).thenReturn(mockClient);
+    when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
     when(() => mockTimelineListener.start()).thenAnswer((_) async {});
     when(() => mockTimelineListener.dispose()).thenAnswer((_) async {});
     when(() => mockRoomManager.dispose()).thenAnswer((_) async {});
@@ -174,6 +181,67 @@ void main() {
     controller.add(invite);
     await controller.close();
     await expectation;
+  });
+
+  test('logout cancels timeline and invokes session manager', () async {
+    final mockTimeline = MockTimeline();
+    when(() => mockTimeline.cancelSubscriptions()).thenAnswer((_) async {});
+    when(() => mockTimelineListener.timeline).thenReturn(mockTimeline);
+    when(() => mockSessionManager.logout()).thenAnswer((_) async {});
+
+    await service.logout();
+
+    verify(() => mockTimeline.cancelSubscriptions()).called(1);
+    verify(() => mockSessionManager.logout()).called(1);
+  });
+
+  test('disposeClient disposes underlying client when logged in', () async {
+    when(() => mockClient.isLogged()).thenReturn(true);
+    when(() => mockClient.dispose()).thenAnswer((_) async {});
+
+    await service.disposeClient();
+
+    verify(() => mockClient.dispose()).called(1);
+  });
+
+  test('disposeClient skips dispose when client not logged', () async {
+    when(() => mockClient.isLogged()).thenReturn(false);
+
+    await service.disposeClient();
+
+    verifyNever(() => mockClient.dispose());
+  });
+
+  test('getDiagnosticInfo returns expected payload and logs', () async {
+    when(() => mockRoomManager.loadPersistedRoomId())
+        .thenAnswer((_) async => '!room:server');
+    final mockRoom = MockRoom();
+    final mockSummary = MockRoomSummary();
+    when(() => mockRoom.id).thenReturn('!room:server');
+    when(() => mockRoom.name).thenReturn('Room');
+    when(() => mockRoom.encrypted).thenReturn(true);
+    when(() => mockRoom.summary).thenReturn(mockSummary);
+    when(() => mockSummary.mJoinedMemberCount).thenReturn(2);
+    when(() => mockClient.rooms).thenReturn([mockRoom]);
+    when(
+      () => mockLoggingService.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
+
+    final info = await service.getDiagnosticInfo();
+
+    expect(info['savedRoomId'], '!room:server');
+    expect(info['joinedRooms'], isA<List<Map<String, Object?>>>());
+    verify(
+      () => mockLoggingService.captureEvent(
+        any<String>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'diagnostics',
+      ),
+    ).called(1);
   });
 
   test('dispose closes controllers and disposes collaborators', () async {
@@ -283,6 +351,9 @@ void main() {
 
       expect(connectCalled, isTrue);
       expect(loginCalled, isTrue);
+      verify(
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
+      ).called(1);
       verify(() => sessionRoomManager.joinRoom('!room:server')).called(1);
     });
 
@@ -294,6 +365,10 @@ void main() {
       expect(result, isFalse);
       expect(connectCalled, isFalse);
       expect(loginCalled, isFalse);
+      verifyNever(
+        () => sessionRoomManager.hydrateRoomSnapshot(
+            client: any<Client>(named: 'client')),
+      );
       verify(
         () => sessionLogging.captureEvent(
           contains('Matrix configuration missing'),
@@ -315,6 +390,9 @@ void main() {
 
       expect(connectCalled, isTrue);
       expect(loginCalled, isFalse);
+      verify(
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
+      ).called(1);
     });
 
     test('connect avoids join when room already hydrated', () async {
@@ -332,6 +410,9 @@ void main() {
 
       await sessionManager.connect(shouldAttemptLogin: true);
 
+      verify(
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
+      ).called(1);
       verifyNever(() => sessionRoomManager.joinRoom(any<String>()));
     });
 
@@ -350,6 +431,9 @@ void main() {
 
       expect(result, isTrue);
       verify(
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
+      ).called(1);
+      verify(
         () => sessionLogging.captureException(
           any<Object>(),
           domain: 'MATRIX_SESSION_MANAGER',
@@ -357,6 +441,24 @@ void main() {
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
+    });
+
+    test('connect does not hydrate when not logged and login skipped',
+        () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+
+      final result = await sessionManager.connect(shouldAttemptLogin: false);
+
+      expect(result, isTrue);
+      verifyNever(
+        () => sessionRoomManager.hydrateRoomSnapshot(
+            client: any<Client>(named: 'client')),
+      );
+      verifyNever(() => sessionRoomManager.joinRoom(any<String>()));
     });
   });
 }

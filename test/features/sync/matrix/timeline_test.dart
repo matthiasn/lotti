@@ -221,4 +221,48 @@ void main() {
       ),
     ).called(1);
   });
+
+  test('processNewTimelineEvents skips processing events from self', () async {
+    final mockRoom = MockRoom();
+    final mockTimeline = MockTimeline();
+    when(() => mockRoom.id).thenReturn('!room:server');
+    final event = Event.fromJson(
+      {
+        'event_id': r'$selfEvent',
+        'sender': '@user:server',
+        'room_id': '!room:server',
+        'type': 'm.room.message',
+        'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
+        'content': {
+          'body': 'self message',
+          'msgtype': 'com.lotti.sync.message',
+        },
+      },
+      mockRoom,
+    );
+
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    context.lastReadEventContextId = null;
+    when(() => mockClient.sync())
+        .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+    when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
+    when(() =>
+            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
+        .thenAnswer((_) async => mockTimeline);
+    when(() => mockTimeline.events).thenReturn([event]);
+
+    await processNewTimelineEvents(
+      listener: context,
+      overriddenJournalDb: mockJournalDb,
+      overriddenLoggingService: mockLoggingService,
+      overriddenSettingsDb: mockSettingsDb,
+      readMarkerService: mockReadMarkerService,
+      eventProcessor: mockEventProcessor,
+    );
+
+    verifyNever(() => mockEventProcessor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: any<JournalDb>(named: 'journalDb'),
+        ));
+  });
 }

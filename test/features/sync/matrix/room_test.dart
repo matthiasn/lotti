@@ -39,13 +39,22 @@ void main() {
     mockClient = MockMatrixClient();
 
     when(() => mockGateway.invites).thenAnswer((_) => inviteController.stream);
-    when(() => mockGateway.getRoomById(any())).thenReturn(null);
-    when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
+    when(() => mockGateway.getRoomById(any<String>())).thenReturn(null);
+    when(() => mockSettingsDb.itemByKey(any<String>()))
+        .thenAnswer((_) async => null);
     when(
       () => mockLoggingService.captureEvent(
         any<String>(),
         domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
+    when(
+      () => mockLoggingService.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) {});
 
@@ -338,7 +347,30 @@ void main() {
       await manager.initialize();
       await manager.leaveCurrentRoom();
 
-      verifyNever(() => mockGateway.leaveRoom(any()));
+      verifyNever(() => mockGateway.leaveRoom(any<String>()));
+    });
+
+    test('leaveCurrentRoom preserves state when leave fails', () async {
+      when(() => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'))
+          .thenAnswer((_) async => 1);
+      await manager.saveRoomId('!room:server');
+      when(() => mockGateway.leaveRoom('!room:server'))
+          .thenThrow(Exception('network error'));
+
+      expect(
+        () => manager.leaveCurrentRoom(),
+        throwsException,
+      );
+      expect(manager.currentRoomId, '!room:server');
+      verifyNever(() => mockSettingsDb.removeSettingsItem(matrixRoomKey));
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: 'SYNC_ROOM_MANAGER',
+          subDomain: 'leaveRoom',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
   });
 }
