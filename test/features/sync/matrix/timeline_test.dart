@@ -265,4 +265,27 @@ void main() {
           journalDb: any<JournalDb>(named: 'journalDb'),
         ));
   });
+
+  test('processNewTimelineEvents logs when timeline unavailable', () async {
+    when(() => mockRoomManager.currentRoom).thenReturn(null);
+    when(() => mockClient.sync())
+        .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+
+    await processNewTimelineEvents(
+      listener: context,
+      overriddenJournalDb: mockJournalDb,
+      overriddenLoggingService: mockLoggingService,
+      overriddenSettingsDb: mockSettingsDb,
+      readMarkerService: mockReadMarkerService,
+      eventProcessor: mockEventProcessor,
+    );
+
+    verify(
+      () => mockLoggingService.captureEvent(
+        'Timeline is null',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processNewTimelineEvents',
+      ),
+    ).called(1);
+  });
 }

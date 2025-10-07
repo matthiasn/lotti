@@ -68,6 +68,16 @@ void main() {
     expect(sessionManager.matrixConfig, equals(config));
   });
 
+  test('loadMatrixConfig returns null when storage empty', () async {
+    when(() => mockSecureStorage.read(key: matrixConfigKey))
+        .thenAnswer((_) async => null);
+
+    final result = await loadMatrixConfig(session: sessionManager);
+
+    expect(result, isNull);
+    expect(sessionManager.matrixConfig, isNull);
+  });
+
   test('setMatrixConfig persists config to secure storage', () async {
     const config = MatrixConfig(
       homeServer: 'https://example.org',

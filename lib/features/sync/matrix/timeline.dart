@@ -172,7 +172,7 @@ Future<void> processNewTimelineEvents({
     loggingService.captureException(
       e,
       domain: 'MATRIX_SERVICE',
-      subDomain: 'listenToTimelineEvents ${listener.client.deviceName}',
+      subDomain: 'processNewTimelineEvents ${listener.client.deviceName}',
       stackTrace: stackTrace,
     );
   }

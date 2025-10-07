@@ -9,6 +9,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -18,7 +19,9 @@ import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
@@ -47,6 +50,56 @@ class MockSettingsDb extends Mock implements SettingsDb {}
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockRoom extends Mock implements Room {}
+
+class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+class MockKeyVerification extends Mock implements KeyVerification {}
+
+class TestUserActivityGate extends UserActivityGate {
+  TestUserActivityGate(UserActivityService service)
+      : super(activityService: service, idleThreshold: Duration.zero);
+
+  bool disposed = false;
+
+  @override
+  Future<void> dispose() async {
+    disposed = true;
+    await super.dispose();
+  }
+}
+
+class TestableMatrixService extends MatrixService {
+  TestableMatrixService({
+    required super.gateway,
+    required this.onStartKeyVerification,
+    required this.onListenTimeline,
+    super.activityGate,
+    super.roomManager,
+    super.sessionManager,
+    super.timelineListener,
+    super.overriddenLoggingService,
+  });
+
+  final VoidCallback onStartKeyVerification;
+  final VoidCallback onListenTimeline;
+
+  @override
+  Future<void> startKeyVerificationListener() async {
+    onStartKeyVerification();
+  }
+
+  @override
+  Future<void> listenToTimeline() async {
+    onListenTimeline();
+  }
+
+  bool loadConfigCalled = false;
+  @override
+  Future<MatrixConfig?> loadConfig() async {
+    loadConfigCalled = true;
+    return matrixConfig;
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +153,7 @@ void main() {
     when(() => mockGateway.client).thenReturn(mockClient);
     when(() => mockSessionManager.client).thenReturn(mockClient);
     when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
+    when(() => mockTimelineListener.initialize()).thenAnswer((_) async {});
     when(() => mockTimelineListener.start()).thenAnswer((_) async {});
     when(() => mockTimelineListener.dispose()).thenAnswer((_) async {});
     when(() => mockRoomManager.dispose()).thenAnswer((_) async {});
@@ -244,6 +298,139 @@ void main() {
     ).called(1);
   });
 
+  test('publishIncomingRunnerState forwards publishState when runner set',
+      () async {
+    final mockKeyVerification = MockKeyVerification();
+    when(() => mockKeyVerification.lastStep).thenReturn('init');
+    when(() => mockKeyVerification.sasEmojis)
+        .thenReturn(<KeyVerificationEmoji>[]);
+    when(() => mockKeyVerification.acceptVerification())
+        .thenAnswer((_) async {});
+    when(() => mockKeyVerification.acceptSas()).thenAnswer((_) async {});
+    when(() => mockKeyVerification.cancel()).thenAnswer((_) async {});
+
+    final controller = StreamController<KeyVerificationRunner>.broadcast();
+    final runner = KeyVerificationRunner(
+      mockKeyVerification,
+      controller: controller,
+      name: 'runner',
+    )..stopTimer();
+    service.incomingKeyVerificationRunner = runner;
+
+    final emitted = <KeyVerificationRunner>[];
+    final sub = controller.stream.listen(emitted.add);
+
+    service.publishIncomingRunnerState();
+    await Future<void>.microtask(() {});
+    await sub.cancel();
+    await controller.close();
+
+    expect(emitted.last, same(runner));
+  });
+
+  test('getIncomingKeyVerificationStream forwards controller events', () async {
+    final stream = service.getIncomingKeyVerificationStream();
+    final verification = MockKeyVerification();
+
+    final expectation = expectLater(stream, emits(verification));
+
+    service.incomingKeyVerificationController.add(verification);
+
+    await expectation;
+  });
+
+  test('getUnverifiedDevices delegates to gateway', () {
+    final deviceKeys = [MockDeviceKeys(), MockDeviceKeys()];
+    when(() => mockGateway.unverifiedDevices()).thenReturn(deviceKeys);
+
+    expect(service.getUnverifiedDevices(), deviceKeys);
+  });
+
+  test('logout ignores timeline when already null', () async {
+    when(() => mockTimelineListener.timeline).thenReturn(null);
+    when(() => mockSessionManager.logout()).thenAnswer((_) async {});
+
+    await service.logout();
+
+    verify(() => mockSessionManager.logout()).called(1);
+  });
+
+  group('deleteDevice', () {
+    const config = MatrixConfig(
+      homeServer: 'https://example.org',
+      user: '@user:server',
+      password: 'pw',
+    );
+    MatrixConfig? sessionConfig;
+
+    setUp(() {
+      sessionConfig = config;
+      when(() => mockSessionManager.matrixConfig)
+          .thenAnswer((_) => sessionConfig);
+      when(() => mockSessionManager.matrixConfig = any())
+          .thenAnswer((invocation) {
+        return sessionConfig =
+            invocation.positionalArguments.first as MatrixConfig?;
+      });
+      service.matrixConfig = config;
+      when(() => mockClient.userID).thenReturn('@user:server');
+      when(() => mockClient.deviceID).thenReturn('device');
+      when(
+        () => mockClient.deleteDevice(
+          any(),
+          auth: any(named: 'auth'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    test('throws when deviceId missing', () async {
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn(null);
+
+      expect(() => service.deleteDevice(deviceKeys), throwsArgumentError);
+    });
+
+    test('throws when config missing', () async {
+      service.matrixConfig = null;
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn('dev');
+
+      expect(() => service.deleteDevice(deviceKeys), throwsStateError);
+    });
+
+    test('throws when user mismatch', () async {
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn('dev');
+      when(() => deviceKeys.userId).thenReturn('@other:server');
+
+      expect(() => service.deleteDevice(deviceKeys), throwsStateError);
+    });
+
+    test('throws when password missing', () async {
+      service.matrixConfig = config.copyWith(password: '');
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn('dev');
+      when(() => deviceKeys.userId).thenReturn('@user:server');
+
+      expect(() => service.deleteDevice(deviceKeys), throwsUnsupportedError);
+    });
+
+    test('invokes client delete for valid device', () async {
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn('dev');
+      when(() => deviceKeys.userId).thenReturn('@user:server');
+
+      await service.deleteDevice(deviceKeys);
+
+      verify(
+        () => mockClient.deleteDevice(
+          'dev',
+          auth: any(named: 'auth'),
+        ),
+      ).called(1);
+    });
+  });
+
   test('dispose closes controllers and disposes collaborators', () async {
     await service.dispose();
 
@@ -257,6 +444,32 @@ void main() {
     verify(() => mockRoomManager.dispose()).called(1);
     verify(() => mockSessionManager.dispose()).called(1);
     verifyNever(() => mockActivityGate.dispose());
+  });
+
+  test('dispose disposes owned activity gate when service owns instance',
+      () async {
+    if (getIt.isRegistered<UserActivityGate>()) {
+      getIt.unregister<UserActivityGate>();
+    }
+    final ownedGate = TestUserActivityGate(UserActivityService());
+    getIt.registerSingleton<UserActivityGate>(ownedGate);
+
+    final extraRoomManager = MockSyncRoomManager();
+    final extraSessionManager = MockMatrixSessionManager();
+    final extraTimelineListener = MockMatrixTimelineListener();
+    when(() => extraTimelineListener.dispose()).thenAnswer((_) async {});
+    when(() => extraRoomManager.dispose()).thenAnswer((_) async {});
+    when(() => extraSessionManager.dispose()).thenAnswer((_) async {});
+    final extraService = MatrixService(
+      gateway: mockGateway,
+      roomManager: extraRoomManager,
+      sessionManager: extraSessionManager,
+      timelineListener: extraTimelineListener,
+    );
+
+    await extraService.dispose();
+
+    expect(ownedGate.disposed, isTrue);
   });
 
   group('MatrixSessionManager', () {
@@ -455,10 +668,134 @@ void main() {
 
       expect(result, isTrue);
       verifyNever(
-        () => sessionRoomManager.hydrateRoomSnapshot(
-            client: any<Client>(named: 'client')),
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
       );
       verifyNever(() => sessionRoomManager.joinRoom(any<String>()));
+    });
+
+    test('connect returns false when gateway connect throws', () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+      when(() => sessionGateway.connect(any())).thenThrow(Exception('fail'));
+
+      final result = await sessionManager.connect(shouldAttemptLogin: true);
+
+      expect(result, isFalse);
+      verify(
+        () => sessionLogging.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SESSION_MANAGER',
+          subDomain: 'connect',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('MatrixService lifecycle', () {
+    late TestableMatrixService testService;
+    late bool startKeyCalled;
+    late bool listenTimelineCalled;
+    late CachedStreamController<LoginState> loginController;
+
+    setUp(() {
+      startKeyCalled = false;
+      listenTimelineCalled = false;
+      when(() => mockRoomManager.loadPersistedRoomId())
+          .thenAnswer((_) async => '!room:server');
+      final mockRoom = MockRoom();
+      final mockSummary = MockRoomSummary();
+      when(() => mockSummary.mJoinedMemberCount).thenReturn(1);
+      when(() => mockRoom.id).thenReturn('!room:server');
+      when(() => mockRoom.name).thenReturn('Room');
+      when(() => mockRoom.encrypted).thenReturn(true);
+      when(() => mockRoom.summary).thenReturn(mockSummary);
+      when(() => mockClient.rooms).thenReturn([mockRoom]);
+      testService = TestableMatrixService(
+        gateway: mockGateway,
+        activityGate: mockActivityGate,
+        roomManager: mockRoomManager,
+        sessionManager: mockSessionManager,
+        timelineListener: mockTimelineListener,
+        overriddenLoggingService: mockLoggingService,
+        onStartKeyVerification: () => startKeyCalled = true,
+        onListenTimeline: () => listenTimelineCalled = true,
+      )..matrixConfig = const MatrixConfig(
+          homeServer: 'https://example.org',
+          user: '@user:server',
+          password: 'pw',
+        );
+      when(() => mockSessionManager.connect(shouldAttemptLogin: false))
+          .thenAnswer((_) async => true);
+      when(() => mockRoomManager.hydrateRoomSnapshot(client: mockClient))
+          .thenAnswer((_) async {});
+      loginController = CachedStreamController<LoginState>()
+        ..add(LoginState.loggedIn);
+      when(() => mockClient.onLoginStateChanged).thenReturn(loginController);
+      when(() => mockSessionManager.isLoggedIn()).thenReturn(true);
+      when(() => mockClient.isLogged()).thenReturn(true);
+    });
+
+    tearDown(() async {
+      await testService.dispose();
+      await loginController.close();
+    });
+
+    test('listen triggers startKey and timeline listeners', () async {
+      await testService.listen();
+
+      expect(startKeyCalled, isTrue);
+      expect(listenTimelineCalled, isTrue);
+      verify(() => mockRoomManager.loadPersistedRoomId()).called(1);
+    });
+
+    test('init connects, hydrates, and listens when logged in', () async {
+      await testService.init();
+
+      expect(testService.loadConfigCalled, isTrue);
+      verify(() => mockSessionManager.connect(shouldAttemptLogin: false))
+          .called(1);
+      verify(() => mockRoomManager.hydrateRoomSnapshot(client: mockClient))
+          .called(1);
+      expect(startKeyCalled, isTrue);
+      expect(listenTimelineCalled, isTrue);
+    });
+
+    test('init stops when session connect fails', () async {
+      when(() => mockSessionManager.connect(shouldAttemptLogin: false))
+          .thenAnswer((_) async => false);
+      await loginController.close();
+      loginController = CachedStreamController<LoginState>()
+        ..add(LoginState.loggedOut);
+      when(() => mockClient.onLoginStateChanged).thenReturn(loginController);
+      when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
+      when(() => mockClient.isLogged()).thenReturn(false);
+
+      await testService.init();
+
+      expect(testService.loadConfigCalled, isTrue);
+      expect(startKeyCalled, isFalse);
+      expect(listenTimelineCalled, isFalse);
+      verifyNever(
+        () => mockRoomManager.hydrateRoomSnapshot(client: mockClient),
+      );
+    });
+
+    test('init does not listen when login state is not logged in', () async {
+      await loginController.close();
+      loginController = CachedStreamController<LoginState>()
+        ..add(LoginState.loggedOut);
+      when(() => mockClient.onLoginStateChanged).thenReturn(loginController);
+      when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
+      when(() => mockClient.isLogged()).thenReturn(false);
+
+      await testService.init();
+
+      expect(startKeyCalled, isFalse);
+      expect(listenTimelineCalled, isFalse);
     });
   });
 }
