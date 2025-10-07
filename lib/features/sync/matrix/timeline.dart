@@ -4,8 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/save_attachment.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/timeline_context.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -13,16 +16,17 @@ import 'package:lotti/utils/list_extension.dart';
 import 'package:matrix/matrix.dart';
 
 Future<void> listenToTimelineEvents({
-  required MatrixService service,
+  required TimelineContext listener,
 }) async {
-  final loggingDb = getIt<LoggingService>();
+  final loggingDb = listener.loggingService;
+  final syncRoom = listener.roomManager.currentRoom;
 
   try {
     // Defensive check: Ensure syncRoom is loaded before attempting to listen
-    if (service.syncRoom == null) {
+    if (syncRoom == null) {
       loggingDb.captureEvent(
         '⚠️ Cannot listen to timeline: syncRoom is null. '
-        'syncRoomId: ${service.syncRoomId}',
+        'syncRoomId: ${listener.roomManager.currentRoomId}',
         domain: 'MATRIX_SERVICE',
         subDomain: 'listenToTimelineEvents',
       );
@@ -30,30 +34,30 @@ Future<void> listenToTimelineEvents({
     }
 
     loggingDb.captureEvent(
-      'Attempting to listen - syncRoom: ${service.syncRoom?.id}, '
-      'syncRoomId: ${service.syncRoomId}',
+      'Attempting to listen - syncRoom: ${syncRoom.id}, '
+      'syncRoomId: ${listener.roomManager.currentRoomId}',
       domain: 'MATRIX_SERVICE',
       subDomain: 'listenToTimelineEvents',
     );
 
-    final previousTimeline = service.timeline;
+    final previousTimeline = listener.timeline;
 
     if (previousTimeline != null) {
       previousTimeline.cancelSubscriptions();
     }
 
-    service.timeline = await service.syncRoom?.getTimeline(
+    listener.timeline = await syncRoom.getTimeline(
       onNewEvent: () {
-        service.clientRunner.enqueueRequest(null);
+        listener.enqueueTimelineRefresh();
       },
     );
 
     unawaited(
       Future<void>.delayed(const Duration(seconds: 1))
-          .then((value) => service.clientRunner.enqueueRequest(null)),
+          .then((value) => listener.enqueueTimelineRefresh()),
     );
 
-    final timeline = service.timeline;
+    final timeline = listener.timeline;
 
     if (timeline == null) {
       loggingDb.captureEvent(
@@ -76,7 +80,7 @@ Future<void> listenToTimelineEvents({
 }
 
 Future<void> processNewTimelineEvents({
-  required MatrixService service,
+  required TimelineContext listener,
   JournalDb? overriddenJournalDb,
   LoggingService? overriddenLoggingService,
   SettingsDb? overriddenSettingsDb,
@@ -98,14 +102,15 @@ Future<void> processNewTimelineEvents({
   final journalDb = overriddenJournalDb ?? getIt<JournalDb>();
 
   try {
-    final lastReadEventContextId = service.lastReadEventContextId;
+    final lastReadEventContextId = listener.lastReadEventContextId;
+    await listener.client.sync();
+    final syncRoom = listener.roomManager.currentRoom;
+    var hasMessage = false;
+    if (lastReadEventContextId != null && syncRoom != null) {
+      hasMessage = await syncRoom.getEventById(lastReadEventContextId) != null;
+    }
 
-    await service.client.sync();
-    final hasMessage = await service.syncRoom
-            ?.getEventById(lastReadEventContextId.toString()) !=
-        null;
-
-    final timeline = await service.syncRoom?.getTimeline(
+    final timeline = await syncRoom?.getTimeline(
       eventContextId: hasMessage ? lastReadEventContextId : null,
     );
 
@@ -125,22 +130,21 @@ Future<void> processNewTimelineEvents({
     final newEvents = eventsAfter ?? events;
 
     loggingService.captureEvent(
-      'Processing timeline events - roomId: ${service.syncRoom?.id}, '
+      'Processing timeline events - roomId: ${syncRoom?.id}, '
       'eventCount: ${newEvents.length}',
       domain: 'MATRIX_SERVICE',
       subDomain: 'processNewTimelineEvents',
     );
 
     for (final event in newEvents) {
-      await service.client.sync();
       final eventId = event.eventId;
 
       // Terminates early when the message was emitted by the device itself,
       // as it would be a waste of battery to try to ingest what the device
       // already knows.
-      if (event.senderId != service.client.userID) {
+      if (event.senderId != listener.client.userID) {
         loggingService.captureEvent(
-          'Received message from ${event.senderId} in room ${service.syncRoom?.id}, '
+          'Received message from ${event.senderId} in room ${syncRoom?.id}, '
           'eventType: ${event.type}',
           domain: 'MATRIX_SERVICE',
           subDomain: 'processNewTimelineEvents',
@@ -156,9 +160,9 @@ Future<void> processNewTimelineEvents({
       }
 
       if (eventId.startsWith(r'$')) {
-        service.lastReadEventContextId = eventId;
+        listener.lastReadEventContextId = eventId;
         await markerService.updateReadMarker(
-          client: service.client,
+          client: listener.client,
           timeline: timeline,
           eventId: eventId,
           overriddenSettingsDb: overriddenSettingsDb,
@@ -169,7 +173,7 @@ Future<void> processNewTimelineEvents({
     loggingService.captureException(
       e,
       domain: 'MATRIX_SERVICE',
-      subDomain: 'listenToTimelineEvents ${service.client.deviceName}',
+      subDomain: 'processNewTimelineEvents ${listener.client.deviceName}',
       stackTrace: stackTrace,
     );
   }

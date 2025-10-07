@@ -1,38 +1,39 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 
 Future<MatrixConfig?> loadMatrixConfig({
-  required MatrixService service,
+  required MatrixSessionManager session,
 }) async {
-  if (service.matrixConfig != null) {
-    return service.matrixConfig;
+  if (session.matrixConfig != null) {
+    return session.matrixConfig;
   }
   final configJson = await getIt<SecureStorage>().read(key: matrixConfigKey);
   if (configJson != null) {
-    service.matrixConfig = MatrixConfig.fromJson(
+    session.matrixConfig = MatrixConfig.fromJson(
       json.decode(configJson) as Map<String, dynamic>,
     );
   }
-  return service.matrixConfig;
+  return session.matrixConfig;
 }
 
 Future<void> logout({
-  required MatrixService service,
+  required MatrixSessionManager session,
 }) async {
-  if (service.client.isLogged()) {
-    await service.client.logout();
+  if (session.client.isLogged()) {
+    await session.client.logout();
   }
 }
 
 Future<void> setMatrixConfig(
   MatrixConfig config, {
-  required MatrixService service,
+  required MatrixSessionManager session,
 }) async {
-  service.matrixConfig = config;
+  session.matrixConfig = config;
   await getIt<SecureStorage>().write(
     key: matrixConfigKey,
     value: jsonEncode(config),
@@ -40,11 +41,11 @@ Future<void> setMatrixConfig(
 }
 
 Future<void> deleteMatrixConfig({
-  required MatrixService service,
+  required MatrixSessionManager session,
 }) async {
   await getIt<SecureStorage>().delete(
     key: matrixConfigKey,
   );
-  service.matrixConfig = null;
-  await service.logout();
+  session.matrixConfig = null;
+  await session.logout();
 }

@@ -29,14 +29,15 @@ Handles reliable message delivery:
 - Tracks message status (pending, sent, error)
 - Manages file attachments
 
-#### 3. Matrix Room Management (`matrix/room.dart`)
+#### 3. Sync Room Management (`matrix/sync_room_manager.dart`)
 
-Room creation, joining, and invitation handling:
+Handles sync-room persistence, invite filtering, and safe join/leave flows:
 
-- Creates encrypted private rooms
-- Handles room invitations
-- Manages room state
-- **⚠️ Contains known bug in `listenToMatrixRoomInvites()` (see Known Issues)**
+- Creates encrypted private rooms and persists their IDs
+- Filters and validates room invitations via the gateway invite stream
+- Emits `SyncRoomInvite` objects for explicit user confirmation before joining
+- Hydrates cached rooms with retry/backoff logic and surfaces failures through logging
+- ✅ Auto-join bug fixed in Milestone 6 by replacing the legacy room-state auto-join path
 
 #### 4. Timeline Processing (`matrix/timeline.dart`)
 
@@ -118,49 +119,22 @@ implementation with a testable, dependency-injected service.
 
 ## Known Issues
 
-### Critical: Room Auto-Join Bug
+### Resolved: Room Auto-Join Bug ✅
 
-**File:** `lib/features/sync/matrix/room.dart:111-146`
+**Fixed in:** `lib/features/sync/matrix/sync_room_manager.dart`
 
-**Problem:**
-The `listenToMatrixRoomInvites()` function listens to `client.onRoomState.stream` which fires for **ANY** room state change in **ANY** room, not just invite events. When `syncRoom?.id == null`, it automatically saves and joins the **first** room that emits a state event.
+Milestone 6 removes the legacy room-state listener behaviour that eagerly joined the first
+room seen on `client.onRoomState`. The new `SyncRoomManager` listens to the gateway's filtered
+invite stream, validates room IDs, and emits `SyncRoomInvite` objects that must be explicitly
+accepted. The auto-join race is gone and the persisted room ID is only updated after a verified
+join. Unit tests in `test/features/sync/matrix/room_test.dart` capture the regression scenario and
+exercise declined invites, persistence caching, retry hydration, and failure logging.
 
-**Symptoms:**
+### Resolved: Room Join Error Masking ✅
 
-- During simultaneous setup on multiple devices, each device may join different rooms
-- One-way sync: Device A sends to Room X, Device B sends to Room Y
-- Mobile shows "outbox empty" but desktop doesn't receive messages
-- Devices appear configured but messages don't sync
-
-**Example Scenario:**
-
-1. Device A creates Room X, invites Device B
-2. Device B's `onRoomState` fires for Room X
-3. Before Device B joins Room X, another state event fires for Room Y (could be any room)
-4. Device B auto-joins Room Y instead of Room X
-5. Device A sends to Room X, Device B sends to Room Y → no sync
-
-**Diagnostic Logging:**
-Added comprehensive logging to detect this issue:
-
-- Logs every `onRoomState` trigger with event type and room ID
-- Logs warning when auto-join is about to occur
-- Shows which room is being joined and why
-
-**Temporary Workaround:**
-
-1. Manually verify both devices are in the same room (use diagnostic info button)
-2. If in different rooms, have both devices leave all rooms
-3. Follow setup flow carefully with Device A creating room first
-4. Device B manually enters specific room ID instead of relying on auto-join
-
-**Proper Fix (TODO):**
-Replace `listenToMatrixRoomInvites()` with proper invite handling:
-
-- Listen to actual invite events specifically
-- Verify room ID matches expected sync room
-- Prompt user before auto-joining
-- Add room validation/verification
+`SyncRoomManager.joinRoom` now propagates the underlying gateway exception without updating the
+persistent room ID. Tests cover both the happy-path join and the thrown error case so the UI can
+surface the failure instead of silently misreporting success.
 
 ### Major: syncRoom Not Loaded on Restart - FIXED ✅
 
@@ -223,27 +197,9 @@ Call `listen()` (or subscribe to login state changes) inside `login()` once the 
 
 ### Major: Room Join Error Masking
 
-**File:** `lib/features/sync/matrix/room.dart:9-52`
-
-**Problem:**
-`joinMatrixRoom()` catches join errors, converts them to strings, and still sets `syncRoomId`. When a
-join fails (for example, wrong room ID or revoked invite), the device believes it joined even though
-Matrix rejected the request.
-
-**Symptoms:**
-
-- Devices report a room ID, but `syncRoom` is `null`
-- Messages "send" but never reach the room because the client never joined
-- Logs contain `MatrixService join error ...` followed by `'joined ...'`
-
-**Workaround:**
-
-1. Watch logs for join errors during setup
-2. If an error occurs, manually remove the saved room ID (Settings → Matrix Sync → Delete config)
-3. Recreate/invite using a confirmed room ID
-
-**Proper Fix (TODO):**
-Throw the join exception (or surface it in the UI) and avoid persisting the room ID on failure.
+✅ **Resolved in Milestone 6.** `SyncRoomManager.joinRoom` no longer swallows failures and the room ID
+is only persisted after a successful join. The updated tests assert that failed joins throw and that
+the cached room ID remains untouched.
 
 ## Diagnostic Tools
 
@@ -272,14 +228,16 @@ Shows:
 
 Sync operations log through `LoggingService` with these domains:
 
-- `MATRIX_SERVICE` – Matrix client lifecycle, with `subDomain` values such as `init`, `listen`,
-  `listenToMatrixRoomInvites`, `sendMatrixMsg`, `processNewTimelineEvents`, and `diagnostics`
+- `MATRIX_SERVICE` – MatrixService lifecycle (`init`, `listen`, `diagnostics`, timeline processing)
+- `SYNC_ROOM_MANAGER` – Invite filtering, hydration retries, join/leave actions
 - `OUTBOX` – Message queuing and delivery events from `OutboxService`
 
 **Key Log Messages:**
 
-- `⚠️ AUTO-JOINING room ...` – Critical warning that room auto-join occurred
-- `onRoomState triggered ...` – Every room state event observed by the listener
+- `Received invite for room ...` – Filtered invite surfaced to the UI layer
+- `Accepting invite to ...` – User-approved joins
+- `Room ... not yet available, retrying ...` – Hydration backoff loop
+- `Failed to resolve room ... after ... attempts` – Hydration exhaustion (device may still await invite)
 - `Sending message - using roomId: ...` – Room used for outbound traffic
 - `Received message from ... in room ...` – Room and sender for inbound events
 
@@ -389,8 +347,8 @@ Stored in settings database with key `MATRIX_ROOM`
 
 ## Future Improvements
 
-1. **Fix room auto-join bug** - Replace with proper invite handling
-2. **Add room validation** - Verify devices joined correct room
+1. **Add architecture diagram** - Show how MatrixService delegates to SessionManager, SyncRoomManager, and MatrixTimelineListener
+2. **Document invite confirmation flow** - Diagram gateway filtering → Stream emission → UI prompt → `acceptInvite()` join/persist
 3. **Improve setup UX** - Guided wizard with validation steps
 4. **Add sync health monitoring** - Dashboard showing sync status
 5. **Support multiple sync rooms** - Different rooms for different data types

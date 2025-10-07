@@ -1,117 +1,103 @@
-// ignore_for_file: use_super_parameters
+// ignore_for_file: unnecessary_lambdas
 
+import 'dart:async';
 import 'dart:io';
 
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
+import 'package:lotti/features/sync/matrix/stats.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../helpers/fallbacks.dart';
-import '../../../helpers/matrix/fake_matrix_gateway.dart';
+class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 
-class MockMatrixClient extends Mock implements Client {}
+class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
-class MockRoom extends Mock implements Room {}
+class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
+
+class MockMatrixTimelineListener extends Mock
+    implements MatrixTimelineListener {}
+
+class MockLoggingService extends Mock implements LoggingService {}
+
+class MockUserActivityGate extends Mock implements UserActivityGate {}
+
+class MockClient extends Mock implements Client {}
+
+class FakeMatrixClient extends Fake implements Client {}
+
+class MockTimeline extends Mock implements Timeline {}
+
+class MockRoomSummary extends Mock implements RoomSummary {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+class MockRoom extends Mock implements Room {}
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
 
-class MockRoomSummary extends Mock implements RoomSummary {}
+class MockKeyVerification extends Mock implements KeyVerification {}
 
-class MockTimeline extends Mock implements Timeline {}
+class TestUserActivityGate extends UserActivityGate {
+  TestUserActivityGate(UserActivityService service)
+      : super(activityService: service, idleThreshold: Duration.zero);
 
-class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
-
-class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
-
-class MockUserActivityGate extends Mock implements UserActivityGate {}
-
-class TestMatrixService extends MatrixService {
-  TestMatrixService({
-    required this.fakeGateway,
-    MatrixConfig? matrixConfig,
-    JournalDb? journalDb,
-    SettingsDb? settingsDb,
-  }) : super(
-          gateway: fakeGateway,
-          matrixConfig: matrixConfig,
-          overriddenJournalDb: journalDb,
-          overriddenSettingsDb: settingsDb,
-        );
-
-  final FakeMatrixGateway fakeGateway;
-
-  List<DeviceKeys> unverifiedDevices = const [];
+  bool disposed = false;
 
   @override
-  List<DeviceKeys> getUnverifiedDevices() => unverifiedDevices;
+  Future<void> dispose() async {
+    disposed = true;
+    await super.dispose();
+  }
 }
 
-class StubMatrixService extends MatrixService {
-  StubMatrixService({
-    required Client client,
-    JournalDb? journalDb,
-    SettingsDb? settingsDb,
-    FakeMatrixGateway? fakeGateway,
-  }) : super(
-          gateway: fakeGateway ?? FakeMatrixGateway(client: client),
-          overriddenJournalDb: journalDb,
-          overriddenSettingsDb: settingsDb,
-        );
+class TestableMatrixService extends MatrixService {
+  TestableMatrixService({
+    required super.gateway,
+    required this.onStartKeyVerification,
+    required this.onListenTimeline,
+    super.activityGate,
+    super.roomManager,
+    super.sessionManager,
+    super.timelineListener,
+    super.overriddenLoggingService,
+  });
 
-  int startKeyVerificationCount = 0;
-  int listenToTimelineCount = 0;
-  bool loadConfigCalled = false;
-  bool connectCalled = false;
+  final VoidCallback onStartKeyVerification;
+  final VoidCallback onListenTimeline;
 
   @override
   Future<void> startKeyVerificationListener() async {
-    startKeyVerificationCount++;
+    onStartKeyVerification();
   }
 
   @override
   Future<void> listenToTimeline() async {
-    listenToTimelineCount++;
+    onListenTimeline();
   }
 
-  @override
-  Future<void> listen() async {
-    await startKeyVerificationListener();
-    await listenToTimeline();
-    // Skip the room state logging that would access GetIt
-  }
-
+  bool loadConfigCalled = false;
   @override
   Future<MatrixConfig?> loadConfig() async {
     loadConfigCalled = true;
     return matrixConfig;
-  }
-
-  @override
-  Future<void> connect() async {
-    connectCalled = true;
   }
 }
 
@@ -121,75 +107,215 @@ void main() {
   const connectivityMethodChannel =
       MethodChannel('dev.fluttercommunity.plus/connectivity');
 
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(connectivityMethodChannel,
-          (MethodCall call) async {
-    if (call.method == 'check') {
-      return 'wifi';
-    }
-    return 'wifi';
-  });
-
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMessageHandler(
-    'dev.fluttercommunity.plus/connectivity_status',
-    (ByteData? message) async => null,
-  );
-
-  late MockMatrixClient mockClient;
-  late MockSettingsDb mockSettingsDb;
-  late MockJournalDb mockJournalDb;
-  late MockLoggingService mockLoggingService;
-  late MockUpdateNotifications mockUpdateNotifications;
-  late TestMatrixService service;
-
   setUpAll(() {
-    registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(FakeMatrixClient());
     registerFallbackValue(
-      AuthenticationPassword(
+      const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@fallback:example.org',
         password: 'pw',
-        identifier: AuthenticationUserIdentifier(user: '@user:server'),
       ),
     );
-    registerFallbackValue(AuthenticationUserIdentifier(user: '@user:server'));
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(connectivityMethodChannel,
+            (MethodCall call) async {
+      if (call.method == 'check') {
+        return 'wifi';
+      }
+      return 'wifi';
+    });
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMessageHandler(
+      'dev.fluttercommunity.plus/connectivity_status',
+      (ByteData? message) async => null,
+    );
   });
 
-  setUp(() {
-    mockClient = MockMatrixClient();
-    mockSettingsDb = MockSettingsDb();
-    mockJournalDb = MockJournalDb();
-    mockLoggingService = MockLoggingService();
-    mockUpdateNotifications = MockUpdateNotifications();
+  late MockMatrixSyncGateway mockGateway;
+  late MockSyncRoomManager mockRoomManager;
+  late MockMatrixSessionManager mockSessionManager;
+  late MockMatrixTimelineListener mockTimelineListener;
+  late MockLoggingService mockLoggingService;
+  late MockUserActivityGate mockActivityGate;
+  late MockClient mockClient;
+  late MatrixService service;
 
-    when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
-    when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag)).thenAnswer(
-      (_) => Stream<bool>.value(false),
-    );
-    when(() => mockClient.isLogged()).thenReturn(true);
-    when(() => mockClient.userDeviceKeys).thenReturn({});
-    when(() => mockClient.rooms).thenReturn(const []);
-    when(() => mockClient.sync())
-        .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
-    when(() => mockClient.userID).thenReturn('@user:server');
-    when(() => mockClient.deviceID).thenReturn('device-id');
-    when(() => mockClient.deviceName).thenReturn('device');
+  setUp(() {
+    mockGateway = MockMatrixSyncGateway();
+    mockRoomManager = MockSyncRoomManager();
+    mockSessionManager = MockMatrixSessionManager();
+    mockTimelineListener = MockMatrixTimelineListener();
+    mockLoggingService = MockLoggingService();
+    mockActivityGate = MockUserActivityGate();
+    mockClient = MockClient();
+
+    when(() => mockGateway.client).thenReturn(mockClient);
+    when(() => mockSessionManager.client).thenReturn(mockClient);
+    when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
+    when(() => mockTimelineListener.initialize()).thenAnswer((_) async {});
+    when(() => mockTimelineListener.start()).thenAnswer((_) async {});
+    when(() => mockTimelineListener.dispose()).thenAnswer((_) async {});
+    when(() => mockRoomManager.dispose()).thenAnswer((_) async {});
+    when(() => mockSessionManager.dispose()).thenAnswer((_) async {});
+    when(() => mockActivityGate.dispose()).thenAnswer((_) async {});
+    when(() => mockRoomManager.inviteRequests)
+        .thenAnswer((_) => const Stream<SyncRoomInvite>.empty());
 
     getIt
       ..reset()
       ..allowReassignment = true
       ..registerSingleton<UserActivityService>(UserActivityService())
-      ..registerSingleton<UserActivityGate>(
-        UserActivityGate(
-          activityService: getIt<UserActivityService>(),
-          idleThreshold: Duration.zero,
-        ),
-      )
       ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<SettingsDb>(mockSettingsDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<SettingsDb>(MockSettingsDb())
+      ..registerSingleton<JournalDb>(MockJournalDb())
       ..registerSingleton<Directory>(Directory.systemTemp);
 
+    service = MatrixService(
+      gateway: mockGateway,
+      activityGate: mockActivityGate,
+      overriddenLoggingService: mockLoggingService,
+      roomManager: mockRoomManager,
+      sessionManager: mockSessionManager,
+      timelineListener: mockTimelineListener,
+    );
+  });
+
+  tearDown(getIt.reset);
+
+  test('createRoom delegates to SyncRoomManager', () async {
+    when(
+      () => mockRoomManager.createRoom(
+        inviteUserIds: any<List<String>?>(named: 'inviteUserIds'),
+      ),
+    ).thenAnswer((_) async => '!room:server');
+
+    final roomId = await service.createRoom(invite: ['@user:server']);
+
+    expect(roomId, '!room:server');
+    verify(
+      () => mockRoomManager.createRoom(inviteUserIds: ['@user:server']),
+    ).called(1);
+  });
+
+  test('joinRoom returns identifier from room manager', () async {
+    final mockRoom = MockRoom();
+    when(() => mockRoom.id).thenReturn('!room:server');
+    when(() => mockRoomManager.joinRoom('!room:server'))
+        .thenAnswer((_) async => mockRoom);
+
+    final result = await service.joinRoom('!room:server');
+
+    expect(result, '!room:server');
+    verify(() => mockRoomManager.joinRoom('!room:server')).called(1);
+  });
+
+  test('inviteToSyncRoom delegates to room manager', () async {
+    when(() => mockRoomManager.inviteUser('@user:server'))
+        .thenAnswer((_) async {});
+
+    await service.inviteToSyncRoom(userId: '@user:server');
+
+    verify(() => mockRoomManager.inviteUser('@user:server')).called(1);
+  });
+
+  test('inviteRequests forwards stream from room manager', () async {
+    final controller = StreamController<SyncRoomInvite>.broadcast();
+    when(() => mockRoomManager.inviteRequests)
+        .thenAnswer((_) => controller.stream);
+
+    final invite = SyncRoomInvite(
+      roomId: '!room:server',
+      senderId: '@user:server',
+      matchesExistingRoom: false,
+    );
+
+    final expectation = expectLater(service.inviteRequests, emits(invite));
+
+    controller.add(invite);
+    await controller.close();
+    await expectation;
+  });
+
+  test('saveRoom delegates to room manager', () async {
+    when(() => mockRoomManager.saveRoomId('!room:server'))
+        .thenAnswer((_) async {});
+
+    await service.saveRoom('!room:server');
+
+    verify(() => mockRoomManager.saveRoomId('!room:server')).called(1);
+  });
+
+  test('leaveRoom delegates to room manager', () async {
+    when(() => mockRoomManager.leaveCurrentRoom()).thenAnswer((_) async {});
+
+    await service.leaveRoom();
+
+    verify(() => mockRoomManager.leaveCurrentRoom()).called(1);
+  });
+
+  test('connect delegates to session manager without login attempt', () async {
+    when(() => mockSessionManager.connect(shouldAttemptLogin: false))
+        .thenAnswer((_) async => true);
+
+    final result = await service.connect();
+
+    expect(result, isTrue);
+    verify(() => mockSessionManager.connect(shouldAttemptLogin: false))
+        .called(1);
+  });
+
+  test('login delegates to session manager with login attempt', () async {
+    when(() => mockSessionManager.connect(shouldAttemptLogin: true))
+        .thenAnswer((_) async => true);
+
+    final result = await service.login();
+
+    expect(result, isTrue);
+    verify(() => mockSessionManager.connect(shouldAttemptLogin: true))
+        .called(1);
+  });
+
+  test('logout cancels timeline and invokes session manager', () async {
+    final mockTimeline = MockTimeline();
+    when(() => mockTimeline.cancelSubscriptions()).thenAnswer((_) async {});
+    when(() => mockTimelineListener.timeline).thenReturn(mockTimeline);
+    when(() => mockSessionManager.logout()).thenAnswer((_) async {});
+
+    await service.logout();
+
+    verify(() => mockTimeline.cancelSubscriptions()).called(1);
+    verify(() => mockSessionManager.logout()).called(1);
+  });
+
+  test('disposeClient disposes underlying client when logged in', () async {
+    when(() => mockClient.isLogged()).thenReturn(true);
+    when(() => mockClient.dispose()).thenAnswer((_) async {});
+
+    await service.disposeClient();
+
+    verify(() => mockClient.dispose()).called(1);
+  });
+
+  test('disposeClient skips dispose when client not logged', () async {
+    when(() => mockClient.isLogged()).thenReturn(false);
+
+    await service.disposeClient();
+
+    verifyNever(() => mockClient.dispose());
+  });
+
+  test('getDiagnosticInfo returns expected payload and logs', () async {
+    when(() => mockRoomManager.loadPersistedRoomId())
+        .thenAnswer((_) async => '!room:server');
+    final mockRoom = MockRoom();
+    final mockSummary = MockRoomSummary();
+    when(() => mockRoom.id).thenReturn('!room:server');
+    when(() => mockRoom.name).thenReturn('Room');
+    when(() => mockRoom.encrypted).thenReturn(true);
+    when(() => mockRoom.summary).thenReturn(mockSummary);
+    when(() => mockSummary.mJoinedMemberCount).thenReturn(2);
+    when(() => mockClient.rooms).thenReturn([mockRoom]);
     when(
       () => mockLoggingService.captureEvent(
         any<String>(),
@@ -198,653 +324,538 @@ void main() {
       ),
     ).thenAnswer((_) {});
 
-    when(
-      () => mockLoggingService.captureException(
-        any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) {});
+    final info = await service.getDiagnosticInfo();
 
-    final fakeGateway = FakeMatrixGateway(client: mockClient);
-
-    service = TestMatrixService(
-      fakeGateway: fakeGateway,
-      matrixConfig: const MatrixConfig(
-        homeServer: 'https://server',
-        user: '@user:server',
-        password: 'secret',
+    expect(info['savedRoomId'], '!room:server');
+    expect(info['joinedRooms'], isA<List<Map<String, Object?>>>());
+    verify(
+      () => mockLoggingService.captureEvent(
+        any<String>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'diagnostics',
       ),
-      journalDb: mockJournalDb,
-      settingsDb: mockSettingsDb,
-    );
+    ).called(1);
   });
 
-  tearDown(getIt.reset);
+  test('publishIncomingRunnerState forwards publishState when runner set',
+      () async {
+    final mockKeyVerification = MockKeyVerification();
+    when(() => mockKeyVerification.lastStep).thenReturn('init');
+    when(() => mockKeyVerification.sasEmojis)
+        .thenReturn(<KeyVerificationEmoji>[]);
+    when(() => mockKeyVerification.acceptVerification())
+        .thenAnswer((_) async {});
+    when(() => mockKeyVerification.acceptSas()).thenAnswer((_) async {});
+    when(() => mockKeyVerification.cancel()).thenAnswer((_) async {});
 
-  test('client getter proxies gateway client instance', () {
-    expect(service.client, mockClient);
+    final controller = StreamController<KeyVerificationRunner>.broadcast();
+    final runner = KeyVerificationRunner(
+      mockKeyVerification,
+      controller: controller,
+      name: 'runner',
+    )..stopTimer();
+    service.incomingKeyVerificationRunner = runner;
+
+    final emitted = <KeyVerificationRunner>[];
+    final sub = controller.stream.listen(emitted.add);
+
+    service.publishIncomingRunnerState();
+    await Future<void>.microtask(() {});
+    await sub.cancel();
+    await controller.close();
+
+    expect(emitted.last, same(runner));
   });
 
-  group('dispose lifecycle', () {
-    test('dispose closes owned activity gate and gateway', () async {
-      final ownedGate = MockUserActivityGate();
-      when(ownedGate.waitUntilIdle).thenAnswer((_) async {});
-      when(ownedGate.dispose).thenAnswer((_) async {});
+  test('getIncomingKeyVerificationStream forwards controller events', () async {
+    final stream = service.getIncomingKeyVerificationStream();
+    final verification = MockKeyVerification();
 
-      await getIt.unregister<UserActivityGate>(disposingFunction: (gate) async {
-        await gate.dispose();
-      });
-      getIt.registerSingleton<UserActivityGate>(ownedGate);
+    final expectation = expectLater(stream, emits(verification));
 
-      final mockGateway = MockMatrixSyncGateway();
-      final loginStateStream =
-          CachedStreamController<LoginState>(LoginState.loggedIn);
-      when(() => mockGateway.client).thenReturn(mockClient);
-      when(mockGateway.dispose).thenAnswer((_) async {});
-      when(() => mockClient.onLoginStateChanged).thenReturn(loginStateStream);
-      when(mockClient.isLogged).thenReturn(true);
-      when(() => mockClient.rooms).thenReturn(const []);
-      when(() => mockClient.userDeviceKeys).thenReturn({});
-      when(mockClient.sync)
-          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
-      when(() => mockClient.deviceID).thenReturn('device-id');
-      when(() => mockClient.deviceName).thenReturn('device-name');
-      when(() => mockClient.userID).thenReturn('@user:server');
+    service.incomingKeyVerificationController.add(verification);
 
-      final ownedService = MatrixService(
-        gateway: mockGateway,
-        overriddenJournalDb: mockJournalDb,
-        overriddenSettingsDb: mockSettingsDb,
-      );
+    await expectation;
+  });
 
-      await ownedService.dispose();
-      await loginStateStream.close();
+  test('getUnverifiedDevices delegates to gateway', () {
+    final deviceKeys = [MockDeviceKeys(), MockDeviceKeys()];
+    when(() => mockGateway.unverifiedDevices()).thenReturn(deviceKeys);
 
-      verify(ownedGate.dispose).called(1);
-      verify(mockGateway.dispose).called(1);
-    });
+    expect(service.getUnverifiedDevices(), deviceKeys);
+  });
 
-    test('dispose skips external activity gate but disposes gateway', () async {
-      final externalGate = MockUserActivityGate();
-      when(externalGate.waitUntilIdle).thenAnswer((_) async {});
-      when(externalGate.dispose).thenAnswer((_) async {});
+  test('logout ignores timeline when already null', () async {
+    when(() => mockTimelineListener.timeline).thenReturn(null);
+    when(() => mockSessionManager.logout()).thenAnswer((_) async {});
 
-      await getIt.unregister<UserActivityGate>(disposingFunction: (gate) async {
-        await gate.dispose();
-      });
+    await service.logout();
 
-      final mockGateway = MockMatrixSyncGateway();
-      final loginStateStream =
-          CachedStreamController<LoginState>(LoginState.loggedIn);
-      when(() => mockGateway.client).thenReturn(mockClient);
-      when(mockGateway.dispose).thenAnswer((_) async {});
-      when(() => mockClient.onLoginStateChanged).thenReturn(loginStateStream);
-      when(mockClient.isLogged).thenReturn(true);
-      when(() => mockClient.rooms).thenReturn(const []);
-      when(() => mockClient.userDeviceKeys).thenReturn({});
-      when(mockClient.sync)
-          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
-      when(() => mockClient.deviceID).thenReturn('device-id');
-      when(() => mockClient.deviceName).thenReturn('device-name');
-      when(() => mockClient.userID).thenReturn('@user:server');
-
-      final externalService = MatrixService(
-        gateway: mockGateway,
-        activityGate: externalGate,
-        overriddenJournalDb: mockJournalDb,
-        overriddenSettingsDb: mockSettingsDb,
-      );
-
-      await externalService.dispose();
-      await loginStateStream.close();
-
-      verifyNever(externalGate.dispose);
-      verify(mockGateway.dispose).called(1);
-    });
+    verify(() => mockSessionManager.logout()).called(1);
   });
 
   group('deleteDevice', () {
-    late MockDeviceKeys deviceKeys;
+    const config = MatrixConfig(
+      homeServer: 'https://example.org',
+      user: '@user:server',
+      password: 'pw',
+    );
+    MatrixConfig? sessionConfig;
 
     setUp(() {
-      deviceKeys = MockDeviceKeys();
-      when(() => deviceKeys.deviceDisplayName).thenReturn('device');
-      when(() => deviceKeys.userId).thenReturn('@user:server');
-    });
-
-    test('throws ArgumentError when deviceId is null', () async {
-      when(() => deviceKeys.deviceId).thenReturn(null);
-
-      expect(
-        () => service.deleteDevice(deviceKeys),
-        throwsArgumentError,
-      );
-    });
-
-    test('throws StateError when config is missing', () async {
-      final serviceWithoutConfig = TestMatrixService(
-        fakeGateway: FakeMatrixGateway(client: mockClient),
-        journalDb: mockJournalDb,
-        settingsDb: mockSettingsDb,
-      );
-
-      when(() => deviceKeys.deviceId).thenReturn('device-id');
-
-      expect(
-        () => serviceWithoutConfig.deleteDevice(deviceKeys),
-        throwsStateError,
-      );
-    });
-
-    test('throws StateError when device belongs to different user', () async {
-      when(() => deviceKeys.deviceId).thenReturn('device-id');
-      when(() => deviceKeys.userId).thenReturn('@other:server');
-
-      expect(
-        () => service.deleteDevice(deviceKeys),
-        throwsStateError,
-      );
-    });
-
-    test('throws UnsupportedError when password is empty', () async {
-      service.matrixConfig = const MatrixConfig(
-        homeServer: 'https://server',
-        user: '@user:server',
-        password: '',
-      );
-      when(() => deviceKeys.deviceId).thenReturn('device-id');
-
-      expect(
-        () => service.deleteDevice(deviceKeys),
-        throwsA(isA<UnsupportedError>()),
-      );
-    });
-
-    test('calls client.deleteDevice with authentication when valid', () async {
-      when(() => deviceKeys.deviceId).thenReturn('device-id');
+      sessionConfig = config;
+      when(() => mockSessionManager.matrixConfig)
+          .thenAnswer((_) => sessionConfig);
+      when(() => mockSessionManager.matrixConfig = any())
+          .thenAnswer((invocation) {
+        return sessionConfig =
+            invocation.positionalArguments.first as MatrixConfig?;
+      });
+      service.matrixConfig = config;
+      when(() => mockClient.userID).thenReturn('@user:server');
+      when(() => mockClient.deviceID).thenReturn('device');
       when(
         () => mockClient.deleteDevice(
-          any<String>(),
-          auth: any<AuthenticationPassword>(named: 'auth'),
+          any(),
+          auth: any(named: 'auth'),
         ),
       ).thenAnswer((_) async {});
+    });
+
+    test('throws when deviceId missing', () async {
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn(null);
+
+      expect(() => service.deleteDevice(deviceKeys), throwsArgumentError);
+    });
+
+    test('throws when config missing', () async {
+      service.matrixConfig = null;
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn('dev');
+
+      expect(() => service.deleteDevice(deviceKeys), throwsStateError);
+    });
+
+    test('throws when user mismatch', () async {
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn('dev');
+      when(() => deviceKeys.userId).thenReturn('@other:server');
+
+      expect(() => service.deleteDevice(deviceKeys), throwsStateError);
+    });
+
+    test('throws when password missing', () async {
+      service.matrixConfig = config.copyWith(password: '');
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn('dev');
+      when(() => deviceKeys.userId).thenReturn('@user:server');
+
+      expect(() => service.deleteDevice(deviceKeys), throwsUnsupportedError);
+    });
+
+    test('invokes client delete for valid device', () async {
+      final deviceKeys = MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn('dev');
+      when(() => deviceKeys.userId).thenReturn('@user:server');
 
       await service.deleteDevice(deviceKeys);
 
       verify(
         () => mockClient.deleteDevice(
-          'device-id',
-          auth: any<AuthenticationPassword>(named: 'auth'),
+          'dev',
+          auth: any(named: 'auth'),
         ),
       ).called(1);
     });
   });
 
-  group('getDiagnosticInfo', () {
-    test('returns snapshot and logs diagnostics', () async {
+  test('dispose closes controllers and disposes collaborators', () async {
+    await service.dispose();
+
+    expect(
+      () => service.messageCountsController.add(
+        MatrixStats(sentCount: 0, messageCounts: const <String, int>{}),
+      ),
+      throwsA(isA<StateError>()),
+    );
+    verify(() => mockTimelineListener.dispose()).called(1);
+    verify(() => mockRoomManager.dispose()).called(1);
+    verify(() => mockSessionManager.dispose()).called(1);
+    verifyNever(() => mockActivityGate.dispose());
+  });
+
+  test('dispose disposes owned activity gate when service owns instance',
+      () async {
+    if (getIt.isRegistered<UserActivityGate>()) {
+      getIt.unregister<UserActivityGate>();
+    }
+    final ownedGate = TestUserActivityGate(UserActivityService());
+    getIt.registerSingleton<UserActivityGate>(ownedGate);
+
+    final extraRoomManager = MockSyncRoomManager();
+    final extraSessionManager = MockMatrixSessionManager();
+    final extraTimelineListener = MockMatrixTimelineListener();
+    when(() => extraTimelineListener.dispose()).thenAnswer((_) async {});
+    when(() => extraRoomManager.dispose()).thenAnswer((_) async {});
+    when(() => extraSessionManager.dispose()).thenAnswer((_) async {});
+    final extraService = MatrixService(
+      gateway: mockGateway,
+      roomManager: extraRoomManager,
+      sessionManager: extraSessionManager,
+      timelineListener: extraTimelineListener,
+    );
+
+    await extraService.dispose();
+
+    expect(ownedGate.disposed, isTrue);
+  });
+
+  group('MatrixSessionManager', () {
+    late MatrixSessionManager sessionManager;
+    late MockSyncRoomManager sessionRoomManager;
+    late MockMatrixSyncGateway sessionGateway;
+    late MockLoggingService sessionLogging;
+    late MockClient sessionClient;
+    late bool connectCalled;
+    late bool loginCalled;
+    late bool isLogged;
+
+    setUp(() {
+      sessionRoomManager = MockSyncRoomManager();
+      sessionGateway = MockMatrixSyncGateway();
+      sessionLogging = MockLoggingService();
+      sessionClient = MockClient();
+      when(() => sessionGateway.client).thenReturn(sessionClient);
+      isLogged = false;
+      when(() => sessionClient.isLogged()).thenAnswer((_) => isLogged);
+      when(() => sessionRoomManager.initialize()).thenAnswer((_) async {});
+      when(
+        () => sessionRoomManager.hydrateRoomSnapshot(
+          client: any<Client>(named: 'client'),
+        ),
+      ).thenAnswer((_) async {});
+      connectCalled = false;
+      loginCalled = false;
+      when(() => sessionGateway.connect(any<MatrixConfig>()))
+          .thenAnswer((_) async {
+        connectCalled = true;
+      });
+      when(() => sessionRoomManager.loadPersistedRoomId())
+          .thenAnswer((_) async => '!room:server');
+      when(() => sessionClient.getRoomById('!room:server')).thenReturn(null);
+      final joinedRoom = MockRoom();
+      when(() => joinedRoom.id).thenReturn('!room:server');
+      when(() => sessionRoomManager.joinRoom('!room:server'))
+          .thenAnswer((_) async => joinedRoom);
+      when(
+        () => sessionGateway.login(
+          any<MatrixConfig>(),
+          deviceDisplayName: any(named: 'deviceDisplayName'),
+        ),
+      ).thenAnswer((_) async {
+        loginCalled = true;
+        isLogged = true;
+        return LoginResponse(
+          accessToken: 'token',
+          deviceId: 'device',
+          userId: '@user:server',
+        );
+      });
+      when(
+        () => sessionLogging.captureEvent(
+          any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+      when(
+        () => sessionLogging.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String?>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) {});
+      sessionManager = MatrixSessionManager(
+        gateway: sessionGateway,
+        roomManager: sessionRoomManager,
+        loggingService: sessionLogging,
+      )
+        ..matrixConfig = const MatrixConfig(
+          homeServer: 'https://example.org',
+          user: '@user:server',
+          password: 'pw',
+        )
+        ..deviceDisplayName = 'Test Device';
+    });
+
+    test('connect joins persisted room after successful setup', () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+      sessionManager.deviceDisplayName = 'Test Device';
+      expect(sessionManager.matrixConfig, isNotNull);
+
+      await sessionManager.connect(shouldAttemptLogin: true);
+
+      expect(connectCalled, isTrue);
+      expect(loginCalled, isTrue);
+      verify(
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
+      ).called(1);
+      verify(() => sessionRoomManager.joinRoom('!room:server')).called(1);
+    });
+
+    test('connect returns false and logs when configuration missing', () async {
+      sessionManager.matrixConfig = null;
+
+      final result = await sessionManager.connect(shouldAttemptLogin: true);
+
+      expect(result, isFalse);
+      expect(connectCalled, isFalse);
+      expect(loginCalled, isFalse);
+      verifyNever(
+        () => sessionRoomManager.hydrateRoomSnapshot(
+            client: any<Client>(named: 'client')),
+      );
+      verify(
+        () => sessionLogging.captureEvent(
+          contains('Matrix configuration missing'),
+          domain: 'MATRIX_SESSION_MANAGER',
+          subDomain: 'connect',
+        ),
+      ).called(1);
+    });
+
+    test('connect skips login when already logged in', () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+      isLogged = true;
+
+      await sessionManager.connect(shouldAttemptLogin: true);
+
+      expect(connectCalled, isTrue);
+      expect(loginCalled, isFalse);
+      verify(
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
+      ).called(1);
+    });
+
+    test('connect avoids join when room already hydrated', () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+      isLogged = true;
+      when(() => sessionRoomManager.loadPersistedRoomId())
+          .thenAnswer((_) async => '!already:room');
+      final hydratedRoom = MockRoom();
+      when(() => sessionClient.getRoomById('!already:room'))
+          .thenReturn(hydratedRoom);
+
+      await sessionManager.connect(shouldAttemptLogin: true);
+
+      verify(
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
+      ).called(1);
+      verifyNever(() => sessionRoomManager.joinRoom(any<String>()));
+    });
+
+    test('connect logs join failure but resolves', () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+      when(() => sessionRoomManager.loadPersistedRoomId())
+          .thenAnswer((_) async => '!room:server');
+      when(() => sessionRoomManager.joinRoom('!room:server'))
+          .thenThrow(Exception('join failed'));
+
+      final result = await sessionManager.connect(shouldAttemptLogin: true);
+
+      expect(result, isTrue);
+      verify(
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
+      ).called(1);
+      verify(
+        () => sessionLogging.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SESSION_MANAGER',
+          subDomain: 'connect.join',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    test('connect does not hydrate when not logged and login skipped',
+        () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+
+      final result = await sessionManager.connect(shouldAttemptLogin: false);
+
+      expect(result, isTrue);
+      verifyNever(
+        () => sessionRoomManager.hydrateRoomSnapshot(client: sessionClient),
+      );
+      verifyNever(() => sessionRoomManager.joinRoom(any<String>()));
+    });
+
+    test('connect returns false when gateway connect throws', () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+      when(() => sessionGateway.connect(any())).thenThrow(Exception('fail'));
+
+      final result = await sessionManager.connect(shouldAttemptLogin: true);
+
+      expect(result, isFalse);
+      verify(
+        () => sessionLogging.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SESSION_MANAGER',
+          subDomain: 'connect',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('MatrixService lifecycle', () {
+    late TestableMatrixService testService;
+    late bool startKeyCalled;
+    late bool listenTimelineCalled;
+    late CachedStreamController<LoginState> loginController;
+
+    setUp(() {
+      startKeyCalled = false;
+      listenTimelineCalled = false;
+      when(() => mockRoomManager.loadPersistedRoomId())
+          .thenAnswer((_) async => '!room:server');
       final mockRoom = MockRoom();
       final mockSummary = MockRoomSummary();
-
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey)).thenAnswer(
-        (_) async => '!saved:room',
-      );
+      when(() => mockSummary.mJoinedMemberCount).thenReturn(1);
       when(() => mockRoom.id).thenReturn('!room:server');
       when(() => mockRoom.name).thenReturn('Room');
       when(() => mockRoom.encrypted).thenReturn(true);
       when(() => mockRoom.summary).thenReturn(mockSummary);
-      when(() => mockSummary.mJoinedMemberCount).thenReturn(2);
       when(() => mockClient.rooms).thenReturn([mockRoom]);
-
-      service
-        ..syncRoomId = '!room:server'
-        ..syncRoom = mockRoom;
-
-      final result = await service.getDiagnosticInfo();
-
-      expect(result['deviceId'], 'device-id');
-      expect(result['savedRoomId'], '!saved:room');
-      expect(result['syncRoomId'], '!room:server');
-      expect(result['joinedRooms'], isNotEmpty);
-
-      verify(
-        () => mockLoggingService.captureEvent(
-          any<String>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'diagnostics',
-        ),
-      ).called(1);
-    });
-  });
-
-  group('incrementSentCount', () {
-    test('increments count and notifies listeners', () async {
-      final stats = <MatrixStats>[];
-      final subscription =
-          service.messageCountsController.stream.listen(stats.add);
-
-      addTearDown(subscription.cancel);
-
-      service.incrementSentCount();
-
-      expect(service.sentCount, 1);
-      await Future<void>.delayed(Duration.zero);
-      expect(stats.single.sentCount, 1);
-    });
-  });
-
-  group('listener utilities', () {
-    test('publishIncomingRunnerState triggers publish on runner', () {
-      final runner = MockKeyVerificationRunner();
-      service
-        ..incomingKeyVerificationRunner = runner
-        ..publishIncomingRunnerState();
-
-      verify(runner.publishState).called(1);
-    });
-
-    test('listen early exits when not logged in', () async {
-      final onLoginStateController =
-          CachedStreamController<LoginState>(LoginState.loggedOut);
-      final roomStateController =
-          CachedStreamController<({String roomId, StrippedStateEvent state})>();
-      final keyVerificationController =
-          CachedStreamController<KeyVerification>();
-      when(() => mockClient.onLoginStateChanged)
-          .thenReturn(onLoginStateController);
-      when(() => mockClient.onRoomState).thenReturn(roomStateController);
-      when(() => mockClient.onKeyVerificationRequest)
-          .thenReturn(keyVerificationController);
-
-      await service.listen();
-
-      verify(
-        () => mockLoggingService.captureEvent(
-          contains('Cannot listen to timeline'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'listenToTimelineEvents',
-        ),
-      ).called(1);
-
-      await onLoginStateController.close();
-      await roomStateController.close();
-      await keyVerificationController.close();
-    });
-
-    test('logout cancels timeline and logs out client', () async {
-      final mockTimeline = MockTimeline();
-      service
-        ..timeline = mockTimeline
-        ..syncRoom = MockRoom();
-
-      when(mockTimeline.cancelSubscriptions).thenAnswer((_) {});
-      when(() => mockClient.logout()).thenAnswer((_) async {});
-
-      await service.logout();
-
-      verify(mockTimeline.cancelSubscriptions).called(1);
-      expect(service.fakeGateway.logoutCalled, isTrue);
-    });
-
-    test('disposeClient calls client.dispose when logged in', () async {
-      when(() => mockClient.dispose()).thenAnswer((_) async {});
-
-      await service.disposeClient();
-
-      verify(() => mockClient.dispose()).called(1);
-    });
-
-    test('listen starts key verification and timeline listeners', () async {
-      final stubService = StubMatrixService(
-        client: mockClient,
-        fakeGateway: FakeMatrixGateway(client: mockClient),
-        journalDb: mockJournalDb,
-        settingsDb: mockSettingsDb,
-      );
-      final onRoomStateController =
-          CachedStreamController<({String roomId, StrippedStateEvent state})>();
-
-      when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
-      when(() => mockClient.rooms).thenReturn(const []);
-
-      await stubService.listen();
-
-      expect(stubService.startKeyVerificationCount, 1);
-      expect(stubService.listenToTimelineCount, 1);
-
-      await onRoomStateController.close();
-    });
-  });
-
-  group('race condition fix - _loadSyncRoom', () {
-    test('successfully loads room on first attempt', () async {
-      final mockRoom = MockRoom();
-      const roomId = '!test:room';
-      final onLoginStateController =
-          CachedStreamController<LoginState>(LoginState.loggedIn);
-      final onRoomStateController =
-          CachedStreamController<({String roomId, StrippedStateEvent state})>();
-
-      when(() => mockClient.onLoginStateChanged)
-          .thenReturn(onLoginStateController);
-      when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-          .thenAnswer((_) async => roomId);
-      when(() => mockClient.getRoomById(roomId)).thenReturn(mockRoom);
-      when(() => mockRoom.id).thenReturn(roomId);
-
-      final stubService = StubMatrixService(
-        client: mockClient,
-        fakeGateway: FakeMatrixGateway(client: mockClient),
-        journalDb: mockJournalDb,
-        settingsDb: mockSettingsDb,
-      );
-
-      await stubService.init();
-
-      expect(stubService.syncRoom, equals(mockRoom));
-      expect(stubService.syncRoomId, equals(roomId));
-
-      verify(
-        () => mockLoggingService.captureEvent(
-          contains('Loaded syncRoom'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: '_loadSyncRoom',
-        ),
-      ).called(1);
-
-      await onLoginStateController.close();
-      await onRoomStateController.close();
-    });
-
-    test('returns early when no saved room ID exists', () async {
-      final onLoginStateController =
-          CachedStreamController<LoginState>(LoginState.loggedIn);
-      final onRoomStateController =
-          CachedStreamController<({String roomId, StrippedStateEvent state})>();
-
-      when(() => mockClient.onLoginStateChanged)
-          .thenReturn(onLoginStateController);
-      when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-          .thenAnswer((_) async => null);
-
-      final stubService = StubMatrixService(
-        client: mockClient,
-        fakeGateway: FakeMatrixGateway(client: mockClient),
-        journalDb: mockJournalDb,
-        settingsDb: mockSettingsDb,
-      );
-
-      await stubService.init();
-
-      expect(stubService.syncRoom, isNull);
-      expect(stubService.syncRoomId, isNull);
-
-      verify(
-        () => mockLoggingService.captureEvent(
-          'No saved room ID found',
-          domain: 'MATRIX_SERVICE',
-          subDomain: '_loadSyncRoom',
-        ),
-      ).called(1);
-
-      await onLoginStateController.close();
-      await onRoomStateController.close();
-    });
-
-    test('retries when room not found initially but succeeds', () {
-      fakeAsync((async) {
-        final mockRoom = MockRoom();
-        const roomId = '!test:room';
-        final onLoginStateController =
-            CachedStreamController<LoginState>(LoginState.loggedIn);
-        final onRoomStateController = CachedStreamController<
-            ({String roomId, StrippedStateEvent state})>();
-
-        when(() => mockClient.onLoginStateChanged)
-            .thenReturn(onLoginStateController);
-        when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
-        when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-            .thenAnswer((_) async => roomId);
-
-        // Return null on first attempt, room on second
-        final responses = [null, mockRoom];
-        when(() => mockClient.getRoomById(roomId))
-            .thenAnswer((_) => responses.removeAt(0));
-        when(() => mockRoom.id).thenReturn(roomId);
-
-        final stubService = StubMatrixService(
-          client: mockClient,
-          fakeGateway: FakeMatrixGateway(client: mockClient),
-          journalDb: mockJournalDb,
-          settingsDb: mockSettingsDb,
+      testService = TestableMatrixService(
+        gateway: mockGateway,
+        activityGate: mockActivityGate,
+        roomManager: mockRoomManager,
+        sessionManager: mockSessionManager,
+        timelineListener: mockTimelineListener,
+        overriddenLoggingService: mockLoggingService,
+        onStartKeyVerification: () => startKeyCalled = true,
+        onListenTimeline: () => listenTimelineCalled = true,
+      )..matrixConfig = const MatrixConfig(
+          homeServer: 'https://example.org',
+          user: '@user:server',
+          password: 'pw',
         );
-
-        // Start init (don't await in fakeAsync)
-        // ignore: cascade_invocations
-        stubService.init();
-
-        // Advance time to complete the retry delay (1 second)
-        async.elapse(const Duration(seconds: 1));
-        // ignore: cascade_invocations
-        async.flushMicrotasks();
-
-        expect(stubService.syncRoom, equals(mockRoom));
-        expect(stubService.syncRoomId, equals(roomId));
-
-        // Should log retry message and success
-        verify(
-          () => mockLoggingService.captureEvent(
-            contains('not found, retrying'),
-            domain: 'MATRIX_SERVICE',
-            subDomain: '_loadSyncRoom',
-          ),
-        ).called(1);
-
-        verify(
-          () => mockLoggingService.captureEvent(
-            contains('Loaded syncRoom'),
-            domain: 'MATRIX_SERVICE',
-            subDomain: '_loadSyncRoom',
-          ),
-        ).called(1);
-
-        onLoginStateController.close();
-        onRoomStateController.close();
-      });
+      when(() => mockSessionManager.connect(shouldAttemptLogin: false))
+          .thenAnswer((_) async => true);
+      when(() => mockRoomManager.hydrateRoomSnapshot(client: mockClient))
+          .thenAnswer((_) async {});
+      loginController = CachedStreamController<LoginState>()
+        ..add(LoginState.loggedIn);
+      when(() => mockClient.onLoginStateChanged).thenReturn(loginController);
+      when(() => mockSessionManager.isLoggedIn()).thenReturn(true);
+      when(() => mockClient.isLogged()).thenReturn(true);
     });
 
-    test('fails after 3 attempts and logs warning', () {
-      fakeAsync((async) {
-        const roomId = '!test:room';
-        final onLoginStateController =
-            CachedStreamController<LoginState>(LoginState.loggedIn);
-        final onRoomStateController = CachedStreamController<
-            ({String roomId, StrippedStateEvent state})>();
-
-        when(() => mockClient.onLoginStateChanged)
-            .thenReturn(onLoginStateController);
-        when(() => mockClient.onRoomState).thenReturn(onRoomStateController);
-        when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-            .thenAnswer((_) async => roomId);
-        when(() => mockClient.getRoomById(roomId)).thenReturn(null);
-
-        final stubService = StubMatrixService(
-          client: mockClient,
-          fakeGateway: FakeMatrixGateway(client: mockClient),
-          journalDb: mockJournalDb,
-          settingsDb: mockSettingsDb,
-        );
-
-        // Start init (don't await in fakeAsync)
-        // ignore: cascade_invocations
-        stubService.init();
-
-        // Advance time to complete all retry delays (1s + 2s + 4s = 7s)
-        async.elapse(const Duration(seconds: 7));
-        // ignore: cascade_invocations
-        async.flushMicrotasks();
-
-        expect(stubService.syncRoom, isNull);
-        expect(stubService.syncRoomId, isNull);
-
-        // Should log 3 retry messages (attempts 1, 2, and 3; attempt 4 doesn't log retry)
-        verify(
-          () => mockLoggingService.captureEvent(
-            contains('not found, retrying'),
-            domain: 'MATRIX_SERVICE',
-            subDomain: '_loadSyncRoom',
-          ),
-        ).called(3);
-
-        // Should log final failure
-        verify(
-          () => mockLoggingService.captureEvent(
-            contains('⚠️ Failed to load room'),
-            domain: 'MATRIX_SERVICE',
-            subDomain: '_loadSyncRoom',
-          ),
-        ).called(1);
-
-        onLoginStateController.close();
-        onRoomStateController.close();
-      });
+    tearDown(() async {
+      await testService.dispose();
+      await loginController.close();
     });
-  });
 
-  group('race condition fix - listenToTimelineEvents', () {
-    test('returns early when syncRoom is null', () async {
-      service.syncRoom = null;
+    test('listen triggers startKey and timeline listeners', () async {
+      await testService.listen();
 
-      await listenToTimelineEvents(service: service);
+      expect(startKeyCalled, isTrue);
+      expect(listenTimelineCalled, isTrue);
+      verify(() => mockRoomManager.loadPersistedRoomId()).called(1);
+    });
+
+    test('listen logs sync state with persisted and joined rooms', () async {
+      final roomA = MockRoom();
+      final roomB = MockRoom();
+      when(() => roomA.id).thenReturn('!roomA:server');
+      when(() => roomB.id).thenReturn('!roomB:server');
+      when(() => mockClient.rooms).thenReturn([roomA, roomB]);
+      when(() => mockRoomManager.currentRoomId).thenReturn('!roomA:server');
+      when(() => mockRoomManager.loadPersistedRoomId())
+          .thenAnswer((_) async => '!roomPersisted:server');
+
+      await testService.listen();
 
       verify(
         () => mockLoggingService.captureEvent(
-          contains('⚠️ Cannot listen to timeline: syncRoom is null'),
+          contains('savedRoomId: !roomPersisted:server'),
           domain: 'MATRIX_SERVICE',
-          subDomain: 'listenToTimelineEvents',
+          subDomain: 'listen',
         ),
       ).called(1);
-
-      // Should not try to get timeline
-      expect(service.timeline, isNull);
     });
 
-    test('proceeds normally when syncRoom is not null', () async {
-      final mockRoom = MockRoom();
-      final mockTimeline = MockTimeline();
-      const roomId = '!test:room';
+    test('init connects, hydrates, and listens when logged in', () async {
+      await testService.init();
 
-      when(() => mockRoom.id).thenReturn(roomId);
-      when(() => mockRoom.getTimeline(onNewEvent: any(named: 'onNewEvent')))
-          .thenAnswer((_) async => mockTimeline);
-
-      service
-        ..syncRoom = mockRoom
-        ..syncRoomId = roomId;
-
-      await listenToTimelineEvents(service: service);
-
-      verify(
-        () => mockLoggingService.captureEvent(
-          contains('Attempting to listen'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'listenToTimelineEvents',
-        ),
-      ).called(1);
-
-      expect(service.timeline, equals(mockTimeline));
+      expect(testService.loadConfigCalled, isTrue);
+      verify(() => mockSessionManager.connect(shouldAttemptLogin: false))
+          .called(1);
+      verify(() => mockRoomManager.hydrateRoomSnapshot(client: mockClient))
+          .called(1);
+      expect(startKeyCalled, isTrue);
+      expect(listenTimelineCalled, isTrue);
     });
-  });
 
-  group('sendMatrixMsg guard rails', () {
-    test('logs send attempts and successes', () async {
-      final mockRoom = MockRoom();
-      when(() => mockRoom.id).thenReturn('!room:server');
+    test('init stops when session connect fails', () async {
+      when(() => mockSessionManager.connect(shouldAttemptLogin: false))
+          .thenAnswer((_) async => false);
+      await loginController.close();
+      loginController = CachedStreamController<LoginState>()
+        ..add(LoginState.loggedOut);
+      when(() => mockClient.onLoginStateChanged).thenReturn(loginController);
+      when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
+      when(() => mockClient.isLogged()).thenReturn(false);
 
-      service
-        ..syncRoom = mockRoom
-        ..syncRoomId = '!room:server'
-        ..unverifiedDevices = const [];
+      await testService.init();
 
-      when(
-        () => mockRoom.sendTextEvent(
-          any(),
-          msgtype: any(named: 'msgtype'),
-          parseCommands: any(named: 'parseCommands'),
-          parseMarkdown: any(named: 'parseMarkdown'),
-        ),
-      ).thenAnswer((_) async => 'event');
-
-      final result = await service.sendMatrixMsg(
-        SyncMessage.aiConfig(
-          aiConfig: fallbackAiConfig,
-          status: SyncEntryStatus.update,
-        ),
+      expect(testService.loadConfigCalled, isTrue);
+      expect(startKeyCalled, isFalse);
+      expect(listenTimelineCalled, isFalse);
+      verifyNever(
+        () => mockRoomManager.hydrateRoomSnapshot(client: mockClient),
       );
-
-      expect(result, isTrue);
-      verify(
-        () => mockLoggingService.captureEvent(
-          contains('Sending message - using roomId'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg',
-        ),
-      ).called(1);
-      verify(
-        () => mockLoggingService.captureEvent(
-          contains('sent text message'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg',
-        ),
-      ).called(1);
     });
 
-    test('throws when unverified devices are present', () async {
-      final mockDeviceKeys = MockDeviceKeys();
-      service.unverifiedDevices = [mockDeviceKeys];
+    test('init does not listen when login state is not logged in', () async {
+      await loginController.close();
+      loginController = CachedStreamController<LoginState>()
+        ..add(LoginState.loggedOut);
+      when(() => mockClient.onLoginStateChanged).thenReturn(loginController);
+      when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
+      when(() => mockClient.isLogged()).thenReturn(false);
 
-      expect(
-        () => service.sendMatrixMsg(
-          SyncMessage.aiConfig(
-            aiConfig: fallbackAiConfig,
-            status: SyncEntryStatus.update,
-          ),
-        ),
-        throwsA(isA<Exception>()),
-      );
+      await testService.init();
 
-      verify(
-        () => mockLoggingService.captureException(
-          any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg',
-        ),
-      ).called(1);
-    });
-
-    test('returns false when roomId is missing', () async {
-      service
-        ..unverifiedDevices = const []
-        ..syncRoomId = null;
-
-      final result = await service.sendMatrixMsg(
-        SyncMessage.aiConfig(
-          aiConfig: fallbackAiConfig,
-          status: SyncEntryStatus.update,
-        ),
-      );
-
-      expect(result, isFalse);
-      verify(
-        () => mockLoggingService.captureEvent(
-          configNotFound,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg',
-        ),
-      ).called(1);
+      expect(startKeyCalled, isFalse);
+      expect(listenTimelineCalled, isFalse);
     });
   });
 }

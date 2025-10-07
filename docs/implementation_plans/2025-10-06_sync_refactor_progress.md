@@ -27,6 +27,12 @@
   - Added targeted timeline tests to ensure the processor is invoked prior to read-marker updates.
   - Deleted legacy `processMatrixMessage` wrapper (no call sites remaining after timeline migration).
 
+- **Session & Room Management** (Milestone 6)
+  - Split responsibilities into `MatrixSessionManager`, `MatrixTimelineListener`, and the new `SyncRoomManager` with invite filtering and persisted room caching.
+  - Rebuilt `MatrixService` to delegate to the new managers, removing the legacy `listenToMatrixRoomInvites` auto-join logic and the `room.dart` helper APIs.
+  - Added exhaustive unit coverage for invite handling, hydration retries, error propagation, and session edge cases.
+  - Updated sync readme documentation to reflect the fix for the auto-join bug and the improved join error handling.
+
 ## Recent Fixes & Enhancements
 
 - `UserActivityGate` now initializes `canProcess` correctly and only emits meaningful transitions.
@@ -36,6 +42,6 @@
 
 ## Next Up
 
-- **Milestone 6:** Split session & room management (SessionManager, TimelineListener, SyncRoomManager with invite filtering) and remove the legacy `listenToMatrixRoomInvites` path; prepare characterization/integration tests for invite flows beforehand.
+- **Milestone 7:** SyncEngine assembly and lifecycle coordinator; compose the extracted services, expose diagnostics, and expand integration coverage for multi-device invites.
 
 This progress log will be updated as each milestone is completed.

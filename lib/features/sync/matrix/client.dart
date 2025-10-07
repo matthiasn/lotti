@@ -1,10 +1,7 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
-import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -57,74 +54,4 @@ Future<String> createMatrixDeviceName() async {
 
   final dateHhMm = DateTime.now().toIso8601String().substring(0, 16);
   return '$deviceName $dateHhMm ${uuid.v1().substring(0, 4)}';
-}
-
-Future<bool> matrixConnect({
-  required MatrixService service,
-  required bool shouldAttemptLogin,
-}) async {
-  try {
-    final matrixConfig = service.matrixConfig;
-
-    if (matrixConfig == null) {
-      getIt<LoggingService>().captureEvent(
-        configNotFound,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'login',
-      );
-
-      return false;
-    }
-
-    final homeServerSummary = await service.client.checkHomeserver(
-      Uri.parse(matrixConfig.homeServer),
-    );
-
-    getIt<LoggingService>().captureEvent(
-      'checkHomeserver $homeServerSummary',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'login',
-    );
-
-    await service.client.init(
-      waitForFirstSync: false,
-      waitUntilLoadCompletedLoaded: false,
-    );
-
-    if (!service.isLoggedIn() && shouldAttemptLogin) {
-      final initialDeviceDisplayName =
-          service.deviceDisplayName ?? await createMatrixDeviceName();
-
-      service.loginResponse = await service.client.login(
-        LoginType.mLoginPassword,
-        identifier: AuthenticationUserIdentifier(user: matrixConfig.user),
-        password: matrixConfig.password,
-        initialDeviceDisplayName: initialDeviceDisplayName,
-      );
-
-      getIt<LoggingService>().captureEvent(
-        'logged in, userId ${service.loginResponse?.userId},'
-        ' deviceId  ${service.loginResponse?.deviceId}',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'login',
-      );
-    }
-
-    final roomId = await service.getRoom();
-
-    if (roomId != null) {
-      await service.joinRoom(roomId);
-    }
-
-    return true;
-  } catch (e, stackTrace) {
-    debugPrint('$e');
-    getIt<LoggingService>().captureException(
-      e,
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'login',
-      stackTrace: stackTrace,
-    );
-    return false;
-  }
 }
