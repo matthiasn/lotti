@@ -1,3 +1,5 @@
+export 'gateway/matrix_sdk_gateway.dart';
+export 'gateway/matrix_sync_gateway.dart';
 export 'matrix/client.dart';
 export 'matrix/config.dart';
 export 'matrix/consts.dart';
@@ -5,6 +7,7 @@ export 'matrix/key_verification_runner.dart';
 export 'matrix/last_read.dart';
 export 'matrix/matrix_service.dart';
 export 'matrix/process_message.dart';
+export 'matrix/read_marker_service.dart';
 export 'matrix/room.dart';
 export 'matrix/save_attachment.dart';
 export 'matrix/send_message.dart';

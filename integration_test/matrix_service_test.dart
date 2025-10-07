@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/send_message.dart';
@@ -154,9 +155,11 @@ void main() {
         // Make sure the GetIt dependencies are ready before creating MatrixService
         await Future<void>.delayed(const Duration(seconds: 1));
 
+        final aliceClient = await createMatrixClient(dbName: 'Alice');
+        final aliceGateway = MatrixSdkGateway(client: aliceClient);
         final alice = MatrixService(
           matrixConfig: config1,
-          client: await createMatrixClient(dbName: 'Alice'),
+          gateway: aliceGateway,
           deviceDisplayName: 'Alice',
           overriddenJournalDb: aliceDb,
           overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
@@ -183,9 +186,11 @@ void main() {
         await alice.listenToTimeline();
 
         debugPrint('\n--- Bob goes live');
+        final bobClient = await createMatrixClient(dbName: 'Bob');
+        final bobGateway = MatrixSdkGateway(client: bobClient);
         final bob = MatrixService(
           matrixConfig: config2,
-          client: await createMatrixClient(dbName: 'Bob'),
+          gateway: bobGateway,
           deviceDisplayName: 'Bob',
           overriddenJournalDb: bobDb,
           overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),

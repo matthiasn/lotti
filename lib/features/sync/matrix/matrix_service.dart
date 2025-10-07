@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -18,18 +19,25 @@ const int _kLoadSyncRoomBaseDelayMs = 1000;
 
 class MatrixService {
   MatrixService({
-    required this.client,
+    required MatrixSyncGateway gateway,
+    UserActivityGate? activityGate,
     this.matrixConfig,
     this.deviceDisplayName,
     JournalDb? overriddenJournalDb,
     SettingsDb? overriddenSettingsDb,
-  }) : keyVerificationController =
+  })  : _gateway = gateway,
+        _activityGate = activityGate ??
+            (getIt.isRegistered<UserActivityGate>()
+                ? getIt<UserActivityGate>()
+                : UserActivityGate(
+                    activityService: getIt<UserActivityService>(),
+                  )),
+        _ownsActivityGate = activityGate == null,
+        keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
     clientRunner = ClientRunner<void>(
       callback: (event) async {
-        while (getIt<UserActivityService>().msSinceLastActivity < 1000) {
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-        }
+        await _activityGate.waitUntilIdle();
 
         await processNewTimelineEvents(
           service: this,
@@ -52,7 +60,7 @@ class MatrixService {
     incomingKeyVerificationRunnerStream =
         incomingKeyVerificationRunnerController.stream;
 
-    Connectivity()
+    _connectivitySubscription = Connectivity()
         .onConnectivityChanged
         .listen((List<ConnectivityResult> result) {
       if ({
@@ -65,12 +73,16 @@ class MatrixService {
     });
   }
 
+  final MatrixSyncGateway _gateway;
+  final UserActivityGate _activityGate;
+  final bool _ownsActivityGate;
+  Client get client => _gateway.client;
+
   void publishIncomingRunnerState() {
     incomingKeyVerificationRunner?.publishState();
   }
 
   final String? deviceDisplayName;
-  final Client client;
   MatrixConfig? matrixConfig;
   LoginResponse? loginResponse;
   String? syncRoomId;
@@ -79,6 +91,7 @@ class MatrixService {
   String? lastReadEventContextId;
 
   late final ClientRunner<void> clientRunner;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   final Map<String, int> messageCounts = {};
   int sentCount = 0;
@@ -233,17 +246,7 @@ class MatrixService {
       );
 
   List<DeviceKeys> getUnverifiedDevices() {
-    final unverifiedDevices = <DeviceKeys>[];
-
-    for (final deviceKeysList in client.userDeviceKeys.values) {
-      for (final deviceKeys in deviceKeysList.deviceKeys.values) {
-        if (!deviceKeys.verified) {
-          unverifiedDevices.add(deviceKeys);
-        }
-      }
-    }
-
-    return unverifiedDevices;
+    return _gateway.unverifiedDevices();
   }
 
   Future<void> verifyDevice(DeviceKeys deviceKeys) => verifyMatrixDevice(
@@ -309,16 +312,28 @@ class MatrixService {
       listenForKeyVerificationRequests(service: this);
 
   Future<void> logout() async {
-    if (client.isLogged()) {
-      timeline?.cancelSubscriptions();
-      await client.logout();
-    }
+    timeline?.cancelSubscriptions();
+    await _gateway.logout();
   }
 
   Future<void> disposeClient() async {
     if (client.isLogged()) {
       await client.dispose();
     }
+  }
+
+  Future<void> dispose() async {
+    clientRunner.close();
+    await messageCountsController.close();
+    await keyVerificationController.close();
+    await incomingKeyVerificationRunnerController.close();
+    await incomingKeyVerificationController.close();
+    await _connectivitySubscription?.cancel();
+    timeline?.cancelSubscriptions();
+    if (_ownsActivityGate) {
+      await _activityGate.dispose();
+    }
+    await _gateway.dispose();
   }
 
   Future<Map<String, dynamic>> getDiagnosticInfo() async {

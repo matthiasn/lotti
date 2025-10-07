@@ -14,9 +14,12 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -92,6 +95,11 @@ Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
     ..registerSingleton<UserActivityService>(UserActivityService())
+    ..registerSingleton<UserActivityGate>(
+      UserActivityGate(
+        activityService: getIt<UserActivityService>(),
+      ),
+    )
     ..registerSingleton<UpdateNotifications>(UpdateNotifications())
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<EditorDb>(EditorDb())
@@ -99,14 +107,26 @@ Future<void> registerSingletons() async {
     ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<VectorClockService>(VectorClockService())
-    ..registerSingleton<TimeService>(TimeService())
-    ..registerSingleton<OutboxService>(OutboxService());
+    ..registerSingleton<TimeService>(TimeService());
 
   await vod.init();
   final client = await createMatrixClient();
+  final matrixGateway = MatrixSdkGateway(client: client);
+  final matrixService = MatrixService(
+    gateway: matrixGateway,
+  );
 
   getIt
-    ..registerSingleton<MatrixService>(MatrixService(client: client))
+    ..registerSingleton<MatrixSyncGateway>(matrixGateway)
+    ..registerSingleton<MatrixService>(matrixService)
+    ..registerSingleton<OutboxService>(
+      OutboxService(
+        syncDatabase: getIt<SyncDatabase>(),
+        loggingService: getIt<LoggingService>(),
+        activityGate: getIt<UserActivityGate>(),
+        matrixService: matrixService,
+      ),
+    )
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<HealthImport>(

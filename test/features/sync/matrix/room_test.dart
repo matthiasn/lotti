@@ -7,6 +7,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/room.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -14,6 +15,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/matrix/fake_matrix_gateway.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
 
@@ -70,6 +73,12 @@ void main() {
       ..allowReassignment = true
       ..registerSingleton<SettingsDb>(mockSettingsDb)
       ..registerSingleton<UserActivityService>(UserActivityService())
+      ..registerSingleton<UserActivityGate>(
+        UserActivityGate(
+          activityService: getIt<UserActivityService>(),
+          idleThreshold: Duration.zero,
+        ),
+      )
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<UpdateNotifications>(MockUpdateNotifications())
@@ -120,8 +129,9 @@ void main() {
     });
 
     test('inviteToMatrixRoom calls room invite when syncRoom set', () async {
-      final matrixService = MatrixService(client: mockClient)
-        ..syncRoom = mockRoom;
+      final matrixService = MatrixService(
+        gateway: FakeMatrixGateway(client: mockClient),
+      )..syncRoom = mockRoom;
 
       when(() => mockRoom.invite('@user:server')).thenAnswer((_) async {});
 
@@ -134,7 +144,9 @@ void main() {
     });
 
     test('listenToMatrixRoomInvites auto-joins when no room set', () async {
-      final matrixService = MatrixService(client: mockClient);
+      final matrixService = MatrixService(
+        gateway: FakeMatrixGateway(client: mockClient),
+      );
       final roomController =
           CachedStreamController<({String roomId, StrippedStateEvent state})>();
       final joinedRoom = MockRoom();
