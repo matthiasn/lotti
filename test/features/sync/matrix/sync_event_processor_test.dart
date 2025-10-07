@@ -284,5 +284,23 @@ void main() {
 
       expect(entity.meta.id, fallbackJournalEntity.meta.id);
     });
+
+    test('rejects path traversal attempts', () async {
+      // Create a file outside the documents directory to ensure it's not read.
+      final externalDir =
+          await Directory.systemTemp.createTemp('sync_loader_ext');
+      final externalFile = File(path.join(externalDir.path, 'escape.json'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(fallbackJournalEntity.toJson()));
+
+      const loader = FileSyncJournalEntityLoader();
+
+      expect(
+        () => loader.load('../${path.basename(externalFile.path)}'),
+        throwsArgumentError,
+      );
+
+      externalDir.deleteSync(recursive: true);
+    });
   });
 }

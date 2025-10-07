@@ -25,10 +25,17 @@ class FileSyncJournalEntityLoader implements SyncJournalEntityLoader {
   @override
   Future<JournalEntity> load(String jsonPath) async {
     final docDir = getDocumentsDirectory();
-    final relativePath =
-        jsonPath.startsWith('/') ? jsonPath.substring(1) : jsonPath;
-    final fullPath = path.join(docDir.path, relativePath);
-    return readEntityFromJson(fullPath);
+    final normalized = path.normalize(jsonPath);
+    final relative = normalized.startsWith(path.separator)
+        ? normalized.substring(1)
+        : normalized;
+    final candidate = path.normalize(path.join(docDir.path, relative));
+    final docPath = path.normalize(docDir.path);
+    if (!path.isWithin(docPath, candidate) && docPath != candidate) {
+      throw ArgumentError('jsonPath resolves outside documents directory');
+    }
+    final jsonRelative = path.relative(candidate, from: docPath);
+    return readEntityFromJson(jsonRelative);
   }
 }
 

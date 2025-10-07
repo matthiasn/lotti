@@ -43,9 +43,9 @@ Room creation, joining, and invitation handling:
 Receives and processes incoming messages:
 
 - Monitors timeline events
-- Processes sync messages
+- Delegates sync payloads to `SyncEventProcessor`
 - Handles file attachments
-- Maintains read markers
+- Maintains read markers via `SyncReadMarkerService`
 
 #### 5. Send Message (`matrix/send_message.dart`)
 
@@ -70,9 +70,25 @@ Sends data to sync room:
 1. Matrix room receives new event
 2. `timeline.onNewEvent` callback fires
 3. `processNewTimelineEvents()` processes events
-4. `processMatrixMessage()` deserializes and applies changes
+4. `SyncEventProcessor` deserializes and applies changes using injected dependencies
 5. Local database updated
 6. Read marker updated
+
+### `SyncEventProcessor`
+
+`SyncEventProcessor` (see `matrix/sync_event_processor.dart`) is the dedicated component that decodes
+incoming `SyncMessage`s and mutates persistence. It replaces the legacy `processMatrixMessage()`
+implementation with a testable, dependency-injected service.
+
+- **Dependencies:** `LoggingService`, `UpdateNotifications`, `AiConfigRepository`, and an optional
+  `SyncJournalEntityLoader`. Production uses the default `FileSyncJournalEntityLoader` (which
+  leverages `path.join`), while tests can supply an in-memory loader.
+- **Responsibilities:** Decode the base64 payload, map it to a concrete `SyncMessage`, update the
+  provided `JournalDb`, and notify listeners (e.g., vector-clock aware updates, outbox trunks).
+- **Error handling:** Logs exceptions while allowing later events to continue processing.
+
+> NOTE: `processMatrixMessage()` is now a thin wrapper around `SyncEventProcessor` and will be
+> removed once all legacy call sites are migrated.
 
 ## Setup Flow
 
