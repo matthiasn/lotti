@@ -26,7 +26,8 @@
 
 ## Next Up
 
-- **Milestone 4:** Split session & room management (SessionManager, TimelineListener, SyncRoomManager with proper invite handling) and remove the legacy `listenToMatrixRoomInvites` path.
-- Continue writing characterization/integration tests for invite flow before refactoring.
+- **Milestone 4:** Extract `SyncReadMarkerService` to own persistence + read-marker updates with unit coverage.
+- **Milestone 5:** Build `SyncEventProcessor` (per-entity handlers + attachment reader abstraction) and cover with targeted tests.
+- **Milestone 6:** Split session & room management (SessionManager, TimelineListener, SyncRoomManager with invite filtering) and remove the legacy `listenToMatrixRoomInvites` path; prepare characterization/integration tests for invite flows beforehand.
 
 This progress log will be updated as each milestone is completed.
