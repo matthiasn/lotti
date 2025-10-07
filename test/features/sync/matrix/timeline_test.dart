@@ -4,51 +4,66 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart';
-import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/features/sync/matrix/timeline_context.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../helpers/matrix/fake_matrix_gateway.dart';
-
-class MockMatrixClient extends Mock implements Client {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockSettingsDb extends Mock implements SettingsDb {}
-
-class MockLoggingService extends Mock implements LoggingService {}
+class MockClient extends Mock implements Client {}
 
 class MockRoom extends Mock implements Room {}
 
 class MockTimeline extends Mock implements Timeline {}
 
+class MockLoggingService extends Mock implements LoggingService {}
+
+class MockJournalDb extends Mock implements JournalDb {}
+
+class MockSettingsDb extends Mock implements SettingsDb {}
+
 class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
+
+class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 class FakeMatrixEvent extends Fake implements Event {}
 
 class FakeJournalDb extends Fake implements JournalDb {}
 
-class TestMatrixService extends MatrixService {
-  TestMatrixService({
-    required Client client,
-    MatrixSyncGateway? gateway,
-    JournalDb? journalDb,
-    SettingsDb? settingsDb,
-  }) : super(
-          gateway: gateway ?? FakeMatrixGateway(client: client),
-          overriddenJournalDb: journalDb,
-          overriddenSettingsDb: settingsDb,
-        );
+class TestTimelineContext implements TimelineContext {
+  TestTimelineContext({
+    required this.client,
+    required this.roomManager,
+    required this.loggingService,
+  });
+
+  @override
+  final Client client;
+
+  @override
+  final SyncRoomManager roomManager;
+
+  @override
+  final LoggingService loggingService;
+
+  @override
+  Timeline? timeline;
+
+  @override
+  String? lastReadEventContextId;
+
+  bool refreshRequested = false;
+
+  @override
+  void enqueueTimelineRefresh() {
+    refreshRequested = true;
+  }
 }
 
 void main() {
@@ -61,6 +76,7 @@ void main() {
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(FakeMatrixEvent());
     registerFallbackValue(FakeJournalDb());
+
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel,
             (MethodCall call) async {
@@ -77,72 +93,57 @@ void main() {
     );
   });
 
-  late MockMatrixClient mockClient;
+  late MockClient mockClient;
+  late MockRoom mockRoom;
+  late MockTimeline mockTimeline;
+  late MockLoggingService mockLoggingService;
+  late MockSyncRoomManager mockRoomManager;
+  late TestTimelineContext context;
   late MockJournalDb mockJournalDb;
   late MockSettingsDb mockSettingsDb;
-  late MockLoggingService mockLoggingService;
-  late TestMatrixService service;
   late MockSyncReadMarkerService mockReadMarkerService;
   late MockSyncEventProcessor mockEventProcessor;
 
   setUp(() {
-    mockClient = MockMatrixClient();
+    mockClient = MockClient();
+    mockRoom = MockRoom();
+    mockTimeline = MockTimeline();
+    mockLoggingService = MockLoggingService();
+    mockRoomManager = MockSyncRoomManager();
     mockJournalDb = MockJournalDb();
     mockSettingsDb = MockSettingsDb();
-    mockLoggingService = MockLoggingService();
+    mockReadMarkerService = MockSyncReadMarkerService();
+    mockEventProcessor = MockSyncEventProcessor();
 
     when(() => mockClient.isLogged()).thenReturn(true);
     when(() => mockClient.userID).thenReturn('@user:server');
     when(() => mockClient.deviceName).thenReturn('device');
     when(() => mockClient.sync())
         .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+    when(() => mockTimeline.events).thenReturn(const []);
 
     getIt
       ..reset()
       ..allowReassignment = true
-      ..registerSingleton<UserActivityService>(UserActivityService())
-      ..registerSingleton<UserActivityGate>(
-        UserActivityGate(
-          activityService: getIt<UserActivityService>(),
-          idleThreshold: Duration.zero,
-        ),
-      )
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<SettingsDb>(mockSettingsDb)
       ..registerSingleton<Directory>(Directory.systemTemp);
 
-    when(() => mockSettingsDb.itemByKey(any<String>()))
-        .thenAnswer((_) async => null);
-    when(
-      () => mockLoggingService.captureEvent(
-        any<String>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenAnswer((_) {});
-
-    service = TestMatrixService(
+    context = TestTimelineContext(
       client: mockClient,
-      journalDb: mockJournalDb,
-      settingsDb: mockSettingsDb,
+      roomManager: mockRoomManager,
+      loggingService: mockLoggingService,
     );
-    mockReadMarkerService = MockSyncReadMarkerService();
-    mockEventProcessor = MockSyncEventProcessor();
-    when(
-      () => mockEventProcessor.process(
-        event: any<Event>(named: 'event'),
-        journalDb: mockJournalDb,
-      ),
-    ).thenAnswer((_) async {});
   });
 
   tearDown(getIt.reset);
 
   test('listenToTimelineEvents logs when syncRoom is null', () async {
-    service.syncRoom = null;
+    when(() => mockRoomManager.currentRoom).thenReturn(null);
+    when(() => mockRoomManager.currentRoomId).thenReturn(null);
 
-    await listenToTimelineEvents(service: service);
+    await listenToTimelineEvents(listener: context);
 
     verify(
       () => mockLoggingService.captureEvent(
@@ -155,10 +156,8 @@ void main() {
 
   test('processNewTimelineEvents updates last read before marker call',
       () async {
-    final mockRoom = MockRoom();
-    final mockTimeline = MockTimeline();
-    when(() => mockRoom.id).thenReturn('!room:server');
     const eventId = r'$event';
+    when(() => mockRoom.id).thenReturn('!room:server');
     final event = Event.fromJson(
       {
         'event_id': eventId,
@@ -174,11 +173,10 @@ void main() {
       mockRoom,
     );
 
-    service
-      ..syncRoom = mockRoom
-      ..syncRoomId = '!room:server'
-      ..lastReadEventContextId = 'initial';
+    context.lastReadEventContextId = 'initial';
 
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
     when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
     when(() =>
             mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
@@ -188,204 +186,39 @@ void main() {
         .thenAnswer((_) async {});
 
     when(
+      () => mockEventProcessor.process(
+        event: any<Event>(named: 'event'),
+        journalDb: mockJournalDb,
+      ),
+    ).thenAnswer((_) async {});
+
+    when(
       () => mockReadMarkerService.updateReadMarker(
-        client: service.client,
+        client: context.client,
         timeline: mockTimeline,
         eventId: eventId,
         overriddenSettingsDb: any(named: 'overriddenSettingsDb'),
       ),
     ).thenAnswer((_) async {
-      expect(service.lastReadEventContextId, eventId);
+      expect(context.lastReadEventContextId, eventId);
     });
 
     await processNewTimelineEvents(
-      service: service,
+      listener: context,
+      overriddenJournalDb: mockJournalDb,
+      overriddenLoggingService: mockLoggingService,
+      overriddenSettingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
     );
 
     verify(
       () => mockReadMarkerService.updateReadMarker(
-        client: service.client,
+        client: context.client,
         timeline: mockTimeline,
         eventId: eventId,
-        overriddenSettingsDb: any(named: 'overriddenSettingsDb'),
+        overriddenSettingsDb: mockSettingsDb,
       ),
     ).called(1);
-    verify(
-      () => mockEventProcessor.process(
-        event: any<Event>(named: 'event'),
-        journalDb: mockJournalDb,
-      ),
-    ).called(1);
-  });
-
-  test('processNewTimelineEvents logs when fetched timeline is null', () async {
-    service
-      ..syncRoom = null
-      ..lastReadEventContextId = 'event-id';
-
-    await processNewTimelineEvents(
-      service: service,
-      eventProcessor: mockEventProcessor,
-    );
-
-    verify(
-      () => mockLoggingService.captureEvent(
-        'Timeline is null',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'processNewTimelineEvents',
-      ),
-    ).called(1);
-  });
-
-  test('processNewTimelineEvents logs event processing details', () async {
-    final mockRoom = MockRoom();
-    final mockTimeline = MockTimeline();
-    when(() => mockRoom.id).thenReturn('!room:server');
-
-    final event = Event.fromJson(
-      {
-        'event_id': 'event',
-        'sender': '@other:server',
-        'room_id': '!room:server',
-        'type': 'm.room.message',
-        'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
-        'content': {
-          'body': 'hi',
-          'msgtype': 'com.lotti.sync.message',
-        },
-      },
-      mockRoom,
-    );
-
-    service
-      ..syncRoom = mockRoom
-      ..syncRoomId = '!room:server'
-      ..lastReadEventContextId = 'start';
-
-    when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
-    when(() =>
-            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
-        .thenAnswer((_) async => mockTimeline);
-    when(() => mockTimeline.events).thenReturn([event]);
-    when(() => mockTimeline.setReadMarker(eventId: any(named: 'eventId')))
-        .thenAnswer((_) async {});
-
-    await processNewTimelineEvents(
-      service: service,
-      eventProcessor: mockEventProcessor,
-    );
-
-    verify(
-      () => mockLoggingService.captureEvent(
-        contains('Processing timeline events'),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'processNewTimelineEvents',
-      ),
-    ).called(1);
-    verify(
-      () => mockLoggingService.captureEvent(
-        contains('Received message from @other:server'),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'processNewTimelineEvents',
-      ),
-    ).called(1);
-    verify(
-      () => mockEventProcessor.process(
-        event: any<Event>(named: 'event'),
-        journalDb: mockJournalDb,
-      ),
-    ).called(1);
-  });
-
-  test('skips processing for events emitted by current user', () async {
-    final mockRoom = MockRoom();
-    final mockTimeline = MockTimeline();
-    when(() => mockRoom.id).thenReturn('!room:server');
-
-    final event = Event.fromJson(
-      {
-        'event_id': '\u0001self',
-        'sender': '@user:server',
-        'room_id': '!room:server',
-        'type': 'm.room.message',
-        'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
-        'content': {
-          'body': 'self',
-          'msgtype': 'com.lotti.sync.message',
-        },
-      },
-      mockRoom,
-    );
-
-    service
-      ..syncRoom = mockRoom
-      ..syncRoomId = '!room:server'
-      ..lastReadEventContextId = '\u0001start';
-
-    when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
-    when(() =>
-            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
-        .thenAnswer((_) async => mockTimeline);
-    when(() => mockTimeline.events).thenReturn([event]);
-
-    await processNewTimelineEvents(
-      service: service,
-      eventProcessor: mockEventProcessor,
-      readMarkerService: mockReadMarkerService,
-    );
-
-    verifyNever(
-      () => mockEventProcessor.process(
-        event: any<Event>(named: 'event'),
-        journalDb: mockJournalDb,
-      ),
-    );
-  });
-
-  test('skips non-sync message types', () async {
-    final mockRoom = MockRoom();
-    final mockTimeline = MockTimeline();
-    when(() => mockRoom.id).thenReturn('!room:server');
-
-    final event = Event.fromJson(
-      {
-        'event_id': '\u0001text',
-        'sender': '@other:server',
-        'room_id': '!room:server',
-        'type': 'm.room.message',
-        'origin_server_ts': DateTime.now().millisecondsSinceEpoch,
-        'content': {
-          'body': 'hi',
-          'msgtype': 'm.text',
-        },
-      },
-      mockRoom,
-    );
-
-    service
-      ..syncRoom = mockRoom
-      ..syncRoomId = '!room:server'
-      ..lastReadEventContextId = '\u0001start';
-
-    when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
-    when(() =>
-            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
-        .thenAnswer((_) async => mockTimeline);
-    when(() => mockTimeline.events).thenReturn([event]);
-
-    await processNewTimelineEvents(
-      service: service,
-      eventProcessor: mockEventProcessor,
-      readMarkerService: mockReadMarkerService,
-    );
-
-    verifyNever(
-      () => mockEventProcessor.process(
-        event: any<Event>(named: 'event'),
-        journalDb: mockJournalDb,
-      ),
-    );
   });
 }

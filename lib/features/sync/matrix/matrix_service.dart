@@ -5,7 +5,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -14,18 +13,20 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
-const int _kLoadSyncRoomMaxAttempts = 4;
-const int _kLoadSyncRoomBaseDelayMs = 1000;
-
 class MatrixService {
   MatrixService({
     required MatrixSyncGateway gateway,
     UserActivityGate? activityGate,
-    this.matrixConfig,
-    this.deviceDisplayName,
+    MatrixConfig? matrixConfig,
+    String? deviceDisplayName,
     JournalDb? overriddenJournalDb,
     SettingsDb? overriddenSettingsDb,
+    LoggingService? overriddenLoggingService,
+    SyncRoomManager? roomManager,
+    MatrixSessionManager? sessionManager,
+    MatrixTimelineListener? timelineListener,
   })  : _gateway = gateway,
+        _loggingService = overriddenLoggingService ?? getIt<LoggingService>(),
         _activityGate = activityGate ??
             (getIt.isRegistered<UserActivityGate>()
                 ? getIt<UserActivityGate>()
@@ -34,22 +35,43 @@ class MatrixService {
                   )),
         _ownsActivityGate = activityGate == null,
         keyVerificationController =
-            StreamController<KeyVerificationRunner>.broadcast() {
-    clientRunner = ClientRunner<void>(
-      callback: (event) async {
-        await _activityGate.waitUntilIdle();
+            StreamController<KeyVerificationRunner>.broadcast(),
+        messageCountsController = StreamController<MatrixStats>.broadcast(),
+        incomingKeyVerificationController =
+            StreamController<KeyVerification>.broadcast() {
+    final settingsDb = overriddenSettingsDb ?? getIt<SettingsDb>();
+    final journalDb = overriddenJournalDb ?? getIt<JournalDb>();
 
-        await processNewTimelineEvents(
-          service: this,
-          overriddenJournalDb: overriddenJournalDb,
-          overriddenSettingsDb: overriddenSettingsDb,
+    _roomManager = roomManager ??
+        sessionManager?.roomManager ??
+        SyncRoomManager(
+          gateway: _gateway,
+          settingsDb: settingsDb,
+          loggingService: _loggingService,
         );
-      },
-    );
+    _sessionManager = sessionManager ??
+        MatrixSessionManager(
+          gateway: _gateway,
+          roomManager: _roomManager,
+          loggingService: _loggingService,
+        );
 
-    getLastReadMatrixEventId(overriddenSettingsDb).then(
-      (value) => lastReadEventContextId = value,
-    );
+    if (sessionManager == null && matrixConfig != null) {
+      _sessionManager.matrixConfig = matrixConfig;
+    }
+    if (sessionManager == null && deviceDisplayName != null) {
+      _sessionManager.deviceDisplayName = deviceDisplayName;
+    }
+
+    _timelineListener = timelineListener ??
+        MatrixTimelineListener(
+          sessionManager: _sessionManager,
+          roomManager: _roomManager,
+          loggingService: _loggingService,
+          activityGate: _activityGate,
+          overriddenJournalDb: journalDb,
+          overriddenSettingsDb: settingsDb,
+        );
 
     incomingKeyVerificationRunnerController =
         StreamController<KeyVerificationRunner>.broadcast(
@@ -68,36 +90,50 @@ class MatrixService {
         ConnectivityResult.mobile,
         ConnectivityResult.ethernet,
       }.intersection(result.toSet()).isNotEmpty) {
-        clientRunner.enqueueRequest(null);
+        _timelineListener.enqueueTimelineRefresh();
       }
     });
   }
 
   final MatrixSyncGateway _gateway;
+  final LoggingService _loggingService;
   final UserActivityGate _activityGate;
   final bool _ownsActivityGate;
-  Client get client => _gateway.client;
 
-  void publishIncomingRunnerState() {
-    incomingKeyVerificationRunner?.publishState();
-  }
+  late final SyncRoomManager _roomManager;
+  late final MatrixSessionManager _sessionManager;
+  late final MatrixTimelineListener _timelineListener;
 
-  final String? deviceDisplayName;
-  MatrixConfig? matrixConfig;
-  LoginResponse? loginResponse;
-  String? syncRoomId;
-  Room? syncRoom;
-  Timeline? timeline;
-  String? lastReadEventContextId;
-
-  late final ClientRunner<void> clientRunner;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+
+  Client get client => _sessionManager.client;
+
+  MatrixConfig? get matrixConfig => _sessionManager.matrixConfig;
+  set matrixConfig(MatrixConfig? value) => _sessionManager.matrixConfig = value;
+
+  LoginResponse? get loginResponse => _sessionManager.loginResponse;
+  set loginResponse(LoginResponse? value) =>
+      _sessionManager.loginResponse = value;
+
+  String? get deviceDisplayName => _sessionManager.deviceDisplayName;
+  set deviceDisplayName(String? value) =>
+      _sessionManager.deviceDisplayName = value;
+
+  String? get syncRoomId => _roomManager.currentRoomId;
+  Room? get syncRoom => _roomManager.currentRoom;
+  Timeline? get timeline => _timelineListener.timeline;
+
+  String? get lastReadEventContextId =>
+      _timelineListener.lastReadEventContextId;
+  set lastReadEventContextId(String? value) =>
+      _timelineListener.lastReadEventContextId = value;
+
+  Stream<SyncRoomInvite> get inviteRequests => _roomManager.inviteRequests;
 
   final Map<String, int> messageCounts = {};
   int sentCount = 0;
 
-  final StreamController<MatrixStats> messageCountsController =
-      StreamController<MatrixStats>.broadcast();
+  final StreamController<MatrixStats> messageCountsController;
   KeyVerificationRunner? keyVerificationRunner;
   KeyVerificationRunner? incomingKeyVerificationRunner;
   final StreamController<KeyVerificationRunner> keyVerificationController;
@@ -106,14 +142,18 @@ class MatrixService {
   late final Stream<KeyVerificationRunner> keyVerificationStream;
   late final Stream<KeyVerificationRunner> incomingKeyVerificationRunnerStream;
 
-  final incomingKeyVerificationController =
-      StreamController<KeyVerification>.broadcast();
+  final StreamController<KeyVerification> incomingKeyVerificationController;
+
+  void publishIncomingRunnerState() {
+    incomingKeyVerificationRunner?.publishState();
+  }
 
   Future<void> init() async {
+    await _timelineListener.initialize();
     await loadConfig();
     await connect();
 
-    getIt<LoggingService>().captureEvent(
+    _loggingService.captureEvent(
       'MatrixService initialized - deviceId: ${client.deviceID}, '
       'deviceName: ${client.deviceName}, userId: ${client.userID}',
       domain: 'MATRIX_SERVICE',
@@ -121,129 +161,51 @@ class MatrixService {
     );
 
     if (client.onLoginStateChanged.value == LoginState.loggedIn) {
-      // Load syncRoom from saved room ID before attaching listeners
-      await _loadSyncRoom();
+      await _roomManager.hydrateRoomSnapshot(client: client);
       await listen();
     }
-  }
-
-  /// Loads the sync room from saved settings after login.
-  /// Waits for client sync and retries if room not immediately available.
-  Future<void> _loadSyncRoom() async {
-    final savedRoomId = await getMatrixRoom(client: client);
-
-    if (savedRoomId == null) {
-      getIt<LoggingService>().captureEvent(
-        'No saved room ID found',
-        domain: 'MATRIX_SERVICE',
-        subDomain: '_loadSyncRoom',
-      );
-      return;
-    }
-
-    // Try to get the room, with retries if not immediately available
-    for (var attempt = 0; attempt < _kLoadSyncRoomMaxAttempts; attempt++) {
-      // Ensure client has synced at least once
-      await client.sync();
-
-      final room = client.getRoomById(savedRoomId);
-
-      if (room != null) {
-        syncRoom = room;
-        syncRoomId = savedRoomId;
-
-        getIt<LoggingService>().captureEvent(
-          'Loaded syncRoom: $savedRoomId (attempt ${attempt + 1})',
-          domain: 'MATRIX_SERVICE',
-          subDomain: '_loadSyncRoom',
-        );
-        return;
-      }
-
-      // Room not found yet, wait before retry with exponential backoff
-      if (attempt < _kLoadSyncRoomMaxAttempts - 1) {
-        final delay =
-            Duration(milliseconds: _kLoadSyncRoomBaseDelayMs * (1 << attempt));
-        getIt<LoggingService>().captureEvent(
-          'Room $savedRoomId not found, retrying in ${delay.inMilliseconds}ms '
-          '(attempt ${attempt + 1}/$_kLoadSyncRoomMaxAttempts)',
-          domain: 'MATRIX_SERVICE',
-          subDomain: '_loadSyncRoom',
-        );
-        await Future<void>.delayed(delay);
-      }
-    }
-
-    // Room still not found after retries
-    getIt<LoggingService>().captureEvent(
-      '⚠️ Failed to load room $savedRoomId after $_kLoadSyncRoomMaxAttempts attempts. '
-      'Room may not exist or device may not be invited.',
-      domain: 'MATRIX_SERVICE',
-      subDomain: '_loadSyncRoom',
-    );
   }
 
   Future<void> listen() async {
     await startKeyVerificationListener();
     await listenToTimeline();
-    listenToMatrixRoomInvites(service: this);
-
-    final savedRoomId = await getMatrixRoom(client: client);
+    final savedRoomId = await _roomManager.loadPersistedRoomId();
     final joinedRooms = client.rooms.map((r) => r.id).toList();
-    getIt<LoggingService>().captureEvent(
+    _loggingService.captureEvent(
       'Sync state - savedRoomId: $savedRoomId, '
-      'syncRoomId: $syncRoomId, '
+      'syncRoomId: ${_roomManager.currentRoomId}, '
       'joinedRooms: $joinedRooms',
       domain: 'MATRIX_SERVICE',
       subDomain: 'listen',
     );
   }
 
-  Future<bool> login() => matrixConnect(
-        service: this,
-        shouldAttemptLogin: true,
-      );
+  Future<bool> login() => _sessionManager.connect(shouldAttemptLogin: true);
 
-  Future<void> connect() => matrixConnect(
-        service: this,
-        shouldAttemptLogin: false,
-      );
+  Future<bool> connect() => _sessionManager.connect(shouldAttemptLogin: false);
 
-  Future<String?> joinRoom(String roomId) =>
-      joinMatrixRoom(roomId: roomId, service: this);
-
-  Future<void> saveRoom(String roomId) => saveMatrixRoom(
-        roomId: roomId,
-        client: client,
-      );
-
-  bool isLoggedIn() {
-    return client.isLogged();
+  Future<String?> joinRoom(String roomId) async {
+    final room = await _roomManager.joinRoom(roomId);
+    return room?.id ?? roomId;
   }
+
+  Future<void> saveRoom(String roomId) => _roomManager.saveRoomId(roomId);
+
+  bool isLoggedIn() => _sessionManager.isLoggedIn();
 
   Future<void> listenToTimeline() async {
-    await listenToTimelineEvents(service: this);
+    await _timelineListener.start();
   }
 
-  Future<String> createRoom({
-    List<String>? invite,
-  }) =>
-      createMatrixRoom(
-        service: this,
-        invite: invite,
-      );
+  Future<String> createRoom({List<String>? invite}) =>
+      _roomManager.createRoom(inviteUserIds: invite);
 
-  Future<String?> getRoom() => getMatrixRoom(client: client);
+  Future<String?> getRoom() => _roomManager.loadPersistedRoomId();
 
-  Future<void> leaveRoom() => leaveMatrixRoom(client: client);
+  Future<void> leaveRoom() => _roomManager.leaveCurrentRoom();
 
-  Future<void> inviteToSyncRoom({
-    required String userId,
-  }) =>
-      inviteToMatrixRoom(
-        service: this,
-        userId: userId,
-      );
+  Future<void> inviteToSyncRoom({required String userId}) =>
+      _roomManager.inviteUser(userId);
 
   List<DeviceKeys> getUnverifiedDevices() {
     return _gateway.unverifiedDevices();
@@ -257,7 +219,6 @@ class MatrixService {
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
 
-    // Validate deviceId
     if (deviceId == null) {
       throw ArgumentError(
         'Cannot delete device: deviceId is null for device '
@@ -265,15 +226,14 @@ class MatrixService {
       );
     }
 
-    // Validate that we have credentials
-    if (matrixConfig == null) {
+    final config = matrixConfig;
+    if (config == null) {
       throw StateError(
         'Cannot delete device $deviceId: No Matrix configuration available. '
         'User must be logged in to delete devices.',
       );
     }
 
-    // Validate that the device belongs to the current user
     if (deviceKeys.userId != client.userID) {
       throw StateError(
         'Cannot delete device $deviceId: Device belongs to user '
@@ -281,18 +241,15 @@ class MatrixService {
       );
     }
 
-    // Check if we have a password for authentication
-    if (matrixConfig!.password.isNotEmpty) {
+    if (config.password.isNotEmpty) {
       await client.deleteDevice(
         deviceId,
         auth: AuthenticationPassword(
-          password: matrixConfig!.password,
-          identifier: AuthenticationUserIdentifier(user: matrixConfig!.user),
+          password: config.password,
+          identifier: AuthenticationUserIdentifier(user: config.user),
         ),
       );
     } else {
-      // TODO: Implement non-password UIA flows (SSO/token) to support
-      // device deletion when password is not available
       throw UnsupportedError(
         'Cannot delete device $deviceId: Password authentication required '
         'but no password is available. SSO/token authentication not yet '
@@ -304,16 +261,15 @@ class MatrixService {
   String? get deviceId => client.deviceID;
   String? get deviceName => client.deviceName;
 
-  Stream<KeyVerification> getIncomingKeyVerificationStream() {
-    return incomingKeyVerificationController.stream;
-  }
+  Stream<KeyVerification> getIncomingKeyVerificationStream() =>
+      incomingKeyVerificationController.stream;
 
   Future<void> startKeyVerificationListener() =>
       listenForKeyVerificationRequests(service: this);
 
   Future<void> logout() async {
-    timeline?.cancelSubscriptions();
-    await _gateway.logout();
+    _timelineListener.timeline?.cancelSubscriptions();
+    await _sessionManager.logout();
   }
 
   Future<void> disposeClient() async {
@@ -323,21 +279,21 @@ class MatrixService {
   }
 
   Future<void> dispose() async {
-    clientRunner.close();
     await messageCountsController.close();
     await keyVerificationController.close();
     await incomingKeyVerificationRunnerController.close();
     await incomingKeyVerificationController.close();
     await _connectivitySubscription?.cancel();
-    timeline?.cancelSubscriptions();
+    await _timelineListener.dispose();
+    await _roomManager.dispose();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }
-    await _gateway.dispose();
+    await _sessionManager.dispose();
   }
 
   Future<Map<String, dynamic>> getDiagnosticInfo() async {
-    final savedRoomId = await getMatrixRoom(client: client);
+    final savedRoomId = await _roomManager.loadPersistedRoomId();
     final joinedRooms = client.rooms
         .map(
           (r) => {
@@ -354,13 +310,13 @@ class MatrixService {
       'deviceName': client.deviceName,
       'userId': client.userID,
       'savedRoomId': savedRoomId,
-      'syncRoomId': syncRoomId,
-      'syncRoom.id': syncRoom?.id,
+      'syncRoomId': _roomManager.currentRoomId,
+      'syncRoom.id': _roomManager.currentRoom?.id,
       'joinedRooms': joinedRooms,
       'isLoggedIn': isLoggedIn(),
     };
 
-    getIt<LoggingService>().captureEvent(
+    _loggingService.captureEvent(
       'Sync diagnostics: ${json.encode(diagnostics)}',
       domain: 'MATRIX_SERVICE',
       subDomain: 'diagnostics',
@@ -369,8 +325,9 @@ class MatrixService {
     return diagnostics;
   }
 
-  Future<MatrixConfig?> loadConfig() => loadMatrixConfig(service: this);
-  Future<void> deleteConfig() => deleteMatrixConfig(service: this);
+  Future<MatrixConfig?> loadConfig() =>
+      loadMatrixConfig(session: _sessionManager);
+  Future<void> deleteConfig() => deleteMatrixConfig(session: _sessionManager);
   Future<void> setConfig(MatrixConfig config) =>
-      setMatrixConfig(config, service: this);
+      setMatrixConfig(config, session: _sessionManager);
 }
