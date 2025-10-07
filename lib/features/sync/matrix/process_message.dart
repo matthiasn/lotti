@@ -11,7 +11,6 @@ import 'package:matrix/matrix.dart';
 /// [SyncEventProcessor] directly.
 Future<void> processMatrixMessage({
   required Event event,
-  required MatrixService service,
   JournalDb? overriddenJournalDb,
   SyncEventProcessor? eventProcessor,
 }) async {

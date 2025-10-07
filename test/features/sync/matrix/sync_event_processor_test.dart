@@ -215,7 +215,7 @@ void main() {
     verify(() => loggingService.captureException(
           any<Object>(),
           domain: 'MATRIX_SERVICE',
-          subDomain: 'processMessage',
+          subDomain: 'SyncEventProcessor',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         )).called(1);
   });
@@ -236,7 +236,7 @@ void main() {
     verify(() => loggingService.captureException(
           any<Object>(),
           domain: 'MATRIX_SERVICE',
-          subDomain: 'processMessage',
+          subDomain: 'SyncEventProcessor',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         )).called(1);
   });

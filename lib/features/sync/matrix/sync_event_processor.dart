@@ -60,7 +60,7 @@ class SyncEventProcessor {
       _loggingService.captureEvent(
         'processing ${event.originServerTs} ${event.eventId}',
         domain: 'MATRIX_SERVICE',
-        subDomain: 'processMessage',
+        subDomain: 'SyncEventProcessor',
       );
 
       await _handleMessage(
@@ -72,7 +72,7 @@ class SyncEventProcessor {
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',
-        subDomain: 'processMessage',
+        subDomain: 'SyncEventProcessor',
         stackTrace: stackTrace,
       );
     }
