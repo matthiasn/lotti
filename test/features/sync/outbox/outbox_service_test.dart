@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -31,6 +33,8 @@ class MockOutboxProcessor extends Mock implements OutboxProcessor {}
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockVectorClockService extends Mock implements VectorClockService {}
+
+class MockMatrixService extends Mock implements MatrixService {}
 
 class TestableOutboxService extends OutboxService {
   TestableOutboxService({
@@ -66,6 +70,7 @@ void main() {
       MethodChannel('dev.fluttercommunity.plus/connectivity');
 
   setUpAll(() {
+    registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'fallback'));
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel,
             (MethodCall call) async {
@@ -111,6 +116,10 @@ void main() {
     when(() => vectorClockService.getHostHash())
         .thenAnswer((_) async => 'hostHash');
     when(() => vectorClockService.getHost()).thenAnswer((_) async => 'host');
+    when(() => userActivityService.lastActivity)
+        .thenReturn(DateTime.now());
+    when(() => userActivityService.activityStream)
+        .thenAnswer((_) => Stream<DateTime>.empty());
   });
 
   tearDown(() {
@@ -299,5 +308,48 @@ void main() {
 
       await service.dispose();
     });
+  });
+
+  test('throws when neither matrix service nor message sender provided', () {
+    expect(
+      () => OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('constructs with matrixService fallback sender', () async {
+    final matrixService = MockMatrixService();
+
+    final service = OutboxService(
+      syncDatabase: syncDatabase,
+      loggingService: loggingService,
+      vectorClockService: vectorClockService,
+      journalDb: journalDb,
+      documentsDirectory: documentsDirectory,
+      userActivityService: userActivityService,
+      matrixService: matrixService,
+    );
+
+    await service.dispose();
+  });
+
+  test('MatrixOutboxMessageSender delegates to MatrixService', () async {
+    final matrixService = MockMatrixService();
+    const message = SyncMessage.aiConfigDelete(id: 'abc');
+    when(() => matrixService.sendMatrixMsg(message)).thenAnswer((_) async => true);
+
+    final sender = MatrixOutboxMessageSender(matrixService);
+
+    final result = await sender.send(message);
+
+    expect(result, isTrue);
+    verify(() => matrixService.sendMatrixMsg(message)).called(1);
   });
 }

@@ -84,6 +84,19 @@ void main() {
     expect(sessionManager.matrixConfig, isNull);
   });
 
+  test('loadMatrixConfig throws when storage contains invalid json', () async {
+    when(() => mockSecureStorage.read(key: matrixConfigKey))
+        .thenAnswer((_) async => '{invalid json');
+
+    expect(
+      () => loadMatrixConfig(
+        session: sessionManager,
+        storage: mockSecureStorage,
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('setMatrixConfig persists config to secure storage', () async {
     const config = MatrixConfig(
       homeServer: 'https://example.org',

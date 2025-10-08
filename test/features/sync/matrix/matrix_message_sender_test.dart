@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -70,6 +71,12 @@ void main() {
     when(() => journalDb.getConfigFlag(any<String>()))
         .thenAnswer((_) async => false);
     when(() => room.id).thenReturn('!room:test');
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
   });
 
   tearDown(() {
@@ -135,6 +142,84 @@ void main() {
     ).called(1);
   });
 
+  test('returns false when room instance missing even with override', () async {
+    final result = await sender.sendMatrixMessage(
+      message: const SyncMessage.aiConfigDelete(id: 'abc'),
+      context: const MatrixMessageContext(
+        syncRoomId: '!room:test',
+        syncRoom: null,
+        unverifiedDevices: <DeviceKeys>[],
+      ),
+      onSent: () {},
+      roomIdOverride: '!room:test',
+    );
+
+    expect(result, isFalse);
+    verify(
+      () => loggingService.captureEvent(
+        contains('no room instance available'),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      ),
+    ).called(1);
+  });
+
+  test('throws when roomIdOverride mismatches room id', () async {
+    final overrideRoom = MockRoom();
+    when(() => overrideRoom.id).thenReturn('!actual:room');
+
+    expect(
+      () => sender.sendMatrixMessage(
+        message: const SyncMessage.aiConfigDelete(id: 'abc'),
+        context: MatrixMessageContext(
+          syncRoomId: '!actual:room',
+          syncRoom: overrideRoom,
+          unverifiedDevices: const <DeviceKeys>[],
+        ),
+        onSent: () {},
+        roomIdOverride: '!different:room',
+      ),
+      throwsA(isA<StateError>()),
+    );
+    verifyNever(() => overrideRoom.sendTextEvent(any(), msgtype: any(named: 'msgtype')));
+  });
+
+  test('uses roomIdOverride when it matches room id', () async {
+    final overrideRoom = MockRoom();
+    when(() => overrideRoom.id).thenReturn('!override:room');
+    when(
+      () => overrideRoom.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => 'event-id');
+
+    var calls = 0;
+    final result = await sender.sendMatrixMessage(
+      message: const SyncMessage.aiConfigDelete(id: 'abc'),
+      context: MatrixMessageContext(
+        syncRoomId: null,
+        syncRoom: overrideRoom,
+        unverifiedDevices: const <DeviceKeys>[],
+      ),
+      onSent: () => calls++,
+      roomIdOverride: '!override:room',
+    );
+
+    expect(result, isTrue);
+    expect(calls, 1);
+    verify(
+      () => overrideRoom.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).called(1);
+  });
+
   test('sends text message and invokes callback once', () async {
     when(
       () => room.sendTextEvent(
@@ -144,6 +229,12 @@ void main() {
         parseMarkdown: any<bool>(named: 'parseMarkdown'),
       ),
     ).thenAnswer((_) async => 'event-id');
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
 
     var calls = 0;
     final result = await sender.sendMatrixMessage(
@@ -170,6 +261,84 @@ void main() {
     );
   });
 
+  test('skips attachments when resend flag false on update messages', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => 'event-id');
+    when(() => journalDb.getConfigFlag(resendAttachments))
+        .thenAnswer((_) async => false);
+
+    final sampleDate = DateTime.utc(2024, 1, 1);
+    final metadata = Metadata(
+      id: 'entry',
+      createdAt: sampleDate,
+      updatedAt: sampleDate,
+      dateFrom: sampleDate,
+      dateTo: sampleDate,
+      vectorClock: VectorClock({'device': 1}),
+    );
+    final imageData = ImageData(
+      capturedAt: sampleDate,
+      imageId: 'image-id',
+      imageFile: 'image.jpg',
+      imageDirectory: '/images/',
+    );
+    final journalEntity = JournalEntity.journalImage(
+      meta: metadata,
+      data: imageData,
+      entryText: const EntryText(plainText: 'Test'),
+    );
+
+    const jsonPath = '/entries/test.json';
+    File('${documentsDirectory.path}$jsonPath')
+      ..createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+    final imagePath =
+        '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
+    File(imagePath)
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(List<int>.filled(10, 42));
+
+    var callbackCount = 0;
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.journalEntity(
+        id: 'entry',
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'device': 1}),
+        status: SyncEntryStatus.update,
+      ),
+      context: buildContext(),
+      onSent: () => callbackCount++,
+    );
+
+    expect(result, isTrue);
+    expect(callbackCount, 1);
+    verify(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).called(1);
+    final extras = verify(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: captureAny(named: 'extraContent'),
+      ),
+    ).captured.cast<Map<String, dynamic>>();
+    expect(
+      extras.map((entry) => entry['relativePath']).toSet(),
+      equals({jsonPath}),
+    );
+  });
+
   test('sends journal entity attachments without duplicating callback',
       () async {
     when(
@@ -186,6 +355,8 @@ void main() {
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     ).thenAnswer((_) async => 'file-id');
+    when(() => journalDb.getConfigFlag(resendAttachments))
+        .thenAnswer((_) async => true);
 
     final sampleDate = DateTime.utc(2024, 1, 1);
     final metadata = Metadata(
@@ -241,12 +412,99 @@ void main() {
         parseMarkdown: any<bool>(named: 'parseMarkdown'),
       ),
     ).called(1);
-    verify(
+    final extras = verify(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: captureAny(named: 'extraContent'),
+      ),
+    ).captured.cast<Map<String, dynamic>>();
+    final extraPaths = extras
+        .map((entry) => entry['relativePath'] as String?)
+        .whereType<String>()
+        .toSet();
+    expect(extraPaths, contains(jsonPath));
+    expect(extraPaths.any((path) => path.endsWith('image.jpg')), isTrue);
+  });
+
+  test('resends audio attachment when resend flag true on update status',
+      () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => 'event-id');
+    when(
       () => room.sendFileEvent(
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).called(2);
+    ).thenAnswer((_) async => 'file-id');
+    when(() => journalDb.getConfigFlag(resendAttachments))
+        .thenAnswer((_) async => true);
+
+    final sampleDate = DateTime.utc(2024, 1, 1);
+    final metadata = Metadata(
+      id: 'entry',
+      createdAt: sampleDate,
+      updatedAt: sampleDate,
+      dateFrom: sampleDate,
+      dateTo: sampleDate,
+      vectorClock: VectorClock({'device': 1}),
+    );
+    final audioData = AudioData(
+      dateFrom: sampleDate,
+      dateTo: sampleDate,
+      audioFile: 'audio.m4a',
+      audioDirectory: '/audio/',
+      duration: const Duration(seconds: 1),
+    );
+    final journalAudio = JournalEntity.journalAudio(
+      meta: metadata,
+      data: audioData,
+    );
+
+    const jsonPath = '/entries/audio.json';
+    File('${documentsDirectory.path}$jsonPath')
+      ..createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(journalAudio.toJson()));
+
+    final audioPath =
+        '${documentsDirectory.path}${audioData.audioDirectory}${audioData.audioFile}';
+    File(audioPath)
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(List<int>.filled(10, 1));
+
+    final audioEntity = SyncMessage.journalEntity(
+      id: 'entry',
+      jsonPath: jsonPath,
+      vectorClock: VectorClock({'device': 1}),
+      status: SyncEntryStatus.update,
+    );
+
+    var callbackCount = 0;
+    final result = await sender.sendMatrixMessage(
+      message: audioEntity,
+      context: buildContext(),
+      onSent: () => callbackCount++,
+    );
+
+    expect(result, isTrue);
+    expect(callbackCount, 1);
+    final capturedExtras = verify(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: captureAny(named: 'extraContent'),
+      ),
+    ).captured.cast<Map<String, dynamic>>();
+    final capturedPaths = capturedExtras
+        .map((entry) => entry['relativePath'] as String?)
+        .whereType<String>()
+        .toSet();
+    expect(capturedPaths, contains(jsonPath));
+    expect(capturedPaths.any((path) => path.endsWith('audio.m4a')), isTrue);
   });
 
   test('rethrows file send failures after logging', () async {

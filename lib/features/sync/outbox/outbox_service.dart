@@ -37,11 +37,7 @@ class OutboxService {
     int maxRetries = 10,
     MatrixService? matrixService,
     bool? ownsActivityGate,
-  })  : assert(
-          messageSender != null || matrixService != null,
-          'Either messageSender or matrixService must be provided.',
-        ),
-        _syncDatabase = syncDatabase,
+  })  : _syncDatabase = syncDatabase,
         _loggingService = loggingService,
         _vectorClockService = vectorClockService,
         _journalDb = journalDb,
@@ -51,6 +47,13 @@ class OutboxService {
               activityService: userActivityService,
             ),
         _ownsActivityGate = ownsActivityGate ?? activityGate == null {
+    // Runtime validation that works in release builds
+    if (messageSender == null && matrixService == null) {
+      throw ArgumentError(
+        'Either messageSender or matrixService must be provided.',
+      );
+    }
+
     _repository = repository ??
         DatabaseOutboxRepository(
           syncDatabase,

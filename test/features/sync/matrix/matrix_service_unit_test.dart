@@ -1,6 +1,7 @@
 // ignore_for_file: unnecessary_lambdas
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -181,6 +183,7 @@ void main() {
   late MockSecureStorage mockSecureStorage;
   late MockSettingsDb mockSettingsDb;
   late MockJournalDb mockJournalDb;
+  MatrixConfig? storedSessionConfig;
   late StreamController<LoginState> loginStateController;
   late MatrixService service;
 
@@ -198,6 +201,15 @@ void main() {
     mockSettingsDb = MockSettingsDb();
     mockJournalDb = MockJournalDb();
     mockSecureStorage = MockSecureStorage();
+
+    storedSessionConfig = null;
+    when(() => mockSessionManager.matrixConfig)
+        .thenAnswer((_) => storedSessionConfig);
+    when(() => mockSessionManager.matrixConfig = any())
+        .thenAnswer((invocation) {
+      storedSessionConfig = invocation.positionalArguments.first as MatrixConfig?;
+    });
+    when(() => mockSessionManager.logout()).thenAnswer((_) async {});
 
     when(() => mockGateway.client).thenReturn(mockClient);
     when(() => mockSessionManager.client).thenReturn(mockClient);
@@ -393,6 +405,47 @@ void main() {
     await service.disposeClient();
 
     verifyNever(() => mockClient.dispose());
+  });
+
+  group('config helpers', () {
+    const config = MatrixConfig(
+      homeServer: 'https://example.org',
+      user: '@user:example.org',
+      password: 'pw',
+    );
+
+    test('loadConfig delegates to secure storage', () async {
+      when(() => mockSecureStorage.read(key: matrixConfigKey))
+          .thenAnswer((_) async => jsonEncode(config));
+
+      final result = await service.loadConfig();
+
+      expect(result, equals(config));
+      expect(storedSessionConfig, equals(config));
+      verify(() => mockSecureStorage.read(key: matrixConfigKey)).called(1);
+    });
+
+    test('setConfig writes to secure storage and updates session', () async {
+      await service.setConfig(config);
+
+      expect(storedSessionConfig, equals(config));
+      verify(
+        () => mockSecureStorage.write(
+          key: matrixConfigKey,
+          value: jsonEncode(config),
+        ),
+      ).called(1);
+    });
+
+    test('deleteConfig clears storage and logs out', () async {
+      storedSessionConfig = config;
+
+      await service.deleteConfig();
+
+      expect(storedSessionConfig, isNull);
+      verify(() => mockSecureStorage.delete(key: matrixConfigKey)).called(1);
+      verify(() => mockSessionManager.logout()).called(1);
+    });
   });
 
   test('getDiagnosticInfo returns expected payload and logs', () async {
