@@ -163,10 +163,17 @@ class FakeMetadata extends Fake implements Metadata {}
 
 class FakeQuillController extends Fake implements QuillController {
   FakeQuillController({TextSelection? selection})
-      : selection = selection ?? const TextSelection.collapsed(offset: 0);
+      : _selection = selection ?? const TextSelection.collapsed(offset: 0);
+
+  TextSelection _selection;
 
   @override
-  final TextSelection selection;
+  TextSelection get selection => _selection;
+
+  @override
+  set selection(TextSelection value) {
+    _selection = value;
+  }
 }
 
 class FakeJournalAudio extends Fake implements JournalAudio {}
