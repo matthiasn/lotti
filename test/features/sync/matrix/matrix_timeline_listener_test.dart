@@ -73,8 +73,8 @@ void main() {
       roomManager: mockRoomManager,
       loggingService: mockLoggingService,
       activityGate: mockActivityGate,
-      overriddenJournalDb: mockJournalDb,
-      overriddenSettingsDb: mockSettingsDb,
+      journalDb: mockJournalDb,
+      settingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
     );

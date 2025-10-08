@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -7,8 +9,8 @@ import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -28,14 +30,21 @@ class MockOutboxProcessor extends Mock implements OutboxProcessor {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
+class MockVectorClockService extends Mock implements VectorClockService {}
+
 class TestableOutboxService extends OutboxService {
   TestableOutboxService({
     required super.syncDatabase,
     required super.loggingService,
+    required super.vectorClockService,
+    required super.journalDb,
+    required super.documentsDirectory,
+    required super.userActivityService,
     required super.repository,
     required super.messageSender,
     required super.processor,
     super.activityGate,
+    super.ownsActivityGate,
   });
 
   int enqueueCalls = 0;
@@ -81,6 +90,9 @@ void main() {
   late MockOutboxMessageSender messageSender;
   late MockOutboxProcessor processor;
   late MockJournalDb journalDb;
+  late MockVectorClockService vectorClockService;
+  late MockUserActivityService userActivityService;
+  late Directory documentsDirectory;
 
   setUp(() {
     syncDatabase = MockSyncDatabase();
@@ -89,13 +101,22 @@ void main() {
     messageSender = MockOutboxMessageSender();
     processor = MockOutboxProcessor();
     journalDb = MockJournalDb();
+    vectorClockService = MockVectorClockService();
+    userActivityService = MockUserActivityService();
+    documentsDirectory =
+        Directory.systemTemp.createTempSync('outbox_service_test_');
 
     when(() => processor.processQueue())
         .thenAnswer((_) async => OutboxProcessingResult.none);
+    when(() => vectorClockService.getHostHash())
+        .thenAnswer((_) async => 'hostHash');
+    when(() => vectorClockService.getHost()).thenAnswer((_) async => 'host');
   });
 
-  tearDown(() async {
-    await getIt.reset();
+  tearDown(() {
+    if (documentsDirectory.existsSync()) {
+      documentsDirectory.deleteSync(recursive: true);
+    }
   });
 
   test('dispose closes owned activity gate', () async {
@@ -103,18 +124,18 @@ void main() {
     when(ownedGate.waitUntilIdle).thenAnswer((_) async {});
     when(ownedGate.dispose).thenAnswer((_) async {});
 
-    await getIt.reset();
-    getIt.allowReassignment = true;
-    getIt
-      ..registerSingleton<UserActivityService>(MockUserActivityService())
-      ..registerSingleton<UserActivityGate>(ownedGate);
-
     final service = OutboxService(
       syncDatabase: syncDatabase,
       loggingService: loggingService,
+      vectorClockService: vectorClockService,
+      journalDb: journalDb,
+      documentsDirectory: documentsDirectory,
+      userActivityService: userActivityService,
       repository: repository,
       messageSender: messageSender,
       processor: processor,
+      activityGate: ownedGate,
+      ownsActivityGate: true,
     );
 
     await service.dispose();
@@ -130,10 +151,15 @@ void main() {
     final service = OutboxService(
       syncDatabase: syncDatabase,
       loggingService: loggingService,
+      vectorClockService: vectorClockService,
+      journalDb: journalDb,
+      documentsDirectory: documentsDirectory,
+      userActivityService: userActivityService,
       repository: repository,
       messageSender: messageSender,
       processor: processor,
       activityGate: externalGate,
+      ownsActivityGate: false,
     );
 
     await service.dispose();
@@ -143,9 +169,6 @@ void main() {
 
   group('sendNext', () {
     test('skips processing when Matrix disabled', () async {
-      await getIt.reset();
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<JournalDb>(journalDb);
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => false);
 
@@ -156,6 +179,10 @@ void main() {
       final service = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
         repository: repository,
         messageSender: messageSender,
         processor: processor,
@@ -171,9 +198,6 @@ void main() {
     });
 
     test('schedules next run when processor requests it', () async {
-      await getIt.reset();
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<JournalDb>(journalDb);
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => true);
       when(() => processor.processQueue()).thenAnswer(
@@ -189,6 +213,10 @@ void main() {
       final service = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
         repository: repository,
         messageSender: messageSender,
         processor: processor,
@@ -205,9 +233,6 @@ void main() {
     });
 
     test('does not reschedule when queue empty', () async {
-      await getIt.reset();
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<JournalDb>(journalDb);
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => true);
       when(() => processor.processQueue())
@@ -220,6 +245,10 @@ void main() {
       final service = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
         repository: repository,
         messageSender: messageSender,
         processor: processor,
@@ -233,9 +262,6 @@ void main() {
     });
 
     test('logs error and reschedules on failure', () async {
-      await getIt.reset();
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<JournalDb>(journalDb);
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => true);
       final exception = Exception('boom');
@@ -248,6 +274,10 @@ void main() {
       final service = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
         repository: repository,
         messageSender: messageSender,
         processor: processor,

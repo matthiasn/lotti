@@ -17,11 +17,10 @@ class SyncReadMarkerService {
     required Client client,
     required Timeline timeline,
     required String eventId,
-    SettingsDb? overriddenSettingsDb,
   }) async {
     await setLastReadMatrixEventId(
       eventId,
-      overriddenSettingsDb ?? _settingsDb,
+      _settingsDb,
     );
 
     final loginState = client.onLoginStateChanged.value;

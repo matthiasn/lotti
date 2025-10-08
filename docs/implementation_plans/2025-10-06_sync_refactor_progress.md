@@ -36,6 +36,10 @@
   - Added `SyncLifecycleCoordinator` and `SyncEngine` to compose session, room, timeline, and diagnostics responsibilities with constructor-driven injection.
   - Refactored `MatrixService` lifecycle to delegate startup/shutdown to the engine, centralizing diagnostics and login hooks.
   - Expanded automated coverage with lifecycle unit tests and a multi-device invite integration scenario backed by the fake gateway.
+- **Extension Method Removal** (Milestone 9)
+  - Introduced `MatrixMessageSender` with injected `LoggingService`, `JournalDb`, and documents directory, replacing the legacy `send_message.dart` extension.
+  - Updated `MatrixService`, `MatrixTimelineListener`, `SyncEngine`, and `MatrixService` tests to consume the new service via constructor injection.
+  - Refreshed `get_it.dart`, unit tests, and the integration flow to register the sender explicitly; added context registration helpers for mocks.
 
 ## Recent Fixes & Enhancements
 
@@ -43,9 +47,11 @@
 - `OutboxService.dispose()` disposes the gate when the service owns it, preventing leaks.
 - `MatrixSdkGateway.dispose()` now always disposes the underlying Matrix client.
 - Added configurable `maxRetries` support in the repository and corresponding tests.
+- `MatrixService.dispose()` now tears down controllers before collaborators, ensuring the new message sender and session managers are released cleanly.
+- Matrix service unit tests register explicit mocktail fallbacks for `Timeline`, `Event`, and `MatrixMessageContext`, avoiding brittle matcher usage.
 
 ## Next Up
 
-- **Milestone 8:** Dependency injection cleanup; remove remaining `getIt` usage from sync modules in favour of constructor wiring and enforce via analysis.
+- **Milestone 8:** Finish dependency injection cleanup: audit remaining sync UI/controllers for `getIt` lookups, introduce providers or constructor wiring, and add an analyzer guard to prevent regressions.
 
 This progress log will be updated as each milestone is completed.

@@ -197,7 +197,6 @@ void main() {
         client: context.client,
         timeline: mockTimeline,
         eventId: eventId,
-        overriddenSettingsDb: any(named: 'overriddenSettingsDb'),
       ),
     ).thenAnswer((_) async {
       expect(context.lastReadEventContextId, eventId);
@@ -205,9 +204,9 @@ void main() {
 
     await processNewTimelineEvents(
       listener: context,
-      overriddenJournalDb: mockJournalDb,
-      overriddenLoggingService: mockLoggingService,
-      overriddenSettingsDb: mockSettingsDb,
+      journalDb: mockJournalDb,
+      loggingService: mockLoggingService,
+      settingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
     );
@@ -217,7 +216,6 @@ void main() {
         client: context.client,
         timeline: mockTimeline,
         eventId: eventId,
-        overriddenSettingsDb: mockSettingsDb,
       ),
     ).called(1);
   });
@@ -253,9 +251,9 @@ void main() {
 
     await processNewTimelineEvents(
       listener: context,
-      overriddenJournalDb: mockJournalDb,
-      overriddenLoggingService: mockLoggingService,
-      overriddenSettingsDb: mockSettingsDb,
+      journalDb: mockJournalDb,
+      loggingService: mockLoggingService,
+      settingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
     );
@@ -273,9 +271,9 @@ void main() {
 
     await processNewTimelineEvents(
       listener: context,
-      overriddenJournalDb: mockJournalDb,
-      overriddenLoggingService: mockLoggingService,
-      overriddenSettingsDb: mockSettingsDb,
+      journalDb: mockJournalDb,
+      loggingService: mockLoggingService,
+      settingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
     );

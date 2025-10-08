@@ -22,16 +22,16 @@ class MatrixTimelineListener implements TimelineContext {
     required SyncRoomManager roomManager,
     required LoggingService loggingService,
     required UserActivityGate activityGate,
-    JournalDb? overriddenJournalDb,
-    SettingsDb? overriddenSettingsDb,
-    SyncReadMarkerService? readMarkerService,
-    SyncEventProcessor? eventProcessor,
+    required JournalDb journalDb,
+    required SettingsDb settingsDb,
+    required SyncReadMarkerService readMarkerService,
+    required SyncEventProcessor eventProcessor,
   })  : _sessionManager = sessionManager,
         _roomManager = roomManager,
         _loggingService = loggingService,
         _activityGate = activityGate,
-        _overriddenJournalDb = overriddenJournalDb,
-        _overriddenSettingsDb = overriddenSettingsDb,
+        _journalDb = journalDb,
+        _settingsDb = settingsDb,
         _readMarkerService = readMarkerService,
         _eventProcessor = eventProcessor {
     _clientRunner = ClientRunner<void>(
@@ -39,9 +39,9 @@ class MatrixTimelineListener implements TimelineContext {
         await _activityGate.waitUntilIdle();
         await processNewTimelineEvents(
           listener: this,
-          overriddenJournalDb: _overriddenJournalDb,
-          overriddenLoggingService: _loggingService,
-          overriddenSettingsDb: _overriddenSettingsDb,
+          journalDb: _journalDb,
+          loggingService: _loggingService,
+          settingsDb: _settingsDb,
           readMarkerService: _readMarkerService,
           eventProcessor: _eventProcessor,
         );
@@ -53,10 +53,10 @@ class MatrixTimelineListener implements TimelineContext {
   final SyncRoomManager _roomManager;
   final LoggingService _loggingService;
   final UserActivityGate _activityGate;
-  final JournalDb? _overriddenJournalDb;
-  final SettingsDb? _overriddenSettingsDb;
-  final SyncReadMarkerService? _readMarkerService;
-  final SyncEventProcessor? _eventProcessor;
+  final JournalDb _journalDb;
+  final SettingsDb _settingsDb;
+  final SyncReadMarkerService _readMarkerService;
+  final SyncEventProcessor _eventProcessor;
 
   late final ClientRunner<void> _clientRunner;
   Timeline? _timeline;
@@ -79,15 +79,14 @@ class MatrixTimelineListener implements TimelineContext {
   @override
   LoggingService get loggingService => _loggingService;
 
-  SettingsDb? get overriddenSettingsDb => _overriddenSettingsDb;
+  SettingsDb get settingsDb => _settingsDb;
 
-  JournalDb? get overriddenJournalDb => _overriddenJournalDb;
+  JournalDb get journalDb => _journalDb;
 
   /// Loads the last processed Matrix event ID so new sessions resume at the
   /// correct timeline position.
   Future<void> initialize() async {
-    _lastReadEventContextId =
-        await getLastReadMatrixEventId(_overriddenSettingsDb);
+    _lastReadEventContextId = await getLastReadMatrixEventId(_settingsDb);
   }
 
   /// Attaches the timeline listener when a sync room is available.

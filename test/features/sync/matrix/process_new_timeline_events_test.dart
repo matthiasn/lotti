@@ -125,7 +125,6 @@ void main() {
           client: any<Client>(named: 'client'),
           timeline: any<Timeline>(named: 'timeline'),
           eventId: any<String>(named: 'eventId'),
-          overriddenSettingsDb: any<SettingsDb?>(named: 'overriddenSettingsDb'),
         ),
       ).thenAnswer((_) async {});
       when(
@@ -151,9 +150,9 @@ void main() {
 
       await processNewTimelineEvents(
         listener: context,
-        overriddenJournalDb: journalDb,
-        overriddenLoggingService: loggingService,
-        overriddenSettingsDb: settingsDb,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        settingsDb: settingsDb,
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
       );
@@ -164,8 +163,6 @@ void main() {
             client: any<Client>(named: 'client'),
             timeline: any<Timeline>(named: 'timeline'),
             eventId: any<String>(named: 'eventId'),
-            overriddenSettingsDb:
-                any<SettingsDb?>(named: 'overriddenSettingsDb'),
           ));
       expect(context.lastReadEventContextId, isNull);
     });
@@ -199,9 +196,9 @@ void main() {
 
       await processNewTimelineEvents(
         listener: context,
-        overriddenJournalDb: journalDb,
-        overriddenLoggingService: loggingService,
-        overriddenSettingsDb: settingsDb,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        settingsDb: settingsDb,
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
       );
@@ -227,9 +224,9 @@ void main() {
 
       await processNewTimelineEvents(
         listener: context,
-        overriddenJournalDb: journalDb,
-        overriddenLoggingService: loggingService,
-        overriddenSettingsDb: settingsDb,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        settingsDb: settingsDb,
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
       );

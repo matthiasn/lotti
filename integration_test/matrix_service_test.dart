@@ -16,11 +16,14 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
+import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/send_message.dart';
+import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -165,12 +168,38 @@ void main() {
 
         final aliceClient = await createMatrixClient(dbName: 'Alice');
         final aliceGateway = MatrixSdkGateway(client: aliceClient);
+        final loggingService = getIt<LoggingService>();
+        final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
+        final aliceActivityGate = UserActivityGate(
+          activityService: getIt<UserActivityService>(),
+        );
+        final aliceMessageSender = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: aliceDb,
+          documentsDirectory: getIt<Directory>(),
+        );
+        final aliceReadMarkerService = SyncReadMarkerService(
+          settingsDb: aliceSettingsDb,
+          loggingService: loggingService,
+        );
+        final aliceEventProcessor = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: getIt<UpdateNotifications>(),
+          aiConfigRepository: getIt<AiConfigRepository>(),
+        );
+
         final alice = MatrixService(
           matrixConfig: config1,
           gateway: aliceGateway,
+          loggingService: loggingService,
+          activityGate: aliceActivityGate,
+          messageSender: aliceMessageSender,
+          journalDb: aliceDb,
+          settingsDb: aliceSettingsDb,
+          readMarkerService: aliceReadMarkerService,
+          eventProcessor: aliceEventProcessor,
           deviceDisplayName: 'Alice',
-          overriddenJournalDb: aliceDb,
-          overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
+          ownsActivityGate: true,
         );
 
         // Allow time for constructor initialization to complete
@@ -196,12 +225,37 @@ void main() {
         debugPrint('\n--- Bob goes live');
         final bobClient = await createMatrixClient(dbName: 'Bob');
         final bobGateway = MatrixSdkGateway(client: bobClient);
+        final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
+        final bobActivityGate = UserActivityGate(
+          activityService: getIt<UserActivityService>(),
+        );
+        final bobMessageSender = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: bobDb,
+          documentsDirectory: getIt<Directory>(),
+        );
+        final bobReadMarkerService = SyncReadMarkerService(
+          settingsDb: bobSettingsDb,
+          loggingService: loggingService,
+        );
+        final bobEventProcessor = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: getIt<UpdateNotifications>(),
+          aiConfigRepository: getIt<AiConfigRepository>(),
+        );
+
         final bob = MatrixService(
           matrixConfig: config2,
           gateway: bobGateway,
+          loggingService: loggingService,
+          activityGate: bobActivityGate,
+          messageSender: bobMessageSender,
+          journalDb: bobDb,
+          settingsDb: bobSettingsDb,
+          readMarkerService: bobReadMarkerService,
+          eventProcessor: bobEventProcessor,
           deviceDisplayName: 'Bob',
-          overriddenJournalDb: bobDb,
-          overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
+          ownsActivityGate: true,
         );
 
         // Allow time for constructor initialization to complete

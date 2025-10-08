@@ -88,11 +88,11 @@
    - Add integration tests with fake gateway to simulate multi-device scenarios.
    - Outcome: `SyncEngine` now owns lifecycle orchestration for `MatrixService`, with dedicated unit/integration coverage.
 
-8. **Dependency Injection Cleanup**
+8. **Dependency Injection Cleanup** *(In Progress — core Matrix services, timeline listener, read-marker, and event processor now receive dependencies via constructors; remaining UI/controllers still rely on `getIt` and need follow-up auditing)*
    - Replace `getIt` usage in sync modules with constructor injection/provider overrides.
    - Enforce via static analysis.
 
-9. **Extension Method Removal**
+9. **Extension Method Removal** *(Completed — `MatrixMessageSender` service introduced, constructor-wired through `MatrixService`, `SyncEngine`, tests, and GetIt bootstrapping)*
    - Replace `send_message` extension with `MatrixMessageSender` service, ensure attachments/policies injected.
    - Add disposal and behaviour tests.
 

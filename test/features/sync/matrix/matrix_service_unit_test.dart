@@ -10,11 +10,15 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -41,6 +45,10 @@ class MockClient extends Mock implements Client {}
 
 class FakeMatrixClient extends Fake implements Client {}
 
+class FakeTimeline extends Fake implements Timeline {}
+
+class FakeEvent extends Fake implements Event {}
+
 class MockRoomSummary extends Mock implements RoomSummary {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
@@ -52,6 +60,12 @@ class MockRoom extends Mock implements Room {}
 class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 class MockKeyVerification extends Mock implements KeyVerification {}
+
+class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
+
+class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
+
+class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class TestUserActivityGate extends UserActivityGate {
   TestUserActivityGate(UserActivityService service)
@@ -69,13 +83,20 @@ class TestUserActivityGate extends UserActivityGate {
 class TestableMatrixService extends MatrixService {
   TestableMatrixService({
     required super.gateway,
+    required super.loggingService,
+    required super.activityGate,
+    required super.messageSender,
+    required super.journalDb,
+    required super.settingsDb,
+    required super.readMarkerService,
+    required super.eventProcessor,
     required this.onStartKeyVerification,
     required this.onListenTimeline,
-    super.activityGate,
     super.roomManager,
     super.sessionManager,
     super.timelineListener,
-    super.overriddenLoggingService,
+    super.lifecycleCoordinator,
+    super.syncEngine,
   });
 
   final VoidCallback onStartKeyVerification;
@@ -114,6 +135,17 @@ void main() {
         password: 'pw',
       ),
     );
+    registerFallbackValue(
+      MatrixMessageContext(
+        syncRoomId: null,
+        syncRoom: null,
+        unverifiedDevices: const [],
+        incrementSentCount: () {},
+      ),
+    );
+    registerFallbackValue(FakeTimeline());
+    registerFallbackValue(FakeEvent());
+    registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'fallback'));
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel,
             (MethodCall call) async {
@@ -137,6 +169,11 @@ void main() {
   late MockLoggingService mockLoggingService;
   late MockUserActivityGate mockActivityGate;
   late MockClient mockClient;
+  late MockMatrixMessageSender mockMessageSender;
+  late MockSyncReadMarkerService mockReadMarkerService;
+  late MockSyncEventProcessor mockEventProcessor;
+  late MockSettingsDb mockSettingsDb;
+  late MockJournalDb mockJournalDb;
   late StreamController<LoginState> loginStateController;
   late MatrixService service;
 
@@ -148,6 +185,11 @@ void main() {
     mockLoggingService = MockLoggingService();
     mockActivityGate = MockUserActivityGate();
     mockClient = MockClient();
+    mockMessageSender = MockMatrixMessageSender();
+    mockReadMarkerService = MockSyncReadMarkerService();
+    mockEventProcessor = MockSyncEventProcessor();
+    mockSettingsDb = MockSettingsDb();
+    mockJournalDb = MockJournalDb();
 
     when(() => mockGateway.client).thenReturn(mockClient);
     when(() => mockSessionManager.client).thenReturn(mockClient);
@@ -161,6 +203,26 @@ void main() {
     when(() => mockActivityGate.dispose()).thenAnswer((_) async {});
     when(() => mockRoomManager.inviteRequests)
         .thenAnswer((_) => const Stream<SyncRoomInvite>.empty());
+    when(
+      () => mockMessageSender.sendMatrixMessage(
+        message: any(named: 'message'),
+        context: any(named: 'context'),
+        roomIdOverride: any(named: 'roomIdOverride'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => mockReadMarkerService.updateReadMarker(
+        client: any(named: 'client'),
+        timeline: any(named: 'timeline'),
+        eventId: any(named: 'eventId'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockEventProcessor.process(
+        event: any(named: 'event'),
+        journalDb: mockJournalDb,
+      ),
+    ).thenAnswer((_) async {});
     loginStateController = StreamController<LoginState>.broadcast();
     when(() => mockGateway.loginStateChanges)
         .thenAnswer((_) => loginStateController.stream);
@@ -170,14 +232,19 @@ void main() {
       ..allowReassignment = true
       ..registerSingleton<UserActivityService>(UserActivityService())
       ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<SettingsDb>(MockSettingsDb())
-      ..registerSingleton<JournalDb>(MockJournalDb())
+      ..registerSingleton<SettingsDb>(mockSettingsDb)
+      ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<Directory>(Directory.systemTemp);
 
     service = MatrixService(
       gateway: mockGateway,
+      loggingService: mockLoggingService,
       activityGate: mockActivityGate,
-      overriddenLoggingService: mockLoggingService,
+      messageSender: mockMessageSender,
+      journalDb: mockJournalDb,
+      settingsDb: mockSettingsDb,
+      readMarkerService: mockReadMarkerService,
+      eventProcessor: mockEventProcessor,
       roomManager: mockRoomManager,
       sessionManager: mockSessionManager,
       timelineListener: mockTimelineListener,
@@ -508,11 +575,44 @@ void main() {
     when(() => extraTimelineListener.dispose()).thenAnswer((_) async {});
     when(() => extraRoomManager.dispose()).thenAnswer((_) async {});
     when(() => extraSessionManager.dispose()).thenAnswer((_) async {});
+    final extraMessageSender = MockMatrixMessageSender();
+    when(
+      () => extraMessageSender.sendMatrixMessage(
+        message: any(named: 'message'),
+        context: any(named: 'context'),
+        roomIdOverride: any(named: 'roomIdOverride'),
+      ),
+    ).thenAnswer((_) async => true);
+    final extraReadMarkerService = MockSyncReadMarkerService();
+    when(
+      () => extraReadMarkerService.updateReadMarker(
+        client: any(named: 'client'),
+        timeline: any(named: 'timeline'),
+        eventId: any(named: 'eventId'),
+      ),
+    ).thenAnswer((_) async {});
+    final extraEventProcessor = MockSyncEventProcessor();
+    final extraJournalDb = MockJournalDb();
+    when(
+      () => extraEventProcessor.process(
+        event: any(named: 'event'),
+        journalDb: extraJournalDb,
+      ),
+    ).thenAnswer((_) async {});
+    final extraSettingsDb = MockSettingsDb();
     final extraService = MatrixService(
       gateway: mockGateway,
+      loggingService: mockLoggingService,
+      activityGate: ownedGate,
+      messageSender: extraMessageSender,
+      journalDb: extraJournalDb,
+      settingsDb: extraSettingsDb,
+      readMarkerService: extraReadMarkerService,
+      eventProcessor: extraEventProcessor,
       roomManager: extraRoomManager,
       sessionManager: extraSessionManager,
       timelineListener: extraTimelineListener,
+      ownsActivityGate: true,
     );
 
     await extraService.dispose();
@@ -767,11 +867,16 @@ void main() {
       when(() => mockClient.rooms).thenReturn([mockRoom]);
       testService = TestableMatrixService(
         gateway: mockGateway,
+        loggingService: mockLoggingService,
         activityGate: mockActivityGate,
+        messageSender: mockMessageSender,
+        journalDb: mockJournalDb,
+        settingsDb: mockSettingsDb,
+        readMarkerService: mockReadMarkerService,
+        eventProcessor: mockEventProcessor,
         roomManager: mockRoomManager,
         sessionManager: mockSessionManager,
         timelineListener: mockTimelineListener,
-        overriddenLoggingService: mockLoggingService,
         onStartKeyVerification: () => startKeyCalled = true,
         onListenTimeline: () => listenTimelineCalled = true,
       )..matrixConfig = const MatrixConfig(
