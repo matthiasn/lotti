@@ -197,4 +197,44 @@ void main() {
     verify(() => timeline.cancelSubscriptions()).called(1);
     expect(coordinator.isActive, isFalse);
   });
+
+  test(
+      '_handleLoggedOut waits for pending transition before triggering another',
+      () async {
+    when(() => client.isLogged()).thenReturn(true);
+    when(() => sessionManager.isLoggedIn()).thenReturn(true);
+
+    final coordinator = SyncLifecycleCoordinator(
+      gateway: gateway,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      roomManager: roomManager,
+      loggingService: loggingService,
+    );
+
+    await coordinator.initialize();
+
+    when(() => timelineListener.start()).thenAnswer((_) async {});
+    await coordinator.reconcileLifecycleState();
+
+    expect(coordinator.isActive, isTrue);
+
+    final timeline = MockTimeline();
+    when(() => timelineListener.timeline).thenReturn(timeline);
+
+    final firstDeactivationCompleter = Completer<void>();
+    when(() => timeline.cancelSubscriptions()).thenAnswer((_) async {
+      firstDeactivationCompleter.complete();
+    });
+
+    final pendingLogout = coordinator.reconcileLifecycleState();
+
+    when(() => sessionManager.isLoggedIn()).thenReturn(false);
+    await coordinator.reconcileLifecycleState();
+
+    await pendingLogout;
+    await firstDeactivationCompleter.future;
+
+    verify(() => timeline.cancelSubscriptions()).called(1);
+  });
 }

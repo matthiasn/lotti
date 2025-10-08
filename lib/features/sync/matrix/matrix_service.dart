@@ -322,6 +322,9 @@ class MatrixService {
     await incomingKeyVerificationController.close();
     await _connectivitySubscription?.cancel();
     await _syncEngine.dispose();
+
+    // Dispose in reverse construction order: timeline listeners
+    // depend on the session, which in turn composes the room manager.
     await _timelineListener.dispose();
     await _sessionManager.dispose();
     await _roomManager.dispose();
