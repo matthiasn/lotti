@@ -43,42 +43,37 @@ void main() {
     test('getStream emits periodic updates', () async {
       final entity = testTextEntry;
       final stream = timeService.getStream();
-      final emissions = <JournalEntity?>[];
 
-      final subscription = stream.listen(emissions.add);
+      // Using take(3) ensures we only wait for 3 emissions, making the test faster and more deterministic.
+      final emissionsFuture = stream.take(3).toList();
 
       await timeService.start(entity, null);
 
-      // Wait for a few emissions
-      await Future<void>.delayed(const Duration(seconds: 2, milliseconds: 500));
+      final emissions =
+          await emissionsFuture.timeout(const Duration(seconds: 5));
 
-      await subscription.cancel();
-
-      // Should have received multiple updates
-      expect(emissions.length, greaterThan(1));
+      // Should have received 3 updates
+      expect(emissions, hasLength(3));
 
       // All emitted entities should have the same ID
       for (final emission in emissions) {
-        if (emission != null) {
-          expect(emission.id, entity.id);
-        }
+        expect(emission?.id, entity.id);
       }
     });
 
     test('stream updates contain updated dateTo timestamp', () async {
       final entity = testTextEntry;
       final stream = timeService.getStream();
-      final emissions = <JournalEntity?>[];
-
-      final subscription = stream.listen(emissions.add);
 
       final startTime = DateTime.now();
+
+      // Using take(2) to wait for 2 emissions
+      final emissionsFuture = stream.take(2).toList();
+
       await timeService.start(entity, null);
 
-      // Wait for a few emissions
-      await Future<void>.delayed(const Duration(seconds: 1, milliseconds: 500));
-
-      await subscription.cancel();
+      final emissions =
+          await emissionsFuture.timeout(const Duration(seconds: 3));
 
       // Check that dateTo timestamps are being updated
       final filteredEmissions =
@@ -95,22 +90,16 @@ void main() {
     test('stop clears current entity and stops stream', () async {
       final entity = testTextEntry;
       final stream = timeService.getStream();
-      final emissions = <JournalEntity?>[];
-
-      final subscription = stream.listen(emissions.add);
 
       await timeService.start(entity, null);
-      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      // The stream should emit null when stop is called
+      expectLater(stream, emits(isNull));
 
       await timeService.stop();
 
       expect(timeService.getCurrent(), isNull);
       expect(timeService.linkedFrom, isNull);
-
-      // Last emission should be null
-      expect(emissions.last, isNull);
-
-      await subscription.cancel();
     });
 
     test('start stops existing timer before starting new one', () async {
@@ -193,22 +182,21 @@ void main() {
       expect(stream2, isNotNull);
 
       // Both streams should receive the same data (broadcast)
-      final emissions1 = <JournalEntity?>[];
-      final emissions2 = <JournalEntity?>[];
-
-      final sub1 = stream1.listen(emissions1.add);
-      final sub2 = stream2.listen(emissions2.add);
+      final emissions1Future = stream1.take(2).toList();
+      final emissions2Future = stream2.take(2).toList();
 
       await timeService.start(testTextEntry, null);
-      await Future<void>.delayed(const Duration(milliseconds: 1500));
+
+      final emissions1 =
+          await emissions1Future.timeout(const Duration(seconds: 3));
+      final emissions2 =
+          await emissions2Future.timeout(const Duration(seconds: 3));
+
       await timeService.stop();
 
-      await sub1.cancel();
-      await sub2.cancel();
-
-      // Both should have received emissions
-      expect(emissions1.length, greaterThan(0));
-      expect(emissions2.length, greaterThan(0));
+      // Both should have received 2 emissions
+      expect(emissions1, hasLength(2));
+      expect(emissions2, hasLength(2));
     });
   });
 }
