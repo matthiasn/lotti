@@ -256,8 +256,8 @@ void main() {
       final stream2 =
           editorStateService.getUnsavedStream(entryId, testEpochDateTime);
 
-      // First stream should be closed, second should be active
-      expect(stream1, isNotNull);
+      // The first stream should emit its initial value and then be closed.
+      await expectLater(stream1, emitsInOrder([isA<bool>(), emitsDone]));
       expect(stream2, isNotNull);
     });
   });
