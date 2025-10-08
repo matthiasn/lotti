@@ -39,6 +39,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:meta/meta.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -95,6 +96,17 @@ void _safeLog(String message, {required bool isError}) {
     print('SERVICE_REGISTRATION: $message (logging failed: $e)');
   }
 }
+
+@visibleForTesting
+void registerLazyServiceForTesting<T extends Object>(
+  T Function() factory,
+  String serviceName,
+) =>
+    _registerLazyServiceSafely(factory, serviceName);
+
+@visibleForTesting
+void safeLogForTesting(String message, {required bool isError}) =>
+    _safeLog(message, isError: isError);
 
 Future<void> registerSingletons() async {
   getIt

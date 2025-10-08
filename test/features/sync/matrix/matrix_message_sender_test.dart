@@ -142,6 +142,27 @@ void main() {
     ).called(1);
   });
 
+  test('returns false when room instance missing even with id', () async {
+    final result = await sender.sendMatrixMessage(
+      message: const SyncMessage.aiConfigDelete(id: 'abc'),
+      context: const MatrixMessageContext(
+        syncRoomId: '!room:test',
+        syncRoom: null,
+        unverifiedDevices: <DeviceKeys>[],
+      ),
+      onSent: () {},
+    );
+
+    expect(result, isFalse);
+    verify(
+      () => loggingService.captureEvent(
+        contains('no room instance available'),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      ),
+    ).called(1);
+  });
+
   test('sends text message and invokes callback once', () async {
     when(
       () => room.sendTextEvent(
@@ -346,6 +367,116 @@ void main() {
         .toSet();
     expect(extraPaths, contains(jsonPath));
     expect(extraPaths.any((path) => path.endsWith('image.jpg')), isTrue);
+  });
+
+  test('returns false when uploading json attachment fails', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => 'event-id');
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => null);
+
+    final metadata = Metadata(
+      id: 'entry',
+      createdAt: DateTime.utc(2024, 1, 1),
+      updatedAt: DateTime.utc(2024, 1, 1),
+      dateFrom: DateTime.utc(2024, 1, 1),
+      dateTo: DateTime.utc(2024, 1, 1),
+      vectorClock: VectorClock({'device': 1}),
+    );
+
+    final journalEntity = JournalEntity.journalEntry(
+      meta: metadata,
+      entryText: const EntryText(plainText: 'Test'),
+    );
+
+    const jsonPath = '/entries/test.json';
+    File('${documentsDirectory.path}$jsonPath')
+      ..createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.journalEntity(
+        id: 'entry',
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'device': 1}),
+        status: SyncEntryStatus.initial,
+      ),
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isFalse);
+    verify(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).called(1);
+  });
+
+  test('uses basename for matrix file uploads', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => 'event-id');
+    MatrixFile? capturedFile;
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedFile = invocation.positionalArguments.first as MatrixFile;
+      return 'file-id';
+    });
+
+    final metadata = Metadata(
+      id: 'entry',
+      createdAt: DateTime.utc(2024, 1, 1),
+      updatedAt: DateTime.utc(2024, 1, 1),
+      dateFrom: DateTime.utc(2024, 1, 1),
+      dateTo: DateTime.utc(2024, 1, 1),
+      vectorClock: VectorClock({'device': 1}),
+    );
+
+    final journalEntity = JournalEntity.journalEntry(
+      meta: metadata,
+      entryText: const EntryText(plainText: 'Test'),
+    );
+
+    const jsonPath = '/entries/test.json';
+    File('${documentsDirectory.path}$jsonPath')
+      ..createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.journalEntity(
+        id: 'entry',
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'device': 1}),
+        status: SyncEntryStatus.initial,
+      ),
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isTrue);
+    expect(capturedFile, isNotNull);
+    expect(capturedFile!.name, 'test.json');
   });
 
   test('resends audio attachment when resend flag true on update status',

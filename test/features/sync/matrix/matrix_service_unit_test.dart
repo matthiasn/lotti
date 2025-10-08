@@ -536,6 +536,86 @@ void main() {
     expect(service.getUnverifiedDevices(), deviceKeys);
   });
 
+  group('sendMatrixMsg', () {
+    late SyncMessage message;
+    late MockRoom currentRoom;
+    late List<DeviceKeys> devices;
+
+    setUp(() {
+      message = const SyncMessage.aiConfigDelete(id: 'abc');
+      currentRoom = MockRoom();
+      devices = [MockDeviceKeys()];
+      when(() => mockGateway.unverifiedDevices()).thenReturn(devices);
+      when(() => mockRoomManager.currentRoom).thenReturn(currentRoom);
+      when(() => mockRoomManager.currentRoomId).thenReturn('!current:room');
+      when(
+        () => mockMessageSender.sendMatrixMessage(
+          message: any(named: 'message'),
+          context: any(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).thenAnswer((_) async => true);
+    });
+
+    test('uses current sync room when override is null', () async {
+      await service.sendMatrixMsg(message);
+
+      final capturedContext = verify(
+        () => mockMessageSender.sendMatrixMessage(
+          message: message,
+          context: captureAny(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).captured.single as MatrixMessageContext;
+
+      expect(capturedContext.syncRoomId, '!current:room');
+      expect(capturedContext.syncRoom, currentRoom);
+      expect(capturedContext.unverifiedDevices, same(devices));
+      verifyNever(() => mockClient.getRoomById(any()));
+    });
+
+    test('uses room override when available from client', () async {
+      final overrideRoom = MockRoom();
+      when(() => mockClient.getRoomById('!override:room'))
+          .thenReturn(overrideRoom);
+
+      await service.sendMatrixMsg(message, myRoomId: '!override:room');
+
+      final capturedContext = verify(
+        () => mockMessageSender.sendMatrixMessage(
+          message: message,
+          context: captureAny(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).captured.single as MatrixMessageContext;
+
+      expect(capturedContext.syncRoomId, '!override:room');
+      expect(capturedContext.syncRoom, overrideRoom);
+      expect(capturedContext.unverifiedDevices, same(devices));
+      verify(() => mockClient.getRoomById('!override:room')).called(1);
+    });
+
+    test('falls back to current room when override missing from client',
+        () async {
+      when(() => mockClient.getRoomById('!override:room')).thenReturn(null);
+
+      await service.sendMatrixMsg(message, myRoomId: '!override:room');
+
+      final capturedContext = verify(
+        () => mockMessageSender.sendMatrixMessage(
+          message: message,
+          context: captureAny(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).captured.single as MatrixMessageContext;
+
+      expect(capturedContext.syncRoomId, '!override:room');
+      expect(capturedContext.syncRoom, currentRoom);
+      expect(capturedContext.unverifiedDevices, same(devices));
+      verify(() => mockClient.getRoomById('!override:room')).called(1);
+    });
+  });
+
   test('logout ignores timeline when already null', () async {
     when(() => mockTimelineListener.timeline).thenReturn(null);
     when(() => mockSessionManager.logout()).thenAnswer((_) async {});

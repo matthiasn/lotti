@@ -1,7 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/blocs/sync/outbox_state.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -9,11 +13,14 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
@@ -56,10 +63,10 @@ class TestableOutboxService extends OutboxService {
 
   @override
   Future<void> enqueueNextSendRequest({
-    Duration delay = const Duration(milliseconds: 1),
+    Duration? delay,
   }) async {
     enqueueCalls++;
-    lastDelay = delay;
+    lastDelay = delay ?? const Duration(milliseconds: 1);
   }
 }
 
@@ -71,6 +78,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'fallback'));
+    registerFallbackValue(const OutboxCompanion());
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel,
             (MethodCall call) async {
@@ -98,6 +106,8 @@ void main() {
   late MockVectorClockService vectorClockService;
   late MockUserActivityService userActivityService;
   late Directory documentsDirectory;
+  late bool hadDirectoryRegistered;
+  Directory? previousDirectory;
 
   setUp(() {
     syncDatabase = MockSyncDatabase();
@@ -110,6 +120,15 @@ void main() {
     userActivityService = MockUserActivityService();
     documentsDirectory =
         Directory.systemTemp.createTempSync('outbox_service_test_');
+    hadDirectoryRegistered = getIt.isRegistered<Directory>();
+    if (hadDirectoryRegistered) {
+      previousDirectory = getIt<Directory>();
+      getIt.unregister<Directory>();
+    } else {
+      previousDirectory = null;
+    }
+    getIt.allowReassignment = true;
+    getIt.registerSingleton<Directory>(documentsDirectory);
 
     when(() => processor.processQueue())
         .thenAnswer((_) async => OutboxProcessingResult.none);
@@ -124,6 +143,12 @@ void main() {
   tearDown(() {
     if (documentsDirectory.existsSync()) {
       documentsDirectory.deleteSync(recursive: true);
+    }
+    if (getIt.isRegistered<Directory>()) {
+      getIt.unregister<Directory>();
+    }
+    if (hadDirectoryRegistered && previousDirectory != null) {
+      getIt.registerSingleton<Directory>(previousDirectory!);
     }
   });
 
@@ -167,12 +192,83 @@ void main() {
       messageSender: messageSender,
       processor: processor,
       activityGate: externalGate,
-      ownsActivityGate: false,
     );
 
     await service.dispose();
 
     verifyNever(externalGate.dispose);
+  });
+
+  group('enqueueMessage', () {
+    test('stores relative attachment path for initial journal entry', () async {
+      final capturedCompanions = <OutboxCompanion>[];
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
+          .thenAnswer((invocation) async {
+        capturedCompanions
+            .add(invocation.positionalArguments.first as OutboxCompanion);
+        return 1;
+      });
+
+      final service = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      final sampleDate = DateTime.utc(2024);
+      final metadata = Metadata(
+        id: 'entry',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: const VectorClock({'host': 1}),
+      );
+      final imageData = ImageData(
+        capturedAt: sampleDate,
+        imageId: 'image-id',
+        imageFile: 'image.jpg',
+        imageDirectory: '/images/',
+      );
+      final journalEntity = JournalEntity.journalImage(
+        meta: metadata,
+        data: imageData,
+        entryText: const EntryText(plainText: 'Test'),
+      );
+
+      const jsonPath = '/entries/test.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      final imagePath =
+          '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
+      File(imagePath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(10, 42));
+
+      await service.enqueueMessage(
+        const SyncMessage.journalEntity(
+          id: 'entry',
+          jsonPath: jsonPath,
+          vectorClock: VectorClock({'device': 1}),
+          status: SyncEntryStatus.initial,
+        ),
+      );
+
+      expect(capturedCompanions, hasLength(1));
+      final companion = capturedCompanions.single;
+      expect(companion.filePath.value, getRelativeAssetPath(imagePath));
+      expect(companion.subject.value, 'hostHash:1');
+      expect(companion.status.value, OutboxStatus.pending.index);
+      verify(() => syncDatabase.addOutboxItem(any<OutboxCompanion>())).called(1);
+    });
   });
 
   group('sendNext', () {
