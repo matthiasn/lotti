@@ -165,7 +165,7 @@ void main() {
   });
 
   test(
-      'ensureSynchronized honours imperative session changes when no events fire',
+      'reconcileLifecycleState honours imperative session changes when no events fire',
       () async {
     final timeline = MockTimeline();
     when(() => timelineListener.timeline).thenReturn(timeline);
@@ -184,7 +184,7 @@ void main() {
     when(() => client.isLogged()).thenReturn(true);
     when(() => sessionManager.isLoggedIn()).thenReturn(true);
 
-    await coordinator.ensureSynchronized();
+    await coordinator.reconcileLifecycleState();
 
     verify(() => timelineListener.start()).called(1);
     expect(coordinator.isActive, isTrue);
@@ -192,7 +192,7 @@ void main() {
     when(() => client.isLogged()).thenReturn(false);
     when(() => sessionManager.isLoggedIn()).thenReturn(false);
 
-    await coordinator.ensureSynchronized();
+    await coordinator.reconcileLifecycleState();
 
     verify(() => timeline.cancelSubscriptions()).called(1);
     expect(coordinator.isActive, isFalse);

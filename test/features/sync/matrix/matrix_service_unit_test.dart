@@ -320,7 +320,7 @@ void main() {
     when(() => mockClient.rooms).thenReturn([mockRoom]);
     final diagnosticsLoginController = CachedStreamController<LoginState>()
       ..add(LoginState.loggedIn);
-    addTearDown(() => diagnosticsLoginController.close());
+    addTearDown(diagnosticsLoginController.close);
     when(() => mockClient.onLoginStateChanged)
         .thenReturn(diagnosticsLoginController);
     when(() => mockClient.onLoginStateChanged.value)

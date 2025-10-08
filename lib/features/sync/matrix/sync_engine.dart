@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
@@ -32,6 +34,7 @@ class SyncEngine {
   final LoggingService _loggingService;
 
   bool _initialized = false;
+  Future<void>? _initialization;
 
   MatrixSessionManager get sessionManager => _sessionManager;
   SyncRoomManager get roomManager => _roomManager;
@@ -49,12 +52,26 @@ class SyncEngine {
     );
 
     if (_initialized) {
-      await _lifecycleCoordinator.ensureSynchronized();
+      await _lifecycleCoordinator.reconcileLifecycleState();
       return;
     }
 
+    _initialization ??= _initializeCoordinator();
+    try {
+      await _initialization;
+    } finally {
+      if (_initialized) {
+        _initialization = null;
+      }
+    }
+  }
+
+  Future<void> _initializeCoordinator() async {
+    if (_initialized) {
+      return;
+    }
     await _lifecycleCoordinator.initialize();
-    await _lifecycleCoordinator.ensureSynchronized();
+    await _lifecycleCoordinator.reconcileLifecycleState();
     _initialized = true;
   }
 
@@ -67,7 +84,7 @@ class SyncEngine {
       shouldAttemptLogin: shouldAttemptLogin,
     );
     if (success) {
-      await _lifecycleCoordinator.ensureSynchronized();
+      await _lifecycleCoordinator.reconcileLifecycleState();
     }
     return success;
   }
@@ -75,7 +92,7 @@ class SyncEngine {
   /// Logs out the underlying session manager and synchronises lifecycle state.
   Future<void> logout() async {
     await _sessionManager.logout();
-    await _lifecycleCoordinator.ensureSynchronized();
+    await _lifecycleCoordinator.reconcileLifecycleState();
   }
 
   /// Releases coordinator resources. Callers are responsible for disposing
@@ -85,42 +102,63 @@ class SyncEngine {
   /// Emits diagnostic information about the current sync state. Consumers can
   /// surface this for debugging or support tooling.
   Future<Map<String, dynamic>> diagnostics({bool log = true}) async {
-    final client = _sessionManager.client;
-    final savedRoomId = await _roomManager.loadPersistedRoomId();
-    final joinedRooms = client.rooms
-        .map(
-          (room) => {
-            'id': room.id,
-            'name': room.name,
-            'encrypted': room.encrypted,
-            'memberCount': room.summary.mJoinedMemberCount,
-          },
-        )
-        .toList();
-
-    String? loginState;
+    Map<String, dynamic> info;
     try {
-      loginState = client.onLoginStateChanged.value.toString();
-    } catch (_) {
-      loginState = null;
-    }
+      final client = _sessionManager.client;
+      final savedRoomId = await _roomManager.loadPersistedRoomId();
+      final joinedRooms = client.rooms
+          .map(
+            (room) => {
+              'id': room.id,
+              'name': room.name,
+              'encrypted': room.encrypted,
+              'memberCount': room.summary.mJoinedMemberCount,
+            },
+          )
+          .toList();
 
-    final info = <String, dynamic>{
-      'deviceId': client.deviceID,
-      'deviceName': client.deviceName,
-      'userId': client.userID,
-      'savedRoomId': savedRoomId,
-      'syncRoomId': _roomManager.currentRoomId,
-      'syncRoom.id': _roomManager.currentRoom?.id,
-      'joinedRooms': joinedRooms,
-      'isLoggedIn': _sessionManager.isLoggedIn(),
-      'timelineActive': _lifecycleCoordinator.isActive,
-      'loginState': loginState,
-    };
+      String? loginState;
+      try {
+        loginState = client.onLoginStateChanged.value.toString();
+      } catch (error, stackTrace) {
+        _loggingService.captureException(
+          error,
+          domain: 'SYNC_ENGINE',
+          subDomain: 'diagnostics.loginState',
+          stackTrace: stackTrace,
+        );
+        loginState = null;
+      }
+
+      info = <String, dynamic>{
+        'deviceId': client.deviceID,
+        'deviceName': client.deviceName,
+        'userId': client.userID,
+        'savedRoomId': savedRoomId,
+        'syncRoomId': _roomManager.currentRoomId,
+        'syncRoom.id': _roomManager.currentRoom?.id,
+        'joinedRooms': joinedRooms,
+        'isLoggedIn': _sessionManager.isLoggedIn(),
+        'timelineActive': _lifecycleCoordinator.isActive,
+        'loginState': loginState,
+      };
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'SYNC_ENGINE',
+        subDomain: 'diagnostics.snapshot',
+        stackTrace: stackTrace,
+      );
+      info = <String, dynamic>{
+        'error': error.toString(),
+        'isLoggedIn': _sessionManager.isLoggedIn(),
+        'timelineActive': _lifecycleCoordinator.isActive,
+      };
+    }
 
     if (log) {
       _loggingService.captureEvent(
-        'Sync diagnostics: $info',
+        'Sync diagnostics: ${json.encode(info)}',
         domain: 'SYNC_ENGINE',
         subDomain: 'diagnostics',
       );

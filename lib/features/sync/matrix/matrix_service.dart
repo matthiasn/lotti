@@ -75,24 +75,35 @@ class MatrixService {
           overriddenSettingsDb: settingsDb,
         );
 
-    _lifecycleCoordinator = lifecycleCoordinator ??
-        syncEngine?.lifecycleCoordinator ??
-        SyncLifecycleCoordinator(
-          gateway: _gateway,
-          sessionManager: _sessionManager,
-          timelineListener: _timelineListener,
-          roomManager: _roomManager,
-          loggingService: _loggingService,
+    if (syncEngine != null) {
+      if (lifecycleCoordinator != null &&
+          !identical(
+            syncEngine.lifecycleCoordinator,
+            lifecycleCoordinator,
+          )) {
+        throw ArgumentError(
+          'Provided SyncEngine and SyncLifecycleCoordinator must reference '
+          'the same instance.',
         );
-
-    _syncEngine = syncEngine ??
-        SyncEngine(
-          sessionManager: _sessionManager,
-          roomManager: _roomManager,
-          timelineListener: _timelineListener,
-          lifecycleCoordinator: _lifecycleCoordinator,
-          loggingService: _loggingService,
-        );
+      }
+      _syncEngine = syncEngine;
+    } else {
+      final coordinator = lifecycleCoordinator ??
+          SyncLifecycleCoordinator(
+            gateway: _gateway,
+            sessionManager: _sessionManager,
+            timelineListener: _timelineListener,
+            roomManager: _roomManager,
+            loggingService: _loggingService,
+          );
+      _syncEngine = SyncEngine(
+        sessionManager: _sessionManager,
+        roomManager: _roomManager,
+        timelineListener: _timelineListener,
+        lifecycleCoordinator: coordinator,
+        loggingService: _loggingService,
+      );
+    }
 
     incomingKeyVerificationRunnerController =
         StreamController<KeyVerificationRunner>.broadcast(
@@ -124,7 +135,6 @@ class MatrixService {
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;
   late final MatrixTimelineListener _timelineListener;
-  late final SyncLifecycleCoordinator _lifecycleCoordinator;
   late final SyncEngine _syncEngine;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -314,10 +324,10 @@ class MatrixService {
     await _syncEngine.dispose();
     await _timelineListener.dispose();
     await _roomManager.dispose();
+    await _sessionManager.dispose();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }
-    await _sessionManager.dispose();
   }
 
   Future<Map<String, dynamic>> getDiagnosticInfo() async {

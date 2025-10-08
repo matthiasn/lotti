@@ -45,6 +45,7 @@ class SyncLifecycleCoordinator {
   bool _isActive = false;
   bool _isInitialized = false;
   Future<void>? _pendingTransition;
+  Future<void>? _initialization;
 
   /// Returns whether the coordinator currently considers the sync pipeline
   /// active (i.e. logged in and timeline listeners attached).
@@ -72,6 +73,20 @@ class SyncLifecycleCoordinator {
     if (_isInitialized) {
       return;
     }
+    _initialization ??= _performInitialization();
+    try {
+      await _initialization;
+    } finally {
+      if (_isInitialized) {
+        _initialization = null;
+      }
+    }
+  }
+
+  Future<void> _performInitialization() async {
+    if (_isInitialized) {
+      return;
+    }
     _isInitialized = true;
 
     await _timelineListener.initialize();
@@ -83,10 +98,10 @@ class SyncLifecycleCoordinator {
     }
   }
 
-  /// Ensures the coordinator state matches the current login status. This is
+  /// Reconciles the coordinator state with the current login status. This is
   /// useful after imperative login/logout operations where the gateway might
   /// not emit a fresh state.
-  Future<void> ensureSynchronized() async {
+  Future<void> reconcileLifecycleState() async {
     if (_sessionManager.isLoggedIn()) {
       await _handleLoggedIn();
     } else {
@@ -177,6 +192,9 @@ class SyncLifecycleCoordinator {
         subDomain: 'deactivate',
         stackTrace: stackTrace,
       );
+      // Surface teardown failures so callers can decide whether to retry or
+      // halt – mirrors the activation path which also rethrows.
+      rethrow;
     } finally {
       _isActive = false;
     }
