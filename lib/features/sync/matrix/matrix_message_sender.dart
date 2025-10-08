@@ -10,6 +10,7 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 /// Handles Matrix message sending including attachments and logging.
@@ -95,77 +96,12 @@ class MatrixMessageSender {
       );
 
       if (message is SyncJournalEntity) {
-        final relativeJsonPath = p.joinAll(
-          message.jsonPath.split('/').where((part) => part.isNotEmpty),
-        );
-        final jsonFullPath = p.join(_documentsDirectory.path, relativeJsonPath);
-
-        final jsonSent = await _sendFile(
+        final payloadSent = await _sendJournalEntityPayload(
           room: room,
-          fullPath: jsonFullPath,
-          relativePath: message.jsonPath,
+          message: message,
         );
 
-        if (!jsonSent) {
-          return false;
-        }
-
-        JournalEntity? journalEntity;
-        try {
-          final jsonString = await File(jsonFullPath).readAsString();
-          journalEntity = JournalEntity.fromJson(
-            json.decode(jsonString) as Map<String, dynamic>,
-          );
-        } catch (error, stackTrace) {
-          _loggingService.captureException(
-            error,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'sendMatrixMsg.decode',
-            stackTrace: stackTrace,
-          );
-          return false;
-        }
-
-        final shouldResendAttachments =
-            await _journalDb.getConfigFlag(resendAttachments);
-
-        var attachmentsOk = true;
-
-        await journalEntity.maybeMap(
-          journalAudio: (JournalAudio journalAudio) async {
-            if (shouldResendAttachments ||
-                message.status == SyncEntryStatus.initial) {
-              final audioPath = AudioUtils.getAudioPath(
-                journalAudio,
-                _documentsDirectory,
-              );
-              final sent = await _sendFile(
-                room: room,
-                fullPath: audioPath,
-                relativePath: AudioUtils.getRelativeAudioPath(journalAudio),
-              );
-              attachmentsOk = attachmentsOk && sent;
-            }
-          },
-          journalImage: (JournalImage journalImage) async {
-            if (shouldResendAttachments ||
-                message.status == SyncEntryStatus.initial) {
-              final imagePath = getFullImagePath(
-                journalImage,
-                documentsDirectory: _documentsDirectory.path,
-              );
-              final sent = await _sendFile(
-                room: room,
-                fullPath: imagePath,
-                relativePath: getRelativeImagePath(journalImage),
-              );
-              attachmentsOk = attachmentsOk && sent;
-            }
-          },
-          orElse: () async {},
-        );
-
-        if (!attachmentsOk) {
+        if (!payloadSent) {
           return false;
         }
       }
@@ -229,6 +165,90 @@ class MatrixMessageSender {
       return false;
     }
   }
+
+  Future<bool> _sendJournalEntityPayload({
+    required Room room,
+    required SyncJournalEntity message,
+  }) async {
+    final relativeJsonPath = p.joinAll(
+      message.jsonPath.split('/').where((part) => part.isNotEmpty),
+    );
+    final jsonFullPath = p.join(_documentsDirectory.path, relativeJsonPath);
+
+    final jsonSent = await _sendFile(
+      room: room,
+      fullPath: jsonFullPath,
+      relativePath: message.jsonPath,
+    );
+
+    if (!jsonSent) {
+      return false;
+    }
+
+    late final JournalEntity journalEntity;
+    try {
+      final jsonString = await File(jsonFullPath).readAsString();
+      journalEntity = JournalEntity.fromJson(
+        json.decode(jsonString) as Map<String, dynamic>,
+      );
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.decode',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+
+    final shouldResendAttachments =
+        await _journalDb.getConfigFlag(resendAttachments);
+
+    var attachmentsOk = true;
+
+    await journalEntity.maybeMap(
+      journalAudio: (JournalAudio journalAudio) async {
+        if (shouldResendAttachments ||
+            message.status == SyncEntryStatus.initial) {
+          final audioPath = AudioUtils.getAudioPath(
+            journalAudio,
+            _documentsDirectory,
+          );
+          final sent = await _sendFile(
+            room: room,
+            fullPath: audioPath,
+            relativePath: AudioUtils.getRelativeAudioPath(journalAudio),
+          );
+          attachmentsOk = attachmentsOk && sent;
+        }
+      },
+      journalImage: (JournalImage journalImage) async {
+        if (shouldResendAttachments ||
+            message.status == SyncEntryStatus.initial) {
+          final imagePath = getFullImagePath(
+            journalImage,
+            documentsDirectory: _documentsDirectory.path,
+          );
+          final sent = await _sendFile(
+            room: room,
+            fullPath: imagePath,
+            relativePath: getRelativeImagePath(journalImage),
+          );
+          attachmentsOk = attachmentsOk && sent;
+        }
+      },
+      orElse: () async {},
+    );
+
+    return attachmentsOk;
+  }
+
+  @visibleForTesting
+  Future<bool> sendJournalEntityPayloadForTesting({
+    required Room room,
+    required SyncJournalEntity message,
+  }) =>
+      _sendJournalEntityPayload(room: room, message: message);
 }
 
 class MatrixMessageContext {

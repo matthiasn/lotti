@@ -786,4 +786,127 @@ void main() {
       ),
     ).called(1);
   });
+
+  group('sendJournalEntityPayloadForTesting', () {
+    test('sends json and attachments successfully', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+      when(() => journalDb.getConfigFlag(resendAttachments))
+          .thenAnswer((_) async => true);
+
+      final sampleDate = DateTime.utc(2024, 1, 1);
+      final metadata = Metadata(
+        id: 'entry',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: VectorClock({'device': 1}),
+      );
+      final imageData = ImageData(
+        capturedAt: sampleDate,
+        imageId: 'image-id',
+        imageFile: 'image.jpg',
+        imageDirectory: '/images/',
+      );
+      final journalEntity = JournalEntity.journalImage(
+        meta: metadata,
+        data: imageData,
+        entryText: const EntryText(plainText: 'Test'),
+      );
+
+      const jsonPath = '/entries/payload.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      final imagePath =
+          '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
+      File(imagePath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(10, 42));
+
+      final message = SyncMessage.journalEntity(
+        id: 'entry',
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'device': 1}),
+        status: SyncEntryStatus.initial,
+      ) as SyncJournalEntity;
+
+      final result = await sender.sendJournalEntityPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).called(greaterThanOrEqualTo(2));
+    });
+
+    test('propagates failure when attachment upload fails', () async {
+      final responses = <String?>['json-id', null];
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => responses.removeAt(0));
+      when(() => journalDb.getConfigFlag(resendAttachments))
+          .thenAnswer((_) async => true);
+
+      final sampleDate = DateTime.utc(2024, 1, 1);
+      final metadata = Metadata(
+        id: 'entry',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: VectorClock({'device': 1}),
+      );
+      final imageData = ImageData(
+        capturedAt: sampleDate,
+        imageId: 'image-id',
+        imageFile: 'image.jpg',
+        imageDirectory: '/images/',
+      );
+      final journalEntity = JournalEntity.journalImage(
+        meta: metadata,
+        data: imageData,
+        entryText: const EntryText(plainText: 'Test'),
+      );
+
+      const jsonPath = '/entries/failing.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      final imagePath =
+          '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
+      File(imagePath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(10, 42));
+
+      final message = SyncMessage.journalEntity(
+        id: 'entry',
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'device': 1}),
+        status: SyncEntryStatus.initial,
+      ) as SyncJournalEntity;
+
+      final result = await sender.sendJournalEntityPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, isFalse);
+    });
+  });
 }
