@@ -32,6 +32,10 @@
   - Rebuilt `MatrixService` to delegate to the new managers, removing the legacy `listenToMatrixRoomInvites` auto-join logic and the `room.dart` helper APIs.
   - Added exhaustive unit coverage for invite handling, hydration retries, error propagation, and session edge cases.
   - Updated sync readme documentation to reflect the fix for the auto-join bug and the improved join error handling.
+- **Sync Engine Assembly** (Milestone 7)
+  - Added `SyncLifecycleCoordinator` and `SyncEngine` to compose session, room, timeline, and diagnostics responsibilities with constructor-driven injection.
+  - Refactored `MatrixService` lifecycle to delegate startup/shutdown to the engine, centralizing diagnostics and login hooks.
+  - Expanded automated coverage with lifecycle unit tests and a multi-device invite integration scenario backed by the fake gateway.
 
 ## Recent Fixes & Enhancements
 
@@ -42,6 +46,6 @@
 
 ## Next Up
 
-- **Milestone 7:** SyncEngine assembly and lifecycle coordinator; compose the extracted services, expose diagnostics, and expand integration coverage for multi-device invites.
+- **Milestone 8:** Dependency injection cleanup; remove remaining `getIt` usage from sync modules in favour of constructor wiring and enforce via analysis.
 
 This progress log will be updated as each milestone is completed.
