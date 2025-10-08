@@ -10,6 +10,7 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
+import 'package:path/path.dart' as p;
 
 /// Handles Matrix message sending including attachments and logging.
 class MatrixMessageSender {
@@ -29,13 +30,7 @@ class MatrixMessageSender {
     required SyncMessage message,
     required MatrixMessageContext context,
     required void Function() onSent,
-    String? roomIdOverride,
   }) async {
-    final encodedMessage = json.encode(message);
-    final candidateRoomId = roomIdOverride ?? context.syncRoomId;
-    final room = context.syncRoom;
-    final roomId = candidateRoomId ?? room?.id;
-
     if (context.unverifiedDevices.isNotEmpty) {
       _loggingService.captureException(
         'Unverified devices found',
@@ -44,6 +39,9 @@ class MatrixMessageSender {
       );
       throw Exception('Unverified Matrix devices found');
     }
+
+    final room = context.syncRoom;
+    final roomId = context.syncRoomId ?? room?.id;
 
     if (roomId == null) {
       _loggingService.captureEvent(
@@ -63,12 +61,6 @@ class MatrixMessageSender {
       return false;
     }
 
-    if (roomIdOverride != null && room.id != roomIdOverride) {
-      throw StateError(
-        'Room override $roomIdOverride does not match provided room ${room.id}',
-      );
-    }
-
     _loggingService.captureEvent(
       'Sending message - using roomId: $roomId, '
       'syncRoomId: ${context.syncRoomId}, '
@@ -78,79 +70,120 @@ class MatrixMessageSender {
       subDomain: 'sendMatrixMsg',
     );
 
-    final eventId = await room.sendTextEvent(
-      base64.encode(utf8.encode(encodedMessage)),
-      msgtype: syncMessageType,
-      parseCommands: false,
-      parseMarkdown: false,
-    );
+    try {
+      final encodedMessage = json.encode(message);
+      final eventId = await room.sendTextEvent(
+        base64.encode(utf8.encode(encodedMessage)),
+        msgtype: syncMessageType,
+        parseCommands: false,
+        parseMarkdown: false,
+      );
 
-    if (eventId == null) {
-      throw Exception('Failed sending text message');
-    }
+      if (eventId == null) {
+        _loggingService.captureEvent(
+          'Failed sending text message to $room',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg',
+        );
+        return false;
+      }
 
-    _loggingService.captureEvent(
-      'sent text message to $room with event ID $eventId',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'sendMatrixMsg',
-    );
+      _loggingService.captureEvent(
+        'sent text message to $room with event ID $eventId',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
 
-    await message.maybeMap(
-      journalEntity: (SyncJournalEntity syncJournalEntity) async {
-        final fullPath =
-            '${_documentsDirectory.path}${syncJournalEntity.jsonPath}';
-        await _sendFile(
+      if (message is SyncJournalEntity) {
+        final relativeJsonPath = p.joinAll(
+          message.jsonPath.split('/').where((part) => part.isNotEmpty),
+        );
+        final jsonFullPath = p.join(_documentsDirectory.path, relativeJsonPath);
+
+        final jsonSent = await _sendFile(
           room: room,
-          fullPath: fullPath,
-          relativePath: syncJournalEntity.jsonPath,
+          fullPath: jsonFullPath,
+          relativePath: message.jsonPath,
         );
 
-        final jsonString = await File(fullPath).readAsString();
-        final journalEntity = JournalEntity.fromJson(
-          json.decode(jsonString) as Map<String, dynamic>,
-        );
+        if (!jsonSent) {
+          return false;
+        }
+
+        JournalEntity? journalEntity;
+        try {
+          final jsonString = await File(jsonFullPath).readAsString();
+          journalEntity = JournalEntity.fromJson(
+            json.decode(jsonString) as Map<String, dynamic>,
+          );
+        } catch (error, stackTrace) {
+          _loggingService.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.decode',
+            stackTrace: stackTrace,
+          );
+          return false;
+        }
 
         final shouldResendAttachments =
             await _journalDb.getConfigFlag(resendAttachments);
 
+        var attachmentsOk = true;
+
         await journalEntity.maybeMap(
           journalAudio: (JournalAudio journalAudio) async {
             if (shouldResendAttachments ||
-                syncJournalEntity.status == SyncEntryStatus.initial) {
-              await _sendFile(
+                message.status == SyncEntryStatus.initial) {
+              final audioPath = AudioUtils.getAudioPath(
+                journalAudio,
+                _documentsDirectory,
+              );
+              final sent = await _sendFile(
                 room: room,
-                fullPath: AudioUtils.getAudioPath(
-                  journalAudio,
-                  _documentsDirectory,
-                ),
+                fullPath: audioPath,
                 relativePath: AudioUtils.getRelativeAudioPath(journalAudio),
               );
+              attachmentsOk = attachmentsOk && sent;
             }
           },
           journalImage: (JournalImage journalImage) async {
             if (shouldResendAttachments ||
-                syncJournalEntity.status == SyncEntryStatus.initial) {
-              await _sendFile(
+                message.status == SyncEntryStatus.initial) {
+              final imagePath = getFullImagePath(
+                journalImage,
+                documentsDirectory: _documentsDirectory.path,
+              );
+              final sent = await _sendFile(
                 room: room,
-                fullPath: getFullImagePath(
-                  journalImage,
-                  documentsDirectory: _documentsDirectory.path,
-                ),
+                fullPath: imagePath,
                 relativePath: getRelativeImagePath(journalImage),
               );
+              attachmentsOk = attachmentsOk && sent;
             }
           },
           orElse: () async {},
         );
-      },
-      orElse: () async {},
-    );
 
-    onSent();
-    return true;
+        if (!attachmentsOk) {
+          return false;
+        }
+      }
+
+      onSent();
+      return true;
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
   }
 
-  Future<void> _sendFile({
+  Future<bool> _sendFile({
     required Room room,
     required String fullPath,
     required String relativePath,
@@ -162,16 +195,22 @@ class MatrixMessageSender {
         subDomain: 'sendMatrixMsg',
       );
 
+      final file = File(fullPath);
       final eventId = await room.sendFileEvent(
         MatrixFile(
-          bytes: await File(fullPath).readAsBytes(),
-          name: fullPath,
+          bytes: await file.readAsBytes(),
+          name: p.basename(fullPath),
         ),
         extraContent: {'relativePath': relativePath},
       );
 
       if (eventId == null) {
-        throw Exception('Failed sending file');
+        _loggingService.captureEvent(
+          'Failed sending $relativePath file message to $room',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg',
+        );
+        return false;
       }
 
       _loggingService.captureEvent(
@@ -179,6 +218,7 @@ class MatrixMessageSender {
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
+      return true;
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
@@ -186,7 +226,7 @@ class MatrixMessageSender {
         subDomain: 'sendMatrixMsg',
         stackTrace: stackTrace,
       );
-      rethrow;
+      return false;
     }
   }
 }

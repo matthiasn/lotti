@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/save_attachment.dart';
@@ -80,7 +79,6 @@ Future<void> processNewTimelineEvents({
   required TimelineContext listener,
   required JournalDb journalDb,
   required LoggingService loggingService,
-  required SettingsDb settingsDb,
   required SyncReadMarkerService readMarkerService,
   required SyncEventProcessor eventProcessor,
 }) async {

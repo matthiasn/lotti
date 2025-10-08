@@ -10,10 +10,10 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -207,7 +207,9 @@ void main() {
         .thenAnswer((_) => storedSessionConfig);
     when(() => mockSessionManager.matrixConfig = any())
         .thenAnswer((invocation) {
-      storedSessionConfig = invocation.positionalArguments.first as MatrixConfig?;
+      storedSessionConfig =
+          invocation.positionalArguments.first as MatrixConfig?;
+      return null;
     });
     when(() => mockSessionManager.logout()).thenAnswer((_) async {});
 
@@ -228,7 +230,6 @@ void main() {
         message: any(named: 'message'),
         context: any(named: 'context'),
         onSent: any(named: 'onSent'),
-        roomIdOverride: any(named: 'roomIdOverride'),
       ),
     ).thenAnswer((_) async => true);
     when(
@@ -655,7 +656,6 @@ void main() {
         message: any(named: 'message'),
         context: any(named: 'context'),
         onSent: any(named: 'onSent'),
-        roomIdOverride: any(named: 'roomIdOverride'),
       ),
     ).thenAnswer((_) async => true);
     final extraReadMarkerService = MockSyncReadMarkerService();

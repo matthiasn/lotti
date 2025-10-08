@@ -254,15 +254,22 @@ class MatrixService {
     SyncMessage syncMessage, {
     String? myRoomId,
   }) {
+    var targetRoom = syncRoom;
+    var targetRoomId = syncRoomId;
+
+    if (myRoomId != null) {
+      targetRoomId = myRoomId;
+      targetRoom = client.getRoomById(myRoomId) ?? targetRoom;
+    }
+
     return _messageSender.sendMatrixMessage(
       message: syncMessage,
       context: MatrixMessageContext(
-        syncRoomId: syncRoomId,
-        syncRoom: syncRoom,
+        syncRoomId: targetRoomId,
+        syncRoom: targetRoom,
         unverifiedDevices: getUnverifiedDevices(),
       ),
       onSent: incrementSentCount,
-      roomIdOverride: myRoomId,
     );
   }
 

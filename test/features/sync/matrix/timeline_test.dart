@@ -206,7 +206,6 @@ void main() {
       listener: context,
       journalDb: mockJournalDb,
       loggingService: mockLoggingService,
-      settingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
     );
@@ -253,7 +252,6 @@ void main() {
       listener: context,
       journalDb: mockJournalDb,
       loggingService: mockLoggingService,
-      settingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
     );
@@ -273,7 +271,6 @@ void main() {
       listener: context,
       journalDb: mockJournalDb,
       loggingService: mockLoggingService,
-      settingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
     );

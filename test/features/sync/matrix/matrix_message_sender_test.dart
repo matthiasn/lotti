@@ -100,8 +100,8 @@ void main() {
     final device = MockDeviceKeys();
     final context = buildContext(devices: [device]);
 
-    expect(
-      () => sender.sendMatrixMessage(
+    await expectLater(
+      sender.sendMatrixMessage(
         message: const SyncMessage.aiConfigDelete(id: 'abc'),
         context: context,
         onSent: () {},
@@ -138,84 +138,6 @@ void main() {
         configNotFound,
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
-      ),
-    ).called(1);
-  });
-
-  test('returns false when room instance missing even with override', () async {
-    final result = await sender.sendMatrixMessage(
-      message: const SyncMessage.aiConfigDelete(id: 'abc'),
-      context: const MatrixMessageContext(
-        syncRoomId: '!room:test',
-        syncRoom: null,
-        unverifiedDevices: <DeviceKeys>[],
-      ),
-      onSent: () {},
-      roomIdOverride: '!room:test',
-    );
-
-    expect(result, isFalse);
-    verify(
-      () => loggingService.captureEvent(
-        contains('no room instance available'),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      ),
-    ).called(1);
-  });
-
-  test('throws when roomIdOverride mismatches room id', () async {
-    final overrideRoom = MockRoom();
-    when(() => overrideRoom.id).thenReturn('!actual:room');
-
-    expect(
-      () => sender.sendMatrixMessage(
-        message: const SyncMessage.aiConfigDelete(id: 'abc'),
-        context: MatrixMessageContext(
-          syncRoomId: '!actual:room',
-          syncRoom: overrideRoom,
-          unverifiedDevices: const <DeviceKeys>[],
-        ),
-        onSent: () {},
-        roomIdOverride: '!different:room',
-      ),
-      throwsA(isA<StateError>()),
-    );
-    verifyNever(() => overrideRoom.sendTextEvent(any(), msgtype: any(named: 'msgtype')));
-  });
-
-  test('uses roomIdOverride when it matches room id', () async {
-    final overrideRoom = MockRoom();
-    when(() => overrideRoom.id).thenReturn('!override:room');
-    when(
-      () => overrideRoom.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
-    ).thenAnswer((_) async => 'event-id');
-
-    var calls = 0;
-    final result = await sender.sendMatrixMessage(
-      message: const SyncMessage.aiConfigDelete(id: 'abc'),
-      context: MatrixMessageContext(
-        syncRoomId: null,
-        syncRoom: overrideRoom,
-        unverifiedDevices: const <DeviceKeys>[],
-      ),
-      onSent: () => calls++,
-      roomIdOverride: '!override:room',
-    );
-
-    expect(result, isTrue);
-    expect(calls, 1);
-    verify(
-      () => overrideRoom.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
       ),
     ).called(1);
   });
@@ -521,7 +443,7 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((_) => Future< String?>.error(Exception('network error')));
+    ).thenAnswer((_) => Future<String?>.error(Exception('network error')));
 
     final metadata = Metadata(
       id: 'entry',
@@ -542,8 +464,8 @@ void main() {
       ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
 
     var callbackCount = 0;
-    expect(
-      () => sender.sendMatrixMessage(
+    await expectLater(
+      sender.sendMatrixMessage(
         message: SyncMessage.journalEntity(
           id: 'entry',
           jsonPath: jsonPath,
@@ -553,7 +475,7 @@ void main() {
         context: buildContext(),
         onSent: () => callbackCount++,
       ),
-      throwsA(isA<Exception>()),
+      completion(isFalse),
     );
 
     expect(callbackCount, 0);

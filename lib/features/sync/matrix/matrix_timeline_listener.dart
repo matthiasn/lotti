@@ -41,7 +41,6 @@ class MatrixTimelineListener implements TimelineContext {
           listener: this,
           journalDb: _journalDb,
           loggingService: _loggingService,
-          settingsDb: _settingsDb,
           readMarkerService: _readMarkerService,
           eventProcessor: _eventProcessor,
         );

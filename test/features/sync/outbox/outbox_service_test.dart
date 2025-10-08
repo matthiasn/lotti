@@ -116,10 +116,9 @@ void main() {
     when(() => vectorClockService.getHostHash())
         .thenAnswer((_) async => 'hostHash');
     when(() => vectorClockService.getHost()).thenAnswer((_) async => 'host');
-    when(() => userActivityService.lastActivity)
-        .thenReturn(DateTime.now());
+    when(() => userActivityService.lastActivity).thenReturn(DateTime.now());
     when(() => userActivityService.activityStream)
-        .thenAnswer((_) => Stream<DateTime>.empty());
+        .thenAnswer((_) => const Stream<DateTime>.empty());
   });
 
   tearDown(() {
@@ -343,7 +342,8 @@ void main() {
   test('MatrixOutboxMessageSender delegates to MatrixService', () async {
     final matrixService = MockMatrixService();
     const message = SyncMessage.aiConfigDelete(id: 'abc');
-    when(() => matrixService.sendMatrixMsg(message)).thenAnswer((_) async => true);
+    when(() => matrixService.sendMatrixMsg(message))
+        .thenAnswer((_) async => true);
 
     final sender = MatrixOutboxMessageSender(matrixService);
 
