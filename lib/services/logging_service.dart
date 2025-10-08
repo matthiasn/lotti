@@ -71,7 +71,7 @@ class LoggingService {
         domain: domain,
         subDomain: subDomain,
         message: exception.toString(),
-        stacktrace: stackTrace.toString(),
+        stacktrace: stackTrace?.toString(),
         level: level.name.toUpperCase(),
         type: type.name.toUpperCase(),
       ),

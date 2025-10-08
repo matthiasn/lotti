@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -160,7 +161,19 @@ class FakeTaskData extends Fake implements TaskData {}
 
 class FakeMetadata extends Fake implements Metadata {}
 
-class FakeQuillController extends Fake implements QuillController {}
+class FakeQuillController extends Fake implements QuillController {
+  FakeQuillController({TextSelection? selection})
+      : _selection = selection ?? const TextSelection.collapsed(offset: 0);
+
+  TextSelection _selection;
+
+  @override
+  TextSelection get selection => _selection;
+
+  set selection(TextSelection value) {
+    _selection = value;
+  }
+}
 
 class FakeJournalAudio extends Fake implements JournalAudio {}
 
