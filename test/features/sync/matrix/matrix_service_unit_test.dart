@@ -18,7 +18,9 @@ import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
+import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -64,6 +66,8 @@ class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 class MockKeyVerification extends Mock implements KeyVerification {}
 
+class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
+
 class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
 
 class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
@@ -71,6 +75,11 @@ class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class MockSecureStorage extends Mock implements SecureStorage {}
+
+class MockSyncLifecycleCoordinator extends Mock
+    implements SyncLifecycleCoordinator {}
+
+class MockSyncEngine extends Mock implements SyncEngine {}
 
 void _noop() {}
 
@@ -317,6 +326,16 @@ void main() {
     verify(() => mockRoomManager.joinRoom('!room:server')).called(1);
   });
 
+  test('joinRoom falls back to provided id when manager returns null',
+      () async {
+    when(() => mockRoomManager.joinRoom('!missing:room'))
+        .thenAnswer((_) async => null);
+
+    final result = await service.joinRoom('!missing:room');
+
+    expect(result, '!missing:room');
+  });
+
   test('inviteToSyncRoom delegates to room manager', () async {
     when(() => mockRoomManager.inviteUser('@user:server'))
         .thenAnswer((_) async {});
@@ -529,11 +548,114 @@ void main() {
     await expectation;
   });
 
+  test('incoming runner stream publishes state on listen', () async {
+    final runner = MockKeyVerificationRunner();
+    service.incomingKeyVerificationRunner = runner;
+    when(() => runner.publishState()).thenAnswer((_) {});
+
+    final subscription =
+        service.incomingKeyVerificationRunnerStream.listen((_) {});
+
+    await Future<void>.microtask(() {});
+    await subscription.cancel();
+
+    verify(() => runner.publishState()).called(1);
+  });
+
   test('getUnverifiedDevices delegates to gateway', () {
     final deviceKeys = [MockDeviceKeys(), MockDeviceKeys()];
     when(() => mockGateway.unverifiedDevices()).thenReturn(deviceKeys);
 
     expect(service.getUnverifiedDevices(), deviceKeys);
+  });
+
+  test('incrementSentCount updates metrics and emits stats', () async {
+    service.messageCounts['sent'] = 2;
+    final statsFuture = expectLater(
+      service.messageCountsController.stream,
+      emits(
+        isA<MatrixStats>()
+            .having((stats) => stats.sentCount, 'sentCount', 1)
+            .having(
+              (stats) => stats.messageCounts['sent'],
+              'messageCounts[sent]',
+              2,
+            ),
+      ),
+    );
+
+    service.incrementSentCount();
+
+    expect(service.sentCount, 1);
+    await statsFuture;
+  });
+
+  test('constructor throws when syncEngine lifecycle coordinator mismatched',
+      () {
+    final mismatchedCoordinator = MockSyncLifecycleCoordinator();
+    final engineCoordinator = MockSyncLifecycleCoordinator();
+    final mockSyncEngine = MockSyncEngine();
+    when(() => mockSyncEngine.lifecycleCoordinator)
+        .thenReturn(engineCoordinator);
+
+    expect(
+      () => MatrixService(
+        gateway: mockGateway,
+        loggingService: mockLoggingService,
+        activityGate: mockActivityGate,
+        messageSender: mockMessageSender,
+        journalDb: mockJournalDb,
+        settingsDb: mockSettingsDb,
+        readMarkerService: mockReadMarkerService,
+        eventProcessor: mockEventProcessor,
+        secureStorage: mockSecureStorage,
+        roomManager: mockRoomManager,
+        sessionManager: mockSessionManager,
+        timelineListener: mockTimelineListener,
+        lifecycleCoordinator: mismatchedCoordinator,
+        syncEngine: mockSyncEngine,
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('uses injected syncEngine when lifecycle coordinator matches', () async {
+    final sharedCoordinator = MockSyncLifecycleCoordinator();
+    final mockSyncEngine = MockSyncEngine();
+    when(() => mockSyncEngine.lifecycleCoordinator)
+        .thenReturn(sharedCoordinator);
+    when(
+      () => mockSyncEngine.connect(
+        shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(() => mockSyncEngine.dispose()).thenAnswer((_) async {});
+
+    final serviceWithEngine = MatrixService(
+      gateway: mockGateway,
+      loggingService: mockLoggingService,
+      activityGate: mockActivityGate,
+      messageSender: mockMessageSender,
+      journalDb: mockJournalDb,
+      settingsDb: mockSettingsDb,
+      readMarkerService: mockReadMarkerService,
+      eventProcessor: mockEventProcessor,
+      secureStorage: mockSecureStorage,
+      roomManager: mockRoomManager,
+      sessionManager: mockSessionManager,
+      timelineListener: mockTimelineListener,
+      lifecycleCoordinator: sharedCoordinator,
+      syncEngine: mockSyncEngine,
+    );
+
+    final result = await serviceWithEngine.connect();
+
+    expect(result, isTrue);
+    verify(
+      () => mockSyncEngine.connect(shouldAttemptLogin: false),
+    ).called(1);
+    await serviceWithEngine.dispose();
+    verify(() => mockSyncEngine.dispose()).called(1);
   });
 
   group('sendMatrixMsg', () {
@@ -613,6 +735,36 @@ void main() {
       expect(capturedContext.syncRoom, currentRoom);
       expect(capturedContext.unverifiedDevices, same(devices));
       verify(() => mockClient.getRoomById('!override:room')).called(1);
+    });
+
+    test('increments sent count when message sender completes', () async {
+      when(
+        () => mockMessageSender.sendMatrixMessage(
+          message: any(named: 'message'),
+          context: any(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onSent = invocation.namedArguments[#onSent] as void Function();
+        onSent();
+        return true;
+      });
+      final statsFuture = expectLater(
+        service.messageCountsController.stream,
+        emits(
+          isA<MatrixStats>().having(
+            (stats) => stats.sentCount,
+            'sentCount',
+            1,
+          ),
+        ),
+      );
+
+      final result = await service.sendMatrixMsg(message);
+
+      expect(result, isTrue);
+      await statsFuture;
+      expect(service.sentCount, 1);
     });
   });
 

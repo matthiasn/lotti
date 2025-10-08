@@ -162,6 +162,66 @@ void main() {
     ).called(1);
   });
 
+  test('returns false when text message send returns null', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => null);
+
+    final result = await sender.sendMatrixMessage(
+      message: const SyncMessage.aiConfigDelete(id: 'abc'),
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isFalse);
+    verify(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).called(1);
+    verifyNever(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    );
+  });
+
+  test('logs and returns false when sending text message throws', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenThrow(Exception('network down'));
+
+    final result = await sender.sendMatrixMessage(
+      message: const SyncMessage.aiConfigDelete(id: 'abc'),
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isFalse);
+    verify(
+      () => loggingService.captureException(
+        any<Object>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).called(1);
+  });
+
   test('sends text message and invokes callback once', () async {
     when(
       () => room.sendTextEvent(
@@ -478,6 +538,55 @@ void main() {
     expect(capturedFile!.name, 'test.json');
   });
 
+  test('returns false when journal entity json cannot be decoded', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => 'event-id');
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
+
+    const jsonPath = '/entries/bad.json';
+    File('${documentsDirectory.path}$jsonPath')
+      ..createSync(recursive: true)
+      ..writeAsStringSync('{"invalid": "json"'); // missing closing brace
+
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.journalEntity(
+        id: 'entry',
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'device': 1}),
+        status: SyncEntryStatus.initial,
+      ),
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isFalse);
+    verify(
+      () => loggingService.captureException(
+        any<Object>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.decode',
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).called(1);
+    verify(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).called(1);
+  });
+
   test('resends audio attachment when resend flag true on update status',
       () async {
     when(
@@ -609,5 +718,72 @@ void main() {
     );
 
     expect(callbackCount, 0);
+  });
+
+  test('returns false when attachment file is missing', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => 'event-id');
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
+    when(() => journalDb.getConfigFlag(resendAttachments))
+        .thenAnswer((_) async => true);
+
+    final sampleDate = DateTime.utc(2024, 1, 1);
+    final metadata = Metadata(
+      id: 'entry',
+      createdAt: sampleDate,
+      updatedAt: sampleDate,
+      dateFrom: sampleDate,
+      dateTo: sampleDate,
+      vectorClock: VectorClock({'device': 1}),
+    );
+    final imageData = ImageData(
+      capturedAt: sampleDate,
+      imageId: 'missing-image',
+      imageFile: 'missing.jpg',
+      imageDirectory: '/images/',
+    );
+
+    final journalEntity = JournalEntity.journalImage(
+      meta: metadata,
+      data: imageData,
+      entryText: const EntryText(plainText: 'Missing attachment'),
+    );
+
+    const jsonPath = '/entries/missing.json';
+    File('${documentsDirectory.path}$jsonPath')
+      ..createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.journalEntity(
+        id: 'entry',
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'device': 1}),
+        status: SyncEntryStatus.initial,
+      ),
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isFalse);
+    verify(
+      () => loggingService.captureException(
+        any<Object>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).called(1);
   });
 }
