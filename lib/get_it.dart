@@ -252,3 +252,7 @@ Future<void> _checkAndRemoveActionItemSuggestions() async {
     }
   }
 }
+
+@visibleForTesting
+Future<void> checkAndRemoveActionItemSuggestionsForTesting() =>
+    _checkAndRemoveActionItemSuggestions();
