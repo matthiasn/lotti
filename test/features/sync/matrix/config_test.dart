@@ -8,7 +8,6 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -24,18 +23,16 @@ void main() {
   late MockSecureStorage mockSecureStorage;
   late MatrixSessionManager sessionManager;
   late MockMatrixSyncGateway mockGateway;
+  late MockLoggingService mockLoggingService;
 
   setUp(() {
     mockSecureStorage = MockSecureStorage();
-    getIt
-      ..reset()
-      ..allowReassignment = true
-      ..registerSingleton<SecureStorage>(mockSecureStorage)
-      ..registerSingleton<LoggingService>(MockLoggingService());
+    mockGateway = MockMatrixSyncGateway();
+    mockLoggingService = MockLoggingService();
     sessionManager = MatrixSessionManager(
-      gateway: mockGateway = MockMatrixSyncGateway(),
+      gateway: mockGateway,
       roomManager: MockSyncRoomManager(),
-      loggingService: getIt<LoggingService>(),
+      loggingService: mockLoggingService,
     );
   });
 
@@ -47,7 +44,10 @@ void main() {
     );
     sessionManager.matrixConfig = config;
 
-    final result = await loadMatrixConfig(session: sessionManager);
+    final result = await loadMatrixConfig(
+      session: sessionManager,
+      storage: mockSecureStorage,
+    );
 
     expect(result, same(config));
     verifyNever(() => mockSecureStorage.read(key: matrixConfigKey));
@@ -62,7 +62,10 @@ void main() {
     when(() => mockSecureStorage.read(key: matrixConfigKey))
         .thenAnswer((_) async => jsonEncode(config));
 
-    final result = await loadMatrixConfig(session: sessionManager);
+    final result = await loadMatrixConfig(
+      session: sessionManager,
+      storage: mockSecureStorage,
+    );
 
     expect(result, equals(config));
     expect(sessionManager.matrixConfig, equals(config));
@@ -72,10 +75,26 @@ void main() {
     when(() => mockSecureStorage.read(key: matrixConfigKey))
         .thenAnswer((_) async => null);
 
-    final result = await loadMatrixConfig(session: sessionManager);
+    final result = await loadMatrixConfig(
+      session: sessionManager,
+      storage: mockSecureStorage,
+    );
 
     expect(result, isNull);
     expect(sessionManager.matrixConfig, isNull);
+  });
+
+  test('loadMatrixConfig throws when storage contains invalid json', () async {
+    when(() => mockSecureStorage.read(key: matrixConfigKey))
+        .thenAnswer((_) async => '{invalid json');
+
+    expect(
+      () => loadMatrixConfig(
+        session: sessionManager,
+        storage: mockSecureStorage,
+      ),
+      throwsA(isA<FormatException>()),
+    );
   });
 
   test('setMatrixConfig persists config to secure storage', () async {
@@ -89,7 +108,11 @@ void main() {
           value: jsonEncode(config),
         )).thenAnswer((_) async {});
 
-    await setMatrixConfig(config, session: sessionManager);
+    await setMatrixConfig(
+      config,
+      session: sessionManager,
+      storage: mockSecureStorage,
+    );
 
     expect(sessionManager.matrixConfig, equals(config));
     verify(
@@ -111,7 +134,10 @@ void main() {
         .thenAnswer((_) async {});
     when(() => mockGateway.logout()).thenAnswer((_) async {});
 
-    await deleteMatrixConfig(session: sessionManager);
+    await deleteMatrixConfig(
+      session: sessionManager,
+      storage: mockSecureStorage,
+    );
 
     expect(sessionManager.matrixConfig, isNull);
     verify(() => mockSecureStorage.delete(key: matrixConfigKey)).called(1);

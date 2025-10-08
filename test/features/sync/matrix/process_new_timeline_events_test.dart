@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -27,8 +26,6 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
-class MockSettingsDb extends Mock implements SettingsDb {}
-
 class MockEvent extends Mock implements Event {}
 
 class FakeClient extends Fake implements Client {}
@@ -36,8 +33,6 @@ class FakeClient extends Fake implements Client {}
 class FakeTimeline extends Fake implements Timeline {}
 
 class FakeEvent extends Fake implements Event {}
-
-class FakeSettingsDb extends Fake implements SettingsDb {}
 
 class FakeJournalDb extends Fake implements JournalDb {}
 
@@ -72,7 +67,6 @@ void main() {
     registerFallbackValue(FakeClient());
     registerFallbackValue(FakeTimeline());
     registerFallbackValue(FakeEvent());
-    registerFallbackValue(FakeSettingsDb());
     registerFallbackValue(FakeJournalDb());
   });
 
@@ -86,7 +80,6 @@ void main() {
     late MockSyncReadMarkerService readMarkerService;
     late MockSyncEventProcessor eventProcessor;
     late MockJournalDb journalDb;
-    late MockSettingsDb settingsDb;
 
     setUp(() {
       loggingService = MockLoggingService();
@@ -97,7 +90,6 @@ void main() {
       readMarkerService = MockSyncReadMarkerService();
       eventProcessor = MockSyncEventProcessor();
       journalDb = MockJournalDb();
-      settingsDb = MockSettingsDb();
 
       context = TestTimelineContext(
         loggingService: loggingService,
@@ -125,7 +117,6 @@ void main() {
           client: any<Client>(named: 'client'),
           timeline: any<Timeline>(named: 'timeline'),
           eventId: any<String>(named: 'eventId'),
-          overriddenSettingsDb: any<SettingsDb?>(named: 'overriddenSettingsDb'),
         ),
       ).thenAnswer((_) async {});
       when(
@@ -151,9 +142,8 @@ void main() {
 
       await processNewTimelineEvents(
         listener: context,
-        overriddenJournalDb: journalDb,
-        overriddenLoggingService: loggingService,
-        overriddenSettingsDb: settingsDb,
+        journalDb: journalDb,
+        loggingService: loggingService,
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
       );
@@ -164,8 +154,6 @@ void main() {
             client: any<Client>(named: 'client'),
             timeline: any<Timeline>(named: 'timeline'),
             eventId: any<String>(named: 'eventId'),
-            overriddenSettingsDb:
-                any<SettingsDb?>(named: 'overriddenSettingsDb'),
           ));
       expect(context.lastReadEventContextId, isNull);
     });
@@ -199,9 +187,8 @@ void main() {
 
       await processNewTimelineEvents(
         listener: context,
-        overriddenJournalDb: journalDb,
-        overriddenLoggingService: loggingService,
-        overriddenSettingsDb: settingsDb,
+        journalDb: journalDb,
+        loggingService: loggingService,
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
       );
@@ -227,9 +214,8 @@ void main() {
 
       await processNewTimelineEvents(
         listener: context,
-        overriddenJournalDb: journalDb,
-        overriddenLoggingService: loggingService,
-        overriddenSettingsDb: settingsDb,
+        journalDb: journalDb,
+        loggingService: loggingService,
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
       );

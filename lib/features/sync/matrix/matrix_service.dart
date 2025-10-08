@@ -5,10 +5,21 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/config.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
+import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
+import 'package:lotti/features/sync/matrix/stats.dart';
+import 'package:lotti/features/sync/matrix/sync_engine.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/features/user_activity/state/user_activity_service.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -16,39 +27,42 @@ import 'package:matrix/matrix.dart';
 class MatrixService {
   MatrixService({
     required MatrixSyncGateway gateway,
-    UserActivityGate? activityGate,
+    required LoggingService loggingService,
+    required UserActivityGate activityGate,
+    required MatrixMessageSender messageSender,
+    required JournalDb journalDb,
+    required SettingsDb settingsDb,
+    required SyncReadMarkerService readMarkerService,
+    required SyncEventProcessor eventProcessor,
+    required SecureStorage secureStorage,
+    bool ownsActivityGate = false,
     MatrixConfig? matrixConfig,
     String? deviceDisplayName,
-    JournalDb? overriddenJournalDb,
-    SettingsDb? overriddenSettingsDb,
-    LoggingService? overriddenLoggingService,
     SyncRoomManager? roomManager,
     MatrixSessionManager? sessionManager,
     MatrixTimelineListener? timelineListener,
     SyncLifecycleCoordinator? lifecycleCoordinator,
     SyncEngine? syncEngine,
   })  : _gateway = gateway,
-        _loggingService = overriddenLoggingService ?? getIt<LoggingService>(),
-        _activityGate = activityGate ??
-            (getIt.isRegistered<UserActivityGate>()
-                ? getIt<UserActivityGate>()
-                : UserActivityGate(
-                    activityService: getIt<UserActivityService>(),
-                  )),
-        _ownsActivityGate = activityGate == null,
+        _loggingService = loggingService,
+        _activityGate = activityGate,
+        _messageSender = messageSender,
+        _journalDb = journalDb,
+        _settingsDb = settingsDb,
+        _readMarkerService = readMarkerService,
+        _eventProcessor = eventProcessor,
+        _secureStorage = secureStorage,
+        _ownsActivityGate = ownsActivityGate,
         keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast(),
         messageCountsController = StreamController<MatrixStats>.broadcast(),
         incomingKeyVerificationController =
             StreamController<KeyVerification>.broadcast() {
-    final settingsDb = overriddenSettingsDb ?? getIt<SettingsDb>();
-    final journalDb = overriddenJournalDb ?? getIt<JournalDb>();
-
     _roomManager = roomManager ??
         sessionManager?.roomManager ??
         SyncRoomManager(
           gateway: _gateway,
-          settingsDb: settingsDb,
+          settingsDb: _settingsDb,
           loggingService: _loggingService,
         );
     _sessionManager = sessionManager ??
@@ -71,8 +85,10 @@ class MatrixService {
           roomManager: _roomManager,
           loggingService: _loggingService,
           activityGate: _activityGate,
-          overriddenJournalDb: journalDb,
-          overriddenSettingsDb: settingsDb,
+          journalDb: _journalDb,
+          settingsDb: _settingsDb,
+          readMarkerService: _readMarkerService,
+          eventProcessor: _eventProcessor,
         );
 
     if (syncEngine != null) {
@@ -130,6 +146,12 @@ class MatrixService {
   final MatrixSyncGateway _gateway;
   final LoggingService _loggingService;
   final UserActivityGate _activityGate;
+  final MatrixMessageSender _messageSender;
+  final JournalDb _journalDb;
+  final SettingsDb _settingsDb;
+  final SyncReadMarkerService _readMarkerService;
+  final SyncEventProcessor _eventProcessor;
+  final SecureStorage _secureStorage;
   final bool _ownsActivityGate;
 
   late final SyncRoomManager _roomManager;
@@ -167,6 +189,16 @@ class MatrixService {
   int sentCount = 0;
 
   final StreamController<MatrixStats> messageCountsController;
+  void incrementSentCount() {
+    sentCount = sentCount + 1;
+    messageCountsController.add(
+      MatrixStats(
+        messageCounts: messageCounts,
+        sentCount: sentCount,
+      ),
+    );
+  }
+
   KeyVerificationRunner? keyVerificationRunner;
   KeyVerificationRunner? incomingKeyVerificationRunner;
   final StreamController<KeyVerificationRunner> keyVerificationController;
@@ -215,6 +247,29 @@ class MatrixService {
       'Sync lifecycle paused (logged out).',
       domain: 'MATRIX_SERVICE',
       subDomain: 'logoutLifecycle',
+    );
+  }
+
+  Future<bool> sendMatrixMsg(
+    SyncMessage syncMessage, {
+    String? myRoomId,
+  }) {
+    var targetRoom = syncRoom;
+    var targetRoomId = syncRoomId;
+
+    if (myRoomId != null) {
+      targetRoomId = myRoomId;
+      targetRoom = client.getRoomById(myRoomId) ?? targetRoom;
+    }
+
+    return _messageSender.sendMatrixMessage(
+      message: syncMessage,
+      context: MatrixMessageContext(
+        syncRoomId: targetRoomId,
+        syncRoom: targetRoom,
+        unverifiedDevices: getUnverifiedDevices(),
+      ),
+      onSent: incrementSentCount,
     );
   }
 
@@ -343,9 +398,17 @@ class MatrixService {
     return diagnostics;
   }
 
-  Future<MatrixConfig?> loadConfig() =>
-      loadMatrixConfig(session: _sessionManager);
-  Future<void> deleteConfig() => deleteMatrixConfig(session: _sessionManager);
-  Future<void> setConfig(MatrixConfig config) =>
-      setMatrixConfig(config, session: _sessionManager);
+  Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
+        session: _sessionManager,
+        storage: _secureStorage,
+      );
+  Future<void> deleteConfig() => deleteMatrixConfig(
+        session: _sessionManager,
+        storage: _secureStorage,
+      );
+  Future<void> setConfig(MatrixConfig config) => setMatrixConfig(
+        config,
+        session: _sessionManager,
+        storage: _secureStorage,
+      );
 }

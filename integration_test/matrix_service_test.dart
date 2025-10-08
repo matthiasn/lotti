@@ -15,12 +15,16 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
+import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/send_message.dart';
+import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -33,6 +37,53 @@ import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
 import '../test/utils/utils.dart';
+
+MatrixService _createMatrixService({
+  required MatrixConfig config,
+  required MatrixSyncGateway gateway,
+  required LoggingService loggingService,
+  required JournalDb journalDb,
+  required SettingsDb settingsDb,
+  required SecureStorage secureStorage,
+  required String deviceName,
+  required UserActivityService activityService,
+  required Directory documentsDirectory,
+  required UpdateNotifications updateNotifications,
+  required AiConfigRepository aiConfigRepository,
+}) {
+  final activityGate = UserActivityGate(
+    activityService: activityService,
+  );
+  final messageSender = MatrixMessageSender(
+    loggingService: loggingService,
+    journalDb: journalDb,
+    documentsDirectory: documentsDirectory,
+  );
+  final readMarkerService = SyncReadMarkerService(
+    settingsDb: settingsDb,
+    loggingService: loggingService,
+  );
+  final eventProcessor = SyncEventProcessor(
+    loggingService: loggingService,
+    updateNotifications: updateNotifications,
+    aiConfigRepository: aiConfigRepository,
+  );
+
+  return MatrixService(
+    matrixConfig: config,
+    gateway: gateway,
+    loggingService: loggingService,
+    activityGate: activityGate,
+    messageSender: messageSender,
+    journalDb: journalDb,
+    settingsDb: settingsDb,
+    readMarkerService: readMarkerService,
+    eventProcessor: eventProcessor,
+    secureStorage: secureStorage,
+    deviceDisplayName: deviceName,
+    ownsActivityGate: true,
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -50,6 +101,10 @@ void main() {
     drift.driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
     final mockUpdateNotifications = MockUpdateNotifications();
+    late LoggingService sharedLoggingService;
+    late UserActivityService sharedUserActivityService;
+    late Directory sharedDocumentsDirectory;
+    late AiConfigRepository sharedAiConfigRepository;
 
     when(() => mockUpdateNotifications.updateStream).thenAnswer(
       (_) => Stream<Set<String>>.fromIterable([]),
@@ -58,6 +113,16 @@ void main() {
     when(
       () => mockUpdateNotifications.notify(any()),
     ).thenAnswer((_) {});
+    when(() => secureStorageMock.read(key: any(named: 'key')))
+        .thenAnswer((_) async => null);
+    when(
+      () => secureStorageMock.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => secureStorageMock.delete(key: any(named: 'key')))
+        .thenAnswer((_) async {});
 
     final aliceDb = JournalDb(
       overriddenFilename: 'alice_db.sqlite',
@@ -117,21 +182,25 @@ void main() {
       final docDir = Directory('${tmpDir.path}/${uuid.v1()}')
         ..createSync(recursive: true);
       debugPrint('Created temporary docDir ${docDir.path}');
+      sharedDocumentsDirectory = docDir;
 
       aiConfigDb = AiConfigDb(inMemoryDatabase: true);
+      sharedAiConfigRepository = AiConfigRepository(aiConfigDb);
+      sharedLoggingService = LoggingService();
+      sharedUserActivityService = UserActivityService();
 
       // Register essential dependencies
       getIt
-        ..registerSingleton<Directory>(docDir)
+        ..registerSingleton<Directory>(sharedDocumentsDirectory)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
-        ..registerSingleton<LoggingService>(LoggingService())
+        ..registerSingleton<LoggingService>(sharedLoggingService)
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UserActivityService>(sharedUserActivityService)
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<AiConfigDb>(aiConfigDb)
-        ..registerSingleton<AiConfigRepository>(AiConfigRepository(aiConfigDb));
+        ..registerSingleton<AiConfigRepository>(sharedAiConfigRepository);
 
       // Ensure all GetIt instances are properly initialized
       // Give time for any async initializations to complete
@@ -165,12 +234,20 @@ void main() {
 
         final aliceClient = await createMatrixClient(dbName: 'Alice');
         final aliceGateway = MatrixSdkGateway(client: aliceClient);
-        final alice = MatrixService(
-          matrixConfig: config1,
+        final loggingService = sharedLoggingService;
+        final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
+        final alice = _createMatrixService(
+          config: config1,
           gateway: aliceGateway,
-          deviceDisplayName: 'Alice',
-          overriddenJournalDb: aliceDb,
-          overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
+          loggingService: loggingService,
+          journalDb: aliceDb,
+          settingsDb: aliceSettingsDb,
+          secureStorage: secureStorageMock,
+          deviceName: 'Alice',
+          activityService: sharedUserActivityService,
+          documentsDirectory: sharedDocumentsDirectory,
+          updateNotifications: mockUpdateNotifications,
+          aiConfigRepository: sharedAiConfigRepository,
         );
 
         // Allow time for constructor initialization to complete
@@ -196,12 +273,19 @@ void main() {
         debugPrint('\n--- Bob goes live');
         final bobClient = await createMatrixClient(dbName: 'Bob');
         final bobGateway = MatrixSdkGateway(client: bobClient);
-        final bob = MatrixService(
-          matrixConfig: config2,
+        final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
+        final bob = _createMatrixService(
+          config: config2,
           gateway: bobGateway,
-          deviceDisplayName: 'Bob',
-          overriddenJournalDb: bobDb,
-          overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
+          loggingService: sharedLoggingService,
+          journalDb: bobDb,
+          settingsDb: bobSettingsDb,
+          secureStorage: secureStorageMock,
+          deviceName: 'Bob',
+          activityService: sharedUserActivityService,
+          documentsDirectory: sharedDocumentsDirectory,
+          updateNotifications: mockUpdateNotifications,
+          aiConfigRepository: sharedAiConfigRepository,
         );
 
         // Allow time for constructor initialization to complete

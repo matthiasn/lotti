@@ -10,13 +10,11 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/send_message.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -26,30 +24,42 @@ import 'package:lotti/utils/image_utils.dart';
 
 class OutboxService {
   OutboxService({
-    SyncDatabase? syncDatabase,
-    LoggingService? loggingService,
+    required SyncDatabase syncDatabase,
+    required LoggingService loggingService,
+    required VectorClockService vectorClockService,
+    required JournalDb journalDb,
+    required Directory documentsDirectory,
+    required UserActivityService userActivityService,
     UserActivityGate? activityGate,
     OutboxRepository? repository,
     OutboxMessageSender? messageSender,
     OutboxProcessor? processor,
-    int? maxRetries,
+    int maxRetries = 10,
     MatrixService? matrixService,
-  })  : _syncDatabase = syncDatabase ?? getIt<SyncDatabase>(),
-        _loggingService = loggingService ?? getIt<LoggingService>(),
+    bool? ownsActivityGate,
+  })  : _syncDatabase = syncDatabase,
+        _loggingService = loggingService,
+        _vectorClockService = vectorClockService,
+        _journalDb = journalDb,
+        _documentsDirectory = documentsDirectory,
         _activityGate = activityGate ??
-            (getIt.isRegistered<UserActivityGate>()
-                ? getIt<UserActivityGate>()
-                : UserActivityGate(
-                    activityService: getIt<UserActivityService>(),
-                  )),
-        _ownsActivityGate = activityGate == null {
+            UserActivityGate(
+              activityService: userActivityService,
+            ),
+        _ownsActivityGate = ownsActivityGate ?? activityGate == null {
+    // Runtime validation that works in release builds
+    if (messageSender == null && matrixService == null) {
+      throw ArgumentError(
+        'Either messageSender or matrixService must be provided.',
+      );
+    }
+
     _repository = repository ??
         DatabaseOutboxRepository(
-          _syncDatabase,
-          maxRetries: maxRetries ?? 10,
+          syncDatabase,
+          maxRetries: maxRetries,
         );
-    _messageSender = messageSender ??
-        MatrixOutboxMessageSender(matrixService ?? getIt<MatrixService>());
+    _messageSender = messageSender ?? MatrixOutboxMessageSender(matrixService!);
     _processor = processor ??
         OutboxProcessor(
           repository: _repository,
@@ -74,6 +84,9 @@ class OutboxService {
 
   final LoggingService _loggingService;
   final SyncDatabase _syncDatabase;
+  final VectorClockService _vectorClockService;
+  final JournalDb _journalDb;
+  final Directory _documentsDirectory;
   final UserActivityGate _activityGate;
   final bool _ownsActivityGate;
   late final OutboxRepository _repository;
@@ -99,11 +112,10 @@ class OutboxService {
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      final vectorClockService = getIt<VectorClockService>();
-      final hostHash = await vectorClockService.getHostHash();
-      final host = await vectorClockService.getHost();
+      final hostHash = await _vectorClockService.getHostHash();
+      final host = await _vectorClockService.getHost();
       final jsonString = json.encode(syncMessage);
-      final docDir = getDocumentsDirectory();
+      final docDir = _documentsDirectory;
 
       final commonFields = OutboxCompanion(
         status: Value(OutboxStatus.pending.index),
@@ -127,7 +139,12 @@ class OutboxService {
           },
           journalImage: (JournalImage journalImage) {
             if (syncMessage.status == SyncEntryStatus.initial) {
-              attachment = File(getFullImagePath(journalImage));
+              attachment = File(
+                getFullImagePath(
+                  journalImage,
+                  documentsDirectory: docDir.path,
+                ),
+              );
             }
           },
           orElse: () {},
@@ -193,7 +210,7 @@ class OutboxService {
 
   Future<void> sendNext() async {
     try {
-      final enableMatrix = await getIt<JournalDb>().getConfigFlag(
+      final enableMatrix = await _journalDb.getConfigFlag(
         enableMatrixFlag,
       );
 

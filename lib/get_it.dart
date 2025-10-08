@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
@@ -17,8 +18,12 @@ import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
+import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -34,6 +39,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:meta/meta.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -91,6 +97,17 @@ void _safeLog(String message, {required bool isError}) {
   }
 }
 
+@visibleForTesting
+void registerLazyServiceForTesting<T extends Object>(
+  T Function() factory,
+  String serviceName,
+) =>
+    _registerLazyServiceSafely(factory, serviceName);
+
+@visibleForTesting
+void safeLogForTesting(String message, {required bool isError}) =>
+    _safeLog(message, isError: isError);
+
 Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
@@ -109,21 +126,62 @@ Future<void> registerSingletons() async {
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(TimeService());
 
+  final aiConfigRepository = AiConfigRepository(AiConfigDb());
+  getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
+
   await vod.init();
   final client = await createMatrixClient();
+  final loggingService = getIt<LoggingService>();
+  final userActivityService = getIt<UserActivityService>();
+  final userActivityGate = getIt<UserActivityGate>();
+  final journalDb = getIt<JournalDb>();
+  final settingsDb = getIt<SettingsDb>();
+  final documentsDirectory = getIt<Directory>();
+  final syncDatabase = getIt<SyncDatabase>();
+  final vectorClockService = getIt<VectorClockService>();
+  final secureStorage = getIt<SecureStorage>();
   final matrixGateway = MatrixSdkGateway(client: client);
+  final matrixMessageSender = MatrixMessageSender(
+    loggingService: loggingService,
+    journalDb: journalDb,
+    documentsDirectory: documentsDirectory,
+  );
+  final readMarkerService = SyncReadMarkerService(
+    settingsDb: settingsDb,
+    loggingService: loggingService,
+  );
+  final syncEventProcessor = SyncEventProcessor(
+    loggingService: loggingService,
+    updateNotifications: getIt<UpdateNotifications>(),
+    aiConfigRepository: aiConfigRepository,
+  );
   final matrixService = MatrixService(
     gateway: matrixGateway,
+    loggingService: loggingService,
+    activityGate: userActivityGate,
+    messageSender: matrixMessageSender,
+    journalDb: journalDb,
+    settingsDb: settingsDb,
+    readMarkerService: readMarkerService,
+    eventProcessor: syncEventProcessor,
+    secureStorage: secureStorage,
   );
 
   getIt
     ..registerSingleton<MatrixSyncGateway>(matrixGateway)
+    ..registerSingleton<MatrixMessageSender>(matrixMessageSender)
+    ..registerSingleton<SyncReadMarkerService>(readMarkerService)
+    ..registerSingleton<SyncEventProcessor>(syncEventProcessor)
     ..registerSingleton<MatrixService>(matrixService)
     ..registerSingleton<OutboxService>(
       OutboxService(
-        syncDatabase: getIt<SyncDatabase>(),
-        loggingService: getIt<LoggingService>(),
-        activityGate: getIt<UserActivityGate>(),
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        activityGate: userActivityGate,
         matrixService: matrixService,
       ),
     )
@@ -139,7 +197,6 @@ Future<void> registerSingletons() async {
     )
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<Maintenance>(Maintenance())
-    ..registerSingleton<AiConfigRepository>(AiConfigRepository(AiConfigDb()))
     ..registerSingleton<NavService>(NavService());
 
   // Register services that might fail in sandboxed environments using lazy loading
@@ -195,3 +252,7 @@ Future<void> _checkAndRemoveActionItemSuggestions() async {
     }
   }
 }
+
+@visibleForTesting
+Future<void> checkAndRemoveActionItemSuggestionsForTesting() =>
+    _checkAndRemoveActionItemSuggestions();

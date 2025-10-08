@@ -117,7 +117,6 @@ void main() {
           client: any<Client>(named: 'client'),
           timeline: any<Timeline>(named: 'timeline'),
           eventId: any<String>(named: 'eventId'),
-          overriddenSettingsDb: any<SettingsDb>(named: 'overriddenSettingsDb'),
         )).thenAnswer((_) async {});
 
     final listener = MatrixTimelineListener(
@@ -125,8 +124,8 @@ void main() {
       roomManager: roomManager,
       loggingService: loggingService,
       activityGate: activityGate,
-      overriddenJournalDb: journalDb,
-      overriddenSettingsDb: settingsDb,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
       readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
     );

@@ -1,6 +1,7 @@
 // ignore_for_file: unnecessary_lambdas
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -9,12 +10,20 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
+import 'package:lotti/features/sync/matrix/sync_engine.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -41,6 +50,10 @@ class MockClient extends Mock implements Client {}
 
 class FakeMatrixClient extends Fake implements Client {}
 
+class FakeTimeline extends Fake implements Timeline {}
+
+class FakeEvent extends Fake implements Event {}
+
 class MockRoomSummary extends Mock implements RoomSummary {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
@@ -52,6 +65,29 @@ class MockRoom extends Mock implements Room {}
 class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 class MockKeyVerification extends Mock implements KeyVerification {}
+
+class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
+
+class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
+
+class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
+
+class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
+
+class MockSecureStorage extends Mock implements SecureStorage {}
+
+class MockSyncLifecycleCoordinator extends Mock
+    implements SyncLifecycleCoordinator {}
+
+class MockSyncEngine extends Mock implements SyncEngine {}
+
+void _noop() {}
+
+MatrixMessageContext _createFallbackContext() => const MatrixMessageContext(
+      syncRoomId: null,
+      syncRoom: null,
+      unverifiedDevices: [],
+    );
 
 class TestUserActivityGate extends UserActivityGate {
   TestUserActivityGate(UserActivityService service)
@@ -69,13 +105,21 @@ class TestUserActivityGate extends UserActivityGate {
 class TestableMatrixService extends MatrixService {
   TestableMatrixService({
     required super.gateway,
+    required super.loggingService,
+    required super.activityGate,
+    required super.messageSender,
+    required super.journalDb,
+    required super.settingsDb,
+    required super.readMarkerService,
+    required super.eventProcessor,
+    required super.secureStorage,
     required this.onStartKeyVerification,
     required this.onListenTimeline,
-    super.activityGate,
     super.roomManager,
     super.sessionManager,
     super.timelineListener,
-    super.overriddenLoggingService,
+    super.lifecycleCoordinator,
+    super.syncEngine,
   });
 
   final VoidCallback onStartKeyVerification;
@@ -114,6 +158,11 @@ void main() {
         password: 'pw',
       ),
     );
+    registerFallbackValue(_createFallbackContext());
+    registerFallbackValue(_noop);
+    registerFallbackValue(FakeTimeline());
+    registerFallbackValue(FakeEvent());
+    registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'fallback'));
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel,
             (MethodCall call) async {
@@ -137,6 +186,13 @@ void main() {
   late MockLoggingService mockLoggingService;
   late MockUserActivityGate mockActivityGate;
   late MockClient mockClient;
+  late MockMatrixMessageSender mockMessageSender;
+  late MockSyncReadMarkerService mockReadMarkerService;
+  late MockSyncEventProcessor mockEventProcessor;
+  late MockSecureStorage mockSecureStorage;
+  late MockSettingsDb mockSettingsDb;
+  late MockJournalDb mockJournalDb;
+  MatrixConfig? storedSessionConfig;
   late StreamController<LoginState> loginStateController;
   late MatrixService service;
 
@@ -148,6 +204,23 @@ void main() {
     mockLoggingService = MockLoggingService();
     mockActivityGate = MockUserActivityGate();
     mockClient = MockClient();
+    mockMessageSender = MockMatrixMessageSender();
+    mockReadMarkerService = MockSyncReadMarkerService();
+    mockEventProcessor = MockSyncEventProcessor();
+    mockSettingsDb = MockSettingsDb();
+    mockJournalDb = MockJournalDb();
+    mockSecureStorage = MockSecureStorage();
+
+    storedSessionConfig = null;
+    when(() => mockSessionManager.matrixConfig)
+        .thenAnswer((_) => storedSessionConfig);
+    when(() => mockSessionManager.matrixConfig = any())
+        .thenAnswer((invocation) {
+      storedSessionConfig =
+          invocation.positionalArguments.first as MatrixConfig?;
+      return null;
+    });
+    when(() => mockSessionManager.logout()).thenAnswer((_) async {});
 
     when(() => mockGateway.client).thenReturn(mockClient);
     when(() => mockSessionManager.client).thenReturn(mockClient);
@@ -161,6 +234,36 @@ void main() {
     when(() => mockActivityGate.dispose()).thenAnswer((_) async {});
     when(() => mockRoomManager.inviteRequests)
         .thenAnswer((_) => const Stream<SyncRoomInvite>.empty());
+    when(
+      () => mockMessageSender.sendMatrixMessage(
+        message: any(named: 'message'),
+        context: any(named: 'context'),
+        onSent: any(named: 'onSent'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => mockReadMarkerService.updateReadMarker(
+        client: any(named: 'client'),
+        timeline: any(named: 'timeline'),
+        eventId: any(named: 'eventId'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockEventProcessor.process(
+        event: any(named: 'event'),
+        journalDb: mockJournalDb,
+      ),
+    ).thenAnswer((_) async {});
+    when(() => mockSecureStorage.read(key: any(named: 'key')))
+        .thenAnswer((_) async => null);
+    when(
+      () => mockSecureStorage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => mockSecureStorage.delete(key: any(named: 'key')))
+        .thenAnswer((_) async {});
     loginStateController = StreamController<LoginState>.broadcast();
     when(() => mockGateway.loginStateChanges)
         .thenAnswer((_) => loginStateController.stream);
@@ -170,14 +273,21 @@ void main() {
       ..allowReassignment = true
       ..registerSingleton<UserActivityService>(UserActivityService())
       ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<SettingsDb>(MockSettingsDb())
-      ..registerSingleton<JournalDb>(MockJournalDb())
-      ..registerSingleton<Directory>(Directory.systemTemp);
+      ..registerSingleton<SettingsDb>(mockSettingsDb)
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<Directory>(Directory.systemTemp)
+      ..registerSingleton<SecureStorage>(mockSecureStorage);
 
     service = MatrixService(
       gateway: mockGateway,
+      loggingService: mockLoggingService,
       activityGate: mockActivityGate,
-      overriddenLoggingService: mockLoggingService,
+      messageSender: mockMessageSender,
+      journalDb: mockJournalDb,
+      settingsDb: mockSettingsDb,
+      readMarkerService: mockReadMarkerService,
+      eventProcessor: mockEventProcessor,
+      secureStorage: mockSecureStorage,
       roomManager: mockRoomManager,
       sessionManager: mockSessionManager,
       timelineListener: mockTimelineListener,
@@ -214,6 +324,16 @@ void main() {
 
     expect(result, '!room:server');
     verify(() => mockRoomManager.joinRoom('!room:server')).called(1);
+  });
+
+  test('joinRoom falls back to provided id when manager returns null',
+      () async {
+    when(() => mockRoomManager.joinRoom('!missing:room'))
+        .thenAnswer((_) async => null);
+
+    final result = await service.joinRoom('!missing:room');
+
+    expect(result, '!missing:room');
   });
 
   test('inviteToSyncRoom delegates to room manager', () async {
@@ -307,6 +427,47 @@ void main() {
     verifyNever(() => mockClient.dispose());
   });
 
+  group('config helpers', () {
+    const config = MatrixConfig(
+      homeServer: 'https://example.org',
+      user: '@user:example.org',
+      password: 'pw',
+    );
+
+    test('loadConfig delegates to secure storage', () async {
+      when(() => mockSecureStorage.read(key: matrixConfigKey))
+          .thenAnswer((_) async => jsonEncode(config));
+
+      final result = await service.loadConfig();
+
+      expect(result, equals(config));
+      expect(storedSessionConfig, equals(config));
+      verify(() => mockSecureStorage.read(key: matrixConfigKey)).called(1);
+    });
+
+    test('setConfig writes to secure storage and updates session', () async {
+      await service.setConfig(config);
+
+      expect(storedSessionConfig, equals(config));
+      verify(
+        () => mockSecureStorage.write(
+          key: matrixConfigKey,
+          value: jsonEncode(config),
+        ),
+      ).called(1);
+    });
+
+    test('deleteConfig clears storage and logs out', () async {
+      storedSessionConfig = config;
+
+      await service.deleteConfig();
+
+      expect(storedSessionConfig, isNull);
+      verify(() => mockSecureStorage.delete(key: matrixConfigKey)).called(1);
+      verify(() => mockSessionManager.logout()).called(1);
+    });
+  });
+
   test('getDiagnosticInfo returns expected payload and logs', () async {
     when(() => mockRoomManager.loadPersistedRoomId())
         .thenAnswer((_) async => '!room:server');
@@ -387,11 +548,224 @@ void main() {
     await expectation;
   });
 
+  test('incoming runner stream publishes state on listen', () async {
+    final runner = MockKeyVerificationRunner();
+    service.incomingKeyVerificationRunner = runner;
+    when(() => runner.publishState()).thenAnswer((_) {});
+
+    final subscription =
+        service.incomingKeyVerificationRunnerStream.listen((_) {});
+
+    await Future<void>.microtask(() {});
+    await subscription.cancel();
+
+    verify(() => runner.publishState()).called(1);
+  });
+
   test('getUnverifiedDevices delegates to gateway', () {
     final deviceKeys = [MockDeviceKeys(), MockDeviceKeys()];
     when(() => mockGateway.unverifiedDevices()).thenReturn(deviceKeys);
 
     expect(service.getUnverifiedDevices(), deviceKeys);
+  });
+
+  test('incrementSentCount updates metrics and emits stats', () async {
+    service.messageCounts['sent'] = 2;
+    final statsFuture = expectLater(
+      service.messageCountsController.stream,
+      emits(
+        isA<MatrixStats>()
+            .having((stats) => stats.sentCount, 'sentCount', 1)
+            .having(
+              (stats) => stats.messageCounts['sent'],
+              'messageCounts[sent]',
+              2,
+            ),
+      ),
+    );
+
+    service.incrementSentCount();
+
+    expect(service.sentCount, 1);
+    await statsFuture;
+  });
+
+  test('constructor throws when syncEngine lifecycle coordinator mismatched',
+      () {
+    final mismatchedCoordinator = MockSyncLifecycleCoordinator();
+    final engineCoordinator = MockSyncLifecycleCoordinator();
+    final mockSyncEngine = MockSyncEngine();
+    when(() => mockSyncEngine.lifecycleCoordinator)
+        .thenReturn(engineCoordinator);
+
+    expect(
+      () => MatrixService(
+        gateway: mockGateway,
+        loggingService: mockLoggingService,
+        activityGate: mockActivityGate,
+        messageSender: mockMessageSender,
+        journalDb: mockJournalDb,
+        settingsDb: mockSettingsDb,
+        readMarkerService: mockReadMarkerService,
+        eventProcessor: mockEventProcessor,
+        secureStorage: mockSecureStorage,
+        roomManager: mockRoomManager,
+        sessionManager: mockSessionManager,
+        timelineListener: mockTimelineListener,
+        lifecycleCoordinator: mismatchedCoordinator,
+        syncEngine: mockSyncEngine,
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('uses injected syncEngine when lifecycle coordinator matches', () async {
+    final sharedCoordinator = MockSyncLifecycleCoordinator();
+    final mockSyncEngine = MockSyncEngine();
+    when(() => mockSyncEngine.lifecycleCoordinator)
+        .thenReturn(sharedCoordinator);
+    when(
+      () => mockSyncEngine.connect(
+        shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(() => mockSyncEngine.dispose()).thenAnswer((_) async {});
+
+    final serviceWithEngine = MatrixService(
+      gateway: mockGateway,
+      loggingService: mockLoggingService,
+      activityGate: mockActivityGate,
+      messageSender: mockMessageSender,
+      journalDb: mockJournalDb,
+      settingsDb: mockSettingsDb,
+      readMarkerService: mockReadMarkerService,
+      eventProcessor: mockEventProcessor,
+      secureStorage: mockSecureStorage,
+      roomManager: mockRoomManager,
+      sessionManager: mockSessionManager,
+      timelineListener: mockTimelineListener,
+      lifecycleCoordinator: sharedCoordinator,
+      syncEngine: mockSyncEngine,
+    );
+
+    final result = await serviceWithEngine.connect();
+
+    expect(result, isTrue);
+    verify(
+      () => mockSyncEngine.connect(shouldAttemptLogin: false),
+    ).called(1);
+    await serviceWithEngine.dispose();
+    verify(() => mockSyncEngine.dispose()).called(1);
+  });
+
+  group('sendMatrixMsg', () {
+    late SyncMessage message;
+    late MockRoom currentRoom;
+    late List<DeviceKeys> devices;
+
+    setUp(() {
+      message = const SyncMessage.aiConfigDelete(id: 'abc');
+      currentRoom = MockRoom();
+      devices = [MockDeviceKeys()];
+      when(() => mockGateway.unverifiedDevices()).thenReturn(devices);
+      when(() => mockRoomManager.currentRoom).thenReturn(currentRoom);
+      when(() => mockRoomManager.currentRoomId).thenReturn('!current:room');
+      when(
+        () => mockMessageSender.sendMatrixMessage(
+          message: any(named: 'message'),
+          context: any(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).thenAnswer((_) async => true);
+    });
+
+    test('uses current sync room when override is null', () async {
+      await service.sendMatrixMsg(message);
+
+      final capturedContext = verify(
+        () => mockMessageSender.sendMatrixMessage(
+          message: message,
+          context: captureAny(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).captured.single as MatrixMessageContext;
+
+      expect(capturedContext.syncRoomId, '!current:room');
+      expect(capturedContext.syncRoom, currentRoom);
+      expect(capturedContext.unverifiedDevices, same(devices));
+      verifyNever(() => mockClient.getRoomById(any()));
+    });
+
+    test('uses room override when available from client', () async {
+      final overrideRoom = MockRoom();
+      when(() => mockClient.getRoomById('!override:room'))
+          .thenReturn(overrideRoom);
+
+      await service.sendMatrixMsg(message, myRoomId: '!override:room');
+
+      final capturedContext = verify(
+        () => mockMessageSender.sendMatrixMessage(
+          message: message,
+          context: captureAny(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).captured.single as MatrixMessageContext;
+
+      expect(capturedContext.syncRoomId, '!override:room');
+      expect(capturedContext.syncRoom, overrideRoom);
+      expect(capturedContext.unverifiedDevices, same(devices));
+      verify(() => mockClient.getRoomById('!override:room')).called(1);
+    });
+
+    test('falls back to current room when override missing from client',
+        () async {
+      when(() => mockClient.getRoomById('!override:room')).thenReturn(null);
+
+      await service.sendMatrixMsg(message, myRoomId: '!override:room');
+
+      final capturedContext = verify(
+        () => mockMessageSender.sendMatrixMessage(
+          message: message,
+          context: captureAny(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).captured.single as MatrixMessageContext;
+
+      expect(capturedContext.syncRoomId, '!override:room');
+      expect(capturedContext.syncRoom, currentRoom);
+      expect(capturedContext.unverifiedDevices, same(devices));
+      verify(() => mockClient.getRoomById('!override:room')).called(1);
+    });
+
+    test('increments sent count when message sender completes', () async {
+      when(
+        () => mockMessageSender.sendMatrixMessage(
+          message: any(named: 'message'),
+          context: any(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onSent = invocation.namedArguments[#onSent] as void Function();
+        onSent();
+        return true;
+      });
+      final statsFuture = expectLater(
+        service.messageCountsController.stream,
+        emits(
+          isA<MatrixStats>().having(
+            (stats) => stats.sentCount,
+            'sentCount',
+            1,
+          ),
+        ),
+      );
+
+      final result = await service.sendMatrixMsg(message);
+
+      expect(result, isTrue);
+      await statsFuture;
+      expect(service.sentCount, 1);
+    });
   });
 
   test('logout ignores timeline when already null', () async {
@@ -508,11 +882,56 @@ void main() {
     when(() => extraTimelineListener.dispose()).thenAnswer((_) async {});
     when(() => extraRoomManager.dispose()).thenAnswer((_) async {});
     when(() => extraSessionManager.dispose()).thenAnswer((_) async {});
+    final extraMessageSender = MockMatrixMessageSender();
+    when(
+      () => extraMessageSender.sendMatrixMessage(
+        message: any(named: 'message'),
+        context: any(named: 'context'),
+        onSent: any(named: 'onSent'),
+      ),
+    ).thenAnswer((_) async => true);
+    final extraReadMarkerService = MockSyncReadMarkerService();
+    when(
+      () => extraReadMarkerService.updateReadMarker(
+        client: any(named: 'client'),
+        timeline: any(named: 'timeline'),
+        eventId: any(named: 'eventId'),
+      ),
+    ).thenAnswer((_) async {});
+    final extraEventProcessor = MockSyncEventProcessor();
+    final extraJournalDb = MockJournalDb();
+    when(
+      () => extraEventProcessor.process(
+        event: any(named: 'event'),
+        journalDb: extraJournalDb,
+      ),
+    ).thenAnswer((_) async {});
+    final extraSettingsDb = MockSettingsDb();
+    final extraSecureStorage = MockSecureStorage();
+    when(() => extraSecureStorage.read(key: any(named: 'key')))
+        .thenAnswer((_) async => null);
+    when(
+      () => extraSecureStorage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => extraSecureStorage.delete(key: any(named: 'key')))
+        .thenAnswer((_) async {});
     final extraService = MatrixService(
       gateway: mockGateway,
+      loggingService: mockLoggingService,
+      activityGate: ownedGate,
+      messageSender: extraMessageSender,
+      journalDb: extraJournalDb,
+      settingsDb: extraSettingsDb,
+      readMarkerService: extraReadMarkerService,
+      eventProcessor: extraEventProcessor,
+      secureStorage: extraSecureStorage,
       roomManager: extraRoomManager,
       sessionManager: extraSessionManager,
       timelineListener: extraTimelineListener,
+      ownsActivityGate: true,
     );
 
     await extraService.dispose();
@@ -767,11 +1186,17 @@ void main() {
       when(() => mockClient.rooms).thenReturn([mockRoom]);
       testService = TestableMatrixService(
         gateway: mockGateway,
+        loggingService: mockLoggingService,
         activityGate: mockActivityGate,
+        messageSender: mockMessageSender,
+        journalDb: mockJournalDb,
+        settingsDb: mockSettingsDb,
+        readMarkerService: mockReadMarkerService,
+        eventProcessor: mockEventProcessor,
+        secureStorage: mockSecureStorage,
         roomManager: mockRoomManager,
         sessionManager: mockSessionManager,
         timelineListener: mockTimelineListener,
-        overriddenLoggingService: mockLoggingService,
         onStartKeyVerification: () => startKeyCalled = true,
         onListenTimeline: () => listenTimelineCalled = true,
       )..matrixConfig = const MatrixConfig(
