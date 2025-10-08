@@ -267,7 +267,8 @@ void main() {
       expect(companion.filePath.value, getRelativeAssetPath(imagePath));
       expect(companion.subject.value, 'hostHash:1');
       expect(companion.status.value, OutboxStatus.pending.index);
-      verify(() => syncDatabase.addOutboxItem(any<OutboxCompanion>())).called(1);
+      verify(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
+          .called(1);
     });
   });
 

@@ -37,7 +37,7 @@ class MatrixMessageSender {
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
-      throw Exception('Unverified Matrix devices found');
+      return false;
     }
 
     final room = context.syncRoom;

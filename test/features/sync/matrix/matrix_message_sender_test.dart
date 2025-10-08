@@ -96,18 +96,17 @@ void main() {
     );
   }
 
-  test('throws when unverified devices are present', () async {
+  test('returns false when unverified devices are present', () async {
     final device = MockDeviceKeys();
     final context = buildContext(devices: [device]);
 
-    await expectLater(
-      sender.sendMatrixMessage(
-        message: const SyncMessage.aiConfigDelete(id: 'abc'),
-        context: context,
-        onSent: () {},
-      ),
-      throwsA(isA<Exception>()),
+    final result = await sender.sendMatrixMessage(
+      message: const SyncMessage.aiConfigDelete(id: 'abc'),
+      context: context,
+      onSent: () {},
     );
+
+    expect(result, isFalse);
     verify(
       () => loggingService.captureException(
         any<Object>(),
