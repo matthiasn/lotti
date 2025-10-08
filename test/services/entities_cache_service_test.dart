@@ -70,7 +70,7 @@ void main() {
       dashboardsController.add([testDashboardConfig]);
 
       // Wait for streams to process
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       // Verify caches are populated
       expect(service.dataTypesById.length, 2);
@@ -93,7 +93,7 @@ void main() {
       final service = EntitiesCacheService();
 
       dataTypesController.add([measurableWater]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final result = service.getDataTypeById(measurableWater.id);
       expect(result, measurableWater);
@@ -103,7 +103,7 @@ void main() {
       final service = EntitiesCacheService();
 
       dataTypesController.add([measurableWater]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final result = service.getDataTypeById('non-existing-id');
       expect(result, isNull);
@@ -113,7 +113,7 @@ void main() {
       final service = EntitiesCacheService();
 
       categoriesController.add([categoryMindfulness]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final result = service.getCategoryById(categoryMindfulness.id);
       expect(result, categoryMindfulness);
@@ -123,7 +123,7 @@ void main() {
       final service = EntitiesCacheService();
 
       categoriesController.add([categoryMindfulness]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final result = service.getCategoryById('non-existing-id');
       expect(result, isNull);
@@ -133,7 +133,7 @@ void main() {
       final service = EntitiesCacheService();
 
       habitsController.add([habitFlossing]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final result = service.getHabitById(habitFlossing.id);
       expect(result, habitFlossing);
@@ -143,7 +143,7 @@ void main() {
       final service = EntitiesCacheService();
 
       habitsController.add([habitFlossing]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final result = service.getHabitById('non-existing-id');
       expect(result, isNull);
@@ -153,7 +153,7 @@ void main() {
       final service = EntitiesCacheService();
 
       dashboardsController.add([testDashboardConfig]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final result = service.getDashboardById(testDashboardConfig.id);
       expect(result, testDashboardConfig);
@@ -163,7 +163,7 @@ void main() {
       final service = EntitiesCacheService();
 
       dashboardsController.add([testDashboardConfig]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final result = service.getDashboardById('non-existing-id');
       expect(result, isNull);
@@ -212,7 +212,7 @@ void main() {
         categoryZ,
         categoryA,
       ]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final result = service.sortedCategories;
 
@@ -231,14 +231,14 @@ void main() {
 
       // Initial data
       dataTypesController.add([measurableWater]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       expect(service.dataTypesById.length, 1);
       expect(service.dataTypesById[measurableWater.id], measurableWater);
 
       // Update with new data
       dataTypesController.add([measurablePullUps, measurableChocolate]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       // Cache should be replaced with new data
       expect(service.dataTypesById.length, 2);
