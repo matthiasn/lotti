@@ -139,7 +139,7 @@ void main() {
       expect(editorStateService.editorStateById[entryId], deltaJson);
     });
 
-    test('saveTempState triggers unsaved stream', () async {
+    test('saveTempState triggers unsaved stream', () {
       const entryId = 'test-entry-id';
       const deltaJson = '{"ops":[{"insert":"new content"}]}';
 
@@ -148,23 +148,16 @@ void main() {
 
       final stream =
           editorStateService.getUnsavedStream(entryId, testEpochDateTime);
-      final emissions = <bool>[];
 
-      final subscription = stream.listen(emissions.add);
-
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      // The stream should first emit `false` (no unsaved changes),
+      // then `true` after saveTempState is called.
+      expectLater(stream, emitsInOrder([false, true]));
 
       editorStateService.saveTempState(
         id: entryId,
         lastSaved: testEpochDateTime,
         json: deltaJson,
       );
-
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      await subscription.cancel();
-
-      expect(emissions, contains(true));
     });
 
     test('entryWasSaved removes delta from cache', () async {
@@ -194,11 +187,10 @@ void main() {
 
       final stream =
           editorStateService.getUnsavedStream(entryId, testEpochDateTime);
-      final emissions = <bool>[];
 
-      final subscription = stream.listen(emissions.add);
-
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      // The stream should first emit `false` (initial state),
+      // then `false` again after entryWasSaved clears unsaved changes.
+      expectLater(stream, emitsInOrder([false, false]));
 
       editorStateService.editorStateById[entryId] =
           '{"ops":[{"insert":"test"}]}';
@@ -212,12 +204,6 @@ void main() {
         lastSaved: testEpochDateTime,
         controller: mockController,
       );
-
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      await subscription.cancel();
-
-      expect(emissions.last, false);
     });
 
     test('entryIsUnsaved returns true when entry has unsaved state', () {
@@ -252,15 +238,10 @@ void main() {
 
       final stream =
           editorStateService.getUnsavedStream(entryId, testEpochDateTime);
-      final emissions = <bool>[];
 
-      final subscription = stream.listen(emissions.add);
+      // The stream should emit `false` initially, then `true` when draft is loaded
+      await expectLater(stream, emitsInOrder([false, true]));
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      await subscription.cancel();
-
-      expect(emissions, contains(true));
       expect(editorStateService.editorStateById[entryId], deltaJson);
     });
 
