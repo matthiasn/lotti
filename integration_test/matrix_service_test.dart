@@ -15,6 +15,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -36,6 +37,49 @@ import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
 import '../test/utils/utils.dart';
+
+MatrixService _createMatrixService({
+  required MatrixConfig config,
+  required MatrixSyncGateway gateway,
+  required LoggingService loggingService,
+  required JournalDb journalDb,
+  required SettingsDb settingsDb,
+  required SecureStorage secureStorage,
+  required String deviceName,
+}) {
+  final activityGate = UserActivityGate(
+    activityService: getIt<UserActivityService>(),
+  );
+  final messageSender = MatrixMessageSender(
+    loggingService: loggingService,
+    journalDb: journalDb,
+    documentsDirectory: getIt<Directory>(),
+  );
+  final readMarkerService = SyncReadMarkerService(
+    settingsDb: settingsDb,
+    loggingService: loggingService,
+  );
+  final eventProcessor = SyncEventProcessor(
+    loggingService: loggingService,
+    updateNotifications: getIt<UpdateNotifications>(),
+    aiConfigRepository: getIt<AiConfigRepository>(),
+  );
+
+  return MatrixService(
+    matrixConfig: config,
+    gateway: gateway,
+    loggingService: loggingService,
+    activityGate: activityGate,
+    messageSender: messageSender,
+    journalDb: journalDb,
+    settingsDb: settingsDb,
+    readMarkerService: readMarkerService,
+    eventProcessor: eventProcessor,
+    secureStorage: secureStorage,
+    deviceDisplayName: deviceName,
+    ownsActivityGate: true,
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -180,37 +224,14 @@ void main() {
         final aliceGateway = MatrixSdkGateway(client: aliceClient);
         final loggingService = getIt<LoggingService>();
         final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
-        final aliceActivityGate = UserActivityGate(
-          activityService: getIt<UserActivityService>(),
-        );
-        final aliceMessageSender = MatrixMessageSender(
-          loggingService: loggingService,
-          journalDb: aliceDb,
-          documentsDirectory: getIt<Directory>(),
-        );
-        final aliceReadMarkerService = SyncReadMarkerService(
-          settingsDb: aliceSettingsDb,
-          loggingService: loggingService,
-        );
-        final aliceEventProcessor = SyncEventProcessor(
-          loggingService: loggingService,
-          updateNotifications: getIt<UpdateNotifications>(),
-          aiConfigRepository: getIt<AiConfigRepository>(),
-        );
-
-        final alice = MatrixService(
-          matrixConfig: config1,
+        final alice = _createMatrixService(
+          config: config1,
           gateway: aliceGateway,
           loggingService: loggingService,
-          activityGate: aliceActivityGate,
-          messageSender: aliceMessageSender,
           journalDb: aliceDb,
           settingsDb: aliceSettingsDb,
-          readMarkerService: aliceReadMarkerService,
-          eventProcessor: aliceEventProcessor,
           secureStorage: secureStorageMock,
-          deviceDisplayName: 'Alice',
-          ownsActivityGate: true,
+          deviceName: 'Alice',
         );
 
         // Allow time for constructor initialization to complete
@@ -237,37 +258,14 @@ void main() {
         final bobClient = await createMatrixClient(dbName: 'Bob');
         final bobGateway = MatrixSdkGateway(client: bobClient);
         final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
-        final bobActivityGate = UserActivityGate(
-          activityService: getIt<UserActivityService>(),
-        );
-        final bobMessageSender = MatrixMessageSender(
-          loggingService: loggingService,
-          journalDb: bobDb,
-          documentsDirectory: getIt<Directory>(),
-        );
-        final bobReadMarkerService = SyncReadMarkerService(
-          settingsDb: bobSettingsDb,
-          loggingService: loggingService,
-        );
-        final bobEventProcessor = SyncEventProcessor(
-          loggingService: loggingService,
-          updateNotifications: getIt<UpdateNotifications>(),
-          aiConfigRepository: getIt<AiConfigRepository>(),
-        );
-
-        final bob = MatrixService(
-          matrixConfig: config2,
+        final bob = _createMatrixService(
+          config: config2,
           gateway: bobGateway,
           loggingService: loggingService,
-          activityGate: bobActivityGate,
-          messageSender: bobMessageSender,
           journalDb: bobDb,
           settingsDb: bobSettingsDb,
-          readMarkerService: bobReadMarkerService,
-          eventProcessor: bobEventProcessor,
           secureStorage: secureStorageMock,
-          deviceDisplayName: 'Bob',
-          ownsActivityGate: true,
+          deviceName: 'Bob',
         );
 
         // Allow time for constructor initialization to complete

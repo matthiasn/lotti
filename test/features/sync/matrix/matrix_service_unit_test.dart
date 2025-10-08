@@ -70,6 +70,14 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class MockSecureStorage extends Mock implements SecureStorage {}
 
+void _noop() {}
+
+MatrixMessageContext _createFallbackContext() => const MatrixMessageContext(
+      syncRoomId: null,
+      syncRoom: null,
+      unverifiedDevices: [],
+    );
+
 class TestUserActivityGate extends UserActivityGate {
   TestUserActivityGate(UserActivityService service)
       : super(activityService: service, idleThreshold: Duration.zero);
@@ -139,14 +147,8 @@ void main() {
         password: 'pw',
       ),
     );
-    registerFallbackValue(
-      MatrixMessageContext(
-        syncRoomId: null,
-        syncRoom: null,
-        unverifiedDevices: const [],
-        incrementSentCount: () {},
-      ),
-    );
+    registerFallbackValue(_createFallbackContext());
+    registerFallbackValue(_noop);
     registerFallbackValue(FakeTimeline());
     registerFallbackValue(FakeEvent());
     registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'fallback'));
@@ -213,6 +215,7 @@ void main() {
       () => mockMessageSender.sendMatrixMessage(
         message: any(named: 'message'),
         context: any(named: 'context'),
+        onSent: any(named: 'onSent'),
         roomIdOverride: any(named: 'roomIdOverride'),
       ),
     ).thenAnswer((_) async => true);
@@ -598,6 +601,7 @@ void main() {
       () => extraMessageSender.sendMatrixMessage(
         message: any(named: 'message'),
         context: any(named: 'context'),
+        onSent: any(named: 'onSent'),
         roomIdOverride: any(named: 'roomIdOverride'),
       ),
     ).thenAnswer((_) async => true);

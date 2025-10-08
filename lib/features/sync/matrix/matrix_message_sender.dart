@@ -28,6 +28,7 @@ class MatrixMessageSender {
   Future<bool> sendMatrixMessage({
     required SyncMessage message,
     required MatrixMessageContext context,
+    required void Function() onSent,
     String? roomIdOverride,
   }) async {
     final encodedMessage = json.encode(message);
@@ -66,7 +67,7 @@ class MatrixMessageSender {
             '${_documentsDirectory.path}${syncJournalEntity.jsonPath}';
         await _sendFile(
           room: context.syncRoom,
-          incrementSentCount: context.incrementSentCount,
+          onSent: onSent,
           fullPath: fullPath,
           relativePath: syncJournalEntity.jsonPath,
         );
@@ -85,7 +86,7 @@ class MatrixMessageSender {
       throw Exception('Failed sending text message');
     }
 
-    context.incrementSentCount();
+    onSent();
 
     _loggingService.captureEvent(
       'sent text message to ${context.syncRoom} with event ID $eventId',
@@ -109,7 +110,7 @@ class MatrixMessageSender {
               message.status == SyncEntryStatus.initial) {
             await _sendFile(
               room: context.syncRoom,
-              incrementSentCount: context.incrementSentCount,
+              onSent: onSent,
               fullPath: AudioUtils.getAudioPath(
                 journalAudio,
                 _documentsDirectory,
@@ -123,7 +124,7 @@ class MatrixMessageSender {
               message.status == SyncEntryStatus.initial) {
             await _sendFile(
               room: context.syncRoom,
-              incrementSentCount: context.incrementSentCount,
+              onSent: onSent,
               fullPath: getFullImagePath(
                 journalImage,
                 documentsDirectory: _documentsDirectory.path,
@@ -140,7 +141,7 @@ class MatrixMessageSender {
 
   Future<void> _sendFile({
     required Room? room,
-    required void Function() incrementSentCount,
+    required void Function() onSent,
     required String fullPath,
     required String relativePath,
   }) async {
@@ -163,7 +164,7 @@ class MatrixMessageSender {
         throw Exception('Failed sending file');
       }
 
-      incrementSentCount();
+      onSent();
 
       _loggingService.captureEvent(
         'sent $relativePath file message to $room, event ID $eventId',
@@ -182,15 +183,13 @@ class MatrixMessageSender {
 }
 
 class MatrixMessageContext {
-  MatrixMessageContext({
+  const MatrixMessageContext({
     required this.syncRoomId,
     required this.syncRoom,
     required this.unverifiedDevices,
-    required this.incrementSentCount,
   });
 
   final String? syncRoomId;
   final Room? syncRoom;
   final List<DeviceKeys> unverifiedDevices;
-  final void Function() incrementSentCount;
 }

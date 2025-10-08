@@ -38,7 +38,7 @@
   - Expanded automated coverage with lifecycle unit tests and a multi-device invite integration scenario backed by the fake gateway.
 - **Extension Method Removal** (Milestone 9)
   - Introduced `MatrixMessageSender` with injected `LoggingService`, `JournalDb`, and documents directory, replacing the legacy `send_message.dart` extension.
-  - Updated `MatrixService`, `MatrixTimelineListener`, `SyncEngine`, and `MatrixService` tests to consume the new service via constructor injection.
+  - Updated `MatrixService`, `MatrixTimelineListener`, `SyncEngine`, and the associated tests to consume the new service via constructor injection.
   - Refreshed `get_it.dart`, unit tests, and the integration flow to register the sender explicitly; added context registration helpers for mocks.
 
 ## Recent Fixes & Enhancements

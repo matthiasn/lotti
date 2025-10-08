@@ -260,8 +260,8 @@ class MatrixService {
         syncRoomId: syncRoomId,
         syncRoom: syncRoom,
         unverifiedDevices: getUnverifiedDevices(),
-        incrementSentCount: incrementSentCount,
       ),
+      onSent: incrementSentCount,
       roomIdOverride: myRoomId,
     );
   }
