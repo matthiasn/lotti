@@ -23,6 +23,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -126,6 +127,7 @@ Future<void> registerSingletons() async {
   final documentsDirectory = getIt<Directory>();
   final syncDatabase = getIt<SyncDatabase>();
   final vectorClockService = getIt<VectorClockService>();
+  final secureStorage = getIt<SecureStorage>();
   final matrixGateway = MatrixSdkGateway(client: client);
   final matrixMessageSender = MatrixMessageSender(
     loggingService: loggingService,
@@ -150,6 +152,7 @@ Future<void> registerSingletons() async {
     settingsDb: settingsDb,
     readMarkerService: readMarkerService,
     eventProcessor: syncEventProcessor,
+    secureStorage: secureStorage,
   );
 
   getIt

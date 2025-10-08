@@ -61,6 +61,16 @@ void main() {
     when(
       () => mockUpdateNotifications.notify(any()),
     ).thenAnswer((_) {});
+    when(() => secureStorageMock.read(key: any(named: 'key')))
+        .thenAnswer((_) async => null);
+    when(
+      () => secureStorageMock.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => secureStorageMock.delete(key: any(named: 'key')))
+        .thenAnswer((_) async {});
 
     final aliceDb = JournalDb(
       overriddenFilename: 'alice_db.sqlite',
@@ -198,6 +208,7 @@ void main() {
           settingsDb: aliceSettingsDb,
           readMarkerService: aliceReadMarkerService,
           eventProcessor: aliceEventProcessor,
+          secureStorage: secureStorageMock,
           deviceDisplayName: 'Alice',
           ownsActivityGate: true,
         );
@@ -254,6 +265,7 @@ void main() {
           settingsDb: bobSettingsDb,
           readMarkerService: bobReadMarkerService,
           eventProcessor: bobEventProcessor,
+          secureStorage: secureStorageMock,
           deviceDisplayName: 'Bob',
           ownsActivityGate: true,
         );

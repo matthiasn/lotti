@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
@@ -33,6 +34,7 @@ class MatrixService {
     required SettingsDb settingsDb,
     required SyncReadMarkerService readMarkerService,
     required SyncEventProcessor eventProcessor,
+    required SecureStorage secureStorage,
     bool ownsActivityGate = false,
     MatrixConfig? matrixConfig,
     String? deviceDisplayName,
@@ -49,6 +51,7 @@ class MatrixService {
         _settingsDb = settingsDb,
         _readMarkerService = readMarkerService,
         _eventProcessor = eventProcessor,
+        _secureStorage = secureStorage,
         _ownsActivityGate = ownsActivityGate,
         keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast(),
@@ -148,6 +151,7 @@ class MatrixService {
   final SettingsDb _settingsDb;
   final SyncReadMarkerService _readMarkerService;
   final SyncEventProcessor _eventProcessor;
+  final SecureStorage _secureStorage;
   final bool _ownsActivityGate;
 
   late final SyncRoomManager _roomManager;
@@ -387,9 +391,17 @@ class MatrixService {
     return diagnostics;
   }
 
-  Future<MatrixConfig?> loadConfig() =>
-      loadMatrixConfig(session: _sessionManager);
-  Future<void> deleteConfig() => deleteMatrixConfig(session: _sessionManager);
-  Future<void> setConfig(MatrixConfig config) =>
-      setMatrixConfig(config, session: _sessionManager);
+  Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
+        session: _sessionManager,
+        storage: _secureStorage,
+      );
+  Future<void> deleteConfig() => deleteMatrixConfig(
+        session: _sessionManager,
+        storage: _secureStorage,
+      );
+  Future<void> setConfig(MatrixConfig config) => setMatrixConfig(
+        config,
+        session: _sessionManager,
+        storage: _secureStorage,
+      );
 }

@@ -19,6 +19,7 @@ import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -67,6 +68,8 @@ class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
+class MockSecureStorage extends Mock implements SecureStorage {}
+
 class TestUserActivityGate extends UserActivityGate {
   TestUserActivityGate(UserActivityService service)
       : super(activityService: service, idleThreshold: Duration.zero);
@@ -90,6 +93,7 @@ class TestableMatrixService extends MatrixService {
     required super.settingsDb,
     required super.readMarkerService,
     required super.eventProcessor,
+    required super.secureStorage,
     required this.onStartKeyVerification,
     required this.onListenTimeline,
     super.roomManager,
@@ -172,6 +176,7 @@ void main() {
   late MockMatrixMessageSender mockMessageSender;
   late MockSyncReadMarkerService mockReadMarkerService;
   late MockSyncEventProcessor mockEventProcessor;
+  late MockSecureStorage mockSecureStorage;
   late MockSettingsDb mockSettingsDb;
   late MockJournalDb mockJournalDb;
   late StreamController<LoginState> loginStateController;
@@ -190,6 +195,7 @@ void main() {
     mockEventProcessor = MockSyncEventProcessor();
     mockSettingsDb = MockSettingsDb();
     mockJournalDb = MockJournalDb();
+    mockSecureStorage = MockSecureStorage();
 
     when(() => mockGateway.client).thenReturn(mockClient);
     when(() => mockSessionManager.client).thenReturn(mockClient);
@@ -223,6 +229,16 @@ void main() {
         journalDb: mockJournalDb,
       ),
     ).thenAnswer((_) async {});
+    when(() => mockSecureStorage.read(key: any(named: 'key')))
+        .thenAnswer((_) async => null);
+    when(
+      () => mockSecureStorage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => mockSecureStorage.delete(key: any(named: 'key')))
+        .thenAnswer((_) async {});
     loginStateController = StreamController<LoginState>.broadcast();
     when(() => mockGateway.loginStateChanges)
         .thenAnswer((_) => loginStateController.stream);
@@ -234,7 +250,8 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<SettingsDb>(mockSettingsDb)
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<Directory>(Directory.systemTemp);
+      ..registerSingleton<Directory>(Directory.systemTemp)
+      ..registerSingleton<SecureStorage>(mockSecureStorage);
 
     service = MatrixService(
       gateway: mockGateway,
@@ -245,6 +262,7 @@ void main() {
       settingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
+      secureStorage: mockSecureStorage,
       roomManager: mockRoomManager,
       sessionManager: mockSessionManager,
       timelineListener: mockTimelineListener,
@@ -600,6 +618,17 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     final extraSettingsDb = MockSettingsDb();
+    final extraSecureStorage = MockSecureStorage();
+    when(() => extraSecureStorage.read(key: any(named: 'key')))
+        .thenAnswer((_) async => null);
+    when(
+      () => extraSecureStorage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => extraSecureStorage.delete(key: any(named: 'key')))
+        .thenAnswer((_) async {});
     final extraService = MatrixService(
       gateway: mockGateway,
       loggingService: mockLoggingService,
@@ -609,6 +638,7 @@ void main() {
       settingsDb: extraSettingsDb,
       readMarkerService: extraReadMarkerService,
       eventProcessor: extraEventProcessor,
+      secureStorage: extraSecureStorage,
       roomManager: extraRoomManager,
       sessionManager: extraSessionManager,
       timelineListener: extraTimelineListener,
@@ -874,6 +904,7 @@ void main() {
         settingsDb: mockSettingsDb,
         readMarkerService: mockReadMarkerService,
         eventProcessor: mockEventProcessor,
+        secureStorage: mockSecureStorage,
         roomManager: mockRoomManager,
         sessionManager: mockSessionManager,
         timelineListener: mockTimelineListener,
