@@ -323,8 +323,8 @@ class MatrixService {
     await _connectivitySubscription?.cancel();
     await _syncEngine.dispose();
     await _timelineListener.dispose();
-    await _roomManager.dispose();
     await _sessionManager.dispose();
+    await _roomManager.dispose();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }

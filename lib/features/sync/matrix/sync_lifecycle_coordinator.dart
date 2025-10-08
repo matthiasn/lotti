@@ -87,14 +87,27 @@ class SyncLifecycleCoordinator {
     if (_isInitialized) {
       return;
     }
-    _isInitialized = true;
 
-    await _timelineListener.initialize();
-    await _roomManager.initialize();
-    _loginSubscription ??= _gateway.loginStateChanges.listen(_handleLoginState);
+    try {
+      await _timelineListener.initialize();
+      await _roomManager.initialize();
+      _loginSubscription ??=
+          _gateway.loginStateChanges.listen(_handleLoginState);
 
-    if (_sessionManager.isLoggedIn()) {
-      await _handleLoggedIn();
+      if (_sessionManager.isLoggedIn()) {
+        await _handleLoggedIn();
+      }
+
+      _isInitialized = true;
+    } catch (error, stackTrace) {
+      _isInitialized = false;
+      _loggingService.captureException(
+        error,
+        domain: 'SYNC_LIFECYCLE',
+        subDomain: 'initialize',
+        stackTrace: stackTrace,
+      );
+      rethrow;
     }
   }
 
@@ -164,7 +177,15 @@ class SyncLifecycleCoordinator {
       return;
     }
 
-    _pendingTransition ??= _deactivate();
+    if (_pendingTransition != null) {
+      await _pendingTransition;
+    }
+
+    if (!_isActive) {
+      return;
+    }
+
+    _pendingTransition = _deactivate();
     try {
       await _pendingTransition;
     } finally {
