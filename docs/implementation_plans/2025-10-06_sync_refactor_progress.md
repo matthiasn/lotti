@@ -49,6 +49,7 @@
 - Added configurable `maxRetries` support in the repository and corresponding tests.
 - `MatrixService.dispose()` now tears down controllers before collaborators, ensuring the new message sender and session managers are released cleanly.
 - Matrix service unit tests register explicit mocktail fallbacks for `Timeline`, `Event`, and `MatrixMessageContext`, avoiding brittle matcher usage.
+- Added dedicated `MatrixMessageSender` unit tests covering room overrides, attachment resend rules, and error propagation, eliminating the silent failure paths from earlier commits.
 
 ## Next Up
 
