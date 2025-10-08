@@ -45,8 +45,7 @@ void main() {
       final result = await healthService.requestAuthorization(types);
 
       expect(result, false);
-      verify(() => mockHealth.requestAuthorization(types))
-          .called(1);
+      verify(() => mockHealth.requestAuthorization(types)).called(1);
     });
 
     test('getTotalStepsInInterval returns step count', () async {

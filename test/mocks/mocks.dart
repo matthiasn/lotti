@@ -170,7 +170,6 @@ class FakeQuillController extends Fake implements QuillController {
   @override
   TextSelection get selection => _selection;
 
-  @override
   set selection(TextSelection value) {
     _selection = value;
   }

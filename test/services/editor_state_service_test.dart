@@ -1,4 +1,3 @@
-
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -190,7 +189,7 @@ void main() {
 
       // The stream should first emit `false` (initial state),
       // then `false` again after entryWasSaved clears unsaved changes.
-      expectLater(stream, emitsInOrder([false, false]));
+      final expectation = expectLater(stream, emitsInOrder([false, false]));
 
       editorStateService.editorStateById[entryId] =
           '{"ops":[{"insert":"test"}]}';
@@ -204,6 +203,8 @@ void main() {
         lastSaved: testEpochDateTime,
         controller: mockController,
       );
+
+      await expectation;
     });
 
     test('entryIsUnsaved returns true when entry has unsaved state', () {
@@ -251,14 +252,42 @@ void main() {
       when(() => mockEditorDb.getLatestDraft(any(),
           lastSaved: any(named: 'lastSaved'))).thenAnswer((_) async => null);
 
+      // Create first stream and subscribe to it
       final stream1 =
           editorStateService.getUnsavedStream(entryId, testEpochDateTime);
+
+      var stream1Completed = false;
+      final stream1Emissions = <bool>[];
+
+      final subscription1 = stream1.listen(
+        stream1Emissions.add,
+        onDone: () {
+          stream1Completed = true;
+        },
+      );
+
+      // Wait for the first stream to emit its initial value
+      await pumpEventQueue();
+      expect(stream1Emissions, isNotEmpty);
+
+      // Create second stream - this should close the first stream
       final stream2 =
           editorStateService.getUnsavedStream(entryId, testEpochDateTime);
 
-      // The first stream should emit its initial value and then be closed.
-      await expectLater(stream1, emitsInOrder([isA<bool>(), emitsDone]));
-      expect(stream2, isNotNull);
+      // Wait for stream1 to complete
+      await pumpEventQueue();
+      expect(stream1Completed, true);
+
+      // Verify stream2 is active and can emit values
+      final stream2Emissions = <bool>[];
+      final subscription2 = stream2.listen(stream2Emissions.add);
+
+      await pumpEventQueue();
+      expect(stream2Emissions, isNotEmpty);
+
+      // Clean up
+      await subscription1.cancel();
+      await subscription2.cancel();
     });
   });
 }

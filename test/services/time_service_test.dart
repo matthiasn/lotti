@@ -94,9 +94,10 @@ void main() {
       await timeService.start(entity, null);
 
       // The stream should emit null when stop is called
-      expectLater(stream, emits(isNull));
+      final expectation = expectLater(stream, emits(isNull));
 
       await timeService.stop();
+      await expectation;
 
       expect(timeService.getCurrent(), isNull);
       expect(timeService.linkedFrom, isNull);

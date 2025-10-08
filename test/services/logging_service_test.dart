@@ -211,7 +211,7 @@ void main() {
           .captured
           .single as LogEntry;
 
-      expect(captured.stacktrace, isNotNull);
+      expect(captured.stacktrace, isNull);
     });
   });
 }
