@@ -282,7 +282,7 @@ void main() {
           any<dynamic>(),
           domain: 'MATRIX_SERVICE',
           subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
       verifyNever(
