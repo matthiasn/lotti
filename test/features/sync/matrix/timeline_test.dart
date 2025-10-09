@@ -104,6 +104,7 @@ void main() {
   late MockSyncReadMarkerService mockReadMarkerService;
   late MockSyncEventProcessor mockEventProcessor;
   late Directory tempDir;
+  late Map<String, int> failureCounts;
 
   setUp(() {
     mockClient = MockClient();
@@ -116,6 +117,7 @@ void main() {
     mockReadMarkerService = MockSyncReadMarkerService();
     mockEventProcessor = MockSyncEventProcessor();
     tempDir = Directory.systemTemp.createTempSync('timeline_test');
+    failureCounts = <String, int>{};
 
     when(() => mockClient.isLogged()).thenReturn(true);
     when(() => mockClient.userID).thenReturn('@user:server');
@@ -216,6 +218,7 @@ void main() {
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
       documentsDirectory: tempDir,
+      failureCounts: failureCounts,
     );
 
     verify(
@@ -263,6 +266,7 @@ void main() {
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
       documentsDirectory: tempDir,
+      failureCounts: failureCounts,
     );
 
     verifyNever(() => mockEventProcessor.process(
@@ -283,6 +287,7 @@ void main() {
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
       documentsDirectory: tempDir,
+      failureCounts: failureCounts,
     );
 
     verify(

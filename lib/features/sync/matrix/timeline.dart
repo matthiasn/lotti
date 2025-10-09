@@ -12,6 +12,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/list_extension.dart';
 import 'package:matrix/matrix.dart';
 
+const _maxTimelineProcessingRetries = 5;
+
 Future<void> listenToTimelineEvents({
   required TimelineContext listener,
 }) async {
@@ -83,6 +85,7 @@ Future<void> processNewTimelineEvents({
   required SyncReadMarkerService readMarkerService,
   required SyncEventProcessor eventProcessor,
   required Directory documentsDirectory,
+  Map<String, int>? failureCounts,
 }) async {
   try {
     final lastReadEventContextId = listener.lastReadEventContextId;
@@ -151,21 +154,27 @@ Future<void> processNewTimelineEvents({
               journalDb: journalDb,
             );
           }
+
+          failureCounts?.remove(eventId);
         } on FileSystemException catch (error, stackTrace) {
-          shouldAdvanceReadMarker = false;
-          loggingService.captureException(
-            error,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'processNewTimelineEvents.missingAttachment',
+          shouldAdvanceReadMarker = _recordProcessingFailure(
+            eventId: eventId,
+            loggingService: loggingService,
+            failureCounts: failureCounts,
+            error: error,
             stackTrace: stackTrace,
+            subDomain: 'processNewTimelineEvents.missingAttachment',
+            skipReason: 'missing attachment',
           );
         } on Object catch (error, stackTrace) {
-          shouldAdvanceReadMarker = false;
-          loggingService.captureException(
-            error,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'processNewTimelineEvents.handler',
+          shouldAdvanceReadMarker = _recordProcessingFailure(
+            eventId: eventId,
+            loggingService: loggingService,
+            failureCounts: failureCounts,
+            error: error,
             stackTrace: stackTrace,
+            subDomain: 'processNewTimelineEvents.handler',
+            skipReason: 'handler error',
           );
         }
       }
@@ -187,6 +196,42 @@ Future<void> processNewTimelineEvents({
       stackTrace: stackTrace,
     );
   }
+}
+
+bool _recordProcessingFailure({
+  required String eventId,
+  required LoggingService loggingService,
+  required Map<String, int>? failureCounts,
+  required Object error,
+  required StackTrace stackTrace,
+  required String subDomain,
+  required String skipReason,
+}) {
+  loggingService.captureException(
+    error,
+    domain: 'MATRIX_SERVICE',
+    subDomain: subDomain,
+    stackTrace: stackTrace,
+  );
+
+  if (failureCounts == null || eventId.isEmpty) {
+    return false;
+  }
+
+  final attempts = (failureCounts[eventId] ?? 0) + 1;
+  failureCounts[eventId] = attempts;
+
+  if (attempts < _maxTimelineProcessingRetries) {
+    return false;
+  }
+
+  loggingService.captureEvent(
+    'Skipping event $eventId after $attempts failed attempts ($skipReason)',
+    domain: 'MATRIX_SERVICE',
+    subDomain: 'processNewTimelineEvents.skip',
+  );
+  failureCounts.remove(eventId);
+  return true;
 }
 
 extension StringExtension on String {

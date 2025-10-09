@@ -86,6 +86,7 @@ void main() {
     late MockSyncEventProcessor eventProcessor;
     late MockJournalDb journalDb;
     late Directory tempDir;
+    late Map<String, int> failureCounts;
 
     setUp(() {
       loggingService = MockLoggingService();
@@ -97,6 +98,7 @@ void main() {
       eventProcessor = MockSyncEventProcessor();
       journalDb = MockJournalDb();
       tempDir = Directory.systemTemp.createTempSync('process_new_timeline');
+      failureCounts = <String, int>{};
 
       context = TestTimelineContext(
         loggingService: loggingService,
@@ -119,6 +121,7 @@ void main() {
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
       when(() => client.userID).thenReturn('@local:server');
+      when(() => client.deviceName).thenReturn('device');
       when(() => client.deviceName).thenReturn('device');
       when(
         () => readMarkerService.updateReadMarker(
@@ -161,6 +164,7 @@ void main() {
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
         documentsDirectory: tempDir,
+        failureCounts: failureCounts,
       );
 
       verifyNever(() => room.getEventById(any<String>()));
@@ -207,6 +211,7 @@ void main() {
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
         documentsDirectory: tempDir,
+        failureCounts: failureCounts,
       );
 
       verify(() => room.getEventById(r'$existing')).called(1);
@@ -235,6 +240,7 @@ void main() {
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
         documentsDirectory: tempDir,
+        failureCounts: failureCounts,
       );
 
       verify(() => room.getEventById(r'$missing')).called(1);
@@ -281,6 +287,7 @@ void main() {
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
         documentsDirectory: tempDir,
+        failureCounts: failureCounts,
       );
 
       verify(
@@ -298,6 +305,7 @@ void main() {
           eventId: any<String>(named: 'eventId'),
         ),
       );
+      expect(failureCounts[eventId], 1);
     });
 
     test(
@@ -349,6 +357,7 @@ void main() {
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
         documentsDirectory: tempDir,
+        failureCounts: failureCounts,
       );
 
       verify(
@@ -366,6 +375,68 @@ void main() {
           eventId: eventId,
         ),
       );
+      expect(failureCounts[eventId], 1);
+    });
+
+    test('advances read marker after exceeding retry limit', () async {
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      final event = MockEvent();
+      const eventId = r'$skip';
+
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => room.id).thenReturn('!room:server');
+      when(() => client.sync())
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => room.getTimeline(eventContextId: any(named: 'eventContextId')))
+          .thenAnswer((_) async => timeline);
+      when(() => timeline.events).thenReturn([event]);
+      when(() => event.eventId).thenReturn(eventId);
+      when(() => event.senderId).thenReturn('@remote:server');
+      when(() => event.type).thenReturn('m.room.message');
+      when(() => event.messageType).thenReturn(syncMessageType);
+      when(() => event.attachmentMimetype).thenReturn('application/json');
+      when(() => event.content)
+          .thenReturn({'relativePath': '/matrix/missing.json'});
+      final matrixFile = MockMatrixFile();
+      when(event.downloadAndDecryptAttachment)
+          .thenAnswer((_) async => matrixFile);
+      when(() => matrixFile.bytes).thenReturn(Uint8List.fromList([1, 2, 3]));
+      when(
+        () => eventProcessor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: any<JournalDb>(named: 'journalDb'),
+        ),
+      ).thenThrow(const FileSystemException('missing attachment'));
+
+      for (var attempt = 0; attempt < 5; attempt++) {
+        await processNewTimelineEvents(
+          listener: context,
+          journalDb: journalDb,
+          loggingService: loggingService,
+          readMarkerService: readMarkerService,
+          eventProcessor: eventProcessor,
+          documentsDirectory: tempDir,
+          failureCounts: failureCounts,
+        );
+      }
+
+      verify(
+        () => readMarkerService.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          timeline: any<Timeline>(named: 'timeline'),
+          eventId: eventId,
+        ),
+      ).called(1);
+      expect(failureCounts[eventId], isNull);
+      verify(
+        () => loggingService.captureEvent(
+          'Skipping event $eventId after 5 failed attempts (missing attachment)',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'processNewTimelineEvents.skip',
+        ),
+      ).called(1);
     });
   });
 }

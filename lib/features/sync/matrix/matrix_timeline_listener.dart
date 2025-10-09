@@ -47,6 +47,7 @@ class MatrixTimelineListener implements TimelineContext {
           readMarkerService: _readMarkerService,
           eventProcessor: _eventProcessor,
           documentsDirectory: _documentsDirectory,
+          failureCounts: _eventFailureCounts,
         );
       },
     );
@@ -61,6 +62,7 @@ class MatrixTimelineListener implements TimelineContext {
   final SyncReadMarkerService _readMarkerService;
   final SyncEventProcessor _eventProcessor;
   final Directory _documentsDirectory;
+  final Map<String, int> _eventFailureCounts = <String, int>{};
 
   late final ClientRunner<void> _clientRunner;
   Timeline? _timeline;
