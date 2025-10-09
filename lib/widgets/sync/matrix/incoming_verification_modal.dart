@@ -1,15 +1,18 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_emojis_row.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/encryption.dart';
 
-class IncomingVerificationModal extends StatefulWidget {
+class IncomingVerificationModal extends ConsumerStatefulWidget {
   const IncomingVerificationModal(
     this.keyVerification, {
     super.key,
@@ -18,12 +21,13 @@ class IncomingVerificationModal extends StatefulWidget {
   final KeyVerification keyVerification;
 
   @override
-  State<IncomingVerificationModal> createState() =>
+  ConsumerState<IncomingVerificationModal> createState() =>
       _IncomingVerificationModalState();
 }
 
-class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
-  final MatrixService _matrixService = getIt<MatrixService>();
+class _IncomingVerificationModalState
+    extends ConsumerState<IncomingVerificationModal> {
+  MatrixService get _matrixService => ref.read(matrixServiceProvider);
 
   @override
   Widget build(BuildContext context) {
@@ -149,24 +153,26 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
   }
 }
 
-class IncomingVerificationWrapper extends StatefulWidget {
+class IncomingVerificationWrapper extends ConsumerStatefulWidget {
   const IncomingVerificationWrapper({super.key});
 
   @override
-  State<IncomingVerificationWrapper> createState() =>
+  ConsumerState<IncomingVerificationWrapper> createState() =>
       _IncomingVerificationWrapperState();
 }
 
 class _IncomingVerificationWrapperState
-    extends State<IncomingVerificationWrapper> {
-  final Stream<KeyVerification> _stream =
-      getIt<MatrixService>().getIncomingKeyVerificationStream();
+    extends ConsumerState<IncomingVerificationWrapper> {
+  StreamSubscription<KeyVerification>? _subscription;
 
   @override
   void initState() {
     super.initState();
 
-    _stream.listen((keyVerification) {
+    _subscription = ref
+        .read(matrixServiceProvider)
+        .getIncomingKeyVerificationStream()
+        .listen((keyVerification) {
       if (mounted) {
         showModalBottomSheet<void>(
           context: context,
@@ -176,6 +182,12 @@ class _IncomingVerificationWrapperState
         );
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   @override

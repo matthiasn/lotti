@@ -8,7 +8,7 @@ import 'package:lotti/features/sync/model/validation/homeserver.dart';
 import 'package:lotti/features/sync/model/validation/password.dart';
 import 'package:lotti/features/sync/model/validation/username.dart';
 import 'package:lotti/features/sync/state/login_form_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMatrixService extends Mock implements MatrixService {}
@@ -50,13 +50,12 @@ void main() {
 
     listener = StateListener<AsyncValue<LoginFormState?>>();
 
-    // Override GetIt to use our mock
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<MatrixService>(mockMatrixService);
-
     // Create a provider container
-    container = ProviderContainer()
-      ..listen(
+    container = ProviderContainer(
+      overrides: [
+        matrixServiceProvider.overrideWithValue(mockMatrixService),
+      ],
+    )..listen(
         loginFormControllerProvider,
         listener.call,
         fireImmediately: true,
@@ -65,7 +64,6 @@ void main() {
 
   tearDown(() {
     container.dispose();
-    getIt.reset();
   });
 
   group('LoginFormController', () {
@@ -97,8 +95,11 @@ void main() {
 
       // Recreate container to use the new mock behavior
       container.dispose();
-      container = ProviderContainer()
-        ..listen(
+      container = ProviderContainer(
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      )..listen(
           loginFormControllerProvider,
           listener.call,
           fireImmediately: true,

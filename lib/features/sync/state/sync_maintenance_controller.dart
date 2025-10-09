@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 
 class SyncMaintenanceController extends Notifier<SyncState> {
@@ -137,5 +137,5 @@ final syncControllerProvider =
 );
 
 final syncLoggingServiceProvider = Provider<LoggingService>((ref) {
-  return getIt<LoggingService>();
+  return ref.watch(loggingServiceProvider);
 });

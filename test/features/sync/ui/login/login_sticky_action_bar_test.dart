@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/login/login_sticky_action_bar.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -51,15 +51,10 @@ void main() {
       return false;
     });
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
-
-    // Override GetIt to use our mock
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<MatrixService>(mockMatrixService);
   });
 
   tearDown(() {
     pageIndexNotifier.dispose();
-    getIt.reset();
   });
 
   group('LoginStickyActionBar Widget', () {
@@ -71,6 +66,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
           child: WidgetTestBench(
             child: LoginStickyActionBar(pageIndexNotifier: pageIndexNotifier),
           ),
@@ -99,6 +97,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
           child: WidgetTestBench(
             child: LoginStickyActionBar(pageIndexNotifier: pageIndexNotifier),
           ),
@@ -123,6 +124,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
           child: WidgetTestBench(
             child: LoginStickyActionBar(pageIndexNotifier: pageIndexNotifier),
           ),
@@ -160,6 +164,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
           child: WidgetTestBench(
             child: LoginStickyActionBar(pageIndexNotifier: pageIndexNotifier),
           ),

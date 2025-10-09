@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/features/sync/ui/room_config_page.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../widget_test_utils.dart';
@@ -46,11 +46,7 @@ void main() {
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<MatrixService>(mockMatrixService);
   });
-
-  tearDown(getIt.reset);
 
   group('roomConfigPage sticky action bar', () {
     testWidgets('updates page index when navigating', (tester) async {
@@ -68,6 +64,9 @@ void main() {
               return page.stickyActionBar ?? const SizedBox.shrink();
             },
           ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
         ),
       );
 
@@ -92,6 +91,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           const RoomConfig(),
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             matrixRoomControllerProvider.overrideWith(() => controller),
           ],
         ),
@@ -116,6 +116,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           const RoomConfig(),
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             matrixRoomControllerProvider.overrideWith(() => controller),
           ],
         ),

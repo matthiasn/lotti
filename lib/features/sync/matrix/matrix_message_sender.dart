@@ -27,6 +27,8 @@ class MatrixMessageSender {
   final JournalDb _journalDb;
   final Directory _documentsDirectory;
 
+  Directory get documentsDirectory => _documentsDirectory;
+
   Future<bool> sendMatrixMessage({
     required SyncMessage message,
     required MatrixMessageContext context,

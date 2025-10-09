@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/sync/state/fts5_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMaintenance extends Mock implements Maintenance {}
@@ -12,17 +12,18 @@ void main() {
   late ProviderContainer container;
   late Fts5Controller controller;
 
-  setUp(() async {
-    await getIt.reset();
+  setUp(() {
     mockMaintenance = MockMaintenance();
-    getIt.registerSingleton<Maintenance>(mockMaintenance);
-    container = ProviderContainer();
+    container = ProviderContainer(
+      overrides: [
+        maintenanceProvider.overrideWithValue(mockMaintenance),
+      ],
+    );
     controller = container.read(fts5ControllerProvider.notifier);
   });
 
-  tearDown(() async {
+  tearDown(() {
     container.dispose();
-    await getIt.reset();
   });
 
   group('Fts5Controller', () {

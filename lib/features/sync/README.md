@@ -56,6 +56,17 @@ Sends data to sync room:
 - File attachments (audio, images, JSON)
 - Tracks sent message counts
 
+### Provider Wiring
+
+All sync-facing controllers and widgets now receive their collaborators through
+Riverpod providers instead of `getIt`. The key providers live in
+`lib/providers/service_providers.dart` and are overridden in `main.dart` and
+tests. Reference `docs/architecture/sync_engine.md` for the up-to-date
+dependency graph and data-flow diagram.
+
+To prevent regressions, the custom lint rule `no_get_it_in_sync` (shipped via
+`tool/lotti_custom_lint`) fails analysis if new sync code references `getIt`.
+
 ### Data Flow
 
 #### Sending Data
@@ -136,28 +147,12 @@ exercise declined invites, persistence caching, retry hydration, and failure log
 persistent room ID. Tests cover both the happy-path join and the thrown error case so the UI can
 surface the failure instead of silently misreporting success.
 
-### Major: syncRoom Not Loaded on Restart - FIXED ✅
+### Current Status
 
-**File:** `lib/features/sync/matrix/matrix_service.dart:96-167`
-
-**Problem (FIXED):**
-After login/restart, `syncRoom` was never loaded from the saved room ID. The `init()` method called
-`connect()` then immediately called `listen()`, but `syncRoom` remained null. Timeline listeners
-silently failed because they tried to call `syncRoom?.getTimeline()` on a null object.
-
-**Symptoms:**
-- "Works after the Nth restart" - classic race condition
-- One-way sync after fresh restart
-- No timeline events received even though outbox sends successfully
-- Logs showed `Timeline is null` errors
-
-**Root Cause:**
-The Matrix client needs time after `connect()` to sync with the server and populate the `client.rooms`
-list. Calling `listen()` immediately meant `getRoomById(savedRoomId)` returned null.
-
-**Fix Applied:**
-Added `_loadSyncRoom()` method that:
-1. Runs after `connect()` but before `listen()`
+- No open regressions are tracked for the refactored sync engine as of Milestone 10 completion.
+- Memory profiling results and methodology are documented in
+  `docs/architecture/sync_memory_audit.md`.
+- Future issues should include failing tests and updated docs alongside fixes.
 2. Calls `client.sync()` to ensure rooms are loaded
 3. Gets the Room object via `getRoomById(savedRoomId)`
 4. Sets `syncRoom` and `syncRoomId`

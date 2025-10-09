@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -80,6 +82,7 @@ void main() {
     late MockSyncReadMarkerService readMarkerService;
     late MockSyncEventProcessor eventProcessor;
     late MockJournalDb journalDb;
+    late Directory tempDir;
 
     setUp(() {
       loggingService = MockLoggingService();
@@ -90,6 +93,7 @@ void main() {
       readMarkerService = MockSyncReadMarkerService();
       eventProcessor = MockSyncEventProcessor();
       journalDb = MockJournalDb();
+      tempDir = Directory.systemTemp.createTempSync('process_new_timeline');
 
       context = TestTimelineContext(
         loggingService: loggingService,
@@ -127,6 +131,12 @@ void main() {
       ).thenAnswer((_) async {});
     });
 
+    tearDown(() {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
     test('does not query when lastReadEventContextId is null', () async {
       context
         ..lastReadEventContextId = null
@@ -146,6 +156,7 @@ void main() {
         loggingService: loggingService,
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
       );
 
       verifyNever(() => room.getEventById(any<String>()));
@@ -191,6 +202,7 @@ void main() {
         loggingService: loggingService,
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
       );
 
       verify(() => room.getEventById(r'$existing')).called(1);
@@ -218,10 +230,61 @@ void main() {
         loggingService: loggingService,
         readMarkerService: readMarkerService,
         eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
       );
 
       verify(() => room.getEventById(r'$missing')).called(1);
       verify(() => room.getTimeline()).called(1);
+    });
+
+    test('logs and recovers when event processing throws', () async {
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      final event = MockEvent();
+
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => client.sync())
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => room.getTimeline(eventContextId: any(named: 'eventContextId')))
+          .thenAnswer((_) async => timeline);
+      when(() => timeline.events).thenReturn([event]);
+      when(() => event.eventId).thenReturn(r'$remote');
+      when(() => event.senderId).thenReturn('@remote:server');
+      when(() => event.messageType).thenReturn(syncMessageType);
+      when(() => event.attachmentMimetype).thenReturn('');
+      when(() => event.type).thenReturn('m.room.message');
+      when(
+        () => eventProcessor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: any<JournalDb>(named: 'journalDb'),
+        ),
+      ).thenThrow(Exception('failed to process'));
+      when(
+        () => readMarkerService.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          timeline: any<Timeline>(named: 'timeline'),
+          eventId: any<String>(named: 'eventId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await processNewTimelineEvents(
+        listener: context,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        readMarkerService: readMarkerService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
+      );
+
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
   });
 }

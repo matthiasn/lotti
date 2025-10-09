@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/features/sync/ui/matrix_stats_page.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../widget_test_utils.dart';
@@ -46,9 +46,6 @@ void main() {
     mockMatrixService = MockMatrixService();
     matrixStatsController = StreamController<MatrixStats>.broadcast();
 
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<MatrixService>(mockMatrixService);
-
     when(() => mockMatrixService.messageCountsController)
         .thenReturn(matrixStatsController);
     when(() => mockMatrixService.messageCounts).thenReturn(<String, int>{});
@@ -57,7 +54,6 @@ void main() {
 
   tearDown(() async {
     await matrixStatsController.close();
-    await getIt.reset();
   });
 
   testWidgets('IncomingStats displays matrix statistics', (tester) async {
@@ -73,6 +69,7 @@ void main() {
       makeTestableWidgetWithScaffold(
         const IncomingStats(),
         overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
           matrixStatsControllerProvider
               .overrideWith(() => _FakeMatrixStatsController(stats)),
         ],
@@ -95,6 +92,7 @@ void main() {
       makeTestableWidgetWithScaffold(
         const IncomingStats(),
         overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
           matrixStatsControllerProvider.overrideWith(
             () => _LoadingMatrixStatsController(completer.future),
           ),
@@ -117,6 +115,7 @@ void main() {
       makeTestableWidgetWithScaffold(
         const IncomingStats(),
         overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
           matrixStatsControllerProvider
               .overrideWith(_ThrowingMatrixStatsController.new),
         ],

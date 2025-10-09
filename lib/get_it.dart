@@ -130,13 +130,15 @@ Future<void> registerSingletons() async {
   getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
 
   await vod.init();
-  final client = await createMatrixClient();
+  final documentsDirectory = getIt<Directory>();
+  final client = await createMatrixClient(
+    documentsDirectory: documentsDirectory,
+  );
   final loggingService = getIt<LoggingService>();
   final userActivityService = getIt<UserActivityService>();
   final userActivityGate = getIt<UserActivityGate>();
   final journalDb = getIt<JournalDb>();
   final settingsDb = getIt<SettingsDb>();
-  final documentsDirectory = getIt<Directory>();
   final syncDatabase = getIt<SyncDatabase>();
   final vectorClockService = getIt<VectorClockService>();
   final secureStorage = getIt<SecureStorage>();

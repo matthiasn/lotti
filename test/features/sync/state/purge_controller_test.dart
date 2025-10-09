@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/state/purge_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -22,23 +22,20 @@ void main() {
     registerFallbackValue(FakeLogEntry());
   });
 
-  setUp(() async {
+  setUp(() {
     mockDb = MockJournalDb();
     mockLoggingDb = MockLoggingDb();
-
-    await getIt.reset();
-
-    getIt
-      ..registerSingleton<JournalDb>(mockDb)
-      ..registerSingleton<LoggingDb>(mockLoggingDb);
-
-    container = ProviderContainer();
+    container = ProviderContainer(
+      overrides: [
+        journalDbProvider.overrideWithValue(mockDb),
+        loggingDbProvider.overrideWithValue(mockLoggingDb),
+      ],
+    );
     controller = container.read(purgeControllerProvider.notifier);
   });
 
-  tearDown(() async {
+  tearDown(() {
     container.dispose();
-    await getIt.reset();
   });
 
   group('PurgeController', () {

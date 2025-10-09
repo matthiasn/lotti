@@ -1,16 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_emojis_row.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
 
-class VerificationModal extends StatefulWidget {
+class VerificationModal extends ConsumerStatefulWidget {
   const VerificationModal(
     this.deviceKeys, {
     super.key,
@@ -19,11 +20,11 @@ class VerificationModal extends StatefulWidget {
   final DeviceKeys deviceKeys;
 
   @override
-  State<VerificationModal> createState() => _VerificationModalState();
+  ConsumerState<VerificationModal> createState() => _VerificationModalState();
 }
 
-class _VerificationModalState extends State<VerificationModal> {
-  final MatrixService _matrixService = getIt<MatrixService>();
+class _VerificationModalState extends ConsumerState<VerificationModal> {
+  MatrixService get _matrixService => ref.read(matrixServiceProvider);
   KeyVerificationRunner? _runner;
 
   @override

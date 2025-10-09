@@ -1,18 +1,18 @@
 import 'dart:async';
 
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'matrix_room_provider.g.dart';
 
 @riverpod
 class MatrixRoomController extends _$MatrixRoomController {
-  final MatrixService _matrixService = getIt<MatrixService>();
+  MatrixService get _matrixService => ref.read(matrixServiceProvider);
 
   @override
   Future<String?> build() async {
-    return _matrixService.getRoom();
+    return ref.watch(matrixServiceProvider).getRoom();
   }
 
   Future<void> createRoom() async {

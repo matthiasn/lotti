@@ -3,10 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -137,15 +136,15 @@ class _HomeserverLoggedInWidgetState
   }
 }
 
-class DiagnosticInfoButton extends StatelessWidget {
+class DiagnosticInfoButton extends ConsumerWidget {
   const DiagnosticInfoButton({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return LottiSecondaryButton(
       label: 'Show Diagnostic Info',
       onPressed: () async {
-        final info = await getIt<MatrixService>().getDiagnosticInfo();
+        final info = await ref.read(matrixServiceProvider).getDiagnosticInfo();
         final prettyJson = const JsonEncoder.withIndent('  ').convert(info);
 
         if (!context.mounted) return;

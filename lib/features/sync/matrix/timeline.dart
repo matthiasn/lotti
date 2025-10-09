@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/database.dart';
@@ -81,6 +82,7 @@ Future<void> processNewTimelineEvents({
   required LoggingService loggingService,
   required SyncReadMarkerService readMarkerService,
   required SyncEventProcessor eventProcessor,
+  required Directory documentsDirectory,
 }) async {
   try {
     final lastReadEventContextId = listener.lastReadEventContextId;
@@ -137,7 +139,11 @@ Future<void> processNewTimelineEvents({
           );
         }
 
-        await saveAttachment(event);
+        await saveAttachment(
+          event,
+          loggingService: loggingService,
+          documentsDirectory: documentsDirectory,
+        );
       }
 
       if (eventId.startsWith(r'$')) {

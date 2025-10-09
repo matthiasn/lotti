@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 final actionItemSuggestionsControllerProvider = NotifierProvider<
     ActionItemSuggestionsController, ActionItemSuggestionsState>(
@@ -38,7 +38,7 @@ class ActionItemSuggestionsController
 
   @override
   ActionItemSuggestionsState build() {
-    _maintenance = getIt<Maintenance>();
+    _maintenance = ref.watch(maintenanceProvider);
     return const ActionItemSuggestionsState();
   }
 

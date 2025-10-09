@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/get_it.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-class ReSyncModalContent extends StatefulWidget {
+class ReSyncModalContent extends ConsumerStatefulWidget {
   const ReSyncModalContent({super.key});
 
   @override
-  State<ReSyncModalContent> createState() => _ReSyncModalContentState();
+  ConsumerState<ReSyncModalContent> createState() => _ReSyncModalContentState();
 }
 
-class _ReSyncModalContentState extends State<ReSyncModalContent> {
-  final Maintenance _maintenanceService = getIt<Maintenance>();
-
+class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
   DateTime? _dateFrom;
   DateTime? _dateTo;
 
@@ -52,10 +50,10 @@ class _ReSyncModalContentState extends State<ReSyncModalContent> {
             'Start',
             onPressed: dateFrom != null && dateTo != null
                 ? () {
-                    _maintenanceService.reSyncInterval(
-                      start: dateFrom,
-                      end: dateTo,
-                    );
+                    ref.read(maintenanceProvider).reSyncInterval(
+                          start: dateFrom,
+                          end: dateTo,
+                        );
                     Navigator.of(context).pop();
                   }
                 : null,

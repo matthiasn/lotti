@@ -1,5 +1,8 @@
 // ignore_for_file: unnecessary_lambdas
 
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -26,6 +29,8 @@ class MockUserActivityGate extends Mock implements UserActivityGate {}
 class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockTimeline extends Mock implements Timeline {}
+
+class MockRoom extends Mock implements Room {}
 
 class MockClient extends Mock implements Client {}
 
@@ -58,6 +63,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockSyncReadMarkerService mockReadMarkerService;
   late MockSyncEventProcessor mockEventProcessor;
+  late Directory tempDir;
 
   setUp(() {
     mockSessionManager = MockMatrixSessionManager();
@@ -68,6 +74,7 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockReadMarkerService = MockSyncReadMarkerService();
     mockEventProcessor = MockSyncEventProcessor();
+    tempDir = Directory.systemTemp.createTempSync('matrix_timeline_listener');
     listener = MatrixTimelineListener(
       sessionManager: mockSessionManager,
       roomManager: mockRoomManager,
@@ -77,6 +84,7 @@ void main() {
       settingsDb: mockSettingsDb,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
+      documentsDirectory: tempDir,
     );
     mockClient = MockClient();
     when(() => mockSessionManager.client).thenReturn(mockClient);
@@ -90,6 +98,9 @@ void main() {
 
   tearDown(() async {
     await getIt.reset();
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
   });
 
   test('initialize loads last read event id from settings', () async {
@@ -127,6 +138,39 @@ void main() {
     await listener.clientRunner.callback(null);
 
     verify(() => mockActivityGate.waitUntilIdle()).called(1);
+  });
+
+  test('enqueueTimelineRefresh waits for activity gate before processing',
+      () async {
+    final activityGateCompleter = Completer<void>();
+    final mockRoom = MockRoom();
+
+    when(() => mockActivityGate.waitUntilIdle()).thenAnswer((_) async {
+      await activityGateCompleter.future;
+    });
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
+    when(() => mockClient.sync())
+        .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+
+    final mockTimeline = MockTimeline();
+    when(
+      () => mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')),
+    ).thenAnswer((_) async => mockTimeline);
+    when(() => mockRoom.getTimeline()).thenAnswer((_) async => mockTimeline);
+    when(() => mockTimeline.events).thenReturn(const []);
+
+    listener.enqueueTimelineRefresh();
+
+    await Future<void>.delayed(Duration.zero);
+
+    verify(() => mockActivityGate.waitUntilIdle()).called(1);
+    verifyNever(() => mockClient.sync());
+
+    activityGateCompleter.complete();
+    await Future<void>.delayed(Duration.zero);
+
+    verify(() => mockClient.sync()).called(1);
   });
 
   test('start logs when no room is available', () async {

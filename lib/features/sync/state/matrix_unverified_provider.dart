@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -16,10 +15,8 @@ class MatrixUnverifiedController extends _$MatrixUnverifiedController {
     });
   }
 
-  final MatrixService _matrixService = getIt<MatrixService>();
-
   @override
   Future<List<DeviceKeys>> build() async {
-    return _matrixService.getUnverifiedDevices();
+    return ref.watch(matrixServiceProvider).getUnverifiedDevices();
   }
 }

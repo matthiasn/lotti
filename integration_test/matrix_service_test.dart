@@ -232,7 +232,10 @@ void main() {
         // Make sure the GetIt dependencies are ready before creating MatrixService
         await Future<void>.delayed(const Duration(seconds: 1));
 
-        final aliceClient = await createMatrixClient(dbName: 'Alice');
+        final aliceClient = await createMatrixClient(
+          documentsDirectory: sharedDocumentsDirectory,
+          dbName: 'Alice',
+        );
         final aliceGateway = MatrixSdkGateway(client: aliceClient);
         final loggingService = sharedLoggingService;
         final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
@@ -271,7 +274,10 @@ void main() {
         await alice.listenToTimeline();
 
         debugPrint('\n--- Bob goes live');
-        final bobClient = await createMatrixClient(dbName: 'Bob');
+        final bobClient = await createMatrixClient(
+          documentsDirectory: sharedDocumentsDirectory,
+          dbName: 'Bob',
+        );
         final bobGateway = MatrixSdkGateway(client: bobClient);
         final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
         final bob = _createMatrixService(

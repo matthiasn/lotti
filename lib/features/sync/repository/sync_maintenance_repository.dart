@@ -3,11 +3,12 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    hide aiConfigRepositoryProvider;
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 
 typedef SyncProgressCallback = void Function(double progress);
@@ -33,14 +34,14 @@ class SyncOperation<T> {
 
 class SyncMaintenanceRepository {
   SyncMaintenanceRepository({
-    JournalDb? journalDb,
-    OutboxService? outboxService,
-    LoggingService? loggingService,
-    AiConfigRepository? aiConfigRepository,
-  })  : _journalDb = journalDb ?? getIt<JournalDb>(),
-        _outboxService = outboxService ?? getIt<OutboxService>(),
-        _loggingService = loggingService ?? getIt<LoggingService>(),
-        _aiConfigRepository = aiConfigRepository ?? getIt<AiConfigRepository>();
+    required JournalDb journalDb,
+    required OutboxService outboxService,
+    required LoggingService loggingService,
+    required AiConfigRepository aiConfigRepository,
+  })  : _journalDb = journalDb,
+        _outboxService = outboxService,
+        _loggingService = loggingService,
+        _aiConfigRepository = aiConfigRepository;
 
   final JournalDb _journalDb;
   final OutboxService _outboxService;
@@ -358,5 +359,10 @@ class SyncMaintenanceRepository {
 
 final syncMaintenanceRepositoryProvider =
     Provider<SyncMaintenanceRepository>((ref) {
-  return SyncMaintenanceRepository();
+  return SyncMaintenanceRepository(
+    journalDb: ref.watch(journalDbProvider),
+    outboxService: ref.watch(outboxServiceProvider),
+    loggingService: ref.watch(loggingServiceProvider),
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+  );
 });

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -39,13 +39,10 @@ void main() {
 
     listener = StateListener<AsyncValue<LoginState?>>();
 
-    // Register the mock
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<MatrixService>(mockMatrixService);
-
     // Create a ProviderContainer that overrides the loginStateStreamProvider
     container = ProviderContainer(
       overrides: [
+        matrixServiceProvider.overrideWithValue(mockMatrixService),
         // Override the loginStateStream provider to use our test stream
         loginStateStreamProvider.overrideWith(
           (ref) => loginStateController.stream,
@@ -61,7 +58,6 @@ void main() {
   tearDown(() {
     loginStateController.close();
     container.dispose();
-    getIt.reset();
   });
 
   group('MatrixLoginController', () {

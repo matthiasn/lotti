@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 final purgeControllerProvider =
@@ -36,10 +36,12 @@ class PurgeController extends Notifier<PurgeState> {
   PurgeController();
 
   late final JournalDb _db;
+  late final LoggingDb _loggingDb;
 
   @override
   PurgeState build() {
-    _db = getIt<JournalDb>();
+    _db = ref.watch(journalDbProvider);
+    _loggingDb = ref.watch(loggingDbProvider);
     return const PurgeState();
   }
 
@@ -51,7 +53,7 @@ class PurgeController extends Notifier<PurgeState> {
         state = state.copyWith(progress: progress);
       }
     } catch (e, stackTrace) {
-      await getIt<LoggingDb>().log(
+      await _loggingDb.log(
         LogEntry(
           id: uuid.v1(),
           createdAt: DateTime.now().toIso8601String(),

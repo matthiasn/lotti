@@ -1,5 +1,6 @@
 // ignore_for_file: unnecessary_lambdas
 
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -71,6 +72,12 @@ void main() {
     final room = MockRoom();
     final timeline = MockTimeline();
     final event = MockEvent();
+    final tempDir = Directory.systemTemp.createTempSync('matrix_timeline_flow');
+    addTearDown(() {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
 
     when(() => loggingService.captureEvent(
           any<String>(),
@@ -128,6 +135,7 @@ void main() {
       settingsDb: settingsDb,
       readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
+      documentsDirectory: tempDir,
     );
 
     expect(listener.lastReadEventContextId, isNull);

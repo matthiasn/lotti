@@ -88,7 +88,7 @@
    - Add integration tests with fake gateway to simulate multi-device scenarios.
    - Outcome: `SyncEngine` now owns lifecycle orchestration for `MatrixService`, with dedicated unit/integration coverage.
 
-8. **Dependency Injection Cleanup** *(In Progress — core Matrix services, timeline listener, read-marker, and event processor now receive dependencies via constructors; remaining UI/controllers still rely on `getIt` and need follow-up auditing)*
+8. **Dependency Injection Cleanup** *(Completed — provider-backed wiring replaces `getIt` across sync modules, with a custom lint preventing regressions)*
    - Replace `getIt` usage in sync modules with constructor injection/provider overrides.
    - Enforce via static analysis.
 
@@ -96,10 +96,10 @@
    - Replace `send_message` extension with `MatrixMessageSender` service, ensure attachments/policies injected.
    - Add disposal and behaviour tests.
 
-10. **Regression & Documentation**
-    - Add lifecycle, invite filtering, activity gating, race-condition (fake_async), and error recovery tests.
-    - Measure memory usage pre/post Milestone 5 to confirm leak fixes.
-    - Update documentation (README/feature docs) with architecture diagram, data flow, dependency graph, extension points.
+10. **Regression & Documentation** *(Completed — resilience tests, memory audit, and architecture docs delivered)*
+    - Added lifecycle, invite filtering, activity gating, race-condition (fake_async), and error recovery tests.
+    - Captured pre/post refactor memory benchmarks and published results in `docs/architecture/sync_memory_audit.md`.
+    - Updated architecture documentation (README, `docs/architecture/sync_engine.md`) with data flow, dependency graph, and extension points.
 
 ## 4. Testing Strategy
 

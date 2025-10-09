@@ -89,6 +89,7 @@ class MatrixService {
           settingsDb: _settingsDb,
           readMarkerService: _readMarkerService,
           eventProcessor: _eventProcessor,
+          documentsDirectory: _messageSender.documentsDirectory,
         );
 
     if (syncEngine != null) {
@@ -358,7 +359,10 @@ class MatrixService {
       incomingKeyVerificationController.stream;
 
   Future<void> startKeyVerificationListener() =>
-      listenForKeyVerificationRequests(service: this);
+      listenForKeyVerificationRequests(
+        service: this,
+        loggingService: _loggingService,
+      );
 
   Future<void> logout() async {
     await _syncEngine.logout();

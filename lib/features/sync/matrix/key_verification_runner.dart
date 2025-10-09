@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -77,6 +76,7 @@ class KeyVerificationRunner {
 
 Future<void> listenForKeyVerificationRequests({
   required MatrixService service,
+  required LoggingService loggingService,
 }) async {
   try {
     service.client.onKeyVerificationRequest.stream.listen((
@@ -93,7 +93,7 @@ Future<void> listenForKeyVerificationRequests({
     });
   } catch (e, stackTrace) {
     debugPrint('$e');
-    getIt<LoggingService>().captureException(
+    loggingService.captureException(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'listen',

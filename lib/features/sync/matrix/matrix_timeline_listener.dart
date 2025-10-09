@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -26,6 +27,7 @@ class MatrixTimelineListener implements TimelineContext {
     required SettingsDb settingsDb,
     required SyncReadMarkerService readMarkerService,
     required SyncEventProcessor eventProcessor,
+    required Directory documentsDirectory,
   })  : _sessionManager = sessionManager,
         _roomManager = roomManager,
         _loggingService = loggingService,
@@ -33,7 +35,8 @@ class MatrixTimelineListener implements TimelineContext {
         _journalDb = journalDb,
         _settingsDb = settingsDb,
         _readMarkerService = readMarkerService,
-        _eventProcessor = eventProcessor {
+        _eventProcessor = eventProcessor,
+        _documentsDirectory = documentsDirectory {
     _clientRunner = ClientRunner<void>(
       callback: (_) async {
         await _activityGate.waitUntilIdle();
@@ -43,6 +46,7 @@ class MatrixTimelineListener implements TimelineContext {
           loggingService: _loggingService,
           readMarkerService: _readMarkerService,
           eventProcessor: _eventProcessor,
+          documentsDirectory: _documentsDirectory,
         );
       },
     );
@@ -56,6 +60,7 @@ class MatrixTimelineListener implements TimelineContext {
   final SettingsDb _settingsDb;
   final SyncReadMarkerService _readMarkerService;
   final SyncEventProcessor _eventProcessor;
+  final Directory _documentsDirectory;
 
   late final ClientRunner<void> _clientRunner;
   Timeline? _timeline;

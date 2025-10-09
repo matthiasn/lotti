@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/get_it.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
 
-class DeviceCard extends StatefulWidget {
+class DeviceCard extends ConsumerWidget {
   const DeviceCard(
     this.deviceKeys, {
     required this.refreshListCallback,
@@ -19,14 +19,9 @@ class DeviceCard extends StatefulWidget {
   final VoidCallback refreshListCallback;
 
   @override
-  State<DeviceCard> createState() => _DeviceCardState();
-}
-
-class _DeviceCardState extends State<DeviceCard> {
-  final MatrixService _matrixService = getIt<MatrixService>();
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final deviceKeys = this.deviceKeys;
+    final matrixService = ref.read(matrixServiceProvider);
     return Card(
       child: ListTile(
         title: Row(
@@ -34,9 +29,7 @@ class _DeviceCardState extends State<DeviceCard> {
           children: [
             Flexible(
               child: Text(
-                widget.deviceKeys.deviceDisplayName ??
-                    widget.deviceKeys.deviceId ??
-                    '',
+                deviceKeys.deviceDisplayName ?? deviceKeys.deviceId ?? '',
                 softWrap: true,
               ),
             ),
@@ -48,13 +41,13 @@ class _DeviceCardState extends State<DeviceCard> {
               ),
               onPressed: () async {
                 try {
-                  await _matrixService.deleteDevice(widget.deviceKeys);
-                  widget.refreshListCallback();
+                  await matrixService.deleteDevice(deviceKeys);
+                  refreshListCallback();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Device ${widget.deviceKeys.deviceDisplayName ?? widget.deviceKeys.deviceId ?? 'unknown'} deleted successfully',
+                          'Device ${deviceKeys.deviceDisplayName ?? deviceKeys.deviceId ?? 'unknown'} deleted successfully',
                         ),
                       ),
                     );
@@ -78,7 +71,7 @@ class _DeviceCardState extends State<DeviceCard> {
             Opacity(
               opacity: 0.5,
               child: Text(
-                widget.deviceKeys.userId,
+                deviceKeys.userId,
                 style: context.textTheme.bodySmall,
               ),
             ),
@@ -89,10 +82,10 @@ class _DeviceCardState extends State<DeviceCard> {
                   context: context,
                   isScrollControlled: true,
                   builder: (_) {
-                    return VerificationModal(widget.deviceKeys);
+                    return VerificationModal(deviceKeys);
                   },
                 );
-                widget.refreshListCallback();
+                refreshListCallback();
               },
               label: context.messages.settingsMatrixVerifyLabel,
             ),
