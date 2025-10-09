@@ -301,6 +301,38 @@ void main() {
     await getIt.reset();
   });
 
+  test('creates default timeline listener when not provided', () async {
+    final tempDir =
+        Directory.systemTemp.createTempSync('matrix_service_default_listener');
+    addTearDown(() {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+    final mockSyncEngine = MockSyncEngine();
+    when(() => mockSyncEngine.dispose()).thenAnswer((_) async {});
+
+    final defaultService = MatrixService(
+      gateway: mockGateway,
+      loggingService: mockLoggingService,
+      activityGate: mockActivityGate,
+      messageSender: mockMessageSender,
+      journalDb: mockJournalDb,
+      settingsDb: mockSettingsDb,
+      readMarkerService: mockReadMarkerService,
+      eventProcessor: mockEventProcessor,
+      secureStorage: mockSecureStorage,
+      documentsDirectory: tempDir,
+      roomManager: mockRoomManager,
+      sessionManager: mockSessionManager,
+      syncEngine: mockSyncEngine,
+    );
+
+    expect(defaultService.timeline, isNull);
+
+    await defaultService.dispose();
+  });
+
   test('createRoom delegates to SyncRoomManager', () async {
     when(
       () => mockRoomManager.createRoom(
@@ -932,6 +964,7 @@ void main() {
       readMarkerService: extraReadMarkerService,
       eventProcessor: extraEventProcessor,
       secureStorage: extraSecureStorage,
+      documentsDirectory: Directory.systemTemp,
       roomManager: extraRoomManager,
       sessionManager: extraSessionManager,
       timelineListener: extraTimelineListener,
@@ -1203,6 +1236,7 @@ void main() {
         timelineListener: mockTimelineListener,
         onStartKeyVerification: () => startKeyCalled = true,
         onListenTimeline: () => listenTimelineCalled = true,
+        documentsDirectory: Directory.systemTemp,
       )..matrixConfig = const MatrixConfig(
           homeServer: 'https://example.org',
           user: '@user:server',

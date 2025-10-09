@@ -1,14 +1,17 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    hide aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
@@ -1010,6 +1013,26 @@ void main() {
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
       ).called(1);
+    });
+  });
+
+  group('syncMaintenanceRepositoryProvider', () {
+    test('constructs repository from shared service providers', () {
+      final container = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(mockJournalDb),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
+          loggingServiceProvider.overrideWithValue(mockLoggingService),
+          aiConfigRepositoryProvider.overrideWithValue(
+            mockAiConfigRepository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(syncMaintenanceRepositoryProvider);
+
+      expect(repository, isA<SyncMaintenanceRepository>());
     });
   });
 }

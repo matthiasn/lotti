@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -29,6 +30,8 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockEvent extends Mock implements Event {}
+
+class MockMatrixFile extends Mock implements MatrixFile {}
 
 class FakeClient extends Fake implements Client {}
 
@@ -116,6 +119,7 @@ void main() {
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
       when(() => client.userID).thenReturn('@local:server');
+      when(() => client.deviceName).thenReturn('device');
       when(
         () => readMarkerService.updateReadMarker(
           client: any<Client>(named: 'client'),
@@ -241,15 +245,17 @@ void main() {
       final room = MockRoom();
       final timeline = MockTimeline();
       final event = MockEvent();
+      const eventId = r'$remote';
 
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => room.id).thenReturn('!room:server');
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
       when(() => room.getTimeline(eventContextId: any(named: 'eventContextId')))
           .thenAnswer((_) async => timeline);
       when(() => timeline.events).thenReturn([event]);
-      when(() => event.eventId).thenReturn(r'$remote');
+      when(() => event.eventId).thenReturn(eventId);
       when(() => event.senderId).thenReturn('@remote:server');
       when(() => event.messageType).thenReturn(syncMessageType);
       when(() => event.attachmentMimetype).thenReturn('');
@@ -281,7 +287,7 @@ void main() {
         () => loggingService.captureException(
           any<dynamic>(),
           domain: 'MATRIX_SERVICE',
-          subDomain: any<String>(named: 'subDomain'),
+          subDomain: 'processNewTimelineEvents.handler',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
@@ -290,6 +296,74 @@ void main() {
           client: any<Client>(named: 'client'),
           timeline: any<Timeline>(named: 'timeline'),
           eventId: any<String>(named: 'eventId'),
+        ),
+      );
+    });
+
+    test(
+        'does not advance read marker when event handling throws FileSystemException',
+        () async {
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      final event = MockEvent();
+      final matrixFile = MockMatrixFile();
+      const eventId = r'$fsError';
+
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => room.id).thenReturn('!room:server');
+      when(() => client.sync())
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => room.getTimeline(eventContextId: any(named: 'eventContextId')))
+          .thenAnswer((_) async => timeline);
+      when(() => timeline.events).thenReturn([event]);
+      when(() => event.eventId).thenReturn(eventId);
+      when(() => event.senderId).thenReturn('@remote:server');
+      when(() => event.type).thenReturn('m.room.message');
+      when(() => event.messageType).thenReturn(syncMessageType);
+      when(() => event.attachmentMimetype).thenReturn('image/png');
+      when(() => event.content)
+          .thenReturn({'relativePath': '/matrix/attachment.bin'});
+      when(event.downloadAndDecryptAttachment)
+          .thenAnswer((_) async => matrixFile);
+      when(() => matrixFile.bytes).thenReturn(Uint8List.fromList([1, 2, 3]));
+
+      when(
+        () => eventProcessor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: any<JournalDb>(named: 'journalDb'),
+        ),
+      ).thenThrow(const FileSystemException('attachment missing'));
+      when(
+        () => readMarkerService.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          timeline: any<Timeline>(named: 'timeline'),
+          eventId: any<String>(named: 'eventId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await processNewTimelineEvents(
+        listener: context,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        readMarkerService: readMarkerService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
+      );
+
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'processNewTimelineEvents.missingAttachment',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => readMarkerService.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          timeline: any<Timeline>(named: 'timeline'),
+          eventId: eventId,
         ),
       );
     });
