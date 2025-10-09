@@ -11,7 +11,6 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../features/sync/outbox/outbox_service_test.dart';
 import '../../../widget_test_utils.dart';
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
@@ -19,6 +18,8 @@ class MockDeviceKeys extends Mock implements DeviceKeys {}
 class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
 
 class MockKeyVerification extends Mock implements KeyVerification {}
+
+class MockMatrixService extends Mock implements MatrixService {}
 
 class _FakeDeviceKeys extends Fake implements DeviceKeys {}
 

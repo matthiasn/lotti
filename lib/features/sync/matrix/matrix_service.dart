@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
@@ -35,6 +36,7 @@ class MatrixService {
     required SyncReadMarkerService readMarkerService,
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
+    required Directory documentsDirectory,
     bool ownsActivityGate = false,
     MatrixConfig? matrixConfig,
     String? deviceDisplayName,
@@ -89,7 +91,7 @@ class MatrixService {
           settingsDb: _settingsDb,
           readMarkerService: _readMarkerService,
           eventProcessor: _eventProcessor,
-          documentsDirectory: _messageSender.documentsDirectory,
+          documentsDirectory: documentsDirectory,
         );
 
     if (syncEngine != null) {

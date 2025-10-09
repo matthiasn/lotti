@@ -80,6 +80,7 @@ MatrixService _createMatrixService({
     readMarkerService: readMarkerService,
     eventProcessor: eventProcessor,
     secureStorage: secureStorage,
+    documentsDirectory: documentsDirectory,
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
   );
