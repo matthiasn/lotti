@@ -125,32 +125,52 @@ Future<void> processNewTimelineEvents({
 
     for (final event in newEvents) {
       final eventId = event.eventId;
+      var shouldAdvanceReadMarker = true;
 
       // Terminates early when the message was emitted by the device itself,
       // as it would be a waste of battery to try to ingest what the device
       // already knows.
       if (event.senderId != listener.client.userID) {
-        loggingService.captureEvent(
-          'Processing event ${event.eventId} from ${event.senderId} '
-          '(${event.type}) in room ${syncRoom?.id}',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'processNewTimelineEvents',
-        );
-        await saveAttachment(
-          event,
-          loggingService: loggingService,
-          documentsDirectory: documentsDirectory,
-        );
+        try {
+          loggingService.captureEvent(
+            'Processing event ${event.eventId} from ${event.senderId} '
+            '(${event.type}) in room ${syncRoom?.id}',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'processNewTimelineEvents',
+          );
 
-        if (event.messageType == syncMessageType) {
-          await eventProcessor.process(
-            event: event,
-            journalDb: journalDb,
+          await saveAttachment(
+            event,
+            loggingService: loggingService,
+            documentsDirectory: documentsDirectory,
+          );
+
+          if (event.messageType == syncMessageType) {
+            await eventProcessor.process(
+              event: event,
+              journalDb: journalDb,
+            );
+          }
+        } on FileSystemException catch (error, stackTrace) {
+          shouldAdvanceReadMarker = false;
+          loggingService.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'processNewTimelineEvents.missingAttachment',
+            stackTrace: stackTrace,
+          );
+        } on Object catch (error, stackTrace) {
+          shouldAdvanceReadMarker = false;
+          loggingService.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'processNewTimelineEvents.handler',
+            stackTrace: stackTrace,
           );
         }
       }
 
-      if (eventId.startsWith(r'$')) {
+      if (shouldAdvanceReadMarker && eventId.startsWith(r'$')) {
         listener.lastReadEventContextId = eventId;
         await readMarkerService.updateReadMarker(
           client: listener.client,

@@ -285,6 +285,13 @@ void main() {
           stackTrace: any(named: 'stackTrace'),
         ),
       ).called(1);
+      verifyNever(
+        () => readMarkerService.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          timeline: any<Timeline>(named: 'timeline'),
+          eventId: any<String>(named: 'eventId'),
+        ),
+      );
     });
   });
 }
