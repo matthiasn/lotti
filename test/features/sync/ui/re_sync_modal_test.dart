@@ -65,4 +65,40 @@ void main() {
       ),
     ).called(1);
   });
+
+  testWidgets('start button disabled until both dates selected',
+      (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const ReSyncModalContent(),
+        overrides: [
+          maintenanceProvider.overrideWithValue(mockMaintenance),
+        ],
+      ),
+    );
+
+    final dateFieldFinder = find.byType(DateTimeField);
+    final fields = dateFieldFinder
+        .evaluate()
+        .map((element) => element.widget as DateTimeField);
+
+    final startButtonFinder =
+        find.widgetWithText(LottiSecondaryButton, 'Start');
+    expect(startButtonFinder, findsOneWidget);
+
+    var startButton = tester.widget<LottiSecondaryButton>(startButtonFinder);
+    expect(startButton.onPressed, isNull);
+
+    fields.first.setDateTime(DateTime(2024, 1, 1));
+    await tester.pump();
+
+    startButton = tester.widget<LottiSecondaryButton>(startButtonFinder);
+    expect(startButton.onPressed, isNull);
+
+    fields.last.setDateTime(DateTime(2024, 1, 2));
+    await tester.pump();
+
+    startButton = tester.widget<LottiSecondaryButton>(startButtonFinder);
+    expect(startButton.onPressed, isNotNull);
+  });
 }

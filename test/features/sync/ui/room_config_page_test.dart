@@ -4,9 +4,12 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/features/sync/ui/room_config_page.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../widget_test_utils.dart';
+
+// ignore_for_file: cascade_invocations
 
 class MockMatrixService extends Mock implements MatrixService {}
 
@@ -18,6 +21,8 @@ class _FakeMatrixRoomController extends MatrixRoomController {
   bool joinCalled = false;
   bool createCalled = false;
   String? joinedRoomId;
+  bool inviteCalled = false;
+  String? invitedUserId;
 
   @override
   Future<String?> build() async => initialRoom;
@@ -31,6 +36,12 @@ class _FakeMatrixRoomController extends MatrixRoomController {
   Future<void> joinRoom(String roomId) async {
     joinCalled = true;
     joinedRoomId = roomId;
+  }
+
+  @override
+  Future<void> inviteToRoom(String userId) async {
+    inviteCalled = true;
+    invitedUserId = userId;
   }
 
   @override
@@ -147,6 +158,45 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.createCalled, isTrue);
+    });
+
+    testWidgets('handleBarcode invites user and hides scanner state',
+        (tester) async {
+      final controller = _FakeMatrixRoomController(initialRoom: '!room:server');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(() => controller),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(RoomConfig)) as StatefulElement;
+      final handle = element.state as RoomConfigStateAccess;
+      handle.showCamForTesting = true;
+
+      await handle.handleBarcodeForTesting(
+        const BarcodeCapture(
+          barcodes: [
+            Barcode(rawValue: '@friend:server'),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      final inviteCalled = controller.inviteCalled;
+      final invitedUserId = controller.invitedUserId;
+      final showCamAfter = handle.showCamForTesting;
+      expect(inviteCalled, isTrue);
+      expect(invitedUserId, '@friend:server');
+      expect(showCamAfter, isFalse);
     });
   });
 }
