@@ -112,9 +112,13 @@ Future<void> processNewTimelineEvents({
     );
     final newEvents = eventsAfter ?? events;
 
+    if (newEvents.isEmpty) {
+      return;
+    }
+
     loggingService.captureEvent(
-      'Processing timeline events - roomId: ${syncRoom?.id}, '
-      'eventCount: ${newEvents.length}',
+      'Processing ${newEvents.length} timeline events '
+      'for room ${syncRoom?.id}',
       domain: 'MATRIX_SERVICE',
       subDomain: 'processNewTimelineEvents',
     );
@@ -127,23 +131,23 @@ Future<void> processNewTimelineEvents({
       // already knows.
       if (event.senderId != listener.client.userID) {
         loggingService.captureEvent(
-          'Received message from ${event.senderId} in room ${syncRoom?.id}, '
-          'eventType: ${event.type}',
+          'Processing event ${event.eventId} from ${event.senderId} '
+          '(${event.type}) in room ${syncRoom?.id}',
           domain: 'MATRIX_SERVICE',
           subDomain: 'processNewTimelineEvents',
         );
+        await saveAttachment(
+          event,
+          loggingService: loggingService,
+          documentsDirectory: documentsDirectory,
+        );
+
         if (event.messageType == syncMessageType) {
           await eventProcessor.process(
             event: event,
             journalDb: journalDb,
           );
         }
-
-        await saveAttachment(
-          event,
-          loggingService: loggingService,
-          documentsDirectory: documentsDirectory,
-        );
       }
 
       if (eventId.startsWith(r'$')) {

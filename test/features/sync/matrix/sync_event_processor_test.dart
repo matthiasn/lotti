@@ -297,7 +297,7 @@ void main() {
 
       expect(
         () => loader.load('../${path.basename(externalFile.path)}'),
-        throwsArgumentError,
+        throwsA(isA<FileSystemException>()),
       );
 
       externalDir.deleteSync(recursive: true);

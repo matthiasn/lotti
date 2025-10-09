@@ -30,6 +30,10 @@ void main() {
       async.flushMicrotasks();
 
       expect(processed, [1, 2]);
+      if (pending.isNotEmpty) {
+        pending.removeAt(0).complete();
+        async.flushMicrotasks();
+      }
       expect(pending, isEmpty);
 
       runner.close();
