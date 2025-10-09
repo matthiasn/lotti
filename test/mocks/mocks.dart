@@ -13,6 +13,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -148,6 +149,8 @@ class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
 class MockNavService extends Mock implements NavService {}
 
 class MockNotificationService extends Mock implements NotificationService {}
+
+class MockOutboxService extends Mock implements OutboxService {}
 
 class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
 

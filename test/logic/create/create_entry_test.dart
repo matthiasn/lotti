@@ -259,8 +259,3 @@ void main() {
     });
   });
 }
-
-// Mock classes
-class MockOutboxService extends Mock implements OutboxService {}
-
-class MockTimeService extends Mock implements TimeService {}
