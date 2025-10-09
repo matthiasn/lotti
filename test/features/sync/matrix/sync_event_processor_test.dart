@@ -213,7 +213,10 @@ void main() {
   test('logs exceptions for invalid base64 payloads', () async {
     when(() => event.text).thenReturn('not-base64');
 
-    await processor.process(event: event, journalDb: journalDb);
+    await expectLater(
+      () => processor.process(event: event, journalDb: journalDb),
+      throwsA(isA<FormatException>()),
+    );
 
     verify(() => loggingService.captureException(
           any<Object>(),
@@ -234,7 +237,10 @@ void main() {
     when(() => journalEntityLoader.load('/entity.json'))
         .thenThrow(Exception('load failed'));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await expectLater(
+      () => processor.process(event: event, journalDb: journalDb),
+      throwsA(isA<Exception>()),
+    );
 
     verify(() => loggingService.captureException(
           any<Object>(),
@@ -297,7 +303,7 @@ void main() {
 
       expect(
         () => loader.load('../${path.basename(externalFile.path)}'),
-        throwsArgumentError,
+        throwsA(isA<FileSystemException>()),
       );
 
       externalDir.deleteSync(recursive: true);

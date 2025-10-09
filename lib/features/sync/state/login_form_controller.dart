@@ -6,14 +6,14 @@ import 'package:lotti/features/sync/model/validation/config_form_state.dart';
 import 'package:lotti/features/sync/model/validation/homeserver.dart';
 import 'package:lotti/features/sync/model/validation/password.dart';
 import 'package:lotti/features/sync/model/validation/username.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'login_form_controller.g.dart';
 
 @riverpod
 class LoginFormController extends _$LoginFormController {
-  final MatrixService _matrixService = getIt<MatrixService>();
+  MatrixService get _matrixService => ref.read(matrixServiceProvider);
 
   final homeServerController = TextEditingController();
   final usernameController = TextEditingController();
@@ -21,7 +21,7 @@ class LoginFormController extends _$LoginFormController {
 
   @override
   Future<LoginFormState?> build() async {
-    final config = await _matrixService.loadConfig();
+    final config = await ref.watch(matrixServiceProvider).loadConfig();
 
     passwordController.text = config?.password ?? '';
     usernameController.text = config?.user ?? '';

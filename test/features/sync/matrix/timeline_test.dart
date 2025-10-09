@@ -103,6 +103,8 @@ void main() {
   late MockSettingsDb mockSettingsDb;
   late MockSyncReadMarkerService mockReadMarkerService;
   late MockSyncEventProcessor mockEventProcessor;
+  late Directory tempDir;
+  late Map<String, int> failureCounts;
 
   setUp(() {
     mockClient = MockClient();
@@ -114,6 +116,8 @@ void main() {
     mockSettingsDb = MockSettingsDb();
     mockReadMarkerService = MockSyncReadMarkerService();
     mockEventProcessor = MockSyncEventProcessor();
+    tempDir = Directory.systemTemp.createTempSync('timeline_test');
+    failureCounts = <String, int>{};
 
     when(() => mockClient.isLogged()).thenReturn(true);
     when(() => mockClient.userID).thenReturn('@user:server');
@@ -128,7 +132,7 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<SettingsDb>(mockSettingsDb)
-      ..registerSingleton<Directory>(Directory.systemTemp);
+      ..registerSingleton<Directory>(tempDir);
 
     context = TestTimelineContext(
       client: mockClient,
@@ -137,7 +141,12 @@ void main() {
     );
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    getIt.reset();
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
+  });
 
   test('listenToTimelineEvents logs when syncRoom is null', () async {
     when(() => mockRoomManager.currentRoom).thenReturn(null);
@@ -208,6 +217,8 @@ void main() {
       loggingService: mockLoggingService,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
+      documentsDirectory: tempDir,
+      failureCounts: failureCounts,
     );
 
     verify(
@@ -254,6 +265,8 @@ void main() {
       loggingService: mockLoggingService,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
+      documentsDirectory: tempDir,
+      failureCounts: failureCounts,
     );
 
     verifyNever(() => mockEventProcessor.process(
@@ -273,6 +286,8 @@ void main() {
       loggingService: mockLoggingService,
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
+      documentsDirectory: tempDir,
+      failureCounts: failureCounts,
     );
 
     verify(

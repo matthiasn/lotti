@@ -36,10 +36,18 @@
   - Added `SyncLifecycleCoordinator` and `SyncEngine` to compose session, room, timeline, and diagnostics responsibilities with constructor-driven injection.
   - Refactored `MatrixService` lifecycle to delegate startup/shutdown to the engine, centralizing diagnostics and login hooks.
   - Expanded automated coverage with lifecycle unit tests and a multi-device invite integration scenario backed by the fake gateway.
+- **Dependency Injection Cleanup** (Milestone 8)
+  - Removed direct `getIt` usage from sync controllers, repositories, and widgets by introducing provider-backed wiring (`matrixServiceProvider`, `maintenanceProvider`, etc.).
+  - Updated tests to override providers instead of mutating global state, simplifying harness setup and teardown.
+  - Added a custom `custom_lint` rule (`no_get_it_in_sync`) to guard against regressions and exercised the rule across the module.
 - **Extension Method Removal** (Milestone 9)
   - Introduced `MatrixMessageSender` with injected `LoggingService`, `JournalDb`, and documents directory, replacing the legacy `send_message.dart` extension.
   - Updated `MatrixService`, `MatrixTimelineListener`, `SyncEngine`, and the associated tests to consume the new service via constructor injection.
   - Refreshed `get_it.dart`, unit tests, and the integration flow to register the sender explicitly; added context registration helpers for mocks.
+- **Regression & Documentation Hardening** (Milestone 10)
+  - Added resilience tests covering invite gating, activity idle sequencing, timeline error recovery, and the new client runner queue.
+  - Recorded pre/post refactor memory benchmarks (`docs/architecture/sync_memory_audit.md`) to validate leak fixes.
+  - Published updated architecture documentation (`docs/architecture/sync_engine.md`) and linked provider wiring in the feature README.
 
 ## Recent Fixes & Enhancements
 
@@ -50,9 +58,11 @@
 - `MatrixService.dispose()` now tears down controllers before collaborators, ensuring the new message sender and session managers are released cleanly.
 - Matrix service unit tests register explicit mocktail fallbacks for `Timeline`, `Event`, and `MatrixMessageContext`, avoiding brittle matcher usage.
 - Added dedicated `MatrixMessageSender` unit tests covering room overrides, attachment resend rules, and error propagation, eliminating the silent failure paths from earlier commits.
+- Added race-condition and activity-gating coverage (`client_runner_test.dart`, `matrix_timeline_listener_test.dart`) plus timeline error-recovery regression tests.
+- Published architecture/memory documentation: `docs/architecture/sync_engine.md` and `docs/architecture/sync_memory_audit.md`.
 
 ## Next Up
 
-- **Milestone 8:** Finish dependency injection cleanup: audit remaining sync UI/controllers for `getIt` lookups, introduce providers or constructor wiring, and add an analyzer guard to prevent regressions.
+- Ongoing regression monitoring and follow-up polish as new sync issues are reported; no remaining refactor milestones.
 
 This progress log will be updated as each milestone is completed.

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_config_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMatrixService extends Mock implements MatrixService {}
@@ -48,13 +48,12 @@ void main() {
 
     listener = StateListener<AsyncValue<MatrixConfig?>>();
 
-    // Override GetIt to use our mock
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<MatrixService>(mockMatrixService);
-
     // Create a provider container
-    container = ProviderContainer()
-      ..listen(
+    container = ProviderContainer(
+      overrides: [
+        matrixServiceProvider.overrideWithValue(mockMatrixService),
+      ],
+    )..listen(
         matrixConfigControllerProvider,
         listener.call,
         fireImmediately: true,
@@ -63,7 +62,6 @@ void main() {
 
   tearDown(() {
     container.dispose();
-    getIt.reset();
   });
 
   group('MatrixConfigController', () {
@@ -120,9 +118,11 @@ void main() {
           .thenAnswer((_) => Future<MatrixConfig?>.value());
 
       // Re-register the service
-      getIt.registerSingleton<MatrixService>(mockService, dispose: (_) {});
-
-      final localContainer = ProviderContainer();
+      final localContainer = ProviderContainer(
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockService),
+        ],
+      );
 
       // Verify we initially get loading state
       final initialState = localContainer.read(matrixConfigControllerProvider);

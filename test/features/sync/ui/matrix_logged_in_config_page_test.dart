@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/ui/matrix_logged_in_config_page.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -35,8 +35,6 @@ void main() {
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<MatrixService>(mockMatrixService);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       SystemChannels.platform,
@@ -47,7 +45,6 @@ void main() {
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, null);
-    getIt.reset();
   });
 
   group('LoggedInPageStickyActionBar', () {
@@ -60,6 +57,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           LoggedInPageStickyActionBar(pageIndexNotifier: pageIndexNotifier),
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             matrixLoginControllerProvider.overrideWith(
               () => _FakeMatrixLoginController(
                 onLogout: () => logoutCalled = true,
@@ -88,6 +86,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           const HomeserverLoggedInWidget(),
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loggedInUserIdProvider.overrideWith(
               (ref) => Future.value('@user:matrix.org'),
             ),
@@ -107,6 +106,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           const HomeserverLoggedInWidget(),
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loggedInUserIdProvider.overrideWith(
               (ref) => Future.value(),
             ),
@@ -127,6 +127,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           const HomeserverLoggedInWidget(),
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loggedInUserIdProvider.overrideWith((ref) => completer.future),
           ],
         ),
@@ -142,6 +143,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           const HomeserverLoggedInWidget(),
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loggedInUserIdProvider.overrideWith(
               (ref) => Future<String?>.error('boom'),
             ),
@@ -178,6 +180,9 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const DiagnosticInfoButton(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
         ),
       );
 

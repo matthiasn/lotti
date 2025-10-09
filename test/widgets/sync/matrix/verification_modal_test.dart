@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/sync/matrix/verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/encryption.dart';
@@ -11,7 +11,6 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
@@ -19,6 +18,8 @@ class MockDeviceKeys extends Mock implements DeviceKeys {}
 class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
 
 class MockKeyVerification extends Mock implements KeyVerification {}
+
+class MockMatrixService extends Mock implements MatrixService {}
 
 class _FakeDeviceKeys extends Fake implements DeviceKeys {}
 
@@ -54,14 +55,10 @@ void main() {
     when(() => mockDeviceKeys.userId).thenReturn('@user:server');
     when(() => mockDeviceKeys.deviceDisplayName).thenReturn('Pixel 7');
     when(() => mockDeviceKeys.deviceId).thenReturn('DEVICE1');
-
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<MatrixService>(mockMatrixService);
   });
 
   tearDown(() async {
     await controller.close();
-    await getIt.reset();
   });
 
   testWidgets('starts verification and shows start button when idle',
@@ -69,6 +66,9 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         VerificationModal(mockDeviceKeys),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
       ),
     );
 
@@ -91,6 +91,9 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         VerificationModal(mockDeviceKeys),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
       ),
     );
 
@@ -121,6 +124,9 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         VerificationModal(mockDeviceKeys),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
       ),
     );
 
@@ -153,6 +159,9 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         VerificationModal(mockDeviceKeys),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
       ),
     );
 
@@ -181,6 +190,9 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         VerificationModal(mockDeviceKeys),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
       ),
     );
 

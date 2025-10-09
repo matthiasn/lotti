@@ -1,53 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/matrix_settings_modal.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
-
-import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 class MockMatrixService extends Mock implements MatrixService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockMatrixService mockMatrixService;
-  late MockJournalDb mockJournalDb;
-  late MockLoggingService mockLoggingService;
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-    mockJournalDb = MockJournalDb();
-    mockLoggingService = MockLoggingService();
-
-    // Register mocks with GetIt
-    getIt
-      ..registerSingleton<MatrixService>(mockMatrixService)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<LoggingService>(mockLoggingService);
 
     // Default stubs
     when(() => mockMatrixService.isLoggedIn()).thenReturn(false);
     when(() => mockMatrixService.logout()).thenAnswer((_) async {});
-
-    when(() => mockJournalDb.watchConfigFlag(any()))
-        .thenAnswer((_) => Stream.value(true));
   });
-
-  tearDown(getIt.reset);
 
   group('MatrixSettingsCard', () {
     testWidgets('displays correct title and subtitle', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const MatrixSettingsCard(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
         ),
       );
 
@@ -63,6 +45,9 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const MatrixSettingsCard(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
         ),
       );
 
@@ -83,6 +68,9 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const MatrixSettingsCard(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
         ),
       );
 

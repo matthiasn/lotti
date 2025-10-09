@@ -113,6 +113,7 @@ class TestableMatrixService extends MatrixService {
     required super.readMarkerService,
     required super.eventProcessor,
     required super.secureStorage,
+    required super.documentsDirectory,
     required this.onStartKeyVerification,
     required this.onListenTimeline,
     super.roomManager,
@@ -288,6 +289,7 @@ void main() {
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
       secureStorage: mockSecureStorage,
+      documentsDirectory: Directory.systemTemp,
       roomManager: mockRoomManager,
       sessionManager: mockSessionManager,
       timelineListener: mockTimelineListener,
@@ -297,6 +299,38 @@ void main() {
   tearDown(() async {
     await loginStateController.close();
     await getIt.reset();
+  });
+
+  test('creates default timeline listener when not provided', () async {
+    final tempDir =
+        Directory.systemTemp.createTempSync('matrix_service_default_listener');
+    addTearDown(() {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+    final mockSyncEngine = MockSyncEngine();
+    when(() => mockSyncEngine.dispose()).thenAnswer((_) async {});
+
+    final defaultService = MatrixService(
+      gateway: mockGateway,
+      loggingService: mockLoggingService,
+      activityGate: mockActivityGate,
+      messageSender: mockMessageSender,
+      journalDb: mockJournalDb,
+      settingsDb: mockSettingsDb,
+      readMarkerService: mockReadMarkerService,
+      eventProcessor: mockEventProcessor,
+      secureStorage: mockSecureStorage,
+      documentsDirectory: tempDir,
+      roomManager: mockRoomManager,
+      sessionManager: mockSessionManager,
+      syncEngine: mockSyncEngine,
+    );
+
+    expect(defaultService.timeline, isNull);
+
+    await defaultService.dispose();
   });
 
   test('createRoom delegates to SyncRoomManager', () async {
@@ -609,6 +643,7 @@ void main() {
         readMarkerService: mockReadMarkerService,
         eventProcessor: mockEventProcessor,
         secureStorage: mockSecureStorage,
+        documentsDirectory: Directory.systemTemp,
         roomManager: mockRoomManager,
         sessionManager: mockSessionManager,
         timelineListener: mockTimelineListener,
@@ -641,6 +676,7 @@ void main() {
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
       secureStorage: mockSecureStorage,
+      documentsDirectory: Directory.systemTemp,
       roomManager: mockRoomManager,
       sessionManager: mockSessionManager,
       timelineListener: mockTimelineListener,
@@ -928,6 +964,7 @@ void main() {
       readMarkerService: extraReadMarkerService,
       eventProcessor: extraEventProcessor,
       secureStorage: extraSecureStorage,
+      documentsDirectory: Directory.systemTemp,
       roomManager: extraRoomManager,
       sessionManager: extraSessionManager,
       timelineListener: extraTimelineListener,
@@ -1199,6 +1236,7 @@ void main() {
         timelineListener: mockTimelineListener,
         onStartKeyVerification: () => startKeyCalled = true,
         onListenTimeline: () => listenTimelineCalled = true,
+        documentsDirectory: Directory.systemTemp,
       )..matrixConfig = const MatrixConfig(
           homeServer: 'https://example.org',
           user: '@user:server',

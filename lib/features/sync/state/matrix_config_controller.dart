@@ -2,18 +2,18 @@ import 'dart:async';
 
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'matrix_config_controller.g.dart';
 
 @riverpod
 class MatrixConfigController extends _$MatrixConfigController {
-  final MatrixService _matrixService = getIt<MatrixService>();
+  MatrixService get _matrixService => ref.read(matrixServiceProvider);
 
   @override
   Future<MatrixConfig?> build() async {
-    return _matrixService.loadConfig();
+    return ref.watch(matrixServiceProvider).loadConfig();
   }
 
   Future<void> setConfig(MatrixConfig config) =>

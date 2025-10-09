@@ -6,10 +6,17 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    hide aiConfigRepositoryProvider;
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -86,8 +93,18 @@ Future<void> main() async {
     };
 
     runApp(
-      const ProviderScope(
-        child: MyBeamerApp(),
+      ProviderScope(
+        overrides: [
+          matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
+          maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
+          journalDbProvider.overrideWithValue(getIt<JournalDb>()),
+          loggingDbProvider.overrideWithValue(getIt<LoggingDb>()),
+          loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
+          outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
+          aiConfigRepositoryProvider
+              .overrideWithValue(getIt<AiConfigRepository>()),
+        ],
+        child: const MyBeamerApp(),
       ),
     );
   }, (Object error, StackTrace stackTrace) {

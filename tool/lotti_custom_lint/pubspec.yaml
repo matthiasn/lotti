@@ -1,0 +1,14 @@
+name: lotti_custom_lint
+description: Custom lint rules for the Lotti project.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  analyzer: ">=6.7.0 <8.0.0"
+  custom_lint_builder: ^0.7.0
+
+dev_dependencies:
+  custom_lint: ^0.7.0

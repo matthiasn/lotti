@@ -1,6 +1,7 @@
 // ignore_for_file: one_member_abstracts
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -32,7 +33,10 @@ class FileSyncJournalEntityLoader implements SyncJournalEntityLoader {
     final candidate = path.normalize(path.join(docDir.path, relative));
     final docPath = path.normalize(docDir.path);
     if (!path.isWithin(docPath, candidate) && docPath != candidate) {
-      throw ArgumentError('jsonPath resolves outside documents directory');
+      throw FileSystemException(
+        'jsonPath resolves outside documents directory',
+        jsonPath,
+      );
     }
     final jsonRelative = path.relative(candidate, from: docPath);
     return readEntityFromJson(jsonRelative);
@@ -85,6 +89,7 @@ class SyncEventProcessor {
         subDomain: 'SyncEventProcessor',
         stackTrace: stackTrace,
       );
+      rethrow;
     }
   }
 
@@ -95,12 +100,22 @@ class SyncEventProcessor {
   }) async {
     switch (syncMessage) {
       case SyncJournalEntity(jsonPath: final jsonPath):
-        final journalEntity = await loader.load(jsonPath);
-        await journalDb.updateJournalEntity(journalEntity);
-        _updateNotifications.notify(
-          journalEntity.affectedIds,
-          fromSync: true,
-        );
+        try {
+          final journalEntity = await loader.load(jsonPath);
+          await journalDb.updateJournalEntity(journalEntity);
+          _updateNotifications.notify(
+            journalEntity.affectedIds,
+            fromSync: true,
+          );
+        } on FileSystemException catch (error, stackTrace) {
+          _loggingService.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SyncEventProcessor.missingAttachment',
+            stackTrace: stackTrace,
+          );
+          rethrow;
+        }
       case SyncEntryLink(entryLink: final entryLink):
         await journalDb.upsertEntryLink(entryLink);
         _updateNotifications.notify(

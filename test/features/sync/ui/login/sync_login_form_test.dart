@@ -7,7 +7,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/ui/login/sync_login_form.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -45,16 +45,11 @@ void main() {
     // Set up default behavior for loadConfig
     when(() => mockMatrixService.loadConfig())
         .thenAnswer((_) => Future.value(testConfig));
-
-    // Override GetIt to use our mock
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<MatrixService>(mockMatrixService);
   });
 
   tearDown(() {
     pageIndexNotifier.dispose();
     loginStateController.close();
-    getIt.reset();
   });
 
   group('SyncLoginForm Widget', () {
@@ -62,6 +57,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loginStateStreamProvider.overrideWith(
               (ref) => loginStateController.stream,
             ),
@@ -88,6 +84,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loginStateStreamProvider.overrideWith(
               (ref) => loginStateController.stream,
             ),
@@ -118,6 +115,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loginStateStreamProvider.overrideWith(
               (ref) => loginStateController.stream,
             ),
@@ -146,6 +144,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loginStateStreamProvider.overrideWith(
               (ref) => loginStateController.stream,
             ),
@@ -174,6 +173,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loginStateStreamProvider.overrideWith(
               (ref) => loginStateController.stream,
             ),
@@ -202,6 +202,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
             loginStateStreamProvider.overrideWith(
               (ref) => loginStateController.stream,
             ),

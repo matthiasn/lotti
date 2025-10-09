@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
-import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/login/sync_login_modal_page.dart';
 import 'package:lotti/features/sync/ui/matrix_logged_in_config_page.dart';
 import 'package:lotti/features/sync/ui/matrix_stats_page.dart';
 import 'package:lotti/features/sync/ui/room_config_page.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-class MatrixSettingsCard extends StatefulWidget {
+class MatrixSettingsCard extends ConsumerStatefulWidget {
   const MatrixSettingsCard({super.key});
 
   @override
-  State<MatrixSettingsCard> createState() => _MatrixSettingsCardState();
+  ConsumerState<MatrixSettingsCard> createState() => _MatrixSettingsCardState();
 }
 
-class _MatrixSettingsCardState extends State<MatrixSettingsCard> {
+class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard> {
   late final ValueNotifier<int> pageIndexNotifier;
 
   @override
@@ -39,7 +39,7 @@ class _MatrixSettingsCardState extends State<MatrixSettingsCard> {
       subtitle: 'Configure end-to-end encrypted sync',
       icon: Icons.sync,
       onTap: () {
-        if (getIt<MatrixService>().isLoggedIn()) {
+        if (ref.read(matrixServiceProvider).isLoggedIn()) {
           pageIndexNotifier.value = 1;
         } else {
           pageIndexNotifier.value = 0;

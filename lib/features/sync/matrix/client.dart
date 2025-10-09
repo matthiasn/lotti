@@ -1,19 +1,18 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 Future<Client> createMatrixClient({
+  required Directory documentsDirectory,
   String? deviceDisplayName,
   String? dbName,
 }) async {
-  final docDir = getIt<Directory>();
   final name = dbName ?? 'lotti_sync';
-  final path = '${docDir.path}/matrix/$name.db';
+  final path = '${documentsDirectory.path}/matrix/$name.db';
   final database = await MatrixSdkDatabase.init(
     name,
     database: await databaseFactoryFfi.openDatabase(

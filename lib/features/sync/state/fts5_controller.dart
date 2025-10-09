@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 final fts5ControllerProvider =
     NotifierProvider<Fts5Controller, Fts5State>(Fts5Controller.new);
@@ -35,7 +35,7 @@ class Fts5Controller extends Notifier<Fts5State> {
 
   @override
   Fts5State build() {
-    _maintenance = getIt<Maintenance>();
+    _maintenance = ref.watch(maintenanceProvider);
     return const Fts5State();
   }
 
