@@ -28,7 +28,7 @@ void main() {
       title: 'Flossing',
     );
 
-    test('replaceAtRecursive with health rule returns rule unchanged', () {
+    test('replaceAtRecursive with health rule at root replaces the rule', () {
       final result = replaceAtRecursive(
         rule: healthRule,
         replaceWith: workoutRule,
@@ -39,7 +39,7 @@ void main() {
       expect(result, workoutRule);
     });
 
-    test('replaceAtRecursive with workout rule returns rule unchanged', () {
+    test('replaceAtRecursive with workout rule at root replaces the rule', () {
       final result = replaceAtRecursive(
         rule: workoutRule,
         replaceWith: healthRule,
@@ -50,7 +50,8 @@ void main() {
       expect(result, healthRule);
     });
 
-    test('replaceAtRecursive with measurable rule returns rule unchanged', () {
+    test('replaceAtRecursive with measurable rule at root replaces the rule',
+        () {
       final result = replaceAtRecursive(
         rule: measurableRule,
         replaceWith: healthRule,
@@ -61,7 +62,7 @@ void main() {
       expect(result, healthRule);
     });
 
-    test('replaceAtRecursive with habit rule returns rule unchanged', () {
+    test('replaceAtRecursive with habit rule at root replaces the rule', () {
       final result = replaceAtRecursive(
         rule: habitRule,
         replaceWith: healthRule,

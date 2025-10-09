@@ -10,7 +10,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
-import '../../../../../mocks/sync_config_test_mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
