@@ -12,8 +12,6 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
-import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -91,7 +89,6 @@ class _FakeWidgetRef implements WidgetRef {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  final secureStorageMock = MockSecureStorage();
   setFakeDocumentsPath();
   registerFallbackValue(fallbackJournalEntity);
   registerFallbackValue(fallbackSyncMessage);
@@ -104,8 +101,6 @@ void main() {
   final mockNavService = MockNavService();
 
   group('Create Entry Tests - ', () {
-    var vcMockNext = '1';
-
     setUpAll(() async {
       await getIt.reset();
 
@@ -116,17 +111,6 @@ void main() {
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final journalDb = JournalDb(inMemoryDatabase: true);
       await initConfigFlags(journalDb, inMemoryDatabase: true);
-
-      when(() => secureStorageMock.readValue(hostKey))
-          .thenAnswer((_) async => 'some_host');
-      when(() => secureStorageMock.readValue(nextAvailableCounterKey))
-          .thenAnswer((_) async {
-        return vcMockNext;
-      });
-      when(() => secureStorageMock.writeValue(nextAvailableCounterKey, any()))
-          .thenAnswer((invocation) async {
-        vcMockNext = invocation.positionalArguments[1] as String;
-      });
 
       when(mockNotificationService.updateBadge).thenAnswer((_) async {});
 
@@ -169,7 +153,6 @@ void main() {
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<TagsService>(TagsService())
         ..registerSingleton<OutboxService>(mockOutboxService)
-        ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<NotificationService>(mockNotificationService)
         ..registerSingleton<VectorClockService>(VectorClockService())
         ..registerSingleton<TimeService>(mockTimeService)
@@ -182,7 +165,6 @@ void main() {
     });
 
     tearDown(() {
-      vcMockNext = '1';
       clearInteractions(mockNotificationService);
       clearInteractions(mockUpdateNotifications);
       clearInteractions(mockFts5Db);
