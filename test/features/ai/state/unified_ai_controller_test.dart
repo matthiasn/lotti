@@ -215,6 +215,83 @@ void main() {
       subscription.close();
     });
 
+    test('deduplicates concurrent inference requests', () async {
+      final promptConfig = AiConfigPrompt(
+        id: 'prompt-1',
+        name: 'Test Prompt',
+        systemMessage: 'System',
+        userMessage: 'User',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.taskSummary,
+      );
+
+      final completer = Completer<void>();
+      var runCount = 0;
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider
+              .overrideWithValue(mockRepository),
+          aiConfigByIdProvider('prompt-1').overrideWith(
+            (ref) => Future.value(promptConfig),
+          ),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      when(
+        () => mockRepository.runInference(
+          entityId: any(named: 'entityId'),
+          promptConfig: any(named: 'promptConfig'),
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
+        ),
+      ).thenAnswer((invocation) async {
+        runCount++;
+        final onStatusChange = invocation.namedArguments[#onStatusChange]
+            as void Function(InferenceStatus);
+        onStatusChange(InferenceStatus.running);
+        await completer.future;
+        onStatusChange(InferenceStatus.idle);
+      });
+
+      final future1 = testContainer.read(
+        triggerNewInferenceProvider(
+          entityId: 'test-entity',
+          promptId: 'prompt-1',
+        ).future,
+      );
+
+      final future2 = testContainer.read(
+        triggerNewInferenceProvider(
+          entityId: 'test-entity',
+          promptId: 'prompt-1',
+        ).future,
+      );
+
+      expect(future1, same(future2));
+
+      completer.complete();
+
+      await Future.wait([future1, future2]);
+
+      verify(
+        () => mockRepository.runInference(
+          entityId: 'test-entity',
+          promptConfig: promptConfig,
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+          useConversationApproach: any(named: 'useConversationApproach'),
+        ),
+      ).called(1);
+      expect(runCount, 1);
+    });
+
     test('handles errors during inference', () async {
       final promptConfig = AiConfigPrompt(
         id: 'prompt-1',

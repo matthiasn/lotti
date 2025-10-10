@@ -27,12 +27,14 @@ class UnifiedAiProgressContent extends ConsumerStatefulWidget {
     required this.entityId,
     required this.promptId,
     this.showExisting = false,
+    this.shouldTriggerOnInit = true,
     super.key,
   });
 
   final String entityId;
   final String promptId;
   final bool showExisting;
+  final bool shouldTriggerOnInit;
 
   @override
   ConsumerState<UnifiedAiProgressContent> createState() =>
@@ -64,7 +66,7 @@ class _UnifiedAiProgressContentState
   void initState() {
     super.initState();
     // Only trigger inference if not showing existing
-    if (!widget.showExisting) {
+    if (!widget.showExisting && widget.shouldTriggerOnInit) {
       // Trigger inference after first frame
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_hasTriggeredInference) {
@@ -155,6 +157,7 @@ class _UnifiedAiProgressContentState
             prompt: prompt,
             entityId: widget.entityId,
             onTapBack: () => Navigator.of(ctx).pop(),
+            triggerOnOpen: false,
           ),
         );
       }
@@ -359,6 +362,7 @@ class _UnifiedAiProgressContentState
                           prompt: prompt,
                           entityId: widget.entityId,
                           onTapBack: () => Navigator.of(ctx).pop(),
+                          triggerOnOpen: false,
                         ),
                       );
                     }
@@ -416,6 +420,7 @@ class UnifiedAiProgressUtils {
     VoidCallback? onTapBack,
     ScrollController? scrollController,
     bool showExisting = false,
+    bool triggerOnOpen = true,
   }) {
     return ModalUtils.sliverModalSheetPage(
       context: context,
@@ -436,6 +441,7 @@ class UnifiedAiProgressUtils {
             entityId: entityId,
             promptId: prompt.id,
             showExisting: showExisting,
+            shouldTriggerOnInit: triggerOnOpen,
           ),
         ),
       ],

@@ -37,6 +37,7 @@ void main() {
   late MockNavigatorObserver mockNavigatorObserver;
   late MockUnifiedAiInferenceRepository mockInferenceRepository;
   late MockLoggingService mockLoggingService;
+  late List<Override> defaultOverrides;
 
   setUpAll(() {
     registerFallbackValue(
@@ -195,6 +196,13 @@ void main() {
         aiResponseType: AiResponseType.taskSummary,
       ) as AiConfigPrompt,
     ];
+
+    defaultOverrides = [
+      for (final prompt in testPrompts)
+        aiConfigByIdProvider(prompt.id).overrideWith(
+          (ref) async => prompt,
+        ),
+    ];
   });
 
   // Helper function to build test widget
@@ -203,7 +211,10 @@ void main() {
     List<Override> overrides = const [],
   }) {
     return ProviderScope(
-      overrides: overrides,
+      overrides: [
+        ...defaultOverrides,
+        ...overrides,
+      ],
       child: MaterialApp(
         localizationsDelegates: const [
           AppLocalizations.delegate,

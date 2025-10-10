@@ -163,7 +163,11 @@ void main() {
       // Verify logging includes linkedEntityId
       verify(
         () => mockLoggingService.captureEvent(
-          'Starting unified AI inference for $audioEntryId (linked: $linkedTaskId)',
+          any<String>(
+            that: contains(
+              'Starting unified AI inference for $audioEntryId (prompt: $asrPromptId, linked: $linkedTaskId',
+            ),
+          ),
           domain: 'UnifiedAiController',
           subDomain: 'runInference',
         ),
