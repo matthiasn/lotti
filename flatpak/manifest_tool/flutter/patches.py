@@ -133,12 +133,23 @@ def _cargokit_patch_entry(package: str) -> dict:
 def _patch_insert_position(sources: List[Any]) -> int:
     """Return index before which cargokit patches should be inserted."""
 
+    cargo_index: Optional[int] = None
+    pubspec_index: Optional[int] = None
+
     for idx, source in enumerate(sources):
         if isinstance(source, dict) and source.get("path") == "cargo-sources.json":
-            return idx
-        if isinstance(source, str) and "cargo-sources.json" in source:
-            return idx
-    return len(sources)
+            cargo_index = idx
+        elif isinstance(source, str) and "cargo-sources.json" in source:
+            cargo_index = idx
+        if isinstance(source, dict) and source.get("path") == "pubspec-sources.json":
+            pubspec_index = idx
+        elif isinstance(source, str) and "pubspec-sources.json" in source:
+            pubspec_index = idx
+
+    insert_index = len(sources) if cargo_index is None else cargo_index
+    if pubspec_index is not None:
+        insert_index = max(insert_index, pubspec_index + 1)
+    return insert_index
 
 
 def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
