@@ -127,6 +127,16 @@ Future<void> processNewTimelineEvents({
     );
 
     for (final event in newEvents) {
+      if (event.senderId != listener.client.userID) {
+        await saveAttachment(
+          event,
+          loggingService: loggingService,
+          documentsDirectory: documentsDirectory,
+        );
+      }
+    }
+
+    for (final event in newEvents) {
       final eventId = event.eventId;
       var shouldAdvanceReadMarker = true;
 
@@ -140,12 +150,6 @@ Future<void> processNewTimelineEvents({
             '(${event.type}) in room ${syncRoom?.id}',
             domain: 'MATRIX_SERVICE',
             subDomain: 'processNewTimelineEvents',
-          );
-
-          await saveAttachment(
-            event,
-            loggingService: loggingService,
-            documentsDirectory: documentsDirectory,
           );
 
           if (event.messageType == syncMessageType) {

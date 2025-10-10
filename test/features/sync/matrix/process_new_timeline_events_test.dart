@@ -1,3 +1,6 @@
+// ignore_for_file: unnecessary_lambdas
+
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -245,6 +248,73 @@ void main() {
 
       verify(() => room.getEventById(r'$missing')).called(1);
       verify(() => room.getTimeline()).called(1);
+    });
+
+    test('processes sync event after attachments saved even when text precedes file',
+        () async {
+      context
+        ..lastReadEventContextId = null
+        ..timeline = null;
+
+      final textEvent = MockEvent();
+      final fileEvent = MockEvent();
+      final bytes = Uint8List.fromList(utf8.encode('{}'));
+
+      when(() => room.getTimeline(
+            eventContextId: any<String?>(named: 'eventContextId'),
+          )).thenAnswer((_) async => timeline);
+      when(() => room.id).thenReturn('!room:server');
+      when(() => timeline.events).thenReturn(<Event>[textEvent, fileEvent]);
+
+      when(() => textEvent.eventId).thenReturn(r'$text');
+      when(() => textEvent.senderId).thenReturn('@remote:server');
+      when(() => textEvent.messageType).thenReturn(syncMessageType);
+      when(() => textEvent.attachmentMimetype).thenReturn('');
+      when(() => textEvent.type).thenReturn('m.room.message');
+
+      when(() => fileEvent.eventId).thenReturn(r'$file');
+      when(() => fileEvent.senderId).thenReturn('@remote:server');
+      when(() => fileEvent.messageType).thenReturn('m.room.message');
+      when(() => fileEvent.attachmentMimetype).thenReturn('application/json');
+      when(() => fileEvent.type).thenReturn('m.room.message');
+      Map<String, dynamic> contentBuilder(Invocation _) =>
+          {'relativePath': '/matrix/file.json'};
+      when(() => fileEvent.content).thenAnswer(
+        contentBuilder,
+      );
+      when(() => fileEvent.downloadAndDecryptAttachment()).thenAnswer(
+        (_) async => MatrixFile(
+          bytes: bytes,
+          name: 'file.json',
+        ),
+      );
+
+      final processedEvents = <Event>[];
+      when(
+        () => eventProcessor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: any<JournalDb>(named: 'journalDb'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event =
+            invocation.namedArguments[#event] as Event? ?? FakeEvent();
+        processedEvents.add(event);
+        final file = File('${tempDir.path}/matrix/file.json');
+        expect(file.existsSync(), isTrue);
+      });
+
+      await processNewTimelineEvents(
+        listener: context,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        readMarkerService: readMarkerService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
+        failureCounts: failureCounts,
+      );
+
+      expect(processedEvents, contains(textEvent));
+      expect(failureCounts, isEmpty);
     });
 
     test('logs and recovers when event processing throws', () async {
