@@ -150,17 +150,17 @@ class _UnifiedAiProgressContentState
       if (!mounted || !context.mounted) return;
 
       if (prompt is AiConfigPrompt) {
-          await ModalUtils.showSingleSliverPageModal<void>(
-            context: context,
-            builder: (ctx) => UnifiedAiProgressUtils.progressPage(
-              context: ctx,
-              prompt: prompt,
-              entityId: widget.entityId,
-              onTapBack: () => Navigator.of(ctx).pop(),
-              triggerOnOpen: false,
-            ),
-          );
-        }
+        await ModalUtils.showSingleSliverPageModal<void>(
+          context: context,
+          builder: (ctx) => UnifiedAiProgressUtils.progressPage(
+            context: ctx,
+            prompt: prompt,
+            entityId: widget.entityId,
+            onTapBack: () => Navigator.of(ctx).pop(),
+            triggerOnOpen: false,
+          ),
+        );
+      }
     } catch (e, stack) {
       developer.log(
         'Error in $providerType onModelInstalled callback: $e',
