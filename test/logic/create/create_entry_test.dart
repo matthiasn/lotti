@@ -182,10 +182,13 @@ void main() {
     });
 
     tearDown(() {
+      vcMockNext = '1';
       clearInteractions(mockNotificationService);
       clearInteractions(mockUpdateNotifications);
       clearInteractions(mockFts5Db);
       clearInteractions(mockTimeService);
+      clearInteractions(mockOutboxService);
+      clearInteractions(mockNavService);
     });
 
     test('createTextEntry creates and stores a text entry', () async {
