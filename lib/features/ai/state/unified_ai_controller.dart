@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -51,6 +53,11 @@ class UnifiedAiState {
 /// Controller for running unified AI inference with configurable prompts
 @riverpod
 class UnifiedAiController extends _$UnifiedAiController {
+  Future<void>? _activeInferenceFuture;
+  String? _activeLinkedEntityId;
+  int _runCounter = 0;
+  int? _activeRunId;
+
   @override
   UnifiedAiState build({
     required String entityId,
@@ -173,12 +180,54 @@ class UnifiedAiController extends _$UnifiedAiController {
   }
 
   Future<void> runInference({String? linkedEntityId}) async {
-    final loggingService = getIt<LoggingService>()
-      ..captureEvent(
-        'Starting unified AI inference for $entityId (linked: $linkedEntityId)',
+    final loggingService = getIt<LoggingService>();
+
+    if (_activeInferenceFuture != null) {
+      loggingService.captureEvent(
+        'Unified AI inference already running for $entityId (prompt: $promptId). '
+        'Joining existing run $_activeRunId (incoming linked: $linkedEntityId, active linked: $_activeLinkedEntityId).',
         subDomain: 'runInference',
         domain: 'UnifiedAiController',
       );
+      return _activeInferenceFuture!;
+    }
+
+    final runId = ++_runCounter;
+    _activeRunId = runId;
+    _activeLinkedEntityId = linkedEntityId;
+
+    final future = _performInference(
+      loggingService: loggingService,
+      linkedEntityId: linkedEntityId,
+    );
+    _activeInferenceFuture = future;
+
+    try {
+      await future;
+    } finally {
+      loggingService.captureEvent(
+        'Unified AI inference finished for $entityId (prompt: $promptId). '
+        'Run $runId completed with linked: $linkedEntityId.',
+        subDomain: 'runInference',
+        domain: 'UnifiedAiController',
+      );
+      if (identical(_activeInferenceFuture, future)) {
+        _activeInferenceFuture = null;
+        _activeLinkedEntityId = null;
+        _activeRunId = null;
+      }
+    }
+  }
+
+  Future<void> _performInference({
+    required LoggingService loggingService,
+    String? linkedEntityId,
+  }) async {
+    loggingService.captureEvent(
+      'Starting unified AI inference for $entityId (prompt: $promptId, linked: $linkedEntityId, run $_activeRunId)',
+      subDomain: 'runInference',
+      domain: 'UnifiedAiController',
+    );
 
     try {
       // Fetch the prompt config
@@ -327,6 +376,10 @@ Future<void> triggerNewInference(
   required String promptId,
   String? linkedEntityId,
 }) async {
+  developer.log(
+    'triggerNewInference called: entityId=$entityId, promptId=$promptId, linkedEntityId=$linkedEntityId',
+    name: 'UnifiedAiController',
+  );
   // Get the controller instance (this will create it if it doesn't exist)
   final controller = ref.read(
     unifiedAiControllerProvider(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,6 +68,11 @@ class UnifiedAiModal {
           // Close the current modal first
           Navigator.of(modalSheetContext).pop();
 
+          developer.log(
+            'AI popup menu trigger: entity=${journalEntity.id}, prompt=${prompt.id}, linkedFrom=$linkedFromId, index=$index',
+            name: 'UnifiedAiPopUpMenu',
+          );
+
           // Trigger inference in the background
           unawaited(
             ref.read(
@@ -86,6 +92,7 @@ class UnifiedAiModal {
               prompt: prompt,
               entityId: journalEntity.id,
               onTapBack: () => Navigator.of(ctx).pop(),
+              triggerOnOpen: false,
             ),
           );
         },
