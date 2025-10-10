@@ -1,10 +1,7 @@
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
-
-class MockOutboxService extends Mock implements OutboxService {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
 
