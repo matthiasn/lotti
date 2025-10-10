@@ -17,7 +17,24 @@ class MatrixSettingsCard extends ConsumerStatefulWidget {
   ConsumerState<MatrixSettingsCard> createState() => _MatrixSettingsCardState();
 }
 
-class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard> {
+@visibleForTesting
+abstract class MatrixSettingsCardStateAccess {
+  MatrixSettingsCardTestHandle get testHandle;
+}
+
+class MatrixSettingsCardTestHandle {
+  MatrixSettingsCardTestHandle._(this._state);
+
+  final _MatrixSettingsCardState _state;
+
+  ValueNotifier<int> get pageIndexNotifier =>
+      _state.pageIndexNotifierForTesting;
+
+  void updatePageIndex() => _state.updatePageIndexForTesting();
+}
+
+class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard>
+    implements MatrixSettingsCardStateAccess {
   late final ValueNotifier<int> pageIndexNotifier;
 
   @override
@@ -33,17 +50,29 @@ class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard> {
   }
 
   @override
+  MatrixSettingsCardTestHandle get testHandle =>
+      MatrixSettingsCardTestHandle._(this);
+
+  @visibleForTesting
+  ValueNotifier<int> get pageIndexNotifierForTesting => pageIndexNotifier;
+
+  @visibleForTesting
+  void updatePageIndexForTesting() {
+    if (ref.read(matrixServiceProvider).isLoggedIn()) {
+      pageIndexNotifier.value = 1;
+    } else {
+      pageIndexNotifier.value = 0;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedModernSettingsCardWithIcon(
       title: context.messages.settingsMatrixTitle,
       subtitle: 'Configure end-to-end encrypted sync',
       icon: Icons.sync,
       onTap: () {
-        if (ref.read(matrixServiceProvider).isLoggedIn()) {
-          pageIndexNotifier.value = 1;
-        } else {
-          pageIndexNotifier.value = 0;
-        }
+        updatePageIndexForTesting();
 
         ModalUtils.showMultiPageModal<void>(
           context: context,

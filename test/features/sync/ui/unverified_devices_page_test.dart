@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
@@ -79,5 +80,43 @@ void main() {
 
     await tester.tap(refreshButton);
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('unverifiedDevicesPage sticky actions navigate', (tester) async {
+    final pageIndexNotifier = ValueNotifier<int>(3);
+    addTearDown(pageIndexNotifier.dispose);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) {
+            final page = unverifiedDevicesPage(
+              context: context,
+              pageIndexNotifier: pageIndexNotifier,
+            );
+
+            return page.stickyActionBar ?? const SizedBox.shrink();
+          },
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixUnverifiedControllerProvider.overrideWith(
+            () => _FakeMatrixUnverifiedController(const []),
+          ),
+        ],
+      ),
+    );
+
+    await tester.pump();
+
+    expect(pageIndexNotifier.value, 3);
+
+    await tester.tap(find.text('Previous Page'));
+    await tester.pump();
+    expect(pageIndexNotifier.value, 2);
+
+    await tester.tap(find.text('Next Page'));
+    await tester.pump();
+    expect(pageIndexNotifier.value, 3);
   });
 }

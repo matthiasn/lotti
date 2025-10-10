@@ -126,4 +126,44 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
+
+  testWidgets('matrixStatsPage wiring updates page index', (tester) async {
+    final stats = MatrixStats(
+      sentCount: 3,
+      messageCounts: const {'m.text': 2},
+    );
+
+    final pageIndexNotifier = ValueNotifier<int>(2);
+    addTearDown(pageIndexNotifier.dispose);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) {
+            final page = matrixStatsPage(
+              context: context,
+              pageIndexNotifier: pageIndexNotifier,
+            );
+
+            return page.stickyActionBar ?? const SizedBox.shrink();
+          },
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('Previous Page'), findsOneWidget);
+    expect(find.text('Done'), findsOneWidget);
+    expect(pageIndexNotifier.value, 2);
+
+    await tester.tap(find.text('Previous Page'));
+    await tester.pump();
+    expect(pageIndexNotifier.value, 1);
+  });
 }

@@ -77,5 +77,51 @@ void main() {
       // Verify the card rendered successfully
       expect(find.byType(MatrixSettingsCard), findsOneWidget);
     });
+
+    testWidgets('starts from login page when user is logged out',
+        (tester) async {
+      when(() => mockMatrixService.isLoggedIn()).thenReturn(false);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const MatrixSettingsCard(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      final element =
+          tester.element(find.byType(MatrixSettingsCard)) as StatefulElement;
+      final handle =
+          (element.state as MatrixSettingsCardStateAccess).testHandle;
+      handle.pageIndexNotifier.value = 5;
+      handle.updatePageIndex();
+
+      expect(handle.pageIndexNotifier.value, 0);
+    });
+
+    testWidgets('jumps to logged in page when user is already authenticated',
+        (tester) async {
+      when(() => mockMatrixService.isLoggedIn()).thenReturn(true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const MatrixSettingsCard(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      final element =
+          tester.element(find.byType(MatrixSettingsCard)) as StatefulElement;
+      final handle =
+          (element.state as MatrixSettingsCardStateAccess).testHandle;
+      handle.pageIndexNotifier.value = 0;
+      handle.updatePageIndex();
+
+      expect(handle.pageIndexNotifier.value, 1);
+    });
   });
 }

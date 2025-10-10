@@ -33,11 +33,12 @@ Future<Client> createMatrixClient({
   );
 }
 
-Future<String> createMatrixDeviceName() async {
+Future<String> createMatrixDeviceName(
+    {DeviceInfoPlugin? deviceInfoPlugin}) async {
   final operatingSystem = Platform.operatingSystem;
   var deviceName = operatingSystem;
 
-  final deviceInfo = DeviceInfoPlugin();
+  final deviceInfo = deviceInfoPlugin ?? DeviceInfoPlugin();
   if (Platform.isIOS) {
     final iosInfo = await deviceInfo.iosInfo;
     deviceName = iosInfo.name;

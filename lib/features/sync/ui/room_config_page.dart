@@ -56,7 +56,15 @@ class RoomConfig extends ConsumerStatefulWidget {
   ConsumerState createState() => _RoomConfigState();
 }
 
-class _RoomConfigState extends ConsumerState<RoomConfig> {
+@visibleForTesting
+abstract class RoomConfigStateAccess {
+  bool get showCamForTesting;
+  set showCamForTesting(bool value);
+  Future<void> handleBarcodeForTesting(BarcodeCapture barcodes);
+}
+
+class _RoomConfigState extends ConsumerState<RoomConfig>
+    implements RoomConfigStateAccess {
   bool showCam = false;
   final joinRoomController = TextEditingController();
   String manualRoomId = '';
@@ -72,17 +80,6 @@ class _RoomConfigState extends ConsumerState<RoomConfig> {
 
     Future<void> joinRoom() async {
       await roomNotifier.joinRoom(manualRoomId);
-    }
-
-    Future<void> handleBarcode(BarcodeCapture barcodes) async {
-      final barcode = barcodes.barcodes.firstOrNull;
-      final userId = barcode?.rawValue;
-      if (userId != null) {
-        await roomNotifier.inviteToRoom(userId);
-        setState(() {
-          showCam = false;
-        });
-      }
     }
 
     return Column(
@@ -110,7 +107,7 @@ class _RoomConfigState extends ConsumerState<RoomConfig> {
               child: SizedBox(
                 height: camDimension,
                 width: camDimension,
-                child: MobileScanner(onDetect: handleBarcode),
+                child: MobileScanner(onDetect: _handleBarcode),
               ),
             ),
         ] else ...[
@@ -141,4 +138,31 @@ class _RoomConfigState extends ConsumerState<RoomConfig> {
       ],
     );
   }
+
+  Future<void> _handleBarcode(BarcodeCapture barcodes) async {
+    final barcode = barcodes.barcodes.firstOrNull;
+    final userId = barcode?.rawValue;
+    if (userId != null) {
+      await ref
+          .read(matrixRoomControllerProvider.notifier)
+          .inviteToRoom(userId);
+      setState(() {
+        showCam = false;
+      });
+    }
+  }
+
+  @override
+  bool get showCamForTesting => showCam;
+
+  @override
+  set showCamForTesting(bool value) {
+    setState(() {
+      showCam = value;
+    });
+  }
+
+  @override
+  Future<void> handleBarcodeForTesting(BarcodeCapture barcodes) =>
+      _handleBarcode(barcodes);
 }
