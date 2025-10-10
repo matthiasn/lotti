@@ -54,3 +54,28 @@ def test_add_cargokit_offline_patches_idempotent(make_document, existing_dest):
 
     assert result.changed  # other packages still added
     assert sum(1 for s in lotti["sources"] if isinstance(s, dict) and s.get("dest") == existing_dest) == 1
+
+
+def test_add_cargokit_offline_patches_respects_pubspec_order(make_document):
+    """Ensure cargokit patches run after pubspec staging so files exist."""
+    document = make_document()
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
+    lotti["sources"] = [
+        {"type": "file", "path": "app.tar.xz"},
+        "pubspec-sources.json",
+        "cargo-sources.json",
+    ]
+
+    flutter_patches.add_cargokit_offline_patches(document)
+
+    sources = lotti["sources"]
+    pubspec_index = sources.index("pubspec-sources.json")
+    cargo_index = sources.index("cargo-sources.json")
+    patch_indices = [
+        idx
+        for idx, source in enumerate(sources)
+        if isinstance(source, dict) and source.get("type") == "patch" and "cargokit" in source.get("dest", "")
+    ]
+
+    assert patch_indices
+    assert all(pubspec_index < idx < cargo_index for idx in patch_indices)
