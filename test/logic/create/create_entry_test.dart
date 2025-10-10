@@ -249,6 +249,7 @@ void main() {
     test('createTask with linkedId and categoryId', () async {
       const testCategoryId = 'task-category-456';
       final parent = await createTextEntry();
+      expect(parent, isNotNull);
 
       final task = await createTask(
         linkedId: parent!.meta.id,
@@ -283,6 +284,7 @@ void main() {
     test('createEvent with linkedId and categoryId', () async {
       const testCategoryId = 'event-category-789';
       final parent = await createTextEntry();
+      expect(parent, isNotNull);
 
       final event = await createEvent(
         linkedId: parent!.meta.id,
