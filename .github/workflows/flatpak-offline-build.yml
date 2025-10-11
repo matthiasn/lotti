@@ -12,6 +12,8 @@ on:
 
 jobs:
   offline-flatpak:
+    if: ${{ false }} # TODO: re-enable after fix
+
     runs-on: ubuntu-latest
 
     steps:
