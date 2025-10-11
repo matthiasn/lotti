@@ -12,6 +12,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockTimeline extends Mock implements Timeline {}
 
+class MockRoom extends Mock implements Room {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -22,6 +24,7 @@ void main() {
     late MockLoggingService loggingService;
     late SyncReadMarkerService service;
     late MockTimeline timeline;
+    late MockRoom room;
     late MockClient client;
     late CachedStreamController<LoginState> loginStateStream;
 
@@ -33,14 +36,14 @@ void main() {
         loggingService: loggingService,
       );
       timeline = MockTimeline();
+      room = MockRoom();
       client = MockClient();
       loginStateStream =
           CachedStreamController<LoginState>(LoginState.loggedIn);
 
       when(() => client.onLoginStateChanged).thenReturn(loginStateStream);
       when(() => client.deviceName).thenReturn('device');
-      when(() => timeline.setReadMarker(eventId: any(named: 'eventId')))
-          .thenAnswer((_) async {});
+      when(() => room.setReadMarker(any())).thenAnswer((_) async {});
       when(() => settingsDb.saveSettingsItem(any(), any()))
           .thenAnswer((_) async => 1);
     });
@@ -52,11 +55,12 @@ void main() {
     test('updates read marker when logged in', () async {
       await service.updateReadMarker(
         client: client,
-        timeline: timeline,
+        room: room,
         eventId: r'$event',
+        timeline: timeline,
       );
 
-      verify(() => timeline.setReadMarker(eventId: r'$event')).called(1);
+      verify(() => room.setReadMarker(r'$event')).called(1);
     });
 
     test('skips timeline update when not logged in', () async {
@@ -67,13 +71,12 @@ void main() {
 
       await service.updateReadMarker(
         client: client,
-        timeline: timeline,
+        room: room,
         eventId: r'$event',
+        timeline: timeline,
       );
 
-      verifyNever(
-        () => timeline.setReadMarker(eventId: any(named: 'eventId')),
-      );
+      verifyNever(() => room.setReadMarker(any()));
     });
 
     test('logs and continues when timeline update fails', () async {
@@ -83,8 +86,7 @@ void main() {
       when(() => client.onLoginStateChanged).thenReturn(loginStateStream);
 
       final exception = Exception('setReadMarker failed');
-      when(() => timeline.setReadMarker(eventId: any(named: 'eventId')))
-          .thenThrow(exception);
+      when(() => room.setReadMarker(any())).thenThrow(exception);
       when(
         () => loggingService.captureException(
           exception,
@@ -96,8 +98,9 @@ void main() {
 
       final future = service.updateReadMarker(
         client: client,
-        timeline: timeline,
+        room: room,
         eventId: r'$event',
+        timeline: timeline,
       );
 
       await expectLater(future, completes);

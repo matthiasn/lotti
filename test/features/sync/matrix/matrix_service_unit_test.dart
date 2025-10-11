@@ -54,6 +54,8 @@ class FakeTimeline extends Fake implements Timeline {}
 
 class FakeEvent extends Fake implements Event {}
 
+class FakeRoom extends Fake implements Room {}
+
 class MockRoomSummary extends Mock implements RoomSummary {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
@@ -163,6 +165,7 @@ void main() {
     registerFallbackValue(_noop);
     registerFallbackValue(FakeTimeline());
     registerFallbackValue(FakeEvent());
+    registerFallbackValue(FakeRoom());
     registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'fallback'));
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel,
@@ -245,8 +248,9 @@ void main() {
     when(
       () => mockReadMarkerService.updateReadMarker(
         client: any(named: 'client'),
-        timeline: any(named: 'timeline'),
+        room: any(named: 'room'),
         eventId: any(named: 'eventId'),
+        timeline: any(named: 'timeline'),
       ),
     ).thenAnswer((_) async {});
     when(
@@ -930,8 +934,9 @@ void main() {
     when(
       () => extraReadMarkerService.updateReadMarker(
         client: any(named: 'client'),
-        timeline: any(named: 'timeline'),
+        room: any(named: 'room'),
         eventId: any(named: 'eventId'),
+        timeline: any(named: 'timeline'),
       ),
     ).thenAnswer((_) async {});
     final extraEventProcessor = MockSyncEventProcessor();

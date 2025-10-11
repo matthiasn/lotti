@@ -1,3 +1,6 @@
+// ignore_for_file: unnecessary_lambdas
+
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -41,6 +44,8 @@ class FakeEvent extends Fake implements Event {}
 
 class FakeJournalDb extends Fake implements JournalDb {}
 
+class FakeRoom extends Fake implements Room {}
+
 class TestTimelineContext implements TimelineContext {
   TestTimelineContext({
     required this.loggingService,
@@ -73,6 +78,7 @@ void main() {
     registerFallbackValue(FakeTimeline());
     registerFallbackValue(FakeEvent());
     registerFallbackValue(FakeJournalDb());
+    registerFallbackValue(FakeRoom());
   });
 
   group('processNewTimelineEvents', () {
@@ -120,14 +126,16 @@ void main() {
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => client.isLogged()).thenReturn(true);
       when(() => client.userID).thenReturn('@local:server');
       when(() => client.deviceName).thenReturn('device');
       when(() => client.deviceName).thenReturn('device');
       when(
         () => readMarkerService.updateReadMarker(
           client: any<Client>(named: 'client'),
-          timeline: any<Timeline>(named: 'timeline'),
+          room: any<Room>(named: 'room'),
           eventId: any<String>(named: 'eventId'),
+          timeline: any<Timeline>(named: 'timeline'),
         ),
       ).thenAnswer((_) async {});
       when(
@@ -150,9 +158,17 @@ void main() {
         ..timeline = null;
 
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => room.getTimeline(
-              eventContextId: any<String?>(named: 'eventContextId')))
-          .thenAnswer((invocation) async {
+      when(
+        () => room.getTimeline(
+          eventContextId: any<String?>(named: 'eventContextId'),
+          onChange: any(named: 'onChange'),
+          onInsert: any(named: 'onInsert'),
+          onRemove: any(named: 'onRemove'),
+          onNewEvent: any(named: 'onNewEvent'),
+          onUpdate: any(named: 'onUpdate'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((invocation) async {
         expect(invocation.namedArguments[#eventContextId], isNull);
         return timeline;
       });
@@ -168,11 +184,11 @@ void main() {
       );
 
       verifyNever(() => room.getEventById(any<String>()));
-      verify(() => room.getTimeline()).called(1);
       verifyNever(() => readMarkerService.updateReadMarker(
             client: any<Client>(named: 'client'),
-            timeline: any<Timeline>(named: 'timeline'),
+            room: any<Room>(named: 'room'),
             eventId: any<String>(named: 'eventId'),
+            timeline: any<Timeline>(named: 'timeline'),
           ));
       expect(context.lastReadEventContextId, isNull);
     });
@@ -184,25 +200,30 @@ void main() {
 
       final existingEvent = MockEvent();
       when(() => existingEvent.eventId).thenReturn(r'$existing');
-      when(() => timeline.events)
-          .thenReturn(<Event>[MockEvent(), existingEvent]);
-
-      when(() => room.getEventById(r'$existing'))
-          .thenAnswer((_) async => existingEvent);
-      when(() => room.getTimeline(
-              eventContextId: any<String?>(named: 'eventContextId')))
-          .thenAnswer((invocation) async {
-        expect(invocation.namedArguments[#eventContextId], r'$existing');
-        return timeline;
-      });
 
       final newEvent = MockEvent();
       when(() => newEvent.eventId).thenReturn(r'$new');
+      when(() => newEvent.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
       when(() => newEvent.senderId).thenReturn('@remote:server');
       when(() => newEvent.messageType).thenReturn(syncMessageType);
       when(() => newEvent.attachmentMimetype).thenReturn('');
       when(() => newEvent.type).thenReturn('m.room.message');
-      when(() => timeline.events).thenReturn(<Event>[newEvent, existingEvent]);
+      when(() => existingEvent.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      when(() => timeline.events).thenReturn(<Event>[existingEvent, newEvent]);
+      when(() => room.id).thenReturn('!room:server');
+      when(
+        () => room.getTimeline(
+          eventContextId: any<String?>(named: 'eventContextId'),
+          onChange: any(named: 'onChange'),
+          onInsert: any(named: 'onInsert'),
+          onRemove: any(named: 'onRemove'),
+          onNewEvent: any(named: 'onNewEvent'),
+          onUpdate: any(named: 'onUpdate'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => timeline);
 
       await processNewTimelineEvents(
         listener: context,
@@ -214,9 +235,116 @@ void main() {
         failureCounts: failureCounts,
       );
 
-      verify(() => room.getEventById(r'$existing')).called(1);
-      verify(() => room.getTimeline(eventContextId: r'$existing')).called(1);
-      expect(context.lastReadEventContextId, r'$existing');
+      verifyNever(() => room.getEventById(any<String>()));
+      final captured = verify(
+        () => readMarkerService.updateReadMarker(
+          client: client,
+          room: room,
+          eventId: captureAny<String>(named: 'eventId'),
+          timeline: timeline,
+        ),
+      ).captured;
+      expect(captured, hasLength(1));
+      expect(captured.single, r'$new');
+      expect(context.lastReadEventContextId, captured.single);
+      verify(
+        () => loggingService.captureEvent(
+          'Processing 1 timeline events for room !room:server',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'processNewTimelineEvents',
+        ),
+      ).called(1);
+      verify(
+        () => eventProcessor.process(
+          event: newEvent,
+          journalDb: journalDb,
+        ),
+      ).called(1);
+    });
+
+    test('processes events sharing a timestamp regardless of eventId order',
+        () async {
+      context
+        ..lastReadEventContextId = r'$existing'
+        ..timeline = null;
+
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => room.id).thenReturn('!room:server');
+      when(() => client.sync())
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+
+      final existingEvent = MockEvent();
+      final newEvent = MockEvent();
+
+      final timestamp = DateTime.fromMillisecondsSinceEpoch(42);
+      when(() => existingEvent.eventId).thenReturn(r'$existing');
+      when(() => existingEvent.originServerTs).thenReturn(timestamp);
+      when(() => existingEvent.senderId).thenReturn('@remote:server');
+      when(() => existingEvent.type).thenReturn('m.room.message');
+      when(() => existingEvent.messageType).thenReturn(syncMessageType);
+      when(() => existingEvent.attachmentMimetype).thenReturn('');
+
+      when(() => newEvent.eventId).thenReturn(r'$earlierLex');
+      when(() => newEvent.originServerTs).thenReturn(timestamp);
+      when(() => newEvent.senderId).thenReturn('@remote:server');
+      when(() => newEvent.type).thenReturn('m.room.message');
+      when(() => newEvent.messageType).thenReturn(syncMessageType);
+      when(() => newEvent.attachmentMimetype).thenReturn('');
+
+      when(() => timeline.events).thenReturn(<Event>[newEvent, existingEvent]);
+      when(
+        () => room.getTimeline(
+          eventContextId: any<String?>(named: 'eventContextId'),
+          onChange: any(named: 'onChange'),
+          onInsert: any(named: 'onInsert'),
+          onRemove: any(named: 'onRemove'),
+          onNewEvent: any(named: 'onNewEvent'),
+          onUpdate: any(named: 'onUpdate'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => timeline);
+
+      when(
+        () => eventProcessor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: any<JournalDb>(named: 'journalDb'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => readMarkerService.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+          timeline: any<Timeline>(named: 'timeline'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await processNewTimelineEvents(
+        listener: context,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        readMarkerService: readMarkerService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
+        failureCounts: failureCounts,
+      );
+
+      verify(
+        () => eventProcessor.process(
+          event: newEvent,
+          journalDb: journalDb,
+        ),
+      ).called(1);
+      verify(
+        () => readMarkerService.updateReadMarker(
+          client: client,
+          room: room,
+          eventId: r'$earlierLex',
+          timeline: timeline,
+        ),
+      ).called(1);
+      expect(context.lastReadEventContextId, r'$earlierLex');
     });
 
     test('falls back to null context when previous event missing', () async {
@@ -226,9 +354,17 @@ void main() {
 
       when(() => room.getEventById(r'$missing')).thenAnswer((_) async => null);
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => room.getTimeline(
-              eventContextId: any<String?>(named: 'eventContextId')))
-          .thenAnswer((invocation) async {
+      when(
+        () => room.getTimeline(
+          eventContextId: any<String?>(named: 'eventContextId'),
+          onChange: any(named: 'onChange'),
+          onInsert: any(named: 'onInsert'),
+          onRemove: any(named: 'onRemove'),
+          onNewEvent: any(named: 'onNewEvent'),
+          onUpdate: any(named: 'onUpdate'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((invocation) async {
         expect(invocation.namedArguments[#eventContextId], isNull);
         return timeline;
       });
@@ -243,8 +379,87 @@ void main() {
         failureCounts: failureCounts,
       );
 
-      verify(() => room.getEventById(r'$missing')).called(1);
-      verify(() => room.getTimeline()).called(1);
+      verifyNever(() => room.getEventById(any<String>()));
+    });
+
+    test(
+        'processes sync event after attachments saved even when text precedes file',
+        () async {
+      context
+        ..lastReadEventContextId = null
+        ..timeline = null;
+
+      final textEvent = MockEvent();
+      final fileEvent = MockEvent();
+      final bytes = Uint8List.fromList(utf8.encode('{}'));
+
+      when(
+        () => room.getTimeline(
+          eventContextId: any<String?>(named: 'eventContextId'),
+          onChange: any(named: 'onChange'),
+          onInsert: any(named: 'onInsert'),
+          onRemove: any(named: 'onRemove'),
+          onNewEvent: any(named: 'onNewEvent'),
+          onUpdate: any(named: 'onUpdate'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => timeline);
+      when(() => room.id).thenReturn('!room:server');
+      when(() => timeline.events).thenReturn(<Event>[textEvent, fileEvent]);
+
+      when(() => textEvent.eventId).thenReturn(r'$text');
+      when(() => textEvent.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      when(() => textEvent.senderId).thenReturn('@remote:server');
+      when(() => textEvent.messageType).thenReturn(syncMessageType);
+      when(() => textEvent.attachmentMimetype).thenReturn('');
+      when(() => textEvent.type).thenReturn('m.room.message');
+
+      when(() => fileEvent.eventId).thenReturn(r'$file');
+      when(() => fileEvent.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+      when(() => fileEvent.senderId).thenReturn('@remote:server');
+      when(() => fileEvent.messageType).thenReturn('m.room.message');
+      when(() => fileEvent.attachmentMimetype).thenReturn('application/json');
+      when(() => fileEvent.type).thenReturn('m.room.message');
+      Map<String, dynamic> contentBuilder(Invocation _) =>
+          {'relativePath': '/matrix/file.json'};
+      when(() => fileEvent.content).thenAnswer(
+        contentBuilder,
+      );
+      when(() => fileEvent.downloadAndDecryptAttachment()).thenAnswer(
+        (_) async => MatrixFile(
+          bytes: bytes,
+          name: 'file.json',
+        ),
+      );
+
+      final processedEvents = <Event>[];
+      when(
+        () => eventProcessor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: any<JournalDb>(named: 'journalDb'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event =
+            invocation.namedArguments[#event] as Event? ?? FakeEvent();
+        processedEvents.add(event);
+        final file = File('${tempDir.path}/matrix/file.json');
+        expect(file.existsSync(), isTrue);
+      });
+
+      await processNewTimelineEvents(
+        listener: context,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        readMarkerService: readMarkerService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
+        failureCounts: failureCounts,
+      );
+
+      expect(processedEvents, contains(textEvent));
+      expect(failureCounts, isEmpty);
     });
 
     test('logs and recovers when event processing throws', () async {
@@ -258,10 +473,13 @@ void main() {
       when(() => room.id).thenReturn('!room:server');
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
-      when(() => room.getTimeline(eventContextId: any(named: 'eventContextId')))
-          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
       when(() => timeline.events).thenReturn([event]);
       when(() => event.eventId).thenReturn(eventId);
+      when(() => event.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
       when(() => event.senderId).thenReturn('@remote:server');
       when(() => event.messageType).thenReturn(syncMessageType);
       when(() => event.attachmentMimetype).thenReturn('');
@@ -275,8 +493,9 @@ void main() {
       when(
         () => readMarkerService.updateReadMarker(
           client: any<Client>(named: 'client'),
-          timeline: any<Timeline>(named: 'timeline'),
+          room: any<Room>(named: 'room'),
           eventId: any<String>(named: 'eventId'),
+          timeline: any<Timeline>(named: 'timeline'),
         ),
       ).thenAnswer((_) async {});
 
@@ -301,8 +520,9 @@ void main() {
       verifyNever(
         () => readMarkerService.updateReadMarker(
           client: any<Client>(named: 'client'),
-          timeline: any<Timeline>(named: 'timeline'),
+          room: any<Room>(named: 'room'),
           eventId: any<String>(named: 'eventId'),
+          timeline: any<Timeline>(named: 'timeline'),
         ),
       );
       expect(failureCounts[eventId], 1);
@@ -322,10 +542,13 @@ void main() {
       when(() => room.id).thenReturn('!room:server');
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
-      when(() => room.getTimeline(eventContextId: any(named: 'eventContextId')))
-          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
       when(() => timeline.events).thenReturn([event]);
       when(() => event.eventId).thenReturn(eventId);
+      when(() => event.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
       when(() => event.senderId).thenReturn('@remote:server');
       when(() => event.type).thenReturn('m.room.message');
       when(() => event.messageType).thenReturn(syncMessageType);
@@ -345,8 +568,9 @@ void main() {
       when(
         () => readMarkerService.updateReadMarker(
           client: any<Client>(named: 'client'),
-          timeline: any<Timeline>(named: 'timeline'),
+          room: any<Room>(named: 'room'),
           eventId: any<String>(named: 'eventId'),
+          timeline: any<Timeline>(named: 'timeline'),
         ),
       ).thenAnswer((_) async {});
 
@@ -371,8 +595,9 @@ void main() {
       verifyNever(
         () => readMarkerService.updateReadMarker(
           client: any<Client>(named: 'client'),
-          timeline: any<Timeline>(named: 'timeline'),
+          room: any<Room>(named: 'room'),
           eventId: eventId,
+          timeline: any<Timeline>(named: 'timeline'),
         ),
       );
       expect(failureCounts[eventId], 1);
@@ -389,10 +614,13 @@ void main() {
       when(() => room.id).thenReturn('!room:server');
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
-      when(() => room.getTimeline(eventContextId: any(named: 'eventContextId')))
-          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
       when(() => timeline.events).thenReturn([event]);
       when(() => event.eventId).thenReturn(eventId);
+      when(() => event.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
       when(() => event.senderId).thenReturn('@remote:server');
       when(() => event.type).thenReturn('m.room.message');
       when(() => event.messageType).thenReturn(syncMessageType);
@@ -425,8 +653,9 @@ void main() {
       verify(
         () => readMarkerService.updateReadMarker(
           client: any<Client>(named: 'client'),
-          timeline: any<Timeline>(named: 'timeline'),
+          room: any<Room>(named: 'room'),
           eventId: eventId,
+          timeline: any<Timeline>(named: 'timeline'),
         ),
       ).called(1);
       expect(failureCounts[eventId], isNull);

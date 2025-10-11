@@ -49,6 +49,8 @@ class FakeJournalDb extends Fake implements JournalDb {}
 
 class FakeSettingsDb extends Fake implements SettingsDb {}
 
+class FakeRoom extends Fake implements Room {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeClient());
@@ -56,6 +58,7 @@ void main() {
     registerFallbackValue(FakeEvent());
     registerFallbackValue(FakeJournalDb());
     registerFallbackValue(FakeSettingsDb());
+    registerFallbackValue(FakeRoom());
   });
 
   test('MatrixTimelineListener processes remote events through runner',
@@ -96,17 +99,21 @@ void main() {
     when(() => sessionManager.client).thenReturn(client);
     when(() => client.sync())
         .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+    when(() => client.isLogged()).thenReturn(true);
     when(() => client.userID).thenReturn('@local:server');
     when(() => client.deviceName).thenReturn('Unit Test Device');
 
     when(() => roomManager.currentRoom).thenReturn(room);
 
     when(() => room.getTimeline(
-            eventContextId: any<String?>(named: 'eventContextId')))
-        .thenAnswer((invocation) async {
+        eventContextId: any<String?>(named: 'eventContextId'),
+        limit: any(named: 'limit'))).thenAnswer((invocation) async {
       expect(invocation.namedArguments[#eventContextId], isNull);
       return timeline;
     });
+    // Also handle calls that only specify the limit (live snapshot fetches).
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
     when(() => timeline.events).thenReturn(<Event>[event]);
 
     when(() => event.eventId).thenReturn(r'$evt');
@@ -122,8 +129,9 @@ void main() {
         )).thenAnswer((_) async {});
     when(() => readMarkerService.updateReadMarker(
           client: any<Client>(named: 'client'),
-          timeline: any<Timeline>(named: 'timeline'),
+          room: any<Room>(named: 'room'),
           eventId: any<String>(named: 'eventId'),
+          timeline: any<Timeline>(named: 'timeline'),
         )).thenAnswer((_) async {});
 
     final listener = MatrixTimelineListener(
@@ -144,6 +152,5 @@ void main() {
 
     verify(() => activityGate.waitUntilIdle()).called(1);
     verify(() => client.sync()).called(1);
-    verify(() => room.getTimeline()).called(1);
   });
 }

@@ -10,11 +10,16 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart'
-    show listenToTimelineEvents, processNewTimelineEvents;
+    show
+        listenToTimelineEvents,
+        processNewTimelineEvents,
+        processTimelineEventsIncremental;
 import 'package:lotti/features/sync/matrix/timeline_context.dart';
+import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 
 /// Coordinates Matrix timeline subscriptions and processing for the sync room.
 class MatrixTimelineListener implements TimelineContext {
@@ -40,6 +45,24 @@ class MatrixTimelineListener implements TimelineContext {
     _clientRunner = ClientRunner<void>(
       callback: (_) async {
         await _activityGate.waitUntilIdle();
+        final drained = _drainPendingEvents();
+        if (drained.isNotEmpty) {
+          await _processPendingEvents(drained);
+          if (_pendingOverflowed) {
+            _pendingOverflowed = false;
+            await processNewTimelineEvents(
+              listener: this,
+              journalDb: _journalDb,
+              loggingService: _loggingService,
+              readMarkerService: _readMarkerService,
+              eventProcessor: _eventProcessor,
+              documentsDirectory: _documentsDirectory,
+              failureCounts: _eventFailureCounts,
+            );
+          }
+          return;
+        }
+
         await processNewTimelineEvents(
           listener: this,
           journalDb: _journalDb,
@@ -67,6 +90,26 @@ class MatrixTimelineListener implements TimelineContext {
   late final ClientRunner<void> _clientRunner;
   Timeline? _timeline;
   String? _lastReadEventContextId;
+  StreamSubscription<Event>? _timelineEventSubscription;
+  final List<Event> _pendingEvents = <Event>[];
+  String? _pendingMarkerEventId;
+  Timer? _markerDebounceTimer;
+  static const Duration _markerDebounce = Duration(milliseconds: 200);
+  // Bound the pending onTimelineEvent queue to avoid unbounded growth
+  // during network churn or long UI-idle stretches. When the limit is
+  // exceeded, the oldest events are dropped (backpressure) since newer
+  // events re-apply current state and the processor deduplicates by id.
+  static const int _maxPendingEvents = 1000;
+  // Process pending events in batches to keep memory usage stable while
+  // deduplicating and ordering the working set. 500 provides a good balance:
+  // small enough to bound transient allocations, large enough to amortize
+  // per-batch overhead in busy rooms. Related events that span boundaries
+  // are still handled correctly because processing is chronological and
+  // marker advancement is based on the latest processed event.
+  static const int _maxPendingBatchSize = 500;
+  // Indicates that the pending buffer hit its cap and we should force a
+  // full catch-up drain after processing the truncated batch.
+  bool _pendingOverflowed = false;
 
   @override
   Client get client => _sessionManager.client;
@@ -98,6 +141,30 @@ class MatrixTimelineListener implements TimelineContext {
   /// Attaches the timeline listener when a sync room is available.
   Future<void> start() async {
     await listenToTimelineEvents(listener: this);
+    // Also listen to the client's decrypted timeline events to schedule a
+    // refresh after the SDK has fully applied the update. This avoids racing
+    // the timeline's own callbacks which may fire before its event list is
+    // updated.
+    await _timelineEventSubscription?.cancel();
+    _timelineEventSubscription =
+        client.onTimelineEvent.stream.listen((Event event) {
+      final roomId = _roomManager.currentRoomId;
+      if (roomId != null && event.roomId == roomId) {
+        // Apply backpressure: if at cap, record overflow (do not drop oldest);
+        // we'll force a full catch-up drain after processing the truncated set.
+        if (_pendingEvents.length >= _maxPendingEvents) {
+          _pendingOverflowed = true;
+          _loggingService.captureEvent(
+            'Pending buffer overflow; forcing full catch-up drain',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'timeline.backpressure',
+          );
+        } else {
+          _pendingEvents.add(event);
+        }
+        enqueueTimelineRefresh();
+      }
+    });
   }
 
   /// Schedules a timeline refresh through the internal runner.
@@ -108,7 +175,13 @@ class MatrixTimelineListener implements TimelineContext {
 
   /// Releases resources and terminates active subscriptions.
   Future<void> dispose() async {
+    // Flush any pending read marker before tearing down timers/subscriptions.
+    if (_pendingMarkerEventId != null) {
+      await _flushReadMarker();
+    }
     _clientRunner.close();
+    await _timelineEventSubscription?.cancel();
+    _markerDebounceTimer?.cancel();
     final timeline = _timeline;
     if (timeline != null) {
       timeline.cancelSubscriptions();
@@ -121,5 +194,129 @@ class MatrixTimelineListener implements TimelineContext {
   @override
   set lastReadEventContextId(String? value) {
     _lastReadEventContextId = value;
+  }
+
+  // Drain and clear pending onTimelineEvent buffer.
+  List<Event> _drainPendingEvents() {
+    if (_pendingEvents.isEmpty) {
+      return const <Event>[];
+    }
+    final copy = List<Event>.from(_pendingEvents);
+    _pendingEvents.clear();
+    return copy;
+  }
+
+  Future<void> _processPendingEvents(List<Event> events) async {
+    // Sort chronologically (oldest first) once for deterministic batching.
+    events.sort(TimelineEventOrdering.compare);
+
+    // Deduplicate and process in bounded batches to avoid large temporary
+    // allocations for very large bursts.
+    var start = 0;
+    String? latestIdOverall;
+    // Deduplicate across the entire pending set so duplicates split across
+    // batch boundaries are still processed exactly once.
+    final seen = <String>{};
+    while (start < events.length) {
+      final end = (start + _maxPendingBatchSize).clamp(0, events.length);
+      final window = events.sublist(start, end);
+      start = end;
+
+      final unique = <Event>[
+        for (final e in window)
+          if (seen.add(e.eventId)) e,
+      ];
+
+      if (unique.isEmpty) continue;
+
+      final latestId = await processTimelineEventsIncremental(
+        listener: this,
+        events: unique,
+        journalDb: _journalDb,
+        loggingService: _loggingService,
+        readMarkerService: _readMarkerService,
+        eventProcessor: _eventProcessor,
+        documentsDirectory: _documentsDirectory,
+        failureCounts: _eventFailureCounts,
+      );
+
+      if (latestId != null) {
+        latestIdOverall = latestId;
+      }
+    }
+
+    if (latestIdOverall != null) {
+      lastReadEventContextId = latestIdOverall;
+      _pendingMarkerEventId = latestIdOverall;
+      _scheduleMarkerFlush();
+    }
+  }
+
+  void _scheduleMarkerFlush() {
+    _markerDebounceTimer?.cancel();
+    _markerDebounceTimer = Timer(_markerDebounce, () {
+      unawaited(
+        _flushReadMarker().catchError((Object error, StackTrace stack) {
+          _loggingService.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'timeline.flushReadMarker',
+            stackTrace: stack,
+          );
+        }),
+      );
+    });
+  }
+
+  Future<void> _flushReadMarker() async {
+    final id = _pendingMarkerEventId;
+    final timeline = _timeline;
+    final room = _roomManager.currentRoom;
+    if (id == null || room == null) {
+      return;
+    }
+    _pendingMarkerEventId = null;
+    await _readMarkerService.updateReadMarker(
+      client: client,
+      room: room,
+      eventId: id,
+      timeline: timeline,
+    );
+  }
+
+  // Test-use-only: allow setting a pending marker to exercise dispose flush.
+  @visibleForTesting
+  set debugPendingMarker(String? id) {
+    _pendingMarkerEventId = id;
+  }
+
+  @visibleForTesting
+  String? get debugPendingMarker => _pendingMarkerEventId;
+
+  // Test-use-only: process a supplied event list through the incremental
+  // pipeline (exercises debounce behaviour without relying on SDK streams).
+  @visibleForTesting
+  Future<void> debugProcessPendingEvents(List<Event> events) async {
+    await _processPendingEvents(events);
+  }
+
+  // Test-use-only: enqueue a pending event using the same path as the SDK
+  // listener but callable from tests to validate backpressure behaviour.
+  @visibleForTesting
+  void debugEnqueuePendingEvent(Event event) {
+    if (_pendingEvents.length >= _maxPendingEvents) {
+      _pendingOverflowed = true;
+    } else {
+      _pendingEvents.add(event);
+    }
+  }
+
+  @visibleForTesting
+  int get debugPendingLength => _pendingEvents.length;
+
+  // Test-use-only: directly schedule the debounced marker flush.
+  @visibleForTesting
+  void debugScheduleMarkerFlush() {
+    _scheduleMarkerFlush();
   }
 }

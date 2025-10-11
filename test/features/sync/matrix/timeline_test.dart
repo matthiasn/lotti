@@ -187,12 +187,12 @@ void main() {
     when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
     when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
     when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
-    when(() =>
-            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
-        .thenAnswer((_) async => mockTimeline);
+    when(() => mockRoom.getTimeline(
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'),
+        )).thenAnswer((_) async => mockTimeline);
     when(() => mockTimeline.events).thenReturn([event]);
-    when(() => mockTimeline.setReadMarker(eventId: any(named: 'eventId')))
-        .thenAnswer((_) async {});
+    when(() => mockRoom.setReadMarker(any())).thenAnswer((_) async {});
 
     when(
       () => mockEventProcessor.process(
@@ -204,8 +204,9 @@ void main() {
     when(
       () => mockReadMarkerService.updateReadMarker(
         client: context.client,
-        timeline: mockTimeline,
+        room: mockRoom,
         eventId: eventId,
+        timeline: mockTimeline,
       ),
     ).thenAnswer((_) async {
       expect(context.lastReadEventContextId, eventId);
@@ -221,11 +222,15 @@ void main() {
       failureCounts: failureCounts,
     );
 
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    expect(context.refreshRequested, isTrue);
+
     verify(
       () => mockReadMarkerService.updateReadMarker(
         client: context.client,
-        timeline: mockTimeline,
+        room: mockRoom,
         eventId: eventId,
+        timeline: mockTimeline,
       ),
     ).called(1);
   });
@@ -254,9 +259,10 @@ void main() {
     when(() => mockClient.sync())
         .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
     when(() => mockRoom.getEventById(any())).thenAnswer((_) async => null);
-    when(() =>
-            mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')))
-        .thenAnswer((_) async => mockTimeline);
+    when(() => mockRoom.getTimeline(
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'),
+        )).thenAnswer((_) async => mockTimeline);
     when(() => mockTimeline.events).thenReturn([event]);
 
     await processNewTimelineEvents(

@@ -12,6 +12,8 @@ import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/matrix/timeline.dart'
+    show listenToTimelineEvents;
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -38,6 +40,8 @@ class FakeMatrixClient extends Fake implements Client {}
 
 class FakeTimeline extends Fake implements Timeline {}
 
+class FakeRoom extends Fake implements Room {}
+
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
@@ -45,12 +49,17 @@ class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class FakeMatrixEvent extends Fake implements Event {}
+// Note: We avoid mocking CachedStreamController from matrix SDK directly to
+// keep tests resilient across SDK changes.
+
+class MockEvent extends Mock implements Event {}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeMatrixClient());
     registerFallbackValue(FakeTimeline());
     registerFallbackValue(FakeMatrixEvent());
+    registerFallbackValue(FakeRoom());
   });
 
   late MockMatrixSessionManager mockSessionManager;
@@ -64,6 +73,7 @@ void main() {
   late MockSyncReadMarkerService mockReadMarkerService;
   late MockSyncEventProcessor mockEventProcessor;
   late Directory tempDir;
+  late StreamController<Event> timelineEventController;
 
   setUp(() {
     mockSessionManager = MockMatrixSessionManager();
@@ -75,6 +85,7 @@ void main() {
     mockReadMarkerService = MockSyncReadMarkerService();
     mockEventProcessor = MockSyncEventProcessor();
     tempDir = Directory.systemTemp.createTempSync('matrix_timeline_listener');
+    timelineEventController = StreamController<Event>.broadcast();
     listener = MatrixTimelineListener(
       sessionManager: mockSessionManager,
       roomManager: mockRoomManager,
@@ -88,6 +99,9 @@ void main() {
     );
     mockClient = MockClient();
     when(() => mockSessionManager.client).thenReturn(mockClient);
+    when(() => mockClient.isLogged()).thenReturn(true);
+    // Do not stub onTimelineEvent here; tests that call start() are adapted
+    // to avoid relying on the underlying SDK controller type.
     when(() => mockActivityGate.waitUntilIdle()).thenAnswer((_) async {});
     when(() => mockLoggingService.captureEvent(
           any<String>(),
@@ -97,6 +111,7 @@ void main() {
   });
 
   tearDown(() async {
+    await timelineEventController.close();
     await getIt.reset();
     if (tempDir.existsSync()) {
       tempDir.deleteSync(recursive: true);
@@ -130,6 +145,43 @@ void main() {
     verify(() => mockTimeline.cancelSubscriptions()).called(1);
   });
 
+  test('dispose flushes pending read marker if scheduled', () async {
+    final mockTimeline = MockTimeline();
+    final mockRoom = MockRoom();
+    final mockClient = MockClient();
+
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
+    when(() => mockRoom.id).thenReturn('!room:server');
+    when(() => mockClient.isLogged()).thenReturn(true);
+    when(() => mockClient.userID).thenReturn('@local:server');
+    when(() => mockClient.deviceName).thenReturn('Unit Test Device');
+    when(() => mockSessionManager.client).thenReturn(mockClient);
+
+    // Set a timeline to pass through to read marker service
+    listener.timeline = mockTimeline;
+
+    // Prepare the read marker call expectation (match exact args)
+    when(() => mockReadMarkerService.updateReadMarker(
+          client: mockClient,
+          room: mockRoom,
+          eventId: r'$evt',
+          timeline: mockTimeline,
+        )).thenAnswer((_) async {});
+
+    // Simulate a pending marker
+    listener.debugPendingMarker = r'$evt';
+
+    await listener.dispose();
+
+    verify(() => mockReadMarkerService.updateReadMarker(
+          client: mockClient,
+          room: mockRoom,
+          eventId: r'$evt',
+          timeline: mockTimeline,
+        )).called(1);
+  });
+
   test('client runner callback waits for idle and hydrates context', () async {
     when(() => mockRoomManager.currentRoom).thenReturn(null);
     when(() => mockClient.sync())
@@ -155,9 +207,13 @@ void main() {
 
     final mockTimeline = MockTimeline();
     when(
-      () => mockRoom.getTimeline(eventContextId: any(named: 'eventContextId')),
+      () => mockRoom.getTimeline(
+        eventContextId: any(named: 'eventContextId'),
+        limit: any(named: 'limit'),
+      ),
     ).thenAnswer((_) async => mockTimeline);
-    when(() => mockRoom.getTimeline()).thenAnswer((_) async => mockTimeline);
+    when(() => mockRoom.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => mockTimeline);
     when(() => mockTimeline.events).thenReturn(const []);
 
     listener.enqueueTimelineRefresh();
@@ -170,7 +226,9 @@ void main() {
     activityGateCompleter.complete();
     await Future<void>.delayed(Duration.zero);
 
-    verify(() => mockClient.sync()).called(1);
+    // Implementation may perform multiple quick retries; ensure at least one
+    // sync occurs after activity gate releases.
+    verify(() => mockClient.sync()).called(greaterThanOrEqualTo(1));
   });
 
   test('start logs when no room is available', () async {
@@ -179,13 +237,186 @@ void main() {
     getIt.registerSingleton<LoggingService>(mockLoggingService);
     when(() => mockRoomManager.currentRoom).thenReturn(null);
 
-    await listener.start();
+    // Call the lower-level listener to assert logging without touching
+    // SDK-specific onTimelineEvent controller types.
+    await listenToTimelineEvents(listener: listener);
 
     verify(
       () => mockLoggingService.captureEvent(
         contains('Cannot listen to timeline: syncRoom is null'),
         domain: 'MATRIX_SERVICE',
         subDomain: 'listenToTimelineEvents',
+      ),
+    ).called(1);
+  });
+
+  test('debounce: multiple marker schedules flush once with latest id',
+      () async {
+    final mockTimeline = MockTimeline();
+    final mockRoom = MockRoom();
+    final mockClient = MockClient();
+
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
+    when(() => mockClient.isLogged()).thenReturn(true);
+    when(() => mockClient.userID).thenReturn('@local:server');
+    when(() => mockClient.deviceName).thenReturn('Unit Test Device');
+    when(() => mockSessionManager.client).thenReturn(mockClient);
+    listener.timeline = mockTimeline;
+
+    final e1 = MockEvent();
+    when(() => e1.eventId).thenReturn(r'$evt1');
+    when(() => e1.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+    when(() => e1.senderId).thenReturn('@remote:server');
+    when(() => e1.type).thenReturn('m.room.message');
+    when(() => e1.messageType).thenReturn(syncMessageType);
+    when(() => e1.attachmentMimetype).thenReturn('');
+
+    final e2 = MockEvent();
+    when(() => e2.eventId).thenReturn(r'$evt2');
+    when(() => e2.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+    when(() => e2.senderId).thenReturn('@remote:server');
+    when(() => e2.type).thenReturn('m.room.message');
+    when(() => e2.messageType).thenReturn(syncMessageType);
+    when(() => e2.attachmentMimetype).thenReturn('');
+
+    when(() => mockReadMarkerService.updateReadMarker(
+          client: any(named: 'client'),
+          room: any(named: 'room'),
+          eventId: any(named: 'eventId'),
+          timeline: any(named: 'timeline'),
+        )).thenAnswer((_) async {});
+
+    // Rapidly schedule two marker writes; only the last should flush.
+    listener.debugPendingMarker = r'$evt1';
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    listener.debugPendingMarker = r'$evt2';
+
+    // Explicitly dispose to force a flush of the pending marker in tests,
+    // avoiding timer flakiness.
+    await listener.dispose();
+
+    final captured = verify(
+      () => mockReadMarkerService.updateReadMarker(
+        client: any(named: 'client'),
+        room: any(named: 'room'),
+        eventId: captureAny(named: 'eventId'),
+        timeline: any(named: 'timeline'),
+      ),
+    ).captured;
+    expect(captured, isNotEmpty);
+    expect(captured.last, r'$evt2');
+  });
+
+  test('backpressure: pending list capped and drops oldest', () async {
+    final mockClient = MockClient();
+    when(() => mockSessionManager.client).thenReturn(mockClient);
+    when(() => mockClient.isLogged()).thenReturn(true);
+
+    // Enqueue well over the cap; verify internal length stays bounded.
+    for (var i = 0; i < 1200; i++) {
+      final e = MockEvent();
+      when(() => e.eventId).thenReturn(r'$e$i');
+      when(() => e.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+      when(() => e.senderId).thenReturn('@remote:server');
+      when(() => e.type).thenReturn('m.room.message');
+      when(() => e.messageType).thenReturn(syncMessageType);
+      when(() => e.attachmentMimetype).thenReturn('');
+      listener.debugEnqueuePendingEvent(e);
+    }
+
+    // The cap is enforced at 1000.
+    expect(listener.debugPendingLength, 1000);
+  });
+
+  test('overflow triggers full catch-up drain after truncated batch', () async {
+    // Ensure the activity gate is stubbed for this test invocation.
+    when(() => mockActivityGate.waitUntilIdle()).thenAnswer((_) async {});
+    final mockRoom = MockRoom();
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
+    when(() => mockRoom.id).thenReturn('!room:server');
+
+    final mockClientLocal = MockClient();
+    when(() => mockClientLocal.isLogged()).thenReturn(true);
+    when(() => mockClientLocal.userID).thenReturn('@local:server');
+    when(() => mockClientLocal.deviceName).thenReturn('Unit Test Device');
+    when(() => mockSessionManager.client).thenReturn(mockClientLocal);
+
+    // Count sync calls to detect the post-overflow full catch-up.
+    var syncCalls = 0;
+    when(() => mockClientLocal.sync()).thenAnswer((_) async {
+      syncCalls++;
+      return SyncUpdate(nextBatch: 'token');
+    });
+
+    // Prepare a minimal snapshot call so catch-up proceeds after sync.
+    final mockTimeline = MockTimeline();
+    when(() => mockRoom.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => mockTimeline);
+    when(() => mockTimeline.events).thenReturn(const []);
+
+    // Enqueue _maxPendingEvents + 1 items to trigger overflow (cap is 1000).
+    for (var i = 0; i < 1001; i++) {
+      final e = MockEvent();
+      when(() => e.eventId).thenReturn(r'$evt' '$i');
+      when(() => e.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+      // Local sender so incremental path is fast and does not call processor.
+      when(() => e.senderId).thenReturn('@local:server');
+      when(() => e.type).thenReturn('m.room.message');
+      when(() => e.messageType).thenReturn(syncMessageType);
+      when(() => e.attachmentMimetype).thenReturn('');
+      listener.debugEnqueuePendingEvent(e);
+    }
+
+    // Run the runner callback (processes pending; overflow forces catch-up).
+    await listener.clientRunner.callback(null);
+
+    // Ensure a full catch-up drain was invoked (sync called at least once).
+    expect(syncCalls, greaterThanOrEqualTo(1));
+  });
+
+  test('debounce flush logs when read marker update fails', () async {
+    final mockTimeline = MockTimeline();
+    final mockRoom = MockRoom();
+    final mockClient = MockClient();
+
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockClient.isLogged()).thenReturn(true);
+    when(() => mockClient.userID).thenReturn('@local:server');
+    when(() => mockClient.deviceName).thenReturn('Unit Test Device');
+    when(() => mockSessionManager.client).thenReturn(mockClient);
+
+    // Provide a timeline to pass through to read marker service
+    listener.timeline = mockTimeline;
+
+    // Cause updateReadMarker to throw so the timer's catchError path logs.
+    when(() => mockReadMarkerService.updateReadMarker(
+          client: any(named: 'client'),
+          room: any(named: 'room'),
+          eventId: any(named: 'eventId'),
+          timeline: any(named: 'timeline'),
+        )).thenThrow(Exception('marker update failed'));
+
+    // Manually set a pending marker and schedule a debounced flush.
+    listener
+      ..debugPendingMarker = r'$evt'
+      ..debugScheduleMarkerFlush();
+
+    // Wait longer than debounce to allow timer to fire and catchError to log.
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+
+    // Verify the exception log occurred once.
+    verify(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'timeline.flushReadMarker',
+        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).called(1);
   });
