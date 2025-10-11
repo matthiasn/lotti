@@ -32,7 +32,14 @@ import '../../mocks/mocks.dart';
 
 class _MockBuildContext extends Mock implements BuildContext {}
 
-// Fake WidgetRef for testing Riverpod functions
+/// Minimal WidgetRef implementation for unit testing createChecklist().
+///
+/// This fake is needed because createChecklist() requires a WidgetRef parameter
+/// to read checklistRepositoryProvider. In widget tests, ProviderScope should be
+/// used instead, but for unit tests we need this minimal implementation.
+///
+/// Only implements the 'read' method which is actually used by createChecklist.
+/// Other methods throw UnimplementedError to catch any unexpected usage.
 class _FakeWidgetRef implements WidgetRef {
   _FakeWidgetRef(this._container);
 
@@ -41,14 +48,16 @@ class _FakeWidgetRef implements WidgetRef {
   @override
   BuildContext get context => _MockBuildContext();
 
+  /// Only method used by createChecklist - delegates to ProviderContainer
   @override
   T read<T>(ProviderListenable<T> provider) {
     return _container.read(provider);
   }
 
+  // Unused methods - throw to catch unexpected usage
   @override
   T watch<T>(ProviderListenable<T> provider) {
-    return _container.read(provider);
+    throw UnimplementedError('watch() not implemented in test fake');
   }
 
   @override
@@ -58,22 +67,22 @@ class _FakeWidgetRef implements WidgetRef {
     void Function(Object error, StackTrace stackTrace)? onError,
     bool fireImmediately = false,
   }) {
-    throw UnimplementedError();
+    throw UnimplementedError('listenManual() not implemented in test fake');
   }
 
   @override
   bool exists(ProviderBase<Object?> provider) {
-    return _container.exists(provider);
+    throw UnimplementedError('exists() not implemented in test fake');
   }
 
   @override
   void invalidate(ProviderOrFamily provider) {
-    _container.invalidate(provider);
+    throw UnimplementedError('invalidate() not implemented in test fake');
   }
 
   @override
   T refresh<T>(Refreshable<T> provider) {
-    return _container.refresh(provider);
+    throw UnimplementedError('refresh() not implemented in test fake');
   }
 
   @override
@@ -83,7 +92,7 @@ class _FakeWidgetRef implements WidgetRef {
     void Function(Object error, StackTrace stackTrace)? onError,
     bool fireImmediately = false,
   }) {
-    throw UnimplementedError();
+    throw UnimplementedError('listen() not implemented in test fake');
   }
 }
 
@@ -100,6 +109,12 @@ void main() {
   final mockTimeService = MockTimeService();
   final mockNavService = MockNavService();
 
+  // Note: Navigation side effects (beamToNamed calls) are intentionally not mocked/verified
+  // in these tests. These are unit tests focused on entry creation and persistence logic.
+  // Navigation behavior is tested separately in integration/widget tests where the full
+  // navigation context is available. The NavService mock is registered to prevent errors,
+  // but navigation calls are not asserted as they are implementation details of the
+  // create functions, not their core responsibility.
   group('Create Entry Tests - ', () {
     setUpAll(() async {
       await getIt.reset();
@@ -254,6 +269,7 @@ void main() {
       expect(event, isA<JournalEvent>());
       expect(event?.data.title, '');
       expect(event?.data.status, EventStatus.tentative);
+      // Events are starred by default (see PersistenceLogic.createEventEntry)
       expect(event?.meta.starred, true);
 
       // Verify event is in database
@@ -326,15 +342,29 @@ void main() {
       expect(checklist, isNotNull);
       expect(checklist, isA<Checklist>());
 
-      // Verify checklist is linked to task
-      final checklistEntity = checklist!;
+      // Verify checklist data integrity
+      final checklistEntity = checklist! as Checklist;
+      expect(checklistEntity.data.title, 'TODOs'); // Default title when none provided
       expect(
-          (checklistEntity as Checklist).data.linkedTasks, contains(task.id));
+          checklistEntity.data.linkedChecklistItems, isEmpty); // No items yet
+      expect(checklistEntity.data.linkedTasks, contains(task.id));
 
-      // Verify task has checklist
+      // Verify metadata is properly set
+      expect(checklistEntity.meta.id, isNotEmpty);
+      expect(checklistEntity.meta.createdAt, isNotNull);
+      expect(checklistEntity.meta.updatedAt, isNotNull);
+      expect(checklistEntity.meta.vectorClock, isNotNull);
+
+      // Verify task has checklist ID
       final updatedTask = await getIt<JournalDb>().journalEntityById(task.id);
       expect((updatedTask! as Task).data.checklistIds,
           contains(checklist.meta.id));
+
+      // Verify checklist is persisted in database
+      final retrievedChecklist =
+          await getIt<JournalDb>().journalEntityById(checklist.meta.id);
+      expect(retrievedChecklist, isNotNull);
+      expect(retrievedChecklist, isA<Checklist>());
     });
 
     test('createScreenshot creates image entry with geolocation', () async {
