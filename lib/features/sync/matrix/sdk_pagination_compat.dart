@@ -1,15 +1,12 @@
-// ignore_for_file: avoid_dynamic_calls
-
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
-/// Best-effort SDK pagination/backfill helper.
+/// SDK pagination/backfill helper for Matrix 2.x Timeline API.
 ///
-/// Some versions of the Matrix Dart SDK expose timeline pagination via
-/// requestHistory/canRequestHistory on the Timeline snapshot, but the exact
-/// API surface may differ. This helper uses dynamic calls to preserve
-/// compatibility across versions and falls back gracefully.
+/// This implementation targets our pinned Matrix SDK (2.x) and uses the
+/// strongly-typed `Timeline.canRequestHistory` and `Timeline.requestHistory` APIs
+/// directly. No reflective/dynamic fallbacks are used.
 class SdkPaginationCompat {
   /// Attempts to backfill the provided [timeline] in-place using SDK
   /// pagination until either [lastEventId] is present in the events or
@@ -28,22 +25,30 @@ class SdkPaginationCompat {
   }) async {
     if (lastEventId == null) return false;
     try {
-      // Use dynamic to tolerate SDK surface differences.
-      final dyn = timeline as dynamic;
       var pages = 0;
       var anyPaged = false;
       while (pages < maxPages) {
-        final events = List<Event>.from(dyn.events as List<Event>)
+        final events = List<Event>.from(timeline.events)
           ..sort(TimelineEventOrdering.compare);
         final contains = events.any((e) => e.eventId == lastEventId);
         if (contains) return true;
 
-        final canMore = _canRequestHistory(dyn);
-        if (!canMore) break;
+        if (!timeline.canRequestHistory) break;
 
         // Mark that we attempted pagination regardless of the outcome.
         anyPaged = true;
-        final ok = await _requestMoreHistory(dyn, pageSize, logging);
+        var ok = true;
+        try {
+          await timeline.requestHistory();
+        } catch (e, st) {
+          logging.captureException(
+            e,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'sdkPagination.requestHistory',
+            stackTrace: st,
+          );
+          ok = false;
+        }
         if (!ok) break;
         pages++;
       }
@@ -57,92 +62,5 @@ class SdkPaginationCompat {
       );
       return false;
     }
-  }
-
-  static bool _canRequestHistory(dynamic timeline) {
-    try {
-      // Common conventions tried in order; default to true if unknown.
-      if (timeline.canRequestHistory is bool) {
-        return timeline.canRequestHistory as bool;
-      }
-      if (timeline.hasMoreHistory is bool) {
-        return timeline.hasMoreHistory as bool;
-      }
-    } catch (_) {}
-    return true;
-  }
-
-  static Future<bool> _requestMoreHistory(
-    dynamic timeline,
-    int pageSize,
-    LoggingService logging,
-  ) async {
-    // Try requestHistory(pageSize) then requestHistory()
-    try {
-      if (timeline.requestHistory is Function) {
-        try {
-          final result = await timeline.requestHistory(pageSize);
-          if (result is bool) return result;
-          return true; // treat void as success
-        } catch (e, st) {
-          logging.captureException(
-            e,
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'sdkPaginationCompat.request',
-            stackTrace: st,
-          );
-        }
-        try {
-          final result = await timeline.requestHistory();
-          if (result is bool) return result;
-          return true;
-        } catch (e, st) {
-          logging.captureException(
-            e,
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'sdkPaginationCompat.request.noarg',
-            stackTrace: st,
-          );
-        }
-      }
-    } catch (_) {}
-
-    // Try paginateBackwards(pageSize) then paginateBackwards()
-    try {
-      if (timeline.paginateBackwards is Function) {
-        try {
-          final result = await timeline.paginateBackwards(pageSize);
-          if (result is bool) return result;
-          return true;
-        } catch (e, st) {
-          logging.captureException(
-            e,
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'sdkPaginationCompat.backwards',
-            stackTrace: st,
-          );
-        }
-        try {
-          final result = await timeline.paginateBackwards();
-          if (result is bool) return result;
-          return true;
-        } catch (e, st) {
-          logging.captureException(
-            e,
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'sdkPaginationCompat.backwards.noarg',
-            stackTrace: st,
-          );
-        }
-      }
-    } catch (_) {}
-
-    // No known pagination method found or all attempts failed.
-    logging.captureEvent(
-      'SDK timeline pagination not available',
-      domain: 'MATRIX_SYNC_V2',
-      subDomain: 'sdkPaginationCompat',
-    );
-    return false;
   }
 }
