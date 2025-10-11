@@ -8,7 +8,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
+// No internal SDK controllers in tests
 import 'package:mocktail/mocktail.dart';
 
 // ignore_for_file: cascade_invocations, unnecessary_lambdas
@@ -131,7 +131,7 @@ void main() {
     late _MockClient client;
     late StreamController<KeyVerificationRunner> runnerController;
     late StreamController<KeyVerification> requestController;
-    late CachedStreamController<KeyVerification> requestCachedController;
+    late StreamController<KeyVerification> requestCachedController;
 
     setUp(() {
       service = _MockMatrixService();
@@ -152,9 +152,10 @@ void main() {
       ).thenReturn(null);
 
       when(() => service.client).thenReturn(client);
-      requestCachedController = CachedStreamController<KeyVerification>();
-      when(() => client.onKeyVerificationRequest)
-          .thenReturn(requestCachedController);
+      requestCachedController =
+          StreamController<KeyVerification>.broadcast(sync: true);
+      when(() => client.onKeyVerificationRequest.stream)
+          .thenAnswer((_) => requestCachedController.stream);
       when(() => service.incomingKeyVerificationRunnerController)
           .thenReturn(runnerController);
       when(() => service.incomingKeyVerificationController)
@@ -164,6 +165,7 @@ void main() {
     tearDown(() async {
       await runnerController.close();
       await requestController.close();
+      await requestCachedController.close();
     });
 
     test('creates runners and forwards incoming requests', () async {
@@ -182,6 +184,7 @@ void main() {
       await listenForKeyVerificationRequests(
         service: service,
         loggingService: loggingService,
+        requests: requestCachedController.stream,
       );
 
       final request = _MockKeyVerification();
@@ -211,6 +214,7 @@ void main() {
       await listenForKeyVerificationRequests(
         service: service,
         loggingService: loggingService,
+        requests: null,
       );
 
       verify(

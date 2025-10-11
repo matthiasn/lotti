@@ -24,8 +24,7 @@ class SyncReadMarkerService {
       _settingsDb,
     );
 
-    final loginState = client.onLoginStateChanged.value;
-    if (loginState == LoginState.loggedIn) {
+    if (client.isLogged()) {
       try {
         // Prefer room-level API to avoid coupling to a snapshot timeline.
         await room.setReadMarker(eventId);

@@ -3,7 +3,6 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSettingsDb extends Mock implements SettingsDb {}
@@ -26,7 +25,7 @@ void main() {
     late MockTimeline timeline;
     late MockRoom room;
     late MockClient client;
-    late CachedStreamController<LoginState> loginStateStream;
+    // No internal SDK controllers in tests; stub login state directly.
 
     setUp(() {
       settingsDb = MockSettingsDb();
@@ -38,19 +37,14 @@ void main() {
       timeline = MockTimeline();
       room = MockRoom();
       client = MockClient();
-      loginStateStream =
-          CachedStreamController<LoginState>(LoginState.loggedIn);
-
-      when(() => client.onLoginStateChanged).thenReturn(loginStateStream);
+      when(() => client.isLogged()).thenReturn(true);
       when(() => client.deviceName).thenReturn('device');
       when(() => room.setReadMarker(any())).thenAnswer((_) async {});
       when(() => settingsDb.saveSettingsItem(any(), any()))
           .thenAnswer((_) async => 1);
     });
 
-    tearDown(() async {
-      await loginStateStream.close();
-    });
+    tearDown(() async {});
 
     test('updates read marker when logged in', () async {
       await service.updateReadMarker(
@@ -64,10 +58,7 @@ void main() {
     });
 
     test('skips timeline update when not logged in', () async {
-      await loginStateStream.close();
-      loginStateStream =
-          CachedStreamController<LoginState>(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(loginStateStream);
+      when(() => client.isLogged()).thenReturn(false);
 
       await service.updateReadMarker(
         client: client,
@@ -80,10 +71,7 @@ void main() {
     });
 
     test('logs and continues when timeline update fails', () async {
-      await loginStateStream.close();
-      loginStateStream =
-          CachedStreamController<LoginState>(LoginState.loggedIn);
-      when(() => client.onLoginStateChanged).thenReturn(loginStateStream);
+      when(() => client.isLogged()).thenReturn(true);
 
       final exception = Exception('setReadMarker failed');
       when(() => room.setReadMarker(any())).thenThrow(exception);
