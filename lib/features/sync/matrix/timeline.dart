@@ -86,6 +86,253 @@ List<Event> _collectNewEvents(
   return candidateEvents;
 }
 
+class TimelineDrainer {
+  TimelineDrainer({
+    required this.listener,
+    required this.journalDb,
+    required this.loggingService,
+    required this.readMarkerService,
+    required this.eventProcessor,
+    required this.documentsDirectory,
+    required this.failureCounts,
+    required this.config,
+    required this.metrics,
+  });
+
+  final TimelineContext listener;
+  final JournalDb journalDb;
+  final LoggingService loggingService;
+  final SyncReadMarkerService readMarkerService;
+  final SyncEventProcessor eventProcessor;
+  final Directory documentsDirectory;
+  final Map<String, int>? failureCounts;
+  final TimelineConfig config;
+  final TimelineMetrics? metrics;
+
+  Future<List<Event>> computeFromTimeline({
+    required Timeline tl,
+    required String source,
+    required int pass,
+    required String roomId,
+    required int usedLimit,
+    required String? lastReadEventContextId,
+  }) async {
+    final sortedEvents = _buildSortedIndexedEvents(tl);
+    final newestId =
+        sortedEvents.isNotEmpty ? sortedEvents.last.event.eventId : null;
+    loggingService.captureEvent(
+      'Timeline drain start (pass ${pass + 1}) - room: $roomId, '
+      'lastRead: ${lastReadEventContextId ?? 'null'}, '
+      'newest: ${newestId ?? 'null'}, '
+      'events: ${sortedEvents.length}, source: $source${usedLimit > 0 ? ', limit: $usedLimit' : ''}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'timeline.debug',
+    );
+
+    final lastReadPosition =
+        _findLastReadPosition(sortedEvents, lastReadEventContextId);
+    var newEvents = _collectNewEvents(
+      sortedEvents,
+      lastReadPosition,
+      lastReadEventContextId,
+    );
+
+    // If empty and we're at the tail, do tiny intra-pass waits to allow the
+    // SDK to apply the newest event into the live list.
+    final atTail = lastReadEventContextId != null &&
+        lastReadPosition >= 0 &&
+        lastReadPosition == sortedEvents.length - 1;
+    if (newEvents.isEmpty && atTail) {
+      for (final delay in config.retryDelays) {
+        if (config.collectMetrics) metrics?.retryAttempts++;
+        loggingService.captureEvent(
+          'Empty snapshot at tail; retrying after ${delay.inMilliseconds}ms '
+          '(pass ${pass + 1}, source: $source${usedLimit > 0 ? ', limit: $usedLimit' : ''})',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'timeline.debug',
+        );
+        await Future<void>.delayed(delay);
+        // Re-evaluate from the same live timeline instance.
+        final evsIndexed = _buildSortedIndexedEvents(tl);
+        final recalculated = <Event>[];
+        for (var i = 0; i < evsIndexed.length; i++) {
+          final event = evsIndexed[i].event;
+          final eventId = event.eventId;
+          if (lastReadPosition >= 0) {
+            if (i <= lastReadPosition) {
+              continue;
+            }
+          } else if (eventId == lastReadEventContextId) {
+            continue;
+          }
+          recalculated.add(event);
+        }
+        if (recalculated.isNotEmpty) {
+          newEvents = recalculated;
+          break;
+        }
+      }
+    }
+
+    return newEvents;
+  }
+
+  Future<void> drain() async {
+    for (var pass = 0; pass < config.maxDrainPasses; pass++) {
+      if (config.collectMetrics) metrics?.drainPasses++;
+      await listener.client.sync();
+
+      final syncRoom = listener.roomManager.currentRoom;
+      final roomId = listener.roomManager.currentRoomId ??
+          listener.roomManager.currentRoom?.id ??
+          'unknown';
+
+      var timeline = listener.timeline;
+      var newEvents = const <Event>[];
+      var usedLimit = 0;
+
+      final lastReadEventContextId = listener.lastReadEventContextId;
+
+      if (timeline != null) {
+        newEvents = await computeFromTimeline(
+          tl: timeline,
+          source: 'live',
+          pass: pass,
+          roomId: roomId,
+          usedLimit: usedLimit,
+          lastReadEventContextId: lastReadEventContextId,
+        );
+      }
+
+      if (newEvents.isEmpty) {
+        for (final limit in config.timelineLimits) {
+          usedLimit = limit;
+          timeline = await syncRoom?.getTimeline(limit: limit);
+          if (timeline == null) {
+            loggingService.captureEvent(
+              'Timeline is null',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'processNewTimelineEvents',
+            );
+            return;
+          }
+          newEvents = await computeFromTimeline(
+            tl: timeline,
+            source: 'snapshot',
+            pass: pass,
+            roomId: roomId,
+            usedLimit: usedLimit,
+            lastReadEventContextId: lastReadEventContextId,
+          );
+          if (newEvents.isNotEmpty) {
+            break;
+          }
+        }
+      }
+
+      if (newEvents.isEmpty) {
+        if (pass < config.maxDrainPasses - 1) {
+          loggingService.captureEvent(
+            'No new events in pass ${pass + 1}; continuing drain (limits tried: $usedLimit).',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'timeline.debug',
+          );
+          continue;
+        }
+        loggingService.captureEvent(
+          'Timeline follow-up scheduled (empty snapshot) - room: $roomId',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'timeline.debug',
+        );
+        unawaited(
+          Future<void>.delayed(config.readMarkerFollowUpDelay).then((_) {
+            listener.enqueueTimelineRefresh();
+          }),
+        );
+        break;
+      }
+
+      loggingService.captureEvent(
+        'Processing ${newEvents.length} timeline events '
+        'for room ${syncRoom?.id}',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processNewTimelineEvents',
+      );
+
+      final outcome = await _ingestAndComputeLatest(
+        events: newEvents,
+        listener: listener,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: documentsDirectory,
+        failureCounts: failureCounts,
+        subDomainPrefix: 'processNewTimelineEvents',
+        roomId: syncRoom?.id ?? roomId,
+      );
+      if (config.collectMetrics) metrics?.eventsProcessed += newEvents.length;
+
+      final latestAdvancingEventId = outcome.latestAdvancingEventId;
+      final hadRetriableFailure = outcome.hadRetriableFailure;
+      if (latestAdvancingEventId != null) {
+        loggingService.captureEvent(
+          'Advancing read marker to $latestAdvancingEventId',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'processNewTimelineEvents',
+        );
+        listener.lastReadEventContextId = latestAdvancingEventId;
+        await readMarkerService.updateReadMarker(
+          client: listener.client,
+          room: syncRoom!,
+          eventId: latestAdvancingEventId,
+          timeline: timeline,
+        );
+        loggingService.captureEvent(
+          'Timeline drain end (pass ${pass + 1}) - room: $roomId, '
+          'processed: ${newEvents.length}, advancedTo: $latestAdvancingEventId, '
+          'followUp: true',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'timeline.debug',
+        );
+        unawaited(
+          Future<void>.delayed(config.readMarkerFollowUpDelay).then((_) {
+            listener.enqueueTimelineRefresh();
+          }),
+        );
+      } else {
+        if (hadRetriableFailure) {
+          loggingService
+            ..captureEvent(
+              'Timeline follow-up scheduled (retriable failure) - room: $roomId',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'timeline.debug',
+            )
+            ..captureEvent(
+              'Timeline drain end (pass ${pass + 1}) - room: $roomId, '
+              'processed: ${newEvents.length}, advancedTo: null, followUp: true',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'timeline.debug',
+            );
+          unawaited(
+            Future<void>.delayed(config.readMarkerFollowUpDelay).then((_) {
+              listener.enqueueTimelineRefresh();
+            }),
+          );
+        }
+        if (!hadRetriableFailure) {
+          loggingService.captureEvent(
+            'Timeline drain end (pass ${pass + 1}) - room: $roomId, '
+            'processed: ${newEvents.length}, advancedTo: null, followUp: false',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'timeline.debug',
+          );
+        }
+        break;
+      }
+    }
+  }
+}
+
 Future<_IngestOutcome> _ingestAndComputeLatest({
   required List<Event> events,
   required TimelineContext listener,
@@ -293,220 +540,18 @@ Future<void> processNewTimelineEvents({
       );
       return;
     }
-    // Drain timeline in small batches to avoid being one message behind.
-    for (var pass = 0; pass < config.maxDrainPasses; pass++) {
-      if (config.collectMetrics) metrics?.drainPasses++;
-      // Pull fresh events from homeserver before each pass.
-      await listener.client.sync();
-
-      final syncRoom = listener.roomManager.currentRoom;
-      final roomId = listener.roomManager.currentRoomId ??
-          listener.roomManager.currentRoom?.id ??
-          'unknown';
-
-      // Prefer the already-attached live timeline first to avoid snapshot lag.
-      var timeline = listener.timeline;
-      var sortedEvents = const <_IndexedEvent>[];
-      var newEvents = const <Event>[];
-      var usedLimit = 0;
-
-      final lastReadEventContextId = listener.lastReadEventContextId;
-
-      Future<void> computeFromTimeline(Timeline tl,
-          {String source = 'live'}) async {
-        sortedEvents = _buildSortedIndexedEvents(tl);
-        final newestId =
-            sortedEvents.isNotEmpty ? sortedEvents.last.event.eventId : null;
-        loggingService.captureEvent(
-          'Timeline drain start (pass ${pass + 1}) - room: $roomId, '
-          'lastRead: ${lastReadEventContextId ?? 'null'}, '
-          'newest: ${newestId ?? 'null'}, '
-          'events: ${sortedEvents.length}, source: $source${usedLimit > 0 ? ', limit: $usedLimit' : ''}',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'timeline.debug',
-        );
-
-        final lastReadPosition =
-            _findLastReadPosition(sortedEvents, lastReadEventContextId);
-        newEvents = _collectNewEvents(
-          sortedEvents,
-          lastReadPosition,
-          lastReadEventContextId,
-        );
-
-        // If empty and we're at the tail, do tiny intra-pass waits to allow the
-        // SDK to apply the newest event into the live list.
-        final atTail = lastReadEventContextId != null &&
-            lastReadPosition >= 0 &&
-            lastReadPosition == sortedEvents.length - 1;
-        if (newEvents.isEmpty && atTail) {
-          for (final delay in config.retryDelays) {
-            if (config.collectMetrics) metrics?.retryAttempts++;
-            loggingService.captureEvent(
-              'Empty snapshot at tail; retrying after ${delay.inMilliseconds}ms '
-              '(pass ${pass + 1}, source: $source${usedLimit > 0 ? ', limit: $usedLimit' : ''})',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'timeline.debug',
-            );
-            await Future<void>.delayed(delay);
-            // Re-evaluate from the same live timeline instance.
-            final evsIndexed = _buildSortedIndexedEvents(tl);
-            final recalculated = <Event>[];
-            for (var i = 0; i < evsIndexed.length; i++) {
-              final event = evsIndexed[i].event;
-              final eventId = event.eventId;
-              if (lastReadPosition >= 0) {
-                if (i <= lastReadPosition) {
-                  continue;
-                }
-              } else if (eventId == lastReadEventContextId) {
-                continue;
-              }
-              recalculated.add(event);
-            }
-            if (recalculated.isNotEmpty) {
-              newEvents = recalculated;
-              break;
-            }
-          }
-        }
-      } // end computeFromTimeline
-
-      // 1) Try the live timeline first, if present.
-      if (timeline != null) {
-        await computeFromTimeline(timeline);
-      }
-
-      // 2) If still empty, fall back to fetching wider snapshots.
-      if (newEvents.isEmpty) {
-        for (final limit in config.timelineLimits) {
-          usedLimit = limit;
-          timeline = await syncRoom?.getTimeline(limit: limit);
-          if (timeline == null) {
-            loggingService.captureEvent(
-              'Timeline is null',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'processNewTimelineEvents',
-            );
-            return;
-          }
-          await computeFromTimeline(timeline, source: 'snapshot');
-          if (newEvents.isNotEmpty) {
-            break;
-          }
-        }
-      }
-
-      if (newEvents.isEmpty) {
-        // After escalating limits and intra-pass retries, still nothing.
-        if (pass < config.maxDrainPasses - 1) {
-          loggingService.captureEvent(
-            'No new events in pass ${pass + 1}; continuing drain (limits tried: $usedLimit).',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'timeline.debug',
-          );
-          continue;
-        }
-        // On the final pass, schedule a short follow-up regardless to cover
-        // single-message gaps that land just after the snapshot.
-        loggingService.captureEvent(
-          'Timeline follow-up scheduled (empty snapshot) - room: $roomId',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'timeline.debug',
-        );
-        unawaited(
-          Future<void>.delayed(config.readMarkerFollowUpDelay).then((_) {
-            listener.enqueueTimelineRefresh();
-          }),
-        );
-        break;
-      }
-
-      loggingService.captureEvent(
-        'Processing ${newEvents.length} timeline events '
-        'for room ${syncRoom?.id}',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'processNewTimelineEvents',
-      );
-
-      final outcome = await _ingestAndComputeLatest(
-        events: newEvents,
-        listener: listener,
-        journalDb: journalDb,
-        loggingService: loggingService,
-        eventProcessor: eventProcessor,
-        documentsDirectory: documentsDirectory,
-        failureCounts: failureCounts,
-        subDomainPrefix: 'processNewTimelineEvents',
-        roomId: syncRoom?.id ?? roomId,
-      );
-      if (config.collectMetrics) metrics?.eventsProcessed += newEvents.length;
-
-      final latestAdvancingEventId = outcome.latestAdvancingEventId;
-      final hadRetriableFailure = outcome.hadRetriableFailure;
-      if (latestAdvancingEventId != null) {
-        loggingService.captureEvent(
-          'Advancing read marker to $latestAdvancingEventId',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'processNewTimelineEvents',
-        );
-        // Advance in-memory marker before persisting, so any observers read the
-        // most recent value immediately.
-        listener.lastReadEventContextId = latestAdvancingEventId;
-        await readMarkerService.updateReadMarker(
-          client: listener.client,
-          room: syncRoom!,
-          eventId: latestAdvancingEventId,
-          timeline: timeline,
-        );
-        // Continue to the next pass to catch any events that landed mid-loop.
-        // We also keep the small delayed refresh as a safety net.
-        loggingService.captureEvent(
-          'Timeline drain end (pass ${pass + 1}) - room: $roomId, '
-          'processed: ${newEvents.length}, advancedTo: $latestAdvancingEventId, '
-          'followUp: true',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'timeline.debug',
-        );
-        unawaited(
-          Future<void>.delayed(config.readMarkerFollowUpDelay).then((_) {
-            listener.enqueueTimelineRefresh();
-          }),
-        );
-      } else {
-        // No advancement in this pass; if we observed a retriable failure
-        // (e.g., attachment not yet available), schedule a short follow-up
-        // refresh so we don't rely on a future inbound event to retry.
-        if (hadRetriableFailure) {
-          loggingService
-            ..captureEvent(
-              'Timeline follow-up scheduled (retriable failure) - room: $roomId',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'timeline.debug',
-            )
-            ..captureEvent(
-              'Timeline drain end (pass ${pass + 1}) - room: $roomId, '
-              'processed: ${newEvents.length}, advancedTo: null, followUp: true',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'timeline.debug',
-            );
-          unawaited(
-            Future<void>.delayed(config.readMarkerFollowUpDelay).then((_) {
-              listener.enqueueTimelineRefresh();
-            }),
-          );
-        }
-        if (!hadRetriableFailure) {
-          loggingService.captureEvent(
-            'Timeline drain end (pass ${pass + 1}) - room: $roomId, '
-            'processed: ${newEvents.length}, advancedTo: null, followUp: false',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'timeline.debug',
-          );
-        }
-        break;
-      }
-    }
+    final drainer = TimelineDrainer(
+      listener: listener,
+      journalDb: journalDb,
+      loggingService: loggingService,
+      readMarkerService: readMarkerService,
+      eventProcessor: eventProcessor,
+      documentsDirectory: documentsDirectory,
+      failureCounts: failureCounts,
+      config: config,
+      metrics: metrics,
+    );
+    await drainer.drain();
   } catch (e, stackTrace) {
     loggingService.captureException(
       e,

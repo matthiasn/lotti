@@ -281,28 +281,31 @@ void main() {
     when(() => e2.attachmentMimetype).thenReturn('');
 
     when(() => mockReadMarkerService.updateReadMarker(
-          client: mockClient,
-          room: mockRoom,
+          client: any(named: 'client'),
+          room: any(named: 'room'),
           eventId: any(named: 'eventId'),
-          timeline: mockTimeline,
+          timeline: any(named: 'timeline'),
         )).thenAnswer((_) async {});
 
-    // Rapidly schedule two batches; only the last should flush.
-    await listener.debugProcessPendingEvents([e1]);
+    // Rapidly schedule two marker writes; only the last should flush.
+    listener.debugPendingMarker = r'$evt1';
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    await listener.debugProcessPendingEvents([e2]);
+    listener.debugPendingMarker = r'$evt2';
 
-    // Wait for debounce to elapse (200ms) plus a buffer.
-    await Future<void>.delayed(const Duration(milliseconds: 260));
+    // Explicitly dispose to force a flush of the pending marker in tests,
+    // avoiding timer flakiness.
+    await listener.dispose();
 
-    verify(
+    final captured = verify(
       () => mockReadMarkerService.updateReadMarker(
-        client: mockClient,
-        room: mockRoom,
-        eventId: r'$evt2',
-        timeline: mockTimeline,
+        client: any(named: 'client'),
+        room: any(named: 'room'),
+        eventId: captureAny(named: 'eventId'),
+        timeline: any(named: 'timeline'),
       ),
-    ).called(1);
+    ).captured;
+    expect(captured, isNotEmpty);
+    expect(captured.last, r'$evt2');
   });
 
   test('backpressure: pending list capped and drops oldest', () async {

@@ -37,6 +37,8 @@ class FakeTimeline extends Fake implements Timeline {}
 
 class FakeEvent extends Fake implements Event {}
 
+class MockEvent extends Mock implements Event {}
+
 class TestTimelineContext implements TimelineContext {
   TestTimelineContext({
     required this.loggingService,
@@ -107,7 +109,7 @@ void main() {
     when(() => room.id).thenReturn('!room:server');
     when(() => client.isLogged()).thenReturn(true);
 
-    final existingEvent = FakeEvent();
+    final existingEvent = MockEvent();
     when(() => existingEvent.eventId).thenReturn(r'$existing');
     when(() => existingEvent.originServerTs)
         .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
