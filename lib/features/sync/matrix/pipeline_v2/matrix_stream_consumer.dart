@@ -163,6 +163,13 @@ class MatrixStreamConsumer implements SyncPipeline {
     _flushTimer?.cancel();
     _liveScanTimer?.cancel();
     _markerDebounceTimer?.cancel();
+    // Cancel live timeline subscriptions to avoid leaks.
+    try {
+      _liveTimeline?.cancelSubscriptions();
+    } catch (_) {
+      // Best effort; Matrix SDK cancel is synchronous.
+    }
+    _liveTimeline = null;
     _loggingService.captureEvent(
       'MatrixStreamConsumer disposed',
       domain: 'MATRIX_SYNC_V2',
@@ -337,10 +344,11 @@ class MatrixStreamConsumer implements SyncPipeline {
           }
         }
 
-        // Check retry cap — if exceeded, treat as handled to avoid permanent blockage.
+        // Check retry cap — if exceeded, treat as handled and drop state to avoid memory growth.
         final attempts = rs?.attempts ?? 0;
         if (attempts >= _maxRetriesPerEvent) {
           treatAsHandled = true;
+          _retryState.remove(id);
           if (_collectMetrics) _metricSkippedByRetryLimit++;
         } else if (processedOk) {
           try {
@@ -354,7 +362,15 @@ class MatrixStreamConsumer implements SyncPipeline {
             final nextAttempts = attempts + 1;
             final backoff = _computeBackoff(nextAttempts);
             final due = DateTime.now().add(backoff);
-            _retryState[id] = _RetryInfo(nextAttempts, due);
+            if (nextAttempts >= _maxRetriesPerEvent) {
+              // Final failure: drop retry state, mark as handled to avoid blocking,
+              // and record metrics.
+              _retryState.remove(id);
+              treatAsHandled = true;
+              if (_collectMetrics) _metricSkippedByRetryLimit++;
+            } else {
+              _retryState[id] = _RetryInfo(nextAttempts, due);
+            }
             if (earliestNextDue == null || due.isBefore(earliestNextDue)) {
               earliestNextDue = due;
             }

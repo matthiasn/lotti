@@ -87,12 +87,26 @@ Future<void> saveJson(String path, String json) async {
   final tmpFile = File(tmpPath);
   await tmpFile.writeAsString(json, flush: true);
 
-  // On most platforms, rename is atomic within the same directory.
-  // If a previous file exists, replace it to keep behavior consistent.
-  if (target.existsSync()) {
-    target.deleteSync();
+  // Attempt an atomic rename in-place. On POSIX this replaces the target.
+  // On Windows, rename fails if the target exists; in that case fall back to
+  // a controlled replacement while keeping the primary path atomic where possible.
+  try {
+    await tmpFile.rename(path);
+  } on FileSystemException catch (_) {
+    // Best-effort fallback for platforms that don't allow overwrite.
+    try {
+      final bakPath = '$path.bak.${DateTime.now().microsecondsSinceEpoch}.$pid';
+      // Try moving the existing target aside if it exists; ignore errors.
+      try {
+        await target.rename(bakPath);
+      } catch (_) {
+        // If the target didn't exist or couldn't be moved, continue.
+      }
+      await tmpFile.rename(path);
+    } on Object {
+      rethrow;
+    }
   }
-  tmpFile.renameSync(path);
 }
 
 Future<String> createAssetDirectory(String relativePath) async {
