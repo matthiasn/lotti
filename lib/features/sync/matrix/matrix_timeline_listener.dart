@@ -48,6 +48,18 @@ class MatrixTimelineListener implements TimelineContext {
         final drained = _drainPendingEvents();
         if (drained.isNotEmpty) {
           await _processPendingEvents(drained);
+          if (_pendingOverflowed) {
+            _pendingOverflowed = false;
+            await processNewTimelineEvents(
+              listener: this,
+              journalDb: _journalDb,
+              loggingService: _loggingService,
+              readMarkerService: _readMarkerService,
+              eventProcessor: _eventProcessor,
+              documentsDirectory: _documentsDirectory,
+              failureCounts: _eventFailureCounts,
+            );
+          }
           return;
         }
 
@@ -95,6 +107,9 @@ class MatrixTimelineListener implements TimelineContext {
   // are still handled correctly because processing is chronological and
   // marker advancement is based on the latest processed event.
   static const int _maxPendingBatchSize = 500;
+  // Indicates that the pending buffer hit its cap and we should force a
+  // full catch-up drain after processing the truncated batch.
+  bool _pendingOverflowed = false;
 
   @override
   Client get client => _sessionManager.client;
@@ -135,11 +150,18 @@ class MatrixTimelineListener implements TimelineContext {
         client.onTimelineEvent.stream.listen((Event event) {
       final roomId = _roomManager.currentRoomId;
       if (roomId != null && event.roomId == roomId) {
-        // Apply backpressure: cap the buffer and drop oldest if over limit.
+        // Apply backpressure: if at cap, record overflow (do not drop oldest);
+        // we'll force a full catch-up drain after processing the truncated set.
         if (_pendingEvents.length >= _maxPendingEvents) {
-          _pendingEvents.removeAt(0);
+          _pendingOverflowed = true;
+          _loggingService.captureEvent(
+            'Pending buffer overflow; forcing full catch-up drain',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'timeline.backpressure',
+          );
+        } else {
+          _pendingEvents.add(event);
         }
-        _pendingEvents.add(event);
         enqueueTimelineRefresh();
       }
     });
@@ -272,9 +294,10 @@ class MatrixTimelineListener implements TimelineContext {
   @visibleForTesting
   void debugEnqueuePendingEvent(Event event) {
     if (_pendingEvents.length >= _maxPendingEvents) {
-      _pendingEvents.removeAt(0);
+      _pendingOverflowed = true;
+    } else {
+      _pendingEvents.add(event);
     }
-    _pendingEvents.add(event);
   }
 
   @visibleForTesting

@@ -329,4 +329,50 @@ void main() {
     // The cap is enforced at 1000.
     expect(listener.debugPendingLength, 1000);
   });
+
+  test('overflow triggers full catch-up drain after truncated batch', () async {
+    final mockRoom = MockRoom();
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
+    when(() => mockRoom.id).thenReturn('!room:server');
+
+    final mockClientLocal = MockClient();
+    when(() => mockClientLocal.isLogged()).thenReturn(true);
+    when(() => mockClientLocal.userID).thenReturn('@local:server');
+    when(() => mockClientLocal.deviceName).thenReturn('Unit Test Device');
+    when(() => mockSessionManager.client).thenReturn(mockClientLocal);
+
+    // Count sync calls to detect the post-overflow full catch-up.
+    var syncCalls = 0;
+    when(() => mockClientLocal.sync()).thenAnswer((_) async {
+      syncCalls++;
+      return SyncUpdate(nextBatch: 'token');
+    });
+
+    // Prepare a minimal snapshot call so catch-up proceeds after sync.
+    final mockTimeline = MockTimeline();
+    when(() => mockRoom.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => mockTimeline);
+    when(() => mockTimeline.events).thenReturn(const []);
+
+    // Enqueue _maxPendingEvents + 1 items to trigger overflow (cap is 1000).
+    for (var i = 0; i < 1001; i++) {
+      final e = MockEvent();
+      when(() => e.eventId).thenReturn(r'$evt' '$i');
+      when(() => e.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+      // Local sender so incremental path is fast and does not call processor.
+      when(() => e.senderId).thenReturn('@local:server');
+      when(() => e.type).thenReturn('m.room.message');
+      when(() => e.messageType).thenReturn(syncMessageType);
+      when(() => e.attachmentMimetype).thenReturn('');
+      listener.debugEnqueuePendingEvent(e);
+    }
+
+    // Run the runner callback (processes pending; overflow forces catch-up).
+    await listener.clientRunner.callback(null);
+
+    // Ensure a full catch-up drain was invoked (sync called at least once).
+    expect(syncCalls, greaterThanOrEqualTo(1));
+  });
 }
