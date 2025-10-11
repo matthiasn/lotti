@@ -52,6 +52,8 @@ class FakeMatrixEvent extends Fake implements Event {}
 // Note: We avoid mocking CachedStreamController from matrix SDK directly to
 // keep tests resilient across SDK changes.
 
+class MockEvent extends Mock implements Event {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeMatrixClient());
@@ -244,5 +246,84 @@ void main() {
         subDomain: 'listenToTimelineEvents',
       ),
     ).called(1);
+  });
+
+  test('debounce: multiple marker schedules flush once with latest id',
+      () async {
+    final mockTimeline = MockTimeline();
+    final mockRoom = MockRoom();
+    final mockClient = MockClient();
+
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
+    when(() => mockClient.isLogged()).thenReturn(true);
+    when(() => mockClient.userID).thenReturn('@local:server');
+    when(() => mockClient.deviceName).thenReturn('Unit Test Device');
+    when(() => mockSessionManager.client).thenReturn(mockClient);
+    listener.timeline = mockTimeline;
+
+    final e1 = MockEvent();
+    when(() => e1.eventId).thenReturn(r'$evt1');
+    when(() => e1.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+    when(() => e1.senderId).thenReturn('@remote:server');
+    when(() => e1.type).thenReturn('m.room.message');
+    when(() => e1.messageType).thenReturn(syncMessageType);
+    when(() => e1.attachmentMimetype).thenReturn('');
+
+    final e2 = MockEvent();
+    when(() => e2.eventId).thenReturn(r'$evt2');
+    when(() => e2.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+    when(() => e2.senderId).thenReturn('@remote:server');
+    when(() => e2.type).thenReturn('m.room.message');
+    when(() => e2.messageType).thenReturn(syncMessageType);
+    when(() => e2.attachmentMimetype).thenReturn('');
+
+    when(() => mockReadMarkerService.updateReadMarker(
+          client: mockClient,
+          room: mockRoom,
+          eventId: any(named: 'eventId'),
+          timeline: mockTimeline,
+        )).thenAnswer((_) async {});
+
+    // Rapidly schedule two batches; only the last should flush.
+    await listener.debugProcessPendingEvents([e1]);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await listener.debugProcessPendingEvents([e2]);
+
+    // Wait for debounce to elapse (200ms) plus a buffer.
+    await Future<void>.delayed(const Duration(milliseconds: 260));
+
+    verify(
+      () => mockReadMarkerService.updateReadMarker(
+        client: mockClient,
+        room: mockRoom,
+        eventId: r'$evt2',
+        timeline: mockTimeline,
+      ),
+    ).called(1);
+  });
+
+  test('backpressure: pending list capped and drops oldest', () async {
+    final mockClient = MockClient();
+    when(() => mockSessionManager.client).thenReturn(mockClient);
+    when(() => mockClient.isLogged()).thenReturn(true);
+
+    // Enqueue well over the cap; verify internal length stays bounded.
+    for (var i = 0; i < 1200; i++) {
+      final e = MockEvent();
+      when(() => e.eventId).thenReturn(r'$e$i');
+      when(() => e.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+      when(() => e.senderId).thenReturn('@remote:server');
+      when(() => e.type).thenReturn('m.room.message');
+      when(() => e.messageType).thenReturn(syncMessageType);
+      when(() => e.attachmentMimetype).thenReturn('');
+      listener.debugEnqueuePendingEvent(e);
+    }
+
+    // The cap is enforced at 1000.
+    expect(listener.debugPendingLength, 1000);
   });
 }

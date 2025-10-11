@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/matrix/save_attachment.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/timeline_config.dart';
 import 'package:lotti/features/sync/matrix/timeline_context.dart';
+import 'package:lotti/features/sync/matrix/timeline_metrics.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -230,7 +231,9 @@ Future<void> processNewTimelineEvents({
   required Directory documentsDirectory,
   Map<String, int>? failureCounts,
   TimelineConfig config = TimelineConfig.production,
+  TimelineMetrics? metrics,
 }) async {
+  final sw = Stopwatch()..start();
   try {
     if (!listener.client.isLogged()) {
       loggingService.captureEvent(
@@ -242,6 +245,7 @@ Future<void> processNewTimelineEvents({
     }
     // Drain timeline in small batches to avoid being one message behind.
     for (var pass = 0; pass < config.maxDrainPasses; pass++) {
+      metrics?.drainPasses++;
       // Pull fresh events from homeserver before each pass.
       await listener.client.sync();
 
@@ -258,13 +262,13 @@ Future<void> processNewTimelineEvents({
 
       final lastReadEventContextId = listener.lastReadEventContextId;
 
-      Future<void> computeFromTimeline(Timeline tl, {String source = 'live'}) async {
+      Future<void> computeFromTimeline(Timeline tl,
+          {String source = 'live'}) async {
         final events = tl.events;
         final indexed = <_IndexedEvent>[
           for (var i = 0; i < events.length; i++)
             _IndexedEvent(index: i, event: events[i]),
-        ]
-          ..sort((a, b) {
+        ]..sort((a, b) {
             final t = TimelineEventOrdering.timestamp(a.event)
                 .compareTo(TimelineEventOrdering.timestamp(b.event));
             if (t != 0) return t;
@@ -275,10 +279,6 @@ Future<void> processNewTimelineEvents({
           });
 
         sortedEvents = indexed;
-        final idToIndex = <String, int>{
-          for (var i = 0; i < sortedEvents.length; i++)
-            sortedEvents[i].event.eventId: i,
-        };
         final newestId =
             sortedEvents.isNotEmpty ? sortedEvents.last.event.eventId : null;
         loggingService.captureEvent(
@@ -290,9 +290,15 @@ Future<void> processNewTimelineEvents({
           subDomain: 'timeline.debug',
         );
 
-        final lastReadPosition = lastReadEventContextId == null
-            ? -1
-            : (idToIndex[lastReadEventContextId] ?? -1);
+        var lastReadPosition = -1;
+        if (lastReadEventContextId != null) {
+          for (var i = sortedEvents.length - 1; i >= 0; i--) {
+            if (sortedEvents[i].event.eventId == lastReadEventContextId) {
+              lastReadPosition = i;
+              break;
+            }
+          }
+        }
 
         final candidateEvents = <Event>[];
         for (var i = 0; i < sortedEvents.length; i++) {
@@ -318,6 +324,7 @@ Future<void> processNewTimelineEvents({
             lastReadPosition == sortedEvents.length - 1;
         if (newEvents.isEmpty && atTail) {
           for (final delay in config.retryDelays) {
+            metrics?.retryAttempts++;
             loggingService.captureEvent(
               'Empty snapshot at tail; retrying after ${delay.inMilliseconds}ms '
               '(pass ${pass + 1}, source: $source${usedLimit > 0 ? ', limit: $usedLimit' : ''})',
@@ -329,8 +336,7 @@ Future<void> processNewTimelineEvents({
             final evsIndexed = <_IndexedEvent>[
               for (var i = 0; i < tl.events.length; i++)
                 _IndexedEvent(index: i, event: tl.events[i]),
-            ]
-              ..sort((a, b) {
+            ]..sort((a, b) {
                 final t = TimelineEventOrdering.timestamp(a.event)
                     .compareTo(TimelineEventOrdering.timestamp(b.event));
                 if (t != 0) return t;
@@ -425,6 +431,7 @@ Future<void> processNewTimelineEvents({
         subDomainPrefix: 'processNewTimelineEvents',
         roomId: syncRoom?.id ?? roomId,
       );
+      metrics?.eventsProcessed += newEvents.length;
 
       final latestAdvancingEventId = outcome.latestAdvancingEventId;
       final hadRetriableFailure = outcome.hadRetriableFailure;
@@ -498,6 +505,8 @@ Future<void> processNewTimelineEvents({
       subDomain: 'processNewTimelineEvents ${listener.client.deviceName}',
       stackTrace: stackTrace,
     );
+  } finally {
+    metrics?.addProcessingTime(sw.elapsed);
   }
 }
 
@@ -515,6 +524,7 @@ Future<String?> processTimelineEventsIncremental({
   required Directory documentsDirectory,
   Map<String, int>? failureCounts,
   TimelineConfig config = TimelineConfig.production,
+  TimelineMetrics? metrics,
 }) async {
   try {
     if (!listener.client.isLogged()) {

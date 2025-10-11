@@ -474,9 +474,8 @@ void main() {
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
       when(() => room.getTimeline(
-            eventContextId: any(named: 'eventContextId'),
-            limit: any(named: 'limit')))
-          .thenAnswer((_) async => timeline);
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
       when(() => timeline.events).thenReturn([event]);
       when(() => event.eventId).thenReturn(eventId);
       when(() => event.originServerTs)
@@ -544,9 +543,8 @@ void main() {
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
       when(() => room.getTimeline(
-            eventContextId: any(named: 'eventContextId'),
-            limit: any(named: 'limit')))
-          .thenAnswer((_) async => timeline);
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
       when(() => timeline.events).thenReturn([event]);
       when(() => event.eventId).thenReturn(eventId);
       when(() => event.originServerTs)
@@ -617,9 +615,8 @@ void main() {
       when(() => client.sync())
           .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
       when(() => room.getTimeline(
-            eventContextId: any(named: 'eventContextId'),
-            limit: any(named: 'limit')))
-          .thenAnswer((_) async => timeline);
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
       when(() => timeline.events).thenReturn([event]);
       when(() => event.eventId).thenReturn(eventId);
       when(() => event.originServerTs)

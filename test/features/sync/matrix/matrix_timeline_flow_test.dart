@@ -106,9 +106,8 @@ void main() {
     when(() => roomManager.currentRoom).thenReturn(room);
 
     when(() => room.getTimeline(
-            eventContextId: any<String?>(named: 'eventContextId'),
-            limit: any(named: 'limit')))
-        .thenAnswer((invocation) async {
+        eventContextId: any<String?>(named: 'eventContextId'),
+        limit: any(named: 'limit'))).thenAnswer((invocation) async {
       expect(invocation.namedArguments[#eventContextId], isNull);
       return timeline;
     });

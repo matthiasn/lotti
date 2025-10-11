@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
- 
 
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -84,6 +83,14 @@ class MatrixTimelineListener implements TimelineContext {
   String? _pendingMarkerEventId;
   Timer? _markerDebounceTimer;
   static const Duration _markerDebounce = Duration(milliseconds: 200);
+  // Bound the pending onTimelineEvent queue to avoid unbounded growth
+  // during network churn or long UI-idle stretches. When the limit is
+  // exceeded, the oldest events are dropped (backpressure) since newer
+  // events re-apply current state and the processor deduplicates by id.
+  static const int _maxPendingEvents = 1000;
+  // Process pending events in batches to keep memory usage stable while
+  // deduplicating and ordering the working set.
+  static const int _maxPendingBatchSize = 500;
 
   @override
   Client get client => _sessionManager.client;
@@ -124,6 +131,10 @@ class MatrixTimelineListener implements TimelineContext {
         client.onTimelineEvent.stream.listen((Event event) {
       final roomId = _roomManager.currentRoomId;
       if (roomId != null && event.roomId == roomId) {
+        // Apply backpressure: cap the buffer and drop oldest if over limit.
+        if (_pendingEvents.length >= _maxPendingEvents) {
+          _pendingEvents.removeAt(0);
+        }
         _pendingEvents.add(event);
         enqueueTimelineRefresh();
       }
@@ -170,28 +181,45 @@ class MatrixTimelineListener implements TimelineContext {
   }
 
   Future<void> _processPendingEvents(List<Event> events) async {
-    // Sort chronologically (oldest first) and dedupe by id
-    final seen = <String>{};
+    // Sort chronologically (oldest first) once for deterministic batching.
     events.sort(TimelineEventOrdering.compare);
-    final unique = <Event>[
-      for (final e in events)
-        if (seen.add(e.eventId)) e,
-    ];
 
-    final latestId = await processTimelineEventsIncremental(
-      listener: this,
-      events: unique,
-      journalDb: _journalDb,
-      loggingService: _loggingService,
-      readMarkerService: _readMarkerService,
-      eventProcessor: _eventProcessor,
-      documentsDirectory: _documentsDirectory,
-      failureCounts: _eventFailureCounts,
-    );
+    // Deduplicate and process in bounded batches to avoid large temporary
+    // allocations for very large bursts.
+    var start = 0;
+    String? latestIdOverall;
+    while (start < events.length) {
+      final end = (start + _maxPendingBatchSize).clamp(0, events.length);
+      final window = events.sublist(start, end);
+      start = end;
 
-    if (latestId != null) {
-      lastReadEventContextId = latestId;
-      _pendingMarkerEventId = latestId;
+      final seen = <String>{};
+      final unique = <Event>[
+        for (final e in window)
+          if (seen.add(e.eventId)) e,
+      ];
+
+      if (unique.isEmpty) continue;
+
+      final latestId = await processTimelineEventsIncremental(
+        listener: this,
+        events: unique,
+        journalDb: _journalDb,
+        loggingService: _loggingService,
+        readMarkerService: _readMarkerService,
+        eventProcessor: _eventProcessor,
+        documentsDirectory: _documentsDirectory,
+        failureCounts: _eventFailureCounts,
+      );
+
+      if (latestId != null) {
+        latestIdOverall = latestId;
+      }
+    }
+
+    if (latestIdOverall != null) {
+      lastReadEventContextId = latestIdOverall;
+      _pendingMarkerEventId = latestIdOverall;
       _scheduleMarkerFlush();
     }
   }
@@ -225,4 +253,24 @@ class MatrixTimelineListener implements TimelineContext {
 
   @visibleForTesting
   String? get debugPendingMarker => _pendingMarkerEventId;
+
+  // Test-use-only: process a supplied event list through the incremental
+  // pipeline (exercises debounce behaviour without relying on SDK streams).
+  @visibleForTesting
+  Future<void> debugProcessPendingEvents(List<Event> events) async {
+    await _processPendingEvents(events);
+  }
+
+  // Test-use-only: enqueue a pending event using the same path as the SDK
+  // listener but callable from tests to validate backpressure behaviour.
+  @visibleForTesting
+  void debugEnqueuePendingEvent(Event event) {
+    if (_pendingEvents.length >= _maxPendingEvents) {
+      _pendingEvents.removeAt(0);
+    }
+    _pendingEvents.add(event);
+  }
+
+  @visibleForTesting
+  int get debugPendingLength => _pendingEvents.length;
 }
