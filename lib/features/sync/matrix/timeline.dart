@@ -187,15 +187,16 @@ class TimelineDrainer {
           listener.roomManager.currentRoom?.id ??
           'unknown';
 
-      var timeline = listener.timeline;
+      final liveTimeline = listener.timeline;
+      var chosenTimeline = liveTimeline;
       var newEvents = const <Event>[];
       var usedLimit = 0;
 
       final lastReadEventContextId = listener.lastReadEventContextId;
 
-      if (timeline != null) {
+      if (liveTimeline != null) {
         newEvents = await computeFromTimeline(
-          tl: timeline,
+          tl: liveTimeline,
           source: 'live',
           pass: pass,
           roomId: roomId,
@@ -207,8 +208,8 @@ class TimelineDrainer {
       if (newEvents.isEmpty) {
         for (final limit in config.timelineLimits) {
           usedLimit = limit;
-          timeline = await syncRoom?.getTimeline(limit: limit);
-          if (timeline == null) {
+          final snapshot = await syncRoom?.getTimeline(limit: limit);
+          if (snapshot == null) {
             loggingService.captureEvent(
               'Timeline is null',
               domain: 'MATRIX_SERVICE',
@@ -216,16 +217,21 @@ class TimelineDrainer {
             );
             return;
           }
-          newEvents = await computeFromTimeline(
-            tl: timeline,
+          final cand = await computeFromTimeline(
+            tl: snapshot,
             source: 'snapshot',
             pass: pass,
             roomId: roomId,
             usedLimit: usedLimit,
             lastReadEventContextId: lastReadEventContextId,
           );
-          if (newEvents.isNotEmpty) {
+          if (cand.isNotEmpty) {
+            newEvents = cand;
+            chosenTimeline = snapshot;
             break;
+          } else {
+            // Dispose unused snapshot to avoid leaks across escalating limits.
+            snapshot.cancelSubscriptions();
           }
         }
       }
@@ -285,8 +291,13 @@ class TimelineDrainer {
           client: listener.client,
           room: syncRoom!,
           eventId: latestAdvancingEventId,
-          timeline: timeline,
+          timeline: chosenTimeline,
         );
+        // Dispose snapshot timelines after use; keep the live instance attached.
+        if (chosenTimeline != null &&
+            !identical(chosenTimeline, liveTimeline)) {
+          chosenTimeline.cancelSubscriptions();
+        }
         loggingService.captureEvent(
           'Timeline drain end (pass ${pass + 1}) - room: $roomId, '
           'processed: ${newEvents.length}, advancedTo: $latestAdvancingEventId, '
@@ -326,6 +337,11 @@ class TimelineDrainer {
             domain: 'MATRIX_SERVICE',
             subDomain: 'timeline.debug',
           );
+        }
+        // Dispose snapshot if one was selected but no advancement occurred.
+        if (chosenTimeline != null &&
+            !identical(chosenTimeline, liveTimeline)) {
+          chosenTimeline.cancelSubscriptions();
         }
         break;
       }
