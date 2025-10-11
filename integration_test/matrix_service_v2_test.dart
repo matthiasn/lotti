@@ -36,6 +36,7 @@ import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
 import '../test/utils/utils.dart';
+import 'matrix_service_test.dart';
 
 MatrixService _createMatrixService({
   required MatrixConfig config,
@@ -116,8 +117,7 @@ void main() {
     when(() => secureStorageMock.write(
           key: any(named: 'key'),
           value: any(named: 'value'),
-        ))
-        .thenAnswer((_) async {});
+        )).thenAnswer((_) async {});
     when(() => secureStorageMock.delete(key: any(named: 'key')))
         .thenAnswer((_) async {});
 
@@ -138,7 +138,8 @@ void main() {
 
     if (!const bool.hasEnvironment(testUserEnv1) ||
         !const bool.hasEnvironment(testUserEnv2)) {
-      debugPrint('TEST_USER1/TEST_USER2 not defined!!! Run via run_matrix_tests.sh');
+      debugPrint(
+          'TEST_USER1/TEST_USER2 not defined!!! Run via run_matrix_tests.sh');
       exit(1);
     }
 
@@ -244,15 +245,51 @@ void main() {
       await bob.joinRoom(roomId);
       await waitSeconds(defaultDelay);
 
-      // quick device verification flow
+      // Device verification using SAS (auto-accept on both sides)
       await waitUntil(() => alice.getUnverifiedDevices().isNotEmpty);
       await waitUntil(() => bob.getUnverifiedDevices().isNotEmpty);
+
+      final outgoingKeyVerificationStream = alice.keyVerificationStream;
+      final incomingKeyVerificationRunnerStream =
+          bob.incomingKeyVerificationRunnerStream;
+
+      var emojisFromBob = '';
+      var emojisFromAlice = '';
+
+      unawaited(
+        incomingKeyVerificationRunnerStream.forEach((runner) async {
+          if (runner.lastStep == 'm.key.verification.request') {
+            await runner.acceptVerification();
+          }
+          if (runner.lastStep == 'm.key.verification.key') {
+            emojisFromAlice = extractEmojiString(runner.emojis);
+            await runner.acceptEmojiVerification();
+          }
+        }),
+      );
+
+      unawaited(
+        outgoingKeyVerificationStream.forEach((runner) async {
+          if (runner.lastStep == 'm.key.verification.key') {
+            emojisFromBob = extractEmojiString(runner.emojis);
+            await waitUntil(
+              () =>
+                  emojisFromAlice == emojisFromBob && emojisFromBob.isNotEmpty,
+            );
+            await runner.acceptEmojiVerification();
+          }
+        }),
+      );
+
+      // Trigger verification from Alice to Bob
       final unverifiedAlice = alice.getUnverifiedDevices();
       await alice.verifyDevice(unverifiedAlice.first);
+
       await waitUntil(() => alice.getUnverifiedDevices().isEmpty);
       await waitUntil(() => bob.getUnverifiedDevices().isEmpty);
 
-      Future<void> sendTestMessage(int index, MatrixService device, String name) async {
+      Future<void> sendTestMessage(
+          int index, MatrixService device, String name) async {
         final id = const Uuid().v1();
         final now = DateTime.now();
         final entity = JournalEntry(
@@ -291,7 +328,8 @@ void main() {
       expect(await bobDb.getJournalCount(), n);
     });
 
-    test('Reconnect resumes and processes remaining messages (sync v2)', () async {
+    test('Reconnect resumes and processes remaining messages (sync v2)',
+        () async {
       final aliceClient = await createMatrixClient(
         documentsDirectory: sharedDocumentsDirectory,
         dbName: 'AliceV2R',
@@ -342,7 +380,47 @@ void main() {
       await bob.joinRoom(roomId);
       await waitSeconds(5);
 
-      Future<void> sendBatch(int count, MatrixService device, String name) async {
+      // Device verification (same SAS flow as above)
+      await waitUntil(() => alice.getUnverifiedDevices().isNotEmpty);
+      await waitUntil(() => bob.getUnverifiedDevices().isNotEmpty);
+
+      final outgoingKeyVerificationStream2 = alice.keyVerificationStream;
+      final incomingKeyVerificationRunnerStream2 =
+          bob.incomingKeyVerificationRunnerStream;
+      var emojisFromBob2 = '';
+      var emojisFromAlice2 = '';
+
+      unawaited(
+        incomingKeyVerificationRunnerStream2.forEach((runner) async {
+          if (runner.lastStep == 'm.key.verification.request') {
+            await runner.acceptVerification();
+          }
+          if (runner.lastStep == 'm.key.verification.key') {
+            emojisFromAlice2 = extractEmojiString(runner.emojis);
+            await runner.acceptEmojiVerification();
+          }
+        }),
+      );
+      unawaited(
+        outgoingKeyVerificationStream2.forEach((runner) async {
+          if (runner.lastStep == 'm.key.verification.key') {
+            emojisFromBob2 = extractEmojiString(runner.emojis);
+            await waitUntil(
+              () =>
+                  emojisFromAlice2 == emojisFromBob2 &&
+                  emojisFromBob2.isNotEmpty,
+            );
+            await runner.acceptEmojiVerification();
+          }
+        }),
+      );
+      final unverifiedAlice2 = alice.getUnverifiedDevices();
+      await alice.verifyDevice(unverifiedAlice2.first);
+      await waitUntil(() => alice.getUnverifiedDevices().isEmpty);
+      await waitUntil(() => bob.getUnverifiedDevices().isEmpty);
+
+      Future<void> sendBatch(
+          int count, MatrixService device, String name) async {
         for (var i = 0; i < count; i++) {
           final id = const Uuid().v1();
           final now = DateTime.now();
@@ -375,7 +453,8 @@ void main() {
       const firstBatch = 10;
       const secondBatch = 15;
       await sendBatch(firstBatch, alice, 'aliceDeviceV2R');
-      await waitUntilAsync(() async => await bobDb.getJournalCount() == firstBatch);
+      await waitUntilAsync(
+          () async => await bobDb.getJournalCount() == firstBatch);
 
       await bob.disposeClient();
       bob = _createMatrixService(
@@ -404,8 +483,10 @@ void main() {
       await sendBatch(secondBatch, alice, 'aliceDeviceV2R');
       await sendBatch(secondBatch, bob, 'bobDeviceV2R');
 
-      await waitUntilAsync(() async => await aliceDb.getJournalCount() == secondBatch);
-      await waitUntilAsync(() async => await bobDb.getJournalCount() == secondBatch);
+      await waitUntilAsync(
+          () async => await aliceDb.getJournalCount() == secondBatch);
+      await waitUntilAsync(
+          () async => await bobDb.getJournalCount() == secondBatch);
       expect(await aliceDb.getJournalCount(), secondBatch);
       expect(await bobDb.getJournalCount(), secondBatch);
     });

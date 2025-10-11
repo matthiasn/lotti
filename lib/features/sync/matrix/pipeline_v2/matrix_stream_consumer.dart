@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -14,6 +15,12 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+
+class _RetryInfo {
+  _RetryInfo(this.attempts, this.nextDue);
+  final int attempts;
+  final DateTime nextDue;
+}
 
 /// Stream-first, simplified sync consumer (V2 scaffold).
 ///
@@ -69,6 +76,29 @@ class MatrixStreamConsumer implements SyncPipeline {
   int _metricPrefetch = 0;
   int _metricFlushes = 0;
   int _metricCatchupBatches = 0;
+  int _metricSkippedByRetryLimit = 0;
+  int _metricRetriesScheduled = 0;
+
+  // Failure retry tracking to avoid permanent blockage.
+  static const int _maxRetriesPerEvent = 5;
+  static const Duration _retryBaseDelay = Duration(milliseconds: 200);
+  static const Duration _retryMaxDelay = Duration(seconds: 10);
+  static const double _retryJitter = 0.2; // +/- 20%
+
+  final Map<String, _RetryInfo> _retryState = <String, _RetryInfo>{};
+
+  Duration _computeBackoff(int attempts) {
+    final baseMs = _retryBaseDelay.inMilliseconds;
+    final maxMs = _retryMaxDelay.inMilliseconds;
+    final raw = baseMs * math.pow(2, attempts);
+    final clamped = raw.clamp(baseMs.toDouble(), maxMs.toDouble());
+    // Jitter: +/- _retryJitter
+    final jitterFactor =
+        1 + (_retryJitter * (math.Random().nextDouble() * 2 - 1));
+    final jittered =
+        (clamped * jitterFactor).clamp(baseMs.toDouble(), maxMs.toDouble());
+    return Duration(milliseconds: jittered.round());
+  }
 
   Client get _client => _sessionManager.client;
 
@@ -247,7 +277,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     if (_collectMetrics) {
       _metricFlushes++;
       _loggingService.captureEvent(
-        'v2 metrics flush=$_metricFlushes processed=$_metricProcessed skipped=$_metricSkipped failures=$_metricFailures prefetch=$_metricPrefetch catchup=$_metricCatchupBatches',
+        'v2 metrics flush=$_metricFlushes processed=$_metricProcessed skipped=$_metricSkipped failures=$_metricFailures prefetch=$_metricPrefetch catchup=$_metricCatchupBatches skippedByRetry=$_metricSkippedByRetryLimit retriesScheduled=$_metricRetriesScheduled retriesPending=${_retryState.length}',
         domain: 'MATRIX_SYNC_V2',
         subDomain: 'metrics',
       );
@@ -274,30 +304,70 @@ class MatrixStreamConsumer implements SyncPipeline {
     // Second pass: process text events and compute advancement.
     String? latestEventId;
     num? latestTs;
+    var blockedByFailure = false;
+    var hadFailure = false;
+    DateTime? earliestNextDue;
     for (final e in ordered) {
       final ts = TimelineEventOrdering.timestamp(e);
       final id = e.eventId;
       final content = e.content;
       final msgType = content['msgtype'];
       var processedOk = true;
+      var treatAsHandled =
+          false; // allow advancement even if skipped by retry limit
+
       if (msgType == syncMessageType) {
-        try {
-          await _eventProcessor.process(event: e, journalDb: _journalDb);
-          if (_collectMetrics) _metricProcessed++;
-        } catch (err, st) {
+        // If this event has a retry schedule, and it's not yet due, block advancement until due.
+        final rs = _retryState[id];
+        final now = DateTime.now();
+        if (rs != null && now.isBefore(rs.nextDue)) {
           processedOk = false;
-          _loggingService.captureException(
-            err,
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'process',
-            stackTrace: st,
-          );
-          if (_collectMetrics) _metricFailures++;
+          hadFailure = true;
+          // Track earliest nextDue to schedule a follow-up scan at the right time.
+          if (earliestNextDue == null || rs.nextDue.isBefore(earliestNextDue)) {
+            earliestNextDue = rs.nextDue;
+          }
+        }
+
+        // Check retry cap — if exceeded, treat as handled to avoid permanent blockage.
+        final attempts = rs?.attempts ?? 0;
+        if (attempts >= _maxRetriesPerEvent) {
+          treatAsHandled = true;
+          if (_collectMetrics) _metricSkippedByRetryLimit++;
+        } else if (processedOk) {
+          try {
+            await _eventProcessor.process(event: e, journalDb: _journalDb);
+            if (_collectMetrics) _metricProcessed++;
+            // On success, clear retry state.
+            _retryState.remove(id);
+          } catch (err, st) {
+            processedOk = false;
+            hadFailure = true;
+            final nextAttempts = attempts + 1;
+            final backoff = _computeBackoff(nextAttempts);
+            final due = DateTime.now().add(backoff);
+            _retryState[id] = _RetryInfo(nextAttempts, due);
+            if (earliestNextDue == null || due.isBefore(earliestNextDue)) {
+              earliestNextDue = due;
+            }
+            _loggingService.captureException(
+              err,
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'process',
+              stackTrace: st,
+            );
+            if (_collectMetrics) _metricFailures++;
+            if (_collectMetrics) _metricRetriesScheduled++;
+          }
         }
       } else {
         if (_collectMetrics) _metricSkipped++;
       }
-      if (processedOk &&
+      if (!processedOk && !treatAsHandled) {
+        blockedByFailure = true;
+      }
+      if (!blockedByFailure &&
+          (processedOk || treatAsHandled) &&
           TimelineEventOrdering.isNewer(
             candidateTimestamp: ts,
             candidateEventId: id,
@@ -314,6 +384,19 @@ class MatrixStreamConsumer implements SyncPipeline {
       _pendingMarkerEventId = latestEventId;
       _scheduleMarkerFlush(room);
     }
+
+    // If we encountered retriable failures (e.g., attachments not yet
+    // available), schedule a follow-up scan to pick them up shortly.
+    if (hadFailure) {
+      final now = DateTime.now();
+      final delay = earliestNextDue != null && earliestNextDue.isAfter(now)
+          ? earliestNextDue.difference(now)
+          : const Duration(milliseconds: 200);
+      _liveScanTimer?.cancel();
+      _liveScanTimer = Timer(delay, () {
+        unawaited(_scanLiveTimeline());
+      });
+    }
   }
 
   Map<String, int> metricsSnapshot() => <String, int>{
@@ -323,6 +406,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         'prefetch': _metricPrefetch,
         'flushes': _metricFlushes,
         'catchupBatches': _metricCatchupBatches,
+        'skippedByRetryLimit': _metricSkippedByRetryLimit,
+        'retriesScheduled': _metricRetriesScheduled,
       };
 
   void _scheduleMarkerFlush(Room room) {
