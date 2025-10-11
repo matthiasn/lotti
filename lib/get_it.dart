@@ -39,6 +39,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:meta/meta.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -157,6 +158,11 @@ Future<void> registerSingletons() async {
     updateNotifications: getIt<UpdateNotifications>(),
     aiConfigRepository: aiConfigRepository,
   );
+  // Initialize config flags before constructing services that depend on them.
+  await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
+
+  final enableSyncV2 = await journalDb.getConfigFlag(enableSyncV2Flag);
+
   final matrixService = MatrixService(
     gateway: matrixGateway,
     loggingService: loggingService,
@@ -168,6 +174,7 @@ Future<void> registerSingletons() async {
     eventProcessor: syncEventProcessor,
     secureStorage: secureStorage,
     documentsDirectory: documentsDirectory,
+    enableSyncV2: enableSyncV2,
   );
 
   getIt
@@ -216,8 +223,6 @@ Future<void> registerSingletons() async {
 
   unawaited(getIt<MatrixService>().init());
   getIt<LoggingService>().listenToConfigFlag();
-
-  await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
 
   // Check and run maintenance task to remove deprecated action item suggestions
   unawaited(_checkAndRemoveActionItemSuggestions());

@@ -54,6 +54,12 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableSyncV2Flag,
+    description:
+        'Enable Matrix Sync V2 (simplified pipeline) – requires restart',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableTooltipFlag,
     description: 'Enable Tooltips',
     status: true,
