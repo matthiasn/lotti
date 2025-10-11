@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+ 
 
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 
 /// Coordinates Matrix timeline subscriptions and processing for the sync room.
 class MatrixTimelineListener implements TimelineContext {
@@ -136,6 +138,10 @@ class MatrixTimelineListener implements TimelineContext {
 
   /// Releases resources and terminates active subscriptions.
   Future<void> dispose() async {
+    // Flush any pending read marker before tearing down timers/subscriptions.
+    if (_pendingMarkerEventId != null) {
+      await _flushReadMarker();
+    }
     _clientRunner.close();
     await _timelineEventSubscription?.cancel();
     _markerDebounceTimer?.cancel();
@@ -210,4 +216,13 @@ class MatrixTimelineListener implements TimelineContext {
       timeline: timeline,
     );
   }
+
+  // Test-use-only: allow setting a pending marker to exercise dispose flush.
+  @visibleForTesting
+  set debugPendingMarker(String? id) {
+    _pendingMarkerEventId = id;
+  }
+
+  @visibleForTesting
+  String? get debugPendingMarker => _pendingMarkerEventId;
 }

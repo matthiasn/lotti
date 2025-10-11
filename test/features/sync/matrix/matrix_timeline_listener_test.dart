@@ -40,6 +40,8 @@ class FakeMatrixClient extends Fake implements Client {}
 
 class FakeTimeline extends Fake implements Timeline {}
 
+class FakeRoom extends Fake implements Room {}
+
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
@@ -55,6 +57,7 @@ void main() {
     registerFallbackValue(FakeMatrixClient());
     registerFallbackValue(FakeTimeline());
     registerFallbackValue(FakeMatrixEvent());
+    registerFallbackValue(FakeRoom());
   });
 
   late MockMatrixSessionManager mockSessionManager;
@@ -138,6 +141,41 @@ void main() {
     await listener.dispose();
 
     verify(() => mockTimeline.cancelSubscriptions()).called(1);
+  });
+
+  test('dispose flushes pending read marker if scheduled', () async {
+    final mockTimeline = MockTimeline();
+    final mockRoom = MockRoom();
+    final mockClient = MockClient();
+
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockClient.isLogged()).thenReturn(true);
+    when(() => mockClient.userID).thenReturn('@local:server');
+    when(() => mockClient.deviceName).thenReturn('Unit Test Device');
+    when(() => mockSessionManager.client).thenReturn(mockClient);
+
+    // Set a timeline to pass through to read marker service
+    listener.timeline = mockTimeline;
+
+    // Prepare the read marker call expectation (match exact args)
+    when(() => mockReadMarkerService.updateReadMarker(
+          client: mockClient,
+          room: mockRoom,
+          eventId: r'$evt',
+          timeline: mockTimeline,
+        )).thenAnswer((_) async {});
+
+    // Simulate a pending marker
+    listener.debugPendingMarker = r'$evt';
+
+    await listener.dispose();
+
+    verify(() => mockReadMarkerService.updateReadMarker(
+          client: mockClient,
+          room: mockRoom,
+          eventId: r'$evt',
+          timeline: mockTimeline,
+        )).called(1);
   });
 
   test('client runner callback waits for idle and hydrates context', () async {
