@@ -6,20 +6,25 @@
 
 ## Summary
 
-Incoming Matrix events are currently processed in reverse order which causes the
-read marker to trail one update behind. This manifests as remote edits only
-surface on the second sync cycle. We will change the processing loop to respect
-the natural oldest → newest ordering, defer the read-marker update until the
-newest successfully ingested event, and adjust tests/documentation accordingly.
+Incoming Matrix events were processed newest-first which caused the read marker
+to trail one update behind. This manifested as remote edits surfacing only on
+the second sync cycle. The fix reorients processing to oldest → newest and
+defers the read-marker update to the newest successfully ingested event.
+
+While implementing this, we hardened the timeline drain: extracted a dedicated
+`TimelineDrainer`, added optional metrics, implemented backpressure in the
+listener, and fixed a snapshot-disposal leak during limit escalation.
 
 ## Goals
 
-- Process remote timeline events oldest-first while still batching work.
-- Advance `lastReadEventContextId` (and the Matrix read marker) exactly once to
-  the newest successfully handled event.
-- Maintain retry semantics for failed events.
-- Keep unit/integration tests green with updated expectations.
-- Document the timeline ordering for future maintainers.
+- Correct ordering: process remote timeline events oldest-first while batching.
+- Exact-once advancement: move `lastReadEventContextId` to the newest
+  successfully handled event and update the Matrix read marker once.
+- Retain robustness: maintain retry semantics for failures and tail-settle
+  retries to avoid the one-behind edge.
+- Memory safety: dispose unused snapshot timelines during limit escalation.
+- Observability: optional, low-overhead metrics for drains and retries.
+- Maintain test green and update documentation to reflect the new flow.
 
 ## Non-Goals
 
@@ -30,30 +35,51 @@ newest successfully ingested event, and adjust tests/documentation accordingly.
 
 ## Deliverables
 
-1. **Code:**  
-   - Update `lib/features/sync/matrix/timeline.dart` to:
-     - Skip reversing the event list; instead sort/ensure chronological order.
-     - Track the newest event ID that advances the read marker.
-     - Call `SyncReadMarkerService.updateReadMarker` once after the loop.
-   - Ensure we log the count of processed events (optional but nice).
+1. Code
+   - Extract `TimelineDrainer` in `lib/features/sync/matrix/timeline.dart` to
+     encapsulate the drain loop and compute-from-timeline logic.
+   - Order events deterministically by `(originServerTs, eventId)`.
+   - Replace id→index map rebuild with a reverse scan to locate last-read.
+   - Defer read-marker update to the newest successfully processed event.
+   - Dispose snapshot timelines created during `timelineLimits` escalation when
+     unused, and after use when not the live attached instance.
+   - Add optional `TimelineMetrics` and `TimelineConfig.collectMetrics` flag;
+     emit a threshold log when drain passes exceed 2.
+   - Add `TimelineConfig.lowEnd` preset for constrained devices.
+   - Implement backpressure in `MatrixTimelineListener`:
+     - cap pending SDK events at 1000 (drop oldest);
+     - process in deduped batches of 500.
 
-2. **Tests:**  
-   - Update `process_new_timeline_events_test.dart` expectations to assert that
-     the newest event ID is written to the read marker.
-   - Adjust `timeline_test.dart` (and any other affected suite) to match the new
-     ordering.
-   - Re-run the focused sync tests (`process_new_timeline_events_test.dart`,
-     `matrix_timeline_flow_test.dart`, `matrix_timeline_listener_test.dart`,
-     `timeline_test.dart`).
+2. Tests
+   - Update `process_new_timeline_events_test.dart` expectations to assert a
+     single read-marker advancement to the newest event.
+   - Add/extend:
+     - `timeline_ordering_test.dart` (ordering helpers)
+     - `timeline_multipass_test.dart` (multi-pass sync behaviour)
+     - `timeline_drainer_test.dart` (compute-from-timeline + minimal drain)
+     - `matrix_timeline_listener_test.dart` (debounce flush + backpressure)
+   - Keep existing suites green: `matrix_timeline_flow_test.dart`,
+     `timeline_test.dart`.
 
-3. **Docs:**  
-   - Refresh `lib/features/sync/README.md` to describe the oldest→newest pass
-     and single read-marker update.
+3. Docs
+   - Refresh `lib/features/sync/README.md` to describe the new drain,
+     backpressure, metrics, and snapshot disposal.
+   - Ensure `docs/architecture/sync_memory_audit.md` remains accurate.
 
 ## Risks & Mitigations
 
 | Risk | Mitigation |
 | --- | --- |
-| Matrix SDK returns events in descending order on some platforms. | We will sort by `(originServerTs, eventId)` before processing, ensuring deterministic ordering regardless of SDK quirks. |
-| Tests rely on previous reverse-order behaviour. | Update mocks and expectations in the affected tests. |
-| Regression in retry logic (skipping failed events). | Preserve `_recordProcessingFailure` handling and only advance the marker if the event succeeded. |
+| Matrix SDK returns events descending. | Sort by `(originServerTs, eventId)` to enforce order. |
+| Increased complexity in drain logic. | Extract into `TimelineDrainer` with focused helpers and tests. |
+| Memory pressure from timeline snapshots. | Dispose unused snapshots immediately; dispose used snapshots after read-marker update when not live. |
+| Overhead from metrics collection. | Gate counters/timers behind `TimelineConfig.collectMetrics` (default false). |
+| Backpressure could drop oldest pending SDK events. | Processing is chronological with per-batch dedupe; live drains and escalation ensure eventual consistency. |
+
+## Rollout & Monitoring
+
+- Land behind existing tests; no runtime flags required for correctness.
+- Optionally enable `collectMetrics` in dev builds to capture `drainPasses`,
+  `eventsProcessed`, `retryAttempts`, and total processing time.
+- Watch for `timeline.metrics` logs indicating excessive drain passes (>2).
+- Re-run memory audit; ensure snapshot disposal reflects in stable RSS.

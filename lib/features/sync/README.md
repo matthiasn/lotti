@@ -18,6 +18,7 @@ that keeps the pipeline testable and observable.
 | **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, timelines, and logout. |
 | **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, increments send counters, and notifies `MatrixService`. |
 | **MatrixTimelineListener** (`matrix/matrix_timeline_listener.dart`) | Queues timeline refreshes with `ClientRunner`, waits for `UserActivityGate` to report idleness, and invokes `processNewTimelineEvents`. |
+| **TimelineDrainer** (`matrix/timeline.dart`) | Internal helper that performs the multi-pass drain: sorts oldest→newest, filters already-processed events, retries at tail, escalates snapshot limits, disposes snapshots, ingests events, and advances the read marker. |
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
 | **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, and emits notifications (e.g. `UpdateNotifications`). |
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
@@ -53,21 +54,66 @@ that keeps the pipeline testable and observable.
    refresh.
 2. `ClientRunner` serialises work; `UserActivityGate` blocks processing while
    the user is actively interacting with the app.
-3. `processNewTimelineEvents(...)` resolves the last read Matrix event ID,
-   pulls the current timeline events (preferring the listener’s in-memory
-   snapshot), orders them **oldest → newest** while preserving the SDK’s
-   sequence for equal timestamps, and filters out everything that was already
-   processed. For each remote event that is newer than the stored ID we:
-   - download attachments via `save_attachment.dart` before handing the payload
-     to `SyncEventProcessor.process(...)`;
-   - skip self-emitted events to avoid re-ingesting local changes;
-   - track failures and keep retry counts via `_maxTimelineProcessingRetries`;
-   - remember the newest successfully processed event so we can advance the read
-     marker once at the end of the batch, then queue a short follow-up drain to
-     catch any events that landed while we were processing.
+3. `processNewTimelineEvents(...)` resolves the last read Matrix event ID and
+   delegates to `TimelineDrainer` to perform a multi-pass drain:
+   - prefers the live (attached) timeline first to avoid snapshot lag;
+   - orders events **oldest → newest** while preserving the SDK’s sequence for
+     equal timestamps; uses a reverse scan to find the last-read position;
+   - filters out events at-or-before the last-read marker;
+   - at the tail, performs short intra-pass retries (configurable) to allow the
+     live timeline to settle;
+   - escalates snapshot limits when needed; disposes any unused snapshots;
+   - for each remote event that is newer than the stored ID we:
+     - download attachments via `save_attachment.dart` before handing the payload
+       to `SyncEventProcessor.process(...)`;
+     - skip self-emitted events to avoid re-ingesting local changes;
+     - track failures and keep retry counts via `_maxTimelineProcessingRetries`;
+     - remember the newest successfully processed event so we can advance the
+       read marker once at the end of the batch, then queue a short follow-up
+       drain to catch any events that landed while we were processing.
 4. After the loop the listener persists the newest processed Matrix event ID
    through `SyncReadMarkerService`, ensuring subsequent sessions resume from the
    same timeline position without re-processing older messages.
+
+### Timeline Draining (Details)
+
+- Sorting and selection are implemented in `TimelineDrainer.computeFromTimeline`
+  using helpers that:
+  - build a stable oldest→newest view of the timeline (tie-break on original
+    indices to preserve SDK semantics);
+  - locate the last-read event via a reverse scan; and
+  - collect only events strictly after last-read.
+- Tail retries are governed by `TimelineConfig.retryDelays` and only run when
+  we are positioned at the newest event with no candidates yet.
+- Multi-pass behaviour calls `client.sync()` each pass and escalates
+  `TimelineConfig.timelineLimits` until candidates appear.
+- Snapshot timelines created during escalation are disposed immediately when not
+  used, and also disposed after processing if they were used (the live attached
+  timeline remains attached). This prevents timeline-related memory leaks.
+
+### Backpressure & Debounce
+
+- `MatrixTimelineListener` maintains a bounded buffer of pending SDK events and
+  processes them in chronological batches:
+  - buffer cap: 1000 (drops oldest when full);
+  - batch size: 500 (deduped by eventId within a batch).
+- Read marker updates are debounced; a pending marker is flushed on listener
+  dispose to avoid losing the latest state.
+
+### Metrics & Configuration
+
+- `TimelineConfig` parameters (production defaults shown):
+  - `maxDrainPasses = 3`
+  - `timelineLimits = [100, 300, 500, 1000]`
+  - `retryDelays = [60ms, 120ms]`
+  - `readMarkerFollowUpDelay = 150ms`
+  - `collectMetrics = false`
+- `TimelineConfig.lowEnd` provides a conservative preset for constrained
+  devices (fewer passes, smaller limits, shorter delays).
+- Optional `TimelineMetrics` can be passed to collect:
+  - `drainPasses`, `eventsProcessed`, `retryAttempts`, `totalProcessingTime`.
+  Metrics increments are gated by `collectMetrics` to avoid hot-path overhead.
+  A threshold log is emitted when drain passes exceed 2.
 
 ### Documentation & Artefacts
 
@@ -103,9 +149,14 @@ that keeps the pipeline testable and observable.
   full flow with the fake gateway (room creation, invites, verification, message
   exchange). Run with `dart-mcp.run_tests` targeting the file or via the project
   Make target.
-- **Unit/Widget:** New coverage exists for the client runner queue, activity
-  gating, timeline error recovery, verification modals (provider overrides), and
-  dependency-injection helpers.
+- **Unit/Widget:** Coverage includes the client runner queue, activity gating,
+  timeline error recovery, verification modals (provider overrides),
+  dependency-injection helpers, and the timeline pipeline:
+  - `timeline_ordering_test.dart` verifies ordering helpers.
+  - `process_new_timeline_events_test.dart` covers ingestion + marker updates.
+  - `timeline_multipass_test.dart` validates multi-pass sync behaviour.
+  - `timeline_drainer_test.dart` covers compute-from-timeline and minimal drain.
+  - `matrix_timeline_listener_test.dart` covers debounce flush and backpressure.
 - Always run `dart-mcp.analyze_files` before committing. The custom lint will
   block any reintroduction of `getIt`.
 
@@ -121,6 +172,8 @@ that keeps the pipeline testable and observable.
   the verification modal tests still pass (`test/widgets/sync/matrix/verification_modal_test.dart`).
 - **Memory concerns:** Re-run the procedure described in
   `docs/architecture/sync_memory_audit.md` and compare against baseline numbers.
+  The drain now disposes unused snapshot timelines during escalation to avoid
+  leaks; if you see RSS growth, inspect timeline creation/disposal logs.
 
 ## Current Status
 
