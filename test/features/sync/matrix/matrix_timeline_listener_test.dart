@@ -151,6 +151,8 @@ void main() {
     final mockClient = MockClient();
 
     when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
+    when(() => mockRoom.id).thenReturn('!room:server');
     when(() => mockClient.isLogged()).thenReturn(true);
     when(() => mockClient.userID).thenReturn('@local:server');
     when(() => mockClient.deviceName).thenReturn('Unit Test Device');
@@ -331,6 +333,8 @@ void main() {
   });
 
   test('overflow triggers full catch-up drain after truncated batch', () async {
+    // Ensure the activity gate is stubbed for this test invocation.
+    when(() => mockActivityGate.waitUntilIdle()).thenAnswer((_) async {});
     final mockRoom = MockRoom();
     when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
     when(() => mockRoomManager.currentRoomId).thenReturn('!room:server');
@@ -374,5 +378,46 @@ void main() {
 
     // Ensure a full catch-up drain was invoked (sync called at least once).
     expect(syncCalls, greaterThanOrEqualTo(1));
+  });
+
+  test('debounce flush logs when read marker update fails', () async {
+    final mockTimeline = MockTimeline();
+    final mockRoom = MockRoom();
+    final mockClient = MockClient();
+
+    when(() => mockRoomManager.currentRoom).thenReturn(mockRoom);
+    when(() => mockClient.isLogged()).thenReturn(true);
+    when(() => mockClient.userID).thenReturn('@local:server');
+    when(() => mockClient.deviceName).thenReturn('Unit Test Device');
+    when(() => mockSessionManager.client).thenReturn(mockClient);
+
+    // Provide a timeline to pass through to read marker service
+    listener.timeline = mockTimeline;
+
+    // Cause updateReadMarker to throw so the timer's catchError path logs.
+    when(() => mockReadMarkerService.updateReadMarker(
+          client: any(named: 'client'),
+          room: any(named: 'room'),
+          eventId: any(named: 'eventId'),
+          timeline: any(named: 'timeline'),
+        )).thenThrow(Exception('marker update failed'));
+
+    // Manually set a pending marker and schedule a debounced flush.
+    listener
+      ..debugPendingMarker = r'$evt'
+      ..debugScheduleMarkerFlush();
+
+    // Wait longer than debounce to allow timer to fire and catchError to log.
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+
+    // Verify the exception log occurred once.
+    verify(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'timeline.flushReadMarker',
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).called(1);
   });
 }

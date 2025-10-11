@@ -254,7 +254,18 @@ class MatrixTimelineListener implements TimelineContext {
 
   void _scheduleMarkerFlush() {
     _markerDebounceTimer?.cancel();
-    _markerDebounceTimer = Timer(_markerDebounce, _flushReadMarker);
+    _markerDebounceTimer = Timer(_markerDebounce, () {
+      unawaited(
+        _flushReadMarker().catchError((Object error, StackTrace stack) {
+          _loggingService.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'timeline.flushReadMarker',
+            stackTrace: stack,
+          );
+        }),
+      );
+    });
   }
 
   Future<void> _flushReadMarker() async {
@@ -302,4 +313,10 @@ class MatrixTimelineListener implements TimelineContext {
 
   @visibleForTesting
   int get debugPendingLength => _pendingEvents.length;
+
+  // Test-use-only: directly schedule the debounced marker flush.
+  @visibleForTesting
+  void debugScheduleMarkerFlush() {
+    _scheduleMarkerFlush();
+  }
 }
