@@ -192,22 +192,28 @@ class MatrixStreamConsumer implements SyncPipeline {
       var limit = 200;
       while (true) {
         final snapshot = await room.getTimeline(limit: limit);
-        final events = List<Event>.from(snapshot.events)
-          ..sort(TimelineEventOrdering.compare);
-        final idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
-        final reachedStart = events.length < limit; // room has fewer than limit
-        final reachedCap = limit >= _catchupMaxLookback;
-        if (idx >= 0 || reachedStart || reachedCap) {
-          final slice = idx >= 0 ? events.sublist(idx + 1) : events;
-          if (slice.isNotEmpty) {
-            if (_collectMetrics) _metricCatchupBatches++;
-            await _processOrdered(slice);
+        try {
+          final events = List<Event>.from(snapshot.events)
+            ..sort(TimelineEventOrdering.compare);
+          final idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
+          final reachedStart =
+              events.length < limit; // room has fewer than limit
+          final reachedCap = limit >= _catchupMaxLookback;
+          if (idx >= 0 || reachedStart || reachedCap) {
+            final slice = idx >= 0 ? events.sublist(idx + 1) : events;
+            if (slice.isNotEmpty) {
+              if (_collectMetrics) _metricCatchupBatches++;
+              await _processOrdered(slice);
+            }
+            break; // done
+          } else {
+            limit = math.min(limit * 2, _catchupMaxLookback);
           }
-          snapshot.cancelSubscriptions();
-          break; // done
-        } else {
-          snapshot.cancelSubscriptions();
-          limit = math.min(limit * 2, _catchupMaxLookback);
+        } finally {
+          // Ensure we always release the snapshot subscription, even on error.
+          try {
+            snapshot.cancelSubscriptions();
+          } catch (_) {}
         }
       }
     } catch (e, st) {
@@ -257,11 +263,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
   }
 
-  // Internal helper retained for compatibility (no longer used); kept to avoid
-  // large diffs while tests migrate. Delegates to utils.
-  // ignore: unused_element
-  int _findLastIndex(List<Event> ordered, String? id) =>
-      tu.findLastIndexByEventId(ordered, id);
+  // (helper removed; all call sites use utils)
 
   Future<void> _flush() async {
     if (_pending.isEmpty) return;

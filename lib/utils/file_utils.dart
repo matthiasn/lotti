@@ -94,16 +94,35 @@ Future<void> saveJson(String path, String json) async {
     await tmpFile.rename(path);
   } on FileSystemException catch (_) {
     // Best-effort fallback for platforms that don't allow overwrite.
+    String? bakPath;
+    var movedAside = false;
     try {
-      final bakPath = '$path.bak.${DateTime.now().microsecondsSinceEpoch}.$pid';
+      bakPath = '$path.bak.${DateTime.now().microsecondsSinceEpoch}.$pid';
       // Try moving the existing target aside if it exists; ignore errors.
       try {
         await target.rename(bakPath);
+        movedAside = true;
       } catch (_) {
         // If the target didn't exist or couldn't be moved, continue.
       }
       await tmpFile.rename(path);
-    } on Object {
+      // Final rename succeeded; if we did move the target aside, try to
+      // remove the backup to avoid accumulating .bak files.
+      if (movedAside) {
+        try {
+          await File(bakPath).delete();
+        } catch (_) {
+          // Swallow cleanup errors.
+        }
+      }
+    } catch (e) {
+      // Cleanup tmp file to avoid leaving temporary files behind.
+      try {
+        await tmpFile.delete();
+      } catch (_) {
+        // Ignore cleanup failures.
+      }
+      // Do not mask the original error.
       rethrow;
     }
   }
