@@ -15,6 +15,10 @@ Completed
   - Attach-time catch-up implemented (bounded snapshot, sorted, after lastProcessed)
   - Streaming micro-batch added (attachments prefetch → text processing → advance id)
   - Debounced read-marker updates via `SyncReadMarkerService`
+  - Live timeline callbacks + bounded live scan to catch mobile-delayed streams
+  - Per-event retry with exponential backoff + jitter and retry cap (advances past poisoned events)
+  - Failure-safe advancement: do not advance past first not-yet-due failure; retry or skip when cap reached
+  - v2Metrics exposed via diagnostics and rendered in Matrix Stats page (with Refresh + Last updated)
 - Updated `SyncLifecycleCoordinator` to accept an optional `SyncPipeline`
   - Uses V2 pipeline if provided; falls back to V1 listener otherwise
 - Wired selection via DI
@@ -27,14 +31,16 @@ Notes / Rationale
 - Next steps will implement catch-up + micro-batched processing in `MatrixStreamConsumer`.
 
 Next
-- Added unit tests for V2 catch-up and attachment prefetch:
-  - test/features/sync/matrix/pipeline_v2/matrix_stream_consumer_test.dart
-- Added integration coverage by reusing the Matrix integration test with V2:
-  - integration_test/matrix_service_test.dart includes a second test case
-    'Create room & join (sync v2)' that runs the full encrypted-room flow
-    using the V2 pipeline (no explicit listenToTimeline).
-- Next: add a reconnect case to validate catch-up bridging after restart
-- Next: add optional metrics counters in V2 (processed/skipped/failures)
+- Unit/UI Tests
+  - Pipeline V2: catch-up, prefetch, hydration + live timeline tests
+    - test/features/sync/matrix/pipeline_v2/matrix_stream_consumer_test.dart
+  - Matrix Stats UI: counts, v2Metrics refresh, loading and error states
+    - test/features/sync/ui/matrix_stats_page_test.dart
+- Integration Tests
+  - Split V2 integration into matrix_service_v2_test.dart
+  - SAS device verification auto-accept flow (prevents “unverified devices” send block)
+  - Reconnect scenario with verification and batch send on both devices
+  - Runner script for V2 tests
 
 CI
 - Added dedicated V2 workflows and scripts:
