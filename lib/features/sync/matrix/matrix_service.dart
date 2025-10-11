@@ -11,6 +11,8 @@ import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
@@ -24,6 +26,7 @@ import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 
 class MatrixService {
   MatrixService({
@@ -37,6 +40,8 @@ class MatrixService {
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
     required Directory documentsDirectory,
+    bool enableSyncV2 = false,
+    bool collectV2Metrics = false,
     bool ownsActivityGate = false,
     MatrixConfig? matrixConfig,
     String? deviceDisplayName,
@@ -45,6 +50,8 @@ class MatrixService {
     MatrixTimelineListener? timelineListener,
     SyncLifecycleCoordinator? lifecycleCoordinator,
     SyncEngine? syncEngine,
+    // Test-only seam to inject a V2 pipeline
+    @visibleForTesting MatrixStreamConsumer? v2PipelineOverride,
   })  : _gateway = gateway,
         _loggingService = loggingService,
         _activityGate = activityGate,
@@ -55,6 +62,7 @@ class MatrixService {
         _eventProcessor = eventProcessor,
         _secureStorage = secureStorage,
         _ownsActivityGate = ownsActivityGate,
+        _collectV2Metrics = collectV2Metrics,
         keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast(),
         messageCountsController = StreamController<MatrixStats>.broadcast(),
@@ -107,6 +115,21 @@ class MatrixService {
       }
       _syncEngine = syncEngine;
     } else {
+      final pipeline = v2PipelineOverride ??
+          (enableSyncV2
+              ? MatrixStreamConsumer(
+                  sessionManager: _sessionManager,
+                  roomManager: _roomManager,
+                  loggingService: _loggingService,
+                  journalDb: _journalDb,
+                  settingsDb: _settingsDb,
+                  eventProcessor: _eventProcessor,
+                  readMarkerService: _readMarkerService,
+                  documentsDirectory: documentsDirectory,
+                  collectMetrics: collectV2Metrics,
+                )
+              : null);
+      _v2Pipeline = pipeline;
       final coordinator = lifecycleCoordinator ??
           SyncLifecycleCoordinator(
             gateway: _gateway,
@@ -114,6 +137,7 @@ class MatrixService {
             timelineListener: _timelineListener,
             roomManager: _roomManager,
             loggingService: _loggingService,
+            pipeline: pipeline,
           );
       _syncEngine = SyncEngine(
         sessionManager: _sessionManager,
@@ -156,11 +180,13 @@ class MatrixService {
   final SyncEventProcessor _eventProcessor;
   final SecureStorage _secureStorage;
   final bool _ownsActivityGate;
+  final bool _collectV2Metrics;
 
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;
   late final MatrixTimelineListener _timelineListener;
   late final SyncEngine _syncEngine;
+  MatrixStreamConsumer? _v2Pipeline;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
@@ -403,6 +429,30 @@ class MatrixService {
     );
     return diagnostics;
   }
+
+  Future<V2Metrics?> getV2Metrics() async {
+    if (_v2Pipeline == null) return null;
+    try {
+      // If metrics collection is disabled, do not attempt to read metrics.
+      if (!_collectV2Metrics) return null;
+      final map = _v2Pipeline!.metricsSnapshot();
+      return V2Metrics.fromMap(map);
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'v2.metrics',
+        stackTrace: st,
+      );
+      return null;
+    }
+  }
+
+  // Visible for testing only
+  /// Exposes the V2 pipeline instance for tests. Returns `null` when V2 is
+  /// disabled or the service was constructed without a pipeline.
+  @visibleForTesting
+  MatrixStreamConsumer? get debugV2Pipeline => _v2Pipeline;
 
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
         session: _sessionManager,

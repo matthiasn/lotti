@@ -28,6 +28,10 @@ class MatrixSessionManager {
 
   Client get client => _gateway.client;
 
+  /// Exposes the client's timeline event stream without leaking SDK-specific
+  /// controller types to tests or call-sites.
+  Stream<Event> get timelineEvents => _gateway.client.onTimelineEvent.stream;
+
   /// Establishes a Matrix session and, if requested, performs an interactive
   /// login. Returns `true` when connectivity succeeded.
   Future<bool> connect({required bool shouldAttemptLogin}) async {

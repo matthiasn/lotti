@@ -1,0 +1,81 @@
+name: Flutter Matrix V2 Test
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  test_v2:
+    if: ${{ false }} # TODO: re-enable after fix
+
+    name: Matrix V2 Test on Linux
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+      - uses: hoverkraft-tech/compose-action@v2.0.0
+        with:
+          cwd: "integration_test/docker"
+      - name: Run Matrix V2 integration tests
+        uses: GabrielBB/xvfb-action@v1.6
+        env:
+          SLOW_NETWORK: false
+        with:
+          working-directory: ./integration_test
+          run: |
+            chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_v2_tests.sh
+            ./setup_toxiproxy_docker.sh
+            ./run_matrix_v2_tests.sh
+
+  test_v2_degraded_network:
+    if: ${{ false }} # TODO: re-enable after fix
+
+    name: Matrix V2 Test on Linux with degraded network
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+      - uses: hoverkraft-tech/compose-action@v2.0.0
+        with:
+          cwd: "integration_test/docker"
+      - name: Run Matrix V2 integration tests (degraded)
+        uses: GabrielBB/xvfb-action@v1.6
+        env:
+          SLOW_NETWORK: true
+        with:
+          working-directory: ./integration_test
+          run: |
+            chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_v2_tests.sh
+            ./setup_toxiproxy_docker.sh
+            ./run_matrix_v2_tests.sh

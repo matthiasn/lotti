@@ -77,8 +77,63 @@ Future<void> saveJournalEntityJson(JournalEntity journalEntity) async {
 }
 
 Future<void> saveJson(String path, String json) async {
-  final file = await File(path).create(recursive: true);
-  await file.writeAsString(json);
+  // Ensure parent directory exists
+  final target = File(path);
+  await target.parent.create(recursive: true);
+
+  // Write to a temporary file first, then atomically rename to the target.
+  // This avoids readers observing an empty or partially-written file.
+  final tmpPath = '$path.tmp.${DateTime.now().microsecondsSinceEpoch}.$pid';
+  final tmpFile = File(tmpPath);
+  await tmpFile.writeAsString(json, flush: true);
+
+  // Attempt an atomic rename in-place. On POSIX this replaces the target.
+  // On Windows, rename fails if the target exists; in that case fall back to
+  // a controlled replacement while keeping the primary path atomic where possible.
+  try {
+    await tmpFile.rename(path);
+  } on FileSystemException catch (_) {
+    // Best-effort fallback for platforms that don't allow overwrite.
+    String? bakPath;
+    var movedAside = false;
+    try {
+      bakPath = '$path.bak.${DateTime.now().microsecondsSinceEpoch}.$pid';
+      // Try moving the existing target aside if it exists; ignore errors.
+      try {
+        await target.rename(bakPath);
+        movedAside = true;
+      } catch (_) {
+        // If the target didn't exist or couldn't be moved, continue.
+      }
+      await tmpFile.rename(path);
+      // Final rename succeeded; if we did move the target aside, try to
+      // remove the backup to avoid accumulating .bak files.
+      if (movedAside) {
+        try {
+          await File(bakPath).delete();
+        } catch (_) {
+          // Swallow cleanup errors.
+        }
+      }
+    } catch (e) {
+      // Cleanup tmp file to avoid leaving temporary files behind.
+      try {
+        await tmpFile.delete();
+      } catch (_) {
+        // Ignore cleanup failures.
+      }
+      // Attempt to restore the original file from backup if we moved it aside.
+      try {
+        if (movedAside && bakPath != null) {
+          await File(bakPath).rename(path);
+        }
+      } catch (_) {
+        // Ignore restore errors; do not mask the original exception.
+      }
+      // Do not mask the original error.
+      rethrow;
+    }
+  }
 }
 
 Future<String> createAssetDirectory(String relativePath) async {

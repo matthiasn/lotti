@@ -30,7 +30,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
+// No internal SDK controllers in tests
 import 'package:mocktail/mocktail.dart';
 
 class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
@@ -517,11 +517,6 @@ void main() {
     when(() => mockRoom.summary).thenReturn(mockSummary);
     when(() => mockSummary.mJoinedMemberCount).thenReturn(2);
     when(() => mockClient.rooms).thenReturn([mockRoom]);
-    final diagnosticsLoginController = CachedStreamController<LoginState>()
-      ..add(LoginState.loggedIn);
-    addTearDown(diagnosticsLoginController.close);
-    when(() => mockClient.onLoginStateChanged)
-        .thenReturn(diagnosticsLoginController);
     when(() => mockClient.onLoginStateChanged.value)
         .thenReturn(LoginState.loggedIn);
     when(
@@ -1208,7 +1203,7 @@ void main() {
     late TestableMatrixService testService;
     late bool startKeyCalled;
     late bool listenTimelineCalled;
-    late CachedStreamController<LoginState> loginController;
+    // No internal SDK controllers in tests
 
     setUp(() {
       startKeyCalled = false;
@@ -1251,16 +1246,15 @@ void main() {
           .thenAnswer((_) async => true);
       when(() => mockRoomManager.hydrateRoomSnapshot(client: mockClient))
           .thenAnswer((_) async {});
-      loginController = CachedStreamController<LoginState>()
-        ..add(LoginState.loggedIn);
-      when(() => mockClient.onLoginStateChanged).thenReturn(loginController);
+      when(() => mockClient.onLoginStateChanged.value)
+          .thenReturn(LoginState.loggedIn);
       when(() => mockSessionManager.isLoggedIn()).thenReturn(true);
       when(() => mockClient.isLogged()).thenReturn(true);
     });
 
     tearDown(() async {
       await testService.dispose();
-      await loginController.close();
+      // no-op
     });
 
     test('listen triggers startKey listener', () async {
@@ -1307,10 +1301,8 @@ void main() {
     test('init stops when session connect fails', () async {
       when(() => mockSessionManager.connect(shouldAttemptLogin: false))
           .thenAnswer((_) async => false);
-      await loginController.close();
-      loginController = CachedStreamController<LoginState>()
-        ..add(LoginState.loggedOut);
-      when(() => mockClient.onLoginStateChanged).thenReturn(loginController);
+      when(() => mockClient.onLoginStateChanged.value)
+          .thenReturn(LoginState.loggedOut);
       when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
       when(() => mockClient.isLogged()).thenReturn(false);
 
@@ -1325,10 +1317,8 @@ void main() {
     });
 
     test('init does not listen when login state is not logged in', () async {
-      await loginController.close();
-      loginController = CachedStreamController<LoginState>()
-        ..add(LoginState.loggedOut);
-      when(() => mockClient.onLoginStateChanged).thenReturn(loginController);
+      when(() => mockClient.onLoginStateChanged.value)
+          .thenReturn(LoginState.loggedOut);
       when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
       when(() => mockClient.isLogged()).thenReturn(false);
 

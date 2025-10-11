@@ -1710,6 +1710,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixStatsTitle => 'Statistici Matrix';
 
   @override
+  String get configFlagEnableSyncV2 => 'Enable Matrix Sync V2';
+
+  @override
+  String get configFlagEnableSyncV2Description =>
+      'Enable Matrix sync pipeline V2 (requires app restart)';
+
+  @override
+  String get settingsMatrixSentMessagesLabel => 'Sent messages:';
+
+  @override
+  String get settingsMatrixMessageType => 'Message Type';
+
+  @override
+  String get settingsMatrixCount => 'Count';
+
+  @override
+  String get settingsMatrixMetric => 'Metric';
+
+  @override
+  String get settingsMatrixValue => 'Value';
+
+  @override
+  String get settingsMatrixV2Metrics => 'Sync V2 Metrics';
+
+  @override
+  String get settingsMatrixV2MetricsNoData => 'Sync V2 Metrics: no data';
+
+  @override
+  String get settingsMatrixLastUpdated => 'Last updated:';
+
+  @override
+  String get settingsMatrixRefresh => 'Refresh';
+
+  @override
   String get settingsMatrixTitle => 'Setări sincronizare Matrix';
 
   @override

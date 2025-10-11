@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockClient extends Mock implements Client {}
@@ -31,28 +32,34 @@ void main() {
 
   late MockClient client;
   late MatrixSdkGateway gateway;
-  late CachedStreamController<({String roomId, StrippedStateEvent state})>
+  late StreamController<({String roomId, StrippedStateEvent state})>
       roomStateController;
-  late CachedStreamController<LoginState> loginStateController;
-  late CachedStreamController<KeyVerification> keyVerificationController;
+  late StreamController<LoginState> loginStateController;
+  late StreamController<KeyVerification> keyVerificationController;
   late bool disposed;
 
   setUp(() {
     client = MockClient();
-    roomStateController =
-        CachedStreamController<({String roomId, StrippedStateEvent state})>();
-    loginStateController =
-        CachedStreamController<LoginState>(LoginState.loggedOut);
-    keyVerificationController = CachedStreamController<KeyVerification>();
+    roomStateController = StreamController<
+        ({String roomId, StrippedStateEvent state})>.broadcast();
+    loginStateController = StreamController<LoginState>.broadcast();
+    keyVerificationController = StreamController<KeyVerification>.broadcast();
 
-    when(() => client.onRoomState).thenReturn(roomStateController);
-    when(() => client.onLoginStateChanged).thenReturn(loginStateController);
-    when(() => client.onKeyVerificationRequest)
-        .thenReturn(keyVerificationController);
+    when(() => client.onRoomState.stream)
+        .thenAnswer((_) => roomStateController.stream);
+    when(() => client.onLoginStateChanged.stream)
+        .thenAnswer((_) => loginStateController.stream);
+    when(() => client.onKeyVerificationRequest.stream)
+        .thenAnswer((_) => keyVerificationController.stream);
     when(() => client.dispose()).thenAnswer((_) async {});
 
     disposed = false;
-    gateway = MatrixSdkGateway(client: client);
+    gateway = MatrixSdkGateway(
+      client: client,
+      roomStateStream: roomStateController.stream,
+      loginStateStream: loginStateController.stream,
+      keyVerificationRequestStream: keyVerificationController.stream,
+    );
   });
 
   tearDown(() async {

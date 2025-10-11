@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -23,6 +24,7 @@ class SyncLifecycleCoordinator {
     required MatrixTimelineListener timelineListener,
     required SyncRoomManager roomManager,
     required LoggingService loggingService,
+    SyncPipeline? pipeline,
     LifecycleCallback? onLogin,
     LifecycleCallback? onLogout,
   })  : _gateway = gateway,
@@ -30,6 +32,7 @@ class SyncLifecycleCoordinator {
         _timelineListener = timelineListener,
         _roomManager = roomManager,
         _loggingService = loggingService,
+        _pipeline = pipeline,
         _onLogin = onLogin,
         _onLogout = onLogout;
 
@@ -38,6 +41,7 @@ class SyncLifecycleCoordinator {
   final MatrixTimelineListener _timelineListener;
   final SyncRoomManager _roomManager;
   final LoggingService _loggingService;
+  final SyncPipeline? _pipeline;
 
   LifecycleCallback? _onLogin;
   LifecycleCallback? _onLogout;
@@ -89,7 +93,12 @@ class SyncLifecycleCoordinator {
     }
 
     try {
-      await _timelineListener.initialize();
+      // Initialize either the provided pipeline or the legacy timeline listener.
+      if (_pipeline != null) {
+        await _pipeline!.initialize();
+      } else {
+        await _timelineListener.initialize();
+      }
       await _roomManager.initialize();
       _loginSubscription ??=
           _gateway.loginStateChanges.listen(_handleLoginState);
@@ -153,10 +162,12 @@ class SyncLifecycleCoordinator {
     );
 
     try {
-      await _roomManager.hydrateRoomSnapshot(
-        client: _sessionManager.client,
-      );
-      await _timelineListener.start();
+      await _roomManager.hydrateRoomSnapshot(client: _sessionManager.client);
+      if (_pipeline != null) {
+        await _pipeline!.start();
+      } else {
+        await _timelineListener.start();
+      }
       if (_onLogin != null) {
         await _onLogin!();
       }
@@ -201,8 +212,12 @@ class SyncLifecycleCoordinator {
     );
 
     try {
-      final timeline = _timelineListener.timeline;
-      timeline?.cancelSubscriptions();
+      if (_pipeline != null) {
+        await _pipeline!.dispose();
+      } else {
+        final timeline = _timelineListener.timeline;
+        timeline?.cancelSubscriptions();
+      }
       if (_onLogout != null) {
         await _onLogout!();
       }

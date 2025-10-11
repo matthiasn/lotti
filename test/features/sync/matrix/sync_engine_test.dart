@@ -6,7 +6,7 @@ import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
+// No internal SDK controllers in tests
 import 'package:mocktail/mocktail.dart';
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
@@ -147,10 +147,6 @@ void main() {
     when(() => room.encrypted).thenReturn(true);
     when(() => room.summary).thenReturn(summary);
     when(() => summary.mJoinedMemberCount).thenReturn(2);
-    final loginController = CachedStreamController<LoginState>()
-      ..add(LoginState.loggedIn);
-    addTearDown(loginController.close);
-    when(() => client.onLoginStateChanged).thenReturn(loginController);
     when(() => client.onLoginStateChanged.value)
         .thenReturn(LoginState.loggedIn);
     when(

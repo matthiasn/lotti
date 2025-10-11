@@ -43,14 +43,40 @@ SliverWoltModalSheetPage matrixStatsPage({
   );
 }
 
-class IncomingStats extends ConsumerWidget {
+class IncomingStats extends ConsumerStatefulWidget {
   const IncomingStats({super.key});
 
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  ConsumerState<IncomingStats> createState() => _IncomingStatsState();
+}
+
+class _IncomingStatsState extends ConsumerState<IncomingStats> {
+  DateTime? _lastUpdated;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initial fetch occurs via provider; only stamp time here.
+    _lastUpdated = DateTime.now();
+  }
+
+  void _refreshDiagnostics() {
+    setState(() {
+      // Invalidate typed diagnostics to force a refresh
+      ref.invalidate(matrixV2MetricsFutureProvider);
+      _lastUpdated = DateTime.now();
+    });
+  }
+
+  String _formatTime(DateTime? dt) {
+    if (dt == null) return '';
+    final t = dt.toLocal().toIso8601String();
+    // Show HH:mm:ss
+    return t.length >= 19 ? t.substring(11, 19) : t;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final stats = ref.watch(matrixStatsControllerProvider);
 
     return stats.map(
@@ -60,23 +86,25 @@ class IncomingStats extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sent messages: ${value.sentCount}'),
+            Text(
+              '${context.messages.settingsMatrixSentMessagesLabel} ${value.sentCount}',
+            ),
             const SizedBox(height: 10),
             DataTable(
-              columns: const <DataColumn>[
+              columns: <DataColumn>[
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Message Type',
-                      style: TextStyle(fontStyle: FontStyle.italic),
+                      context.messages.settingsMatrixMessageType,
+                      style: const TextStyle(fontStyle: FontStyle.italic),
                     ),
                   ),
                 ),
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Count',
-                      style: TextStyle(fontStyle: FontStyle.italic),
+                      context.messages.settingsMatrixCount,
+                      style: const TextStyle(fontStyle: FontStyle.italic),
                     ),
                   ),
                 ),
@@ -92,10 +120,99 @@ class IncomingStats extends ConsumerWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            // V2 metrics via typed provider
+            ref.watch(matrixV2MetricsFutureProvider).when(
+                  data: (metrics) {
+                    final v2 = metrics?.toMap();
+                    if (v2 == null || v2.isEmpty) {
+                      return Row(
+                        children: [
+                          Text(context.messages.settingsMatrixV2MetricsNoData),
+                          const Spacer(),
+                          IconButton(
+                            key: const Key('matrixStats.refresh.noData'),
+                            tooltip: context.messages.settingsMatrixRefresh,
+                            icon: const Icon(Icons.refresh_rounded),
+                            onPressed: _refreshDiagnostics,
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              context.messages.settingsMatrixV2Metrics,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              '${context.messages.settingsMatrixLastUpdated} ${_formatTime(_lastUpdated)}',
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              key: const Key('matrixStats.refresh.metrics'),
+                              tooltip: context.messages.settingsMatrixRefresh,
+                              icon: const Icon(Icons.refresh_rounded),
+                              onPressed: _refreshDiagnostics,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        DataTable(
+                          columns: <DataColumn>[
+                            DataColumn(
+                              label: Expanded(
+                                child: Text(
+                                  context.messages.settingsMatrixMetric,
+                                  style: const TextStyle(
+                                      fontStyle: FontStyle.italic),
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Expanded(
+                                child: Text(
+                                  context.messages.settingsMatrixValue,
+                                  style: const TextStyle(
+                                      fontStyle: FontStyle.italic),
+                                ),
+                              ),
+                            ),
+                          ],
+                          rows: <DataRow>[
+                            for (final entry in v2.entries)
+                              DataRow(
+                                cells: <DataCell>[
+                                  DataCell(Text(entry.key)),
+                                  DataCell(Text(entry.value.toString())),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                  loading: () => const CircularProgressIndicator(),
+                  error: (err, __) => const Text(
+                    'Error loading V2 metrics',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
           ],
         );
       },
-      error: (error) => const CircularProgressIndicator(),
+      error: (error) => const Text(
+        'Error loading Matrix stats',
+        style: TextStyle(color: Colors.red),
+      ),
       loading: (loading) => const CircularProgressIndicator(),
     );
   }
