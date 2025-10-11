@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -52,18 +51,19 @@ class IncomingStats extends ConsumerStatefulWidget {
 }
 
 class _IncomingStatsState extends ConsumerState<IncomingStats> {
-  Future<Map<String, dynamic>>? _diagFuture;
   DateTime? _lastUpdated;
 
   @override
   void initState() {
     super.initState();
-    _refreshDiagnostics();
+    // Initial fetch occurs via provider; only stamp time here.
+    _lastUpdated = DateTime.now();
   }
 
   void _refreshDiagnostics() {
     setState(() {
-      _diagFuture = ref.read(matrixServiceProvider).getDiagnosticInfo();
+      // Invalidate typed diagnostics to force a refresh
+      ref.invalidate(matrixV2MetricsFutureProvider);
       _lastUpdated = DateTime.now();
     });
   }
@@ -86,12 +86,8 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text(context.messages.settingsMatrixSentMessagesLabel),
-                const SizedBox(width: 6),
-                Text('${value.sentCount}'),
-              ],
+            Text(
+              '${context.messages.settingsMatrixSentMessagesLabel} ${value.sentCount}',
             ),
             const SizedBox(height: 10),
             DataTable(
@@ -125,18 +121,17 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
               ],
             ),
             const SizedBox(height: 16),
-            // V2 metrics (if available) from MatrixService diagnostics
-            FutureBuilder<Map<String, dynamic>>(
-              future: _diagFuture,
-              builder: (context, snapshot) {
-                final diag = snapshot.data ?? const <String, dynamic>{};
-                final v2 = diag['v2Metrics'] as Map<String, dynamic>?;
+            // V2 metrics via typed provider
+            ref.watch(matrixV2MetricsFutureProvider).when(
+              data: (metrics) {
+                final v2 = metrics?.toMap();
                 if (v2 == null || v2.isEmpty) {
                   return Row(
                     children: [
                       Text(context.messages.settingsMatrixV2MetricsNoData),
                       const Spacer(),
                       IconButton(
+                        key: const Key('matrixStats.refresh'),
                         tooltip: context.messages.settingsMatrixRefresh,
                         icon: const Icon(Icons.refresh_rounded),
                         onPressed: _refreshDiagnostics,
@@ -162,6 +157,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                         ),
                         const Spacer(),
                         IconButton(
+                          key: const Key('matrixStats.refresh'),
                           tooltip: context.messages.settingsMatrixRefresh,
                           icon: const Icon(Icons.refresh_rounded),
                           onPressed: _refreshDiagnostics,
@@ -203,6 +199,8 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                   ],
                 );
               },
+              loading: () => const CircularProgressIndicator(),
+              error: (_, __) => const CircularProgressIndicator(),
             ),
           ],
         );

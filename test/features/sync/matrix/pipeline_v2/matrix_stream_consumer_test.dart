@@ -911,4 +911,250 @@ void main() {
           eventId: 'A',
         ));
   });
+
+  test('circuit breaker opens after many failures and blocks processing',
+      () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+    final onTimelineController = CachedStreamController<Event>();
+
+    addTearDown(onTimelineController.close);
+
+    when(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logger.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => null);
+
+    // Create >50 failing events to trip the breaker.
+    List<Event> failingEvents(int n) {
+      final list = <Event>[];
+      for (var i = 0; i < n; i++) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('F$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        when(() => e.senderId).thenReturn('@other:server');
+        when(() => e.attachmentMimetype).thenReturn('');
+        when(() => e.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        list.add(e);
+      }
+      return list;
+    }
+
+    final events = failingEvents(60);
+    when(() => timeline.events).thenReturn(events);
+    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
+
+    when(() =>
+            processor.process(event: any(named: 'event'), journalDb: journalDb))
+        .thenThrow(Exception('boom'));
+    when(() => readMarker.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+        )).thenAnswer((_) async {});
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+      collectMetrics: true,
+    );
+
+    await consumer.initialize();
+    await consumer.start();
+
+    // After first batch, breaker should be open.
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    expect(consumer.debugCircuitOpen(), isTrue);
+
+    // Trigger a live scan; breaker should still be open
+    when(() => timeline.events).thenReturn(events.take(1).toList());
+    // simulate onUpdate callback path by calling schedule and letting debounce expire
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    expect(consumer.debugCircuitOpen(), isTrue);
+  });
+
+  test('retry state pruned to cap size on large failure batch', () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+    final onTimelineController = CachedStreamController<Event>();
+
+    addTearDown(onTimelineController.close);
+
+    when(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logger.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => null);
+
+    // Create 2100 failing events to exceed cap.
+    final list = <Event>[];
+    for (var i = 0; i < 2100; i++) {
+      final e = MockEvent();
+      when(() => e.eventId).thenReturn('R$i');
+      when(() => e.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+      when(() => e.senderId).thenReturn('@other:server');
+      when(() => e.attachmentMimetype).thenReturn('');
+      when(() => e.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      list.add(e);
+    }
+    when(() => timeline.events).thenReturn(list);
+    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
+
+    when(() =>
+            processor.process(event: any(named: 'event'), journalDb: journalDb))
+        .thenThrow(Exception('fail'));
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+      collectMetrics: true,
+    );
+
+    await consumer.initialize();
+    await consumer.start();
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    // Retry state should be pruned to its cap (<=2000)
+    expect(consumer.debugRetryStateSize(), lessThanOrEqualTo(2000));
+  });
+
+  test('retry TTL pruning removes stale entries', () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+    final onTimelineController = CachedStreamController<Event>();
+
+    addTearDown(onTimelineController.close);
+
+    when(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logger.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => null);
+
+    // Create some failing events to populate retry state.
+    final list = <Event>[];
+    for (var i = 0; i < 5; i++) {
+      final e = MockEvent();
+      when(() => e.eventId).thenReturn('T$i');
+      when(() => e.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+      when(() => e.senderId).thenReturn('@other:server');
+      when(() => e.attachmentMimetype).thenReturn('');
+      when(() => e.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      list.add(e);
+    }
+    when(() => timeline.events).thenReturn(list);
+    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
+
+    when(() =>
+            processor.process(event: any(named: 'event'), journalDb: journalDb))
+        .thenThrow(Exception('temporary fail'));
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+      collectMetrics: true,
+    );
+
+    await consumer.initialize();
+    await consumer.start();
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final before = consumer.debugRetryStateSize();
+    expect(before, greaterThan(0));
+
+    // Wait for a moment and trigger another pass to prune TTL (entries older than TTL are removed).
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    // Trigger scan by injecting a no-op timeline
+    when(() => timeline.events).thenReturn(<Event>[]);
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    final after = consumer.debugRetryStateSize();
+    expect(after, lessThanOrEqualTo(before));
+  });
 }

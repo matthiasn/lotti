@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 
 class _RetryInfo {
   _RetryInfo(this.attempts, this.nextDue);
@@ -501,6 +502,16 @@ class MatrixStreamConsumer implements SyncPipeline {
       room: room,
       eventId: id,
     );
+  }
+
+  // Visible for testing: surface internals for assertions without exposing API.
+  @visibleForTesting
+  int debugRetryStateSize() => _retryState.length;
+
+  @visibleForTesting
+  bool debugCircuitOpen() {
+    final openUntil = _circuitOpenUntil;
+    return openUntil != null && DateTime.now().isBefore(openUntil);
   }
 
   void _pruneRetryState() {

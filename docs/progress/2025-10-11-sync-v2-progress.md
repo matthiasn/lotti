@@ -57,7 +57,7 @@ Issues Investigated (Integration)
   - Fix: make JSON writes atomic by writing to a temp file and renaming.
     - Change: lib/utils/file_utils.dart:79
       - Old: create file then `writeAsString`.
-      - New: write to `*.tmp` with `flush: true`, then `renameSync` to target (delete existing file if present). Avoids empty/partial reads.
+      - New: write to `*.tmp` with `flush: true`, then async `rename` to target; Windows-safe fallback moves existing file aside and cleans up `.bak`/`tmp` on success/failure. Avoids empty/partial reads.
   - Impact: `SyncEventProcessor` now reads fully written JSON; V2 retry/backoff remains as guard for genuine transient failures.
 
 How To Verify
@@ -68,6 +68,20 @@ How To Verify
   - `./integration_test/run_matrix_v2_tests.sh`
   - Ensure variables `TEST_USER1`, `TEST_USER2`, `TEST_SERVER`, `TEST_PASSWORD` set by the script.
   - Expect SAS auto-verify to complete and both tests to pass without timeouts.
+
+Enhancements (landed post-integration)
+- Monotonic read-marker advancement to prevent regression with interleaved scans.
+- Retry map bounded by TTL and max size; per-batch pruning.
+- Circuit breaker (cooldown) after sustained failures; resumes automatically.
+- V2 metrics gated by `enable_logging` flag; reduces log noise by default.
+
+L10n and UI
+- Localized Sync V2 flag title/description and Matrix Stats labels (Message Type, Count, Metric, Value, Refresh, Last updated).
+- Matrix Stats renders V2 metrics with localized labels.
+
+Typed Diagnostics
+- Introduced a typed `V2Metrics` model (processed, skipped, failures, prefetch, flushes, catchupBatches, skippedByRetryLimit, retriesScheduled, circuitOpens).
+- `MatrixService.getV2Metrics()` returns typed metrics; `getDiagnosticInfo()` still exposes raw maps for compatibility.
 
 Follow-ups
 - Consider a small resilience tweak in `FileSyncJournalEntityLoader` to re-read once if a JSON decode fails due to emptiness, though the atomic write eliminates the observed race.
