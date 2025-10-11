@@ -344,16 +344,27 @@ class MatrixStreamConsumer implements SyncPipeline {
     if (_pending.isEmpty) return;
     final queue = List<Event>.from(_pending);
     _pending.clear();
-    queue.sort(TimelineEventOrdering.compare);
-    // Deduplicate by id while preserving chronological order.
-    final ordered = tu.dedupEventsByIdPreserveOrder(queue);
-    await _processOrdered(ordered);
-    if (_collectMetrics) {
-      _metricFlushes++;
-      _loggingService.captureEvent(
-        'v2 metrics flush=$_metricFlushes processed=$_metricProcessed skipped=$_metricSkipped failures=$_metricFailures prefetch=$_metricPrefetch catchup=$_metricCatchupBatches skippedByRetry=$_metricSkippedByRetryLimit retriesScheduled=$_metricRetriesScheduled retriesPending=${_retryState.length}',
+    try {
+      queue.sort(TimelineEventOrdering.compare);
+      // Deduplicate by id while preserving chronological order.
+      final ordered = tu.dedupEventsByIdPreserveOrder(queue);
+      await _processOrdered(ordered);
+      if (_collectMetrics) {
+        _metricFlushes++;
+        _loggingService.captureEvent(
+          'v2 metrics flush=$_metricFlushes processed=$_metricProcessed skipped=$_metricSkipped failures=$_metricFailures prefetch=$_metricPrefetch catchup=$_metricCatchupBatches skippedByRetry=$_metricSkippedByRetryLimit retriesScheduled=$_metricRetriesScheduled retriesPending=${_retryState.length}',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'metrics',
+        );
+      }
+    } catch (err, st) {
+      // Restore pending queue to avoid losing events if processing failed.
+      _pending.insertAll(0, queue);
+      _loggingService.captureException(
+        err,
         domain: 'MATRIX_SYNC_V2',
-        subDomain: 'metrics',
+        subDomain: 'flush',
+        stackTrace: st,
       );
     }
   }
@@ -416,7 +427,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (msgType == syncMessageType) {
         // If this event has a retry schedule, and it's not yet due, block advancement until due.
         final rs = _retryState[id];
-        final now = DateTime.now();
+        final now = _now();
         if (rs != null && now.isBefore(rs.nextDue)) {
           processedOk = false;
           hadFailure = true;
@@ -449,7 +460,7 @@ class MatrixStreamConsumer implements SyncPipeline {
             batchFailures++;
             final nextAttempts = attempts + 1;
             final backoff = _computeBackoff(nextAttempts);
-            final due = DateTime.now().add(backoff);
+            final due = _now().add(backoff);
             if (nextAttempts >= _maxRetriesPerEvent) {
               // Final failure: drop retry state, mark as handled to avoid blocking,
               // and record metrics.

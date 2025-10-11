@@ -62,6 +62,7 @@ class MatrixService {
         _eventProcessor = eventProcessor,
         _secureStorage = secureStorage,
         _ownsActivityGate = ownsActivityGate,
+        _collectV2Metrics = collectV2Metrics,
         keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast(),
         messageCountsController = StreamController<MatrixStats>.broadcast(),
@@ -179,6 +180,7 @@ class MatrixService {
   final SyncEventProcessor _eventProcessor;
   final SecureStorage _secureStorage;
   final bool _ownsActivityGate;
+  final bool _collectV2Metrics;
 
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;
@@ -430,8 +432,20 @@ class MatrixService {
 
   Future<V2Metrics?> getV2Metrics() async {
     if (_v2Pipeline == null) return null;
-    final map = _v2Pipeline!.metricsSnapshot();
-    return V2Metrics.fromMap(map);
+    try {
+      // If metrics collection is disabled, do not attempt to read metrics.
+      if (!_collectV2Metrics) return null;
+      final map = _v2Pipeline!.metricsSnapshot();
+      return V2Metrics.fromMap(map);
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'v2.metrics',
+        stackTrace: st,
+      );
+      return null;
+    }
   }
 
   // Visible for testing only

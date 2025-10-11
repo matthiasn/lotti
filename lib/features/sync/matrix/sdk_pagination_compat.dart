@@ -41,9 +41,10 @@ class SdkPaginationCompat {
         final canMore = _canRequestHistory(dyn);
         if (!canMore) break;
 
+        // Mark that we attempted pagination regardless of the outcome.
+        anyPaged = true;
         final ok = await _requestMoreHistory(dyn, pageSize, logging);
         if (!ok) break;
-        anyPaged = true;
         pages++;
       }
       return anyPaged;
