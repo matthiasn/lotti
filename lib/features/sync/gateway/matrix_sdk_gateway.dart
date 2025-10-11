@@ -11,8 +11,19 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   /// The gateway assumes ownership of the provided [client] instance and will
   /// call [Client.dispose] during [dispose]. Callers must not dispose the
   /// client separately once it is passed here.
-  MatrixSdkGateway({required Client client}) : _client = client {
-    _inviteSubscription = _client.onRoomState.stream.listen(_handleRoomState);
+  MatrixSdkGateway({
+    required Client client,
+    Stream<({String roomId, StrippedStateEvent state})>? roomStateStream,
+    Stream<LoginState>? loginStateStream,
+    Stream<KeyVerification>? keyVerificationRequestStream,
+  })  : _client = client,
+        _roomStateStream = roomStateStream,
+        _loginStateStream = loginStateStream,
+        _keyVerificationRequests = keyVerificationRequestStream {
+    _inviteSubscription =
+        (_roomStateStream ?? _client.onRoomState.stream).listen(
+      _handleRoomState,
+    );
   }
 
   final Client _client;
@@ -21,6 +32,9 @@ class MatrixSdkGateway implements MatrixSyncGateway {
       _inviteSubscription;
   final StreamController<RoomInviteEvent> _inviteController =
       StreamController<RoomInviteEvent>.broadcast();
+  final Stream<({String roomId, StrippedStateEvent state})>? _roomStateStream;
+  final Stream<LoginState>? _loginStateStream;
+  final Stream<KeyVerification>? _keyVerificationRequests;
 
   @override
   Client get client => _client;
@@ -56,7 +70,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
 
   @override
   Stream<LoginState> get loginStateChanges =>
-      _client.onLoginStateChanged.stream;
+      _loginStateStream ?? _client.onLoginStateChanged.stream;
 
   @override
   Future<String> createRoom({
@@ -157,7 +171,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
 
   @override
   Stream<KeyVerification> get keyVerificationRequests =>
-      _client.onKeyVerificationRequest.stream;
+      _keyVerificationRequests ?? _client.onKeyVerificationRequest.stream;
 
   @override
   Future<KeyVerification> startKeyVerification(DeviceKeys device) {

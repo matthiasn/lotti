@@ -77,9 +77,10 @@ class KeyVerificationRunner {
 Future<void> listenForKeyVerificationRequests({
   required MatrixService service,
   required LoggingService loggingService,
+  Stream<KeyVerification>? requests,
 }) async {
   try {
-    service.client.onKeyVerificationRequest.stream.listen((
+    (requests ?? service.client.onKeyVerificationRequest.stream).listen((
       KeyVerification keyVerification,
     ) {
       service.incomingKeyVerificationRunner = KeyVerificationRunner(

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -401,6 +403,57 @@ void main() {
       ).called(1);
       expect(service.enqueueCalls, 1);
       expect(service.lastDelay, const Duration(seconds: 15));
+
+      await service.dispose();
+    });
+
+    test(
+        'schedules immediate continuation when drain pass cap reached and items remain',
+        () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      // Always indicate more work immediately.
+      when(() => processor.processQueue()).thenAnswer(
+        (_) async => OutboxProcessingResult.schedule(Duration.zero),
+      );
+      // Indicate there are still pending items after the pass cap is reached.
+      when(() => repository.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [
+                OutboxItem(
+                  id: 1,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  status: 0,
+                  retries: 0,
+                  message: '{}',
+                  subject: 'test',
+                  filePath: null,
+                )
+              ]);
+
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+
+      final service = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: gate,
+      );
+
+      await service.sendNext();
+
+      // After hitting the internal pass cap, service should schedule an
+      // immediate continuation because items remain pending.
+      expect(service.enqueueCalls, 1);
+      expect(service.lastDelay, Duration.zero);
 
       await service.dispose();
     });

@@ -28,6 +28,14 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableSyncV2Flag,
+      description:
+          'Enable Matrix Sync V2 (simplified pipeline) – requires restart',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableTooltipFlag,
       description: 'Enable Tooltips',
       status: true,

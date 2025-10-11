@@ -215,7 +215,8 @@ class OutboxService {
     for (var pass = 0; pass < _maxDrainPasses; pass++) {
       final result = await _processor.processQueue();
       if (!result.shouldSchedule) {
-        return true; // drained without needing a scheduled retry
+        // Queue appears drained for now.
+        return true;
       }
       final delay = result.nextDelay ?? Duration.zero;
       if (delay == Duration.zero) {
@@ -224,7 +225,15 @@ class OutboxService {
       }
       // Non-zero delay indicates retry/error backoff; schedule and exit.
       await enqueueNextSendRequest(delay: delay);
-      return false; // scheduled
+      return false;
+    }
+
+    // Reached pass cap; if there are still pending items, schedule immediate
+    // continuation so large backlogs don't stall after a fixed number processed.
+    final stillPending = (await _repository.fetchPending(limit: 1)).isNotEmpty;
+    if (stillPending) {
+      await enqueueNextSendRequest(delay: Duration.zero);
+      return false;
     }
     return true;
   }

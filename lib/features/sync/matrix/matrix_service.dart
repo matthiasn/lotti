@@ -11,6 +11,8 @@ import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
@@ -37,6 +39,8 @@ class MatrixService {
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
     required Directory documentsDirectory,
+    bool enableSyncV2 = false,
+    bool collectV2Metrics = false,
     bool ownsActivityGate = false,
     MatrixConfig? matrixConfig,
     String? deviceDisplayName,
@@ -107,6 +111,20 @@ class MatrixService {
       }
       _syncEngine = syncEngine;
     } else {
+      final pipeline = enableSyncV2
+          ? MatrixStreamConsumer(
+              sessionManager: _sessionManager,
+              roomManager: _roomManager,
+              loggingService: _loggingService,
+              journalDb: _journalDb,
+              settingsDb: _settingsDb,
+              eventProcessor: _eventProcessor,
+              readMarkerService: _readMarkerService,
+              documentsDirectory: documentsDirectory,
+              collectMetrics: collectV2Metrics,
+            )
+          : null;
+      _v2Pipeline = pipeline;
       final coordinator = lifecycleCoordinator ??
           SyncLifecycleCoordinator(
             gateway: _gateway,
@@ -114,6 +132,7 @@ class MatrixService {
             timelineListener: _timelineListener,
             roomManager: _roomManager,
             loggingService: _loggingService,
+            pipeline: pipeline,
           );
       _syncEngine = SyncEngine(
         sessionManager: _sessionManager,
@@ -161,6 +180,7 @@ class MatrixService {
   late final MatrixSessionManager _sessionManager;
   late final MatrixTimelineListener _timelineListener;
   late final SyncEngine _syncEngine;
+  MatrixStreamConsumer? _v2Pipeline;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
@@ -402,6 +422,12 @@ class MatrixService {
       subDomain: 'diagnostics',
     );
     return diagnostics;
+  }
+
+  Future<V2Metrics?> getV2Metrics() async {
+    if (_v2Pipeline == null) return null;
+    final map = _v2Pipeline!.metricsSnapshot();
+    return V2Metrics.fromMap(map);
   }
 
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
