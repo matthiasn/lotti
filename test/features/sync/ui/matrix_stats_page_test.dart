@@ -50,6 +50,8 @@ void main() {
         .thenReturn(matrixStatsController);
     when(() => mockMatrixService.messageCounts).thenReturn(<String, int>{});
     when(() => mockMatrixService.sentCount).thenReturn(0);
+    when(() => mockMatrixService.getDiagnosticInfo())
+        .thenAnswer((_) async => <String, dynamic>{});
   });
 
   tearDown(() async {
@@ -83,6 +85,65 @@ void main() {
     expect(find.text('3'), findsOneWidget);
     expect(find.text('m.image'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
+  });
+
+  testWidgets('IncomingStats shows V2 metrics and supports refresh',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 1,
+      messageCounts: const {'m.text': 1},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+
+    // First diagnostics payload
+    when(() => mockMatrixService.getDiagnosticInfo()).thenAnswer(
+      (_) async => {
+        'v2Metrics': {
+          'processed': 2,
+          'skipped': 1,
+          'failures': 0,
+          'prefetch': 1,
+          'flushes': 1,
+          'catchupBatches': 1,
+        },
+      },
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+
+    await tester.pump();
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+
+    // Change diagnostics payload for refresh
+    when(() => mockMatrixService.getDiagnosticInfo()).thenAnswer(
+      (_) async => {
+        'v2Metrics': {
+          'processed': 3,
+          'skipped': 1,
+          'failures': 0,
+          'prefetch': 1,
+          'flushes': 2,
+          'catchupBatches': 1,
+        },
+      },
+    );
+
+    await tester.tap(find.byTooltip('Refresh'));
+    await tester.pump();
+
+    // Last updated label present (implies metrics section is rendered)
+    expect(find.textContaining('Last updated:'), findsOneWidget);
   });
 
   testWidgets('IncomingStats shows progress while loading', (tester) async {

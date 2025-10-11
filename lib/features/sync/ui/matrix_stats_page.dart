@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -43,14 +44,39 @@ SliverWoltModalSheetPage matrixStatsPage({
   );
 }
 
-class IncomingStats extends ConsumerWidget {
+class IncomingStats extends ConsumerStatefulWidget {
   const IncomingStats({super.key});
 
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  ConsumerState<IncomingStats> createState() => _IncomingStatsState();
+}
+
+class _IncomingStatsState extends ConsumerState<IncomingStats> {
+  Future<Map<String, dynamic>>? _diagFuture;
+  DateTime? _lastUpdated;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshDiagnostics();
+  }
+
+  void _refreshDiagnostics() {
+    setState(() {
+      _diagFuture = ref.read(matrixServiceProvider).getDiagnosticInfo();
+      _lastUpdated = DateTime.now();
+    });
+  }
+
+  String _formatTime(DateTime? dt) {
+    if (dt == null) return '';
+    final t = dt.toLocal().toIso8601String();
+    // Show HH:mm:ss
+    return t.length >= 19 ? t.substring(11, 19) : t;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final stats = ref.watch(matrixStatsControllerProvider);
 
     return stats.map(
@@ -91,6 +117,84 @@ class IncomingStats extends ConsumerWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            // V2 metrics (if available) from MatrixService diagnostics
+            FutureBuilder<Map<String, dynamic>>(
+              future: _diagFuture,
+              builder: (context, snapshot) {
+                final diag = snapshot.data ?? const <String, dynamic>{};
+                final v2 = diag['v2Metrics'] as Map<String, dynamic>?;
+                if (v2 == null || v2.isEmpty) {
+                  return Row(
+                    children: [
+                      const Text('Sync V2 Metrics: no data'),
+                      const Spacer(),
+                      IconButton(
+                        tooltip: 'Refresh',
+                        icon: const Icon(Icons.refresh_rounded),
+                        onPressed: _refreshDiagnostics,
+                      ),
+                    ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Sync V2 Metrics',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Last updated: ${_formatTime(_lastUpdated)}',
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: 'Refresh',
+                          icon: const Icon(Icons.refresh_rounded),
+                          onPressed: _refreshDiagnostics,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    DataTable(
+                      columns: const <DataColumn>[
+                        DataColumn(
+                          label: Expanded(
+                            child: Text(
+                              'Metric',
+                              style: TextStyle(fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Expanded(
+                            child: Text(
+                              'Value',
+                              style: TextStyle(fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        ),
+                      ],
+                      rows: <DataRow>[
+                        for (final entry in v2.entries)
+                          DataRow(
+                            cells: <DataCell>[
+                              DataCell(Text(entry.key)),
+                              DataCell(Text(entry.value.toString())),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         );

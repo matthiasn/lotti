@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
@@ -38,9 +39,22 @@ class MockTimeline extends Mock implements Timeline {}
 
 class MockEvent extends Mock implements Event {}
 
+class _FakeClient extends Fake implements Client {}
+
+class _FakeRoom extends Fake implements Room {}
+
+class _FakeTimeline extends Fake implements Timeline {}
+
+class _FakeEvent extends Fake implements Event {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
+    // Fallbacks for typed `any<T>` matchers used in mocks
+    registerFallbackValue(_FakeClient());
+    registerFallbackValue(_FakeRoom());
+    registerFallbackValue(_FakeTimeline());
+    registerFallbackValue(_FakeEvent());
   });
 
   group('MatrixStreamConsumer catch-up', () {
@@ -235,6 +249,107 @@ void main() {
         final saved = File('${tempDir.path}/sub/test.json');
         expect(saved.existsSync(), isTrue);
       });
+    });
+  });
+
+  group('MatrixStreamConsumer live timeline + hydration', () {
+    test('start hydrates room when missing and attaches live timeline',
+        () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      final onTimelineController = CachedStreamController<Event>();
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+      // First, room missing to force hydrate
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(null);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => roomManager.hydrateRoomSnapshot(
+          client: any<Client>(named: 'client'))).thenAnswer((_) async {
+        // After hydration, room available
+        when(() => roomManager.currentRoom).thenReturn(room);
+      });
+
+      // Simulate live timeline attach; call onNewEvent immediately, return timeline
+      when(
+        () => room.getTimeline(
+          limit: any<int>(named: 'limit'),
+          onNewEvent: any<void Function()>(named: 'onNewEvent'),
+          onInsert: any<void Function(int)>(named: 'onInsert'),
+          onChange: any<void Function(int)>(named: 'onChange'),
+          onRemove: any<void Function(int)>(named: 'onRemove'),
+          onUpdate: any<void Function()>(named: 'onUpdate'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onNew =
+            invocation.namedArguments[#onNewEvent] as void Function()?;
+        onNew?.call();
+        return timeline;
+      });
+
+      // Provide one new event in the live timeline
+      final newEvent = MockEvent();
+      when(() => newEvent.eventId).thenReturn('e1');
+      when(() => newEvent.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+      when(() => newEvent.senderId).thenReturn('@other:server');
+      when(() => newEvent.attachmentMimetype).thenReturn('');
+      when(() => newEvent.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => timeline.events).thenReturn(<Event>[newEvent]);
+
+      when(() => processor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: journalDb)).thenAnswer((_) async {});
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+          )).thenAnswer((_) async {});
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+
+      // Allow liveScan debounce to elapse
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      verify(() => roomManager.hydrateRoomSnapshot(client: client)).called(1);
+      verify(() => processor.process(event: newEvent, journalDb: journalDb))
+          .called(1);
+      final metrics = consumer.metricsSnapshot();
+      expect(metrics['processed'], greaterThanOrEqualTo(1));
     });
   });
 }

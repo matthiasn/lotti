@@ -55,6 +55,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   String? _lastProcessedEventId;
   final List<Event> _pending = <Event>[];
   Timer? _flushTimer;
+  Timer? _liveScanTimer;
   String? _pendingMarkerEventId;
   Timer? _markerDebounceTimer;
   static const Duration _flushInterval = Duration(milliseconds: 150);
@@ -82,7 +83,10 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   @override
   Future<void> start() async {
-    // Attach-time bounded catch-up, then stream.
+    // Ensure room snapshot exists, then catch up and attach streaming.
+    if (_roomManager.currentRoom == null) {
+      await _roomManager.hydrateRoomSnapshot(client: _client);
+    }
     await _attachCatchUp();
     await _sub?.cancel();
     _sub = _client.onTimelineEvent.stream.listen((event) {
@@ -90,6 +94,29 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (roomId == null || event.roomId != roomId) return;
       _enqueue(event);
     });
+
+    // Also attach live timeline listeners to proactively scan in case the
+    // client-level stream is delayed or suppressed on some platforms.
+    final room = _roomManager.currentRoom;
+    if (room != null) {
+      try {
+        final tl = await room.getTimeline(
+          onNewEvent: _scheduleLiveScan,
+          onInsert: (_) => _scheduleLiveScan(),
+          onChange: (_) => _scheduleLiveScan(),
+          onRemove: (_) => _scheduleLiveScan(),
+          onUpdate: _scheduleLiveScan,
+        );
+        _liveTimeline = tl;
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'attach.liveTimeline',
+          stackTrace: st,
+        );
+      }
+    }
     _loggingService.captureEvent(
       'MatrixStreamConsumer started',
       domain: 'MATRIX_SYNC_V2',
@@ -102,6 +129,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     await _sub?.cancel();
     _sub = null;
     _flushTimer?.cancel();
+    _liveScanTimer?.cancel();
     _markerDebounceTimer?.cancel();
     _loggingService.captureEvent(
       'MatrixStreamConsumer disposed',
@@ -154,6 +182,43 @@ class MatrixStreamConsumer implements SyncPipeline {
         e,
         domain: 'MATRIX_SYNC_V2',
         subDomain: 'catchup',
+        stackTrace: st,
+      );
+    }
+  }
+
+  Timeline? _liveTimeline;
+
+  void _scheduleLiveScan() {
+    _liveScanTimer?.cancel();
+    _liveScanTimer = Timer(const Duration(milliseconds: 120), () {
+      unawaited(_scanLiveTimeline());
+    });
+  }
+
+  Future<void> _scanLiveTimeline() async {
+    final tl = _liveTimeline;
+    if (tl == null) return;
+    try {
+      final events = List<Event>.from(tl.events)
+        ..sort(TimelineEventOrdering.compare);
+      final idx = _findLastIndex(events, _lastProcessedEventId);
+      final slice = idx >= 0 ? events.sublist(idx + 1) : events;
+      if (slice.isNotEmpty) {
+        await _processOrdered(slice);
+        if (_collectMetrics) {
+          _loggingService.captureEvent(
+            'v2 liveScan processed=${slice.length} latest=${_lastProcessedEventId ?? 'null'}',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'liveScan',
+          );
+        }
+      }
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'liveScan',
         stackTrace: st,
       );
     }
