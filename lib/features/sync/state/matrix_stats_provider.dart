@@ -29,8 +29,7 @@ class MatrixStatsController extends _$MatrixStatsController {
 
 /// Typed V2 metrics provider. Use [ref.invalidate(matrixV2MetricsFutureProvider)]
 /// to trigger a refresh in the UI.
-final matrixV2MetricsFutureProvider =
-    FutureProvider<V2Metrics?>((ref) async {
+final matrixV2MetricsFutureProvider = FutureProvider<V2Metrics?>((ref) async {
   final svc = ref.watch(matrixServiceProvider);
   return svc.getV2Metrics();
 });

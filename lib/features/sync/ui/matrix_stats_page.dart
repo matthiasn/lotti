@@ -123,85 +123,86 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
             const SizedBox(height: 16),
             // V2 metrics via typed provider
             ref.watch(matrixV2MetricsFutureProvider).when(
-              data: (metrics) {
-                final v2 = metrics?.toMap();
-                if (v2 == null || v2.isEmpty) {
-                  return Row(
-                    children: [
-                      Text(context.messages.settingsMatrixV2MetricsNoData),
-                      const Spacer(),
-                      IconButton(
-                        key: const Key('matrixStats.refresh'),
-                        tooltip: context.messages.settingsMatrixRefresh,
-                        icon: const Icon(Icons.refresh_rounded),
-                        onPressed: _refreshDiagnostics,
-                      ),
-                    ],
-                  );
-                }
+                  data: (metrics) {
+                    final v2 = metrics?.toMap();
+                    if (v2 == null || v2.isEmpty) {
+                      return Row(
+                        children: [
+                          Text(context.messages.settingsMatrixV2MetricsNoData),
+                          const Spacer(),
+                          IconButton(
+                            key: const Key('matrixStats.refresh'),
+                            tooltip: context.messages.settingsMatrixRefresh,
+                            icon: const Icon(Icons.refresh_rounded),
+                            onPressed: _refreshDiagnostics,
+                          ),
+                        ],
+                      );
+                    }
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          context.messages.settingsMatrixV2Metrics,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '${context.messages.settingsMatrixLastUpdated} ${_formatTime(_lastUpdated)}',
-                          style:
-                              const TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          key: const Key('matrixStats.refresh'),
-                          tooltip: context.messages.settingsMatrixRefresh,
-                          icon: const Icon(Icons.refresh_rounded),
-                          onPressed: _refreshDiagnostics,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    DataTable(
-                      columns: <DataColumn>[
-                        DataColumn(
-                          label: Expanded(
-                            child: Text(
-                              context.messages.settingsMatrixMetric,
+                        Row(
+                          children: [
+                            Text(
+                              context.messages.settingsMatrixV2Metrics,
                               style:
-                                  const TextStyle(fontStyle: FontStyle.italic),
+                                  const TextStyle(fontWeight: FontWeight.bold),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            Text(
+                              '${context.messages.settingsMatrixLastUpdated} ${_formatTime(_lastUpdated)}',
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              key: const Key('matrixStats.refresh'),
+                              tooltip: context.messages.settingsMatrixRefresh,
+                              icon: const Icon(Icons.refresh_rounded),
+                              onPressed: _refreshDiagnostics,
+                            ),
+                          ],
                         ),
-                        DataColumn(
-                          label: Expanded(
-                            child: Text(
-                              context.messages.settingsMatrixValue,
-                              style:
-                                  const TextStyle(fontStyle: FontStyle.italic),
+                        const SizedBox(height: 8),
+                        DataTable(
+                          columns: <DataColumn>[
+                            DataColumn(
+                              label: Expanded(
+                                child: Text(
+                                  context.messages.settingsMatrixMetric,
+                                  style: const TextStyle(
+                                      fontStyle: FontStyle.italic),
+                                ),
+                              ),
                             ),
-                          ),
+                            DataColumn(
+                              label: Expanded(
+                                child: Text(
+                                  context.messages.settingsMatrixValue,
+                                  style: const TextStyle(
+                                      fontStyle: FontStyle.italic),
+                                ),
+                              ),
+                            ),
+                          ],
+                          rows: <DataRow>[
+                            for (final entry in v2.entries)
+                              DataRow(
+                                cells: <DataCell>[
+                                  DataCell(Text(entry.key)),
+                                  DataCell(Text(entry.value.toString())),
+                                ],
+                              ),
+                          ],
                         ),
                       ],
-                      rows: <DataRow>[
-                        for (final entry in v2.entries)
-                          DataRow(
-                            cells: <DataCell>[
-                              DataCell(Text(entry.key)),
-                              DataCell(Text(entry.value.toString())),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ],
-                );
-              },
-              loading: () => const CircularProgressIndicator(),
-              error: (_, __) => const CircularProgressIndicator(),
-            ),
+                    );
+                  },
+                  loading: () => const CircularProgressIndicator(),
+                  error: (_, __) => const CircularProgressIndicator(),
+                ),
           ],
         );
       },

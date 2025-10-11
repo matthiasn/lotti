@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/save_attachment.dart';
+import 'package:lotti/features/sync/matrix/sdk_pagination_compat.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -39,6 +40,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required SyncReadMarkerService readMarkerService,
     required Directory documentsDirectory,
     bool collectMetrics = false,
+    DateTime Function()? now,
   })  : _sessionManager = sessionManager,
         _roomManager = roomManager,
         _loggingService = loggingService,
@@ -47,7 +49,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         _eventProcessor = eventProcessor,
         _readMarkerService = readMarkerService,
         _documentsDirectory = documentsDirectory,
-        _collectMetrics = collectMetrics;
+        _collectMetrics = collectMetrics,
+        _now = now ?? DateTime.now;
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
@@ -58,6 +61,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final SyncReadMarkerService _readMarkerService;
   final Directory _documentsDirectory;
   final bool _collectMetrics;
+  final DateTime Function() _now;
 
   StreamSubscription<Event>? _sub;
   bool _initialized = false;
@@ -199,32 +203,54 @@ class MatrixStreamConsumer implements SyncPipeline {
         );
         return;
       }
+      // First try SDK pagination/backfill so we don't need to rebuild giant
+      // snapshots for large/high-traffic rooms. Fallback to limit-doubling.
       var limit = 200;
-      while (true) {
-        final snapshot = await room.getTimeline(limit: limit);
-        try {
-          final events = List<Event>.from(snapshot.events)
-            ..sort(TimelineEventOrdering.compare);
-          final idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
-          final reachedStart =
-              events.length < limit; // room has fewer than limit
-          final reachedCap = limit >= _catchupMaxLookback;
-          if (idx >= 0 || reachedStart || reachedCap) {
-            final slice = idx >= 0 ? events.sublist(idx + 1) : events;
-            if (slice.isNotEmpty) {
-              if (_collectMetrics) _metricCatchupBatches++;
-              await _processOrdered(slice);
-            }
-            break; // done
-          } else {
+      final snapshot = await room.getTimeline(limit: limit);
+      try {
+        // Attempt SDK backfill (best-effort across SDK versions).
+        final attempted = await SdkPaginationCompat.backfillUntilContains(
+          timeline: snapshot,
+          lastEventId: _lastProcessedEventId,
+          pageSize: 200,
+          maxPages: 20,
+          logging: _loggingService,
+        );
+        final events = List<Event>.from(snapshot.events)
+          ..sort(TimelineEventOrdering.compare);
+        var idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
+        if (idx < 0 && !attempted) {
+          // If SDK backfill wasn't possible, fall back to snapshot escalation.
+          while (true) {
+            final reachedStart = events.length < limit;
+            final reachedCap = limit >= _catchupMaxLookback;
+            if (idx >= 0 || reachedStart || reachedCap) break;
             limit = math.min(limit * 2, _catchupMaxLookback);
+            final next = await room.getTimeline(limit: limit);
+            try {
+              final nextEvents = List<Event>.from(next.events)
+                ..sort(TimelineEventOrdering.compare);
+              events
+                ..clear()
+                ..addAll(nextEvents);
+              idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
+            } finally {
+              try {
+                next.cancelSubscriptions();
+              } catch (_) {}
+            }
           }
-        } finally {
-          // Ensure we always release the snapshot subscription, even on error.
-          try {
-            snapshot.cancelSubscriptions();
-          } catch (_) {}
         }
+
+        final slice = idx >= 0 ? events.sublist(idx + 1) : events;
+        if (slice.isNotEmpty) {
+          if (_collectMetrics) _metricCatchupBatches++;
+          await _processOrdered(slice);
+        }
+      } finally {
+        try {
+          snapshot.cancelSubscriptions();
+        } catch (_) {}
       }
     } catch (e, st) {
       _loggingService.captureException(
@@ -298,7 +324,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     if (room == null || ordered.isEmpty) return;
 
     // Circuit breaker: if open, skip processing and schedule a follow-up scan.
-    final nowStart = DateTime.now();
+    final nowStart = _now();
     final openUntil = _circuitOpenUntil;
     if (openUntil != null && nowStart.isBefore(openUntil)) {
       _liveScanTimer?.cancel();
@@ -451,7 +477,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           subDomain: 'circuit',
         );
       }
-      final now = DateTime.now();
+      final now = _now();
       final delay = earliestNextDue != null && earliestNextDue.isAfter(now)
           ? earliestNextDue.difference(now)
           : const Duration(milliseconds: 200);
@@ -511,12 +537,12 @@ class MatrixStreamConsumer implements SyncPipeline {
   @visibleForTesting
   bool debugCircuitOpen() {
     final openUntil = _circuitOpenUntil;
-    return openUntil != null && DateTime.now().isBefore(openUntil);
+    return openUntil != null && _now().isBefore(openUntil);
   }
 
   void _pruneRetryState() {
     if (_retryState.isEmpty) return;
-    final now = DateTime.now();
+    final now = _now();
     // Remove entries whose nextDue is far in the past (stale),
     // and enforce a max size by dropping oldest nextDue entries.
     _retryState

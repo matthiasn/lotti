@@ -416,9 +416,6 @@ class MatrixService {
 
   Future<Map<String, dynamic>> getDiagnosticInfo() async {
     final diagnostics = await _syncEngine.diagnostics(log: false);
-    if (_v2Pipeline != null) {
-      diagnostics['v2Metrics'] = _v2Pipeline!.metricsSnapshot();
-    }
     _loggingService.captureEvent(
       'Sync diagnostics: ${json.encode(diagnostics)}',
       domain: 'MATRIX_SERVICE',

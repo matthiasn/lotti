@@ -85,3 +85,42 @@ Typed Diagnostics
 
 Follow-ups
 - Consider a small resilience tweak in `FileSyncJournalEntityLoader` to re-read once if a JSON decode fails due to emptiness, though the atomic write eliminates the observed race.
+
+Housekeeping
+- Fixed documentation year typos (20025 → 2025) in implementation plan files.
+- Updated progress text to reflect async rename and temp/backup cleanup strategy.
+
+Next Steps
+
+Implementation
+- Catch-up pagination (SDK tokens): replace doubling snapshot limit with SDK pagination/backfill tokens for large rooms. Keep current logic as fallback.
+- Metrics cadence + flags: add a dedicated `enable_sync_v2_metrics` config flag (or sample logs every N flushes). Add a UI toggle in Matrix Stats to enable/disable V2 metrics.
+- Circuit breaker/TTL knobs: read thresholds (failure count, cooldown, retry TTL, retry size cap) from config to allow tuning without code changes.
+
+Testing
+- Fake-clock TTL tests: inject a clock into the consumer (or add a test seam) to make TTL pruning fully deterministic.
+- Remove internal SDK dependency: replace test import of `matrix/src/utils/cached_stream_controller.dart` with a tiny local test controller.
+- Integration coverage: add an integration test that verifies monotonic marker under real event flow and that the breaker pauses/resumes as expected.
+- UI tests: add test IDs for metrics rows (avoid relying on localized text). Add tests for metrics gating (on/off) and typed metrics rendering only.
+
+Docs
+- Progress log: add a short “Rollout and Observability” section (how to enable V2, where to see metrics).
+- Architecture notes: document tie-breaker semantics in `TimelineEventOrdering` (ID lexicographic at equal timestamps). Note circuit breaker/TTL defaults and tuning guidance.
+- Consistency: confirm all docs reference async rename (and removal of `renameSync`) and reflect Windows-safe fallback cleanup.
+
+CI
+- Add a quick typed metrics widget test job: run only UI/widget tests touching Matrix Stats to catch regressions fast.
+- Consider a nightly job: run integration with degraded network + pagination (once implemented) to detect edge cases.
+
+Polish
+- Typed diagnostics adoption: move Matrix Stats fully to typed diagnostics and remove fallback map path after a deprecation window.
+- Observability: keep the one-off warning when messages are dropped at retry cap (done) and consider surfacing a small “dropped” counter in the UI.
+
+Housekeeping
+- Remove debug-only helpers (`debugRetryStateSize`, `debugCircuitOpen`) once the suite stabilizes.
+- Add a short README snippet on enabling V2 (feature flag and metrics gating).
+
+Proposed Starting Tasks
+- Add SDK pagination to catch-up.
+- Inject a clock into the consumer and tighten TTL tests.
+- Switch Matrix Stats to typed-only diagnostics and update tests accordingly.

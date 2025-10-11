@@ -1077,7 +1077,7 @@ void main() {
     expect(consumer.debugRetryStateSize(), lessThanOrEqualTo(2000));
   });
 
-  test('retry TTL pruning removes stale entries', () async {
+  test('retry TTL pruning removes stale entries (fake clock)', () async {
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
     final logger = MockLoggingService();
@@ -1131,6 +1131,8 @@ void main() {
             processor.process(event: any(named: 'event'), journalDb: journalDb))
         .thenThrow(Exception('temporary fail'));
 
+    // Inject a controllable clock to make TTL deterministic.
+    var now = DateTime(2025);
     final consumer = MatrixStreamConsumer(
       sessionManager: session,
       roomManager: roomManager,
@@ -1141,6 +1143,7 @@ void main() {
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
+      now: () => now,
     );
 
     await consumer.initialize();
@@ -1149,11 +1152,11 @@ void main() {
     final before = consumer.debugRetryStateSize();
     expect(before, greaterThan(0));
 
-    // Wait for a moment and trigger another pass to prune TTL (entries older than TTL are removed).
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+    // Advance fake clock beyond TTL and trigger another pass to prune.
+    now = now.add(const Duration(minutes: 11));
     // Trigger scan by injecting a no-op timeline
     when(() => timeline.events).thenReturn(<Event>[]);
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+    await Future<void>.delayed(const Duration(milliseconds: 250));
     final after = consumer.debugRetryStateSize();
     expect(after, lessThanOrEqualTo(before));
   });
