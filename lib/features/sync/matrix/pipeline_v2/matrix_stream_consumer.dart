@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
+import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -83,24 +84,11 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   // Failure retry tracking to avoid permanent blockage.
   static const int _maxRetriesPerEvent = 5;
-  static const Duration _retryBaseDelay = Duration(milliseconds: 200);
-  static const Duration _retryMaxDelay = Duration(seconds: 10);
-  static const double _retryJitter = 0.2; // +/- 20%
 
   final Map<String, _RetryInfo> _retryState = <String, _RetryInfo>{};
 
-  Duration _computeBackoff(int attempts) {
-    final baseMs = _retryBaseDelay.inMilliseconds;
-    final maxMs = _retryMaxDelay.inMilliseconds;
-    final raw = baseMs * math.pow(2, attempts);
-    final clamped = raw.clamp(baseMs.toDouble(), maxMs.toDouble());
-    // Jitter: +/- _retryJitter
-    final jitterFactor =
-        1 + (_retryJitter * (math.Random().nextDouble() * 2 - 1));
-    final jittered =
-        (clamped * jitterFactor).clamp(baseMs.toDouble(), maxMs.toDouble());
-    return Duration(milliseconds: jittered.round());
-  }
+  Duration _computeBackoff(int attempts) =>
+      tu.computeExponentialBackoff(attempts);
 
   Client get _client => _sessionManager.client;
 
@@ -206,7 +194,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         final snapshot = await room.getTimeline(limit: limit);
         final events = List<Event>.from(snapshot.events)
           ..sort(TimelineEventOrdering.compare);
-        final idx = _findLastIndex(events, _lastProcessedEventId);
+        final idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
         final reachedStart = events.length < limit; // room has fewer than limit
         final reachedCap = limit >= _catchupMaxLookback;
         if (idx >= 0 || reachedStart || reachedCap) {
@@ -247,7 +235,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     try {
       final events = List<Event>.from(tl.events)
         ..sort(TimelineEventOrdering.compare);
-      final idx = _findLastIndex(events, _lastProcessedEventId);
+      final idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
       final slice = idx >= 0 ? events.sublist(idx + 1) : events;
       if (slice.isNotEmpty) {
         await _processOrdered(slice);
@@ -269,13 +257,11 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
   }
 
-  int _findLastIndex(List<Event> ordered, String? id) {
-    if (id == null) return -1;
-    for (var i = ordered.length - 1; i >= 0; i--) {
-      if (ordered[i].eventId == id) return i;
-    }
-    return -1;
-  }
+  // Internal helper retained for compatibility (no longer used); kept to avoid
+  // large diffs while tests migrate. Delegates to utils.
+  // ignore: unused_element
+  int _findLastIndex(List<Event> ordered, String? id) =>
+      tu.findLastIndexByEventId(ordered, id);
 
   Future<void> _flush() async {
     if (_pending.isEmpty) return;
@@ -283,11 +269,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     _pending.clear();
     queue.sort(TimelineEventOrdering.compare);
     // Deduplicate by id while preserving chronological order.
-    final seen = <String>{};
-    final ordered = <Event>[
-      for (final e in queue)
-        if (seen.add(e.eventId)) e,
-    ];
+    final ordered = tu.dedupEventsByIdPreserveOrder(queue);
     await _processOrdered(ordered);
     if (_collectMetrics) {
       _metricFlushes++;
@@ -305,8 +287,7 @@ class MatrixStreamConsumer implements SyncPipeline {
 
     // First pass: prefetch attachments for remote events.
     for (final e in ordered) {
-      final isRemote = e.senderId != _client.userID;
-      if (isRemote && e.attachmentMimetype.isNotEmpty) {
+      if (tu.shouldPrefetchAttachment(e, _client.userID)) {
         await saveAttachment(
           e,
           loggingService: _loggingService,
