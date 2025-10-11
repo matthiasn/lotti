@@ -37,6 +37,7 @@ jobs:
         with:
           working-directory: ./integration_test
           run: |
+            chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_v2_tests.sh
             ./setup_toxiproxy_docker.sh
             ./run_matrix_v2_tests.sh
 
@@ -71,5 +72,6 @@ jobs:
         with:
           working-directory: ./integration_test
           run: |
+            chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_v2_tests.sh
             ./setup_toxiproxy_docker.sh
             ./run_matrix_v2_tests.sh
