@@ -53,12 +53,21 @@ that keeps the pipeline testable and observable.
    refresh.
 2. `ClientRunner` serialises work; `UserActivityGate` blocks processing while
    the user is actively interacting with the app.
-3. `processNewTimelineEvents(...)` fetches the relevant timeline slice, calls
-   `SyncEventProcessor.process(...)`, saves attachments (via
-   `save_attachment.dart`), and updates read markers through
-   `SyncReadMarkerService`.
-4. The listener records the last processed event ID so a fresh session can
-   resume from the correct position.
+3. `processNewTimelineEvents(...)` resolves the last read Matrix event ID,
+   pulls the current timeline events (preferring the listener’s in-memory
+   snapshot), orders them **oldest → newest** while preserving the SDK’s
+   sequence for equal timestamps, and filters out everything that was already
+   processed. For each remote event that is newer than the stored ID we:
+   - download attachments via `save_attachment.dart` before handing the payload
+     to `SyncEventProcessor.process(...)`;
+   - skip self-emitted events to avoid re-ingesting local changes;
+   - track failures and keep retry counts via `_maxTimelineProcessingRetries`;
+   - remember the newest successfully processed event so we can advance the read
+     marker once at the end of the batch, then queue a short follow-up drain to
+     catch any events that landed while we were processing.
+4. After the loop the listener persists the newest processed Matrix event ID
+   through `SyncReadMarkerService`, ensuring subsequent sessions resume from the
+   same timeline position without re-processing older messages.
 
 ### Documentation & Artefacts
 

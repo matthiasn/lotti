@@ -15,8 +15,9 @@ class SyncReadMarkerService {
 
   Future<void> updateReadMarker({
     required Client client,
-    required Timeline timeline,
+    required Room room,
     required String eventId,
+    Timeline? timeline,
   }) async {
     await setLastReadMatrixEventId(
       eventId,
@@ -26,8 +27,18 @@ class SyncReadMarkerService {
     final loginState = client.onLoginStateChanged.value;
     if (loginState == LoginState.loggedIn) {
       try {
-        await timeline.setReadMarker(eventId: eventId);
+        // Prefer room-level API to avoid coupling to a snapshot timeline.
+        await room.setReadMarker(eventId);
       } catch (error, stackTrace) {
+        // Fallback to timeline-level API for compatibility if provided.
+        if (timeline != null) {
+          try {
+            await timeline.setReadMarker(eventId: eventId);
+            return;
+          } catch (_) {
+            // Fall through to log the original error below.
+          }
+        }
         _loggingService.captureException(
           error,
           domain: 'MATRIX_SERVICE',

@@ -10,8 +10,12 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart'
-    show listenToTimelineEvents, processNewTimelineEvents;
+    show
+        listenToTimelineEvents,
+        processNewTimelineEvents,
+        processTimelineEventsIncremental;
 import 'package:lotti/features/sync/matrix/timeline_context.dart';
+import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -40,6 +44,12 @@ class MatrixTimelineListener implements TimelineContext {
     _clientRunner = ClientRunner<void>(
       callback: (_) async {
         await _activityGate.waitUntilIdle();
+        final drained = _drainPendingEvents();
+        if (drained.isNotEmpty) {
+          await _processPendingEvents(drained);
+          return;
+        }
+
         await processNewTimelineEvents(
           listener: this,
           journalDb: _journalDb,
@@ -67,6 +77,11 @@ class MatrixTimelineListener implements TimelineContext {
   late final ClientRunner<void> _clientRunner;
   Timeline? _timeline;
   String? _lastReadEventContextId;
+  StreamSubscription<Event>? _timelineEventSubscription;
+  final List<Event> _pendingEvents = <Event>[];
+  String? _pendingMarkerEventId;
+  Timer? _markerDebounceTimer;
+  static const Duration _markerDebounce = Duration(milliseconds: 200);
 
   @override
   Client get client => _sessionManager.client;
@@ -98,6 +113,19 @@ class MatrixTimelineListener implements TimelineContext {
   /// Attaches the timeline listener when a sync room is available.
   Future<void> start() async {
     await listenToTimelineEvents(listener: this);
+    // Also listen to the client's decrypted timeline events to schedule a
+    // refresh after the SDK has fully applied the update. This avoids racing
+    // the timeline's own callbacks which may fire before its event list is
+    // updated.
+    await _timelineEventSubscription?.cancel();
+    _timelineEventSubscription =
+        client.onTimelineEvent.stream.listen((Event event) {
+      final roomId = _roomManager.currentRoomId;
+      if (roomId != null && event.roomId == roomId) {
+        _pendingEvents.add(event);
+        enqueueTimelineRefresh();
+      }
+    });
   }
 
   /// Schedules a timeline refresh through the internal runner.
@@ -109,6 +137,8 @@ class MatrixTimelineListener implements TimelineContext {
   /// Releases resources and terminates active subscriptions.
   Future<void> dispose() async {
     _clientRunner.close();
+    await _timelineEventSubscription?.cancel();
+    _markerDebounceTimer?.cancel();
     final timeline = _timeline;
     if (timeline != null) {
       timeline.cancelSubscriptions();
@@ -121,5 +151,63 @@ class MatrixTimelineListener implements TimelineContext {
   @override
   set lastReadEventContextId(String? value) {
     _lastReadEventContextId = value;
+  }
+
+  // Drain and clear pending onTimelineEvent buffer.
+  List<Event> _drainPendingEvents() {
+    if (_pendingEvents.isEmpty) {
+      return const <Event>[];
+    }
+    final copy = List<Event>.from(_pendingEvents);
+    _pendingEvents.clear();
+    return copy;
+  }
+
+  Future<void> _processPendingEvents(List<Event> events) async {
+    // Sort chronologically (oldest first) and dedupe by id
+    final seen = <String>{};
+    events.sort(TimelineEventOrdering.compare);
+    final unique = <Event>[
+      for (final e in events)
+        if (seen.add(e.eventId)) e,
+    ];
+
+    final latestId = await processTimelineEventsIncremental(
+      listener: this,
+      events: unique,
+      journalDb: _journalDb,
+      loggingService: _loggingService,
+      readMarkerService: _readMarkerService,
+      eventProcessor: _eventProcessor,
+      documentsDirectory: _documentsDirectory,
+      failureCounts: _eventFailureCounts,
+    );
+
+    if (latestId != null) {
+      lastReadEventContextId = latestId;
+      _pendingMarkerEventId = latestId;
+      _scheduleMarkerFlush();
+    }
+  }
+
+  void _scheduleMarkerFlush() {
+    _markerDebounceTimer?.cancel();
+    _markerDebounceTimer = Timer(_markerDebounce, _flushReadMarker);
+  }
+
+  Future<void> _flushReadMarker() async {
+    final id = _pendingMarkerEventId;
+    final timeline = _timeline;
+    final room = _roomManager.currentRoom;
+    if (id == null || room == null) {
+      return;
+    }
+    _pendingMarkerEventId = null;
+    await _readMarkerService.updateReadMarker(
+      client: client,
+      room: room,
+      eventId: id,
+      timeline: timeline,
+    );
   }
 }
