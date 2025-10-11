@@ -45,7 +45,8 @@ List<_IndexedEvent> _buildSortedIndexedEvents(Timeline tl) {
       final t = TimelineEventOrdering.timestamp(a.event)
           .compareTo(TimelineEventOrdering.timestamp(b.event));
       if (t != 0) return t;
-      // For ties, prefer higher original indices to preserve SDK ordering.
+      // For ties, prefer higher original indices to preserve SDK ordering so
+      // newly appended events are considered after previously-read items.
       return b.index.compareTo(a.index);
     });
 }
@@ -153,20 +154,14 @@ class TimelineDrainer {
         );
         await Future<void>.delayed(delay);
         // Re-evaluate from the same live timeline instance.
-        final evsIndexed = _buildSortedIndexedEvents(tl);
-        final recalculated = <Event>[];
-        for (var i = 0; i < evsIndexed.length; i++) {
-          final event = evsIndexed[i].event;
-          final eventId = event.eventId;
-          if (lastReadPosition >= 0) {
-            if (i <= lastReadPosition) {
-              continue;
-            }
-          } else if (eventId == lastReadEventContextId) {
-            continue;
-          }
-          recalculated.add(event);
-        }
+        final newSortedEvents = _buildSortedIndexedEvents(tl);
+        final newLastReadPosition =
+            _findLastReadPosition(newSortedEvents, lastReadEventContextId);
+        final recalculated = _collectNewEvents(
+          newSortedEvents,
+          newLastReadPosition,
+          lastReadEventContextId,
+        );
         if (recalculated.isNotEmpty) {
           newEvents = recalculated;
           break;

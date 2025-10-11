@@ -192,12 +192,14 @@ class MatrixTimelineListener implements TimelineContext {
     // allocations for very large bursts.
     var start = 0;
     String? latestIdOverall;
+    // Deduplicate across the entire pending set so duplicates split across
+    // batch boundaries are still processed exactly once.
+    final seen = <String>{};
     while (start < events.length) {
       final end = (start + _maxPendingBatchSize).clamp(0, events.length);
       final window = events.sublist(start, end);
       start = end;
 
-      final seen = <String>{};
       final unique = <Event>[
         for (final e in window)
           if (seen.add(e.eventId)) e,

@@ -211,6 +211,24 @@ class OutboxService {
   static const int _maxDrainPasses = 20;
   static const Duration _postDrainSettle = Duration(milliseconds: 250);
 
+  Future<bool> _drainOutbox() async {
+    for (var pass = 0; pass < _maxDrainPasses; pass++) {
+      final result = await _processor.processQueue();
+      if (!result.shouldSchedule) {
+        return true; // drained without needing a scheduled retry
+      }
+      final delay = result.nextDelay ?? Duration.zero;
+      if (delay == Duration.zero) {
+        // Immediate continue to the next item.
+        continue;
+      }
+      // Non-zero delay indicates retry/error backoff; schedule and exit.
+      await enqueueNextSendRequest(delay: delay);
+      return false; // scheduled
+    }
+    return true;
+  }
+
   Future<void> sendNext() async {
     try {
       final enableMatrix = await _journalDb.getConfigFlag(
@@ -223,35 +241,12 @@ class OutboxService {
 
       // Drain the outbox in a single runner callback to avoid leaving the
       // latest item unsent (which can manifest as receivers being one behind).
-      for (var pass = 0; pass < _maxDrainPasses; pass++) {
-        final result = await _processor.processQueue();
-        if (!result.shouldSchedule) {
-          break;
-        }
-        final delay = result.nextDelay ?? Duration.zero;
-        if (delay == Duration.zero) {
-          // Immediate continue to the next item.
-          continue;
-        }
-        // Non-zero delay indicates retry/error backoff; schedule and exit.
-        await enqueueNextSendRequest(delay: delay);
-        return;
-      }
+      final firstDrained = await _drainOutbox();
+      if (!firstDrained) return;
 
       // Allow recent enqueues to settle then attempt one more drain.
       await Future<void>.delayed(_postDrainSettle);
-      for (var pass = 0; pass < _maxDrainPasses; pass++) {
-        final result = await _processor.processQueue();
-        if (!result.shouldSchedule) {
-          break;
-        }
-        final delay = result.nextDelay ?? Duration.zero;
-        if (delay == Duration.zero) {
-          continue;
-        }
-        await enqueueNextSendRequest(delay: delay);
-        return;
-      }
+      await _drainOutbox();
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
