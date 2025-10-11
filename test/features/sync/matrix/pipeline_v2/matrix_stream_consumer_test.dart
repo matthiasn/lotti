@@ -798,4 +798,117 @@ void main() {
           .called(greaterThanOrEqualTo(1));
     });
   });
+
+  test('monotonic marker across interleaved older live scan', () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final catchupTimeline = MockTimeline();
+    final liveTimeline = MockTimeline();
+    final onTimelineController = CachedStreamController<Event>();
+
+    addTearDown(onTimelineController.close);
+
+    when(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logger.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => null);
+
+    // Catch-up initial older event A (ts=1)
+    final a = MockEvent();
+    when(() => a.eventId).thenReturn('A');
+    when(() => a.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+    when(() => a.senderId).thenReturn('@other:server');
+    when(() => a.attachmentMimetype).thenReturn('');
+    when(() => a.content)
+        .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+    when(() => catchupTimeline.events).thenReturn(<Event>[a]);
+    when(() => catchupTimeline.cancelSubscriptions()).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => catchupTimeline);
+
+    // Live timeline attach
+    void Function()? onUpdateCb;
+    when(
+      () => room.getTimeline(
+        limit: any<int>(named: 'limit'),
+        onNewEvent: any<void Function()>(named: 'onNewEvent'),
+        onInsert: any<void Function(int)>(named: 'onInsert'),
+        onChange: any<void Function(int)>(named: 'onChange'),
+        onRemove: any<void Function(int)>(named: 'onRemove'),
+        onUpdate: any<void Function()>(named: 'onUpdate'),
+      ),
+    ).thenAnswer((invocation) async {
+      onUpdateCb = invocation.namedArguments[#onUpdate] as void Function()?;
+      return liveTimeline;
+    });
+    when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
+
+    when(() =>
+            processor.process(event: any(named: 'event'), journalDb: journalDb))
+        .thenAnswer((_) async {});
+    when(() => readMarker.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+        )).thenAnswer((_) async {});
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+    );
+
+    await consumer.initialize();
+    await consumer.start();
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+
+    // Inject newer live event B
+    final b = MockEvent();
+    when(() => b.eventId).thenReturn('B');
+    when(() => b.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+    when(() => b.senderId).thenReturn('@other:server');
+    when(() => b.attachmentMimetype).thenReturn('');
+    when(() => b.content)
+        .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+    onTimelineController.add(b);
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+
+    // Make live timeline contain only older A and trigger a scan
+    when(() => liveTimeline.events).thenReturn(<Event>[a]);
+    onUpdateCb?.call();
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+
+    // Ensure marker was not regressed to A
+    verifyNever(() => readMarker.updateReadMarker(
+          client: client,
+          room: room,
+          eventId: 'A',
+        ));
+  });
 }

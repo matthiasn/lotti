@@ -119,7 +119,7 @@ class MatrixService {
               eventProcessor: _eventProcessor,
               readMarkerService: _readMarkerService,
               documentsDirectory: documentsDirectory,
-              collectMetrics: true,
+              // Gate metrics by default to reduce log noise.
             )
           : null;
       _v2Pipeline = pipeline;

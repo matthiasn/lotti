@@ -61,6 +61,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   StreamSubscription<Event>? _sub;
   bool _initialized = false;
   String? _lastProcessedEventId;
+  num? _lastProcessedTs;
   final List<Event> _pending = <Event>[];
   Timer? _flushTimer;
   Timer? _liveScanTimer;
@@ -81,9 +82,17 @@ class MatrixStreamConsumer implements SyncPipeline {
   int _metricCatchupBatches = 0;
   int _metricSkippedByRetryLimit = 0;
   int _metricRetriesScheduled = 0;
+  // Circuit breaker counters
+  int _metricCircuitOpens = 0;
 
   // Failure retry tracking to avoid permanent blockage.
   static const int _maxRetriesPerEvent = 5;
+  static const Duration _retryTtl = Duration(minutes: 10);
+  static const int _retryMaxEntries = 2000;
+  static const int _circuitFailureThreshold = 50;
+  static const Duration _circuitCooldown = Duration(seconds: 30);
+  DateTime? _circuitOpenUntil;
+  int _consecutiveFailures = 0;
 
   final Map<String, _RetryInfo> _retryState = <String, _RetryInfo>{};
 
@@ -287,6 +296,18 @@ class MatrixStreamConsumer implements SyncPipeline {
     final room = _roomManager.currentRoom;
     if (room == null || ordered.isEmpty) return;
 
+    // Circuit breaker: if open, skip processing and schedule a follow-up scan.
+    final nowStart = DateTime.now();
+    final openUntil = _circuitOpenUntil;
+    if (openUntil != null && nowStart.isBefore(openUntil)) {
+      _liveScanTimer?.cancel();
+      final delay = openUntil.difference(nowStart);
+      _liveScanTimer = Timer(delay, () {
+        unawaited(_scanLiveTimeline());
+      });
+      return;
+    }
+
     // First pass: prefetch attachments for remote events.
     for (final e in ordered) {
       if (tu.shouldPrefetchAttachment(e, _client.userID)) {
@@ -304,6 +325,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     num? latestTs;
     var blockedByFailure = false;
     var hadFailure = false;
+    var batchFailures = 0;
     DateTime? earliestNextDue;
     for (final e in ordered) {
       final ts = TimelineEventOrdering.timestamp(e);
@@ -332,6 +354,11 @@ class MatrixStreamConsumer implements SyncPipeline {
         if (attempts >= _maxRetriesPerEvent) {
           treatAsHandled = true;
           _retryState.remove(id);
+          _loggingService.captureEvent(
+            'dropping after retry cap: $id (attempts=$attempts)',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'retry.cap',
+          );
           if (_collectMetrics) _metricSkippedByRetryLimit++;
         } else if (processedOk) {
           try {
@@ -342,6 +369,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           } catch (err, st) {
             processedOk = false;
             hadFailure = true;
+            batchFailures++;
             final nextAttempts = attempts + 1;
             final backoff = _computeBackoff(nextAttempts);
             final due = DateTime.now().add(backoff);
@@ -350,6 +378,11 @@ class MatrixStreamConsumer implements SyncPipeline {
               // and record metrics.
               _retryState.remove(id);
               treatAsHandled = true;
+              _loggingService.captureEvent(
+                'dropping after retry cap: $id (attempts=$nextAttempts)',
+                domain: 'MATRIX_SYNC_V2',
+                subDomain: 'retry.cap',
+              );
               if (_collectMetrics) _metricSkippedByRetryLimit++;
             } else {
               _retryState[id] = _RetryInfo(nextAttempts, due);
@@ -386,15 +419,37 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
     }
 
-    if (latestEventId != null) {
-      _lastProcessedEventId = latestEventId;
-      _pendingMarkerEventId = latestEventId;
-      _scheduleMarkerFlush(room);
+    if (latestEventId != null && latestTs != null) {
+      final shouldAdvance = _lastProcessedEventId == null ||
+          _lastProcessedTs == null ||
+          TimelineEventOrdering.isNewer(
+            candidateTimestamp: latestTs,
+            candidateEventId: latestEventId,
+            latestTimestamp: _lastProcessedTs,
+            latestEventId: _lastProcessedEventId,
+          );
+      if (shouldAdvance) {
+        _lastProcessedEventId = latestEventId;
+        _lastProcessedTs = latestTs;
+        _pendingMarkerEventId = latestEventId;
+        _scheduleMarkerFlush(room);
+        _consecutiveFailures = 0; // reset on successful advancement
+      }
     }
 
     // If we encountered retriable failures (e.g., attachments not yet
     // available), schedule a follow-up scan to pick them up shortly.
     if (hadFailure) {
+      _consecutiveFailures += batchFailures;
+      if (_consecutiveFailures >= _circuitFailureThreshold) {
+        _circuitOpenUntil = DateTime.now().add(_circuitCooldown);
+        if (_collectMetrics) _metricCircuitOpens++;
+        _loggingService.captureEvent(
+          'circuit open for ${_circuitCooldown.inSeconds}s (failures=$_consecutiveFailures)',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'circuit',
+        );
+      }
       final now = DateTime.now();
       final delay = earliestNextDue != null && earliestNextDue.isAfter(now)
           ? earliestNextDue.difference(now)
@@ -404,6 +459,9 @@ class MatrixStreamConsumer implements SyncPipeline {
         unawaited(_scanLiveTimeline());
       });
     }
+
+    // Prune retry state map to avoid unbounded growth.
+    _pruneRetryState();
   }
 
   Map<String, int> metricsSnapshot() => <String, int>{
@@ -415,6 +473,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         'catchupBatches': _metricCatchupBatches,
         'skippedByRetryLimit': _metricSkippedByRetryLimit,
         'retriesScheduled': _metricRetriesScheduled,
+        'circuitOpens': _metricCircuitOpens,
       };
 
   void _scheduleMarkerFlush(Room room) {
@@ -442,5 +501,21 @@ class MatrixStreamConsumer implements SyncPipeline {
       room: room,
       eventId: id,
     );
+  }
+
+  void _pruneRetryState() {
+    if (_retryState.isEmpty) return;
+    final now = DateTime.now();
+    // Remove entries whose nextDue is far in the past (stale),
+    // and enforce a max size by dropping oldest nextDue entries.
+    _retryState
+        .removeWhere((_, info) => now.difference(info.nextDue) > _retryTtl);
+    if (_retryState.length <= _retryMaxEntries) return;
+    final entries = _retryState.entries.toList()
+      ..sort((a, b) => a.value.nextDue.compareTo(b.value.nextDue));
+    final toRemove = _retryState.length - _retryMaxEntries;
+    for (var i = 0; i < toRemove; i++) {
+      _retryState.remove(entries[i].key);
+    }
   }
 }

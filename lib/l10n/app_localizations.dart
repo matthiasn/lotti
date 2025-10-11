@@ -3237,6 +3237,72 @@ abstract class AppLocalizations {
   /// **'Matrix Stats'**
   String get settingsMatrixStatsTitle;
 
+  /// No description provided for @configFlagEnableSyncV2.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Matrix Sync V2'**
+  String get configFlagEnableSyncV2;
+
+  /// No description provided for @configFlagEnableSyncV2Description.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Matrix sync pipeline V2 (requires app restart)'**
+  String get configFlagEnableSyncV2Description;
+
+  /// No description provided for @settingsMatrixSentMessagesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent messages:'**
+  String get settingsMatrixSentMessagesLabel;
+
+  /// No description provided for @settingsMatrixMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Type'**
+  String get settingsMatrixMessageType;
+
+  /// No description provided for @settingsMatrixCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get settingsMatrixCount;
+
+  /// No description provided for @settingsMatrixMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get settingsMatrixMetric;
+
+  /// No description provided for @settingsMatrixValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get settingsMatrixValue;
+
+  /// No description provided for @settingsMatrixV2Metrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync V2 Metrics'**
+  String get settingsMatrixV2Metrics;
+
+  /// No description provided for @settingsMatrixV2MetricsNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync V2 Metrics: no data'**
+  String get settingsMatrixV2MetricsNoData;
+
+  /// No description provided for @settingsMatrixLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated:'**
+  String get settingsMatrixLastUpdated;
+
+  /// No description provided for @settingsMatrixRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get settingsMatrixRefresh;
+
   /// No description provided for @settingsMatrixTitle.
   ///
   /// In en, this message translates to:

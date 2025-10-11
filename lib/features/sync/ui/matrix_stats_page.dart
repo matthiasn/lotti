@@ -86,23 +86,29 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sent messages: ${value.sentCount}'),
+            Row(
+              children: [
+                Text(context.messages.settingsMatrixSentMessagesLabel),
+                const SizedBox(width: 6),
+                Text('${value.sentCount}'),
+              ],
+            ),
             const SizedBox(height: 10),
             DataTable(
-              columns: const <DataColumn>[
+              columns: <DataColumn>[
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Message Type',
-                      style: TextStyle(fontStyle: FontStyle.italic),
+                      context.messages.settingsMatrixMessageType,
+                      style: const TextStyle(fontStyle: FontStyle.italic),
                     ),
                   ),
                 ),
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Count',
-                      style: TextStyle(fontStyle: FontStyle.italic),
+                      context.messages.settingsMatrixCount,
+                      style: const TextStyle(fontStyle: FontStyle.italic),
                     ),
                   ),
                 ),
@@ -128,10 +134,10 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                 if (v2 == null || v2.isEmpty) {
                   return Row(
                     children: [
-                      const Text('Sync V2 Metrics: no data'),
+                      Text(context.messages.settingsMatrixV2MetricsNoData),
                       const Spacer(),
                       IconButton(
-                        tooltip: 'Refresh',
+                        tooltip: context.messages.settingsMatrixRefresh,
                         icon: const Icon(Icons.refresh_rounded),
                         onPressed: _refreshDiagnostics,
                       ),
@@ -144,19 +150,19 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                   children: [
                     Row(
                       children: [
-                        const Text(
-                          'Sync V2 Metrics',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        Text(
+                          context.messages.settingsMatrixV2Metrics,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Last updated: ${_formatTime(_lastUpdated)}',
+                          '${context.messages.settingsMatrixLastUpdated} ${_formatTime(_lastUpdated)}',
                           style:
                               const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                         const Spacer(),
                         IconButton(
-                          tooltip: 'Refresh',
+                          tooltip: context.messages.settingsMatrixRefresh,
                           icon: const Icon(Icons.refresh_rounded),
                           onPressed: _refreshDiagnostics,
                         ),
@@ -164,20 +170,22 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                     ),
                     const SizedBox(height: 8),
                     DataTable(
-                      columns: const <DataColumn>[
+                      columns: <DataColumn>[
                         DataColumn(
                           label: Expanded(
                             child: Text(
-                              'Metric',
-                              style: TextStyle(fontStyle: FontStyle.italic),
+                              context.messages.settingsMatrixMetric,
+                              style:
+                                  const TextStyle(fontStyle: FontStyle.italic),
                             ),
                           ),
                         ),
                         DataColumn(
                           label: Expanded(
                             child: Text(
-                              'Value',
-                              style: TextStyle(fontStyle: FontStyle.italic),
+                              context.messages.settingsMatrixValue,
+                              style:
+                                  const TextStyle(fontStyle: FontStyle.italic),
                             ),
                           ),
                         ),

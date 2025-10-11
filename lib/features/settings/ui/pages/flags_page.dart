@@ -74,10 +74,7 @@ class _FlagsPageState extends State<FlagsPage> {
       case enableMatrixFlag:
         return context.messages.configFlagEnableMatrixDescription;
       case enableSyncV2Flag:
-        // TODO: replace with l10n key `configFlagEnableSyncV2Description`
-        // once added (e.g., `context.messages.configFlagEnableSyncV2Description`).
-        // Fallback to configured description until l10n exists.
-        return flag.description;
+        return context.messages.configFlagEnableSyncV2Description;
       case resendAttachments:
         return context.messages.configFlagResendAttachmentsDescription;
       case enableHabitsPageFlag:
@@ -107,10 +104,7 @@ class _FlagsPageState extends State<FlagsPage> {
       case enableMatrixFlag:
         return context.messages.configFlagEnableMatrix;
       case enableSyncV2Flag:
-        // TODO: replace with l10n key `configFlagEnableSyncV2`
-        // once added (e.g., `context.messages.configFlagEnableSyncV2`).
-        // Fallback title for the new flag without l10n for now.
-        return 'Enable Matrix Sync V2';
+        return context.messages.configFlagEnableSyncV2;
       case resendAttachments:
         return context.messages.configFlagResendAttachments;
       case enableHabitsPageFlag:
