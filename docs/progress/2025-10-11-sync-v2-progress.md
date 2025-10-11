@@ -124,3 +124,12 @@ Proposed Starting Tasks
 - Add SDK pagination to catch-up.
 - Inject a clock into the consumer and tighten TTL tests.
 - Switch Matrix Stats to typed-only diagnostics and update tests accordingly.
+
+Completed (since last update)
+- Tests: removed internal SDK dependency from tests by replacing CachedStreamController usage with standard StreamController and API seams.
+- Tests: added deterministic TTL pruning via injected clock; replaced debug helpers with metricsSnapshot fields and updated tests accordingly.
+- Consumer: added optional backfill seam and timing knobs (flush interval, batch size, marker debounce) to improve testability without changing prod defaults.
+- Catch-up: integrated SDK pagination/backfill path with graceful fallback; added tests for both the seam success path and fallback doubling.
+- Streaming: added tests for room ID filtering and batched flush timing under rapid event bursts.
+- Live callbacks: added a focused test to validate that combined callbacks coalesce into a single scan.
+- Metrics: added coverage to assert metricsSnapshot contains and increments expected counters under mixed scenarios.

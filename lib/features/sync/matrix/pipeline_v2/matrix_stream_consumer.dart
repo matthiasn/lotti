@@ -17,6 +17,7 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 
 class _RetryInfo {
   _RetryInfo(this.attempts, this.nextDue);
@@ -40,6 +41,16 @@ class MatrixStreamConsumer implements SyncPipeline {
     required Directory documentsDirectory,
     bool collectMetrics = false,
     DateTime Function()? now,
+    Duration flushInterval = const Duration(milliseconds: 150),
+    int maxBatch = 200,
+    Duration markerDebounce = const Duration(milliseconds: 600),
+    Future<bool> Function({
+      required Timeline timeline,
+      required String? lastEventId,
+      required int pageSize,
+      required int maxPages,
+      required LoggingService logging,
+    })? backfill,
   })  : _sessionManager = sessionManager,
         _roomManager = roomManager,
         _loggingService = loggingService,
@@ -50,6 +61,10 @@ class MatrixStreamConsumer implements SyncPipeline {
         _documentsDirectory = documentsDirectory,
         _collectMetrics = collectMetrics,
         _now = now ?? DateTime.now,
+        _flushInterval = flushInterval,
+        _maxBatch = maxBatch,
+        _markerDebounce = markerDebounce,
+        _backfill = backfill,
         _maxRetriesPerEvent = 5,
         _retryTtl = const Duration(minutes: 10),
         _retryMaxEntries = 2000,
@@ -66,6 +81,13 @@ class MatrixStreamConsumer implements SyncPipeline {
   final Directory _documentsDirectory;
   final bool _collectMetrics;
   final DateTime Function() _now;
+  final Future<bool> Function({
+    required Timeline timeline,
+    required String? lastEventId,
+    required int pageSize,
+    required int maxPages,
+    required LoggingService logging,
+  })? _backfill;
 
   StreamSubscription<Event>? _sub;
   bool _initialized = false;
@@ -76,9 +98,9 @@ class MatrixStreamConsumer implements SyncPipeline {
   Timer? _liveScanTimer;
   String? _pendingMarkerEventId;
   Timer? _markerDebounceTimer;
-  static const Duration _flushInterval = Duration(milliseconds: 150);
-  static const int _maxBatch = 200;
-  static const Duration _markerDebounce = Duration(milliseconds: 600);
+  final Duration _flushInterval;
+  final int _maxBatch;
+  final Duration _markerDebounce;
   static const int _catchupMaxLookback =
       4000; // maximum events to inspect during catch-up
 
@@ -213,7 +235,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       final snapshot = await room.getTimeline(limit: limit);
       try {
         // Attempt SDK backfill (best-effort across SDK versions).
-        final attempted = await SdkPaginationCompat.backfillUntilContains(
+        final attempted =
+            await (_backfill ?? SdkPaginationCompat.backfillUntilContains)(
           timeline: snapshot,
           lastEventId: _lastProcessedEventId,
           pageSize: 200,
@@ -507,11 +530,15 @@ class MatrixStreamConsumer implements SyncPipeline {
         'circuitOpens': _metricCircuitOpens,
         // Diagnostics-only fields (not shown in UI)
         'retryStateSize': _retryState.length,
-        'circuitOpen': _circuitOpenUntil != null &&
-                _now().isBefore(_circuitOpenUntil!)
-            ? 1
-            : 0,
+        'circuitOpen':
+            _circuitOpenUntil != null && _now().isBefore(_circuitOpenUntil!)
+                ? 1
+                : 0,
       };
+
+  // Visible for testing only
+  @visibleForTesting
+  bool get debugCollectMetrics => _collectMetrics;
 
   void _scheduleMarkerFlush(Room room) {
     _markerDebounceTimer?.cancel();

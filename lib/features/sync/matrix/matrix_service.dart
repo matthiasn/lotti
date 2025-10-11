@@ -26,6 +26,7 @@ import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 
 class MatrixService {
   MatrixService({
@@ -49,6 +50,8 @@ class MatrixService {
     MatrixTimelineListener? timelineListener,
     SyncLifecycleCoordinator? lifecycleCoordinator,
     SyncEngine? syncEngine,
+    // Test-only seam to inject a V2 pipeline
+    @visibleForTesting MatrixStreamConsumer? v2PipelineOverride,
   })  : _gateway = gateway,
         _loggingService = loggingService,
         _activityGate = activityGate,
@@ -111,19 +114,20 @@ class MatrixService {
       }
       _syncEngine = syncEngine;
     } else {
-      final pipeline = enableSyncV2
-          ? MatrixStreamConsumer(
-              sessionManager: _sessionManager,
-              roomManager: _roomManager,
-              loggingService: _loggingService,
-              journalDb: _journalDb,
-              settingsDb: _settingsDb,
-              eventProcessor: _eventProcessor,
-              readMarkerService: _readMarkerService,
-              documentsDirectory: documentsDirectory,
-              collectMetrics: collectV2Metrics,
-            )
-          : null;
+      final pipeline = v2PipelineOverride ??
+          (enableSyncV2
+              ? MatrixStreamConsumer(
+                  sessionManager: _sessionManager,
+                  roomManager: _roomManager,
+                  loggingService: _loggingService,
+                  journalDb: _journalDb,
+                  settingsDb: _settingsDb,
+                  eventProcessor: _eventProcessor,
+                  readMarkerService: _readMarkerService,
+                  documentsDirectory: documentsDirectory,
+                  collectMetrics: collectV2Metrics,
+                )
+              : null);
       _v2Pipeline = pipeline;
       final coordinator = lifecycleCoordinator ??
           SyncLifecycleCoordinator(
@@ -429,6 +433,10 @@ class MatrixService {
     final map = _v2Pipeline!.metricsSnapshot();
     return V2Metrics.fromMap(map);
   }
+
+  // Visible for testing only
+  @visibleForTesting
+  MatrixStreamConsumer? get debugV2Pipeline => _v2Pipeline;
 
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
         session: _sessionManager,

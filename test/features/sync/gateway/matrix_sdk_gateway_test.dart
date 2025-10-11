@@ -40,8 +40,8 @@ void main() {
 
   setUp(() {
     client = MockClient();
-    roomStateController =
-        StreamController<({String roomId, StrippedStateEvent state})>.broadcast();
+    roomStateController = StreamController<
+        ({String roomId, StrippedStateEvent state})>.broadcast();
     loginStateController = StreamController<LoginState>.broadcast();
     keyVerificationController = StreamController<KeyVerification>.broadcast();
 
