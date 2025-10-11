@@ -68,6 +68,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   static const Duration _flushInterval = Duration(milliseconds: 150);
   static const int _maxBatch = 200;
   static const Duration _markerDebounce = Duration(milliseconds: 600);
+  static const int _catchupMaxLookback =
+      4000; // maximum events to inspect during catch-up
 
   // Lightweight metrics counters (dev diagnostics).
   int _metricProcessed = 0;
@@ -192,20 +194,26 @@ class MatrixStreamConsumer implements SyncPipeline {
         );
         return;
       }
-      const limits = <int>[200, 500, 1000];
-      for (final limit in limits) {
+      var limit = 200;
+      while (true) {
         final snapshot = await room.getTimeline(limit: limit);
         final events = List<Event>.from(snapshot.events)
           ..sort(TimelineEventOrdering.compare);
         final idx = _findLastIndex(events, _lastProcessedEventId);
-        final slice = idx >= 0 ? events.sublist(idx + 1) : events;
-        if (slice.isNotEmpty) {
-          if (_collectMetrics) _metricCatchupBatches++;
-          await _processOrdered(slice);
+        final reachedStart = events.length < limit; // room has fewer than limit
+        final reachedCap = limit >= _catchupMaxLookback;
+        if (idx >= 0 || reachedStart || reachedCap) {
+          final slice = idx >= 0 ? events.sublist(idx + 1) : events;
+          if (slice.isNotEmpty) {
+            if (_collectMetrics) _metricCatchupBatches++;
+            await _processOrdered(slice);
+          }
           snapshot.cancelSubscriptions();
-          break;
+          break; // done
+        } else {
+          snapshot.cancelSubscriptions();
+          limit = math.min(limit * 2, _catchupMaxLookback);
         }
-        snapshot.cancelSubscriptions();
       }
     } catch (e, st) {
       _loggingService.captureException(

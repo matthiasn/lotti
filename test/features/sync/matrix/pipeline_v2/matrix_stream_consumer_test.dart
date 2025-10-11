@@ -72,8 +72,10 @@ void main() {
         final room = MockRoom();
         final timeline = MockTimeline();
         final tempDir = await Directory.systemTemp.createTemp('msc_v2');
+        final onTimelineController = CachedStreamController<Event>();
 
         addTearDown(() => tempDir.deleteSync(recursive: true));
+        addTearDown(onTimelineController.close);
 
         when(() => logger.captureEvent(any<String>(),
             domain: any<String>(named: 'domain'),
@@ -86,6 +88,7 @@ void main() {
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
+        when(() => client.onTimelineEvent).thenReturn(onTimelineController);
         when(() => roomManager.initialize()).thenAnswer((_) async {});
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -179,8 +182,10 @@ void main() {
         final room = MockRoom();
         final timeline = MockTimeline();
         final tempDir = await Directory.systemTemp.createTemp('msc_v2_files');
+        final onTimelineController = CachedStreamController<Event>();
 
         addTearDown(() => tempDir.deleteSync(recursive: true));
+        addTearDown(onTimelineController.close);
 
         when(() => logger.captureEvent(any<String>(),
             domain: any<String>(named: 'domain'),
@@ -193,6 +198,7 @@ void main() {
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
+        when(() => client.onTimelineEvent).thenReturn(onTimelineController);
         when(() => roomManager.initialize()).thenAnswer((_) async {});
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -248,6 +254,113 @@ void main() {
         // Attachment written
         final saved = File('${tempDir.path}/sub/test.json');
         expect(saved.existsSync(), isTrue);
+      });
+    });
+
+    test('expands catch-up window to include backlog and does not skip events',
+        () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final onTimelineController = CachedStreamController<Event>();
+
+        addTearDown(onTimelineController.close);
+
+        when(() => logger.captureEvent(any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+        when(() => logger.captureException(any<Object>(),
+                domain: any<String>(named: 'domain'),
+                subDomain: any<String>(named: 'subDomain'),
+                stackTrace: any<StackTrace?>(named: 'stackTrace')))
+            .thenReturn(null);
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+
+        // Simulate last processed far behind the latest (e499 of 1200 events)
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => 'e499');
+
+        // Build 1200 events with increasing timestamps
+        List<Event> buildAll() {
+          final list = <Event>[];
+          for (var i = 0; i < 1200; i++) {
+            final e = MockEvent();
+            when(() => e.eventId).thenReturn('e$i');
+            when(() => e.originServerTs)
+                .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+            when(() => e.senderId).thenReturn('@other:server');
+            when(() => e.attachmentMimetype).thenReturn('');
+            when(() => e.content)
+                .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+            list.add(e);
+          }
+          return list;
+        }
+
+        final allEvents = buildAll();
+
+        Future<Timeline> timelineForLimit(int limit) async {
+          final tl = MockTimeline();
+          final start = allEvents.length > limit ? allEvents.length - limit : 0;
+          final sub = allEvents.sublist(start);
+          when(() => tl.events).thenReturn(sub);
+          when(() => tl.cancelSubscriptions()).thenReturn(null);
+          return tl;
+        }
+
+        when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer(
+          (invocation) async {
+            final limit = invocation.namedArguments[#limit] as int? ?? 200;
+            return timelineForLimit(limit);
+          },
+        );
+
+        when(() => processor.process(
+            event: any<Event>(named: 'event'),
+            journalDb: journalDb)).thenAnswer((_) async {});
+        when(() => readMarker.updateReadMarker(
+              client: any<Client>(named: 'client'),
+              room: any<Room>(named: 'room'),
+              eventId: any<String>(named: 'eventId'),
+            )).thenAnswer((_) async {});
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          collectMetrics: true,
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        // Advance debounce timer to flush read marker.
+        async.elapse(const Duration(milliseconds: 700));
+        async.flushMicrotasks();
+
+        // Expect 700 events processed: e500..e1199
+        verify(() => processor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: journalDb,
+            )).called(700);
       });
     });
   });

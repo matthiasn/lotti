@@ -77,8 +77,22 @@ Future<void> saveJournalEntityJson(JournalEntity journalEntity) async {
 }
 
 Future<void> saveJson(String path, String json) async {
-  final file = await File(path).create(recursive: true);
-  await file.writeAsString(json);
+  // Ensure parent directory exists
+  final target = File(path);
+  await target.parent.create(recursive: true);
+
+  // Write to a temporary file first, then atomically rename to the target.
+  // This avoids readers observing an empty or partially-written file.
+  final tmpPath = '$path.tmp.${DateTime.now().microsecondsSinceEpoch}.$pid';
+  final tmpFile = File(tmpPath);
+  await tmpFile.writeAsString(json, flush: true);
+
+  // On most platforms, rename is atomic within the same directory.
+  // If a previous file exists, replace it to keep behavior consistent.
+  if (target.existsSync()) {
+    target.deleteSync();
+  }
+  tmpFile.renameSync(path);
 }
 
 Future<String> createAssetDirectory(String relativePath) async {
