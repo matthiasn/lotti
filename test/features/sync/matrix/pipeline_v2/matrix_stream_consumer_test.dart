@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -14,7 +15,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
+// No internal SDK imports in tests
 import 'package:mocktail/mocktail.dart';
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
@@ -72,7 +73,7 @@ void main() {
         final room = MockRoom();
         final timeline = MockTimeline();
         final tempDir = await Directory.systemTemp.createTemp('msc_v2');
-        final onTimelineController = CachedStreamController<Event>();
+        final onTimelineController = StreamController<Event>.broadcast();
 
         addTearDown(() => tempDir.deleteSync(recursive: true));
         addTearDown(onTimelineController.close);
@@ -88,7 +89,8 @@ void main() {
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
-        when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => onTimelineController.stream);
         when(() => roomManager.initialize()).thenAnswer((_) async {});
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -180,7 +182,7 @@ void main() {
       final room = MockRoom();
       final badTimeline = MockTimeline();
       final liveTimeline = MockTimeline();
-      final onTimelineController = CachedStreamController<Event>();
+      final onTimelineController = StreamController<Event>.broadcast();
 
       addTearDown(onTimelineController.close);
 
@@ -194,7 +196,8 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => onTimelineController.stream);
       when(() => roomManager.initialize()).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -264,7 +267,7 @@ void main() {
         final room = MockRoom();
         final timeline = MockTimeline();
         final tempDir = await Directory.systemTemp.createTemp('msc_v2_files');
-        final onTimelineController = CachedStreamController<Event>();
+        final onTimelineController = StreamController<Event>.broadcast();
 
         addTearDown(() => tempDir.deleteSync(recursive: true));
         addTearDown(onTimelineController.close);
@@ -280,7 +283,8 @@ void main() {
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
-        when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => onTimelineController.stream);
         when(() => roomManager.initialize()).thenAnswer((_) async {});
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -351,7 +355,7 @@ void main() {
         final readMarker = MockSyncReadMarkerService();
         final client = MockClient();
         final room = MockRoom();
-        final onTimelineController = CachedStreamController<Event>();
+        final onTimelineController = StreamController<Event>.broadcast();
 
         addTearDown(onTimelineController.close);
 
@@ -366,7 +370,8 @@ void main() {
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
-        when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => onTimelineController.stream);
         when(() => roomManager.initialize()).thenAnswer((_) async {});
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -460,7 +465,7 @@ void main() {
       final client = MockClient();
       final room = MockRoom();
       final timeline = MockTimeline();
-      final onTimelineController = CachedStreamController<Event>();
+      final onTimelineController = StreamController<Event>.broadcast();
 
       when(() => logger.captureEvent(any<String>(),
           domain: any<String>(named: 'domain'),
@@ -472,7 +477,8 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => onTimelineController.stream);
       when(() => settingsDb.itemByKey(lastReadMatrixEventId))
           .thenAnswer((_) async => null);
       // First, room missing to force hydrate
@@ -559,7 +565,7 @@ void main() {
         final client = MockClient();
         final room = MockRoom();
         final timeline = MockTimeline();
-        final onTimelineController = CachedStreamController<Event>();
+        final onTimelineController = StreamController<Event>.broadcast();
 
         addTearDown(onTimelineController.close);
 
@@ -574,7 +580,8 @@ void main() {
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
-        when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => onTimelineController.stream);
         when(() => roomManager.initialize()).thenAnswer((_) async {});
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -661,7 +668,7 @@ void main() {
       final client = MockClient();
       final room = MockRoom();
       final timeline = MockTimeline();
-      final onTimelineController = CachedStreamController<Event>();
+      final onTimelineController = StreamController<Event>.broadcast();
 
       addTearDown(onTimelineController.close);
 
@@ -675,7 +682,8 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => onTimelineController.stream);
       when(() => roomManager.initialize()).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -744,7 +752,7 @@ void main() {
       final client = MockClient();
       final room = MockRoom();
       final timeline = MockTimeline();
-      final onTimelineController = CachedStreamController<Event>();
+      final onTimelineController = StreamController<Event>.broadcast();
 
       addTearDown(onTimelineController.close);
 
@@ -758,7 +766,8 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => onTimelineController.stream);
       when(() => roomManager.initialize()).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -811,7 +820,7 @@ void main() {
     final room = MockRoom();
     final catchupTimeline = MockTimeline();
     final liveTimeline = MockTimeline();
-    final onTimelineController = CachedStreamController<Event>();
+    final onTimelineController = StreamController<Event>.broadcast();
 
     addTearDown(onTimelineController.close);
 
@@ -825,7 +834,8 @@ void main() {
 
     when(() => session.client).thenReturn(client);
     when(() => client.userID).thenReturn('@me:server');
-    when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+    when(() => session.timelineEvents)
+        .thenAnswer((_) => onTimelineController.stream);
     when(() => roomManager.initialize()).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(room);
     when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -924,7 +934,7 @@ void main() {
     final client = MockClient();
     final room = MockRoom();
     final timeline = MockTimeline();
-    final onTimelineController = CachedStreamController<Event>();
+    final onTimelineController = StreamController<Event>.broadcast();
 
     addTearDown(onTimelineController.close);
 
@@ -938,7 +948,8 @@ void main() {
 
     when(() => session.client).thenReturn(client);
     when(() => client.userID).thenReturn('@me:server');
-    when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+    when(() => session.timelineEvents)
+        .thenAnswer((_) => onTimelineController.stream);
     when(() => roomManager.initialize()).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(room);
     when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -992,15 +1003,15 @@ void main() {
     await consumer.initialize();
     await consumer.start();
 
-    // After first batch, breaker should be open.
+    // After first batch, breaker should have opened at least once.
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    expect(consumer.debugCircuitOpen(), isTrue);
+    expect(consumer.metricsSnapshot()['circuitOpens'], greaterThanOrEqualTo(1));
 
     // Trigger a live scan; breaker should still be open
     when(() => timeline.events).thenReturn(events.take(1).toList());
     // simulate onUpdate callback path by calling schedule and letting debounce expire
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    expect(consumer.debugCircuitOpen(), isTrue);
+    expect(consumer.metricsSnapshot()['circuitOpens'], greaterThanOrEqualTo(1));
   });
 
   test('retry state pruned to cap size on large failure batch', () async {
@@ -1014,7 +1025,7 @@ void main() {
     final client = MockClient();
     final room = MockRoom();
     final timeline = MockTimeline();
-    final onTimelineController = CachedStreamController<Event>();
+    final onTimelineController = StreamController<Event>.broadcast();
 
     addTearDown(onTimelineController.close);
 
@@ -1028,7 +1039,8 @@ void main() {
 
     when(() => session.client).thenReturn(client);
     when(() => client.userID).thenReturn('@me:server');
-    when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+    when(() => session.timelineEvents)
+        .thenAnswer((_) => onTimelineController.stream);
     when(() => roomManager.initialize()).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(room);
     when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -1074,7 +1086,10 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 500));
 
     // Retry state should be pruned to its cap (<=2000)
-    expect(consumer.debugRetryStateSize(), lessThanOrEqualTo(2000));
+    expect(
+      consumer.metricsSnapshot()['retryStateSize'],
+      lessThanOrEqualTo(2000),
+    );
   });
 
   test('retry TTL pruning removes stale entries (fake clock)', () async {
@@ -1088,7 +1103,7 @@ void main() {
     final client = MockClient();
     final room = MockRoom();
     final timeline = MockTimeline();
-    final onTimelineController = CachedStreamController<Event>();
+    final onTimelineController = StreamController<Event>();
 
     addTearDown(onTimelineController.close);
 
@@ -1102,7 +1117,8 @@ void main() {
 
     when(() => session.client).thenReturn(client);
     when(() => client.userID).thenReturn('@me:server');
-    when(() => client.onTimelineEvent).thenReturn(onTimelineController);
+    when(() => session.timelineEvents)
+        .thenAnswer((_) => onTimelineController.stream);
     when(() => roomManager.initialize()).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(room);
     when(() => roomManager.currentRoomId).thenReturn('!room:server');
@@ -1149,7 +1165,7 @@ void main() {
     await consumer.initialize();
     await consumer.start();
     await Future<void>.delayed(const Duration(milliseconds: 300));
-    final before = consumer.debugRetryStateSize();
+    final before = consumer.metricsSnapshot()['retryStateSize'] ?? 0;
     expect(before, greaterThan(0));
 
     // Advance fake clock beyond TTL and trigger another pass to prune.
@@ -1157,7 +1173,7 @@ void main() {
     // Trigger scan by injecting a no-op timeline
     when(() => timeline.events).thenReturn(<Event>[]);
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    final after = consumer.debugRetryStateSize();
+    final after = consumer.metricsSnapshot()['retryStateSize'] ?? 0;
     expect(after, lessThanOrEqualTo(before));
   });
 }

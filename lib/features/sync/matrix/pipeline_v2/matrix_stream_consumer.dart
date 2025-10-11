@@ -17,7 +17,6 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
-import 'package:meta/meta.dart';
 
 class _RetryInfo {
   _RetryInfo(this.attempts, this.nextDue);
@@ -50,7 +49,12 @@ class MatrixStreamConsumer implements SyncPipeline {
         _readMarkerService = readMarkerService,
         _documentsDirectory = documentsDirectory,
         _collectMetrics = collectMetrics,
-        _now = now ?? DateTime.now;
+        _now = now ?? DateTime.now,
+        _maxRetriesPerEvent = 5,
+        _retryTtl = const Duration(minutes: 10),
+        _retryMaxEntries = 2000,
+        _circuitFailureThreshold = 50,
+        _circuitCooldown = const Duration(seconds: 30);
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
@@ -90,12 +94,12 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Circuit breaker counters
   int _metricCircuitOpens = 0;
 
-  // Failure retry tracking to avoid permanent blockage.
-  static const int _maxRetriesPerEvent = 5;
-  static const Duration _retryTtl = Duration(minutes: 10);
-  static const int _retryMaxEntries = 2000;
-  static const int _circuitFailureThreshold = 50;
-  static const Duration _circuitCooldown = Duration(seconds: 30);
+  // Failure retry tracking to avoid permanent blockage (configurable).
+  final int _maxRetriesPerEvent;
+  final Duration _retryTtl;
+  final int _retryMaxEntries;
+  final int _circuitFailureThreshold;
+  final Duration _circuitCooldown;
   DateTime? _circuitOpenUntil;
   int _consecutiveFailures = 0;
 
@@ -123,7 +127,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
     await _attachCatchUp();
     await _sub?.cancel();
-    _sub = _client.onTimelineEvent.stream.listen((event) {
+    _sub = _sessionManager.timelineEvents.listen((event) {
       final roomId = _roomManager.currentRoomId;
       if (roomId == null || event.roomId != roomId) return;
       _enqueue(event);
@@ -469,7 +473,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     if (hadFailure) {
       _consecutiveFailures += batchFailures;
       if (_consecutiveFailures >= _circuitFailureThreshold) {
-        _circuitOpenUntil = DateTime.now().add(_circuitCooldown);
+        _circuitOpenUntil = _now().add(_circuitCooldown);
         if (_collectMetrics) _metricCircuitOpens++;
         _loggingService.captureEvent(
           'circuit open for ${_circuitCooldown.inSeconds}s (failures=$_consecutiveFailures)',
@@ -501,6 +505,12 @@ class MatrixStreamConsumer implements SyncPipeline {
         'skippedByRetryLimit': _metricSkippedByRetryLimit,
         'retriesScheduled': _metricRetriesScheduled,
         'circuitOpens': _metricCircuitOpens,
+        // Diagnostics-only fields (not shown in UI)
+        'retryStateSize': _retryState.length,
+        'circuitOpen': _circuitOpenUntil != null &&
+                _now().isBefore(_circuitOpenUntil!)
+            ? 1
+            : 0,
       };
 
   void _scheduleMarkerFlush(Room room) {
@@ -530,15 +540,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     );
   }
 
-  // Visible for testing: surface internals for assertions without exposing API.
-  @visibleForTesting
-  int debugRetryStateSize() => _retryState.length;
-
-  @visibleForTesting
-  bool debugCircuitOpen() {
-    final openUntil = _circuitOpenUntil;
-    return openUntil != null && _now().isBefore(openUntil);
-  }
+  // Debug helpers removed in favor of metricsSnapshot() fields.
 
   void _pruneRetryState() {
     if (_retryState.isEmpty) return;
