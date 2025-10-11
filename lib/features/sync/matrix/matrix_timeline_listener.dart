@@ -89,7 +89,11 @@ class MatrixTimelineListener implements TimelineContext {
   // events re-apply current state and the processor deduplicates by id.
   static const int _maxPendingEvents = 1000;
   // Process pending events in batches to keep memory usage stable while
-  // deduplicating and ordering the working set.
+  // deduplicating and ordering the working set. 500 provides a good balance:
+  // small enough to bound transient allocations, large enough to amortize
+  // per-batch overhead in busy rooms. Related events that span boundaries
+  // are still handled correctly because processing is chronological and
+  // marker advancement is based on the latest processed event.
   static const int _maxPendingBatchSize = 500;
 
   @override

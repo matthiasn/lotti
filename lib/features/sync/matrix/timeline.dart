@@ -36,6 +36,56 @@ class _IngestOutcome {
   final bool hadRetriableFailure;
 }
 
+List<_IndexedEvent> _buildSortedIndexedEvents(Timeline tl) {
+  final events = tl.events;
+  return <_IndexedEvent>[
+    for (var i = 0; i < events.length; i++)
+      _IndexedEvent(index: i, event: events[i]),
+  ]..sort((a, b) {
+      final t = TimelineEventOrdering.timestamp(a.event)
+          .compareTo(TimelineEventOrdering.timestamp(b.event));
+      if (t != 0) return t;
+      // For ties, prefer higher original indices to preserve SDK ordering.
+      return b.index.compareTo(a.index);
+    });
+}
+
+int _findLastReadPosition(
+  List<_IndexedEvent> sortedEvents,
+  String? lastReadEventContextId,
+) {
+  if (lastReadEventContextId == null) return -1;
+  for (var i = sortedEvents.length - 1; i >= 0; i--) {
+    if (sortedEvents[i].event.eventId == lastReadEventContextId) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+List<Event> _collectNewEvents(
+  List<_IndexedEvent> sortedEvents,
+  int lastReadPosition,
+  String? lastReadEventContextId,
+) {
+  final candidateEvents = <Event>[];
+  for (var i = 0; i < sortedEvents.length; i++) {
+    final event = sortedEvents[i].event;
+    final eventId = event.eventId;
+    if (lastReadEventContextId != null) {
+      if (lastReadPosition >= 0) {
+        if (i <= lastReadPosition) {
+          continue;
+        }
+      } else if (eventId == lastReadEventContextId) {
+        continue;
+      }
+    }
+    candidateEvents.add(event);
+  }
+  return candidateEvents;
+}
+
 Future<_IngestOutcome> _ingestAndComputeLatest({
   required List<Event> events,
   required TimelineContext listener,
@@ -245,7 +295,7 @@ Future<void> processNewTimelineEvents({
     }
     // Drain timeline in small batches to avoid being one message behind.
     for (var pass = 0; pass < config.maxDrainPasses; pass++) {
-      metrics?.drainPasses++;
+      if (config.collectMetrics) metrics?.drainPasses++;
       // Pull fresh events from homeserver before each pass.
       await listener.client.sync();
 
@@ -264,21 +314,7 @@ Future<void> processNewTimelineEvents({
 
       Future<void> computeFromTimeline(Timeline tl,
           {String source = 'live'}) async {
-        final events = tl.events;
-        final indexed = <_IndexedEvent>[
-          for (var i = 0; i < events.length; i++)
-            _IndexedEvent(index: i, event: events[i]),
-        ]..sort((a, b) {
-            final t = TimelineEventOrdering.timestamp(a.event)
-                .compareTo(TimelineEventOrdering.timestamp(b.event));
-            if (t != 0) return t;
-            // Preserve original order semantics for ties: prefer higher original
-            // indices (SDK is often newest-first), so we still see the newer item
-            // after the previously read one.
-            return b.index.compareTo(a.index);
-          });
-
-        sortedEvents = indexed;
+        sortedEvents = _buildSortedIndexedEvents(tl);
         final newestId =
             sortedEvents.isNotEmpty ? sortedEvents.last.event.eventId : null;
         loggingService.captureEvent(
@@ -290,32 +326,13 @@ Future<void> processNewTimelineEvents({
           subDomain: 'timeline.debug',
         );
 
-        var lastReadPosition = -1;
-        if (lastReadEventContextId != null) {
-          for (var i = sortedEvents.length - 1; i >= 0; i--) {
-            if (sortedEvents[i].event.eventId == lastReadEventContextId) {
-              lastReadPosition = i;
-              break;
-            }
-          }
-        }
-
-        final candidateEvents = <Event>[];
-        for (var i = 0; i < sortedEvents.length; i++) {
-          final event = sortedEvents[i].event;
-          final eventId = event.eventId;
-          if (lastReadEventContextId != null) {
-            if (lastReadPosition >= 0) {
-              if (i <= lastReadPosition) {
-                continue;
-              }
-            } else if (eventId == lastReadEventContextId) {
-              continue;
-            }
-          }
-          candidateEvents.add(event);
-        }
-        newEvents = candidateEvents;
+        final lastReadPosition =
+            _findLastReadPosition(sortedEvents, lastReadEventContextId);
+        newEvents = _collectNewEvents(
+          sortedEvents,
+          lastReadPosition,
+          lastReadEventContextId,
+        );
 
         // If empty and we're at the tail, do tiny intra-pass waits to allow the
         // SDK to apply the newest event into the live list.
@@ -324,7 +341,7 @@ Future<void> processNewTimelineEvents({
             lastReadPosition == sortedEvents.length - 1;
         if (newEvents.isEmpty && atTail) {
           for (final delay in config.retryDelays) {
-            metrics?.retryAttempts++;
+            if (config.collectMetrics) metrics?.retryAttempts++;
             loggingService.captureEvent(
               'Empty snapshot at tail; retrying after ${delay.inMilliseconds}ms '
               '(pass ${pass + 1}, source: $source${usedLimit > 0 ? ', limit: $usedLimit' : ''})',
@@ -333,15 +350,7 @@ Future<void> processNewTimelineEvents({
             );
             await Future<void>.delayed(delay);
             // Re-evaluate from the same live timeline instance.
-            final evsIndexed = <_IndexedEvent>[
-              for (var i = 0; i < tl.events.length; i++)
-                _IndexedEvent(index: i, event: tl.events[i]),
-            ]..sort((a, b) {
-                final t = TimelineEventOrdering.timestamp(a.event)
-                    .compareTo(TimelineEventOrdering.timestamp(b.event));
-                if (t != 0) return t;
-                return b.index.compareTo(a.index);
-              });
+            final evsIndexed = _buildSortedIndexedEvents(tl);
             final recalculated = <Event>[];
             for (var i = 0; i < evsIndexed.length; i++) {
               final event = evsIndexed[i].event;
@@ -431,7 +440,7 @@ Future<void> processNewTimelineEvents({
         subDomainPrefix: 'processNewTimelineEvents',
         roomId: syncRoom?.id ?? roomId,
       );
-      metrics?.eventsProcessed += newEvents.length;
+      if (config.collectMetrics) metrics?.eventsProcessed += newEvents.length;
 
       final latestAdvancingEventId = outcome.latestAdvancingEventId;
       final hadRetriableFailure = outcome.hadRetriableFailure;
@@ -506,7 +515,16 @@ Future<void> processNewTimelineEvents({
       stackTrace: stackTrace,
     );
   } finally {
-    metrics?.addProcessingTime(sw.elapsed);
+    if (config.collectMetrics) metrics?.addProcessingTime(sw.elapsed);
+    // Optional metrics threshold logging to flag anomalous drains without
+    // impacting success paths.
+    if (config.collectMetrics && (metrics?.drainPasses ?? 0) > 2) {
+      loggingService.captureEvent(
+        'Excessive drain passes: ${metrics?.drainPasses}',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'timeline.metrics',
+      );
+    }
   }
 }
 

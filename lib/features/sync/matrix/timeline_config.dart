@@ -24,6 +24,7 @@ class TimelineConfig {
       Duration(milliseconds: 120),
     ],
     this.readMarkerFollowUpDelay = const Duration(milliseconds: 150),
+    this.collectMetrics = false,
   });
 
   final int maxDrainPasses;
@@ -31,5 +32,17 @@ class TimelineConfig {
   final List<Duration> retryDelays;
   final Duration readMarkerFollowUpDelay;
 
+  /// When true, increments metrics counters if a metrics object is provided.
+  /// Disabled by default for zero overhead in hot paths.
+  final bool collectMetrics;
+
   static const TimelineConfig production = TimelineConfig();
+
+  /// Conservative preset for low-end devices or constrained environments.
+  static const TimelineConfig lowEnd = TimelineConfig(
+    maxDrainPasses: 2,
+    timelineLimits: <int>[50, 100, 200],
+    retryDelays: <Duration>[Duration(milliseconds: 50)],
+    readMarkerFollowUpDelay: Duration(milliseconds: 100),
+  );
 }
