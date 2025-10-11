@@ -618,14 +618,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.3"
-  enhanced_enum:
-    dependency: transitive
-    description:
-      name: enhanced_enum
-      sha256: "074c5a8b9664799ca91e1e8b68003b8694cb19998671cbafd9c7779c13fcdecf"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.4"
   enum_to_string:
     dependency: "direct main"
     description:
@@ -1006,10 +998,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_rust_bridge
-      sha256: b416ff56002789e636244fb4cc449f587656eff995e5a7169457eb0593fcaddb
+      sha256: "37ef40bc6f863652e865f0b2563ea07f0d3c58d8efad803cc01933a4b2ee067e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.10.0"
+    version: "2.11.1"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1091,10 +1083,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_vodozemac
-      sha256: "2405ca121b84d1cd83200a14021022e1691b123a23bcefc36adc7740cefbc1f9"
+      sha256: "54cd3790b6dfdc1afce928f8c46f7eeea9e4f8326f077400894935926f202057"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.2"
+    version: "0.3.0"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -1633,10 +1625,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "75b64e31b8b85cd327087683a784b7cf38850ecbeb34fe342034fed0d1c61ea7"
+      sha256: "832d112e556cbb6fcf5e7e4528c840c1f95f865682ade277dc2b9e4128431021"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "3.0.0"
   media_kit:
     dependency: "direct main"
     description:
@@ -2631,10 +2623,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3
-      sha256: "809bc27297bd0633ef360a7e27e056e93a2ef598079616db97b0c93e275f6d31"
+      sha256: f18fd9a72d7a1ad2920db61368f2a69368f1cc9b56b8233e9d83b47b0a8435aa
       url: "https://pub.dev"
     source: hosted
-    version: "2.9.2"
+    version: "2.9.3"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -3023,10 +3015,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_platform_interface
-      sha256: cf2a1d29a284db648fd66cbd18aacc157f9862d77d2cc790f6f9678a46c1db5a
+      sha256: "9e372520573311055cb353b9a0da1c9d72b094b7ba01b8ecc66f28473553793b"
       url: "https://pub.dev"
     source: hosted
-    version: "6.4.0"
+    version: "6.5.0"
   video_player_web:
     dependency: transitive
     description:
@@ -3052,13 +3044,13 @@ packages:
     source: hosted
     version: "15.0.2"
   vodozemac:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: vodozemac
-      sha256: dba14017e042748fb22d270e8ab1d3e46965b89788dd3857dba938ec07571968
+      sha256: "95cac62ffab94db99e134c8f9aac198f8131a4eed0bed76a6cfc9c72add229b9"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.3.0"
   watcher:
     dependency: transitive
     description:

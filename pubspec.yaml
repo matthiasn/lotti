@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.678+3332
+version: 0.9.679+3333
 
 msix_config:
   display_name: LottiApp
@@ -59,7 +59,7 @@ dependencies:
   flutter_rating: ^2.0.2
   flutter_riverpod: ^2.4.9
   flutter_secure_storage: ^9.0.0
-  flutter_vodozemac: ^0.2.2
+  flutter_vodozemac: ^0.3.0
   form_builder_validators: ^11.0.0
   formz: ^0.8.0
   freezed_annotation: ^3.1.0
@@ -80,7 +80,7 @@ dependencies:
   latlong2: ^0.9.0
   location: ^8.0.0
   material_design_icons_flutter: ^7.0.7096
-  matrix: ^2.0.1
+  matrix: ^3.0.0
   media_kit: ^1.0.2
   media_kit_libs_audio: ^1.0.7
   meta: ^1.12.0
@@ -117,7 +117,6 @@ dependencies:
   uuid: ^4.3.3
   vector_math: any
   visibility_detector: ^0.4.0+2
-  vodozemac: ^0.2.0
   wechat_assets_picker: ^9.0.0
   widgetbook: ^3.7.1
   window_manager: ^0.5.0
