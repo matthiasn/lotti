@@ -1,5 +1,3 @@
-// ignore_for_file: unnecessary_lambdas
-
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -67,19 +65,19 @@ void main() {
           .thenAnswer((_) => loginStates.stream);
 
       when(() => roomManager.initialize()).thenAnswer((_) async {});
-      when(() => roomManager.hydrateRoomSnapshot(client: any(named: 'client')))
-          .thenAnswer((_) async {});
+      when(() => roomManager.hydrateRoomSnapshot(
+          client: any<Client>(named: 'client'))).thenAnswer((_) async {});
       when(() => sessionManager.client).thenReturn(MockClient());
       when(() => pipeline.initialize()).thenAnswer((_) async {});
       when(() => pipeline.start()).thenAnswer((_) async {});
       when(() => pipeline.dispose()).thenAnswer((_) async {});
-      when(() => logging.captureEvent(any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'))).thenReturn(null);
-      when(() => logging.captureException(any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'))).thenReturn(null);
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
     });
 
     tearDown(() async {
@@ -108,8 +106,9 @@ void main() {
       await coord.initialize();
 
       // Emit loggedIn twice rapidly
-      loginStates.add(LoginState.loggedIn);
-      loginStates.add(LoginState.loggedIn);
+      loginStates
+        ..add(LoginState.loggedIn)
+        ..add(LoginState.loggedIn);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(() =>
@@ -141,9 +140,10 @@ void main() {
       final coord = makeCoordinator();
       await coord.initialize();
 
-      loginStates.add(LoginState.loggedIn);
-      // Immediately log out before start completes
-      loginStates.add(LoginState.loggedOut);
+      loginStates
+        ..add(LoginState.loggedIn)
+        // Immediately log out before start completes
+        ..add(LoginState.loggedOut);
       // Now complete start
       startCompleter.complete();
       await Future<void>.delayed(const Duration(milliseconds: 150));

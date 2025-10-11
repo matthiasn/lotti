@@ -162,18 +162,17 @@ void main() {
       eventProcessor: processor,
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
-    );
-    testPipeline.testMetrics = {
-      'processed': 100,
-      'skipped': 10,
-      'failures': 2,
-      'prefetch': 5,
-      'flushes': 20,
-      'catchupBatches': 3,
-      'skippedByRetryLimit': 1,
-      'retriesScheduled': 4,
-      'circuitOpens': 0,
-    };
+    )..testMetrics = {
+        'processed': 100,
+        'skipped': 10,
+        'failures': 2,
+        'prefetch': 5,
+        'flushes': 20,
+        'catchupBatches': 3,
+        'skippedByRetryLimit': 1,
+        'retriesScheduled': 4,
+        'circuitOpens': 0,
+      };
 
     final service = MatrixService(
       gateway: gateway,
@@ -235,8 +234,7 @@ void main() {
       eventProcessor: processor,
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
-    );
-    testPipeline.testMetrics = {};
+    )..testMetrics = {};
 
     final service = MatrixService(
       gateway: gateway,

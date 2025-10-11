@@ -25,10 +25,22 @@ class _RetryInfo {
   final DateTime nextDue;
 }
 
-/// Stream-first, simplified sync consumer (V2 scaffold).
+/// Stream-first sync consumer (V2 pipeline).
 ///
-/// This initial version only wires the lifecycle and logging; event processing
-/// and micro-batching will land incrementally behind the same flag.
+/// Responsibilities:
+/// - Attach-time catch-up using SDK pagination/backfill when available and a
+///   limit-escalation fallback for large backlogs.
+/// - Micro-batched streaming with chronological ordering and in-batch
+///   de-duplication by event ID.
+/// - Attachment prefetch for remote events before text processing.
+/// - Monotonic read marker advancement with lexicographical tie-breakers.
+/// - Per-event retries with exponential backoff, TTL pruning, and a size cap
+///   to bound memory growth; circuit breaker to avoid thrashing.
+/// - Lightweight typed metrics via metricsSnapshot().
+///
+/// Constructor parameters allow test seams for time (now), SDK backfill
+/// (backfill), and tuning for flush interval, batch size, and marker
+/// debounce. Defaults are production-safe.
 class MatrixStreamConsumer implements SyncPipeline {
   MatrixStreamConsumer({
     required MatrixSessionManager sessionManager,

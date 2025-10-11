@@ -435,6 +435,8 @@ class MatrixService {
   }
 
   // Visible for testing only
+  /// Exposes the V2 pipeline instance for tests. Returns `null` when V2 is
+  /// disabled or the service was constructed without a pipeline.
   @visibleForTesting
   MatrixStreamConsumer? get debugV2Pipeline => _v2Pipeline;
 
