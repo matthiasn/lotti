@@ -150,6 +150,78 @@ void main() {
     expect(find.textContaining('Last updated:'), findsOneWidget);
   });
 
+  testWidgets('refresh button invalidates provider and updates metrics',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 0,
+      messageCounts: const {},
+    );
+
+    var refreshCount = 0;
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer((_) async {
+      refreshCount++;
+      return V2Metrics.fromMap({
+        'processed': refreshCount,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': refreshCount, // change with refresh
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+      });
+    });
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Initial fetch increments once
+    expect(refreshCount, 1);
+
+    // Tap Refresh button and expect a second fetch
+    await tester.tap(find.byKey(const Key('matrixStats.refresh')).first);
+    await tester.pumpAndSettle();
+    expect(refreshCount, 2);
+  });
+
+  testWidgets('shows no-data message when V2 metrics are null', (tester) async {
+    final stats = MatrixStats(
+      sentCount: 0,
+      messageCounts: const {},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer((_) async => null);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    // Localized string from l10n: settingsMatrixV2MetricsNoData
+    expect(find.textContaining('Sync V2 Metrics: no data'), findsOneWidget);
+  });
+
   testWidgets('IncomingStats shows progress while loading', (tester) async {
     final completer = Completer<MatrixStats>();
 

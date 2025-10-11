@@ -214,7 +214,6 @@ void main() {
       await listenForKeyVerificationRequests(
         service: service,
         loggingService: loggingService,
-        requests: null,
       );
 
       verify(
