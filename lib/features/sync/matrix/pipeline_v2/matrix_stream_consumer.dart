@@ -377,12 +377,23 @@ class MatrixStreamConsumer implements SyncPipeline {
     // First pass: prefetch attachments for remote events.
     for (final e in ordered) {
       if (tu.shouldPrefetchAttachment(e, _client.userID)) {
-        await saveAttachment(
-          e,
-          loggingService: _loggingService,
-          documentsDirectory: _documentsDirectory,
-        );
-        if (_collectMetrics) _metricPrefetch++;
+        try {
+          await saveAttachment(
+            e,
+            loggingService: _loggingService,
+            documentsDirectory: _documentsDirectory,
+          );
+          if (_collectMetrics) _metricPrefetch++;
+        } catch (err, st) {
+          _loggingService.captureException(
+            err,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'prefetch',
+            stackTrace: st,
+          );
+          if (_collectMetrics) _metricFailures++;
+          // Continue with the next event; do not abort the batch on prefetch failures.
+        }
       }
     }
 

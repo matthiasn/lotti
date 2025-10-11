@@ -191,7 +191,7 @@ void main() {
     expect(refreshCount, 1);
 
     // Tap Refresh button and expect a second fetch
-    await tester.tap(find.byKey(const Key('matrixStats.refresh')).first);
+    await tester.tap(find.byIcon(Icons.refresh_rounded).first);
     await tester.pumpAndSettle();
     expect(refreshCount, 2);
   });
@@ -261,7 +261,7 @@ void main() {
 
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.textContaining('Error loading Matrix stats'), findsOneWidget);
   });
 
   testWidgets('matrixStatsPage wiring updates page index', (tester) async {

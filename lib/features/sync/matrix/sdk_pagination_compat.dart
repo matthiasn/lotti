@@ -15,8 +15,10 @@ class SdkPaginationCompat {
   /// pagination until either [lastEventId] is present in the events or
   /// [maxPages] is reached or the SDK reports no more history.
   ///
-  /// Returns true if pagination was attempted (regardless of whether the
-  /// target event was found), false if pagination could not be attempted.
+  /// Returns true if the target event is already present (no pagination
+  /// required) or if at least one pagination call was attempted. Returns false
+  /// only if pagination could not be attempted at all (no suitable SDK method
+  /// is available or invocation failed before any attempt).
   static Future<bool> backfillUntilContains({
     required Timeline timeline,
     required String? lastEventId,
@@ -29,6 +31,7 @@ class SdkPaginationCompat {
       // Use dynamic to tolerate SDK surface differences.
       final dyn = timeline as dynamic;
       var pages = 0;
+      var anyPaged = false;
       while (pages < maxPages) {
         final events = List<Event>.from(dyn.events as List<Event>)
           ..sort(TimelineEventOrdering.compare);
@@ -40,10 +43,10 @@ class SdkPaginationCompat {
 
         final ok = await _requestMoreHistory(dyn, pageSize, logging);
         if (!ok) break;
-
+        anyPaged = true;
         pages++;
       }
-      return true; // we attempted pagination even if not found
+      return anyPaged;
     } catch (e, st) {
       logging.captureException(
         e,
@@ -73,28 +76,67 @@ class SdkPaginationCompat {
     int pageSize,
     LoggingService logging,
   ) async {
+    // Try requestHistory(pageSize) then requestHistory()
     try {
-      // Try the common API names. If one exists, use it.
       if (timeline.requestHistory is Function) {
-        final result = await timeline.requestHistory(pageSize);
-        if (result is bool) return result;
-        return true; // treat void as success
+        try {
+          final result = await timeline.requestHistory(pageSize);
+          if (result is bool) return result;
+          return true; // treat void as success
+        } catch (e, st) {
+          logging.captureException(
+            e,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'sdkPaginationCompat.request',
+            stackTrace: st,
+          );
+        }
+        try {
+          final result = await timeline.requestHistory();
+          if (result is bool) return result;
+          return true;
+        } catch (e, st) {
+          logging.captureException(
+            e,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'sdkPaginationCompat.request.noarg',
+            stackTrace: st,
+          );
+        }
       }
+    } catch (_) {}
+
+    // Try paginateBackwards(pageSize) then paginateBackwards()
+    try {
       if (timeline.paginateBackwards is Function) {
-        final result = await timeline.paginateBackwards(pageSize);
-        if (result is bool) return result;
-        return true; // treat void as success
+        try {
+          final result = await timeline.paginateBackwards(pageSize);
+          if (result is bool) return result;
+          return true;
+        } catch (e, st) {
+          logging.captureException(
+            e,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'sdkPaginationCompat.backwards',
+            stackTrace: st,
+          );
+        }
+        try {
+          final result = await timeline.paginateBackwards();
+          if (result is bool) return result;
+          return true;
+        } catch (e, st) {
+          logging.captureException(
+            e,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'sdkPaginationCompat.backwards.noarg',
+            stackTrace: st,
+          );
+        }
       }
-    } catch (e, st) {
-      logging.captureException(
-        e,
-        domain: 'MATRIX_SYNC_V2',
-        subDomain: 'sdkPaginationCompat.request',
-        stackTrace: st,
-      );
-      return false;
-    }
-    // No known pagination method found.
+    } catch (_) {}
+
+    // No known pagination method found or all attempts failed.
     logging.captureEvent(
       'SDK timeline pagination not available',
       domain: 'MATRIX_SYNC_V2',

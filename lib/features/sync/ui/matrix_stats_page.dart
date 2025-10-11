@@ -131,7 +131,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                           Text(context.messages.settingsMatrixV2MetricsNoData),
                           const Spacer(),
                           IconButton(
-                            key: const Key('matrixStats.refresh'),
+                            key: const Key('matrixStats.refresh.noData'),
                             tooltip: context.messages.settingsMatrixRefresh,
                             icon: const Icon(Icons.refresh_rounded),
                             onPressed: _refreshDiagnostics,
@@ -158,7 +158,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                             ),
                             const Spacer(),
                             IconButton(
-                              key: const Key('matrixStats.refresh'),
+                              key: const Key('matrixStats.refresh.metrics'),
                               tooltip: context.messages.settingsMatrixRefresh,
                               icon: const Icon(Icons.refresh_rounded),
                               onPressed: _refreshDiagnostics,
@@ -201,12 +201,18 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                     );
                   },
                   loading: () => const CircularProgressIndicator(),
-                  error: (_, __) => const CircularProgressIndicator(),
+                  error: (err, __) => const Text(
+                    'Error loading V2 metrics',
+                    style: TextStyle(color: Colors.red),
+                  ),
                 ),
           ],
         );
       },
-      error: (error) => const CircularProgressIndicator(),
+      error: (error) => const Text(
+        'Error loading Matrix stats',
+        style: TextStyle(color: Colors.red),
+      ),
       loading: (loading) => const CircularProgressIndicator(),
     );
   }

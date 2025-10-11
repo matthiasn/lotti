@@ -122,6 +122,14 @@ Future<void> saveJson(String path, String json) async {
       } catch (_) {
         // Ignore cleanup failures.
       }
+      // Attempt to restore the original file from backup if we moved it aside.
+      try {
+        if (movedAside && bakPath != null) {
+          await File(bakPath).rename(path);
+        }
+      } catch (_) {
+        // Ignore restore errors; do not mask the original exception.
+      }
       // Do not mask the original error.
       rethrow;
     }
