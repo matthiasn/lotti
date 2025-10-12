@@ -8,11 +8,28 @@ FONTCONFIG_SRC="../flatpak/75-noto-color-emoji.conf"
 FONTCONFIG_DEST="/etc/fonts/conf.d/75-noto-color-emoji.conf"
 
 echo "Installing Noto Color Emoji font configuration..."
+echo ""
 
 # Check if the source file exists
 if [ ! -f "$SCRIPT_DIR/$FONTCONFIG_SRC" ]; then
     echo "Error: Font configuration file not found at $SCRIPT_DIR/$FONTCONFIG_SRC"
     exit 1
+fi
+
+# Check if Noto Color Emoji font is installed
+if ! fc-list | grep -qi "Noto Color Emoji"; then
+    echo "NOTE: This script only installs the font configuration. You must also install the"
+    echo "      'Noto Color Emoji' font package."
+    echo ""
+    echo "For example, on Debian/Ubuntu: sudo apt install fonts-noto-color-emoji"
+    echo "             on Fedora:        sudo dnf install google-noto-emoji-color-fonts"
+    echo "             on Arch:          sudo pacman -S noto-fonts-emoji"
+    echo ""
+    read -p "Do you want to continue anyway? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
 fi
 
 # Install the fontconfig file
