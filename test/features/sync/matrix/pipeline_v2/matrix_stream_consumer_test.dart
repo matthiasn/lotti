@@ -166,6 +166,164 @@ void main() {
       }
     });
 
+    test('flushReadMarker exceptions are captured and do not break flow',
+        () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+        final onTimelineController = StreamController<Event>.broadcast();
+
+        addTearDown(onTimelineController.close);
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => onTimelineController.stream);
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+
+        // read marker will throw on flush
+        when(() => readMarker.updateReadMarker(
+              client: any<Client>(named: 'client'),
+              room: any<Room>(named: 'room'),
+              eventId: any<String>(named: 'eventId'),
+            )).thenThrow(Exception('rm'));
+        when(() => processor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: journalDb,
+            )).thenAnswer((_) async {});
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          markerDebounce: const Duration(milliseconds: 50),
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('mk');
+        when(() => ev.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+        when(() => ev.senderId).thenReturn('@other:server');
+        when(() => ev.attachmentMimetype).thenReturn('');
+        when(() => ev.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(() => ev.roomId).thenReturn('!room:server');
+
+        onTimelineController.add(ev);
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 60));
+        async.flushMicrotasks();
+
+        // Exception captured from flushReadMarker path
+        verify(() => logger.captureException(
+              any<dynamic>(),
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'flushReadMarker',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).called(1);
+      });
+    });
+
+    test('live timeline scan handles events getter exceptions gracefully',
+        () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final catchupTimeline = MockTimeline();
+        final liveTimeline = MockTimeline();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+
+        when(() => catchupTimeline.events).thenReturn(<Event>[]);
+        when(() => catchupTimeline.cancelSubscriptions()).thenReturn(null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => catchupTimeline);
+
+        void Function()? onNewEvent;
+        when(
+          () => room.getTimeline(
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          ),
+        ).thenAnswer((inv) async {
+          onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
+          return liveTimeline;
+        });
+
+        // Cause events getter to throw inside _scanLiveTimeline
+        when(() => liveTimeline.events).thenThrow(Exception('events'));
+        when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          collectMetrics: true,
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        onNewEvent?.call();
+        async.elapse(const Duration(milliseconds: 130));
+        async.flushMicrotasks();
+
+        verify(() => logger.captureException(
+              any<dynamic>(),
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'liveScan',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).called(1);
+      });
+    });
+
     test('live timeline callbacks schedule scan and process (fakeAsync)',
         () async {
       fakeAsync((async) async {

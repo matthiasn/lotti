@@ -1,0 +1,143 @@
+import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_helpers.dart'
+    as msh;
+import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_utils.dart';
+
+class MetricsCounters {
+  MetricsCounters({
+    this.collect = false,
+    this.lastIgnoredMax = 10,
+    this.lastPrefetchedMax = 10,
+  });
+
+  final bool collect;
+  final int lastIgnoredMax;
+  final int lastPrefetchedMax;
+
+  int processed = 0;
+  int skipped = 0;
+  int failures = 0;
+  int prefetch = 0;
+  int flushes = 0;
+  int catchupBatches = 0;
+  int skippedByRetryLimit = 0;
+  int retriesScheduled = 0;
+  int circuitOpens = 0;
+
+  int dbApplied = 0;
+  int dbIgnoredByVectorClock = 0;
+  int conflictsCreated = 0;
+  int dbMissingBase = 0;
+
+  final Map<String, int> processedByType = <String, int>{};
+  final Map<String, int> droppedByType = <String, int>{};
+
+  final List<String> lastIgnored = <String>[];
+  final List<String> lastPrefetched = <String>[];
+
+  void incProcessed() {
+    if (!collect) return;
+    processed++;
+  }
+
+  void incProcessedWithType(String? rt) {
+    if (!collect) return;
+    processed++;
+    bumpProcessedType(rt);
+  }
+
+  void bumpProcessedType(String? rt) {
+    if (!collect) return;
+    if (rt == null || rt.isEmpty) return;
+    processedByType.update(rt, (v) => v + 1, ifAbsent: () => 1);
+  }
+
+  void bumpDroppedType(String? rt) {
+    if (!collect) return;
+    if (rt == null || rt.isEmpty) return;
+    droppedByType.update(rt, (v) => v + 1, ifAbsent: () => 1);
+  }
+
+  void incSkipped() {
+    if (!collect) return;
+    skipped++;
+  }
+
+  void incFailures() {
+    if (!collect) return;
+    failures++;
+  }
+
+  void incPrefetch() {
+    if (!collect) return;
+    prefetch++;
+  }
+
+  void incFlushes() {
+    if (!collect) return;
+    flushes++;
+  }
+
+  void incCatchupBatches() {
+    if (!collect) return;
+    catchupBatches++;
+  }
+
+  void incSkippedByRetryLimit() {
+    if (!collect) return;
+    skippedByRetryLimit++;
+  }
+
+  void incRetriesScheduled() {
+    if (!collect) return;
+    retriesScheduled++;
+  }
+
+  void incCircuitOpens() {
+    if (!collect) return;
+    circuitOpens++;
+  }
+
+  // DB metrics are tracked regardless of collect
+  void incDbApplied() => dbApplied++;
+  void incDbIgnoredByVectorClock() => dbIgnoredByVectorClock++;
+  void incConflictsCreated() => conflictsCreated++;
+  void incDbMissingBase() => dbMissingBase++;
+
+  void addLastIgnored(String entry) {
+    msh.ringBufferAdd(lastIgnored, entry, lastIgnoredMax);
+  }
+
+  void addLastPrefetched(String path) {
+    msh.ringBufferAdd(lastPrefetched, path, lastPrefetchedMax);
+  }
+
+  Map<String, int> snapshot({
+    required int retryStateSize,
+    required bool circuitIsOpen,
+  }) {
+    return MetricsUtils.buildSnapshot(
+      processed: processed,
+      skipped: skipped,
+      failures: failures,
+      prefetch: prefetch,
+      flushes: flushes,
+      catchupBatches: catchupBatches,
+      skippedByRetryLimit: skippedByRetryLimit,
+      retriesScheduled: retriesScheduled,
+      circuitOpens: circuitOpens,
+      processedByType: processedByType,
+      droppedByType: droppedByType,
+      dbApplied: dbApplied,
+      dbIgnoredByVectorClock: dbIgnoredByVectorClock,
+      conflictsCreated: conflictsCreated,
+      lastIgnored: lastIgnored,
+      lastPrefetched: lastPrefetched,
+      retryStateSize: retryStateSize,
+      circuitOpen: circuitIsOpen,
+    )..putIfAbsent('dbMissingBase', () => dbMissingBase);
+  }
+
+  String buildFlushLog({required int retriesPending}) {
+    return 'v2 metrics flush=$flushes processed=$processed skipped=$skipped failures=$failures prefetch=$prefetch catchup=$catchupBatches skippedByRetry=$skippedByRetryLimit retriesScheduled=$retriesScheduled retriesPending=$retriesPending';
+  }
+}
