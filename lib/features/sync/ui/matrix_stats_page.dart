@@ -316,14 +316,13 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                                     }
                                     final dbMissingBase =
                                         diag['dbMissingBase'] ?? '0';
-                                    final ignoredCount =
-                                        int.tryParse(
-                                                diag['lastIgnoredCount'] ?? '0') ??
-                                            0;
-                                    final prefCount =
-                                        int.tryParse(diag['lastPrefetchedCount'] ??
+                                    final ignoredCount = int.tryParse(
+                                            diag['lastIgnoredCount'] ?? '0') ??
+                                        0;
+                                    final prefCount = int.tryParse(
+                                            diag['lastPrefetchedCount'] ??
                                                 '0') ??
-                                            0;
+                                        0;
                                     return Padding(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
@@ -337,16 +336,18 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                                           const SizedBox(height: 6),
                                           if (ignoredCount > 0) ...[
                                             const Text('Last Ignored:'),
-                                            for (var i = 1; i <= ignoredCount; i++)
-                                              Text(diag['lastIgnored.$i'] ?? ''),
+                                            for (var i = 1;
+                                                i <= ignoredCount;
+                                                i++)
+                                              Text(
+                                                  diag['lastIgnored.$i'] ?? ''),
                                             const SizedBox(height: 6),
                                           ],
                                           if (prefCount > 0) ...[
                                             const Text('Last Prefetched:'),
                                             for (var i = 1; i <= prefCount; i++)
-                                              Text(
-                                                  diag['lastPrefetched.$i'] ??
-                                                      ''),
+                                              Text(diag['lastPrefetched.$i'] ??
+                                                  ''),
                                           ],
                                         ],
                                       ),

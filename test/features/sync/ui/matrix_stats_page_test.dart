@@ -438,7 +438,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Called at least once by the diagnostics section plus this button.
-    verify(() => mockMatrixService.getSyncDiagnosticsText()).called(greaterThan(0));
+    verify(() => mockMatrixService.getSyncDiagnosticsText())
+        .called(greaterThan(0));
     expect(find.text('Diagnostics copied'), findsOneWidget);
   });
 
