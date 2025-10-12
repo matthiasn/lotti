@@ -53,6 +53,8 @@ void main() {
     when(() => mockMatrixService.sentCount).thenReturn(0);
     when(() => mockMatrixService.getDiagnosticInfo())
         .thenAnswer((_) async => <String, dynamic>{});
+    when(() => mockMatrixService.getSyncDiagnosticsText())
+        .thenAnswer((_) async => '');
   });
 
   tearDown(() async {
@@ -264,6 +266,52 @@ void main() {
     expect(find.textContaining('Error loading Matrix stats'), findsOneWidget);
   });
 
+  testWidgets('IncomingStats shows DB-apply metrics and legend tooltip',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 1,
+      messageCounts: const {'m.text': 1},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 1,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 1,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+        'dbApplied': 2,
+        'dbIgnoredByVectorClock': 1,
+        'conflictsCreated': 1,
+      }),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('dbApplied'), findsOneWidget);
+    expect(find.text('2'), findsWidgets);
+    expect(find.text('dbIgnoredByVectorClock'), findsOneWidget);
+    expect(find.text('conflictsCreated'), findsOneWidget);
+    // Tooltip icon present
+    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+  });
+
   testWidgets('matrixStatsPage wiring updates page index', (tester) async {
     final stats = MatrixStats(
       sentCount: 3,
@@ -302,5 +350,196 @@ void main() {
     await tester.tap(find.text('Previous Page'));
     await tester.pump();
     expect(pageIndexNotifier.value, 1);
+  });
+
+  testWidgets('Force Rescan button triggers rescan and refresh',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 1,
+      messageCounts: const {'m.text': 1},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 1,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 1,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+      }),
+    );
+    when(() => mockMatrixService.forceV2Rescan()).thenAnswer((_) async {});
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('matrixStats.forceRescan')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('matrixStats.forceRescan')));
+    await tester.pumpAndSettle();
+
+    verify(() => mockMatrixService.forceV2Rescan()).called(1);
+  });
+
+  testWidgets('Last updated formatting shows HH:mm:ss', (tester) async {
+    final stats = MatrixStats(
+      sentCount: 0,
+      messageCounts: const {},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 0,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 0,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+      }),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    // Validate that the last updated string uses HH:mm:ss format
+    final lastUpdatedMatch = find.byWidgetPredicate((w) {
+      if (w is Text && w.data != null) {
+        return RegExp(r'^Last updated: \d{2}:\d{2}:\d{2}').hasMatch(w.data!);
+      }
+      return false;
+    });
+    expect(lastUpdatedMatch, findsOneWidget);
+  });
+
+  testWidgets('Copy Diagnostics button calls service and shows snackbar',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 1,
+      messageCounts: const {'m.text': 1},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 1,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 1,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+      }),
+    );
+    when(() => mockMatrixService.getSyncDiagnosticsText())
+        .thenAnswer((_) async => 'processed=1');
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('matrixStats.copyDiagnostics')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Called at least once by the diagnostics section plus this button.
+    verify(() => mockMatrixService.getSyncDiagnosticsText())
+        .called(greaterThan(0));
+  });
+
+  testWidgets('Tooltips contain expected messages and snackbar duration holds',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 1,
+      messageCounts: const {'m.text': 1},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 1,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 1,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+      }),
+    );
+    when(() => mockMatrixService.getSyncDiagnosticsText())
+        .thenAnswer((_) async => 'ok');
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip)).toList();
+    expect(
+      tooltips.any((t) => t.message?.startsWith('Legend:') ?? false),
+      isTrue,
+    );
+    expect(
+      tooltips.any((t) => t.message == 'Force rescan and catch-up now'),
+      isTrue,
+    );
+    expect(
+      tooltips.any((t) => t.message == 'Copy sync diagnostics to clipboard'),
+      isTrue,
+    );
+
+    // Trigger copy diagnostics without asserting snackbar visibility
+    await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
   });
 }

@@ -130,6 +130,11 @@ class MatrixService {
                 )
               : null);
       _v2Pipeline = pipeline;
+
+      // Wire DB-apply diagnostics from the processor into the V2 pipeline
+      if (_v2Pipeline != null) {
+        _eventProcessor.applyObserver = _v2Pipeline!.reportDbApplyDiagnostics;
+      }
       final coordinator = lifecycleCoordinator ??
           SyncLifecycleCoordinator(
             gateway: _gateway,
@@ -446,6 +451,44 @@ class MatrixService {
       );
       return null;
     }
+  }
+
+  Future<void> forceV2Rescan({bool includeCatchUp = true}) async {
+    final p = _v2Pipeline;
+    if (p == null) return;
+    await p.forceRescan(includeCatchUp: includeCatchUp);
+    _loggingService.captureEvent(
+      'V2 forceRescan(includeCatchUp=$includeCatchUp) invoked',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'v2.forceRescan',
+    );
+  }
+
+  Future<void> retryV2Now() async {
+    final p = _v2Pipeline;
+    if (p == null) return;
+    await p.retryNow();
+    _loggingService.captureEvent(
+      'V2 retryNow invoked',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'v2.retryNow',
+    );
+  }
+
+  Future<String> getSyncDiagnosticsText() async {
+    final p = _v2Pipeline;
+    if (p == null) return 'V2 pipeline disabled';
+    // Use raw snapshot so we include diagnostics-only fields
+    final map = p.metricsSnapshot();
+    final lines = map.entries.map((e) => '${e.key}=${e.value}').toList();
+    // Append textual diagnostics if available
+    try {
+      final extras = p.diagnosticsStrings();
+      lines.addAll(extras.entries.map((e) => '${e.key}=${e.value}'));
+    } catch (_) {
+      // Older pipeline without diagnosticsStrings
+    }
+    return lines.join('\n');
   }
 
   // Visible for testing only

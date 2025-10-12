@@ -1,12 +1,21 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_event_classifier.dart'
+    as ec;
+import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_helpers.dart'
+    as msh;
+import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_counters.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/read_marker_manager.dart';
+// metrics_utils is used indirectly via MetricsCounters.snapshot
+import 'package:lotti/features/sync/matrix/pipeline_v2/retry_and_circuit.dart'
+    as rc;
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/save_attachment.dart';
 import 'package:lotti/features/sync/matrix/sdk_pagination_compat.dart';
@@ -19,11 +28,22 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
-class _RetryInfo {
-  _RetryInfo(this.attempts, this.nextDue);
-  final int attempts;
-  final DateTime nextDue;
+class _ProcessOutcome {
+  const _ProcessOutcome({
+    required this.processedOk,
+    required this.treatAsHandled,
+    required this.hadFailure,
+    required this.failureDelta,
+    this.nextDue,
+  });
+  final bool processedOk;
+  final bool treatAsHandled;
+  final bool hadFailure;
+  final int failureDelta; // counts only processing exceptions (for circuit)
+  final DateTime? nextDue; // earliest next due time if blocked/retried
 }
+
+// Retry info moved to retry_and_circuit.dart
 
 /// Stream-first sync consumer (V2 pipeline).
 ///
@@ -56,6 +76,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     Duration flushInterval = const Duration(milliseconds: 150),
     int maxBatch = 200,
     Duration markerDebounce = const Duration(milliseconds: 600),
+    int? maxRetriesPerEvent,
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,
@@ -77,11 +98,32 @@ class MatrixStreamConsumer implements SyncPipeline {
         _maxBatch = maxBatch,
         _markerDebounce = markerDebounce,
         _backfill = backfill,
-        _maxRetriesPerEvent = 5,
+        _maxRetriesPerEvent = maxRetriesPerEvent ?? 5,
         _retryTtl = const Duration(minutes: 10),
         _retryMaxEntries = 2000,
         _circuitFailureThreshold = 50,
-        _circuitCooldown = const Duration(seconds: 30);
+        _circuitCooldown = const Duration(seconds: 30) {
+    _retryTracker = rc.RetryTracker(
+      ttl: _retryTtl,
+      maxEntries: _retryMaxEntries,
+    );
+    _circuit = rc.CircuitBreaker(
+      failureThreshold: _circuitFailureThreshold,
+      cooldown: _circuitCooldown,
+    );
+    _metrics = MetricsCounters(
+      collect: _collectMetrics,
+    );
+    _readMarkerManager = ReadMarkerManager(
+      debounce: _markerDebounce,
+      onFlush: (Room room, String id) => _readMarkerService.updateReadMarker(
+        client: _client,
+        room: room,
+        eventId: id,
+      ),
+      logging: _loggingService,
+    );
+  }
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
@@ -108,25 +150,18 @@ class MatrixStreamConsumer implements SyncPipeline {
   final List<Event> _pending = <Event>[];
   Timer? _flushTimer;
   Timer? _liveScanTimer;
-  String? _pendingMarkerEventId;
-  Timer? _markerDebounceTimer;
   final Duration _flushInterval;
   final int _maxBatch;
   final Duration _markerDebounce;
-  static const int _catchupMaxLookback =
-      4000; // maximum events to inspect during catch-up
+  // Catch-up window is handled by strategy with sensible defaults.
 
-  // Lightweight metrics counters (dev diagnostics).
-  int _metricProcessed = 0;
-  int _metricSkipped = 0;
-  int _metricFailures = 0;
-  int _metricPrefetch = 0;
-  int _metricFlushes = 0;
-  int _metricCatchupBatches = 0;
-  int _metricSkippedByRetryLimit = 0;
-  int _metricRetriesScheduled = 0;
-  // Circuit breaker counters
-  int _metricCircuitOpens = 0;
+  late final MetricsCounters _metrics;
+  final Set<String> _pendingJsonPaths = <String>{};
+
+  // Tracks eventIds that reported rows=0 while predicted status suggests
+  // incoming is newer (missing base). These should be retried and block
+  // advancement in the current batch.
+  final Set<String> _missingBaseEventIds = <String>{};
 
   // Failure retry tracking to avoid permanent blockage (configurable).
   final int _maxRetriesPerEvent;
@@ -134,15 +169,130 @@ class MatrixStreamConsumer implements SyncPipeline {
   final int _retryMaxEntries;
   final int _circuitFailureThreshold;
   final Duration _circuitCooldown;
-  DateTime? _circuitOpenUntil;
-  int _consecutiveFailures = 0;
-
-  final Map<String, _RetryInfo> _retryState = <String, _RetryInfo>{};
+  late final rc.CircuitBreaker _circuit;
+  late final rc.RetryTracker _retryTracker;
+  late final ReadMarkerManager _readMarkerManager;
 
   Duration _computeBackoff(int attempts) =>
       tu.computeExponentialBackoff(attempts);
 
   Client get _client => _sessionManager.client;
+
+  String? _extractRuntimeType(Event ev) => msh.extractRuntimeTypeFromEvent(ev);
+
+  String? _extractJsonPath(Event ev) => msh.extractJsonPathFromEvent(ev);
+
+  void _bumpDroppedType(String? rt) => _metrics.bumpDroppedType(rt);
+
+  Future<_ProcessOutcome> _processSyncPayloadEvent(
+    Event e, {
+    String dropSuffix = '',
+  }) async {
+    var processedOk = true;
+    var treatAsHandled = false;
+    var hadFailure = false;
+    var failureDelta = 0;
+    DateTime? nextDue;
+
+    final id = e.eventId;
+    final now = _now();
+    final blockedUntil = _retryTracker.blockedUntil(id, now);
+
+    if (blockedUntil != null) {
+      processedOk = false;
+      hadFailure = true;
+      nextDue = blockedUntil;
+    }
+
+    final attempts = _retryTracker.attempts(id);
+    if (attempts >= _maxRetriesPerEvent) {
+      treatAsHandled = true;
+      _retryTracker.clear(id);
+      _loggingService.captureEvent(
+        'dropping after retry cap$dropSuffix: $id (attempts=$attempts)',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'retry.cap',
+      );
+      if (_collectMetrics) {
+        _metrics.incSkippedByRetryLimit();
+        _bumpDroppedType(_extractRuntimeType(e));
+      }
+    } else if (processedOk) {
+      try {
+        await _eventProcessor.process(event: e, journalDb: _journalDb);
+        // If apply observer flagged this as "missing base" then treat it as a
+        // retryable failure (do not count as processed, do not advance, and
+        // schedule a retry soon).
+        if (_missingBaseEventIds.remove(id)) {
+          processedOk = false;
+          hadFailure = true;
+          failureDelta = 0; // apply-level retry, not an exception
+          final nextAttempts = attempts + 1;
+          final backoff = _computeBackoff(nextAttempts);
+          final due = _now().add(backoff);
+          _retryTracker.scheduleNext(id, nextAttempts, due);
+          nextDue = due;
+          _loggingService.captureEvent(
+            'missingBase retry scheduled: $id (attempts=$nextAttempts)',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'retry.missingBase',
+          );
+        } else {
+          if (_collectMetrics) {
+            _metrics.incProcessedWithType(_extractRuntimeType(e));
+          }
+          _retryTracker.clear(id);
+        }
+      } catch (err, st) {
+        processedOk = false;
+        hadFailure = true;
+        failureDelta = 1;
+        final nextAttempts = attempts + 1;
+        final backoff = _computeBackoff(nextAttempts);
+        final due = _now().add(backoff);
+        if (nextAttempts >= _maxRetriesPerEvent) {
+          _retryTracker.clear(id);
+          treatAsHandled = true;
+          _loggingService.captureEvent(
+            'dropping after retry cap$dropSuffix: $id (attempts=$nextAttempts)',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'retry.cap',
+          );
+          if (_collectMetrics) {
+            _metrics.incSkippedByRetryLimit();
+            _bumpDroppedType(_extractRuntimeType(e));
+          }
+        } else {
+          _retryTracker.scheduleNext(id, nextAttempts, due);
+        }
+        nextDue = due;
+        // Record pending JSON path for faster recovery when the failure is
+        // due to a missing attachment.
+        if (err is FileSystemException) {
+          final jp = _extractJsonPath(e);
+          if (jp != null) {
+            _pendingJsonPaths.add(jp);
+          }
+        }
+        _loggingService.captureException(
+          err,
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: dropSuffix.isEmpty ? 'process' : 'process.fallback',
+          stackTrace: st,
+        );
+        if (_collectMetrics) _metrics.incFailures();
+        if (_collectMetrics) _metrics.incRetriesScheduled();
+      }
+    }
+
+    return _ProcessOutcome(
+      processedOk: processedOk,
+      treatAsHandled: treatAsHandled,
+      hadFailure: hadFailure,
+      failureDelta: failureDelta,
+      nextDue: nextDue,
+    );
+  }
 
   @override
   Future<void> initialize() async {
@@ -157,7 +307,16 @@ class MatrixStreamConsumer implements SyncPipeline {
   Future<void> start() async {
     // Ensure room snapshot exists, then catch up and attach streaming.
     if (_roomManager.currentRoom == null) {
-      await _roomManager.hydrateRoomSnapshot(client: _client);
+      try {
+        await _roomManager.hydrateRoomSnapshot(client: _client);
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'start.hydrateRoom',
+          stackTrace: st,
+        );
+      }
     }
     await _attachCatchUp();
     await _sub?.cancel();
@@ -202,7 +361,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     _sub = null;
     _flushTimer?.cancel();
     _liveScanTimer?.cancel();
-    _markerDebounceTimer?.cancel();
+    _readMarkerManager.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
     try {
       _liveTimeline?.cancelSubscriptions();
@@ -241,55 +400,15 @@ class MatrixStreamConsumer implements SyncPipeline {
         );
         return;
       }
-      // First try SDK pagination/backfill so we don't need to rebuild giant
-      // snapshots for large/high-traffic rooms. Fallback to limit-doubling.
-      var limit = 200;
-      final snapshot = await room.getTimeline(limit: limit);
-      try {
-        // Attempt SDK backfill (best-effort across SDK versions).
-        final attempted =
-            await (_backfill ?? SdkPaginationCompat.backfillUntilContains)(
-          timeline: snapshot,
-          lastEventId: _lastProcessedEventId,
-          pageSize: 200,
-          maxPages: 20,
-          logging: _loggingService,
-        );
-        final events = List<Event>.from(snapshot.events)
-          ..sort(TimelineEventOrdering.compare);
-        var idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
-        if (idx < 0 && !attempted) {
-          // If SDK backfill wasn't possible, fall back to snapshot escalation.
-          while (true) {
-            final reachedStart = events.length < limit;
-            final reachedCap = limit >= _catchupMaxLookback;
-            if (idx >= 0 || reachedStart || reachedCap) break;
-            limit = math.min(limit * 2, _catchupMaxLookback);
-            final next = await room.getTimeline(limit: limit);
-            try {
-              final nextEvents = List<Event>.from(next.events)
-                ..sort(TimelineEventOrdering.compare);
-              events
-                ..clear()
-                ..addAll(nextEvents);
-              idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
-            } finally {
-              try {
-                next.cancelSubscriptions();
-              } catch (_) {}
-            }
-          }
-        }
-
-        final slice = idx >= 0 ? events.sublist(idx + 1) : events;
-        if (slice.isNotEmpty) {
-          if (_collectMetrics) _metricCatchupBatches++;
-          await _processOrdered(slice);
-        }
-      } finally {
-        try {
-          snapshot.cancelSubscriptions();
-        } catch (_) {}
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: _lastProcessedEventId,
+        backfill: _backfill ?? SdkPaginationCompat.backfillUntilContains,
+        logging: _loggingService,
+      );
+      if (slice.isNotEmpty) {
+        if (_collectMetrics) _metrics.incCatchupBatches();
+        await _processOrdered(slice);
       }
     } catch (e, st) {
       _loggingService.captureException(
@@ -350,9 +469,9 @@ class MatrixStreamConsumer implements SyncPipeline {
       final ordered = tu.dedupEventsByIdPreserveOrder(queue);
       await _processOrdered(ordered);
       if (_collectMetrics) {
-        _metricFlushes++;
+        _metrics.incFlushes();
         _loggingService.captureEvent(
-          'v2 metrics flush=$_metricFlushes processed=$_metricProcessed skipped=$_metricSkipped failures=$_metricFailures prefetch=$_metricPrefetch catchup=$_metricCatchupBatches skippedByRetry=$_metricSkippedByRetryLimit retriesScheduled=$_metricRetriesScheduled retriesPending=${_retryState.length}',
+          _metrics.buildFlushLog(retriesPending: _retryTracker.size()),
           domain: 'MATRIX_SYNC_V2',
           subDomain: 'metrics',
         );
@@ -375,11 +494,10 @@ class MatrixStreamConsumer implements SyncPipeline {
 
     // Circuit breaker: if open, skip processing and schedule a follow-up scan.
     final nowStart = _now();
-    final openUntil = _circuitOpenUntil;
-    if (openUntil != null && nowStart.isBefore(openUntil)) {
+    final remaining = _circuit.remainingCooldown(nowStart);
+    if (remaining != null) {
       _liveScanTimer?.cancel();
-      final delay = openUntil.difference(nowStart);
-      _liveScanTimer = Timer(delay, () {
+      _liveScanTimer = Timer(remaining, () {
         unawaited(_scanLiveTimeline());
       });
       return;
@@ -387,14 +505,24 @@ class MatrixStreamConsumer implements SyncPipeline {
 
     // First pass: prefetch attachments for remote events.
     for (final e in ordered) {
-      if (tu.shouldPrefetchAttachment(e, _client.userID)) {
+      if (ec.MatrixEventClassifier.shouldPrefetchAttachment(
+          e, _client.userID)) {
         try {
           await saveAttachment(
             e,
             loggingService: _loggingService,
             documentsDirectory: _documentsDirectory,
           );
-          if (_collectMetrics) _metricPrefetch++;
+          if (_collectMetrics) _metrics.incPrefetch();
+          final rp = e.content['relativePath'];
+          if (rp is String && rp.isNotEmpty) {
+            _metrics.addLastPrefetched(rp);
+            // If this path was pending during apply, trigger an immediate scan
+            // now that the attachment exists.
+            if (_pendingJsonPaths.remove(rp)) {
+              unawaited(_scanLiveTimeline());
+            }
+          }
         } catch (err, st) {
           _loggingService.captureException(
             err,
@@ -402,7 +530,7 @@ class MatrixStreamConsumer implements SyncPipeline {
             subDomain: 'prefetch',
             stackTrace: st,
           );
-          if (_collectMetrics) _metricFailures++;
+          if (_collectMetrics) _metrics.incFailures();
           // Continue with the next event; do not abort the batch on prefetch failures.
         }
       }
@@ -419,83 +547,65 @@ class MatrixStreamConsumer implements SyncPipeline {
       final ts = TimelineEventOrdering.timestamp(e);
       final id = e.eventId;
       final content = e.content;
-      final msgType = content['msgtype'];
       var processedOk = true;
       var treatAsHandled =
-          false; // allow advancement even if skipped by retry limit
+          false; // allow advancement even if skipped by retry cap
+      var isSyncPayloadEvent = false;
 
-      if (msgType == syncMessageType) {
-        // If this event has a retry schedule, and it's not yet due, block advancement until due.
-        final rs = _retryState[id];
-        final now = _now();
-        if (rs != null && now.isBefore(rs.nextDue)) {
-          processedOk = false;
-          hadFailure = true;
-          // Track earliest nextDue to schedule a follow-up scan at the right time.
-          if (earliestNextDue == null || rs.nextDue.isBefore(earliestNextDue)) {
-            earliestNextDue = rs.nextDue;
-          }
-        }
-
-        // Check retry cap — if exceeded, treat as handled and drop state to avoid memory growth.
-        final attempts = rs?.attempts ?? 0;
-        if (attempts >= _maxRetriesPerEvent) {
-          treatAsHandled = true;
-          _retryState.remove(id);
-          _loggingService.captureEvent(
-            'dropping after retry cap: $id (attempts=$attempts)',
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'retry.cap',
-          );
-          if (_collectMetrics) _metricSkippedByRetryLimit++;
-        } else if (processedOk) {
-          try {
-            await _eventProcessor.process(event: e, journalDb: _journalDb);
-            if (_collectMetrics) _metricProcessed++;
-            // On success, clear retry state.
-            _retryState.remove(id);
-          } catch (err, st) {
-            processedOk = false;
-            hadFailure = true;
-            batchFailures++;
-            final nextAttempts = attempts + 1;
-            final backoff = _computeBackoff(nextAttempts);
-            final due = _now().add(backoff);
-            if (nextAttempts >= _maxRetriesPerEvent) {
-              // Final failure: drop retry state, mark as handled to avoid blocking,
-              // and record metrics.
-              _retryState.remove(id);
-              treatAsHandled = true;
-              _loggingService.captureEvent(
-                'dropping after retry cap: $id (attempts=$nextAttempts)',
-                domain: 'MATRIX_SYNC_V2',
-                subDomain: 'retry.cap',
-              );
-              if (_collectMetrics) _metricSkippedByRetryLimit++;
-            } else {
-              _retryState[id] = _RetryInfo(nextAttempts, due);
-            }
-            if (earliestNextDue == null || due.isBefore(earliestNextDue)) {
-              earliestNextDue = due;
-            }
-            _loggingService.captureException(
-              err,
-              domain: 'MATRIX_SYNC_V2',
-              subDomain: 'process',
-              stackTrace: st,
-            );
-            if (_collectMetrics) _metricFailures++;
-            if (_collectMetrics) _metricRetriesScheduled++;
-          }
+      if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+          content['msgtype'] == syncMessageType) {
+        isSyncPayloadEvent = true;
+        final outcome = await _processSyncPayloadEvent(e);
+        processedOk = outcome.processedOk;
+        treatAsHandled = outcome.treatAsHandled;
+        if (outcome.hadFailure) hadFailure = true;
+        if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
+        if (outcome.nextDue != null &&
+            (earliestNextDue == null ||
+                outcome.nextDue!.isBefore(earliestNextDue))) {
+          earliestNextDue = outcome.nextDue;
         }
       } else {
-        if (_collectMetrics) _metricSkipped++;
+        // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
+        final validFallback = ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+            content['msgtype'] != syncMessageType;
+
+        if (validFallback) {
+          isSyncPayloadEvent = true;
+          final outcome = await _processSyncPayloadEvent(
+            e,
+            dropSuffix: ' (no-msgtype)',
+          );
+          processedOk = outcome.processedOk;
+          treatAsHandled = outcome.treatAsHandled;
+          if (outcome.hadFailure) hadFailure = true;
+          if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
+          if (outcome.nextDue != null &&
+              (earliestNextDue == null ||
+                  outcome.nextDue!.isBefore(earliestNextDue))) {
+            earliestNextDue = outcome.nextDue;
+          }
+          if (processedOk && _collectMetrics) {
+            _loggingService.captureEvent(
+              'v2 processed via no-msgtype fallback: $id',
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'fallback',
+            );
+          }
+        } else {
+          // Do not count attachment events as "skipped" — they are part of
+          // the sync flow and are already tracked via the `prefetch` metric.
+          if (!ec.MatrixEventClassifier.isAttachment(e)) {
+            if (_collectMetrics) _metrics.incSkipped();
+          }
+        }
       }
       if (!processedOk && !treatAsHandled) {
         blockedByFailure = true;
       }
       if (!blockedByFailure &&
           (processedOk || treatAsHandled) &&
+          isSyncPayloadEvent &&
           TimelineEventOrdering.isNewer(
             candidateTimestamp: ts,
             candidateEventId: id,
@@ -508,40 +618,34 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
 
     if (latestEventId != null && latestTs != null) {
-      final shouldAdvance = _lastProcessedEventId == null ||
-          _lastProcessedTs == null ||
-          TimelineEventOrdering.isNewer(
-            candidateTimestamp: latestTs,
-            candidateEventId: latestEventId,
-            latestTimestamp: _lastProcessedTs,
-            latestEventId: _lastProcessedEventId,
-          );
+      final shouldAdvance = msh.shouldAdvanceMarker(
+        candidateTimestamp: latestTs,
+        candidateEventId: latestEventId,
+        lastTimestamp: _lastProcessedTs,
+        lastEventId: _lastProcessedEventId,
+      );
       if (shouldAdvance) {
         _lastProcessedEventId = latestEventId;
         _lastProcessedTs = latestTs;
-        _pendingMarkerEventId = latestEventId;
-        _scheduleMarkerFlush(room);
-        _consecutiveFailures = 0; // reset on successful advancement
+        _readMarkerManager.schedule(room, latestEventId);
+        _circuit.reset(); // reset on successful advancement
       }
     }
 
     // If we encountered retriable failures (e.g., attachments not yet
     // available), schedule a follow-up scan to pick them up shortly.
     if (hadFailure) {
-      _consecutiveFailures += batchFailures;
-      if (_consecutiveFailures >= _circuitFailureThreshold) {
-        _circuitOpenUntil = _now().add(_circuitCooldown);
-        if (_collectMetrics) _metricCircuitOpens++;
+      final openedNow = _circuit.recordFailures(batchFailures, _now());
+      if (openedNow) {
+        if (_collectMetrics) _metrics.incCircuitOpens();
         _loggingService.captureEvent(
-          'circuit open for ${_circuitCooldown.inSeconds}s (failures=$_consecutiveFailures)',
+          'circuit open for ${_circuitCooldown.inSeconds}s',
           domain: 'MATRIX_SYNC_V2',
           subDomain: 'circuit',
         );
       }
       final now = _now();
-      final delay = earliestNextDue != null && earliestNextDue.isAfter(now)
-          ? earliestNextDue.difference(now)
-          : const Duration(milliseconds: 200);
+      final delay = msh.computeNextScanDelay(now, earliestNextDue);
       _liveScanTimer?.cancel();
       _liveScanTimer = Timer(delay, () {
         unawaited(_scanLiveTimeline());
@@ -549,73 +653,101 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
 
     // Prune retry state map to avoid unbounded growth.
-    _pruneRetryState();
+    _retryTracker.prune(_now());
   }
 
-  Map<String, int> metricsSnapshot() => <String, int>{
-        'processed': _metricProcessed,
-        'skipped': _metricSkipped,
-        'failures': _metricFailures,
-        'prefetch': _metricPrefetch,
-        'flushes': _metricFlushes,
-        'catchupBatches': _metricCatchupBatches,
-        'skippedByRetryLimit': _metricSkippedByRetryLimit,
-        'retriesScheduled': _metricRetriesScheduled,
-        'circuitOpens': _metricCircuitOpens,
-        // Diagnostics-only fields (not shown in UI)
-        'retryStateSize': _retryState.length,
-        'circuitOpen':
-            _circuitOpenUntil != null && _now().isBefore(_circuitOpenUntil!)
-                ? 1
-                : 0,
-      };
+  Map<String, int> metricsSnapshot() => _metrics.snapshot(
+        retryStateSize: _retryTracker.size(),
+        circuitIsOpen: _circuit.isOpen(_now()),
+      );
+
+  // Called by SyncEventProcessor via observer to record DB apply results
+  void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {
+    try {
+      final rows = diag.rowsAffected;
+      final status = diag.conflictStatus;
+      final rt = diag.payloadType;
+      if (rows > 0) {
+        _metrics.incDbApplied();
+      } else if (status.contains('concurrent')) {
+        _metrics.incConflictsCreated();
+      } else {
+        _metrics.incDbIgnoredByVectorClock();
+      }
+      // Also attribute to type-specific drops if ignored
+      if (rows == 0 && !status.contains('concurrent')) {
+        final isMissingBase = status.contains('b_gt_a');
+        if (isMissingBase) {
+          _metrics.incDbMissingBase();
+          _missingBaseEventIds.add(diag.eventId);
+          // Record in diagnostics ring buffer
+          final entry = '${diag.eventId}:missingBase';
+          _metrics.addLastIgnored(entry);
+        } else {
+          // older/equal – count as dropped by type
+          _bumpDroppedType(rt);
+          final reason = msh.ignoredReasonFromStatus(status);
+          final entry = '${diag.eventId}:$reason';
+          _metrics.addLastIgnored(entry);
+        }
+      }
+    } catch (_) {
+      // best-effort only
+    }
+  }
 
   // Visible for testing only
   @visibleForTesting
   bool get debugCollectMetrics => _collectMetrics;
 
-  void _scheduleMarkerFlush(Room room) {
-    _markerDebounceTimer?.cancel();
-    _markerDebounceTimer = Timer(_markerDebounce, () {
-      unawaited(
-        _flushReadMarker(room).catchError((Object error, StackTrace stack) {
-          _loggingService.captureException(
-            error,
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'flushReadMarker',
-            stackTrace: stack,
-          );
-        }),
-      );
-    });
+  // Additional textual diagnostics not represented in numeric metrics.
+  Map<String, String> diagnosticsStrings() {
+    final map = <String, String>{
+      'lastIgnoredCount': _metrics.lastIgnored.length.toString(),
+      'lastPrefetchedCount': _metrics.lastPrefetched.length.toString(),
+    };
+    for (var i = 0; i < _metrics.lastIgnored.length; i++) {
+      map['lastIgnored.${i + 1}'] = _metrics.lastIgnored[i];
+    }
+    for (var i = 0; i < _metrics.lastPrefetched.length; i++) {
+      map['lastPrefetched.${i + 1}'] = _metrics.lastPrefetched[i];
+    }
+    return map;
   }
 
-  Future<void> _flushReadMarker(Room room) async {
-    final id = _pendingMarkerEventId;
-    if (id == null) return;
-    _pendingMarkerEventId = null;
-    await _readMarkerService.updateReadMarker(
-      client: _client,
-      room: room,
-      eventId: id,
-    );
+  // Force a rescan and optional catch-up to recover from potential gaps
+  Future<void> forceRescan({bool includeCatchUp = true}) async {
+    try {
+      if (includeCatchUp) {
+        await _attachCatchUp();
+      }
+      await _scanLiveTimeline();
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'forceRescan',
+        stackTrace: st,
+      );
+    }
+  }
+
+  // Force all pending retries to be immediately due and trigger a scan.
+  Future<void> retryNow() async {
+    try {
+      if (_retryTracker.size() == 0) return;
+      final now = _now();
+      _retryTracker.markAllDueNow(now);
+      await _scanLiveTimeline();
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'retryNow',
+        stackTrace: st,
+      );
+    }
   }
 
   // Debug helpers removed in favor of metricsSnapshot() fields.
-
-  void _pruneRetryState() {
-    if (_retryState.isEmpty) return;
-    final now = _now();
-    // Remove entries whose nextDue is far in the past (stale),
-    // and enforce a max size by dropping oldest nextDue entries.
-    _retryState
-        .removeWhere((_, info) => now.difference(info.nextDue) > _retryTtl);
-    if (_retryState.length <= _retryMaxEntries) return;
-    final entries = _retryState.entries.toList()
-      ..sort((a, b) => a.value.nextDue.compareTo(b.value.nextDue));
-    final toRemove = _retryState.length - _retryMaxEntries;
-    for (var i = 0; i < toRemove; i++) {
-      _retryState.remove(entries[i].key);
-    }
-  }
 }

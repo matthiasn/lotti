@@ -344,7 +344,8 @@ void main() {
 
       // Verify checklist data integrity
       final checklistEntity = checklist! as Checklist;
-      expect(checklistEntity.data.title, 'TODOs'); // Default title when none provided
+      expect(checklistEntity.data.title,
+          'TODOs'); // Default title when none provided
       expect(
           checklistEntity.data.linkedChecklistItems, isEmpty); // No items yet
       expect(checklistEntity.data.linkedTasks, contains(task.id));

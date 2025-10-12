@@ -196,21 +196,38 @@ that keeps the pipeline testable and observable.
 - Enabling V2
   - Set the config flag `enable_sync_v2` (JournalDb flags). Restart so DI can
     construct the V2 pipeline path. V1 remains intact if the flag is false.
-- Metrics (typed)
-  - The `MatrixStreamConsumer` surfaces a limited set of counters via
-    `metricsSnapshot()` (processed, skipped, failures, prefetch, flushes,
-    catchupBatches, skippedByRetryLimit, retriesScheduled, circuitOpens).
-  - `MatrixService.getV2Metrics()` maps these into a typed `V2Metrics` model.
-  - The Matrix Stats page renders a typed table and supports a Refresh action.
-  - Diagnostics (`getDiagnosticInfo`) intentionally omit V2 metrics to avoid
-    bloating logs; prefer the typed accessors for tooling/UI.
+- Metrics (typed + diagnostics)
+  - Consumer surfaces counters via `metricsSnapshot()` including:
+    - processed, skipped, failures, prefetch, flushes, catchupBatches,
+      skippedByRetryLimit, retriesScheduled, circuitOpens
+    - processed.<type>, droppedByType.<type>
+    - dbApplied, dbIgnoredByVectorClock, conflictsCreated
+    - heartbeatScans, markerMisses
+  - `MatrixService.getV2Metrics()` maps these into a typed `V2Metrics` model
+    for UI display. The Matrix Stats page renders them and supports:
+    - Refresh
+    - Force Rescan (triggers live rescan + focused catch-up)
+    - Copy Diagnostics (copies a readable metrics snapshot)
+  - `getDiagnosticInfo()` intentionally omits V2 metrics; prefer the typed API
+    or diagnostics text for tooling/UI.
 - Catch-up and Pagination
   - On attach, V2 attempts SDK pagination/backfill first (best-effort across
     SDK versions); if unavailable, it falls back to escalating snapshot limits.
 - Reliability safeguards
-  - Streaming micro-batches are ordered oldest→newest, attachments are prefetched
-    before processing, retries apply exponential backoff with TTL and a size cap,
-    and a circuit breaker opens after sustained failures to prevent thrash.
+  - Streaming micro-batches are ordered oldest→newest; attachments are prefetched
+    before processing. Retries apply exponential backoff with TTL and a size cap;
+    a circuit breaker opens after sustained failures to prevent thrash.
+  - Read-marker advancement is sync-payload only (or valid fallback-decoded JSON)
+    to avoid silently skipping payloads when non-sync events arrive late.
+  - A heartbeat rescan (every 5s) runs; if the last marker isn’t in the live
+    window, a focused catch-up recovers gaps.
+
+### Reliability tracker
+
+For ongoing issues, hypotheses, and the current mitigation plan see:
+`docs/progress/2025-10-12-sync-v2-reliability.md`. This document outlines what we
+are struggling with in the field, what we’ve landed so far, and how to verify
+behaviour using Matrix Stats and logs.
 
 ## Implementation Notes & Consistency
 
