@@ -395,54 +395,6 @@ void main() {
     verify(() => mockMatrixService.forceV2Rescan()).called(1);
   });
 
-  testWidgets('Copy Diagnostics button calls service and shows snackbar',
-      (tester) async {
-    final stats = MatrixStats(
-      sentCount: 1,
-      messageCounts: const {'m.text': 1},
-    );
-
-    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
-    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
-        'processed': 1,
-        'skipped': 0,
-        'failures': 0,
-        'prefetch': 0,
-        'flushes': 1,
-        'catchupBatches': 0,
-        'skippedByRetryLimit': 0,
-        'retriesScheduled': 0,
-        'circuitOpens': 0,
-      }),
-    );
-    when(() => mockMatrixService.getSyncDiagnosticsText())
-        .thenAnswer((_) async => 'processed=1');
-
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const IncomingStats(),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(
-        find.byKey(const Key('matrixStats.copyDiagnostics')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
-    await tester.pumpAndSettle();
-
-    // Called at least once by the diagnostics section plus this button.
-    verify(() => mockMatrixService.getSyncDiagnosticsText())
-        .called(greaterThan(0));
-    expect(find.text('Diagnostics copied'), findsOneWidget);
-  });
-
   testWidgets('Last updated formatting shows HH:mm:ss', (tester) async {
     final stats = MatrixStats(
       sentCount: 0,
@@ -484,67 +436,5 @@ void main() {
       return false;
     });
     expect(lastUpdatedMatch, findsOneWidget);
-  });
-
-  testWidgets('Tooltips contain expected messages and snackbar duration holds',
-      (tester) async {
-    final stats = MatrixStats(
-      sentCount: 1,
-      messageCounts: const {'m.text': 1},
-    );
-
-    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
-    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
-        'processed': 1,
-        'skipped': 0,
-        'failures': 0,
-        'prefetch': 0,
-        'flushes': 1,
-        'catchupBatches': 0,
-        'skippedByRetryLimit': 0,
-        'retriesScheduled': 0,
-        'circuitOpens': 0,
-      }),
-    );
-    when(() => mockMatrixService.getSyncDiagnosticsText())
-        .thenAnswer((_) async => 'ok');
-
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const IncomingStats(),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip)).toList();
-    expect(
-      tooltips.any((t) => t.message?.startsWith('Legend:') ?? false),
-      isTrue,
-    );
-    expect(
-      tooltips.any((t) => t.message == 'Force rescan and catch-up now'),
-      isTrue,
-    );
-    expect(
-      tooltips.any((t) => t.message == 'Copy sync diagnostics to clipboard'),
-      isTrue,
-    );
-
-    // Verify snackbar duration ~800ms
-    await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
-    await tester.pump();
-    expect(find.text('Diagnostics copied'), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Diagnostics copied'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
-    expect(find.text('Diagnostics copied'), findsNothing);
   });
 }

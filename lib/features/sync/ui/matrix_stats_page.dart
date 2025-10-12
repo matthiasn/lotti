@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
+import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -208,22 +208,15 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                                           ref.read(matrixServiceProvider);
                                       final text =
                                           await svc.getSyncDiagnosticsText();
-                                      // Use Flutter clipboard
                                       // ignore: use_build_context_synchronously
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(const SnackBar(
-                                        content: Text('Diagnostics copied'),
-                                        duration: Duration(milliseconds: 800),
-                                      ));
-                                      // defer import at call-site level
-                                      // set clipboard via services
-                                      // Using dynamic to avoid test import tight-coupling
-                                      // with services library in this layer.
-                                      // This is intentionally simple; tests only verify
-                                      // invocation and snack bar.
-                                      // In app runtime, Clipboard is available.
-                                      await Clipboard.setData(
-                                        ClipboardData(text: text),
+                                      await ClipboardHelper
+                                          .copyTextWithSnackBar(
+                                        context,
+                                        text,
+                                        snackBar: const SnackBar(
+                                          content: Text('Diagnostics copied'),
+                                          duration: Duration(milliseconds: 800),
+                                        ),
                                       );
                                     },
                                   ),
