@@ -53,25 +53,15 @@ class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
 
 class _TestV2Pipeline2 extends MatrixStreamConsumer {
   _TestV2Pipeline2({
-    required MatrixSessionManager sessionManager,
-    required SyncRoomManager roomManager,
-    required LoggingService loggingService,
-    required JournalDb journalDb,
-    required SettingsDb settingsDb,
-    required SyncEventProcessor eventProcessor,
-    required SyncReadMarkerService readMarkerService,
-    required Directory documentsDirectory,
-  }) : super(
-          sessionManager: sessionManager,
-          roomManager: roomManager,
-          loggingService: loggingService,
-          journalDb: journalDb,
-          settingsDb: settingsDb,
-          eventProcessor: eventProcessor,
-          readMarkerService: readMarkerService,
-          documentsDirectory: documentsDirectory,
-          collectMetrics: true,
-        );
+    required super.sessionManager,
+    required super.roomManager,
+    required super.loggingService,
+    required super.journalDb,
+    required super.settingsDb,
+    required super.eventProcessor,
+    required super.readMarkerService,
+    required super.documentsDirectory,
+  }) : super(collectMetrics: true);
 
   Map<String, int>? testMetrics;
   Future<void> Function({required bool includeCatchUp})? onForceRescan;
@@ -358,7 +348,7 @@ void main() {
       v2PipelineOverride: pipeline,
     );
 
-    await service.forceV2Rescan(includeCatchUp: true);
+    await service.forceV2Rescan();
     expect(called, 1);
   });
 

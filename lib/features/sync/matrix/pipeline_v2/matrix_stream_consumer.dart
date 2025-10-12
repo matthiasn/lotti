@@ -20,6 +20,21 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
+class _ProcessOutcome {
+  const _ProcessOutcome({
+    required this.processedOk,
+    required this.treatAsHandled,
+    required this.hadFailure,
+    required this.failureDelta,
+    this.nextDue,
+  });
+  final bool processedOk;
+  final bool treatAsHandled;
+  final bool hadFailure;
+  final int failureDelta; // counts only processing exceptions (for circuit)
+  final DateTime? nextDue; // earliest next due time if blocked/retried
+}
+
 class _RetryInfo {
   _RetryInfo(this.attempts, this.nextDue);
   final int attempts;
@@ -178,6 +193,88 @@ class MatrixStreamConsumer implements SyncPipeline {
   void _bumpDroppedType(String? rt) {
     if (rt == null || rt.isEmpty) return;
     _metricDroppedByType.update(rt, (int v) => v + 1, ifAbsent: () => 1);
+  }
+
+  Future<_ProcessOutcome> _processSyncPayloadEvent(
+    Event e, {
+    String dropSuffix = '',
+  }) async {
+    var processedOk = true;
+    var treatAsHandled = false;
+    var hadFailure = false;
+    var failureDelta = 0;
+    DateTime? nextDue;
+
+    final id = e.eventId;
+    final rs = _retryState[id];
+    final now = _now();
+
+    if (rs != null && now.isBefore(rs.nextDue)) {
+      processedOk = false;
+      hadFailure = true;
+      nextDue = rs.nextDue;
+    }
+
+    final attempts = rs?.attempts ?? 0;
+    if (attempts >= _maxRetriesPerEvent) {
+      treatAsHandled = true;
+      _retryState.remove(id);
+      _loggingService.captureEvent(
+        'dropping after retry cap$dropSuffix: $id (attempts=$attempts)',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'retry.cap',
+      );
+      if (_collectMetrics) {
+        _metricSkippedByRetryLimit++;
+        _bumpDroppedType(_extractRuntimeType(e));
+      }
+    } else if (processedOk) {
+      try {
+        await _eventProcessor.process(event: e, journalDb: _journalDb);
+        if (_collectMetrics) _metricProcessed++;
+        if (_collectMetrics) _bumpProcessedType(_extractRuntimeType(e));
+        _retryState.remove(id);
+      } catch (err, st) {
+        processedOk = false;
+        hadFailure = true;
+        failureDelta = 1;
+        final nextAttempts = attempts + 1;
+        final backoff = _computeBackoff(nextAttempts);
+        final due = _now().add(backoff);
+        if (nextAttempts >= _maxRetriesPerEvent) {
+          _retryState.remove(id);
+          treatAsHandled = true;
+          _loggingService.captureEvent(
+            'dropping after retry cap$dropSuffix: $id (attempts=$nextAttempts)',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'retry.cap',
+          );
+          if (_collectMetrics) {
+            _metricSkippedByRetryLimit++;
+            _bumpDroppedType(_extractRuntimeType(e));
+          }
+        } else {
+          _retryState[id] = _RetryInfo(nextAttempts, due);
+        }
+        nextDue = due;
+        _loggingService.captureException(
+          err,
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: dropSuffix.isEmpty ? 'process' : 'process.fallback',
+          stackTrace: st,
+        );
+        if (_collectMetrics) _metricFailures++;
+        if (_collectMetrics) _metricRetriesScheduled++;
+      }
+    }
+
+    return _ProcessOutcome(
+      processedOk: processedOk,
+      treatAsHandled: treatAsHandled,
+      hadFailure: hadFailure,
+      failureDelta: failureDelta,
+      nextDue: nextDue,
+    );
   }
 
   @override
@@ -458,178 +555,60 @@ class MatrixStreamConsumer implements SyncPipeline {
       final msgType = content['msgtype'];
       var processedOk = true;
       var treatAsHandled =
-          false; // allow advancement even if skipped by retry limit
-      var isSyncPayloadEvent = msgType == syncMessageType;
+          false; // allow advancement even if skipped by retry cap
+      var isSyncPayloadEvent = false;
 
       if (msgType == syncMessageType) {
-        // If this event has a retry schedule, and it's not yet due, block advancement until due.
-        final rs = _retryState[id];
-        final now = _now();
-        if (rs != null && now.isBefore(rs.nextDue)) {
-          processedOk = false;
-          hadFailure = true;
-          // Track earliest nextDue to schedule a follow-up scan at the right time.
-          if (earliestNextDue == null || rs.nextDue.isBefore(earliestNextDue)) {
-            earliestNextDue = rs.nextDue;
-          }
-        }
-
-        // Check retry cap — if exceeded, treat as handled and drop state to avoid memory growth.
-        final attempts = rs?.attempts ?? 0;
-        if (attempts >= _maxRetriesPerEvent) {
-          treatAsHandled = true;
-          _retryState.remove(id);
-          _loggingService.captureEvent(
-            'dropping after retry cap: $id (attempts=$attempts)',
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'retry.cap',
-          );
-          if (_collectMetrics) {
-            _metricSkippedByRetryLimit++;
-            _bumpDroppedType(_extractRuntimeType(e));
-          }
-        } else if (processedOk) {
-          try {
-            await _eventProcessor.process(event: e, journalDb: _journalDb);
-            if (_collectMetrics) _metricProcessed++;
-            if (_collectMetrics) _bumpProcessedType(_extractRuntimeType(e));
-            // On success, clear retry state.
-            _retryState.remove(id);
-          } catch (err, st) {
-            processedOk = false;
-            hadFailure = true;
-            batchFailures++;
-            final nextAttempts = attempts + 1;
-            final backoff = _computeBackoff(nextAttempts);
-            final due = _now().add(backoff);
-            if (nextAttempts >= _maxRetriesPerEvent) {
-              // Final failure: drop retry state, mark as handled to avoid blocking,
-              // and record metrics.
-              _retryState.remove(id);
-              treatAsHandled = true;
-              _loggingService.captureEvent(
-                'dropping after retry cap: $id (attempts=$nextAttempts)',
-                domain: 'MATRIX_SYNC_V2',
-                subDomain: 'retry.cap',
-              );
-              if (_collectMetrics) {
-                _metricSkippedByRetryLimit++;
-                _bumpDroppedType(_extractRuntimeType(e));
-              }
-            } else {
-              _retryState[id] = _RetryInfo(nextAttempts, due);
-            }
-            if (earliestNextDue == null || due.isBefore(earliestNextDue)) {
-              earliestNextDue = due;
-            }
-            _loggingService.captureException(
-              err,
-              domain: 'MATRIX_SYNC_V2',
-              subDomain: 'process',
-              stackTrace: st,
-            );
-            if (_collectMetrics) _metricFailures++;
-            if (_collectMetrics) _metricRetriesScheduled++;
-          }
+        isSyncPayloadEvent = true;
+        final outcome = await _processSyncPayloadEvent(e);
+        processedOk = outcome.processedOk;
+        treatAsHandled = outcome.treatAsHandled;
+        if (outcome.hadFailure) hadFailure = true;
+        if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
+        if (outcome.nextDue != null &&
+            (earliestNextDue == null ||
+                outcome.nextDue!.isBefore(earliestNextDue))) {
+          earliestNextDue = outcome.nextDue;
         }
       } else {
-        // Fallback: some older clients may have omitted the custom msgtype
-        // while still sending a valid Lotti sync payload as the text body.
-        // Try to decode and process these safely to avoid dropping messages.
-        var handledByFallback = false;
+        // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
+        var validFallback = false;
         try {
           final txt = e.text;
           if (txt.isNotEmpty) {
-            // Quick parse check: decode base64 -> JSON map and verify it looks
-            // like a SyncMessage (freezed includes a `runtimeType` discriminator).
             final decoded = utf8.decode(base64.decode(txt));
             final obj = json.decode(decoded);
-            if (obj is Map<String, dynamic> && obj['runtimeType'] is String) {
-              // Mirror the same retry/processing path used for syncMessageType.
-              isSyncPayloadEvent = true;
-              final rs = _retryState[id];
-              final now = _now();
-              if (rs != null && now.isBefore(rs.nextDue)) {
-                processedOk = false;
-                hadFailure = true;
-                if (earliestNextDue == null ||
-                    rs.nextDue.isBefore(earliestNextDue)) {
-                  earliestNextDue = rs.nextDue;
-                }
-              }
-
-              final attempts = rs?.attempts ?? 0;
-              if (attempts >= _maxRetriesPerEvent) {
-                treatAsHandled = true;
-                _retryState.remove(id);
-                _loggingService.captureEvent(
-                  'dropping after retry cap (no-msgtype): $id (attempts=$attempts)',
-                  domain: 'MATRIX_SYNC_V2',
-                  subDomain: 'retry.cap',
-                );
-                if (_collectMetrics) {
-                  _metricSkippedByRetryLimit++;
-                  _bumpDroppedType(_extractRuntimeType(e));
-                }
-              } else if (processedOk) {
-                try {
-                  await _eventProcessor.process(
-                      event: e, journalDb: _journalDb);
-                  if (_collectMetrics) _metricProcessed++;
-                  if (_collectMetrics) {
-                    _bumpProcessedType(_extractRuntimeType(e));
-                  }
-                  _retryState.remove(id);
-                  handledByFallback = true;
-                  if (_collectMetrics) {
-                    _loggingService.captureEvent(
-                      'v2 processed via no-msgtype fallback: $id',
-                      domain: 'MATRIX_SYNC_V2',
-                      subDomain: 'fallback',
-                    );
-                  }
-                } catch (err, st) {
-                  processedOk = false;
-                  hadFailure = true;
-                  batchFailures++;
-                  final nextAttempts = attempts + 1;
-                  final backoff = _computeBackoff(nextAttempts);
-                  final due = _now().add(backoff);
-                  if (nextAttempts >= _maxRetriesPerEvent) {
-                    _retryState.remove(id);
-                    treatAsHandled = true;
-                    _loggingService.captureEvent(
-                      'dropping after retry cap (no-msgtype): $id (attempts=$nextAttempts)',
-                      domain: 'MATRIX_SYNC_V2',
-                      subDomain: 'retry.cap',
-                    );
-                    if (_collectMetrics) {
-                      _metricSkippedByRetryLimit++;
-                      _bumpDroppedType(_extractRuntimeType(e));
-                    }
-                  } else {
-                    _retryState[id] = _RetryInfo(nextAttempts, due);
-                  }
-                  if (earliestNextDue == null ||
-                      due.isBefore(earliestNextDue)) {
-                    earliestNextDue = due;
-                  }
-                  _loggingService.captureException(
-                    err,
-                    domain: 'MATRIX_SYNC_V2',
-                    subDomain: 'process.fallback',
-                    stackTrace: st,
-                  );
-                  if (_collectMetrics) _metricFailures++;
-                  if (_collectMetrics) _metricRetriesScheduled++;
-                }
-              }
-            }
+            validFallback =
+                obj is Map<String, dynamic> && obj['runtimeType'] is String;
           }
         } catch (_) {
           // Not a Lotti sync payload — ignore quietly.
+          validFallback = false;
         }
-        if (!handledByFallback) {
+
+        if (validFallback) {
+          isSyncPayloadEvent = true;
+          final outcome = await _processSyncPayloadEvent(
+            e,
+            dropSuffix: ' (no-msgtype)',
+          );
+          processedOk = outcome.processedOk;
+          treatAsHandled = outcome.treatAsHandled;
+          if (outcome.hadFailure) hadFailure = true;
+          if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
+          if (outcome.nextDue != null &&
+              (earliestNextDue == null ||
+                  outcome.nextDue!.isBefore(earliestNextDue))) {
+            earliestNextDue = outcome.nextDue;
+          }
+          if (processedOk && _collectMetrics) {
+            _loggingService.captureEvent(
+              'v2 processed via no-msgtype fallback: $id',
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'fallback',
+            );
+          }
+        } else {
           // Do not count attachment events as "skipped" — they are part of
           // the sync flow and are already tracked via the `prefetch` metric.
           if (e.attachmentMimetype.isEmpty) {
@@ -743,7 +722,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
       // Also attribute to type-specific drops if ignored
       if (rows == 0 && !status.contains('concurrent')) {
-        _metricDroppedByType.update(rt, (int v) => v + 1, ifAbsent: () => 1);
+        _bumpDroppedType(rt);
       }
     } catch (_) {
       // best-effort only

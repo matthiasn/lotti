@@ -120,7 +120,15 @@ class SyncEventProcessor {
               if (vcA != null && vcB0 != null) {
                 predictedStatus = VectorClock.compare(vcA, vcB0);
               }
-            } catch (_) {
+            } catch (e, st) {
+              // Best-effort prediction only: log unexpected failures so they
+              // don't get silently swallowed, and keep a safe default.
+              _loggingService.captureException(
+                e,
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'apply.predictVectorClock',
+                stackTrace: st,
+              );
               predictedStatus = VclockStatus.b_gt_a;
             }
           }

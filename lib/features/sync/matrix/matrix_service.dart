@@ -133,11 +133,7 @@ class MatrixService {
 
       // Wire DB-apply diagnostics from the processor into the V2 pipeline
       if (_v2Pipeline != null) {
-        try {
-          _eventProcessor.applyObserver = _v2Pipeline!.reportDbApplyDiagnostics;
-        } catch (_) {
-          // If observer not available, skip wiring; metrics will simply omit DB apply counters.
-        }
+        _eventProcessor.applyObserver = _v2Pipeline!.reportDbApplyDiagnostics;
       }
       final coordinator = lifecycleCoordinator ??
           SyncLifecycleCoordinator(

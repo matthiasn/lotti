@@ -17,20 +17,6 @@ class V2Metrics {
   });
 
   factory V2Metrics.fromMap(Map<String, dynamic> map) {
-    final base = V2Metrics(
-      processed: (map['processed'] ?? 0) as int,
-      skipped: (map['skipped'] ?? 0) as int,
-      failures: (map['failures'] ?? 0) as int,
-      prefetch: (map['prefetch'] ?? 0) as int,
-      flushes: (map['flushes'] ?? 0) as int,
-      catchupBatches: (map['catchupBatches'] ?? 0) as int,
-      skippedByRetryLimit: (map['skippedByRetryLimit'] ?? 0) as int,
-      retriesScheduled: (map['retriesScheduled'] ?? 0) as int,
-      circuitOpens: (map['circuitOpens'] ?? 0) as int,
-      dbApplied: (map['dbApplied'] ?? 0) as int,
-      dbIgnoredByVectorClock: (map['dbIgnoredByVectorClock'] ?? 0) as int,
-      conflictsCreated: (map['conflictsCreated'] ?? 0) as int,
-    );
     final typed = <String, int>{};
     final dropped = <String, int>{};
     for (final entry in map.entries) {
@@ -43,20 +29,20 @@ class V2Metrics {
       }
     }
     return V2Metrics(
-      processed: base.processed,
-      skipped: base.skipped,
-      failures: base.failures,
-      prefetch: base.prefetch,
-      flushes: base.flushes,
-      catchupBatches: base.catchupBatches,
-      skippedByRetryLimit: base.skippedByRetryLimit,
-      retriesScheduled: base.retriesScheduled,
-      circuitOpens: base.circuitOpens,
+      processed: (map['processed'] ?? 0) as int,
+      skipped: (map['skipped'] ?? 0) as int,
+      failures: (map['failures'] ?? 0) as int,
+      prefetch: (map['prefetch'] ?? 0) as int,
+      flushes: (map['flushes'] ?? 0) as int,
+      catchupBatches: (map['catchupBatches'] ?? 0) as int,
+      skippedByRetryLimit: (map['skippedByRetryLimit'] ?? 0) as int,
+      retriesScheduled: (map['retriesScheduled'] ?? 0) as int,
+      circuitOpens: (map['circuitOpens'] ?? 0) as int,
+      dbApplied: (map['dbApplied'] ?? 0) as int,
+      dbIgnoredByVectorClock: (map['dbIgnoredByVectorClock'] ?? 0) as int,
+      conflictsCreated: (map['conflictsCreated'] ?? 0) as int,
       processedByType: typed,
       droppedByType: dropped,
-      dbApplied: base.dbApplied,
-      dbIgnoredByVectorClock: base.dbIgnoredByVectorClock,
-      conflictsCreated: base.conflictsCreated,
     );
   }
 
