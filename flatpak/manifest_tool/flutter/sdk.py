@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shlex
 from typing import Any, Iterable, Optional
 
 try:  # pragma: no cover
@@ -196,10 +197,11 @@ def normalize_flutter_sdk_module(document: ManifestDocument) -> OperationResult:
 
 
 def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
-    """Replace hardcoded SDK copy with conditional version.
+    """Normalize Flutter SDK copy commands to be robust.
 
-    Changes cp -r /var/lib/flutter to a conditional that checks
-    if the directory exists first.
+    - If commands copy from a single hardcoded location (only /var/lib/flutter or only /app/flutter),
+      replace them with a conditional that tries both locations.
+    - Preserve destination path.
 
     Args:
         document: The manifest document to modify
@@ -220,13 +222,30 @@ def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
 
         new_commands = []
         for cmd in commands:
-            if isinstance(cmd, str) and cmd.strip() == "cp -r /var/lib/flutter .":
-                # Replace with conditional version
-                new_cmd = "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
-                new_commands.append(new_cmd)
-                changed = True
-            else:
+            if not isinstance(cmd, str):
                 new_commands.append(cmd)
+                continue
+
+            stripped = cmd.strip()
+
+            # Match common copy forms used in our manifests
+            # 1) cp -r /var/lib/flutter /run/build/lotti/flutter_sdk
+            # 2) cp -r /app/flutter /run/build/lotti/flutter_sdk
+            # 3) cp -r /var/lib/flutter . (older form)
+            # 4) cp -r /app/flutter . (rare)
+            if stripped.startswith("cp -r /var/lib/flutter ") or stripped.startswith("cp -r /app/flutter "):
+                parts = stripped.split()
+                # Expect: cp -r <src> <dest>
+                if len(parts) >= 4 and parts[0] == "cp" and parts[1] == "-r":
+                    dest = parts[3]
+                    # Shell-escape destination to prevent injection in constructed command
+                    escaped_dest = shlex.quote(dest)
+                    conditional = f"if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {escaped_dest}; fi"
+                    new_commands.append(conditional)
+                    changed = True
+                    continue
+
+            new_commands.append(cmd)
 
         if changed:
             module["build-commands"] = new_commands

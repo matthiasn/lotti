@@ -12,8 +12,6 @@ on:
 
 jobs:
   offline-flatpak:
-    if: ${{ false }} # TODO: re-enable after fix
-
     runs-on: ubuntu-latest
 
     steps:
@@ -58,7 +56,7 @@ jobs:
         env:
           CLEAN_AFTER_GEN: "false"  # Keep build artifacts for the verification step
         run: |
-          ./flatpak/prepare_flathub_submission.sh
+          DOWNLOAD_MISSING_SOURCES=false ./flatpak/prepare_flathub_submission.sh
 
       - name: Debug prepared artifacts contents
         run: |

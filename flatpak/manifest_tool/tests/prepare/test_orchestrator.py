@@ -70,7 +70,7 @@ def _make_context(base: Path) -> PrepareFlathubContext:
         release_date="1970-01-01",
         current_branch="main",
         app_commit="deadbeef",
-        flutter_tag="3.35.4",
+        flutter_tag="3.35.6",
         cached_flutter_dir=None,
         flatpak_flutter_repo=flatpak_dir / "flatpak-flutter",
         flatpak_flutter_log=work_dir / "flatpak-flutter.log",
@@ -159,7 +159,7 @@ class PrepareOrchestratorTests(unittest.TestCase):
                                     {
                                         "type": "git",
                                         "url": "https://github.com/flutter/flutter.git",
-                                        "tag": "3.35.4",
+                                        "tag": "3.35.6",
                                     }
                                 ],
                             },
@@ -350,6 +350,29 @@ class PrepareOrchestratorTests(unittest.TestCase):
 
             self.assertTrue((context.output_dir / "sqlite3_flutter_libs" / "dummy.patch").is_file())
             self.assertTrue((context.output_dir / "cargokit" / "Cargo.lock").is_file())
+
+    def test_copy_helper_directories_fallbacks_to_foreign_deps(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            context = _make_context(base)
+            context.manifest_work.parent.mkdir(parents=True, exist_ok=True)
+            outgoing_manifest = context.output_dir / context.manifest_work.name
+            outgoing_manifest.parent.mkdir(parents=True, exist_ok=True)
+            outgoing_manifest.write_text(yaml.safe_dump({"modules": []}), encoding="utf-8")
+
+            foreign_root = context.flatpak_flutter_repo / "foreign_deps"
+            cargokit_root = foreign_root / "cargokit"
+            cargokit_root.mkdir(parents=True, exist_ok=True)
+            (cargokit_root / "run_build_tool.sh.patch").write_text("patch", encoding="utf-8")
+            sqlite_root = foreign_root / "sqlite3_flutter_libs"
+            sqlite_root.mkdir(parents=True, exist_ok=True)
+            (sqlite_root / "helper.patch").write_text("sqlite", encoding="utf-8")
+
+            printer = _StatusPrinter()
+            _copy_assets_and_metadata(context, printer)
+
+            self.assertTrue((context.output_dir / "cargokit" / "run_build_tool.sh.patch").is_file())
+            self.assertTrue((context.output_dir / "sqlite3_flutter_libs" / "helper.patch").is_file())
 
     def test_copy_screenshots_missing_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -407,6 +407,7 @@ def _bundle_single_source(
     if local_path is None:
         return False, fetch_messages
 
+    # Replace remote URL with a local path reference, preserving original type
     source["path"] = local_path.name
     source.pop("url", None)
     return True, fetch_messages

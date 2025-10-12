@@ -17,6 +17,13 @@ except ImportError:  # pragma: no cover
 
 _LOGGER = get_logger("flutter.patches")
 
+# Known cargokit-based plugins that ship run_build_tool.sh
+_KNOWN_CARGOKIT_PACKAGES = [
+    "super_native_extensions",
+    "flutter_vodozemac",
+    "irondash_engine_context",
+]
+
 _FALLBACK_CARGOKIT_PACKAGES = [
     "super_native_extensions-0.9.1",
     "flutter_vodozemac-0.2.2",
@@ -84,17 +91,24 @@ def _load_pubspec_sources(document: ManifestDocument) -> Optional[List[Any]]:
 
 
 def _find_package_in_pubspec(package_base: str, entries: Iterable[Any]) -> Optional[str]:
-    """Return ``package-version`` entry for ``package_base`` if available."""
+    """Return ``package-version`` dest for ``package_base`` from pubspec entries.
+
+    The pubspec-sources.json emitted by flatpak-flutter lists entries as
+    type: "archive" with a dest like ".pub-cache/hosted/pub.dev/<package>-<version>".
+    We consider any mapping with a matching dest regardless of the "type".
+    """
 
     for item in entries:
-        if not (isinstance(item, dict) and item.get("type") == "file"):
+        if not isinstance(item, dict):
             continue
-        dest = item.get("dest", "")
+        dest = str(item.get("dest", ""))
         if "/pub.dev/" not in dest:
             continue
-        if package_base in dest:
+        # Match exact base name followed by a dash and version
+        needle = f"/{package_base}-"
+        if needle in dest:
             candidate = dest.split("/")[-1]
-            if package_base in candidate:
+            if candidate.startswith(f"{package_base}-"):
                 return candidate
     return None
 
@@ -133,35 +147,59 @@ def _cargokit_patch_entry(package: str) -> dict:
 def _patch_insert_position(sources: List[Any]) -> int:
     """Return index before which cargokit patches should be inserted."""
 
+    cargo_index: Optional[int] = None
+    pubspec_index: Optional[int] = None
+
     for idx, source in enumerate(sources):
         if isinstance(source, dict) and source.get("path") == "cargo-sources.json":
-            return idx
-        if isinstance(source, str) and "cargo-sources.json" in source:
-            return idx
-    return len(sources)
+            cargo_index = idx
+        elif isinstance(source, str) and "cargo-sources.json" in source:
+            cargo_index = idx
+        if isinstance(source, dict) and source.get("path") == "pubspec-sources.json":
+            pubspec_index = idx
+        elif isinstance(source, str) and "pubspec-sources.json" in source:
+            pubspec_index = idx
+
+    insert_index = len(sources) if cargo_index is None else cargo_index
+    if pubspec_index is not None:
+        insert_index = max(insert_index, pubspec_index + 1)
+    return insert_index
 
 
 def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
-    """Find packages that use cargokit by inspecting manifest sources."""
+    """Detect versioned cargokit packages to patch.
 
+    Preferred detection reads pubspec-sources.json and extracts the exact
+    `<package>-<version>` directory names under `.pub-cache/hosted/pub.dev/` for
+    known cargokit users. Falls back to scanning manifest sources and then to a
+    static list if nothing is found.
+    """
+
+    # 1) Prefer pubspec-sources.json (most reliable and version-accurate)
+    entries = _load_pubspec_sources(document)
+    if entries:
+        # Patch known cargokit-based plugins that ship run_build_tool.sh
+        bases = _KNOWN_CARGOKIT_PACKAGES
+        detected = _match_packages_with_versions(bases, entries)
+        if detected:
+            return detected
+
+    # 2) Fallback: infer from -Cargo.lock file sources (older flow)
     modules = document.ensure_modules()
     lotti_module = _get_lotti_module(modules)
-    if not lotti_module:
-        _LOGGER.debug("Using fallback list of known cargokit packages")
-        return list(_FALLBACK_CARGOKIT_PACKAGES)
+    if lotti_module:
+        bases = _collect_cargokit_basenames(lotti_module)
+        # Filter to the known cargokit plugins
+        bases = [b for b in bases if b in _KNOWN_CARGOKIT_PACKAGES]
+        if bases and entries:
+            versioned = _match_packages_with_versions(bases, entries)
+            if versioned:
+                return versioned
+        if bases:
+            return bases
 
-    package_bases = _collect_cargokit_basenames(lotti_module)
-    if not package_bases:
-        _LOGGER.debug("No Cargo.lock sources detected; using fallback list")
-        return list(_FALLBACK_CARGOKIT_PACKAGES)
-
-    pubspec_entries = _load_pubspec_sources(document)
-    if pubspec_entries:
-        versioned = _match_packages_with_versions(package_bases, pubspec_entries)
-        if versioned:
-            return versioned
-
-    return package_bases
+    # 3) Last resort: static list (may not match current versions)
+    return [p for p in _FALLBACK_CARGOKIT_PACKAGES if p.split("-")[0] in _KNOWN_CARGOKIT_PACKAGES]
 
 
 def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:

@@ -36,6 +36,27 @@ source .venv/bin/activate
 pip install pytest pyyaml
 ```
 
+## Local Quality Check
+
+Run the same checks as GitHub Actions locally, but auto-format instead of failing on style:
+
+```bash
+# From repo root or flatpak/manifest_tool
+cd flatpak/manifest_tool
+bash ./local_quality_check.sh
+
+# Options:
+#   --no-tests   Format + flake8 only (skip pytest)
+#   --no-venv    Do not create/activate a virtualenv automatically
+#   --python PY  Use a specific Python binary (default: python3)
+```
+
+What it does:
+- Installs tools (black, flake8, pytest, pyyaml) in your venv if present (or creates .venv if missing)
+- Formats code with Black (writes changes, does not fail the run)
+- Lints with flake8 (build fails on lint violations)
+- Runs the full test suite (unless `--no-tests` is passed)
+
 ## Command-Line Interface
 
 The tool provides a CLI with multiple subcommands:

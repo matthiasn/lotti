@@ -23,6 +23,7 @@ from .build import (
 from .plugins import (
     add_sqlite3_source,
     add_media_kit_mimalloc_source,
+    ensure_pub_package_archive,
 )
 
 # Rust operations
@@ -66,6 +67,7 @@ __all__ = [
     # Plugins
     "add_sqlite3_source",
     "add_media_kit_mimalloc_source",
+    "ensure_pub_package_archive",
     # Rust
     "ensure_rust_sdk_env",
     "remove_rustup_install",
