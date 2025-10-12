@@ -39,10 +39,13 @@ void main() {
 
   testWidgets('IncomingStats shows loading state', (tester) async {
     final completer = Completer<MatrixStats>();
+    final mockSvc = _MockMatrixService();
+    when(() => mockSvc.getV2Metrics()).thenAnswer((_) async => null);
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const IncomingStats(),
         overrides: [
+          matrixServiceProvider.overrideWithValue(mockSvc),
           matrixStatsControllerProvider.overrideWith(
               () => _LoadingMatrixStatsController(completer.future)),
         ],
@@ -54,6 +57,7 @@ void main() {
 
   testWidgets('IncomingStats shows error state', (tester) async {
     final mockSvc = _MockMatrixService();
+    when(() => mockSvc.getV2Metrics()).thenAnswer((_) async => null);
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const IncomingStats(),

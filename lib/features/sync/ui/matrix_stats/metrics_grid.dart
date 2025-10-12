@@ -4,13 +4,11 @@ class MetricsGrid extends StatelessWidget {
   const MetricsGrid({
     required this.entries,
     required this.labelFor,
-    this.history,
     super.key,
   });
 
   final List<MapEntry<String, int>> entries;
   final String Function(String key) labelFor;
-  final Map<String, List<int>>? history;
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +28,12 @@ class MetricsGrid extends StatelessWidget {
           children: [
             for (final e in entries)
               SizedBox(
+                key: Key('metric:${e.key}'),
                 width: tileWidth,
                 child: MetricTile(
                   label: labelFor(e.key),
                   toneKey: e.key,
                   value: e.value,
-                  series: history?[e.key],
                 ),
               ),
           ],
@@ -50,14 +48,12 @@ class MetricTile extends StatelessWidget {
     required this.label,
     required this.value,
     required this.toneKey,
-    this.series,
     super.key,
   });
 
   final String label;
   final int value;
   final String toneKey;
-  final List<int>? series;
 
   Color _tone(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -97,15 +93,6 @@ class MetricTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          if (series != null && (series!.length > 1))
-            SizedBox(
-              key: Key('sparkline:$label'),
-              height: 16,
-              child: CustomPaint(
-                painter: _SparklinePainter(series!),
-              ),
-            ),
-          if (series != null && (series!.length > 1)) const SizedBox(height: 6),
           Text(
             value.toString(),
             style: TextStyle(
@@ -117,42 +104,5 @@ class MetricTile extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _SparklinePainter extends CustomPainter {
-  _SparklinePainter(this.values);
-  final List<int> values;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.length < 2) return;
-    final maxV = values.reduce((a, b) => a > b ? a : b).toDouble();
-    final minV = values.reduce((a, b) => a < b ? a : b).toDouble();
-    final range = (maxV - minV).abs() < 1 ? 1.0 : (maxV - minV);
-    final stepX = size.width / (values.length - 1);
-
-    final path = Path();
-    for (var i = 0; i < values.length; i++) {
-      final x = stepX * i;
-      final norm = (values[i] - minV) / range;
-      final y = size.height - norm * size.height;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-
-    final paint = Paint()
-      ..color = Colors.lightBlueAccent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
-    return oldDelegate.values != values;
   }
 }

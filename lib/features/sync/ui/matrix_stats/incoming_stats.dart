@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/v2_metrics_section.dart';
@@ -15,11 +16,14 @@ class IncomingStats extends ConsumerStatefulWidget {
 
 class _IncomingStatsState extends ConsumerState<IncomingStats> {
   DateTime? _lastUpdated;
+  Future<V2Metrics?>? _metricsFuture;
 
   @override
   void initState() {
     super.initState();
     _lastUpdated = DateTime.now();
+    // Initial typed metrics fetch (decoupled from messageCounts rebuilds).
+    _metricsFuture = ref.read(matrixServiceProvider).getV2Metrics();
   }
 
   void _refreshDiagnostics() {
@@ -27,6 +31,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
       ref
         ..invalidate(matrixV2MetricsFutureProvider)
         ..invalidate(matrixDiagnosticsTextProvider);
+      _metricsFuture = ref.read(matrixServiceProvider).getV2Metrics();
       _lastUpdated = DateTime.now();
     });
   }
@@ -67,81 +72,71 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                   ),
                 ],
                 rows: <DataRow>[
-                  ...value.messageCounts.keys.map(
-                    (k) => DataRow(
+                  for (final k in (value.messageCounts.keys.toList()..sort()))
+                    DataRow(
                       cells: <DataCell>[
                         DataCell(Text(k)),
                         DataCell(Text(value.messageCounts[k].toString())),
                       ],
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 16),
-              ref.watch(matrixV2MetricsFutureProvider).when(
-                    data: (metrics) {
-                      final v2 = metrics?.toMap();
-                      if (v2 == null || v2.isEmpty) {
-                        return Row(
-                          children: [
-                            Text(
-                              context.messages.settingsMatrixV2MetricsNoData,
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              key: const Key('matrixStats.refresh.noData'),
-                              tooltip: context.messages.settingsMatrixRefresh,
-                              icon: const Icon(Icons.refresh_rounded),
-                              onPressed: _refreshDiagnostics,
-                            ),
-                          ],
-                        );
-                      }
+              FutureBuilder<V2Metrics?>(
+                future: _metricsFuture,
+                builder: (context, snap) {
+                  final v2 = snap.data?.toMap();
+                  if (v2 == null || v2.isEmpty) {
+                    return Row(
+                      children: [
+                        Text(
+                          context.messages.settingsMatrixV2MetricsNoData,
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          key: const Key('matrixStats.refresh.noData'),
+                          tooltip: context.messages.settingsMatrixRefresh,
+                          icon: const Icon(Icons.refresh_rounded),
+                          onPressed: _refreshDiagnostics,
+                        ),
+                      ],
+                    );
+                  }
 
-                      final history = ref.watch(v2MetricsHistoryProvider);
-                      return V2MetricsSection(
-                        metrics: v2,
-                        lastUpdated: _lastUpdated,
-                        history: history,
-                        title: context.messages.settingsMatrixV2Metrics,
-                        lastUpdatedLabel:
-                            context.messages.settingsMatrixLastUpdated,
-                        onForceRescan: () async {
-                          await ref.read(matrixServiceProvider).forceV2Rescan();
-                          _refreshDiagnostics();
-                        },
-                        onRetryNow: () async {
-                          await ref.read(matrixServiceProvider).retryV2Now();
-                          _refreshDiagnostics();
-                        },
-                        onCopyDiagnostics: () async {
-                          final svc = ref.read(matrixServiceProvider);
-                          final text = await svc.getSyncDiagnosticsText();
-                          if (!context.mounted) return;
-                          await ClipboardHelper.copyTextWithSnackBar(
-                            context,
-                            text,
-                            snackBar: const SnackBar(
-                              content: Text('Diagnostics copied'),
-                              duration: Duration(milliseconds: 800),
-                            ),
-                          );
-                        },
-                        onRefresh: () {
-                          ref.read(v2MetricsHistoryProvider.notifier).clear();
-                          _refreshDiagnostics();
-                        },
-                        fetchDiagnostics: () => ref
-                            .read(matrixServiceProvider)
-                            .getSyncDiagnosticsText(),
+                  return V2MetricsSection(
+                    metrics: v2,
+                    lastUpdated: _lastUpdated,
+                    title: context.messages.settingsMatrixV2Metrics,
+                    lastUpdatedLabel:
+                        context.messages.settingsMatrixLastUpdated,
+                    onForceRescan: () async {
+                      await ref.read(matrixServiceProvider).forceV2Rescan();
+                      _refreshDiagnostics();
+                    },
+                    onRetryNow: () async {
+                      await ref.read(matrixServiceProvider).retryV2Now();
+                      _refreshDiagnostics();
+                    },
+                    onCopyDiagnostics: () async {
+                      final svc = ref.read(matrixServiceProvider);
+                      final text = await svc.getSyncDiagnosticsText();
+                      if (!context.mounted) return;
+                      await ClipboardHelper.copyTextWithSnackBar(
+                        context,
+                        text,
+                        snackBar: const SnackBar(
+                          content: Text('Diagnostics copied'),
+                          duration: Duration(milliseconds: 800),
+                        ),
                       );
                     },
-                    loading: () => const CircularProgressIndicator(),
-                    error: (err, __) => const Text(
-                      'Error loading V2 metrics',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
+                    onRefresh: _refreshDiagnostics,
+                    fetchDiagnostics: () => ref
+                        .read(matrixServiceProvider)
+                        .getSyncDiagnosticsText(),
+                  );
+                },
+              ),
             ],
           ),
         );

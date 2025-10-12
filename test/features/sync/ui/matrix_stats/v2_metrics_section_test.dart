@@ -30,12 +30,6 @@ void main() {
       'dbMissingBase': 0,
     };
 
-    final history = <String, List<int>>{
-      'processed': [10, 11, 12],
-      'failures': [0, 1],
-      'retriesScheduled': [1, 3],
-    };
-
     var force = 0;
     var retry = 0;
     var copy = 0;
@@ -46,7 +40,6 @@ void main() {
         SingleChildScrollView(
           child: V2MetricsSection(
             metrics: metrics,
-            history: history,
             lastUpdated: DateTime(2025, 1, 1, 12),
             title: 'Sync V2 Metrics',
             lastUpdatedLabel: 'Last updated:',
@@ -66,9 +59,8 @@ void main() {
     expect(find.text('Sync V2 Metrics'), findsOneWidget);
     expect(find.textContaining('Last updated:'), findsOneWidget);
 
-    // KPIs section with sparklines
+    // KPIs section present
     expect(find.text('Top KPIs'), findsOneWidget);
-    expect(find.byKey(const Key('sparkline:Processed')), findsWidgets);
 
     // Group headers
     expect(find.text('Throughput'), findsOneWidget);

@@ -14,13 +14,11 @@ class V2MetricsSection extends StatelessWidget {
     required this.fetchDiagnostics,
     required this.title,
     required this.lastUpdatedLabel,
-    this.history,
     super.key,
   });
 
   final Map<String, int> metrics;
   final DateTime? lastUpdated;
-  final Map<String, List<int>>? history;
   final VoidCallback onForceRescan;
   final VoidCallback onRetryNow;
   final VoidCallback onCopyDiagnostics;
@@ -37,7 +35,10 @@ class V2MetricsSection extends StatelessWidget {
 
   List<MapEntry<String, int>> _select(
       Map<String, int> m, bool Function(String) pred) {
-    return m.entries.where((e) => pred(e.key)).toList();
+    return m.entries
+        .where((e) => pred(e.key))
+        .toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
   }
 
   String _labelFor(String key) {
@@ -125,9 +126,12 @@ class V2MetricsSection extends StatelessWidget {
         const SizedBox(height: 12),
         // Top KPIs with optional sparklines
         Builder(builder: (context) {
-          final kpiKeys = ['processed', 'failures', 'retriesScheduled'];
-          final kpiEntries =
-              metrics.entries.where((e) => kpiKeys.contains(e.key)).toList();
+          const kpiKeys = ['processed', 'failures', 'retriesScheduled'];
+          final kpiEntries = metrics.entries
+              .where((e) => kpiKeys.contains(e.key))
+              .toList()
+            ..sort((a, b) =>
+                kpiKeys.indexOf(a.key).compareTo(kpiKeys.indexOf(b.key)));
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -138,7 +142,6 @@ class V2MetricsSection extends StatelessWidget {
                   child: MetricsGrid(
                     entries: kpiEntries,
                     labelFor: _labelFor,
-                    history: history,
                   ),
                 ),
             ],
@@ -146,17 +149,20 @@ class V2MetricsSection extends StatelessWidget {
         }),
         // Grouped sections
         ..._grouped(metrics).entries.expand((section) => [
-              Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 8),
-                child: Text(
-                  section.key,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+              RepaintBoundary(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 8),
+                  child: Text(
+                    section.key,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
-              MetricsGrid(
-                entries: section.value,
-                labelFor: _labelFor,
-                history: history,
+              RepaintBoundary(
+                child: MetricsGrid(
+                  entries: section.value,
+                  labelFor: _labelFor,
+                ),
               ),
               const SizedBox(height: 12),
             ]),
