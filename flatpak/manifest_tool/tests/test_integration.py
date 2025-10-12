@@ -83,7 +83,7 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
                 "--cargo",
                 "cargo-sources.json",
                 "--flutter-json",
-                "flutter-sdk-3.35.4.json",
+                "flutter-sdk-3.35.6.json",
             ]
         )
         == 0
@@ -118,7 +118,7 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
     # Offline sources present and sanitized
     assert "pubspec-sources.json" in lotti["sources"]
     assert "cargo-sources.json" in lotti["sources"]
-    assert any(isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.4.json" for s in lotti["sources"])
+    assert any(isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.6.json" for s in lotti["sources"])
     # No rustup JSON under sources
     assert not any(
         (s == "rustup-1.83.0.json") or (isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json")
@@ -178,7 +178,7 @@ def test_end_to_end_nested_sdk_pipeline(tmp_path: Path) -> None:
     # Prepare an output dir with an offline flutter JSON and artifacts
     out_dir = tmp_path / "out"
     out_dir.mkdir()
-    (out_dir / "flutter-sdk-3.35.4.json").write_text("{}", encoding="utf-8")
+    (out_dir / "flutter-sdk-3.35.6.json").write_text("{}", encoding="utf-8")
     (out_dir / "pubspec-sources.json").write_text("{}", encoding="utf-8")
     (out_dir / "cargo-sources.json").write_text("{}", encoding="utf-8")
     (out_dir / "setup-flutter.sh").write_text("#!/bin/bash", encoding="utf-8")

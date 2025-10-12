@@ -39,7 +39,7 @@ except ImportError:  # pragma: no cover - colorama optional
     Fore = Style = None  # type: ignore
     _COLOR_ENABLED = False
 
-_DEFAULT_FLUTTER_TAG = "3.35.4"
+_DEFAULT_FLUTTER_TAG = "3.35.6"
 _ALLOWED_URL_SCHEMES = {"https"}
 
 _SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400")

@@ -70,7 +70,7 @@ def _make_context(base: Path) -> PrepareFlathubContext:
         release_date="1970-01-01",
         current_branch="main",
         app_commit="deadbeef",
-        flutter_tag="3.35.4",
+        flutter_tag="3.35.6",
         cached_flutter_dir=None,
         flatpak_flutter_repo=flatpak_dir / "flatpak-flutter",
         flatpak_flutter_log=work_dir / "flatpak-flutter.log",
@@ -159,7 +159,7 @@ class PrepareOrchestratorTests(unittest.TestCase):
                                     {
                                         "type": "git",
                                         "url": "https://github.com/flutter/flutter.git",
-                                        "tag": "3.35.4",
+                                        "tag": "3.35.6",
                                     }
                                 ],
                             },
