@@ -10,8 +10,8 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
@@ -39,7 +39,7 @@ class MatrixService {
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
     required Directory documentsDirectory,
-    bool collectV2Metrics = false,
+    bool collectMetrics = false,
     bool ownsActivityGate = false,
     MatrixConfig? matrixConfig,
     String? deviceDisplayName,
@@ -59,7 +59,7 @@ class MatrixService {
         _eventProcessor = eventProcessor,
         _secureStorage = secureStorage,
         _ownsActivityGate = ownsActivityGate,
-        _collectV2Metrics = collectV2Metrics,
+        _collectMetrics = collectMetrics,
         keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast(),
         messageCountsController = StreamController<MatrixStats>.broadcast(),
@@ -109,13 +109,13 @@ class MatrixService {
             eventProcessor: _eventProcessor,
             readMarkerService: _readMarkerService,
             documentsDirectory: documentsDirectory,
-            collectMetrics: collectV2Metrics,
+            collectMetrics: collectMetrics,
           );
-      _v2Pipeline = pipeline;
+      _pipeline = pipeline;
 
       // Wire DB-apply diagnostics from the processor into the V2 pipeline
-      if (_v2Pipeline != null) {
-        _eventProcessor.applyObserver = _v2Pipeline!.reportDbApplyDiagnostics;
+      if (_pipeline != null) {
+        _eventProcessor.applyObserver = _pipeline!.reportDbApplyDiagnostics;
       }
       final coordinator = lifecycleCoordinator ??
           SyncLifecycleCoordinator(
@@ -150,8 +150,8 @@ class MatrixService {
         ConnectivityResult.mobile,
         ConnectivityResult.ethernet,
       }.intersection(result.toSet()).isNotEmpty) {
-        // Nudge V2 pipeline to pick up from live streams asap.
-        unawaited(_v2Pipeline?.retryNow());
+        // Nudge stream pipeline to pick up from live events asap.
+        unawaited(_pipeline?.retryNow());
       }
     });
   }
@@ -166,12 +166,12 @@ class MatrixService {
   final SyncEventProcessor _eventProcessor;
   final SecureStorage _secureStorage;
   final bool _ownsActivityGate;
-  final bool _collectV2Metrics;
+  final bool _collectMetrics;
 
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;
   late final SyncEngine _syncEngine;
-  MatrixStreamConsumer? _v2Pipeline;
+  MatrixStreamConsumer? _pipeline;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
@@ -387,7 +387,7 @@ class MatrixService {
     await incomingKeyVerificationController.close();
     await _connectivitySubscription?.cancel();
     await _syncEngine.dispose();
-    await _v2Pipeline?.dispose();
+    await _pipeline?.dispose();
 
     // Dispose in reverse construction order: session depends on room manager.
     await _sessionManager.dispose();
@@ -407,48 +407,48 @@ class MatrixService {
     return diagnostics;
   }
 
-  Future<V2Metrics?> getV2Metrics() async {
-    if (_v2Pipeline == null) return null;
+  Future<SyncMetrics?> getMetrics() async {
+    if (_pipeline == null) return null;
     try {
       // If metrics collection is disabled, do not attempt to read metrics.
-      if (!_collectV2Metrics) return null;
-      final map = _v2Pipeline!.metricsSnapshot();
-      return V2Metrics.fromMap(map);
+      if (!_collectMetrics) return null;
+      final map = _pipeline!.metricsSnapshot();
+      return SyncMetrics.fromMap(map);
     } catch (e, st) {
       _loggingService.captureException(
         e,
         domain: 'MATRIX_SERVICE',
-        subDomain: 'v2.metrics',
+        subDomain: 'pipeline.metrics',
         stackTrace: st,
       );
       return null;
     }
   }
 
-  Future<void> forceV2Rescan({bool includeCatchUp = true}) async {
-    final p = _v2Pipeline;
+  Future<void> forceRescan({bool includeCatchUp = true}) async {
+    final p = _pipeline;
     if (p == null) return;
     await p.forceRescan(includeCatchUp: includeCatchUp);
     _loggingService.captureEvent(
-      'V2 forceRescan(includeCatchUp=$includeCatchUp) invoked',
+      'forceRescan(includeCatchUp=$includeCatchUp) invoked',
       domain: 'MATRIX_SERVICE',
-      subDomain: 'v2.forceRescan',
+      subDomain: 'pipeline.forceRescan',
     );
   }
 
-  Future<void> retryV2Now() async {
-    final p = _v2Pipeline;
+  Future<void> retryNow() async {
+    final p = _pipeline;
     if (p == null) return;
     await p.retryNow();
     _loggingService.captureEvent(
-      'V2 retryNow invoked',
+      'retryNow invoked',
       domain: 'MATRIX_SERVICE',
-      subDomain: 'v2.retryNow',
+      subDomain: 'pipeline.retryNow',
     );
   }
 
   Future<String> getSyncDiagnosticsText() async {
-    final p = _v2Pipeline;
+    final p = _pipeline;
     // Use raw snapshot so we include diagnostics-only fields
     final map = p?.metricsSnapshot() ?? <String, Object?>{};
     final lines = map.entries.map((e) => '${e.key}=${e.value}').toList();
@@ -463,10 +463,10 @@ class MatrixService {
   }
 
   // Visible for testing only
-  /// Exposes the V2 pipeline instance for tests. Returns `null` when V2 is
-  /// disabled or the service was constructed without a pipeline.
+  /// Exposes the stream pipeline instance for tests. Returns `null` when the
+  /// service was constructed without a pipeline (tests only).
   @visibleForTesting
-  MatrixStreamConsumer? get debugV2Pipeline => _v2Pipeline;
+  MatrixStreamConsumer? get debugPipeline => _pipeline;
 
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
         session: _sessionManager,

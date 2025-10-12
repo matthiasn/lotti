@@ -1,4 +1,4 @@
-// Metrics snapshot helpers for the V2 pipeline
+// Metrics snapshot helpers for the stream pipeline
 
 class MetricsUtils {
   const MetricsUtils._();

@@ -27,15 +27,12 @@ Future<void> initConfigFlags(
     ),
   );
   await db.insertFlagIfNotExists(
-    // Sync V2 is now always enabled; removed legacy flag insertion.
-    // (Kept placeholder for ordering readability.)
     const ConfigFlag(
       name: enableTooltipFlag,
       description: 'Enable Tooltips',
       status: true,
     ),
   );
-  // Note: subsequent flags remain unchanged.
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: recordLocationFlag,

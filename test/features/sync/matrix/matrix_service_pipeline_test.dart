@@ -8,8 +8,8 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -118,38 +118,38 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      collectV2Metrics: collectMetrics,
+      collectMetrics: collectMetrics,
       roomManager: roomManager,
       sessionManager: sessionManager,
       lifecycleCoordinator: lifecycleCoordinator,
     );
   }
 
-  test('getV2Metrics returns null when collection disabled', () async {
+  test('getMetrics returns null when collection disabled', () async {
     final service = makeService(collectMetrics: false);
-    final metrics = await service.getV2Metrics();
+    final metrics = await service.getMetrics();
     expect(metrics, isNull);
   });
 
-  test('getV2Metrics returns metrics when V2 enabled', () async {
+  test('getMetrics returns metrics when enabled', () async {
     final service = makeService();
-    final metrics = await service.getV2Metrics();
-    expect(metrics, isA<V2Metrics>());
+    final metrics = await service.getMetrics();
+    expect(metrics, isA<SyncMetrics>());
     // Expect default zeros from fresh pipeline map
     expect(metrics?.processed, greaterThanOrEqualTo(0));
   });
 
-  test('creates V2 pipeline and respects collect flag', () async {
+  test('creates pipeline and respects collect flag', () async {
     final s1 = makeService(collectMetrics: false);
-    expect(s1.debugV2Pipeline, isNotNull);
-    expect(s1.debugV2Pipeline!.debugCollectMetrics, isFalse);
+    expect(s1.debugPipeline, isNotNull);
+    expect(s1.debugPipeline!.debugCollectMetrics, isFalse);
 
     final s2 = makeService();
-    expect(s2.debugV2Pipeline, isNotNull);
-    expect(s2.debugV2Pipeline!.debugCollectMetrics, isTrue);
+    expect(s2.debugPipeline, isNotNull);
+    expect(s2.debugPipeline!.debugCollectMetrics, isTrue);
   });
 
-  test('getV2Metrics maps from injected pipeline snapshot', () async {
+  test('getMetrics maps from injected pipeline snapshot', () async {
     final gateway = MockMatrixSyncGateway();
     final logging = MockLoggingService();
     final journalDb = MockJournalDb();
@@ -204,14 +204,14 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      collectV2Metrics: true,
+      collectMetrics: true,
       roomManager: roomManager,
       sessionManager: sessionManager,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: testPipeline,
     );
 
-    final metrics = await service.getV2Metrics();
+    final metrics = await service.getMetrics();
     expect(metrics, isNotNull);
     expect(metrics!.processed, 100);
     expect(metrics.skipped, 10);
@@ -219,7 +219,7 @@ void main() {
     expect(metrics.circuitOpens, 0);
   });
 
-  test('getV2Metrics treats empty snapshot as zeros', () async {
+  test('getMetrics treats empty snapshot as zeros', () async {
     final gateway = MockMatrixSyncGateway();
     final logging = MockLoggingService();
     final journalDb = MockJournalDb();
@@ -263,14 +263,14 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      collectV2Metrics: true,
+      collectMetrics: true,
       roomManager: roomManager,
       sessionManager: sessionManager,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: testPipeline,
     );
 
-    final metrics = await service.getV2Metrics();
+    final metrics = await service.getMetrics();
     expect(metrics, isNotNull);
     expect(metrics!.processed, 0);
   });
@@ -324,14 +324,14 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      collectV2Metrics: true,
+      collectMetrics: true,
       roomManager: roomManager,
       sessionManager: sessionManager,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: pipeline,
     );
 
-    await service.forceV2Rescan();
+    await service.forceRescan();
     expect(called, 1);
   });
 
@@ -379,7 +379,7 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      collectV2Metrics: true,
+      collectMetrics: true,
       roomManager: roomManager,
       sessionManager: sessionManager,
       lifecycleCoordinator: lifecycleCoordinator,

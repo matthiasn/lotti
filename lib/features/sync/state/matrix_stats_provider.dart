@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -27,15 +27,15 @@ class MatrixStatsController extends _$MatrixStatsController {
   }
 }
 
-/// Typed V2 metrics provider. Use [ref.invalidate(matrixV2MetricsFutureProvider)]
+/// Typed metrics provider. Use [ref.invalidate(matrixMetricsFutureProvider)]
 /// to trigger a refresh in the UI.
-final matrixV2MetricsFutureProvider = FutureProvider<V2Metrics?>((ref) async {
+final matrixMetricsFutureProvider = FutureProvider<SyncMetrics?>((ref) async {
   final svc = ref.watch(matrixServiceProvider);
-  return svc.getV2Metrics();
+  return svc.getMetrics();
 });
 
 /// Copy-diagnostics text provider for additional runtime info not represented
-/// in V2Metrics (e.g., lastIgnored, lastPrefetched, dbMissingBase when not
+/// in SyncMetrics (e.g., lastIgnored, lastPrefetched, dbMissingBase when not
 /// included in the typed model).
 final matrixDiagnosticsTextProvider = FutureProvider<String>((ref) async {
   final svc = ref.watch(matrixServiceProvider);

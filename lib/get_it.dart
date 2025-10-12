@@ -161,8 +161,8 @@ Future<void> registerSingletons() async {
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
 
-  // V2 pipeline is always enabled; collectV2Metrics still follows logging flag.
-  final collectV2Metrics = await journalDb.getConfigFlag(enableLoggingFlag);
+  // Stream pipeline is always enabled; metrics collection follows logging flag.
+  final collectMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
   final matrixService = MatrixService(
     gateway: matrixGateway,
@@ -175,7 +175,7 @@ Future<void> registerSingletons() async {
     eventProcessor: syncEventProcessor,
     secureStorage: secureStorage,
     documentsDirectory: documentsDirectory,
-    collectV2Metrics: collectV2Metrics,
+    collectMetrics: collectMetrics,
   );
 
   getIt

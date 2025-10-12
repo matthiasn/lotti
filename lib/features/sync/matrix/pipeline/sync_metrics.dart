@@ -1,5 +1,5 @@
-class V2Metrics {
-  const V2Metrics({
+class SyncMetrics {
+  const SyncMetrics({
     required this.processed,
     required this.skipped,
     required this.failures,
@@ -16,7 +16,7 @@ class V2Metrics {
     this.conflictsCreated = 0,
   });
 
-  factory V2Metrics.fromMap(Map<String, dynamic> map) {
+  factory SyncMetrics.fromMap(Map<String, dynamic> map) {
     final typed = <String, int>{};
     final dropped = <String, int>{};
     for (final entry in map.entries) {
@@ -28,7 +28,7 @@ class V2Metrics {
             (entry.value ?? 0) as int;
       }
     }
-    return V2Metrics(
+    return SyncMetrics(
       processed: (map['processed'] ?? 0) as int,
       skipped: (map['skipped'] ?? 0) as int,
       failures: (map['failures'] ?? 0) as int,

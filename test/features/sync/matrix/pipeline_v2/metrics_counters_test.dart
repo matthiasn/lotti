@@ -1,6 +1,6 @@
 // ignore_for_file: cascade_invocations
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_counters.dart';
+import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 
 void main() {
   group('MetricsCounters', () {

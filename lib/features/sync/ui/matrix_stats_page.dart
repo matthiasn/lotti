@@ -76,7 +76,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
   void _refreshDiagnostics() {
     setState(() {
       // Invalidate typed diagnostics to force a refresh
-      ref.invalidate(matrixV2MetricsFutureProvider);
+      ref.invalidate(matrixMetricsFutureProvider);
       _lastUpdated = DateTime.now();
     });
   }
@@ -137,7 +137,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                 ),
                 const SizedBox(height: 16),
                 // V2 metrics via typed provider
-                ref.watch(matrixV2MetricsFutureProvider).when(
+                ref.watch(matrixMetricsFutureProvider).when(
                       data: (metrics) {
                         final v2 = metrics?.toMap();
                         if (v2 == null || v2.isEmpty) {
@@ -192,7 +192,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                                       // Fire and forget; UI will reflect via metrics
                                       await ref
                                           .read(matrixServiceProvider)
-                                          .forceV2Rescan();
+                                          .forceRescan();
                                       _refreshDiagnostics();
                                     },
                                   ),
@@ -232,7 +232,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                                     onPressed: () async {
                                       await ref
                                           .read(matrixServiceProvider)
-                                          .retryV2Now();
+                                          .retryNow();
                                       _refreshDiagnostics();
                                     },
                                   ),

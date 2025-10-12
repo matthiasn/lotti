@@ -17,7 +17,7 @@ that keeps the pipeline testable and observable.
 | **MatrixService** (`matrix/matrix_service.dart`) | Wraps the `MatrixSyncGateway`, coordinates verification flows, exposes stats, and delegates lifecycle work to the engine. |
 | **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, and logout. |
 | **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, increments send counters, and notifies `MatrixService`. |
-| **MatrixStreamConsumer** (`matrix/pipeline_v2/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and typed metrics. |
+| **MatrixStreamConsumer** (`matrix/pipeline/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and typed metrics. |
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
 | **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, and emits notifications (e.g. `UpdateNotifications`). |
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
@@ -76,7 +76,7 @@ that keeps the pipeline testable and observable.
 - Use `matrixServiceProvider.read().getDiagnosticInfo()` in debug builds to
   inspect saved room IDs, active room state, lifecycle activity, joined rooms,
   and login status. Note: typed V2 metrics are not included in this payload; use
-  `MatrixService.getV2Metrics()` or the Matrix Stats UI instead.
+  `MatrixService.getMetrics()` or the Matrix Stats UI instead.
 - Key log domains: `MATRIX_SERVICE`, `SYNC_ENGINE`, `SYNC_ROOM_MANAGER`,
   `SYNC_EVENT_PROCESSOR`, `SYNC_READ_MARKER`, and `OUTBOX`.
 - Typical messages include invite acceptance/filters, hydration retries, send
@@ -108,7 +108,7 @@ that keeps the pipeline testable and observable.
 ## Current Status
 
 - V2 (MatrixStreamConsumer) is the only sync path; there is no flag.
-- Typed metrics are available via `MatrixService.getV2Metrics()` and diagnostics text.
+- Typed metrics are available via `MatrixService.getMetrics()` and diagnostics text.
 - When extending the sync feature, update both this README and the architecture docs.
 
 ## Sync V2 – Observability
@@ -120,7 +120,7 @@ that keeps the pipeline testable and observable.
     - processed.<type>, droppedByType.<type>
     - dbApplied, dbIgnoredByVectorClock, conflictsCreated
     - heartbeatScans, markerMisses
-  - `MatrixService.getV2Metrics()` maps these into a typed `V2Metrics` model
+  - `MatrixService.getMetrics()` maps these into a typed `SyncMetrics` model
     for UI display. The Matrix Stats page renders them and supports:
     - Refresh
     - Force Rescan (triggers live rescan + focused catch-up)

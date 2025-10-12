@@ -5,17 +5,16 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
-import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/catch_up_strategy.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_event_classifier.dart'
+import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart'
     as ec;
-import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_helpers.dart'
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_helpers.dart'
     as msh;
-import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_counters.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/read_marker_manager.dart';
-// metrics_utils is used indirectly via MetricsCounters.snapshot
-import 'package:lotti/features/sync/matrix/pipeline_v2/retry_and_circuit.dart'
+import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
+import 'package:lotti/features/sync/matrix/pipeline/read_marker_manager.dart';
+import 'package:lotti/features/sync/matrix/pipeline/retry_and_circuit.dart'
     as rc;
+import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/save_attachment.dart';
 import 'package:lotti/features/sync/matrix/sdk_pagination_compat.dart';

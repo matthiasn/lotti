@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 
 void main() {
-  group('V2Metrics', () {
+  group('SyncMetrics', () {
     test('constructor initializes fields and defaults', () {
-      const m = V2Metrics(
+      const m = SyncMetrics(
         processed: 1,
         skipped: 2,
         failures: 3,
@@ -32,7 +32,7 @@ void main() {
     });
 
     test('fromMap parses scalars and typed entries', () {
-      final m = V2Metrics.fromMap({
+      final m = SyncMetrics.fromMap({
         'processed': 10,
         'skipped': 1,
         'failures': 2,
@@ -60,7 +60,7 @@ void main() {
     });
 
     test('fromMap handles missing fields with defaults', () {
-      final m = V2Metrics.fromMap({});
+      final m = SyncMetrics.fromMap({});
       expect(m.processed, 0);
       expect(m.skipped, 0);
       expect(m.processedByType, isEmpty);
@@ -68,7 +68,7 @@ void main() {
     });
 
     test('toMap formats all fields including typed and DB metrics', () {
-      const m = V2Metrics(
+      const m = SyncMetrics(
         processed: 1,
         skipped: 0,
         failures: 0,
@@ -95,7 +95,7 @@ void main() {
     });
 
     test('round-trip preserves values', () {
-      const original = V2Metrics(
+      const original = SyncMetrics(
         processed: 9,
         skipped: 8,
         failures: 7,
@@ -111,7 +111,7 @@ void main() {
         dbIgnoredByVectorClock: 4,
         conflictsCreated: 5,
       );
-      final rt = V2Metrics.fromMap(original.toMap());
+      final rt = SyncMetrics.fromMap(original.toMap());
       expect(rt.processed, original.processed);
       expect(rt.skipped, original.skipped);
       expect(rt.processedByType, original.processedByType);

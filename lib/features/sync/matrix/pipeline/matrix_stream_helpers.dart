@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:matrix/matrix.dart';
 
-/// Helpers for Matrix V2 streaming pipeline.
+/// Helpers for Matrix streaming pipeline.
 ///
 /// Pure functions extracted from MatrixStreamConsumer for easier testing.
 
