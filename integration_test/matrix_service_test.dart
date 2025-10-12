@@ -272,7 +272,7 @@ void main() {
         debugPrint(
           'Alice - room encrypted: ${alice.syncRoom?.encrypted}',
         );
-        await alice.listenToTimeline();
+        // V2 pipeline streams events automatically; no explicit timeline start.
 
         debugPrint('\n--- Bob goes live');
         final bobClient = await createMatrixClient(
@@ -308,7 +308,7 @@ void main() {
 
         final joinRes2 = await bob.joinRoom(roomId);
         debugPrint('Bob - room joined: $joinRes2');
-        await bob.listenToTimeline();
+        // V2 pipeline streams events automatically; no explicit timeline start.
         await waitSeconds(defaultDelay);
 
         await waitUntil(() => alice.getUnverifiedDevices().isNotEmpty);

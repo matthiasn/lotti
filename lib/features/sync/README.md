@@ -9,17 +9,15 @@ that keeps the pipeline testable and observable.
 
 ## Architecture
 
-### Core Services
+### Core Services (V2-only)
 
 | Component | Responsibility |
 | --- | --- |
 | **SyncEngine** (`matrix/sync_engine.dart`) | Owns the high-level lifecycle via `SyncLifecycleCoordinator`, runs login/logout hooks, and surfaces diagnostic snapshots. |
 | **MatrixService** (`matrix/matrix_service.dart`) | Wraps the `MatrixSyncGateway`, coordinates verification flows, exposes stats/read markers, and delegates lifecycle work to the engine. |
-| **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, timelines, and logout. |
+| **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, and logout. |
 | **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, increments send counters, and notifies `MatrixService`. |
-| **MatrixTimelineListener** (`matrix/matrix_timeline_listener.dart`) | V1 pipeline. Queues timeline refreshes with `ClientRunner`, waits for `UserActivityGate` to report idleness, and invokes `processNewTimelineEvents`. |
-| **TimelineDrainer** (`matrix/timeline.dart`) | V1 helper that performs the multi-pass drain: sorts oldest→newest, filters already-processed events, retries at tail, escalates snapshot limits, disposes snapshots, ingests events, and advances the read marker. |
-| **MatrixStreamConsumer (V2)** (`matrix/pipeline_v2/matrix_stream_consumer.dart`) | V2 stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and typed metrics. |
+| **MatrixStreamConsumer** (`matrix/pipeline_v2/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and typed metrics. |
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
 | **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, and emits notifications (e.g. `UpdateNotifications`). |
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
@@ -36,7 +34,7 @@ that keeps the pipeline testable and observable.
   `lib/features/sync` or `lib/widgets/sync`, preventing regressions.
 - Additional documentation is available in `docs/architecture/sync_engine.md`.
 
-### Data Flow (V1)
+### Data Flow (V2)
 
 #### Sending
 
@@ -130,9 +128,9 @@ that keeps the pipeline testable and observable.
    Device A’s Matrix ID), and waits for the invite surfaced by `SyncRoomManager`.
 3. Device A approves the invite. Both devices verify each other using the emoji
    SAS flow.
-4. `SyncLifecycleCoordinator` starts the timeline listener once both devices are
-   logged in and the room has been hydrated. Synchronisation continues
-   automatically while both devices are idle.
+4. `SyncLifecycleCoordinator` starts the V2 stream pipeline once both devices are
+  logged in and the room has been hydrated. Synchronisation continues
+  automatically while both devices are idle.
 
 ## Diagnostics & Logging
 
@@ -151,21 +149,7 @@ that keeps the pipeline testable and observable.
   full flow with the fake gateway (room creation, invites, verification, message
   exchange). Run with `dart-mcp.run_tests` targeting the file or via the project
   Make target.
-- **Unit/Widget:** Coverage includes the client runner queue, activity gating,
-  timeline error recovery, verification modals (provider overrides),
-  dependency-injection helpers, and the sync pipelines:
-  - `timeline_ordering_test.dart` verifies ordering helpers.
-  - `process_new_timeline_events_test.dart` covers ingestion + marker updates.
-  - `timeline_multipass_test.dart` validates multi-pass sync behaviour.
-  - `timeline_drainer_test.dart` covers compute-from-timeline and minimal drain.
-  - `matrix_timeline_listener_test.dart` covers debounce flush and backpressure.
-  - V2: `pipeline_v2/matrix_stream_consumer_test.dart` covers SDK pagination seam,
-    streaming/flush batching, live timeline callbacks, metrics accuracy, lifecycle
-    edges, retries/TTL/circuit breaker.
-  - V2: `sync_lifecycle_coordinator_v2_test.dart` covers coordinator activation,
-    deactivation and login/logout races when a pipeline is provided.
-- Always run `dart-mcp.analyze_files` before committing. The custom lint will
-  block any reintroduction of `getIt`.
+- Unit: tests cover `MatrixService`, `SyncEngine`, `SyncLifecycleCoordinator`, and V2 pipeline behaviour (metrics, retries, catch-up).
 
 ## Troubleshooting
 
@@ -184,18 +168,12 @@ that keeps the pipeline testable and observable.
 
 ## Current Status
 
-- V2 (MatrixStreamConsumer) is available behind the `enable_sync_v2` flag; V1
-  remains the default. V2 typed metrics can be surfaced in the Matrix Stats UI
-  and via `MatrixService.getV2Metrics()`.
-- Provider overrides and custom lint rules enforce the new dependency model.
-- When extending the sync feature, update both this README and the architecture
-  documents so the narrative stays aligned with the implementation.
+- V2 (MatrixStreamConsumer) is the only sync path; there is no flag.
+- Typed metrics are available via `MatrixService.getV2Metrics()` and diagnostics text.
+- When extending the sync feature, update both this README and the architecture docs.
 
-## Sync V2 – Rollout & Observability
+## Sync V2 – Observability
 
-- Enabling V2
-  - Set the config flag `enable_sync_v2` (JournalDb flags). Restart so DI can
-    construct the V2 pipeline path. V1 remains intact if the flag is false.
 - Metrics (typed + diagnostics)
   - Consumer surfaces counters via `metricsSnapshot()` including:
     - processed, skipped, failures, prefetch, flushes, catchupBatches,

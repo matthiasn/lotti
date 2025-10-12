@@ -50,7 +50,6 @@ MatrixService _createMatrixService({
   required Directory documentsDirectory,
   required UpdateNotifications updateNotifications,
   required AiConfigRepository aiConfigRepository,
-  bool enableSyncV2 = true,
 }) {
   final activityGate = UserActivityGate(
     activityService: activityService,
@@ -84,7 +83,6 @@ MatrixService _createMatrixService({
     documentsDirectory: documentsDirectory,
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
-    enableSyncV2: enableSyncV2,
   );
 }
 

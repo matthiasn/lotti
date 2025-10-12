@@ -8,7 +8,6 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -28,9 +27,6 @@ class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
-
-class MockMatrixTimelineListener extends Mock
-    implements MatrixTimelineListener {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -85,7 +81,7 @@ void main() {
     registerFallbackValue(StackTrace.empty);
   });
 
-  MatrixService makeService({required bool enableV2}) {
+  MatrixService makeService({bool collectMetrics = true}) {
     final gateway = MockMatrixSyncGateway();
     final logging = MockLoggingService();
     final messageSender = MockMatrixMessageSender();
@@ -96,7 +92,6 @@ void main() {
     final storage = MockSecureStorage();
     final sessionManager = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
-    final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
     final client = MockClient();
 
@@ -123,37 +118,34 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      enableSyncV2: enableV2,
-      collectV2Metrics: true,
+      collectV2Metrics: collectMetrics,
       roomManager: roomManager,
       sessionManager: sessionManager,
-      timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
     );
   }
 
-  test('getV2Metrics returns null when V2 disabled', () async {
-    final service = makeService(enableV2: false);
+  test('getV2Metrics returns null when collection disabled', () async {
+    final service = makeService(collectMetrics: false);
     final metrics = await service.getV2Metrics();
     expect(metrics, isNull);
   });
 
   test('getV2Metrics returns metrics when V2 enabled', () async {
-    final service = makeService(enableV2: true);
+    final service = makeService();
     final metrics = await service.getV2Metrics();
     expect(metrics, isA<V2Metrics>());
     // Expect default zeros from fresh pipeline map
     expect(metrics?.processed, greaterThanOrEqualTo(0));
   });
 
-  test('creates V2 pipeline only when enabled and passes collect flag',
-      () async {
-    final s1 = makeService(enableV2: false);
-    expect(s1.debugV2Pipeline, isNull);
+  test('creates V2 pipeline and respects collect flag', () async {
+    final s1 = makeService(collectMetrics: false);
+    expect(s1.debugV2Pipeline, isNotNull);
+    expect(s1.debugV2Pipeline!.debugCollectMetrics, isFalse);
 
-    final s2 = makeService(enableV2: true);
+    final s2 = makeService();
     expect(s2.debugV2Pipeline, isNotNull);
-    // collectV2Metrics is true in makeService; verify pipeline sees it
     expect(s2.debugV2Pipeline!.debugCollectMetrics, isTrue);
   });
 
@@ -167,7 +159,6 @@ void main() {
     final storage = MockSecureStorage();
     final sessionManager = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
-    final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
     final messageSender = MockMatrixMessageSender();
     final client = MockClient();
@@ -213,11 +204,9 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      enableSyncV2: true,
       collectV2Metrics: true,
       roomManager: roomManager,
       sessionManager: sessionManager,
-      timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: testPipeline,
     );
@@ -240,7 +229,6 @@ void main() {
     final storage = MockSecureStorage();
     final sessionManager = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
-    final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
     final messageSender = MockMatrixMessageSender();
     final client = MockClient();
@@ -275,11 +263,9 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      enableSyncV2: true,
       collectV2Metrics: true,
       roomManager: roomManager,
       sessionManager: sessionManager,
-      timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: testPipeline,
     );
@@ -299,7 +285,6 @@ void main() {
     final storage = MockSecureStorage();
     final sessionManager = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
-    final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
     final messageSender = MockMatrixMessageSender();
     final client = MockClient();
@@ -339,11 +324,9 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      enableSyncV2: true,
       collectV2Metrics: true,
       roomManager: roomManager,
       sessionManager: sessionManager,
-      timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: pipeline,
     );
@@ -362,7 +345,6 @@ void main() {
     final storage = MockSecureStorage();
     final sessionManager = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
-    final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
     final messageSender = MockMatrixMessageSender();
     final client = MockClient();
@@ -397,11 +379,9 @@ void main() {
       eventProcessor: processor,
       secureStorage: storage,
       documentsDirectory: Directory.systemTemp,
-      enableSyncV2: true,
       collectV2Metrics: true,
       roomManager: roomManager,
       sessionManager: sessionManager,
-      timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: pipeline,
     );
@@ -412,7 +392,7 @@ void main() {
   });
 
   test('getDiagnosticInfo does not include v2Metrics (typed-only)', () async {
-    final service = makeService(enableV2: true);
+    final service = makeService();
     final info = await service.getDiagnosticInfo();
     expect(info.containsKey('v2Metrics'), isFalse);
   });

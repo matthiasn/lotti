@@ -10,7 +10,6 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
-import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -40,14 +39,12 @@ class MatrixService {
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
     required Directory documentsDirectory,
-    bool enableSyncV2 = false,
     bool collectV2Metrics = false,
     bool ownsActivityGate = false,
     MatrixConfig? matrixConfig,
     String? deviceDisplayName,
     SyncRoomManager? roomManager,
     MatrixSessionManager? sessionManager,
-    MatrixTimelineListener? timelineListener,
     SyncLifecycleCoordinator? lifecycleCoordinator,
     SyncEngine? syncEngine,
     // Test-only seam to inject a V2 pipeline
@@ -89,19 +86,6 @@ class MatrixService {
       _sessionManager.deviceDisplayName = deviceDisplayName;
     }
 
-    _timelineListener = timelineListener ??
-        MatrixTimelineListener(
-          sessionManager: _sessionManager,
-          roomManager: _roomManager,
-          loggingService: _loggingService,
-          activityGate: _activityGate,
-          journalDb: _journalDb,
-          settingsDb: _settingsDb,
-          readMarkerService: _readMarkerService,
-          eventProcessor: _eventProcessor,
-          documentsDirectory: documentsDirectory,
-        );
-
     if (syncEngine != null) {
       if (lifecycleCoordinator != null &&
           !identical(
@@ -116,19 +100,17 @@ class MatrixService {
       _syncEngine = syncEngine;
     } else {
       final pipeline = v2PipelineOverride ??
-          (enableSyncV2
-              ? MatrixStreamConsumer(
-                  sessionManager: _sessionManager,
-                  roomManager: _roomManager,
-                  loggingService: _loggingService,
-                  journalDb: _journalDb,
-                  settingsDb: _settingsDb,
-                  eventProcessor: _eventProcessor,
-                  readMarkerService: _readMarkerService,
-                  documentsDirectory: documentsDirectory,
-                  collectMetrics: collectV2Metrics,
-                )
-              : null);
+          MatrixStreamConsumer(
+            sessionManager: _sessionManager,
+            roomManager: _roomManager,
+            loggingService: _loggingService,
+            journalDb: _journalDb,
+            settingsDb: _settingsDb,
+            eventProcessor: _eventProcessor,
+            readMarkerService: _readMarkerService,
+            documentsDirectory: documentsDirectory,
+            collectMetrics: collectV2Metrics,
+          );
       _v2Pipeline = pipeline;
 
       // Wire DB-apply diagnostics from the processor into the V2 pipeline
@@ -139,7 +121,6 @@ class MatrixService {
           SyncLifecycleCoordinator(
             gateway: _gateway,
             sessionManager: _sessionManager,
-            timelineListener: _timelineListener,
             roomManager: _roomManager,
             loggingService: _loggingService,
             pipeline: pipeline,
@@ -147,7 +128,6 @@ class MatrixService {
       _syncEngine = SyncEngine(
         sessionManager: _sessionManager,
         roomManager: _roomManager,
-        timelineListener: _timelineListener,
         lifecycleCoordinator: coordinator,
         loggingService: _loggingService,
       );
@@ -170,7 +150,8 @@ class MatrixService {
         ConnectivityResult.mobile,
         ConnectivityResult.ethernet,
       }.intersection(result.toSet()).isNotEmpty) {
-        _timelineListener.enqueueTimelineRefresh();
+        // Nudge V2 pipeline to pick up from live streams asap.
+        unawaited(_v2Pipeline?.retryNow());
       }
     });
   }
@@ -189,7 +170,6 @@ class MatrixService {
 
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;
-  late final MatrixTimelineListener _timelineListener;
   late final SyncEngine _syncEngine;
   MatrixStreamConsumer? _v2Pipeline;
 
@@ -210,12 +190,7 @@ class MatrixService {
 
   String? get syncRoomId => _roomManager.currentRoomId;
   Room? get syncRoom => _roomManager.currentRoom;
-  Timeline? get timeline => _timelineListener.timeline;
-
-  String? get lastReadEventContextId =>
-      _timelineListener.lastReadEventContextId;
-  set lastReadEventContextId(String? value) =>
-      _timelineListener.lastReadEventContextId = value;
+  // V2 pipeline does not expose timeline context on the service surface.
 
   Stream<SyncRoomInvite> get inviteRequests => _roomManager.inviteRequests;
 
@@ -320,9 +295,7 @@ class MatrixService {
 
   bool isLoggedIn() => _sessionManager.isLoggedIn();
 
-  Future<void> listenToTimeline() async {
-    await _timelineListener.start();
-  }
+  // V1 timeline listener has been removed; stream-first pipeline is always enabled.
 
   Future<String> createRoom({List<String>? invite}) =>
       _roomManager.createRoom(inviteUserIds: invite);
@@ -414,10 +387,9 @@ class MatrixService {
     await incomingKeyVerificationController.close();
     await _connectivitySubscription?.cancel();
     await _syncEngine.dispose();
+    await _v2Pipeline?.dispose();
 
-    // Dispose in reverse construction order: timeline listeners
-    // depend on the session, which in turn composes the room manager.
-    await _timelineListener.dispose();
+    // Dispose in reverse construction order: session depends on room manager.
     await _sessionManager.dispose();
     await _roomManager.dispose();
     if (_ownsActivityGate) {
@@ -477,13 +449,12 @@ class MatrixService {
 
   Future<String> getSyncDiagnosticsText() async {
     final p = _v2Pipeline;
-    if (p == null) return 'V2 pipeline disabled';
     // Use raw snapshot so we include diagnostics-only fields
-    final map = p.metricsSnapshot();
+    final map = p?.metricsSnapshot() ?? <String, Object?>{};
     final lines = map.entries.map((e) => '${e.key}=${e.value}').toList();
     // Append textual diagnostics if available
     try {
-      final extras = p.diagnosticsStrings();
+      final extras = p?.diagnosticsStrings() ?? <String, String>{};
       lines.addAll(extras.entries.map((e) => '${e.key}=${e.value}'));
     } catch (_) {
       // Older pipeline without diagnosticsStrings

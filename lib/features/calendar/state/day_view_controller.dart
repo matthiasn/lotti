@@ -8,7 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
 import 'package:lotti/features/calendar/state/time_by_category_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/sync/matrix.dart';
+// Removed unused sync timeline import; V2 pipeline is independent here.
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -22,6 +22,12 @@ import 'package:tinycolor2/tinycolor2.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 part 'day_view_controller.g.dart';
+
+extension _TruncateString on String {
+  String truncate(int maxLength, [String ellipsis = '…']) => length > maxLength
+      ? '${substring(0, maxLength - ellipsis.length)}$ellipsis'
+      : this;
+}
 
 @riverpod
 class DayViewController extends _$DayViewController {

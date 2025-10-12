@@ -14,7 +14,6 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
@@ -38,9 +37,6 @@ class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
-
-class MockMatrixTimelineListener extends Mock
-    implements MatrixTimelineListener {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -117,25 +113,17 @@ class TestableMatrixService extends MatrixService {
     required super.secureStorage,
     required super.documentsDirectory,
     required this.onStartKeyVerification,
-    required this.onListenTimeline,
     super.roomManager,
     super.sessionManager,
-    super.timelineListener,
     super.lifecycleCoordinator,
     super.syncEngine,
   });
 
   final VoidCallback onStartKeyVerification;
-  final VoidCallback onListenTimeline;
 
   @override
   Future<void> startKeyVerificationListener() async {
     onStartKeyVerification();
-  }
-
-  @override
-  Future<void> listenToTimeline() async {
-    onListenTimeline();
   }
 
   bool loadConfigCalled = false;
@@ -186,7 +174,6 @@ void main() {
   late MockMatrixSyncGateway mockGateway;
   late MockSyncRoomManager mockRoomManager;
   late MockMatrixSessionManager mockSessionManager;
-  late MockMatrixTimelineListener mockTimelineListener;
   late MockLoggingService mockLoggingService;
   late MockUserActivityGate mockActivityGate;
   late MockClient mockClient;
@@ -204,7 +191,6 @@ void main() {
     mockGateway = MockMatrixSyncGateway();
     mockRoomManager = MockSyncRoomManager();
     mockSessionManager = MockMatrixSessionManager();
-    mockTimelineListener = MockMatrixTimelineListener();
     mockLoggingService = MockLoggingService();
     mockActivityGate = MockUserActivityGate();
     mockClient = MockClient();
@@ -229,9 +215,8 @@ void main() {
     when(() => mockGateway.client).thenReturn(mockClient);
     when(() => mockSessionManager.client).thenReturn(mockClient);
     when(() => mockSessionManager.isLoggedIn()).thenReturn(false);
-    when(() => mockTimelineListener.initialize()).thenAnswer((_) async {});
-    when(() => mockTimelineListener.start()).thenAnswer((_) async {});
-    when(() => mockTimelineListener.dispose()).thenAnswer((_) async {});
+    when(() => mockSessionManager.timelineEvents)
+        .thenAnswer((_) => const Stream<Event>.empty());
     when(() => mockRoomManager.initialize()).thenAnswer((_) async {});
     when(() => mockRoomManager.dispose()).thenAnswer((_) async {});
     when(() => mockSessionManager.dispose()).thenAnswer((_) async {});
@@ -269,6 +254,8 @@ void main() {
     ).thenAnswer((_) async {});
     when(() => mockSecureStorage.delete(key: any(named: 'key')))
         .thenAnswer((_) async {});
+    // V2 pipeline loads last read event id via SettingsDb; provide default.
+    when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
     loginStateController = StreamController<LoginState>.broadcast();
     when(() => mockGateway.loginStateChanges)
         .thenAnswer((_) => loginStateController.stream);
@@ -296,7 +283,6 @@ void main() {
       documentsDirectory: Directory.systemTemp,
       roomManager: mockRoomManager,
       sessionManager: mockSessionManager,
-      timelineListener: mockTimelineListener,
     );
   });
 
@@ -331,8 +317,6 @@ void main() {
       sessionManager: mockSessionManager,
       syncEngine: mockSyncEngine,
     );
-
-    expect(defaultService.timeline, isNull);
 
     await defaultService.dispose();
   });
@@ -645,7 +629,6 @@ void main() {
         documentsDirectory: Directory.systemTemp,
         roomManager: mockRoomManager,
         sessionManager: mockSessionManager,
-        timelineListener: mockTimelineListener,
         lifecycleCoordinator: mismatchedCoordinator,
         syncEngine: mockSyncEngine,
       ),
@@ -678,7 +661,6 @@ void main() {
       documentsDirectory: Directory.systemTemp,
       roomManager: mockRoomManager,
       sessionManager: mockSessionManager,
-      timelineListener: mockTimelineListener,
       lifecycleCoordinator: sharedCoordinator,
       syncEngine: mockSyncEngine,
     );
@@ -803,8 +785,7 @@ void main() {
     });
   });
 
-  test('logout ignores timeline when already null', () async {
-    when(() => mockTimelineListener.timeline).thenReturn(null);
+  test('logout delegates to session manager', () async {
     when(() => mockSessionManager.logout()).thenAnswer((_) async {});
 
     await service.logout();
@@ -897,7 +878,7 @@ void main() {
       ),
       throwsA(isA<StateError>()),
     );
-    verify(() => mockTimelineListener.dispose()).called(1);
+    // Timeline listener removed in V2-only; we dispose managers and engine.
     verify(() => mockRoomManager.dispose()).called(1);
     verify(() => mockSessionManager.dispose()).called(1);
     verifyNever(() => mockActivityGate.dispose());
@@ -913,8 +894,6 @@ void main() {
 
     final extraRoomManager = MockSyncRoomManager();
     final extraSessionManager = MockMatrixSessionManager();
-    final extraTimelineListener = MockMatrixTimelineListener();
-    when(() => extraTimelineListener.dispose()).thenAnswer((_) async {});
     when(() => extraRoomManager.dispose()).thenAnswer((_) async {});
     when(() => extraSessionManager.dispose()).thenAnswer((_) async {});
     final extraMessageSender = MockMatrixMessageSender();
@@ -967,7 +946,6 @@ void main() {
       documentsDirectory: Directory.systemTemp,
       roomManager: extraRoomManager,
       sessionManager: extraSessionManager,
-      timelineListener: extraTimelineListener,
       ownsActivityGate: true,
     );
 
@@ -1202,15 +1180,10 @@ void main() {
   group('MatrixService lifecycle', () {
     late TestableMatrixService testService;
     late bool startKeyCalled;
-    late bool listenTimelineCalled;
     // No internal SDK controllers in tests
 
     setUp(() {
       startKeyCalled = false;
-      listenTimelineCalled = false;
-      when(() => mockTimelineListener.start()).thenAnswer((_) async {
-        listenTimelineCalled = true;
-      });
       when(() => mockRoomManager.loadPersistedRoomId())
           .thenAnswer((_) async => '!room:server');
       final mockRoom = MockRoom();
@@ -1233,9 +1206,7 @@ void main() {
         secureStorage: mockSecureStorage,
         roomManager: mockRoomManager,
         sessionManager: mockSessionManager,
-        timelineListener: mockTimelineListener,
         onStartKeyVerification: () => startKeyCalled = true,
-        onListenTimeline: () => listenTimelineCalled = true,
         documentsDirectory: Directory.systemTemp,
       )..matrixConfig = const MatrixConfig(
           homeServer: 'https://example.org',
@@ -1261,7 +1232,6 @@ void main() {
       await testService.listen();
 
       expect(startKeyCalled, isTrue);
-      expect(listenTimelineCalled, isFalse);
       verify(() => mockRoomManager.loadPersistedRoomId()).called(1);
     });
 
@@ -1286,7 +1256,7 @@ void main() {
       ).called(1);
     });
 
-    test('init connects, hydrates, and listens when logged in', () async {
+    test('init connects and starts key verification when logged in', () async {
       await testService.init();
 
       expect(testService.loadConfigCalled, isTrue);
@@ -1295,7 +1265,7 @@ void main() {
       verify(() => mockRoomManager.hydrateRoomSnapshot(client: mockClient))
           .called(1);
       expect(startKeyCalled, isTrue);
-      expect(listenTimelineCalled, isTrue);
+      // With V2 pipeline, timeline listener is not started directly here.
     });
 
     test('init stops when session connect fails', () async {
@@ -1310,7 +1280,6 @@ void main() {
 
       expect(testService.loadConfigCalled, isTrue);
       expect(startKeyCalled, isFalse);
-      expect(listenTimelineCalled, isFalse);
       verifyNever(
         () => mockRoomManager.hydrateRoomSnapshot(client: mockClient),
       );
@@ -1325,7 +1294,6 @@ void main() {
       await testService.init();
 
       expect(startKeyCalled, isFalse);
-      expect(listenTimelineCalled, isFalse);
     });
   });
 }
