@@ -41,3 +41,36 @@ final matrixDiagnosticsTextProvider = FutureProvider<String>((ref) async {
   final svc = ref.watch(matrixServiceProvider);
   return svc.getSyncDiagnosticsText();
 });
+
+/// Rolling in-memory history for a few KPI metrics to power sparklines.
+/// Kept UI-side to avoid coupling to the pipeline internals.
+class V2MetricsHistory extends StateNotifier<Map<String, List<int>>> {
+  V2MetricsHistory(this.ref) : super(<String, List<int>>{}) {
+    // Listen for typed metrics updates and append KPI values.
+    ref.listen<AsyncValue<V2Metrics?>>(matrixV2MetricsFutureProvider,
+        (prev, next) {
+      next.whenData((v) {
+        if (v == null) return;
+        final map = v.toMap();
+        const keys = ['processed', 'failures', 'retriesScheduled'];
+        final updated = Map<String, List<int>>.from(state);
+        for (final k in keys) {
+          final val = map[k] ?? 0;
+          final list = List<int>.from(updated[k] ?? const <int>[])..add(val);
+          if (list.length > 24) list.removeAt(0);
+          updated[k] = list;
+        }
+        state = updated;
+      });
+    });
+  }
+
+  final Ref ref;
+
+  void clear() => state = <String, List<int>>{};
+}
+
+final v2MetricsHistoryProvider =
+    StateNotifierProvider<V2MetricsHistory, Map<String, List<int>>>(
+  V2MetricsHistory.new,
+);

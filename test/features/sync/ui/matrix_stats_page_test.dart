@@ -304,10 +304,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('dbApplied'), findsOneWidget);
+    expect(find.text('DB Applied'), findsOneWidget);
     expect(find.text('2'), findsWidgets);
-    expect(find.text('dbIgnoredByVectorClock'), findsOneWidget);
-    expect(find.text('conflictsCreated'), findsOneWidget);
+    expect(find.text('DB Ignored (VectorClock)'), findsOneWidget);
+    expect(find.text('Conflicts'), findsOneWidget);
     // Tooltip icon present
     expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
   });
