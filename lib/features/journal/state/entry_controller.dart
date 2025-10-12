@@ -468,6 +468,19 @@ class EntryController extends _$EntryController {
     }
   }
 
+  Future<void> copyEntryTextPlain() async {
+    final plain = controller.document.toPlainText();
+    if (plain.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: plain));
+  }
+
+  Future<void> copyEntryTextMarkdown() async {
+    final entryText = entryTextFromController(controller);
+    final md = (entryText.markdown ?? entryText.plainText).trim();
+    if (md.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: md));
+  }
+
   Future<void> updateChecklistOrder(List<String> checklistIds) async {
     final task = state.value?.entry;
 

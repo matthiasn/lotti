@@ -390,3 +390,75 @@ class ModernCopyImageItem extends ConsumerWidget {
     );
   }
 }
+
+/// Modern styled copy entry text (plain) action item
+class ModernCopyEntryTextPlainItem extends ConsumerWidget {
+  const ModernCopyEntryTextPlainItem({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final notifier = ref.read(provider.notifier);
+    final entryState = ref.watch(provider).value;
+
+    // Show only when some text exists
+    final hasText =
+        notifier.controller.document.toPlainText().trim().isNotEmpty;
+    final entry = entryState?.entry;
+    if (!hasText || entry == null) {
+      return const SizedBox.shrink();
+    }
+
+    return ModernModalActionItem(
+      icon: MdiIcons.contentCopy,
+      title: 'Copy as text',
+      onTap: () async {
+        await notifier.copyEntryTextPlain();
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+    );
+  }
+}
+
+/// Modern styled copy entry text (markdown) action item
+class ModernCopyEntryTextMarkdownItem extends ConsumerWidget {
+  const ModernCopyEntryTextMarkdownItem({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final notifier = ref.read(provider.notifier);
+    final entryState = ref.watch(provider).value;
+
+    // Show only when some text exists
+    final hasText =
+        notifier.controller.document.toPlainText().trim().isNotEmpty;
+    final entry = entryState?.entry;
+    if (!hasText || entry == null) {
+      return const SizedBox.shrink();
+    }
+
+    return ModernModalActionItem(
+      icon: Icons.code,
+      title: 'Copy as Markdown',
+      onTap: () async {
+        await notifier.copyEntryTextMarkdown();
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+    );
+  }
+}
