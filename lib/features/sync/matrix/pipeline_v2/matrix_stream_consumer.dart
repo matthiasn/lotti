@@ -57,6 +57,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     Duration flushInterval = const Duration(milliseconds: 150),
     int maxBatch = 200,
     Duration markerDebounce = const Duration(milliseconds: 600),
+    int? maxRetriesPerEvent,
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,
@@ -78,7 +79,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _maxBatch = maxBatch,
         _markerDebounce = markerDebounce,
         _backfill = backfill,
-        _maxRetriesPerEvent = 5,
+        _maxRetriesPerEvent = maxRetriesPerEvent ?? 5,
         _retryTtl = const Duration(minutes: 10),
         _retryMaxEntries = 2000,
         _circuitFailureThreshold = 50,
@@ -128,6 +129,14 @@ class MatrixStreamConsumer implements SyncPipeline {
   int _metricRetriesScheduled = 0;
   // Circuit breaker counters
   int _metricCircuitOpens = 0;
+  // Per-type processed counters (journalEntity, entryLink, etc.)
+  final Map<String, int> _metricProcessedByType = <String, int>{};
+  // Per-type dropped counters (after retry cap reached)
+  final Map<String, int> _metricDroppedByType = <String, int>{};
+  // DB apply diagnostics
+  int _metricDbApplied = 0;
+  int _metricDbIgnoredByVectorClock = 0;
+  int _metricConflictsCreated = 0;
 
   // Failure retry tracking to avoid permanent blockage (configurable).
   final int _maxRetriesPerEvent;
@@ -144,6 +153,32 @@ class MatrixStreamConsumer implements SyncPipeline {
       tu.computeExponentialBackoff(attempts);
 
   Client get _client => _sessionManager.client;
+
+  String? _extractRuntimeType(Event ev) {
+    try {
+      final txt = ev.text;
+      if (txt.isEmpty) return null;
+      final decoded = utf8.decode(base64.decode(txt));
+      final obj = json.decode(decoded);
+      if (obj is Map<String, dynamic>) {
+        final rt = obj['runtimeType'];
+        return rt is String ? rt : null;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _bumpProcessedType(String? rt) {
+    if (rt == null || rt.isEmpty) return;
+    _metricProcessedByType.update(rt, (int v) => v + 1, ifAbsent: () => 1);
+  }
+
+  void _bumpDroppedType(String? rt) {
+    if (rt == null || rt.isEmpty) return;
+    _metricDroppedByType.update(rt, (int v) => v + 1, ifAbsent: () => 1);
+  }
 
   @override
   Future<void> initialize() async {
@@ -424,6 +459,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       var processedOk = true;
       var treatAsHandled =
           false; // allow advancement even if skipped by retry limit
+      var isSyncPayloadEvent = msgType == syncMessageType;
 
       if (msgType == syncMessageType) {
         // If this event has a retry schedule, and it's not yet due, block advancement until due.
@@ -448,11 +484,15 @@ class MatrixStreamConsumer implements SyncPipeline {
             domain: 'MATRIX_SYNC_V2',
             subDomain: 'retry.cap',
           );
-          if (_collectMetrics) _metricSkippedByRetryLimit++;
+          if (_collectMetrics) {
+            _metricSkippedByRetryLimit++;
+            _bumpDroppedType(_extractRuntimeType(e));
+          }
         } else if (processedOk) {
           try {
             await _eventProcessor.process(event: e, journalDb: _journalDb);
             if (_collectMetrics) _metricProcessed++;
+            if (_collectMetrics) _bumpProcessedType(_extractRuntimeType(e));
             // On success, clear retry state.
             _retryState.remove(id);
           } catch (err, st) {
@@ -472,7 +512,10 @@ class MatrixStreamConsumer implements SyncPipeline {
                 domain: 'MATRIX_SYNC_V2',
                 subDomain: 'retry.cap',
               );
-              if (_collectMetrics) _metricSkippedByRetryLimit++;
+              if (_collectMetrics) {
+                _metricSkippedByRetryLimit++;
+                _bumpDroppedType(_extractRuntimeType(e));
+              }
             } else {
               _retryState[id] = _RetryInfo(nextAttempts, due);
             }
@@ -503,6 +546,7 @@ class MatrixStreamConsumer implements SyncPipeline {
             final obj = json.decode(decoded);
             if (obj is Map<String, dynamic> && obj['runtimeType'] is String) {
               // Mirror the same retry/processing path used for syncMessageType.
+              isSyncPayloadEvent = true;
               final rs = _retryState[id];
               final now = _now();
               if (rs != null && now.isBefore(rs.nextDue)) {
@@ -523,12 +567,18 @@ class MatrixStreamConsumer implements SyncPipeline {
                   domain: 'MATRIX_SYNC_V2',
                   subDomain: 'retry.cap',
                 );
-                if (_collectMetrics) _metricSkippedByRetryLimit++;
+                if (_collectMetrics) {
+                  _metricSkippedByRetryLimit++;
+                  _bumpDroppedType(_extractRuntimeType(e));
+                }
               } else if (processedOk) {
                 try {
                   await _eventProcessor.process(
                       event: e, journalDb: _journalDb);
                   if (_collectMetrics) _metricProcessed++;
+                  if (_collectMetrics) {
+                    _bumpProcessedType(_extractRuntimeType(e));
+                  }
                   _retryState.remove(id);
                   handledByFallback = true;
                   if (_collectMetrics) {
@@ -553,7 +603,10 @@ class MatrixStreamConsumer implements SyncPipeline {
                       domain: 'MATRIX_SYNC_V2',
                       subDomain: 'retry.cap',
                     );
-                    if (_collectMetrics) _metricSkippedByRetryLimit++;
+                    if (_collectMetrics) {
+                      _metricSkippedByRetryLimit++;
+                      _bumpDroppedType(_extractRuntimeType(e));
+                    }
                   } else {
                     _retryState[id] = _RetryInfo(nextAttempts, due);
                   }
@@ -589,6 +642,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
       if (!blockedByFailure &&
           (processedOk || treatAsHandled) &&
+          isSyncPayloadEvent &&
           TimelineEventOrdering.isNewer(
             candidateTimestamp: ts,
             candidateEventId: id,
@@ -655,13 +709,46 @@ class MatrixStreamConsumer implements SyncPipeline {
         'skippedByRetryLimit': _metricSkippedByRetryLimit,
         'retriesScheduled': _metricRetriesScheduled,
         'circuitOpens': _metricCircuitOpens,
+        'dbApplied': _metricDbApplied,
+        'dbIgnoredByVectorClock': _metricDbIgnoredByVectorClock,
+        'conflictsCreated': _metricConflictsCreated,
         // Diagnostics-only fields (not shown in UI)
         'retryStateSize': _retryState.length,
         'circuitOpen':
             _circuitOpenUntil != null && _now().isBefore(_circuitOpenUntil!)
                 ? 1
                 : 0,
-      };
+      }
+        // Flatten per-type counts as processed.<type>
+        ..addEntries(_metricProcessedByType.entries.map(
+          (e) => MapEntry('processed.${e.key}', e.value),
+        ))
+        // Flatten per-type dropped as droppedByType.<type>
+        ..addEntries(_metricDroppedByType.entries.map(
+          (e) => MapEntry('droppedByType.${e.key}', e.value),
+        ));
+
+  // Called by SyncEventProcessor via observer to record DB apply results
+  void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {
+    try {
+      final rows = diag.rowsAffected;
+      final status = diag.conflictStatus;
+      final rt = diag.payloadType;
+      if (rows > 0) {
+        _metricDbApplied++;
+      } else if (status.contains('concurrent')) {
+        _metricConflictsCreated++;
+      } else {
+        _metricDbIgnoredByVectorClock++;
+      }
+      // Also attribute to type-specific drops if ignored
+      if (rows == 0 && !status.contains('concurrent')) {
+        _metricDroppedByType.update(rt, (int v) => v + 1, ifAbsent: () => 1);
+      }
+    } catch (_) {
+      // best-effort only
+    }
+  }
 
   // Visible for testing only
   @visibleForTesting

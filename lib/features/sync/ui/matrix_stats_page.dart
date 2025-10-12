@@ -94,7 +94,9 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
       data: (data) {
         final value = data.value;
 
-        return Column(
+        return SingleChildScrollView(
+          padding: EdgeInsets.zero,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -168,6 +170,16 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                                   fontSize: 12, color: Colors.grey),
                             ),
                             const Spacer(),
+                            const Tooltip(
+                              message:
+                                  'Legend:\n• processed.<type> = processed sync messages by payload type\n• droppedByType.<type> = per‑type drops after retries/older ignores\n• dbApplied = DB rows written\n• dbIgnoredByVectorClock = incoming older/same ignored by DB\n• conflictsCreated = concurrent vector clocks logged',
+                              child: Icon(
+                                Icons.info_outline_rounded,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             IconButton(
                               key: const Key('matrixStats.refresh.metrics'),
                               tooltip: context.messages.settingsMatrixRefresh,
@@ -218,7 +230,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                   ),
                 ),
           ],
-        );
+        ));
       },
       error: (error) => const Text(
         'Error loading Matrix stats',

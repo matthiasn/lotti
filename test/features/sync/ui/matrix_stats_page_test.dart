@@ -264,6 +264,52 @@ void main() {
     expect(find.textContaining('Error loading Matrix stats'), findsOneWidget);
   });
 
+  testWidgets('IncomingStats shows DB-apply metrics and legend tooltip',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 1,
+      messageCounts: const {'m.text': 1},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 1,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 1,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+        'dbApplied': 2,
+        'dbIgnoredByVectorClock': 1,
+        'conflictsCreated': 1,
+      }),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('dbApplied'), findsOneWidget);
+    expect(find.text('2'), findsWidgets);
+    expect(find.text('dbIgnoredByVectorClock'), findsOneWidget);
+    expect(find.text('conflictsCreated'), findsOneWidget);
+    // Tooltip icon present
+    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+  });
+
   testWidgets('matrixStatsPage wiring updates page index', (tester) async {
     final stats = MatrixStats(
       sentCount: 3,
