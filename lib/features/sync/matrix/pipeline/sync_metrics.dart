@@ -9,6 +9,7 @@ class SyncMetrics {
     required this.skippedByRetryLimit,
     required this.retriesScheduled,
     required this.circuitOpens,
+    required this.dbMissingBase,
     this.processedByType = const <String, int>{},
     this.droppedByType = const <String, int>{},
     this.dbApplied = 0,
@@ -38,6 +39,7 @@ class SyncMetrics {
       skippedByRetryLimit: (map['skippedByRetryLimit'] ?? 0) as int,
       retriesScheduled: (map['retriesScheduled'] ?? 0) as int,
       circuitOpens: (map['circuitOpens'] ?? 0) as int,
+      dbMissingBase: (map['dbMissingBase'] ?? 0) as int,
       dbApplied: (map['dbApplied'] ?? 0) as int,
       dbIgnoredByVectorClock: (map['dbIgnoredByVectorClock'] ?? 0) as int,
       conflictsCreated: (map['conflictsCreated'] ?? 0) as int,
@@ -57,6 +59,7 @@ class SyncMetrics {
   final int circuitOpens;
   final Map<String, int> processedByType;
   final Map<String, int> droppedByType;
+  final int dbMissingBase;
   final int dbApplied;
   final int dbIgnoredByVectorClock;
   final int conflictsCreated;
@@ -79,6 +82,7 @@ class SyncMetrics {
           (e) => MapEntry('droppedByType.${e.key}', e.value),
         ))
         ..addEntries(<MapEntry<String, int>>[
+          MapEntry('dbMissingBase', dbMissingBase),
           MapEntry('dbApplied', dbApplied),
           MapEntry('dbIgnoredByVectorClock', dbIgnoredByVectorClock),
           MapEntry('conflictsCreated', conflictsCreated),

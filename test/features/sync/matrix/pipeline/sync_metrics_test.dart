@@ -14,6 +14,7 @@ void main() {
         skippedByRetryLimit: 7,
         retriesScheduled: 8,
         circuitOpens: 9,
+        dbMissingBase: 0,
       );
       expect(m.processed, 1);
       expect(m.skipped, 2);
@@ -83,6 +84,7 @@ void main() {
         dbApplied: 5,
         dbIgnoredByVectorClock: 1,
         conflictsCreated: 1,
+        dbMissingBase: 0,
       );
       final map = m.toMap();
       expect(map['processed'], 1);
@@ -110,6 +112,7 @@ void main() {
         dbApplied: 3,
         dbIgnoredByVectorClock: 4,
         conflictsCreated: 5,
+        dbMissingBase: 0,
       );
       final rt = SyncMetrics.fromMap(original.toMap());
       expect(rt.processed, original.processed);

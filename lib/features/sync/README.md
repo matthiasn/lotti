@@ -88,7 +88,34 @@ that keeps the pipeline testable and observable.
   full flow with the fake gateway (room creation, invites, verification, message
   exchange). Run with `dart-mcp.run_tests` targeting the file or via the project
   Make target.
-- Unit: tests cover `MatrixService`, `SyncEngine`, `SyncLifecycleCoordinator`, and V2 pipeline behaviour (metrics, retries, catch-up).
+- **Unit (key files by component)**
+  - Lifecycle
+    - `test/features/sync/matrix/sync_engine_test.dart` — engine hooks, connect/logout delegation, diagnostics.
+    - `test/features/sync/matrix/sync_lifecycle_coordinator_test.dart` — initialize/activate/deactivate; onLogin/onLogout hook ordering.
+  - Matrix service layer
+    - `test/features/sync/matrix/matrix_service_unit_test.dart` — service wiring, counters, diagnostics mapping.
+    - `test/features/sync/gateway/matrix_sdk_gateway_test.dart` — gateway behaviours (login state, invites, logout).
+    - `test/features/sync/matrix/read_marker_service_test.dart` — read-marker writes and fallbacks.
+    - `test/features/sync/matrix/sync_room_manager_test.dart` — room persistence, invite filtering, hydration.
+    - `test/features/sync/matrix/key_verification_runner_test.dart` — emoji SAS flows.
+  - V2 pipeline (stream-first)
+    - `test/features/sync/matrix/pipeline_v2/matrix_stream_consumer_test.dart` — attach, batch ordering, prefetch, processing.
+    - `test/features/sync/matrix/pipeline_v2/matrix_stream_helpers_test.dart` — helper behaviours for batching and markers.
+    - `test/features/sync/matrix/pipeline_v2/catch_up_strategy_test.dart` — pagination/backfill fallback logic.
+    - `test/features/sync/matrix/pipeline/read_marker_manager_test.dart` — monotonic marker advancement.
+    - `test/features/sync/matrix/pipeline_v2/metrics_counters_test.dart` — typed metrics increments and snapshots.
+    - `test/features/sync/matrix/pipeline/retry_and_circuit_test.dart` — retry policy and circuit breaker.
+    - `test/features/sync/matrix/pipeline_v2/retry_and_circuit_integration_test.dart` — end-to-end failure/ recovery path.
+    - `test/features/sync/matrix/pipeline/sync_metrics_test.dart` — metrics model mapping.
+    - `test/features/sync/matrix/timeline_ordering_test.dart` — deterministic ordering and comparators.
+  - Outbox
+    - `test/features/sync/outbox/outbox_service_test.dart` — enqueue/send lifecycle, attachments resolution.
+    - `test/features/sync/outbox/outbox_processor_test.dart` — retry scheduling and completion.
+    - `test/features/sync/matrix/matrix_message_sender_test.dart` — payload encoding, upload, and counters.
+  - UI + widgets (selection)
+    - `test/features/sync/ui/matrix_stats_page_test.dart` — metrics UI and actions.
+    - `test/features/sync/ui/matrix_settings_modal_test.dart`, `room_config_page_test.dart`, `matrix_logged_in_config_page_test.dart` — configuration and logout/login flows.
+    - `test/widgets/sync/outbox_monitor_test.dart`, `outbox_badge_test.dart` — outbox indicators.
 
 ## Troubleshooting
 

@@ -16,6 +16,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:lotti/utils/string_extensions.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -23,11 +24,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 part 'day_view_controller.g.dart';
 
-extension _TruncateString on String {
-  String truncate(int maxLength, [String ellipsis = '…']) => length > maxLength
-      ? '${substring(0, maxLength - ellipsis.length)}$ellipsis'
-      : this;
-}
+// Uses shared string truncate extension from utils.
 
 @riverpod
 class DayViewController extends _$DayViewController {

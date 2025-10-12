@@ -68,7 +68,7 @@ void main() {
       loggingService: logging,
       pipeline: pipeline,
       onLogin: () async => onLoginCalled = true,
-      onLogout: () async => onLogoutCalled = false,
+      onLogout: () async => onLogoutCalled = true,
     );
 
     await coord.initialize();
