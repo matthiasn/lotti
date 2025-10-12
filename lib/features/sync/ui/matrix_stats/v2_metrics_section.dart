@@ -111,7 +111,9 @@ class V2MetricsSection extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              '$lastUpdatedLabel ${_formatTime(lastUpdated)}',
+              lastUpdated == null
+                  ? '$lastUpdatedLabel —'
+                  : '$lastUpdatedLabel ${_formatTime(lastUpdated)}',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],

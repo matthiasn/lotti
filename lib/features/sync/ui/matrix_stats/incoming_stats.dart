@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
@@ -14,16 +15,23 @@ class IncomingStats extends ConsumerStatefulWidget {
   ConsumerState<IncomingStats> createState() => _IncomingStatsState();
 }
 
-class _IncomingStatsState extends ConsumerState<IncomingStats> {
+class _IncomingStatsState extends ConsumerState<IncomingStats>
+    with WidgetsBindingObserver {
   DateTime? _lastUpdated;
   Future<V2Metrics?>? _metricsFuture;
+  Timer? _pollTimer;
+  bool _appActive = true;
+  bool _inFlight = false;
+  String? _lastSig;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _lastUpdated = DateTime.now();
     // Initial typed metrics fetch (decoupled from messageCounts rebuilds).
     _metricsFuture = ref.read(matrixServiceProvider).getV2Metrics();
+    _startPolling();
   }
 
   void _refreshDiagnostics() {
@@ -34,6 +42,50 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
       _metricsFuture = ref.read(matrixServiceProvider).getV2Metrics();
       _lastUpdated = DateTime.now();
     });
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (!_appActive || _inFlight) return;
+      _inFlight = true;
+      try {
+        final v2 = await ref.read(matrixServiceProvider).getV2Metrics();
+        final map = v2?.toMap();
+        final sig = _signature(map);
+        if (sig != _lastSig) {
+          setState(() {
+            _metricsFuture = Future<V2Metrics?>.value(v2);
+            _lastSig = sig;
+            _lastUpdated = DateTime.now();
+          });
+        }
+      } finally {
+        _inFlight = false;
+      }
+    });
+  }
+
+  String? _signature(Map<String, int>? m) {
+    if (m == null || m.isEmpty) return null;
+    final keys = m.keys.toList()..sort();
+    final b = StringBuffer();
+    for (final k in keys) {
+      b..write(k)..write('=')..write(m[k])..write(';');
+    }
+    return b.toString();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appActive = state == AppLifecycleState.resumed;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -55,19 +107,15 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
               DataTable(
                 columns: <DataColumn>[
                   DataColumn(
-                    label: Expanded(
-                      child: Text(
-                        context.messages.settingsMatrixMessageType,
-                        style: const TextStyle(fontStyle: FontStyle.italic),
-                      ),
+                    label: Text(
+                      context.messages.settingsMatrixMessageType,
+                      style: const TextStyle(fontStyle: FontStyle.italic),
                     ),
                   ),
                   DataColumn(
-                    label: Expanded(
-                      child: Text(
-                        context.messages.settingsMatrixCount,
-                        style: const TextStyle(fontStyle: FontStyle.italic),
-                      ),
+                    label: Text(
+                      context.messages.settingsMatrixCount,
+                      style: const TextStyle(fontStyle: FontStyle.italic),
                     ),
                   ),
                 ],
