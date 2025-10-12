@@ -765,7 +765,7 @@ def _run_prepare_flathub(namespace: argparse.Namespace) -> int:
         output_dir=output_dir,
         clean_after_gen=_env_bool("CLEAN_AFTER_GEN", True),
         pin_commit=_env_bool("PIN_COMMIT", True),
-        use_nested_flutter=_env_bool("USE_NESTED_FLUTTER", False),
+        use_nested_flutter=_env_bool("USE_NESTED_FLUTTER", True),
         download_missing_sources=_env_bool("DOWNLOAD_MISSING_SOURCES", True),
         no_flatpak_flutter=_env_bool("NO_FLATPAK_FLUTTER", False),
         flatpak_flutter_timeout=_env_optional_int("FLATPAK_FLUTTER_TIMEOUT"),

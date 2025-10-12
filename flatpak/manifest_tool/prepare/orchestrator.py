@@ -223,7 +223,9 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
     current_branch = _determine_branch(repo_root, env, printer)
     app_commit = _run_git(["rev-parse", "HEAD"], cwd=repo_root)
 
-    flutter_tag = _extract_flutter_tag(manifest_template, printer)
+    # Defer Flutter tag resolution to prefer FVM configuration first.
+    # The tag will be determined later via _ensure_flutter_tag_from_modules.
+    flutter_tag = None
     cached_flutter_dir = build_utils.find_flutter_sdk(search_roots=[repo_root], max_depth=6)
 
     context = PrepareFlathubContext(
@@ -486,6 +488,13 @@ def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -
     _prepare_workspace_files(context, printer)
     _prime_flutter_sdk(context, printer)
     _run_flatpak_flutter(context, printer)
+    # Fail fast if flatpak-flutter failed, unless explicit fallback was requested
+    allow_fallback_env = os.getenv("ALLOW_FALLBACK", "false").strip().lower()
+    allow_fallback = allow_fallback_env in {"1", "true", "yes", "on"}
+    if context.flatpak_flutter_status not in (0, None) and not allow_fallback:
+        raise PrepareFlathubError(
+            "flatpak-flutter failed; set ALLOW_FALLBACK=true to proceed with fallback generation"
+        )
     _normalize_sqlite_patch(context, printer)
     _pin_working_manifest(context, printer)
     _copy_generated_artifacts(context, printer)
@@ -800,6 +809,17 @@ def _stage_pubdev_archive(
     if pub_cache_env:
         candidates.append(Path(pub_cache_env) / "hosted" / "pub.dev" / f"{package}-{version}")
 
+    # Also search any local pub caches created by flatpak-flutter under the work directory
+    # e.g., .flatpak-builder/build/lotti/.pub-cache/hosted/pub.dev/<package>-<version>
+    build_root = context.work_dir / ".flatpak-builder" / "build"
+    if build_root.is_dir():
+        try:
+            for path in build_root.glob(f"**/.pub-cache/hosted/pub.dev/{package}-{version}"):
+                if path.is_dir():
+                    candidates.append(path)
+        except OSError:
+            pass
+
     for candidate in candidates:
         if candidate.is_dir():
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -945,6 +965,14 @@ def _read_fvm_flutter_tag(repo_root: Path) -> Optional[str]:
 
 
 def _regenerate_pubspec_sources_if_needed(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+    # If flatpak-flutter succeeded and already produced pubspec-sources.json, keep it.
+    existing = context.output_dir / "pubspec-sources.json"
+    if context.flatpak_flutter_status == 0 and existing.is_file():
+        printer.info("Using pubspec-sources.json from flatpak-flutter")
+        _stage_packages_from_pubspec_json(context, printer, existing)
+        return
+
+    # Otherwise, generate from available lockfiles (best-effort fallback)
     lock_inputs = _collect_pubspec_lock_inputs(context)
     printer.info("Generating pubspec-sources.json from lockfiles")
     final_path = _run_pubspec_sources_generator(context, lock_inputs)
@@ -958,6 +986,8 @@ def _apply_core_manifest_fixes(document: ManifestDocument, printer: _StatusPrint
     _apply_operation(document, printer, flutter.ensure_flutter_pub_get_offline)
     _apply_operation(document, printer, flutter.ensure_dart_pub_offline_in_build)
     _apply_operation(document, printer, flutter.remove_rustup_install)
+    # Ensure Rust toolchain from SDK extension is available on PATH
+    _apply_operation(document, printer, flutter.ensure_rust_sdk_env)
     _apply_operation(document, printer, flutter.apply_all_offline_fixes)
     _apply_operation(
         document,
@@ -1587,11 +1617,147 @@ def _post_process_output_manifest(context: PrepareFlathubContext, printer: _Stat
     _apply_operation(document, printer, flutter.normalize_flutter_sdk_module)
     _add_offline_sources_to_manifest(document, printer, rustup_modules, flutter_json_name, context)
 
+    # Ensure plugin toolchain sources that normally fetch at configure time are provided offline.
+    # 1) sqlite3_flutter_libs downloads SQLite – add as file sources for each arch.
+    # 2) media_kit_libs_linux downloads mimalloc – add as file sources.
+    _apply_operation(document, printer, flutter.add_sqlite3_source)
+    _apply_operation(document, printer, flutter.add_media_kit_mimalloc_source)
+
+    # Ensure cargokit patches are applied after dependency sources have been included
+    # to avoid 'patch: File to patch' interactive prompts when files are not yet present.
+    _ensure_cargokit_patches_after_dependency_sources(document, printer)
+
     layout = "nested" if remove_flutter else "top"
     _apply_layout_adjustments(document, context, printer, layout)
     _finalize_manifest_adjustments(document, printer)
 
+    # Ensure pubspec-sources.json includes exact pinned pub packages needed by cargokit build tools.
+    # Some plugin versions pin yaml=3.1.2, which may not be included by default generators when only 3.1.3 exists.
+    _ensure_pub_package_in_pubspec_sources(context, printer, name="yaml", version="3.1.2")
+
     document.save()
+
+
+def _ensure_pub_package_in_pubspec_sources(
+    context: PrepareFlathubContext, printer: _StatusPrinter, *, name: str, version: str
+) -> None:
+    json_path = context.output_dir / "pubspec-sources.json"
+    if not json_path.is_file():
+        return
+
+    try:
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+
+    target_dest = f".pub-cache/hosted/pub.dev/{name}-{version}"
+    present = False
+    for entry in data:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("dest") == target_dest:
+            present = True
+            break
+    if present:
+        return
+
+    # Fetch archive to compute SHA256 (preparation stage allows network)
+    url = f"https://pub.dev/api/archives/{name}-{version}.tar.gz"
+    tmp_path = context.work_dir / f"{name}-{version}.tar.gz"
+    try:
+        _download_https_resource(context=context, printer=printer, url=url, destination=tmp_path)  # type: ignore[arg-type]
+    except Exception:
+        printer.warn(f"Failed to fetch {name}-{version} archive for sha256; skipping injection")
+        return
+    sha = _file_sha256(tmp_path)
+    tmp_path.unlink(missing_ok=True)
+
+    entry = {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": url,
+        "sha256": sha,
+        "strip-components": 0,
+        "dest": target_dest,
+    }
+    data.append(entry)
+    json_path.write_text(json.dumps(data, indent=4) + "\n", encoding="utf-8")
+    printer.info(f"Injected pub package {name}-{version} into pubspec-sources.json")
+
+
+def _ensure_cargokit_patches_after_dependency_sources(
+    document: ManifestDocument, printer: _StatusPrinter
+) -> None:
+    """Reorder cargokit patch sources to appear after dependency source includes.
+
+    flatpak-builder processes sources sequentially. Cargokit patches must run
+    after pubspec/cargo sources have populated the .pub-cache directories.
+    If patches appear earlier, patch(1) prompts for the file to patch and hangs.
+    """
+    modules = document.ensure_modules()
+    target = None
+    for module in modules:
+        if isinstance(module, dict) and module.get("name") == "lotti":
+            target = module
+            break
+    if not target:
+        return
+
+    sources = target.get("sources")
+    if not isinstance(sources, list):
+        return
+
+    def _is_dep_include(entry: object) -> bool:
+        if isinstance(entry, str):
+            return "pubspec-sources.json" in entry or "cargo-sources.json" in entry
+        if isinstance(entry, dict):
+            path = str(entry.get("path", ""))
+            return path.endswith("pubspec-sources.json") or path.endswith("cargo-sources.json")
+        return False
+
+    def _is_cargokit_patch(entry: object) -> bool:
+        if not isinstance(entry, dict) or entry.get("type") != "patch":
+            return False
+        dest = str(entry.get("dest", ""))
+        path = str(entry.get("path", ""))
+        return dest.startswith(".pub-cache/hosted/pub.dev/") and "/cargokit" in dest and path.endswith(
+            "run_build_tool.sh.patch"
+        )
+
+    def _is_sqlite_patch(entry: object) -> bool:
+        if not isinstance(entry, dict) or entry.get("type") != "patch":
+            return False
+        path = str(entry.get("path", ""))
+        if not path.startswith("sqlite3_flutter_libs/"):
+            return False
+        return path.endswith("-CMakeLists.txt.patch")
+
+    last_dep_idx = max((idx for idx, e in enumerate(sources) if _is_dep_include(e)), default=-1)
+    if last_dep_idx < 0:
+        return
+
+    # Collect patches that are placed before dependency includes
+    early_patch_indices = [
+        idx
+        for idx, e in enumerate(sources)
+        if ( _is_cargokit_patch(e) or _is_sqlite_patch(e) ) and idx <= last_dep_idx
+    ]
+    if not early_patch_indices:
+        return
+
+    # Stable-reorder: extract early patches and insert them after last_dep_idx
+    patches_to_move = [sources[i] for i in early_patch_indices]
+    for i in reversed(early_patch_indices):
+        del sources[i]
+
+    insert_pos = min(last_dep_idx + 1, len(sources))
+    for patch_entry in patches_to_move:
+        sources.insert(insert_pos, patch_entry)
+        insert_pos += 1
+
+    target["sources"] = sources
+    document.mark_changed()
+    printer.info("Reordered cargokit patches after dependency sources")
 
 
 def _bundle_sources_and_archives(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:

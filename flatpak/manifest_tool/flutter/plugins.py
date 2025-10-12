@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 try:  # pragma: no cover
     from ..core import ManifestDocument, OperationResult, get_logger
+    from .patches import _load_pubspec_sources  # internal helper
 except ImportError:  # pragma: no cover
     import sys
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from core import ManifestDocument, OperationResult, get_logger  # type: ignore
+    from flutter.patches import _load_pubspec_sources  # type: ignore
 
 _LOGGER = get_logger("flutter.plugins")
 
@@ -201,6 +204,51 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
             changed = True
             messages.extend(add_messages)
 
+        # Also add a patch that injects URL_HASH into the plugin CMake to avoid redownloads
+        # Detect installed sqlite3_flutter_libs version from pubspec-sources.json (adjacent to manifest)
+        manifest_path = getattr(document, "path", None)
+        manifest_dir = Path(manifest_path).parent if manifest_path else Path.cwd()
+        entries = _load_pubspec_sources(document)
+        plugin_version: Optional[str] = None
+        if entries:
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                dest = str(entry.get("dest", ""))
+                if "/pub.dev/sqlite3_flutter_libs-" in dest:
+                    try:
+                        plugin_version = dest.split("/sqlite3_flutter_libs-", 1)[1]
+                    except Exception:
+                        plugin_version = None
+                    break
+
+        patch_dir = manifest_dir / "sqlite3_flutter_libs"
+        patch_rel: Optional[str] = None
+        if patch_dir.is_dir():
+            # Prefer exact version match
+            if plugin_version:
+                exact = patch_dir / f"{plugin_version}-CMakeLists.txt.patch"
+                if exact.is_file():
+                    patch_rel = f"sqlite3_flutter_libs/{exact.name}"
+            # Fallback to any available patch file
+            if patch_rel is None:
+                candidates = sorted(patch_dir.glob("*-CMakeLists.txt.patch"))
+                if candidates:
+                    patch_rel = f"sqlite3_flutter_libs/{candidates[-1].name}"
+
+        if plugin_version and patch_rel:
+            plugin_root = f".pub-cache/hosted/pub.dev/sqlite3_flutter_libs-{plugin_version}"
+            already = any(
+                isinstance(src, dict)
+                and src.get("type") == "patch"
+                and src.get("path") == patch_rel
+                for src in sources
+            )
+            if not already:
+                sources.append({"type": "patch", "path": patch_rel, "dest": plugin_root})
+                changed = True
+                messages.append(f"Added sqlite3_flutter_libs CMake patch {patch_rel}")
+
         # Update module sources
         module["sources"] = sources
         break
@@ -259,4 +307,62 @@ def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult
         _LOGGER.debug(message)
         return OperationResult(changed, messages)
 
+    return OperationResult.unchanged()
+
+
+def ensure_pub_package_archive(
+    document: ManifestDocument,
+    *,
+    name: str,
+    version: str,
+    sha256: Optional[str] = None,
+) -> OperationResult:
+    """Ensure a Dart pub package archive is extracted into the offline cache.
+
+    Adds a manifest source of type 'archive' that extracts the given package
+    into `.pub-cache/hosted/pub.dev/<name>-<version>` so that offline pub gets
+    inside plugin build tools can resolve exact pinned versions.
+    """
+    modules = document.ensure_modules()
+    changed = False
+    messages: list[str] = []
+
+    target_dest = f".pub-cache/hosted/pub.dev/{name}-{version}"
+
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+        sources = module.setdefault("sources", [])
+
+        # Check if already present
+        present = False
+        for entry in sources:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("type") == "archive" and entry.get("dest") == target_dest:
+                present = True
+                break
+            if entry.get("type") == "file" and entry.get("path") == target_dest:
+                present = True
+                break
+
+        if not present:
+            archive_entry: dict[str, object] = {
+                "type": "archive",
+                "archive-type": "tar-gzip",
+                "url": f"https://pub.dev/api/archives/{name}-{version}.tar.gz",
+                "dest": target_dest,
+            }
+            if sha256:
+                archive_entry["sha256"] = sha256
+            sources.append(archive_entry)
+            changed = True
+            messages.append(f"Added pub package {name}-{version} to offline cache")
+
+        module["sources"] = sources
+        break
+
+    if changed:
+        document.mark_changed()
+        return OperationResult.changed_result("; ".join(messages))
     return OperationResult.unchanged()

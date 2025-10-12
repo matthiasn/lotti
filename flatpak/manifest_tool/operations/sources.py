@@ -409,6 +409,8 @@ def _bundle_single_source(
 
     source["path"] = local_path.name
     source.pop("url", None)
+    # Normalize to a local file reference so flatpak-builder does not require a checksum
+    source["type"] = "file"
     return True, fetch_messages
 
 
