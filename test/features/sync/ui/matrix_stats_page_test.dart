@@ -438,4 +438,109 @@ void main() {
     verify(() => mockMatrixService.getSyncDiagnosticsText()).called(1);
     expect(find.text('Diagnostics copied'), findsOneWidget);
   });
+
+  testWidgets('Last updated formatting shows HH:mm:ss', (tester) async {
+    final stats = MatrixStats(
+      sentCount: 0,
+      messageCounts: const {},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 0,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 0,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+      }),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    // Validate that the last updated string uses HH:mm:ss format
+    final lastUpdatedMatch = find.byWidgetPredicate((w) {
+      if (w is Text && w.data != null) {
+        return RegExp(r'^Last updated: \d{2}:\d{2}:\d{2}').hasMatch(w.data!);
+      }
+      return false;
+    });
+    expect(lastUpdatedMatch, findsOneWidget);
+  });
+
+  testWidgets('Tooltips contain expected messages and snackbar duration holds',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 1,
+      messageCounts: const {'m.text': 1},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 1,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 1,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+      }),
+    );
+    when(() => mockMatrixService.getSyncDiagnosticsText())
+        .thenAnswer((_) async => 'ok');
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip)).toList();
+    expect(
+      tooltips.any((t) => t.message?.startsWith('Legend:') ?? false),
+      isTrue,
+    );
+    expect(
+      tooltips.any((t) => t.message == 'Force rescan and catch-up now'),
+      isTrue,
+    );
+    expect(
+      tooltips.any((t) => t.message == 'Copy sync diagnostics to clipboard'),
+      isTrue,
+    );
+
+    // Verify snackbar duration ~800ms
+    await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
+    await tester.pump();
+    expect(find.text('Diagnostics copied'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Diagnostics copied'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(find.text('Diagnostics copied'), findsNothing);
+  });
 }

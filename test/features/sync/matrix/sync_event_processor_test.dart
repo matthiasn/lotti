@@ -136,6 +136,48 @@ void main() {
     ).called(1);
   });
 
+  test(
+      'invokes applyObserver with diagnostics and logs vclock prediction failure',
+      () async {
+    // Arrange a journal entity message
+    const message = SyncMessage.journalEntity(
+      id: 'entity-id',
+      jsonPath: '/entity.json',
+      vectorClock: null,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    // Loader returns the canonical fallback entity
+    when(() => journalEntityLoader.load('/entity.json'))
+        .thenAnswer((_) async => fallbackJournalEntity);
+
+    // DB lookup for prediction throws to exercise logging + default status
+    when(() => journalDb.journalEntityById(fallbackJournalEntity.meta.id))
+        .thenThrow(Exception('db unavailable'));
+
+    SyncApplyDiagnostics? capturedDiag;
+    processor.applyObserver = (diag) => capturedDiag = diag;
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    // Observer called with a complete diagnostics payload
+    expect(capturedDiag, isNotNull);
+    expect(capturedDiag!.eventId, 'event-id');
+    expect(capturedDiag!.payloadType, 'journalEntity');
+    expect(capturedDiag!.entityId, fallbackJournalEntity.meta.id);
+    expect(capturedDiag!.rowsAffected, 1);
+    expect(capturedDiag!.conflictStatus, contains('VclockStatus'));
+
+    // Prediction failure is logged with specific subDomain
+    verify(() => loggingService.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'apply.predictVectorClock',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        )).called(1);
+  });
+
   test('processes entry link messages', () async {
     final link = EntryLink.basic(
       id: 'link',
