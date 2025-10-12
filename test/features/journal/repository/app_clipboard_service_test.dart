@@ -28,6 +28,12 @@ void main() {
       stored = '';
     });
 
+    tearDown(() {
+      // Clear the mock to avoid affecting other tests
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
     test('writes plain text via Flutter Clipboard in tests', () async {
       await service.writePlainText('Hello');
       final data = await Clipboard.getData('text/plain');
