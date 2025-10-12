@@ -208,7 +208,9 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
                                           ref.read(matrixServiceProvider);
                                       final text =
                                           await svc.getSyncDiagnosticsText();
-                                      // ignore: use_build_context_synchronously
+                                      if (!context.mounted) {
+                                        return;
+                                      }
                                       await ClipboardHelper
                                           .copyTextWithSnackBar(
                                         context,

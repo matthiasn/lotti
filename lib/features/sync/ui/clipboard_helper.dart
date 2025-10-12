@@ -10,8 +10,10 @@ class ClipboardHelper {
     String text, {
     SnackBar? snackBar,
   }) async {
+    // Capture messenger before the async gap to avoid using context after await.
+    final messenger = ScaffoldMessenger.of(context);
     await Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       snackBar ?? const SnackBar(content: Text('Copied to clipboard')),
     );
   }
