@@ -349,4 +349,93 @@ void main() {
     await tester.pump();
     expect(pageIndexNotifier.value, 1);
   });
+
+  testWidgets('Force Rescan button triggers rescan and refresh',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 1,
+      messageCounts: const {'m.text': 1},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 1,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 1,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+      }),
+    );
+    when(() => mockMatrixService.forceV2Rescan()).thenAnswer((_) async {});
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('matrixStats.forceRescan')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('matrixStats.forceRescan')));
+    await tester.pumpAndSettle();
+
+    verify(() => mockMatrixService.forceV2Rescan()).called(1);
+  });
+
+  testWidgets('Copy Diagnostics button calls service and shows snackbar',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 1,
+      messageCounts: const {'m.text': 1},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({
+        'processed': 1,
+        'skipped': 0,
+        'failures': 0,
+        'prefetch': 0,
+        'flushes': 1,
+        'catchupBatches': 0,
+        'skippedByRetryLimit': 0,
+        'retriesScheduled': 0,
+        'circuitOpens': 0,
+      }),
+    );
+    when(() => mockMatrixService.getSyncDiagnosticsText())
+        .thenAnswer((_) async => 'processed=1');
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('matrixStats.copyDiagnostics')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
+    await tester.pumpAndSettle();
+
+    verify(() => mockMatrixService.getSyncDiagnosticsText()).called(1);
+    expect(find.text('Diagnostics copied'), findsOneWidget);
+  });
 }

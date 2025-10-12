@@ -457,6 +457,25 @@ class MatrixService {
     }
   }
 
+  Future<void> forceV2Rescan({bool includeCatchUp = true}) async {
+    final p = _v2Pipeline;
+    if (p == null) return;
+    await p.forceRescan(includeCatchUp: includeCatchUp);
+    _loggingService.captureEvent(
+      'V2 forceRescan(includeCatchUp=$includeCatchUp) invoked',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'v2.forceRescan',
+    );
+  }
+
+  Future<String> getSyncDiagnosticsText() async {
+    final p = _v2Pipeline;
+    if (p == null) return 'V2 pipeline disabled';
+    // Use raw snapshot so we include diagnostics-only fields
+    final map = p.metricsSnapshot();
+    return map.entries.map((e) => '${e.key}=${e.value}').join('\n');
+  }
+
   // Visible for testing only
   /// Exposes the V2 pipeline instance for tests. Returns `null` when V2 is
   /// disabled or the service was constructed without a pipeline.

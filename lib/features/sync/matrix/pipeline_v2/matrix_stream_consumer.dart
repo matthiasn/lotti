@@ -754,6 +754,23 @@ class MatrixStreamConsumer implements SyncPipeline {
   @visibleForTesting
   bool get debugCollectMetrics => _collectMetrics;
 
+  // Force a rescan and optional catch-up to recover from potential gaps
+  Future<void> forceRescan({bool includeCatchUp = true}) async {
+    try {
+      if (includeCatchUp) {
+        await _attachCatchUp();
+      }
+      await _scanLiveTimeline();
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'forceRescan',
+        stackTrace: st,
+      );
+    }
+  }
+
   void _scheduleMarkerFlush(Room room) {
     _markerDebounceTimer?.cancel();
     _markerDebounceTimer = Timer(_markerDebounce, () {
