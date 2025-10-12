@@ -4047,6 +4047,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcribing audio...'**
   String get aiTranscribingAudio;
+
+  /// No description provided for @copyAsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as text'**
+  String get copyAsText;
+
+  /// No description provided for @copyAsMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as Markdown'**
+  String get copyAsMarkdown;
 }
 
 class _AppLocalizationsDelegate

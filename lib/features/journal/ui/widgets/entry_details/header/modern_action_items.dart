@@ -390,3 +390,49 @@ class ModernCopyImageItem extends ConsumerWidget {
     );
   }
 }
+
+/// Reusable copy entry text action item (plain or markdown)
+class ModernCopyEntryTextItem extends ConsumerWidget {
+  const ModernCopyEntryTextItem({
+    required this.entryId,
+    required this.markdown,
+    super.key,
+  });
+
+  final String entryId;
+  final bool markdown;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final notifier = ref.read(provider.notifier);
+    final entryState = ref.watch(provider).value;
+
+    final hasText =
+        notifier.controller.document.toPlainText().trim().isNotEmpty;
+    final entry = entryState?.entry;
+    if (!hasText || entry == null) {
+      return const SizedBox.shrink();
+    }
+
+    final title = markdown
+        ? context.messages.copyAsMarkdown
+        : context.messages.copyAsText;
+    final icon = markdown ? Icons.code : MdiIcons.contentCopy;
+
+    return ModernModalActionItem(
+      icon: icon,
+      title: title,
+      onTap: () async {
+        if (markdown) {
+          await notifier.copyEntryTextMarkdown();
+        } else {
+          await notifier.copyEntryTextPlain();
+        }
+        if (context.mounted) {
+          await Navigator.of(context).maybePop();
+        }
+      },
+    );
+  }
+}

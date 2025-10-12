@@ -2129,4 +2129,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiTranscribingAudio => 'Transcribing audio...';
+
+  @override
+  String get copyAsText => 'Copy as text';
+
+  @override
+  String get copyAsMarkdown => 'Copy as Markdown';
 }
