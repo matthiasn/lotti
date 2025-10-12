@@ -267,8 +267,9 @@ def _ensure_cargo_commands(commands: list[Any]) -> Tuple[bool, list[str]]:
             "Ensured .cargo directory exists",
         ),
         (
-            lambda cmd: "ln -sfn ../cargo .cargo/cargo" in cmd,
-            "ln -sfn ../cargo .cargo/cargo",
+            # Prefer absolute link to the vendored cargo directory to avoid path confusion
+            lambda cmd: "ln -sfn" in cmd and ".cargo/cargo" in cmd,
+            "ln -sfn \"$PWD/cargo\" .cargo/cargo",
             "Linked cargo vendor directory into CARGO_HOME",
         ),
         (

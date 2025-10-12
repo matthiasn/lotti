@@ -52,8 +52,9 @@ CARGO_LOCK_SOURCES: tuple[tuple[str, str], ...] = (
     (
         "flutter_vodozemac",
         (
+            # Match the plugin version used in pubspec-sources (0.3.0)
             "https://raw.githubusercontent.com/famedly/dart-vodozemac/"
-            "a3446206da432a3a48dedf39bb57604a376b3582/rust/Cargo.lock"
+            "5319314eb397bc3c8de06baddbe64fa721596ce0/rust/Cargo.lock"
         ),
     ),
     (
