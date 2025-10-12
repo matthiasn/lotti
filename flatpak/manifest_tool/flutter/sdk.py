@@ -237,9 +237,7 @@ def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
                 # Expect: cp -r <src> <dest>
                 if len(parts) >= 4 and parts[0] == "cp" and parts[1] == "-r":
                     dest = parts[3]
-                    conditional = (
-                        f"if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {dest}; fi"
-                    )
+                    conditional = f"if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {dest}; fi"
                     new_commands.append(conditional)
                     changed = True
                     continue

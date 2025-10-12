@@ -187,11 +187,7 @@ def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
     if lotti_module:
         bases = _collect_cargokit_basenames(lotti_module)
         # Filter to the known cargokit plugins
-        bases = [
-            b
-            for b in bases
-            if b in ("super_native_extensions", "flutter_vodozemac", "irondash_engine_context")
-        ]
+        bases = [b for b in bases if b in ("super_native_extensions", "flutter_vodozemac", "irondash_engine_context")]
         if bases and entries:
             versioned = _match_packages_with_versions(bases, entries)
             if versioned:
