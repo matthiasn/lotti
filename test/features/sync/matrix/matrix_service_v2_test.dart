@@ -51,6 +51,44 @@ class MockSyncLifecycleCoordinator extends Mock
 
 class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
 
+class _TestV2Pipeline2 extends MatrixStreamConsumer {
+  _TestV2Pipeline2({
+    required MatrixSessionManager sessionManager,
+    required SyncRoomManager roomManager,
+    required LoggingService loggingService,
+    required JournalDb journalDb,
+    required SettingsDb settingsDb,
+    required SyncEventProcessor eventProcessor,
+    required SyncReadMarkerService readMarkerService,
+    required Directory documentsDirectory,
+  }) : super(
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          loggingService: loggingService,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: eventProcessor,
+          readMarkerService: readMarkerService,
+          documentsDirectory: documentsDirectory,
+          collectMetrics: true,
+        );
+
+  Map<String, int>? testMetrics;
+  Future<void> Function({required bool includeCatchUp})? onForceRescan;
+
+  @override
+  Map<String, int> metricsSnapshot() => testMetrics ?? super.metricsSnapshot();
+
+  @override
+  Future<void> forceRescan({bool includeCatchUp = true}) async {
+    if (onForceRescan != null) {
+      await onForceRescan!(includeCatchUp: includeCatchUp);
+      return;
+    }
+    await super.forceRescan(includeCatchUp: includeCatchUp);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() {
@@ -259,6 +297,128 @@ void main() {
     final metrics = await service.getV2Metrics();
     expect(metrics, isNotNull);
     expect(metrics!.processed, 0);
+  });
+
+  test('forceV2Rescan delegates to pipeline', () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final messageSender = MockMatrixMessageSender();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+
+    final pipeline = _TestV2Pipeline2(
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      loggingService: logging,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+    );
+    var called = 0;
+    pipeline.onForceRescan = ({required bool includeCatchUp}) async {
+      called++;
+      expect(includeCatchUp, isTrue);
+    };
+
+    final service = MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: messageSender,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      collectV2Metrics: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      v2PipelineOverride: pipeline,
+    );
+
+    await service.forceV2Rescan(includeCatchUp: true);
+    expect(called, 1);
+  });
+
+  test('getSyncDiagnosticsText formats metrics snapshot as lines', () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final messageSender = MockMatrixMessageSender();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+
+    final pipeline = _TestV2Pipeline2(
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      loggingService: logging,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+    )..testMetrics = {'processed': 3, 'dbApplied': 2};
+
+    final service = MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: messageSender,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      collectV2Metrics: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      v2PipelineOverride: pipeline,
+    );
+
+    final text = await service.getSyncDiagnosticsText();
+    expect(text.contains('processed=3'), isTrue);
+    expect(text.contains('dbApplied=2'), isTrue);
   });
 
   test('getDiagnosticInfo does not include v2Metrics (typed-only)', () async {
