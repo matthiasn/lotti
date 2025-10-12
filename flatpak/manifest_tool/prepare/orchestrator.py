@@ -531,8 +531,8 @@ def _prestage_local_tool_for_pub_get(context: PrepareFlathubContext, printer: _S
         if not target_dir.exists():
             _copytree(source_dir, target_dir)
             printer.info("Pre-staged tool/lotti_custom_lint for flatpak-flutter pub get")
-    except Exception as exc:
-        _LOGGER.debug("Failed to pre-stage local tool path: %s", exc)
+    except (OSError, shutil.Error):
+        _LOGGER.debug("Failed to pre-stage local tool path", exc_info=True)
 
 
 def _prepare_directories(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:

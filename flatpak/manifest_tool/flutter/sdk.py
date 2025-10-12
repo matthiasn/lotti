@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shlex
 from typing import Any, Iterable, Optional
 
 try:  # pragma: no cover
@@ -237,7 +238,9 @@ def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
                 # Expect: cp -r <src> <dest>
                 if len(parts) >= 4 and parts[0] == "cp" and parts[1] == "-r":
                     dest = parts[3]
-                    conditional = f"if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {dest}; fi"
+                    # Shell-escape destination to prevent injection in constructed command
+                    escaped_dest = shlex.quote(dest)
+                    conditional = f"if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {escaped_dest}; fi"
                     new_commands.append(conditional)
                     changed = True
                     continue

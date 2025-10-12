@@ -20,11 +20,25 @@ usage() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --no-tests) run_tests=0; shift ;;
-    --no-venv) create_venv_if_missing=0; shift ;;
-    --python) shift; python_bin="${1:-python3}"; shift ;;
-    -h|--help) usage ;;
-    *) echo "Unknown arg: $1" >&2; usage ;;
+    --no-tests)
+      run_tests=0; shift ;;
+    --no-venv)
+      create_venv_if_missing=0; shift ;;
+    --python=*)
+      python_bin="${1#*=}"; shift ;;
+    --python)
+      # Accept space-separated form: --python PY
+      if [[ $# -ge 2 && "${2:0:1}" != '-' && -n "$2" ]]; then
+        python_bin="$2"; shift 2
+      else
+        echo "Error: --python requires a value (use --python=PY or --python PY)" >&2
+        usage
+      fi
+      ;;
+    -h|--help)
+      usage ;;
+    *)
+      echo "Unknown arg: $1" >&2; usage ;;
   esac
 done
 
@@ -68,4 +82,3 @@ else
 fi
 
 echo "[quality] Done"
-

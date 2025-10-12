@@ -17,6 +17,13 @@ except ImportError:  # pragma: no cover
 
 _LOGGER = get_logger("flutter.patches")
 
+# Known cargokit-based plugins that ship run_build_tool.sh
+_KNOWN_CARGOKIT_PACKAGES = [
+    "super_native_extensions",
+    "flutter_vodozemac",
+    "irondash_engine_context",
+]
+
 _FALLBACK_CARGOKIT_PACKAGES = [
     "super_native_extensions-0.9.1",
     "flutter_vodozemac-0.2.2",
@@ -172,11 +179,7 @@ def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
     entries = _load_pubspec_sources(document)
     if entries:
         # Patch known cargokit-based plugins that ship run_build_tool.sh
-        bases = [
-            "super_native_extensions",
-            "flutter_vodozemac",
-            "irondash_engine_context",
-        ]
+        bases = _KNOWN_CARGOKIT_PACKAGES
         detected = _match_packages_with_versions(bases, entries)
         if detected:
             return detected
@@ -187,7 +190,7 @@ def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
     if lotti_module:
         bases = _collect_cargokit_basenames(lotti_module)
         # Filter to the known cargokit plugins
-        bases = [b for b in bases if b in ("super_native_extensions", "flutter_vodozemac", "irondash_engine_context")]
+        bases = [b for b in bases if b in _KNOWN_CARGOKIT_PACKAGES]
         if bases and entries:
             versioned = _match_packages_with_versions(bases, entries)
             if versioned:
@@ -196,11 +199,7 @@ def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
             return bases
 
     # 3) Last resort: static list (may not match current versions)
-    return [
-        p
-        for p in _FALLBACK_CARGOKIT_PACKAGES
-        if p.split("-")[0] in ("super_native_extensions", "flutter_vodozemac", "irondash_engine_context")
-    ]
+    return [p for p in _FALLBACK_CARGOKIT_PACKAGES if p.split("-")[0] in _KNOWN_CARGOKIT_PACKAGES]
 
 
 def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
