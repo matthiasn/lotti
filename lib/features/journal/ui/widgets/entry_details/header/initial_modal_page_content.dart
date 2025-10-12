@@ -25,7 +25,6 @@ class InitialModalPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final linkService = getIt<LinkService>();
     final linkedFromId = this.linkedFromId;
     final link = this.link;
 
@@ -35,8 +34,8 @@ class InitialModalPageContent extends StatelessWidget {
         ModernToggleStarredItem(entryId: entryId),
         ModernTogglePrivateItem(entryId: entryId),
         ModernToggleFlaggedItem(entryId: entryId),
-        ModernCopyEntryTextPlainItem(entryId: entryId),
-        ModernCopyEntryTextMarkdownItem(entryId: entryId),
+        ModernCopyEntryTextItem(entryId: entryId, markdown: false),
+        ModernCopyEntryTextItem(entryId: entryId, markdown: true),
         ModernToggleMapItem(entryId: entryId),
         ModernDeleteItem(
           entryId: entryId,
@@ -52,7 +51,7 @@ class InitialModalPageContent extends StatelessWidget {
           icon: Icons.add_link,
           title: context.messages.journalLinkFromHint,
           onTap: () {
-            linkService.linkFrom(entryId);
+            getIt<LinkService>().linkFrom(entryId);
             Navigator.of(context).pop();
           },
         ),
@@ -60,7 +59,7 @@ class InitialModalPageContent extends StatelessWidget {
           icon: MdiIcons.target,
           title: context.messages.journalLinkToHint,
           onTap: () {
-            linkService.linkTo(entryId);
+            getIt<LinkService>().linkTo(entryId);
             Navigator.of(context).pop();
           },
         ),

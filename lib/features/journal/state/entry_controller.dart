@@ -13,6 +13,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
@@ -85,7 +86,7 @@ class EntryController extends _$EntryController {
   bool _dirty = false;
   bool _isFocused = false;
   bool _shouldShowEditorToolBar = false;
-  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+  PersistenceLogic get _persistenceLogic => getIt<PersistenceLogic>();
   StreamSubscription<Set<String>>? _updateSubscription;
 
   final JournalDb _journalDb = getIt<JournalDb>();
@@ -470,15 +471,15 @@ class EntryController extends _$EntryController {
 
   Future<void> copyEntryTextPlain() async {
     final plain = controller.document.toPlainText();
-    if (plain.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: plain));
+    if (plain.trim().isEmpty) return;
+    await ref.read(appClipboardProvider).writePlainText(plain);
   }
 
   Future<void> copyEntryTextMarkdown() async {
     final entryText = entryTextFromController(controller);
     final md = (entryText.markdown ?? entryText.plainText).trim();
     if (md.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: md));
+    await ref.read(appClipboardProvider).writePlainText(md);
   }
 
   Future<void> updateChecklistOrder(List<String> checklistIds) async {

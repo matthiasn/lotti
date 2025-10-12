@@ -738,5 +738,7 @@
   "commonLoading": "Loading...",
   "commonError": "Error",
   "commonUnknown": "Unknown",
-  "aiTranscribingAudio": "Transcribing audio..."
+  "aiTranscribingAudio": "Transcribing audio...",
+  "copyAsText": "Copy as text",
+  "copyAsMarkdown": "Copy as Markdown"
 }

@@ -1,15 +1,22 @@
 // ignore_for_file: avoid_redundant_argument_values, prefer_const_constructors
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill_localizations;
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 
 // A lightweight test controller that returns a minimal entry state and
 // exposes the base copy methods via super.* for coverage.
@@ -29,13 +36,14 @@ class TestEntryController extends EntryController {
       controller.document.insert(0, initialText);
     }
 
+    final fixed = DateTime.utc(2023);
     final entry = JournalEntity.journalEntry(
       meta: Metadata(
         id: id,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: fixed,
+        updatedAt: fixed,
+        dateFrom: fixed,
+        dateTo: fixed,
       ),
     );
 
@@ -61,10 +69,15 @@ class TestEntryController extends EntryController {
   }
 }
 
+// Clipboard is abstracted via provider; tests override with a closure-backed
+// AppClipboard instance where needed.
+
 Widget _wrapWithApp(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: overrides,
     child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Navigator(
         onGenerateRoute: (settings) => MaterialPageRoute(
           builder: (_) => Scaffold(body: child),
@@ -77,18 +90,34 @@ Widget _wrapWithApp(Widget child, {List<Override> overrides = const []}) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Copy as text triggers copy and pops', (tester) async {
+  setUpAll(() async {
+    await getIt.reset(dispose: true);
+    getIt
+      ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
+      ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
+      ..registerSingleton<UpdateNotifications>(UpdateNotifications())
+      ..registerSingleton<EditorStateService>(EditorStateService());
+  });
+
+  testWidgets('Copy as text triggers copy', (tester) async {
     final controller = TestEntryController(initialText: 'Hello');
+    String? last;
+    final fakeClipboard = AppClipboard(
+      writePlainText: (t) async {
+        last = t;
+      },
+    );
 
     await tester.pumpWidget(
       _wrapWithApp(
-        const Column(
-          children: [
-            ModernCopyEntryTextPlainItem(entryId: 'e1'),
+        Column(
+          children: const [
+            ModernCopyEntryTextItem(entryId: 'e1', markdown: false),
           ],
         ),
         overrides: [
           entryControllerProvider(id: 'e1').overrideWith(() => controller),
+          appClipboardProvider.overrideWithValue(fakeClipboard),
         ],
       ),
     );
@@ -98,27 +127,31 @@ void main() {
     expect(find.text('Copy as text'), findsOneWidget);
 
     await tester.tap(find.text('Copy as text'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(controller.plainCalled, isTrue);
-
-    final data = await Clipboard.getData('text/plain');
-    // Quill adds a trailing newline for plain text
-    expect(data?.text?.trim(), 'Hello');
+    expect(last, 'Hello\n');
   });
 
-  testWidgets('Copy as Markdown triggers copy and pops', (tester) async {
+  testWidgets('Copy as Markdown triggers copy', (tester) async {
     final controller = TestEntryController(initialText: 'Hello');
+    String? last;
+    final fakeClipboard = AppClipboard(
+      writePlainText: (t) async {
+        last = t;
+      },
+    );
 
     await tester.pumpWidget(
       _wrapWithApp(
-        const Column(
-          children: [
-            ModernCopyEntryTextMarkdownItem(entryId: 'e1'),
+        Column(
+          children: const [
+            ModernCopyEntryTextItem(entryId: 'e1', markdown: true),
           ],
         ),
         overrides: [
           entryControllerProvider(id: 'e1').overrideWith(() => controller),
+          appClipboardProvider.overrideWithValue(fakeClipboard),
         ],
       ),
     );
@@ -128,12 +161,10 @@ void main() {
     expect(find.text('Copy as Markdown'), findsOneWidget);
 
     await tester.tap(find.text('Copy as Markdown'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(controller.markdownCalled, isTrue);
-
-    final data = await Clipboard.getData('text/plain');
-    expect(data?.text, 'Hello');
+    expect(last, 'Hello');
   });
 
   testWidgets('Copy actions hidden when no text', (tester) async {
@@ -141,10 +172,10 @@ void main() {
 
     await tester.pumpWidget(
       _wrapWithApp(
-        const Column(
-          children: [
-            ModernCopyEntryTextPlainItem(entryId: 'e2'),
-            ModernCopyEntryTextMarkdownItem(entryId: 'e2'),
+        Column(
+          children: const [
+            ModernCopyEntryTextItem(entryId: 'e2', markdown: false),
+            ModernCopyEntryTextItem(entryId: 'e2', markdown: true),
           ],
         ),
         overrides: [
@@ -167,7 +198,10 @@ void main() {
         entryControllerProvider(id: 'e3').overrideWith(() => controller),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppLocalizations.localizationsDelegates,
+          quill_localizations.FlutterQuillLocalizations.delegate,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: const Scaffold(
           body: EditorWidget(entryId: 'e3'),
@@ -178,5 +212,38 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(QuillSimpleToolbar), findsOneWidget);
+  });
+
+  testWidgets('InitialModalPageContent includes copy actions', (tester) async {
+    final controller = TestEntryController(initialText: 'Hello');
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        entryControllerProvider(id: 'e4').overrideWith(() => controller),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: const [
+          ...AppLocalizations.localizationsDelegates,
+          quill_localizations.FlutterQuillLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: InitialModalPageContent(
+              entryId: 'e4',
+              linkedFromId: null,
+              inLinkedEntries: false,
+              link: null,
+              pageIndexNotifier: ValueNotifier(0),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Copy as text'), findsOneWidget);
+    expect(find.text('Copy as Markdown'), findsOneWidget);
   });
 }

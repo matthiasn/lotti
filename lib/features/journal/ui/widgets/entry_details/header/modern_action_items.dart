@@ -391,14 +391,16 @@ class ModernCopyImageItem extends ConsumerWidget {
   }
 }
 
-/// Modern styled copy entry text (plain) action item
-class ModernCopyEntryTextPlainItem extends ConsumerWidget {
-  const ModernCopyEntryTextPlainItem({
+/// Reusable copy entry text action item (plain or markdown)
+class ModernCopyEntryTextItem extends ConsumerWidget {
+  const ModernCopyEntryTextItem({
     required this.entryId,
+    required this.markdown,
     super.key,
   });
 
   final String entryId;
+  final bool markdown;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -406,7 +408,6 @@ class ModernCopyEntryTextPlainItem extends ConsumerWidget {
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
 
-    // Show only when some text exists
     final hasText =
         notifier.controller.document.toPlainText().trim().isNotEmpty;
     final entry = entryState?.entry;
@@ -414,49 +415,22 @@ class ModernCopyEntryTextPlainItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final title = markdown
+        ? context.messages.copyAsMarkdown
+        : context.messages.copyAsText;
+    final icon = markdown ? Icons.code : MdiIcons.contentCopy;
+
     return ModernModalActionItem(
-      icon: MdiIcons.contentCopy,
-      title: 'Copy as text',
+      icon: icon,
+      title: title,
       onTap: () async {
-        await notifier.copyEntryTextPlain();
-        if (context.mounted) {
-          Navigator.of(context).pop();
+        if (markdown) {
+          await notifier.copyEntryTextMarkdown();
+        } else {
+          await notifier.copyEntryTextPlain();
         }
-      },
-    );
-  }
-}
-
-/// Modern styled copy entry text (markdown) action item
-class ModernCopyEntryTextMarkdownItem extends ConsumerWidget {
-  const ModernCopyEntryTextMarkdownItem({
-    required this.entryId,
-    super.key,
-  });
-
-  final String entryId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
-    final notifier = ref.read(provider.notifier);
-    final entryState = ref.watch(provider).value;
-
-    // Show only when some text exists
-    final hasText =
-        notifier.controller.document.toPlainText().trim().isNotEmpty;
-    final entry = entryState?.entry;
-    if (!hasText || entry == null) {
-      return const SizedBox.shrink();
-    }
-
-    return ModernModalActionItem(
-      icon: Icons.code,
-      title: 'Copy as Markdown',
-      onTap: () async {
-        await notifier.copyEntryTextMarkdown();
         if (context.mounted) {
-          Navigator.of(context).pop();
+          await Navigator.of(context).maybePop();
         }
       },
     );
