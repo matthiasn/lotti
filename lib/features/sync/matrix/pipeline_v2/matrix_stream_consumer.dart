@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -489,7 +490,99 @@ class MatrixStreamConsumer implements SyncPipeline {
           }
         }
       } else {
-        if (_collectMetrics) _metricSkipped++;
+        // Fallback: some older clients may have omitted the custom msgtype
+        // while still sending a valid Lotti sync payload as the text body.
+        // Try to decode and process these safely to avoid dropping messages.
+        var handledByFallback = false;
+        try {
+          final txt = e.text;
+          if (txt.isNotEmpty) {
+            // Quick parse check: decode base64 -> JSON map and verify it looks
+            // like a SyncMessage (freezed includes a `runtimeType` discriminator).
+            final decoded = utf8.decode(base64.decode(txt));
+            final obj = json.decode(decoded);
+            if (obj is Map<String, dynamic> && obj['runtimeType'] is String) {
+              // Mirror the same retry/processing path used for syncMessageType.
+              final rs = _retryState[id];
+              final now = _now();
+              if (rs != null && now.isBefore(rs.nextDue)) {
+                processedOk = false;
+                hadFailure = true;
+                if (earliestNextDue == null ||
+                    rs.nextDue.isBefore(earliestNextDue)) {
+                  earliestNextDue = rs.nextDue;
+                }
+              }
+
+              final attempts = rs?.attempts ?? 0;
+              if (attempts >= _maxRetriesPerEvent) {
+                treatAsHandled = true;
+                _retryState.remove(id);
+                _loggingService.captureEvent(
+                  'dropping after retry cap (no-msgtype): $id (attempts=$attempts)',
+                  domain: 'MATRIX_SYNC_V2',
+                  subDomain: 'retry.cap',
+                );
+                if (_collectMetrics) _metricSkippedByRetryLimit++;
+              } else if (processedOk) {
+                try {
+                  await _eventProcessor.process(
+                      event: e, journalDb: _journalDb);
+                  if (_collectMetrics) _metricProcessed++;
+                  _retryState.remove(id);
+                  handledByFallback = true;
+                  if (_collectMetrics) {
+                    _loggingService.captureEvent(
+                      'v2 processed via no-msgtype fallback: $id',
+                      domain: 'MATRIX_SYNC_V2',
+                      subDomain: 'fallback',
+                    );
+                  }
+                } catch (err, st) {
+                  processedOk = false;
+                  hadFailure = true;
+                  batchFailures++;
+                  final nextAttempts = attempts + 1;
+                  final backoff = _computeBackoff(nextAttempts);
+                  final due = _now().add(backoff);
+                  if (nextAttempts >= _maxRetriesPerEvent) {
+                    _retryState.remove(id);
+                    treatAsHandled = true;
+                    _loggingService.captureEvent(
+                      'dropping after retry cap (no-msgtype): $id (attempts=$nextAttempts)',
+                      domain: 'MATRIX_SYNC_V2',
+                      subDomain: 'retry.cap',
+                    );
+                    if (_collectMetrics) _metricSkippedByRetryLimit++;
+                  } else {
+                    _retryState[id] = _RetryInfo(nextAttempts, due);
+                  }
+                  if (earliestNextDue == null ||
+                      due.isBefore(earliestNextDue)) {
+                    earliestNextDue = due;
+                  }
+                  _loggingService.captureException(
+                    err,
+                    domain: 'MATRIX_SYNC_V2',
+                    subDomain: 'process.fallback',
+                    stackTrace: st,
+                  );
+                  if (_collectMetrics) _metricFailures++;
+                  if (_collectMetrics) _metricRetriesScheduled++;
+                }
+              }
+            }
+          }
+        } catch (_) {
+          // Not a Lotti sync payload — ignore quietly.
+        }
+        if (!handledByFallback) {
+          // Do not count attachment events as "skipped" — they are part of
+          // the sync flow and are already tracked via the `prefetch` metric.
+          if (e.attachmentMimetype.isEmpty) {
+            if (_collectMetrics) _metricSkipped++;
+          }
+        }
       }
       if (!processedOk && !treatAsHandled) {
         blockedByFailure = true;

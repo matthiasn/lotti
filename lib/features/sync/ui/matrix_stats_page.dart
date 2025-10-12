@@ -15,26 +15,37 @@ SliverWoltModalSheetPage matrixStatsPage({
   return ModalUtils.modalSheetPage(
     context: context,
     showCloseButton: true,
-    stickyActionBar: Padding(
-      padding: WoltModalConfig.pagePadding,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: LottiSecondaryButton(
-              label: context.messages.settingsMatrixPreviousPage,
-              onPressed: () =>
-                  pageIndexNotifier.value = pageIndexNotifier.value - 1,
+    stickyActionBar: SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
             ),
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: LottiPrimaryButton(
-              onPressed: () => Navigator.of(context).pop(),
-              label: context.messages.settingsMatrixDone,
+        ),
+        padding: WoltModalConfig.pagePadding,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: LottiSecondaryButton(
+                label: context.messages.settingsMatrixPreviousPage,
+                onPressed: () =>
+                    pageIndexNotifier.value = pageIndexNotifier.value - 1,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Flexible(
+              child: LottiPrimaryButton(
+                onPressed: () => Navigator.of(context).pop(),
+                label: context.messages.settingsMatrixDone,
+              ),
+            ),
+          ],
+        ),
       ),
     ),
     title: context.messages.settingsMatrixStatsTitle,
