@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
@@ -15,6 +17,12 @@ import 'package:lotti/utils/consts.dart';
 const lightSchemeNameKey = 'LIGHT_SCHEME';
 const darkSchemeNameKey = 'DARK_SCHEMA';
 const themeModeKey = 'THEME_MODE';
+
+/// Get emoji font fallback list for the current platform.
+/// Only Linux needs explicit emoji font configuration.
+List<String>? _getEmojiFontFallback() {
+  return !kIsWeb && Platform.isLinux ? const ['Noto Color Emoji'] : null;
+}
 
 class ThemingCubit extends Cubit<ThemingState> {
   ThemingCubit() : super(ThemingState(enableTooltips: true)) {
@@ -51,6 +59,7 @@ class ThemingCubit extends Cubit<ThemingState> {
       FlexThemeData.light(
         scheme: scheme,
         fontFamily: GoogleFonts.inclusiveSans().fontFamily,
+        fontFamilyFallback: _getEmojiFontFallback(),
       ),
     );
   }
@@ -61,6 +70,7 @@ class ThemingCubit extends Cubit<ThemingState> {
       FlexThemeData.dark(
         scheme: scheme,
         fontFamily: GoogleFonts.inclusiveSans().fontFamily,
+        fontFamilyFallback: _getEmojiFontFallback(),
       ),
     );
   }

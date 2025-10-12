@@ -108,6 +108,16 @@ See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup and development workflow.
 
 - Install Flutter ([instructions](https://docs.flutter.dev/get-started/install)) — FVM recommended; repo includes `.fvmrc`
 - Install dependencies: `make deps`
+- **Linux only**: Install emoji font support for proper emoji rendering:
+  ```bash
+  # First install the Noto Color Emoji font package:
+  # Debian/Ubuntu: sudo apt install fonts-noto-color-emoji
+  # Fedora: sudo dnf install google-noto-emoji-color-fonts
+  # Arch: sudo pacman -S noto-fonts-emoji
+
+  # Then configure fontconfig:
+  ./linux/install_emoji_fonts.sh
+  ```
 - Static analysis: `make analyze`
 - Tests: `make test` • Coverage report: `make coverage`
 - Code generation: `make build_runner` • Localization: `make l10n`
