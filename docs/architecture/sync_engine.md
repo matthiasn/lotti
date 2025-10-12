@@ -2,18 +2,17 @@
 
 ## Overview
 
-The sync engine composes the Matrix session, room, and timeline layers into a
+The sync engine composes the Matrix session, room, and stream pipeline layers into a
 single lifecycle-controlled pipeline. Each collaborator is constructor injected
 and orchestrated by `SyncLifecycleCoordinator`, with Riverpod providers wiring
 them into the UI and controller layer. The following sections document the
-current architecture after the milestone 8 dependency-injection refactor.
+current architecture after the V2 stream-first consolidation.
 
 ## Dependency Graph
 
 - `SyncEngine`
   - `MatrixSessionManager`
   - `SyncRoomManager`
-  - `MatrixTimelineListener`
   - `SyncLifecycleCoordinator`
   - `LoggingService`
 - `MatrixService`
@@ -23,10 +22,10 @@ current architecture after the milestone 8 dependency-injection refactor.
   - `SyncEventProcessor`
   - `SyncReadMarkerService`
   - `SyncEngine` (owns lifecycle)
-- `MatrixTimelineListener`
+- `MatrixStreamConsumer` (stream-first pipeline)
   - `MatrixSessionManager`
   - `SyncRoomManager`
-  - `UserActivityGate`
+  - `LoggingService`
   - `JournalDb`
   - `SettingsDb`
   - `SyncReadMarkerService`
@@ -53,7 +52,7 @@ direct `getIt` usage within the sync module.
    hooks and reconciles the initial lifecycle state.
 2. `SyncLifecycleCoordinator` transitions between logged-in/out states by:
    - instructing `MatrixSessionManager` to connect/disconnect
-   - starting/stopping `MatrixTimelineListener`
+   - starting/stopping the stream-first pipeline (`MatrixStreamConsumer`)
    - hydrating/persisting the active sync room through `SyncRoomManager`
 3. `MatrixService.startKeyVerificationListener()` delegates to
    `listenForKeyVerificationRequests`, surfacing verification runners on the new
@@ -61,23 +60,12 @@ direct `getIt` usage within the sync module.
 4. `MatrixService.dispose()` tears down message controllers before delegating to
    `SyncEngine.dispose()` and the injected collaborators.
 
-## Timeline Flow
+## Pipeline Flow (stream-first)
 
-```
-Matrix client -> MatrixTimelineListener.enqueueTimelineRefresh()
-  -> ClientRunner queue (FIFO, one task at a time)
-     -> UserActivityGate.waitUntilIdle()
-        -> processNewTimelineEvents()
-           -> SyncEventProcessor.process()
-           -> SyncReadMarkerService.updateReadMarker()
-           -> saveAttachment()
-```
-
-The new `ClientRunner` queue plus `UserActivityGate` ensures that timeline work
-never runs concurrently and pauses when the user is actively interacting with
-the app. The FIFO queue is covered by `client_runner_test.dart`, and the
-activity gate behaviour is validated in
-`matrix_timeline_listener_test.enqueueTimelineRefresh waits for activity gate...`.
+1. Attach and catch-up using SDK pagination/backfill when available; fallback to snapshot escalation.
+2. Batch events oldest→newest and prefetch attachments for remote events.
+3. Process events via `SyncEventProcessor`; retries/backoff with TTL and a circuit breaker protect stability.
+4. Advance read marker monotonically and emit typed metrics.
 
 ## Provider Injection
 
@@ -93,8 +81,6 @@ creeping back into the module.
 
 ## Resilience Improvements
 
-- `processNewTimelineEvents` logs and recovers from event processor failures.
-- `SyncRoomManager` filters malformed invites and emits rich `SyncRoomInvite`
-  objects for the UI to confirm.
-- New tests cover error recovery, invite filtering regressions, and
-  race-condition edge cases by leveraging `fake_async`.
+- Stream pipeline retries with exponential backoff, TTL pruning, and a size cap; a circuit breaker prevents thrashing.
+- `SyncRoomManager` filters malformed invites and emits rich `SyncRoomInvite` objects for the UI to confirm.
+- Tests cover error recovery, invite filtering regressions, and edge cases.

@@ -28,7 +28,7 @@
   - Deleted legacy `processMatrixMessage` wrapper (no call sites remaining after timeline migration).
 
 - **Session & Room Management** (Milestone 6)
-  - Split responsibilities into `MatrixSessionManager`, `MatrixTimelineListener`, and the new `SyncRoomManager` with invite filtering and persisted room caching.
+  - Split responsibilities into `MatrixSessionManager` and the new `SyncRoomManager` with invite filtering and persisted room caching. (Historical: `MatrixTimelineListener` existed and has since been removed.)
   - Rebuilt `MatrixService` to delegate to the new managers, removing the legacy `listenToMatrixRoomInvites` auto-join logic and the `room.dart` helper APIs.
   - Added exhaustive unit coverage for invite handling, hydration retries, error propagation, and session edge cases.
   - Updated sync readme documentation to reflect the fix for the auto-join bug and the improved join error handling.
@@ -42,7 +42,7 @@
   - Added a custom `custom_lint` rule (`no_get_it_in_sync`) to guard against regressions and exercised the rule across the module.
 - **Extension Method Removal** (Milestone 9)
   - Introduced `MatrixMessageSender` with injected `LoggingService`, `JournalDb`, and documents directory, replacing the legacy `send_message.dart` extension.
-  - Updated `MatrixService`, `MatrixTimelineListener`, `SyncEngine`, and the associated tests to consume the new service via constructor injection.
+  - Updated `MatrixService`, `SyncEngine`, and the associated tests to consume the new services via constructor injection.
   - Refreshed `get_it.dart`, unit tests, and the integration flow to register the sender explicitly; added context registration helpers for mocks.
 - **Regression & Documentation Hardening** (Milestone 10)
   - Added resilience tests covering invite gating, activity idle sequencing, timeline error recovery, and the new client runner queue.

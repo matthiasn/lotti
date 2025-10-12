@@ -45,7 +45,7 @@
   - Login/config, connectivity monitoring, verification lifecycle.
 - `SyncRoomManager`
   - Persists/validates room ID, uses gateway `invites` stream, prompts/validates before join.
-- `MatrixTimelineListener`
+- Historical: `MatrixTimelineListener` (removed)
   - Subscribes to `timelineEvents`, applies gating, forwards to `SyncEventProcessor`.
 - `SyncEngine`
   - Composes managers/processors, provides status metrics, ensures cleanup.
@@ -79,7 +79,7 @@
    - Cover with unit tests.
 
 6. **Session & Room Management**
-   - Split `MatrixService` into `MatrixSessionManager` and `MatrixTimelineListener`.
+   - Historical split: `MatrixService` into `MatrixSessionManager` and `MatrixTimelineListener` (listener removed later).
    - Create `SyncRoomManager` using filtered `gateway.invites`, validate room IDs, prompt user, update persisted room.
    - Delete `listenToMatrixRoomInvites`; manual multi-device testing for invites.
 

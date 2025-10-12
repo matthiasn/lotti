@@ -12,7 +12,7 @@ the second sync cycle. The fix reorients processing to oldest → newest and
 defers the read-marker update to the newest successfully ingested event.
 
 While implementing this, we hardened the timeline drain: extracted a dedicated
-`TimelineDrainer`, added optional metrics, implemented backpressure in the
+Historical: `TimelineDrainer`, added optional metrics, implemented backpressure in the
 listener, and fixed a snapshot-disposal leak during limit escalation.
 
 ## Goals
@@ -36,17 +36,17 @@ listener, and fixed a snapshot-disposal leak during limit escalation.
 ## Deliverables
 
 1. Code
-   - Extract `TimelineDrainer` in `lib/features/sync/matrix/timeline.dart` to
+   - Historical: Extract `TimelineDrainer` in `lib/features/sync/matrix/timeline.dart` to
      encapsulate the drain loop and compute-from-timeline logic.
    - Order events deterministically by `(originServerTs, eventId)`.
    - Replace id→index map rebuild with a reverse scan to locate last-read.
    - Defer read-marker update to the newest successfully processed event.
-   - Dispose snapshot timelines created during `timelineLimits` escalation when
+   - Historical: Dispose snapshot timelines created during `timelineLimits` escalation when
      unused, and after use when not the live attached instance.
    - Add optional `TimelineMetrics` and `TimelineConfig.collectMetrics` flag;
      emit a threshold log when drain passes exceed 2.
    - Add `TimelineConfig.lowEnd` preset for constrained devices.
-   - Implement backpressure in `MatrixTimelineListener`:
+   - Historical: Implement backpressure in `MatrixTimelineListener` (removed):
      - cap pending SDK events at 1000 (drop oldest);
      - process in deduped batches of 500.
 
@@ -71,7 +71,7 @@ listener, and fixed a snapshot-disposal leak during limit escalation.
 | Risk | Mitigation |
 | --- | --- |
 | Matrix SDK returns events descending. | Sort by `(originServerTs, eventId)` to enforce order. |
-| Increased complexity in drain logic. | Extract into `TimelineDrainer` with focused helpers and tests. |
+| Increased complexity in drain logic. | Historical; V1 code was removed. |
 | Memory pressure from timeline snapshots. | Dispose unused snapshots immediately; dispose used snapshots after read-marker update when not live. |
 | Overhead from metrics collection. | Gate counters/timers behind `TimelineConfig.collectMetrics` (default false). |
 | Backpressure could drop oldest pending SDK events. | Processing is chronological with per-batch dedupe; live drains and escalation ensure eventual consistency. |

@@ -14,7 +14,7 @@ robustness but invites subtle tail-edge bugs and high maintenance cost.
 We will replace the custom drain with a simpler, SDK-first pipeline (V2): subscribe to the SDK’s
 event streams, process events in arrival order, and persist a single “last processed” event id for
 our own idempotency. We will keep snapshot-based catch-up only on attach/reconnect (bounded) and
-otherwise avoid snapshot scans. This ships behind a feature flag (enable_sync_v2) for safe rollout
+otherwise avoid snapshot scans. Note: the stream-first pipeline is now the only implementation; historical references to `enable_sync_v2` are obsolete.
 and quick rollback.
 
 ## Goals
@@ -26,7 +26,7 @@ and quick rollback.
   timeline model.
 - Idempotency: Persist a single lastProcessedEventId; make processing safe on retries.
 - Observability: Minimal counters and concise logs to debug ordering and delivery.
-- Migration safety: Ship behind enable_sync_v2 with zero data migration and easy rollback.
+- Migration safety: Historical note; the pipeline is now the default implementation.
 
 ## Non-Goals
 
@@ -114,14 +114,13 @@ G. What we remove (once V2 is stable)
 
 ## Flag & Switch Strategy
 
-- New config flag in config_flags table: enable_sync_v2 (default: false)
+- Historical: prior plan proposed an `enable_sync_v2` feature flag.
     - Add constant in lib/utils/consts.dart
     - Add initializer in lib/database/journal_db/config_flags.dart
     - Surface in Settings > Flags with description: “Enable Matrix Sync V2 (simplified pipeline) –
       requires restart”
 - Construction switch in `MatrixService`:
-    - If `enable_sync_v2`: create `MatrixStreamConsumer` (V2) as the active sync pipeline.
-    - Else: keep current `MatrixTimelineListener` (V1).
+    - The project now always constructs `MatrixStreamConsumer` as the active sync pipeline.
 - No DB migration. Same persisted key LAST_READ_MATRIX_EVENT_ID used by v2; semantics widen to
   “processed” instead of strictly “read”.
 
@@ -129,7 +128,7 @@ G. What we remove (once V2 is stable)
 
 - SyncPipeline (interface)
     - initialize(), start(), stop(), dispose()
-- V1: `MatrixTimelineListener` implements `SyncPipeline` via a thin adapter (or keep as-is until
+- Historical: a V1 adapter existed during transition; it has been removed.
   removal).
 - V2: `MatrixStreamConsumer` implements `SyncPipeline`
     - Deps: `MatrixSessionManager`, `SyncRoomManager`, `LoggingService`, `JournalDb`, `SettingsDb`,
@@ -157,7 +156,7 @@ Phase 0 – Verification/Proto (0.5–1 day)
 
 Phase 1 – Add flag and skeleton (0.5 day)
 
-- Add `enable_sync_v2` flag and Flags UI entry.
+- Historical: no longer applicable; there is no flag.
 - Define `SyncPipeline` interface; add a minimal adapter for V1 so both pipelines share
   initialize/start/stop/dispose.
 - Wire `MatrixService` to pick V1 or V2 based on the flag.
@@ -216,7 +215,7 @@ Phase 5 – Cleanup (post‑stabilization)
 ## Code-change checklist (per file)
 
 - matrix_service.dart: inject `SyncPipeline`; construct V1 or V2 based on flag; replace direct calls
-  to `MatrixTimelineListener` with pipeline calls.
+  to the stream-first pipeline calls.
 - sync_engine.dart / sync_lifecycle_coordinator.dart: continue to orchestrate lifecycle; use
   pipeline’s `initialize/start/stop/dispose`.
 - matrix_timeline_listener.dart: unchanged for V1; later remove backpressure queue when V2 is
@@ -227,7 +226,7 @@ Phase 5 – Cleanup (post‑stabilization)
 
 ## Rollback Plan
 
-- Toggle off `enable_sync_v2` (default false) and restart; V1 remains intact.
+- Historical: removed; only the stream pipeline is active.
 - No data migration. `lastProcessedEventId` continues to be used by V1 as last read.
 
 ## Success Metrics & Acceptance Criteria
@@ -253,7 +252,7 @@ Phase 5 – Cleanup (post‑stabilization)
 
 ---
 
-If you want, I can scaffold the V2 interface and flag wiring behind enable_sync_v2 in a small PR so
+Historical plan; the project now ships the stream-first pipeline by default.
 we can iterate in code.
 
 ## Alignment with research document

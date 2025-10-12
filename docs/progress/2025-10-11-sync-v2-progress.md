@@ -5,7 +5,7 @@ Date: 2025-10-11
 Scope: Scaffold feature flag, pipeline abstraction, V2 consumer stub, and wiring in service initialization.
 
 Completed
-- Added config flag `enable_sync_v2` (default false)
+- Historical: initial rollout proposed `enable_sync_v2`; the project now defaults to the stream-first pipeline without a flag.
   - Constant: `lib/utils/consts.dart`
   - Init: `lib/database/journal_db/config_flags.dart`
 - Created `SyncPipeline` interface
@@ -19,16 +19,15 @@ Completed
   - Per-event retry with exponential backoff + jitter and retry cap (advances past poisoned events)
   - Failure-safe advancement: do not advance past first not-yet-due failure; retry or skip when cap reached
   - v2Metrics exposed via diagnostics and rendered in Matrix Stats page (with Refresh + Last updated)
-- Updated `SyncLifecycleCoordinator` to accept an optional `SyncPipeline`
-  - Uses V2 pipeline if provided; falls back to V1 listener otherwise
-- Wired selection via DI
-  - `lib/get_it.dart`: initialize flags early, read `enable_sync_v2`, pass to `MatrixService`
+- Updated `SyncLifecycleCoordinator` to accept a `SyncPipeline` (now always the stream pipeline)
+- Wired selection via DI (historical; today the stream pipeline is unconditional)
+- `MatrixService` always constructs the stream-first pipeline.
   - `lib/features/sync/matrix/matrix_service.dart`: construct V2 pipeline and pass into coordinator when flag enabled
 
 Notes / Rationale
-- Kept V1 intact; V2 runs only when the flag is enabled (requires restart via DI path).
-- Avoided refactoring `SyncEngine` public surface; coordinator now routes start/teardown to either V1 or V2.
-- Next steps will implement catch-up + micro-batched processing in `MatrixStreamConsumer`.
+- Historical: V1 was retained during the rollout behind a flag; the stream pipeline is now the only implementation.
+- Coordinator routes lifecycle to the stream pipeline.
+- Catch-up + micro-batched processing implemented in `MatrixStreamConsumer`.
 
 Next
 - Unit/UI Tests
@@ -94,7 +93,7 @@ Next Steps
 
 Implementation
 - Catch-up pagination (SDK tokens): replace doubling snapshot limit with SDK pagination/backfill tokens for large rooms. Keep current logic as fallback.
-- Metrics cadence + flags: add a dedicated `enable_sync_v2_metrics` config flag (or sample logs every N flushes). Add a UI toggle in Matrix Stats to enable/disable V2 metrics.
+- Metrics cadence: use existing logging flag or sampling as needed; no dedicated V2 flag.
 - Circuit breaker/TTL knobs: read thresholds (failure count, cooldown, retry TTL, retry size cap) from config to allow tuning without code changes.
 
 Testing
