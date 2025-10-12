@@ -166,6 +166,189 @@ void main() {
       }
     });
 
+    test('missing-base safeguard schedules retry and does not count processed',
+        () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('MB1');
+      when(() => ev.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      when(() => ev.senderId).thenReturn('@other:server');
+      when(() => ev.attachmentMimetype).thenReturn('');
+      when(() => ev.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => ev.roomId).thenReturn('!room:server');
+
+      when(() => timeline.events).thenReturn(<Event>[ev]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => processor.process(event: ev, journalDb: journalDb))
+          .thenAnswer((_) async {});
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+      );
+
+      await consumer.initialize();
+      // Simulate apply observer observation for the same event id as "missing base"
+      consumer.reportDbApplyDiagnostics(
+        SyncApplyDiagnostics(
+          eventId: 'MB1',
+          payloadType: 'journalEntity',
+          entityId: 'e',
+          vectorClock: null,
+          rowsAffected: 0,
+          conflictStatus: 'VclockStatus.b_gt_a',
+        ),
+      );
+
+      await consumer.start();
+
+      final m = consumer.metricsSnapshot();
+      expect(m['processed'], 0);
+      expect(m['dbMissingBase'], greaterThanOrEqualTo(1));
+      expect(m['retryStateSize'], greaterThanOrEqualTo(1));
+    });
+
+    test('pending jsonPath triggers immediate scan after prefetch', () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+        final onTimelineController = StreamController<Event>.broadcast();
+
+        addTearDown(onTimelineController.close);
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => onTimelineController.stream);
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+
+        var calls = 0;
+        when(() => processor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: journalDb,
+            )).thenAnswer((inv) async {
+          calls++;
+          if (calls == 1) {
+            throw const FileSystemException('missing');
+          }
+        });
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          collectMetrics: true,
+          markerDebounce: const Duration(milliseconds: 50),
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        // 1) Text event fails with FileSystemException -> pending jsonPath recorded
+        final textEvent = MockEvent();
+        when(() => textEvent.eventId).thenReturn('T1');
+        when(() => textEvent.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+        when(() => textEvent.senderId).thenReturn('@other:server');
+        when(() => textEvent.attachmentMimetype).thenReturn('');
+        final textPayload = base64.encode(
+          utf8.encode(json.encode(<String, dynamic>{
+            'runtimeType': 'journalEntity',
+            'jsonPath': '/sub/test.json',
+          })),
+        );
+        when(() => textEvent.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(() => textEvent.text).thenReturn(textPayload);
+        when(() => textEvent.roomId).thenReturn('!room:server');
+
+        onTimelineController.add(textEvent);
+        async.flushMicrotasks();
+        // After first failure, a retry is scheduled
+        expect(consumer.metricsSnapshot()['retriesScheduled'], 1);
+
+        // 2) Later, the attachment arrives and is prefetched
+        final fileEvent = MockEvent();
+        when(() => fileEvent.eventId).thenReturn('F1');
+        when(() => fileEvent.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+        when(() => fileEvent.senderId).thenReturn('@other:server');
+        when(() => fileEvent.attachmentMimetype).thenReturn('application/json');
+        when(() => fileEvent.content)
+            .thenReturn(<String, dynamic>{'relativePath': '/sub/test.json'});
+        when(() => fileEvent.downloadAndDecryptAttachment()).thenAnswer(
+          (_) async => MatrixFile(
+            bytes: Uint8List.fromList('{"k":1}'.codeUnits),
+            name: 'test.json',
+          ),
+        );
+        when(() => fileEvent.roomId).thenReturn('!room:server');
+
+        onTimelineController.add(fileEvent);
+        async.flushMicrotasks();
+
+        // Advance beyond the backoff so the pending retry can run
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        // Processor should have been invoked a second time and succeeded
+        expect(calls, greaterThanOrEqualTo(2));
+        final m = consumer.metricsSnapshot();
+        expect(m['lastPrefetchedCount'], greaterThanOrEqualTo(1));
+      });
+    });
     test('respects maxBatch cap by flushing immediately (fakeAsync)', () async {
       fakeAsync((async) async {
         final session = MockMatrixSessionManager();

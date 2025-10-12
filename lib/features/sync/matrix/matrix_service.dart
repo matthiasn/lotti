@@ -464,12 +464,31 @@ class MatrixService {
     );
   }
 
+  Future<void> retryV2Now() async {
+    final p = _v2Pipeline;
+    if (p == null) return;
+    await p.retryNow();
+    _loggingService.captureEvent(
+      'V2 retryNow invoked',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'v2.retryNow',
+    );
+  }
+
   Future<String> getSyncDiagnosticsText() async {
     final p = _v2Pipeline;
     if (p == null) return 'V2 pipeline disabled';
     // Use raw snapshot so we include diagnostics-only fields
     final map = p.metricsSnapshot();
-    return map.entries.map((e) => '${e.key}=${e.value}').join('\n');
+    final lines = map.entries.map((e) => '${e.key}=${e.value}').toList();
+    // Append textual diagnostics if available
+    try {
+      final extras = p.diagnosticsStrings();
+      lines.addAll(extras.entries.map((e) => '${e.key}=${e.value}'));
+    } catch (_) {
+      // Older pipeline without diagnosticsStrings
+    }
+    return lines.join('\n');
   }
 
   // Visible for testing only

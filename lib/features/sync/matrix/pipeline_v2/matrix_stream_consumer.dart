@@ -152,6 +152,20 @@ class MatrixStreamConsumer implements SyncPipeline {
   int _metricDbApplied = 0;
   int _metricDbIgnoredByVectorClock = 0;
   int _metricConflictsCreated = 0;
+  int _metricDbMissingBase = 0;
+
+  // Diagnostics ring buffers
+  final List<String> _lastIgnored = <String>[]; // format: "<id>:<reason>"
+  final int _lastIgnoredMax = 10;
+  final List<String> _lastPrefetched =
+      <String>[]; // recently saved attachment paths
+  final int _lastPrefetchedMax = 10;
+  final Set<String> _pendingJsonPaths = <String>{};
+
+  // Tracks eventIds that reported rows=0 while predicted status suggests
+  // incoming is newer (missing base). These should be retried and block
+  // advancement in the current batch.
+  final Set<String> _missingBaseEventIds = <String>{};
 
   // Failure retry tracking to avoid permanent blockage (configurable).
   final int _maxRetriesPerEvent;
@@ -178,6 +192,25 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (obj is Map<String, dynamic>) {
         final rt = obj['runtimeType'];
         return rt is String ? rt : null;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _extractJsonPath(Event ev) {
+    try {
+      final txt = ev.text;
+      if (txt.isEmpty) return null;
+      final decoded = utf8.decode(base64.decode(txt));
+      final obj = json.decode(decoded);
+      if (obj is Map<String, dynamic>) {
+        final rt = obj['runtimeType'];
+        if (rt == 'journalEntity') {
+          final jp = obj['jsonPath'];
+          return jp is String ? jp : null;
+        }
       }
       return null;
     } catch (_) {
@@ -231,9 +264,28 @@ class MatrixStreamConsumer implements SyncPipeline {
     } else if (processedOk) {
       try {
         await _eventProcessor.process(event: e, journalDb: _journalDb);
-        if (_collectMetrics) _metricProcessed++;
-        if (_collectMetrics) _bumpProcessedType(_extractRuntimeType(e));
-        _retryState.remove(id);
+        // If apply observer flagged this as "missing base" then treat it as a
+        // retryable failure (do not count as processed, do not advance, and
+        // schedule a retry soon).
+        if (_missingBaseEventIds.remove(id)) {
+          processedOk = false;
+          hadFailure = true;
+          failureDelta = 0; // apply-level retry, not an exception
+          final nextAttempts = (rs?.attempts ?? 0) + 1;
+          final backoff = _computeBackoff(nextAttempts);
+          final due = _now().add(backoff);
+          _retryState[id] = _RetryInfo(nextAttempts, due);
+          nextDue = due;
+          _loggingService.captureEvent(
+            'missingBase retry scheduled: $id (attempts=$nextAttempts)',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'retry.missingBase',
+          );
+        } else {
+          if (_collectMetrics) _metricProcessed++;
+          if (_collectMetrics) _bumpProcessedType(_extractRuntimeType(e));
+          _retryState.remove(id);
+        }
       } catch (err, st) {
         processedOk = false;
         hadFailure = true;
@@ -257,6 +309,14 @@ class MatrixStreamConsumer implements SyncPipeline {
           _retryState[id] = _RetryInfo(nextAttempts, due);
         }
         nextDue = due;
+        // Record pending JSON path for faster recovery when the failure is
+        // due to a missing attachment.
+        if (err is FileSystemException) {
+          final jp = _extractJsonPath(e);
+          if (jp != null) {
+            _pendingJsonPaths.add(jp);
+          }
+        }
         _loggingService.captureException(
           err,
           domain: 'MATRIX_SYNC_V2',
@@ -528,6 +588,18 @@ class MatrixStreamConsumer implements SyncPipeline {
             documentsDirectory: _documentsDirectory,
           );
           if (_collectMetrics) _metricPrefetch++;
+          final rp = e.content['relativePath'];
+          if (rp is String && rp.isNotEmpty) {
+            _lastPrefetched.add(rp);
+            if (_lastPrefetched.length > _lastPrefetchedMax) {
+              _lastPrefetched.removeAt(0);
+            }
+            // If this path was pending during apply, trigger an immediate scan
+            // now that the attachment exists.
+            if (_pendingJsonPaths.remove(rp)) {
+              unawaited(_scanLiveTimeline());
+            }
+          }
         } catch (err, st) {
           _loggingService.captureException(
             err,
@@ -691,6 +763,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         'dbApplied': _metricDbApplied,
         'dbIgnoredByVectorClock': _metricDbIgnoredByVectorClock,
         'conflictsCreated': _metricConflictsCreated,
+        'dbMissingBase': _metricDbMissingBase,
         // Diagnostics-only fields (not shown in UI)
         'retryStateSize': _retryState.length,
         'circuitOpen':
@@ -705,7 +778,18 @@ class MatrixStreamConsumer implements SyncPipeline {
         // Flatten per-type dropped as droppedByType.<type>
         ..addEntries(_metricDroppedByType.entries.map(
           (e) => MapEntry('droppedByType.${e.key}', e.value),
-        ));
+        ))
+        // Ring buffers: lastIgnored and lastPrefetched
+        ..addEntries(<MapEntry<String, int>>[
+          MapEntry('lastIgnoredCount', _lastIgnored.length),
+          MapEntry('lastPrefetchedCount', _lastPrefetched.length),
+        ])
+        ..addEntries(_lastIgnored.asMap().entries.map(
+              (e) => MapEntry('lastIgnored.${e.key + 1}', e.value.length),
+            ))
+        ..addEntries(_lastPrefetched.asMap().entries.map(
+              (e) => MapEntry('lastPrefetched.${e.key + 1}', e.value.length),
+            ));
 
   // Called by SyncEventProcessor via observer to record DB apply results
   void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {
@@ -722,7 +806,30 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
       // Also attribute to type-specific drops if ignored
       if (rows == 0 && !status.contains('concurrent')) {
-        _bumpDroppedType(rt);
+        final isMissingBase = status.contains('b_gt_a');
+        if (isMissingBase) {
+          _metricDbMissingBase++;
+          _missingBaseEventIds.add(diag.eventId);
+          // Record in diagnostics ring buffer
+          final entry = '${diag.eventId}:missingBase';
+          _lastIgnored.add(entry);
+          if (_lastIgnored.length > _lastIgnoredMax) {
+            _lastIgnored.removeAt(0);
+          }
+        } else {
+          // older/equal – count as dropped by type
+          _bumpDroppedType(rt);
+          final reason = status.contains('a_gt_a')
+              ? 'older'
+              : (status.contains('a_gt_b')
+                  ? 'older'
+                  : (status.contains('equal') ? 'equal' : 'unknown'));
+          final entry = '${diag.eventId}:$reason';
+          _lastIgnored.add(entry);
+          if (_lastIgnored.length > _lastIgnoredMax) {
+            _lastIgnored.removeAt(0);
+          }
+        }
       }
     } catch (_) {
       // best-effort only
@@ -732,6 +839,21 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Visible for testing only
   @visibleForTesting
   bool get debugCollectMetrics => _collectMetrics;
+
+  // Additional textual diagnostics not represented in numeric metrics.
+  Map<String, String> diagnosticsStrings() {
+    final map = <String, String>{
+      'lastIgnoredCount': _lastIgnored.length.toString(),
+      'lastPrefetchedCount': _lastPrefetched.length.toString(),
+    };
+    for (var i = 0; i < _lastIgnored.length; i++) {
+      map['lastIgnored.${i + 1}'] = _lastIgnored[i];
+    }
+    for (var i = 0; i < _lastPrefetched.length; i++) {
+      map['lastPrefetched.${i + 1}'] = _lastPrefetched[i];
+    }
+    return map;
+  }
 
   // Force a rescan and optional catch-up to recover from potential gaps
   Future<void> forceRescan({bool includeCatchUp = true}) async {
@@ -745,6 +867,25 @@ class MatrixStreamConsumer implements SyncPipeline {
         e,
         domain: 'MATRIX_SYNC_V2',
         subDomain: 'forceRescan',
+        stackTrace: st,
+      );
+    }
+  }
+
+  // Force all pending retries to be immediately due and trigger a scan.
+  Future<void> retryNow() async {
+    try {
+      if (_retryState.isEmpty) return;
+      final now = _now();
+      for (final entry in _retryState.entries) {
+        _retryState[entry.key] = _RetryInfo(entry.value.attempts, now);
+      }
+      await _scanLiveTimeline();
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'retryNow',
         stackTrace: st,
       );
     }
