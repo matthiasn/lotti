@@ -1761,7 +1761,10 @@ def _ensure_pub_package_in_pubspec_sources(
     url = f"https://pub.dev/api/archives/{name}-{version}.tar.gz"
     tmp_path = context.work_dir / f"{name}-{version}.tar.gz"
     try:
-        _download_https_resource(context=context, printer=printer, url=url, destination=tmp_path)  # type: ignore[arg-type]
+        _download_https_resource(
+            url=url,
+            destination=tmp_path,
+        )
     except Exception:
         printer.warn(f"Failed to fetch {name}-{version} archive for sha256; skipping injection")
         return
