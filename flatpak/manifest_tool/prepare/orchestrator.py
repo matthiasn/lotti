@@ -601,8 +601,8 @@ def _ensure_local_tool_paths(
             try:
                 _copytree(repo_tool, tool_abs)
                 printer.info("Staged local tool path: tool/lotti_custom_lint")
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001 - best effort staging, log and continue
+                printer.warn(f"Failed to stage local tool path: {exc}")
     if not tool_abs.exists():
         return
 
@@ -700,8 +700,8 @@ def _prepare_workspace_files(context: PrepareFlathubContext, printer: _StatusPri
                 }
             }
             (work_dir / "foreign.json").write_text(json.dumps(foreign_json, indent=2) + "\n", encoding="utf-8")
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 - best effort hint file
+            printer.warn(f"Failed to write foreign.json: {exc}")
     _copyfile(pubspec_yaml, work_dir / "pubspec.yaml")
     _copyfile(pubspec_lock, work_dir / "pubspec.lock")
 
@@ -1807,6 +1807,37 @@ def _remove_local_dir_sources(document: ManifestDocument, printer: _StatusPrinte
         break
 
 
+# Helper predicates split out to reduce complexity of the main reorder function
+def _is_dep_include_entry(entry: object) -> bool:
+    if isinstance(entry, str):
+        return "pubspec-sources.json" in entry or "cargo-sources.json" in entry
+    if isinstance(entry, dict):
+        path = str(entry.get("path", ""))
+        return path.endswith("pubspec-sources.json") or path.endswith("cargo-sources.json")
+    return False
+
+
+def _is_cargokit_patch_entry(entry: object) -> bool:
+    if not isinstance(entry, dict) or entry.get("type") != "patch":
+        return False
+    dest = str(entry.get("dest", ""))
+    path = str(entry.get("path", ""))
+    return (
+        dest.startswith(".pub-cache/hosted/pub.dev/")
+        and "/cargokit" in dest
+        and path.endswith("run_build_tool.sh.patch")
+    )
+
+
+def _is_sqlite_patch_entry(entry: object) -> bool:
+    if not isinstance(entry, dict) or entry.get("type") != "patch":
+        return False
+    path = str(entry.get("path", ""))
+    if not path.startswith("sqlite3_flutter_libs/"):
+        return False
+    return path.endswith("-CMakeLists.txt.patch")
+
+
 def _ensure_cargokit_patches_after_dependency_sources(document: ManifestDocument, printer: _StatusPrinter) -> None:
     """Reorder cargokit patch sources to appear after dependency source includes.
 
@@ -1827,40 +1858,15 @@ def _ensure_cargokit_patches_after_dependency_sources(document: ManifestDocument
     if not isinstance(sources, list):
         return
 
-    def _is_dep_include(entry: object) -> bool:
-        if isinstance(entry, str):
-            return "pubspec-sources.json" in entry or "cargo-sources.json" in entry
-        if isinstance(entry, dict):
-            path = str(entry.get("path", ""))
-            return path.endswith("pubspec-sources.json") or path.endswith("cargo-sources.json")
-        return False
-
-    def _is_cargokit_patch(entry: object) -> bool:
-        if not isinstance(entry, dict) or entry.get("type") != "patch":
-            return False
-        dest = str(entry.get("dest", ""))
-        path = str(entry.get("path", ""))
-        return (
-            dest.startswith(".pub-cache/hosted/pub.dev/")
-            and "/cargokit" in dest
-            and path.endswith("run_build_tool.sh.patch")
-        )
-
-    def _is_sqlite_patch(entry: object) -> bool:
-        if not isinstance(entry, dict) or entry.get("type") != "patch":
-            return False
-        path = str(entry.get("path", ""))
-        if not path.startswith("sqlite3_flutter_libs/"):
-            return False
-        return path.endswith("-CMakeLists.txt.patch")
-
-    last_dep_idx = max((idx for idx, e in enumerate(sources) if _is_dep_include(e)), default=-1)
+    last_dep_idx = max((idx for idx, e in enumerate(sources) if _is_dep_include_entry(e)), default=-1)
     if last_dep_idx < 0:
         return
 
     # Collect patches that are placed before dependency includes
     early_patch_indices = [
-        idx for idx, e in enumerate(sources) if (_is_cargokit_patch(e) or _is_sqlite_patch(e)) and idx <= last_dep_idx
+        idx
+        for idx, e in enumerate(sources)
+        if (_is_cargokit_patch_entry(e) or _is_sqlite_patch_entry(e)) and idx <= last_dep_idx
     ]
     if not early_patch_indices:
         return

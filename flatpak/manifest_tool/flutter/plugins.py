@@ -205,36 +205,13 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
             messages.extend(add_messages)
 
         # Also add a patch that injects URL_HASH into the plugin CMake to avoid redownloads
-        # Detect installed sqlite3_flutter_libs version from pubspec-sources.json (adjacent to manifest)
+        # Compute plugin version and matching patch path (if available)
         manifest_path = getattr(document, "path", None)
         manifest_dir = Path(manifest_path).parent if manifest_path else Path.cwd()
         entries = _load_pubspec_sources(document)
-        plugin_version: Optional[str] = None
-        if entries:
-            for entry in entries:
-                if not isinstance(entry, dict):
-                    continue
-                dest = str(entry.get("dest", ""))
-                if "/pub.dev/sqlite3_flutter_libs-" in dest:
-                    try:
-                        plugin_version = dest.split("/sqlite3_flutter_libs-", 1)[1]
-                    except Exception:
-                        plugin_version = None
-                    break
 
-        patch_dir = manifest_dir / "sqlite3_flutter_libs"
-        patch_rel: Optional[str] = None
-        if patch_dir.is_dir():
-            # Prefer exact version match
-            if plugin_version:
-                exact = patch_dir / f"{plugin_version}-CMakeLists.txt.patch"
-                if exact.is_file():
-                    patch_rel = f"sqlite3_flutter_libs/{exact.name}"
-            # Fallback to any available patch file
-            if patch_rel is None:
-                candidates = sorted(patch_dir.glob("*-CMakeLists.txt.patch"))
-                if candidates:
-                    patch_rel = f"sqlite3_flutter_libs/{candidates[-1].name}"
+        plugin_version = _extract_sqlite_plugin_version(entries)
+        patch_rel = _compute_sqlite_patch_rel(manifest_dir, plugin_version)
 
         if plugin_version and patch_rel:
             plugin_root = f".pub-cache/hosted/pub.dev/sqlite3_flutter_libs-{plugin_version}"
@@ -257,6 +234,39 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
         return OperationResult(changed, messages)
 
     return OperationResult.unchanged()
+
+
+def _extract_sqlite_plugin_version(entries) -> Optional[str]:
+    """Extract sqlite3_flutter_libs version from pubspec-sources entries."""
+    if not entries:
+        return None
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        dest = str(entry.get("dest", ""))
+        if "/pub.dev/sqlite3_flutter_libs-" in dest:
+            try:
+                return dest.split("/sqlite3_flutter_libs-", 1)[1]
+            except Exception:  # pragma: no cover - defensive
+                return None
+    return None
+
+
+def _compute_sqlite_patch_rel(manifest_dir: Path, plugin_version: Optional[str]) -> Optional[str]:
+    """Return relative path to the best sqlite patch file if present."""
+    patch_dir = manifest_dir / "sqlite3_flutter_libs"
+    if not patch_dir.is_dir():
+        return None
+    # Prefer exact version match
+    if plugin_version:
+        exact = patch_dir / f"{plugin_version}-CMakeLists.txt.patch"
+        if exact.is_file():
+            return f"sqlite3_flutter_libs/{exact.name}"
+    # Fallback to any available patch file
+    candidates = sorted(patch_dir.glob("*-CMakeLists.txt.patch"))
+    if candidates:
+        return f"sqlite3_flutter_libs/{candidates[-1].name}"
+    return None
 
 
 def add_media_kit_mimalloc_source(document: ManifestDocument) -> OperationResult:
