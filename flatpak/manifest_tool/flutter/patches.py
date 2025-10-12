@@ -171,10 +171,11 @@ def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
     # 1) Prefer pubspec-sources.json (most reliable and version-accurate)
     entries = _load_pubspec_sources(document)
     if entries:
-        # Patch only known cargokit-based plugins that ship run_build_tool.sh
+        # Patch known cargokit-based plugins that ship run_build_tool.sh
         bases = [
             "super_native_extensions",
             "flutter_vodozemac",
+            "irondash_engine_context",
         ]
         detected = _match_packages_with_versions(bases, entries)
         if detected:
@@ -186,7 +187,11 @@ def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
     if lotti_module:
         bases = _collect_cargokit_basenames(lotti_module)
         # Filter to the known cargokit plugins
-        bases = [b for b in bases if b in ("super_native_extensions", "flutter_vodozemac")]
+        bases = [
+            b
+            for b in bases
+            if b in ("super_native_extensions", "flutter_vodozemac", "irondash_engine_context")
+        ]
         if bases and entries:
             versioned = _match_packages_with_versions(bases, entries)
             if versioned:
@@ -196,7 +201,9 @@ def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
 
     # 3) Last resort: static list (may not match current versions)
     return [
-        p for p in _FALLBACK_CARGOKIT_PACKAGES if p.split("-")[0] in ("super_native_extensions", "flutter_vodozemac")
+        p
+        for p in _FALLBACK_CARGOKIT_PACKAGES
+        if p.split("-")[0] in ("super_native_extensions", "flutter_vodozemac", "irondash_engine_context")
     ]
 
 

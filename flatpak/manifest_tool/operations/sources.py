@@ -407,10 +407,9 @@ def _bundle_single_source(
     if local_path is None:
         return False, fetch_messages
 
+    # Replace remote URL with a local path reference, preserving original type
     source["path"] = local_path.name
     source.pop("url", None)
-    # Normalize to a local file reference so flatpak-builder does not require a checksum
-    source["type"] = "file"
     return True, fetch_messages
 
 

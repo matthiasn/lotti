@@ -238,9 +238,7 @@ def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
                 if len(parts) >= 4 and parts[0] == "cp" and parts[1] == "-r":
                     dest = parts[3]
                     conditional = (
-                        f"if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {dest}; "
-                        f"elif [ -d /app/flutter ]; then cp -r /app/flutter {dest}; "
-                        f"else echo 'Flutter SDK not found' >&2; exit 1; fi"
+                        f"if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {dest}; fi"
                     )
                     new_commands.append(conditional)
                     changed = True
