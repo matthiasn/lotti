@@ -195,7 +195,9 @@ def _find_cargokit_packages(document: ManifestDocument) -> list[str]:
             return bases
 
     # 3) Last resort: static list (may not match current versions)
-    return [p for p in _FALLBACK_CARGOKIT_PACKAGES if p.split("-")[0] in ("super_native_extensions", "flutter_vodozemac")]
+    return [
+        p for p in _FALLBACK_CARGOKIT_PACKAGES if p.split("-")[0] in ("super_native_extensions", "flutter_vodozemac")
+    ]
 
 
 def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:

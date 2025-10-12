@@ -486,15 +486,14 @@ def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -
     _ensure_setup_helper_reference(context, printer)
     _ensure_flatpak_flutter_repo(context, printer)
     _prepare_workspace_files(context, printer)
+    _prestage_local_tool_for_pub_get(context, printer)
     _prime_flutter_sdk(context, printer)
     _run_flatpak_flutter(context, printer)
     # Fail fast if flatpak-flutter failed, unless explicit fallback was requested
     allow_fallback_env = os.getenv("ALLOW_FALLBACK", "false").strip().lower()
     allow_fallback = allow_fallback_env in {"1", "true", "yes", "on"}
     if context.flatpak_flutter_status not in (0, None) and not allow_fallback:
-        raise PrepareFlathubError(
-            "flatpak-flutter failed; set ALLOW_FALLBACK=true to proceed with fallback generation"
-        )
+        raise PrepareFlathubError("flatpak-flutter failed; set ALLOW_FALLBACK=true to proceed with fallback generation")
     _normalize_sqlite_patch(context, printer)
     _pin_working_manifest(context, printer)
     _copy_generated_artifacts(context, printer)
@@ -510,6 +509,29 @@ def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -
     _cleanup(context, printer)
     _maybe_test_build(context, printer)
     _print_summary(context, printer)
+
+
+def _prestage_local_tool_for_pub_get(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+    """Pre-stage local tool path deps into flatpak-flutter build dir before pub get.
+
+    flatpak-flutter clones the app into `.flatpak-builder/build/lotti` and runs
+    `flutter pub get` there. If the app depends on a local path like
+    `tool/lotti_custom_lint`, ensure that directory exists in the clone before
+    pub get runs by copying it from the repository root.
+    """
+    source_dir = context.repo_root / "tool" / "lotti_custom_lint"
+    if not source_dir.is_dir():
+        return
+    target_root = context.work_dir / ".flatpak-builder" / "build" / "lotti"
+    target_dir = target_root / "tool" / "lotti_custom_lint"
+    try:
+        target_dir.parent.mkdir(parents=True, exist_ok=True)
+        # Copy only if missing or stale
+        if not target_dir.exists():
+            _copytree(source_dir, target_dir)
+            printer.info("Pre-staged tool/lotti_custom_lint for flatpak-flutter pub get")
+    except Exception as exc:
+        _LOGGER.debug("Failed to pre-stage local tool path: %s", exc)
 
 
 def _prepare_directories(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
@@ -542,6 +564,9 @@ def _prepare_manifest_for_flatpak_flutter(context: PrepareFlathubContext, printe
 
     branch_applied, flutter_added, repo_overridden = _prepare_lotti_module_for_flatpak_flutter(modules, context)
 
+    # Ensure local tool path dependencies are available to flatpak-flutter before pub get
+    _ensure_local_tool_paths(context, document, printer)
+
     if branch_applied or flutter_added or repo_overridden:
         document.mark_changed()
     document.save()
@@ -554,6 +579,52 @@ def _prepare_manifest_for_flatpak_flutter(context: PrepareFlathubContext, printe
         printer.info("Injected Flutter SDK git source into lotti module")
     if repo_overridden:
         printer.info(f"Using PR fork URL: {context.pr_head_url}")
+
+
+def _ensure_local_tool_paths(
+    context: PrepareFlathubContext, document: ManifestDocument, printer: _StatusPrinter
+) -> None:
+    """Inject local tool/ path deps into lotti sources for flatpak-flutter.
+
+    flatpak-flutter runs `flutter pub get` before processing foreign.json. If the
+    app depends on a local path (e.g., tool/lotti_custom_lint), ensure it's included
+    as a 'dir' source so it exists under .flatpak-builder/build/<app>/tool/... when
+    pub get runs.
+    """
+    tool_rel = Path("tool/lotti_custom_lint")
+    tool_abs = context.work_dir / tool_rel
+    if not tool_abs.exists():
+        # Try copying from repo_root if not already staged
+        repo_tool = context.repo_root / tool_rel
+        if repo_tool.exists():
+            try:
+                _copytree(repo_tool, tool_abs)
+                printer.info("Staged local tool path: tool/lotti_custom_lint")
+            except Exception:
+                pass
+    if not tool_abs.exists():
+        return
+
+    modules = document.ensure_modules()
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+        sources = module.setdefault("sources", [])
+        already = any(
+            isinstance(s, dict) and s.get("type") == "dir" and s.get("path") == str(tool_rel) for s in sources
+        )
+        if not already:
+            sources.insert(
+                0,
+                {
+                    "type": "dir",
+                    "path": str(tool_rel),
+                    "dest": str(tool_rel),
+                },
+            )
+            document.mark_changed()
+            printer.info("Injected local tool dir source: tool/lotti_custom_lint")
+        break
 
 
 def _ensure_setup_helper_reference(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
@@ -594,6 +665,7 @@ def _prepare_workspace_files(context: PrepareFlathubContext, printer: _StatusPri
 
     lib_src = repo_root / "lib"
     linux_src = repo_root / "linux"
+    tool_src = repo_root / "tool"
     pubspec_yaml = repo_root / "pubspec.yaml"
     pubspec_lock = repo_root / "pubspec.lock"
 
@@ -608,6 +680,27 @@ def _prepare_workspace_files(context: PrepareFlathubContext, printer: _StatusPri
 
     _copytree(lib_src, work_dir / "lib")
     _copytree(linux_src, work_dir / "linux")
+    # Copy local tool/ path dependencies (e.g., tool/lotti_custom_lint) so flatpak-flutter pub get resolves
+    if tool_src.is_dir():
+        _copytree(tool_src, work_dir / "tool")
+        # Write foreign.json to have flatpak-flutter embed local tool paths into the app sources
+        try:
+            foreign_json = {
+                "app_local_paths": {
+                    "manifest": {
+                        "sources": [
+                            {
+                                "type": "dir",
+                                "path": "tool/lotti_custom_lint",
+                                "dest": "$APP/tool/lotti_custom_lint",
+                            }
+                        ]
+                    }
+                }
+            }
+            (work_dir / "foreign.json").write_text(json.dumps(foreign_json, indent=2) + "\n", encoding="utf-8")
+        except Exception:
+            pass
     _copyfile(pubspec_yaml, work_dir / "pubspec.yaml")
     _copyfile(pubspec_lock, work_dir / "pubspec.lock")
 
@@ -1631,6 +1724,9 @@ def _post_process_output_manifest(context: PrepareFlathubContext, printer: _Stat
     _apply_layout_adjustments(document, context, printer, layout)
     _finalize_manifest_adjustments(document, printer)
 
+    # Remove any local dir sources (e.g., tool/lotti_custom_lint) from final submission manifest
+    _remove_local_dir_sources(document, printer)
+
     # Ensure pubspec-sources.json includes exact pinned pub packages needed by cargokit build tools.
     # Some plugin versions pin yaml=3.1.2, which may not be included by default generators when only 3.1.3 exists.
     _ensure_pub_package_in_pubspec_sources(context, printer, name="yaml", version="3.1.2")
@@ -1685,9 +1781,29 @@ def _ensure_pub_package_in_pubspec_sources(
     printer.info(f"Injected pub package {name}-{version} into pubspec-sources.json")
 
 
-def _ensure_cargokit_patches_after_dependency_sources(
-    document: ManifestDocument, printer: _StatusPrinter
-) -> None:
+def _remove_local_dir_sources(document: ManifestDocument, printer: _StatusPrinter) -> None:
+    modules = document.ensure_modules()
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+        sources = module.get("sources", [])
+        if not isinstance(sources, list):
+            return
+        filtered: list[object] = []
+        removed = 0
+        for src in sources:
+            if isinstance(src, dict) and src.get("type") == "dir":
+                removed += 1
+                continue
+            filtered.append(src)
+        if removed:
+            module["sources"] = filtered
+            document.mark_changed()
+            printer.info(f"Removed {removed} local dir source(s) from final manifest")
+        break
+
+
+def _ensure_cargokit_patches_after_dependency_sources(document: ManifestDocument, printer: _StatusPrinter) -> None:
     """Reorder cargokit patch sources to appear after dependency source includes.
 
     flatpak-builder processes sources sequentially. Cargokit patches must run
@@ -1720,8 +1836,10 @@ def _ensure_cargokit_patches_after_dependency_sources(
             return False
         dest = str(entry.get("dest", ""))
         path = str(entry.get("path", ""))
-        return dest.startswith(".pub-cache/hosted/pub.dev/") and "/cargokit" in dest and path.endswith(
-            "run_build_tool.sh.patch"
+        return (
+            dest.startswith(".pub-cache/hosted/pub.dev/")
+            and "/cargokit" in dest
+            and path.endswith("run_build_tool.sh.patch")
         )
 
     def _is_sqlite_patch(entry: object) -> bool:
@@ -1738,9 +1856,7 @@ def _ensure_cargokit_patches_after_dependency_sources(
 
     # Collect patches that are placed before dependency includes
     early_patch_indices = [
-        idx
-        for idx, e in enumerate(sources)
-        if ( _is_cargokit_patch(e) or _is_sqlite_patch(e) ) and idx <= last_dep_idx
+        idx for idx, e in enumerate(sources) if (_is_cargokit_patch(e) or _is_sqlite_patch(e)) and idx <= last_dep_idx
     ]
     if not early_patch_indices:
         return

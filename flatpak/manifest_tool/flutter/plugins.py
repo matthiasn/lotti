@@ -239,10 +239,7 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
         if plugin_version and patch_rel:
             plugin_root = f".pub-cache/hosted/pub.dev/sqlite3_flutter_libs-{plugin_version}"
             already = any(
-                isinstance(src, dict)
-                and src.get("type") == "patch"
-                and src.get("path") == patch_rel
-                for src in sources
+                isinstance(src, dict) and src.get("type") == "patch" and src.get("path") == patch_rel for src in sources
             )
             if not already:
                 sources.append({"type": "patch", "path": patch_rel, "dest": plugin_root})
