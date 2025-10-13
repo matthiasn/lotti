@@ -61,7 +61,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
 
     return DropTarget(
       onDragDone: (data) {
-        importDroppedImages(
+        handleDroppedMedia(
           data: data,
           linkedId: item.meta.id,
           categoryId: item.meta.categoryId,

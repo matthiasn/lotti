@@ -69,7 +69,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
 
     return DropTarget(
       onDragDone: (data) {
-        importDroppedImages(
+        handleDroppedMedia(
           data: data,
           linkedId: task.meta.id,
           categoryId: task.meta.categoryId,
