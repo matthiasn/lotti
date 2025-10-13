@@ -71,7 +71,11 @@ class _IncomingStatsState extends ConsumerState<IncomingStats>
     final keys = m.keys.toList()..sort();
     final b = StringBuffer();
     for (final k in keys) {
-      b..write(k)..write('=')..write(m[k])..write(';');
+      b
+        ..write(k)
+        ..write('=')
+        ..write(m[k])
+        ..write(';');
     }
     return b.toString();
   }

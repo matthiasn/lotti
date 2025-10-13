@@ -64,8 +64,7 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
                   children: [
                     Row(
                       children: [
-                        Expanded(
-                            child: Text('dbMissingBase: $dbMissingBase')),
+                        Expanded(child: Text('dbMissingBase: $dbMissingBase')),
                         IconButton(
                           tooltip: 'Refresh diagnostics',
                           icon: const Icon(Icons.refresh_rounded),

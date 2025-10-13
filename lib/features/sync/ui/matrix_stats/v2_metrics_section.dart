@@ -35,9 +35,7 @@ class V2MetricsSection extends StatelessWidget {
 
   List<MapEntry<String, int>> _select(
       Map<String, int> m, bool Function(String) pred) {
-    return m.entries
-        .where((e) => pred(e.key))
-        .toList()
+    return m.entries.where((e) => pred(e.key)).toList()
       ..sort((a, b) => a.key.compareTo(b.key));
   }
 

@@ -55,8 +55,7 @@ void main() {
         .thenAnswer((_) async => <String, dynamic>{});
     when(() => mockMatrixService.getSyncDiagnosticsText())
         .thenAnswer((_) async => '');
-    when(() => mockMatrixService.getV2Metrics())
-        .thenAnswer((_) async => null);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer((_) async => null);
   });
 
   tearDown(() async {
