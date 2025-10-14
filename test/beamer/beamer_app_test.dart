@@ -8,11 +8,15 @@ int calculateClampedIndex({
   required bool isDashboardsEnabled,
 }) {
   // Calculate the number of navigation items based on enabled flags
-  final itemCount = 2 + // Tasks and Journal (always enabled)
-      (isCalendarEnabled ? 1 : 0) +
-      (isHabitsEnabled ? 1 : 0) +
-      (isDashboardsEnabled ? 1 : 0) +
-      1; // Settings (always enabled)
+  final navItems = [
+    true, // Tasks
+    isCalendarEnabled, // Calendar
+    isHabitsEnabled, // Habits
+    isDashboardsEnabled, // Dashboards
+    true, // Journal
+    true, // Settings
+  ];
+  final itemCount = navItems.where((isEnabled) => isEnabled).length;
 
   // Clamp index to valid range to prevent out of bounds errors
   return rawIndex.clamp(0, itemCount - 1);

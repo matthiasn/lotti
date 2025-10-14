@@ -93,11 +93,15 @@ class _AppScreenState extends State<AppScreen> {
         final rawIndex = snapshot.data ?? 0;
 
         // Calculate the number of navigation items based on enabled flags
-        final itemCount = 2 + // Tasks and Journal (always enabled)
-            (_isCalendarPageEnabled ? 1 : 0) +
-            (_isHabitsPageEnabled ? 1 : 0) +
-            (_isDashboardsPageEnabled ? 1 : 0) +
-            1; // Settings (always enabled)
+        final navItems = [
+          true, // Tasks
+          _isCalendarPageEnabled, // Calendar
+          _isHabitsPageEnabled, // Habits
+          _isDashboardsPageEnabled, // Dashboards
+          true, // Journal
+          true, // Settings
+        ];
+        final itemCount = navItems.where((isEnabled) => isEnabled).length;
 
         // Clamp index to valid range to prevent out of bounds errors
         // when flags are toggled and items list shrinks
