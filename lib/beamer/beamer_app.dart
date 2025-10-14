@@ -90,7 +90,18 @@ class _AppScreenState extends State<AppScreen> {
     return StreamBuilder<int>(
       stream: navService.getIndexStream(),
       builder: (context, snapshot) {
-        final index = snapshot.data ?? 0;
+        final rawIndex = snapshot.data ?? 0;
+
+        // Calculate the number of navigation items based on enabled flags
+        final itemCount = 2 + // Tasks and Journal (always enabled)
+            (_isCalendarPageEnabled ? 1 : 0) +
+            (_isHabitsPageEnabled ? 1 : 0) +
+            (_isDashboardsPageEnabled ? 1 : 0) +
+            1; // Settings (always enabled)
+
+        // Clamp index to valid range to prevent out of bounds errors
+        // when flags are toggled and items list shrinks
+        final index = rawIndex.clamp(0, itemCount - 1);
 
         return Scaffold(
           body: Stack(
