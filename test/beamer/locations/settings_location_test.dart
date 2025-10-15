@@ -48,9 +48,10 @@ void main() {
 
     setUpAll(() {
       // Register mock services with GetIt for tests that need them
-      getIt..registerSingleton<TagsService>(MockTagsService())
-      ..registerSingleton<LoggingDb>(MockLoggingDb())
-      ..registerSingleton<JournalDb>(MockJournalDb());
+      getIt
+        ..registerSingleton<TagsService>(MockTagsService())
+        ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<JournalDb>(MockJournalDb());
     });
 
     tearDownAll(getIt.reset);
