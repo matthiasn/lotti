@@ -66,8 +66,7 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('start button disabled until both dates selected',
-      (tester) async {
+  testWidgets('start button enabled with default dates', (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const ReSyncModalContent(),
@@ -77,28 +76,55 @@ void main() {
       ),
     );
 
-    final dateFieldFinder = find.byType(DateTimeField);
-    final fields = dateFieldFinder
-        .evaluate()
-        .map((element) => element.widget as DateTimeField);
+    await tester.pumpAndSettle();
 
     final startButtonFinder =
         find.widgetWithText(LottiSecondaryButton, 'Start');
     expect(startButtonFinder, findsOneWidget);
 
-    var startButton = tester.widget<LottiSecondaryButton>(startButtonFinder);
-    expect(startButton.onPressed, isNull);
-
-    fields.first.setDateTime(DateTime(2024, 1, 1));
-    await tester.pump();
-
-    startButton = tester.widget<LottiSecondaryButton>(startButtonFinder);
-    expect(startButton.onPressed, isNull);
-
-    fields.last.setDateTime(DateTime(2024, 1, 2));
-    await tester.pump();
-
-    startButton = tester.widget<LottiSecondaryButton>(startButtonFinder);
+    final startButton = tester.widget<LottiSecondaryButton>(startButtonFinder);
     expect(startButton.onPressed, isNotNull);
+  });
+
+  testWidgets('default dates set to last 24 hours', (tester) async {
+    final testStartTime = DateTime.now();
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const ReSyncModalContent(),
+        overrides: [
+          maintenanceProvider.overrideWithValue(mockMaintenance),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final dateFieldFinder = find.byType(DateTimeField);
+    final fields = dateFieldFinder
+        .evaluate()
+        .map((element) => element.widget as DateTimeField)
+        .toList();
+
+    expect(fields.length, 2);
+
+    final dateFrom = fields.first.dateTime;
+    final dateTo = fields.last.dateTime;
+
+    expect(dateFrom, isNotNull);
+    expect(dateTo, isNotNull);
+
+    // Verify dateFrom is approximately 24 hours before dateTo
+    final difference = dateTo!.difference(dateFrom!);
+    expect(difference.inHours, 24);
+    expect(difference.inMinutes, closeTo(24 * 60, 1));
+
+    // Verify dateTo is approximately now
+    final timeDifferenceFromNow = testStartTime.difference(dateTo).abs();
+    expect(
+      timeDifferenceFromNow.inSeconds,
+      lessThan(5),
+      reason: 'dateTo should be very close to current time',
+    );
   });
 }
