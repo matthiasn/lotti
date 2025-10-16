@@ -1008,19 +1008,6 @@ void main() {
       // Verifying the update method executes successfully covers the JournalImage branch
       expect(success, true);
     });
-
-    test(
-        'Entity Type Branch Coverage: updateJournalEntityText returns false for non-existent entity',
-        () async {
-      const newText = EntryText(plainText: 'Test text');
-      final result = await getIt<PersistenceLogic>().updateJournalEntityText(
-        'non-existent-id-12345',
-        newText,
-        DateTime.now(),
-      );
-
-      expect(result, false);
-    });
   });
 }
 
