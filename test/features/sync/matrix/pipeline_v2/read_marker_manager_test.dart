@@ -67,7 +67,7 @@ void main() {
     });
   });
 
-  test('dispose cancels pending flush', () {
+  test('dispose flushes pending marker immediately', () {
     fakeAsync((async) {
       final room = MockRoom();
       final log = MockLogging();
@@ -81,7 +81,7 @@ void main() {
       mgr.schedule(room, 'e');
       mgr.dispose();
       async.elapse(const Duration(milliseconds: 60));
-      expect(called, isFalse);
+      expect(called, isTrue);
     });
   });
 }

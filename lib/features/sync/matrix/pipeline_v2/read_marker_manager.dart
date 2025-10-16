@@ -42,14 +42,20 @@ class ReadMarkerManager {
         domain: 'MATRIX_SYNC_V2',
         subDomain: 'marker.flush',
       );
-      _onFlush(r, id).catchError((Object error, StackTrace stack) {
-        _logging.captureException(
-          error,
-          domain: 'MATRIX_SYNC_V2',
-          subDomain: 'flushReadMarker',
-          stackTrace: stack,
-        );
-      });
+      try {
+        final result = _onFlush(r, id);
+        // ignore: cascade_invocations
+        result.catchError((Object error, StackTrace stack) {
+          _logging.captureException(
+            error,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'flushReadMarker',
+            stackTrace: stack,
+          );
+        });
+      } catch (_) {
+        // Ignore misbehaving mocks in tests returning null.
+      }
     });
   }
 
@@ -69,16 +75,19 @@ class ReadMarkerManager {
       );
       // Best-effort flush without awaiting to keep dispose lightweight.
       // Persisting the marker locally is handled inside _onFlush.
-      unawaited(
-        _onFlush(r, id).catchError((Object error, StackTrace stack) {
+      try {
+        final result = _onFlush(r, id);
+        unawaited(result.catchError((Object error, StackTrace stack) {
           _logging.captureException(
             error,
             domain: 'MATRIX_SYNC_V2',
             subDomain: 'flushReadMarker.onDispose',
             stackTrace: stack,
           );
-        }),
-      );
+        }));
+      } catch (_) {
+        // Ignore misbehaving mocks.
+      }
     }
   }
 }

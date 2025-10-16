@@ -112,6 +112,14 @@ void main() {
       when(() => timeline.cancelSubscriptions()).thenReturn(null);
       when(() => room.getTimeline(limit: any(named: 'limit')))
           .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
 
       when(() => processor.process(
           event: any<Event>(named: 'event'),
@@ -164,6 +172,217 @@ void main() {
         verify(() => processor.process(event: ev, journalDb: journalDb))
             .called(1);
       }
+    });
+
+    test('persists id and ts on marker advancement', () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('e1');
+      when(() => ev.roomId).thenReturn('!room:server');
+      when(() => ev.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(123));
+      when(() => ev.senderId).thenReturn('@other:server');
+      when(() => ev.attachmentMimetype).thenReturn('');
+      when(() => ev.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+
+      when(() => timeline.events).thenReturn(<Event>[ev]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => processor.process(event: ev, journalDb: journalDb))
+          .thenAnswer((_) async {});
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+            timeline: any<Timeline>(named: 'timeline'),
+          )).thenAnswer((_) async {});
+      when(() => settingsDb.saveSettingsItem(any(), any()))
+          .thenAnswer((_) async => 1);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+
+      verify(() => settingsDb.saveSettingsItem(lastReadMatrixEventId, 'e1'))
+          .called(1);
+      verify(() => settingsDb.saveSettingsItem(lastReadMatrixEventTs, '123'))
+          .called(1);
+    });
+
+    test('logs startup scheduling: start.catchUpRetry when marker exists',
+        () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'e0');
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.canRequestHistory).thenReturn(false);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+      when(() => processor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: journalDb)).thenAnswer((_) async {});
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+            timeline: any<Timeline>(named: 'timeline'),
+          )).thenAnswer((_) async {});
+
+      when(() => logger.captureEvent('v2 start: scheduling catchUp retry',
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+
+      // catchUpRetry is logged after start when a local marker exists.
+      verify(() => logger.captureEvent(
+            any<String>(),
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'start.catchUpRetry',
+          )).called(1);
+    });
+
+    test('noAdvance.rescan is scheduled when only attachments are seen',
+        () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      final att = MockEvent();
+      when(() => att.eventId).thenReturn('a1');
+      when(() => att.roomId).thenReturn('!room:server');
+      when(() => att.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
+      when(() => att.senderId).thenReturn('@other:server');
+      when(() => att.attachmentMimetype).thenReturn('image/jpeg');
+      when(() => att.content)
+          .thenReturn(<String, dynamic>{'relativePath': '/tmp/x'});
+      when(() => att.downloadAndDecryptAttachment()).thenAnswer((_) async =>
+          MatrixFile(bytes: Uint8List.fromList(const [0]), name: 'x.jpg'));
+
+      when(() => timeline.events).thenReturn(<Event>[att]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'noAdvance.rescan')).thenReturn(null);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+
+      verify(() => logger.captureEvent(any<String>(),
+          domain: 'MATRIX_SYNC_V2', subDomain: 'noAdvance.rescan')).called(1);
     });
 
     test('flushReadMarker exceptions are captured and do not break flow',
@@ -1952,11 +2171,11 @@ void main() {
       await consumer.initialize();
       await consumer.start();
 
-      // Expect processing of e1..e9 (after e0)
+      // Expect processing of e0..e9 due to startup rewind floor
       verify(() => processor.process(
             event: any<Event>(named: 'event'),
             journalDb: journalDb,
-          )).called(9);
+          )).called(10);
     });
 
     test('filters events from other rooms and batches via flush timer',
