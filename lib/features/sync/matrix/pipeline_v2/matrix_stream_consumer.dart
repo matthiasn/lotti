@@ -75,7 +75,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     DateTime Function()? now,
     Duration flushInterval = const Duration(milliseconds: 150),
     int maxBatch = 200,
-    Duration markerDebounce = const Duration(milliseconds: 600),
+    Duration markerDebounce = const Duration(milliseconds: 300),
     int? maxRetriesPerEvent,
     Future<bool> Function({
       required Timeline timeline,
@@ -120,6 +120,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         client: _client,
         room: room,
         eventId: id,
+        timeline: _liveTimeline,
       ),
       logging: _loggingService,
     );
@@ -300,6 +301,12 @@ class MatrixStreamConsumer implements SyncPipeline {
     // Ensure room snapshot is hydrated similarly to V1.
     await _roomManager.initialize();
     _lastProcessedEventId = await getLastReadMatrixEventId(_settingsDb);
+    try {
+      final ts = await getLastReadMatrixEventTs(_settingsDb);
+      if (ts != null) _lastProcessedTs = ts;
+    } catch (_) {
+      // optional
+    }
     _initialized = true;
   }
 
@@ -339,6 +346,30 @@ class MatrixStreamConsumer implements SyncPipeline {
           onUpdate: _scheduleLiveScan,
         );
         _liveTimeline = tl;
+        // Proactively scan once at startup so we don't rely on a fresh
+        // incoming event to kick the first processing pass.
+        _loggingService.captureEvent(
+          'v2 start: scheduling initial liveScan',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'start.liveScan',
+        );
+        _liveScanTimer?.cancel();
+        _liveScanTimer = Timer(const Duration(milliseconds: 80), () {
+          unawaited(_scanLiveTimeline());
+        });
+        // If we had a stored lastProcessed marker, ensure we run catch-up once
+        // more shortly after the room is ready. This covers the case where the
+        // room snapshot became available only after start(), and the first
+        // catch-up attempt had no active room.
+        if (_lastProcessedEventId != null) {
+          _loggingService.captureEvent(
+            'v2 start: scheduling catchUp retry',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'start.catchUpRetry',
+          );
+          unawaited(Future<void>.delayed(const Duration(milliseconds: 150))
+              .then((_) => _attachCatchUp()));
+        }
       } catch (e, st) {
         _loggingService.captureException(
           e,
@@ -400,11 +431,15 @@ class MatrixStreamConsumer implements SyncPipeline {
         );
         return;
       }
+      final thresholdTs =
+          _lastProcessedTs != null ? (_lastProcessedTs!.toInt() - 1) : null;
       final slice = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: _lastProcessedEventId,
         backfill: _backfill ?? SdkPaginationCompat.backfillUntilContains,
         logging: _loggingService,
+        rewindCount: 3,
+        thresholdTsMillis: thresholdTs,
       );
       if (slice.isNotEmpty) {
         if (_collectMetrics) _metrics.incCatchupBatches();
@@ -504,6 +539,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
 
     // First pass: prefetch attachments for remote events.
+    var sawAttachmentPrefetch = false;
     for (final e in ordered) {
       if (ec.MatrixEventClassifier.shouldPrefetchAttachment(
           e, _client.userID)) {
@@ -523,6 +559,7 @@ class MatrixStreamConsumer implements SyncPipeline {
               unawaited(_scanLiveTimeline());
             }
           }
+          sawAttachmentPrefetch = true;
         } catch (err, st) {
           _loggingService.captureException(
             err,
@@ -543,6 +580,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     var hadFailure = false;
     var batchFailures = 0;
     DateTime? earliestNextDue;
+    var syncPayloadEventsSeen = 0;
     for (final e in ordered) {
       final ts = TimelineEventOrdering.timestamp(e);
       final id = e.eventId;
@@ -555,6 +593,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
           content['msgtype'] == syncMessageType) {
         isSyncPayloadEvent = true;
+        syncPayloadEventsSeen++;
         final outcome = await _processSyncPayloadEvent(e);
         processedOk = outcome.processedOk;
         treatAsHandled = outcome.treatAsHandled;
@@ -572,6 +611,7 @@ class MatrixStreamConsumer implements SyncPipeline {
 
         if (validFallback) {
           isSyncPayloadEvent = true;
+          syncPayloadEventsSeen++;
           final outcome = await _processSyncPayloadEvent(
             e,
             dropSuffix: ' (no-msgtype)',
@@ -627,8 +667,37 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (shouldAdvance) {
         _lastProcessedEventId = latestEventId;
         _lastProcessedTs = latestTs;
+        // Persist locally immediately to avoid losing progress if the app
+        // backgrounds or exits before the debounced remote flush fires.
+        try {
+          await setLastReadMatrixEventId(latestEventId, _settingsDb);
+          _loggingService.captureEvent(
+            'marker.local id=$latestEventId',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'marker.local',
+          );
+          await setLastReadMatrixEventTs(latestTs.toInt(), _settingsDb);
+          _loggingService.captureEvent(
+            'marker.local.ts ts=${latestTs.toInt()}',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'marker.local',
+          );
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'marker.local',
+            stackTrace: st,
+          );
+        }
         _readMarkerManager.schedule(room, latestEventId);
         _circuit.reset(); // reset on successful advancement
+        // Nudge a quick tail rescan to catch immediately subsequent events
+        // that may have landed while we were applying this batch.
+        _liveScanTimer?.cancel();
+        _liveScanTimer = Timer(const Duration(milliseconds: 100), () {
+          unawaited(_scanLiveTimeline());
+        });
       }
     }
 
@@ -648,6 +717,19 @@ class MatrixStreamConsumer implements SyncPipeline {
       final delay = msh.computeNextScanDelay(now, earliestNextDue);
       _liveScanTimer?.cancel();
       _liveScanTimer = Timer(delay, () {
+        unawaited(_scanLiveTimeline());
+      });
+    } else if (latestEventId == null &&
+        (sawAttachmentPrefetch || syncPayloadEventsSeen > 0)) {
+      // Defensive: if we saw activity but could not advance and had no explicit
+      // failures, schedule a small tail rescan to catch ordering edge-cases.
+      _loggingService.captureEvent(
+        'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'noAdvance.rescan',
+      );
+      _liveScanTimer?.cancel();
+      _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
         unawaited(_scanLiveTimeline());
       });
     }
