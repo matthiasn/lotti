@@ -7,12 +7,11 @@ import 'package:lotti/features/settings/ui/widgets/form/form_switch.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
-
+import 'package:lotti/widgets/empty_scaffold.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TagEditPage extends StatefulWidget {

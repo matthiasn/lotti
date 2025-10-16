@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tag_edit_page.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/empty_scaffold.dart';
 
 class CreateTagPage extends StatefulWidget {
   const CreateTagPage({

@@ -5,10 +5,10 @@ import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:lotti/widgets/empty_scaffold.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {

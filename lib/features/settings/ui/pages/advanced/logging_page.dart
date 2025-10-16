@@ -6,10 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/empty_scaffold.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 

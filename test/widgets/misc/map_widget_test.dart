@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/geolocation.dart';
-import 'package:lotti/map/cached_tile_provider.dart';
+import 'package:lotti/utils/cached_tile_provider.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 
 void main() {

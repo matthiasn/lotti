@@ -16,7 +16,7 @@ import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
-import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/widgets/empty_scaffold.dart';
 
 class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
