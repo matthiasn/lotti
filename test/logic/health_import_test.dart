@@ -383,19 +383,25 @@ void main() {
   group('fetchHealthDataDelta', () {
     test('should throttle cumulative type requests within 10 minutes',
         () async {
+      // Note: This test verifies the throttling and queue management logic.
+      // On desktop (where tests run), getActivityHealthData returns early due to
+      // isDesktop check, so we only validate throttling behavior, not full data processing.
       const type = 'cumulative_step_count';
 
-      // First call
+      // First call - type should be queued and lastFetched recorded
       await healthImport.fetchHealthDataDelta(type);
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Second call within 10 minutes should be throttled
-      await healthImport.fetchHealthDataDelta(type);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Verify the queue is empty after processing
-      expect(healthImport.queue.length, 0);
       expect(healthImport.lastFetched.containsKey(type), true);
+      final firstFetchTime = healthImport.lastFetched[type]!;
+
+      // Second call within 10 minutes should be throttled (not queued again)
+      await healthImport.fetchHealthDataDelta(type);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Verify throttling: lastFetched time unchanged, queue processed
+      expect(healthImport.lastFetched[type], firstFetchTime);
+      expect(healthImport.queue.length, 0);
     });
 
     test('should add type to queue and track last fetch time', () async {
