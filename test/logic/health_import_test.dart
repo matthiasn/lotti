@@ -418,15 +418,24 @@ void main() {
       expect(healthImport.lastFetched.containsKey(type), true);
     });
 
-    test('should process multiple different types', () async {
+    test('should process multiple different types concurrently', () async {
+      // Note: This test verifies concurrent processing of multiple health data types.
+      // On desktop (where tests run), getActivityHealthData returns early due to
+      // isDesktop check, so we validate queue management and type tracking.
       const type1 = 'HealthDataType.HEART_RATE';
       const type2 = 'HealthDataType.WEIGHT';
 
-      await healthImport.fetchHealthDataDelta(type1);
-      await healthImport.fetchHealthDataDelta(type2);
+      // Call without awaiting to test concurrent execution
+      final future1 = healthImport.fetchHealthDataDelta(type1);
+      final future2 = healthImport.fetchHealthDataDelta(type2);
 
+      // Wait for both calls to complete their synchronous parts
+      await Future.wait([future1, future2]);
+
+      // Wait for async processing in the queue to complete
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
+      expect(healthImport.queue.isEmpty, isTrue);
       expect(healthImport.lastFetched.containsKey(type1), true);
       expect(healthImport.lastFetched.containsKey(type2), true);
     });
