@@ -59,6 +59,188 @@ void main() {
     registerFallbackValue(_FakeEvent());
   });
 
+  test('does not doubleScan when attachment already exists (no new write)',
+      () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+
+    when(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logger.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => session.timelineEvents).thenAnswer((_) => const Stream.empty());
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+
+    // No last-read marker; process whatever is present.
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => null);
+
+    // Prepare an attachment event whose relativePath already exists on disk
+    final ev = MockEvent();
+    when(() => ev.eventId).thenReturn('att-1');
+    when(() => ev.roomId).thenReturn('!room:server');
+    when(() => ev.senderId).thenReturn('@other:server');
+    when(() => ev.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+    when(() => ev.attachmentMimetype).thenReturn('application/json');
+    final relPath = '/text_entries/2024-01-01/exist.text.json';
+    when(() => ev.content).thenReturn({'relativePath': relPath});
+    when(() => timeline.events).thenReturn(<Event>[ev]);
+    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
+    when(() => room.getTimeline(
+          limit: any(named: 'limit'),
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        )).thenAnswer((_) async => timeline);
+
+    // Create the pre-existing file so saveAttachment() returns false
+    final docs = await Directory.systemTemp.createTemp('msc_dedupe');
+    addTearDown(() => docs.delete(recursive: true));
+    final normalized = relPath.startsWith('/') ? relPath.substring(1) : relPath;
+    final pre = File('${docs.path}/$normalized')
+      ..createSync(recursive: true)
+      ..writeAsStringSync('x');
+    expect(pre.existsSync(), isTrue);
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: docs,
+      collectMetrics: true,
+    );
+
+    await consumer.initialize();
+    await consumer.start();
+
+    // Ensure no doubleScan logs were emitted when saveAttachment returned false
+    verifyNever(() => logger.captureEvent(
+          any<String>(that: contains('doubleScan.attachment')),
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'doubleScan',
+        ));
+  });
+
+  test('dispose flushes pending read marker (logs marker.disposeFlush)',
+      () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+    final onTimelineController = StreamController<Event>.broadcast();
+    addTearDown(onTimelineController.close);
+
+    when(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logger.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => session.timelineEvents)
+        .thenAnswer((_) => onTimelineController.stream);
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => null);
+
+    // Provide a single sync payload to trigger scheduling of marker
+    final e = MockEvent();
+    when(() => e.eventId).thenReturn('e1');
+    when(() => e.roomId).thenReturn('!room:server');
+    when(() => e.senderId).thenReturn('@other:server');
+    when(() => e.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+    when(() => e.attachmentMimetype).thenReturn('');
+    when(() => e.content)
+        .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+    when(() => timeline.events).thenReturn(<Event>[e]);
+    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
+    when(() => room.getTimeline(
+          limit: any(named: 'limit'),
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        )).thenAnswer((_) async => timeline);
+
+    when(() => processor.process(
+        event: any<Event>(named: 'event'),
+        journalDb: journalDb)).thenAnswer((_) async {});
+    when(() => readMarker.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+          timeline: any<Timeline?>(named: 'timeline'),
+        )).thenAnswer((_) async {});
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+      collectMetrics: true,
+      markerDebounce: const Duration(seconds: 5), // ensure pending at dispose
+    );
+
+    await consumer.initialize();
+    await consumer.start();
+    // Dispose before debounce fires to force disposeFlush path
+    unawaited(consumer.dispose());
+    // Allow microtask queue to process logging capture
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    verify(
+      () => logger.captureEvent(
+        any<String>(that: contains('marker.disposeFlush')),
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'marker.flush',
+      ),
+    ).called(1);
+  });
+
   group('MatrixStreamConsumer SDK pagination + streaming', () {
     test('uses SDK pagination seam when available', () async {
       final session = MockMatrixSessionManager();
