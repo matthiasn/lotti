@@ -24,8 +24,8 @@ This note captures the current V2 pipeline behavior, recent fixes, logs to look 
 
 2) Startup catch‑up (works without new events)
 - Backfill/paginate until the last marker is present; then process strictly after it.
-- Rewind floor: replay N=3 events before the last marker id (belt‑and‑suspenders).
-- Time‑based rewind: if ts is known, slice from `ts(marker) − 1ms` (no caps).
+- No rewind floor (N=0): we do not reprocess events before the marker.
+- If the marker is not immediately present in the room snapshot, the backfill seam paginates until it is included.
 - Initial live scan + scheduled catch‑up retry after room hydration.
 - Code: `matrix_stream_consumer.dart`, `catch_up_strategy.dart`
 
@@ -281,6 +281,36 @@ Benefits
   - If a text apply misses a JSON descriptor (`attachment descriptor not yet available`), it is treated as a retriable failure.
   - We keep retrying beyond the normal cap for this specific condition and avoid marking the event as handled, so the marker does not advance spuriously.
   - File: `matrix_stream_consumer.dart` (`retry.missingAttachment`).
+
+### Duplicate Work Avoidance
+
+- Live‑scan dedup
+  - Deduplicates events by `eventId` within each live‑scan slice.
+  - Coalesces scan triggers; avoids immediate re‑scans.
+  - File: `matrix_stream_consumer.dart` (liveScan).
+
+- Attachment first‑pass filters
+  - Seen‑ID LRU skips duplicate attachment work across stream + live timeline.
+  - Timestamp gate skips attachments older than `lastProcessedTs − 2s`.
+  - File: `matrix_stream_consumer.dart`.
+
+- Sync text duplicate suppression
+  - Completed‑sync LRU prevents re‑applying the same sync eventId.
+  - In‑flight guard prevents overlap when stream and live‑scan see the same id at once.
+  - File: `matrix_stream_consumer.dart`.
+
+- Tail limiting (marker missing)
+  - When the lastProcessed id is not present in the live timeline, process only the last 50 events and filter by `ts ≥ lastProcessedTs − 2s`.
+  - Prevents unrelated older audio/image descriptors from being re‑observed after a text‑only edit.
+  - File: `matrix_stream_consumer.dart`.
+
+- Prefetch and rewind
+  - Removed duplicate media prefetch block; prefetch runs once and only for media (never JSON).
+  - Catch‑up rewind disabled (N=0); backlog safety remains via backfill.
+
+- Backlog safety
+  - Large offline batches (hundreds/thousands) are handled by catch‑up (backfill/paginate) and are not limited by the live‑scan tail filter.
+  - File: `catch_up_strategy.dart`.
 
 ### Invite Flow (desktop QR) – Brief
 

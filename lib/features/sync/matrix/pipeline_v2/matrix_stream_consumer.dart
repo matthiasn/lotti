@@ -218,6 +218,10 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
   }
 
+  // Tracks sync payload eventIds currently processing to avoid duplicate
+  // applies across overlapping ingestion paths.
+  final Set<String> _inFlightSyncIds = <String>{};
+
   Duration _computeBackoff(int attempts) =>
       tu.computeExponentialBackoff(attempts);
 
@@ -544,8 +548,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         final cutoff =
             _lastProcessedTs!.toInt() - _attachmentTsGate.inMilliseconds;
         slice = slice
-            .where((e) =>
-                TimelineEventOrdering.timestamp(e) >= cutoff)
+            .where((e) => TimelineEventOrdering.timestamp(e) >= cutoff)
             .toList();
       }
       if (slice.isNotEmpty) {
@@ -724,32 +727,21 @@ class MatrixStreamConsumer implements SyncPipeline {
           false; // allow advancement even if skipped by retry cap
       var isSyncPayloadEvent = false;
 
+      // If this looks like a sync payload and another ingestion path is already
+      // processing it, skip to avoid duplicate applies.
+      final isPotentialSync = ec.MatrixEventClassifier.isSyncPayloadEvent(e);
+      if (isPotentialSync && _inFlightSyncIds.contains(id)) {
+        // Defer; the completing path will record completion and advancement.
+        continue;
+      }
+
       if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
           content['msgtype'] == syncMessageType) {
         isSyncPayloadEvent = true;
         syncPayloadEventsSeen++;
-        final outcome = await _processSyncPayloadEvent(e);
-        processedOk = outcome.processedOk;
-        treatAsHandled = outcome.treatAsHandled;
-        if (outcome.hadFailure) hadFailure = true;
-        if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
-        if (outcome.nextDue != null &&
-            (earliestNextDue == null ||
-                outcome.nextDue!.isBefore(earliestNextDue))) {
-          earliestNextDue = outcome.nextDue;
-        }
-      } else {
-        // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
-        final validFallback = ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
-            content['msgtype'] != syncMessageType;
-
-        if (validFallback) {
-          isSyncPayloadEvent = true;
-          syncPayloadEventsSeen++;
-          final outcome = await _processSyncPayloadEvent(
-            e,
-            dropSuffix: ' (no-msgtype)',
-          );
+        _inFlightSyncIds.add(id);
+        try {
+          final outcome = await _processSyncPayloadEvent(e);
           processedOk = outcome.processedOk;
           treatAsHandled = outcome.treatAsHandled;
           if (outcome.hadFailure) hadFailure = true;
@@ -759,12 +751,41 @@ class MatrixStreamConsumer implements SyncPipeline {
                   outcome.nextDue!.isBefore(earliestNextDue))) {
             earliestNextDue = outcome.nextDue;
           }
-          if (processedOk && _collectMetrics) {
-            _loggingService.captureEvent(
-              'v2 processed via no-msgtype fallback: $id',
-              domain: 'MATRIX_SYNC_V2',
-              subDomain: 'fallback',
+        } finally {
+          _inFlightSyncIds.remove(id);
+        }
+      } else {
+        // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
+        final validFallback = ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+            content['msgtype'] != syncMessageType;
+
+        if (validFallback) {
+          isSyncPayloadEvent = true;
+          syncPayloadEventsSeen++;
+          _inFlightSyncIds.add(id);
+          try {
+            final outcome = await _processSyncPayloadEvent(
+              e,
+              dropSuffix: ' (no-msgtype)',
             );
+            processedOk = outcome.processedOk;
+            treatAsHandled = outcome.treatAsHandled;
+            if (outcome.hadFailure) hadFailure = true;
+            if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
+            if (outcome.nextDue != null &&
+                (earliestNextDue == null ||
+                    outcome.nextDue!.isBefore(earliestNextDue))) {
+              earliestNextDue = outcome.nextDue;
+            }
+            if (processedOk && _collectMetrics) {
+              _loggingService.captureEvent(
+                'v2 processed via no-msgtype fallback: $id',
+                domain: 'MATRIX_SYNC_V2',
+                subDomain: 'fallback',
+              );
+            }
+          } finally {
+            _inFlightSyncIds.remove(id);
           }
         } else {
           // Do not count attachment events as "skipped" — they are part of
