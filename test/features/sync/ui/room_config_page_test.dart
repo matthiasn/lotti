@@ -57,6 +57,8 @@ void main() {
 
   setUp(() {
     mockMatrixService = MockMatrixService();
+    when(() => mockMatrixService.inviteRequests)
+        .thenAnswer((_) => Stream<SyncRoomInvite>.empty());
   });
 
   group('roomConfigPage sticky action bar', () {

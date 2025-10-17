@@ -35,6 +35,10 @@ void main() {
 
   setUp(() {
     mockMatrixService = MockMatrixService();
+    // Provide a default empty invite stream for widgets that subscribe
+    // during initState. Individual tests can override as needed.
+    when(() => mockMatrixService.inviteRequests)
+        .thenAnswer((_) => Stream<SyncRoomInvite>.empty());
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       SystemChannels.platform,

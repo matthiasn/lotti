@@ -260,14 +260,15 @@ class SyncRoomManager {
       );
     }
     try {
+      final roomId = _currentRoomId;
       _loggingService.captureEvent(
-        'Inviting $userId to room ${room.id}',
+        'Inviting $userId to room ${roomId ?? '(unknown)'}',
         domain: 'SYNC_ROOM_MANAGER',
         subDomain: 'inviteUser',
       );
       await room.invite(userId);
       _loggingService.captureEvent(
-        'Invite sent to $userId for room ${room.id}',
+        'Invite sent to $userId for room ${roomId ?? '(unknown)'}',
         domain: 'SYNC_ROOM_MANAGER',
         subDomain: 'inviteUser',
       );
