@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -78,9 +80,56 @@ class HomeserverLoggedInWidget extends ConsumerStatefulWidget {
 
 class _HomeserverLoggedInWidgetState
     extends ConsumerState<HomeserverLoggedInWidget> {
+  StreamSubscription<SyncRoomInvite>? _inviteSub;
+  bool _dialogOpen = false;
+
+  @override
+  void dispose() {
+    _inviteSub?.cancel();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
+    // Listen for invites while this page (QR view) is visible
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final matrixService = ref.read(matrixServiceProvider);
+      _inviteSub =
+          matrixService.inviteRequests.listen((SyncRoomInvite invite) async {
+        if (!mounted || _dialogOpen) return;
+        _dialogOpen = true;
+        try {
+          final accept = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Room invite'),
+                  content: Text(
+                      'Invite to room ${invite.roomId} from ${invite.senderId}. Accept?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Accept'),
+                    ),
+                  ],
+                ),
+              ) ??
+              false;
+          if (accept) {
+            await ref.read(matrixServiceProvider).acceptInvite(invite);
+            if (mounted) setState(() {});
+          }
+        } catch (_) {
+          // ignore dialog errors
+        } finally {
+          _dialogOpen = false;
+        }
+      });
+    });
   }
 
   @override

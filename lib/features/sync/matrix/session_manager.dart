@@ -78,6 +78,15 @@ class MatrixSessionManager {
               subDomain: 'connect.join',
               stackTrace: stackTrace,
             );
+            final msg = error.toString();
+            final forbidden = msg.contains('M_FORBIDDEN') ||
+                msg.contains('not invited') ||
+                msg.contains('not in room');
+            if (forbidden) {
+              await _roomManager.clearPersistedRoom(
+                subDomain: 'connect.join.clear',
+              );
+            }
           }
         }
       }

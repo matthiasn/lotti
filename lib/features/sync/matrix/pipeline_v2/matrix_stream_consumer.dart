@@ -258,7 +258,15 @@ class MatrixStreamConsumer implements SyncPipeline {
         final nextAttempts = attempts + 1;
         final backoff = _computeBackoff(nextAttempts);
         final due = _now().add(backoff);
-        if (nextAttempts >= _maxRetriesPerEvent) {
+        // If this looks like a missing attachment/descriptor scenario, keep the
+        // event blocking and do not advance the marker even after the retry cap.
+        // We detect this via a FileSystemException earlier, which records the
+        // jsonPath into _pendingJsonPaths. When present, continue scheduling
+        // retries and avoid marking as handled.
+        final jp = _extractJsonPath(e);
+        final isMissingAttachment =
+            jp != null && _pendingJsonPaths.contains(jp);
+        if (nextAttempts >= _maxRetriesPerEvent && !isMissingAttachment) {
           _retryTracker.clear(id);
           treatAsHandled = true;
           _loggingService.captureEvent(
@@ -271,7 +279,16 @@ class MatrixStreamConsumer implements SyncPipeline {
             _bumpDroppedType(_extractRuntimeType(e));
           }
         } else {
+          // Keep retrying (or start retrying) for missing attachments and normal failures
+          // below the cap.
           _retryTracker.scheduleNext(id, nextAttempts, due);
+          if (isMissingAttachment) {
+            _loggingService.captureEvent(
+              'missingAttachment keepRetrying: $id (attempts=$nextAttempts)',
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'retry.missingAttachment',
+            );
+          }
         }
         nextDue = due;
         // Record pending JSON path for faster recovery when the failure is
@@ -555,8 +572,26 @@ class MatrixStreamConsumer implements SyncPipeline {
         _attachmentIndex?.record(e);
         if (_collectMetrics) {
           // Count an attachment observed and record path for diagnostics.
-          _metrics.incPrefetch();
-          _metrics.addLastPrefetched(rpAny);
+          _metrics
+            ..incPrefetch()
+            ..addLastPrefetched(rpAny);
+        }
+        try {
+          final mime = e.attachmentMimetype;
+          final content = e.content;
+          final hasUrl = content.containsKey('url') ||
+              content.containsKey('mxc') ||
+              content.containsKey('mxcUrl') ||
+              content.containsKey('uri');
+          final hasEnc = content.containsKey('file');
+          final msgType = content['msgtype'];
+          _loggingService.captureEvent(
+            'attachmentEvent id=${e.eventId} path=$rpAny mime=$mime msgtype=$msgType hasUrl=$hasUrl hasFile=$hasEnc',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'attachment.observe',
+          );
+        } catch (_) {
+          // best-effort logging
         }
         if (_pendingJsonPaths.remove(rpAny)) {
           unawaited(_scanLiveTimeline());

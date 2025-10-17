@@ -127,13 +127,41 @@ class SyncRoomManager {
         subDomain: 'leaveRoom',
       );
     } catch (error, stackTrace) {
+      // If the homeserver reports that this device/user is not in the room,
+      // treat this as a successful local leave: clear persisted state anyway.
+      final message = error.toString();
+      final looksLikeNotInRoom =
+          message.contains('not in room') || message.contains('M_FORBIDDEN');
+
       _loggingService.captureException(
         error,
         domain: 'SYNC_ROOM_MANAGER',
-        subDomain: 'leaveRoom',
+        subDomain: looksLikeNotInRoom ? 'leaveRoom.notInRoom' : 'leaveRoom',
         stackTrace: stackTrace,
       );
-      rethrow;
+
+      if (looksLikeNotInRoom) {
+        try {
+          await _settingsDb.removeSettingsItem(matrixRoomKey);
+          _currentRoom = null;
+          _currentRoomId = null;
+          _loggingService.captureEvent(
+            'Cleared persisted state for $roomId (server says not in room).',
+            domain: 'SYNC_ROOM_MANAGER',
+            subDomain: 'leaveRoom.localClear',
+          );
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'SYNC_ROOM_MANAGER',
+            subDomain: 'leaveRoom.localClear',
+            stackTrace: st,
+          );
+          rethrow; // surface local clear failure
+        }
+      } else {
+        rethrow; // rethrow unexpected errors
+      }
     }
   }
 
@@ -146,6 +174,21 @@ class SyncRoomManager {
       subDomain: 'acceptInvite',
     );
     await joinRoom(invite.roomId);
+  }
+
+  /// Clears any persisted sync room locally without contacting the server.
+  /// Useful when the server reports that this device is not invited/in the
+  /// room anymore during startup.
+  Future<void> clearPersistedRoom({String subDomain = 'clearPersisted'}) async {
+    final previous = _currentRoomId;
+    await _settingsDb.removeSettingsItem(matrixRoomKey);
+    _currentRoom = null;
+    _currentRoomId = null;
+    _loggingService.captureEvent(
+      'Cleared persisted sync room (was: ${previous ?? 'none'}).',
+      domain: 'SYNC_ROOM_MANAGER',
+      subDomain: subDomain,
+    );
   }
 
   /// Loads the persisted room identifier (if any) without altering in-memory
@@ -216,7 +259,27 @@ class SyncRoomManager {
         'Cannot invite $userId: no active sync room configured.',
       );
     }
-    await room.invite(userId);
+    try {
+      _loggingService.captureEvent(
+        'Inviting $userId to room ${room.id}',
+        domain: 'SYNC_ROOM_MANAGER',
+        subDomain: 'inviteUser',
+      );
+      await room.invite(userId);
+      _loggingService.captureEvent(
+        'Invite sent to $userId for room ${room.id}',
+        domain: 'SYNC_ROOM_MANAGER',
+        subDomain: 'inviteUser',
+      );
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_ROOM_MANAGER',
+        subDomain: 'inviteUser',
+        stackTrace: st,
+      );
+      rethrow;
+    }
   }
 
   /// Disposes resources owned by the manager.

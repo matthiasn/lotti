@@ -336,10 +336,32 @@ class MatrixService {
 
   Future<String?> getRoom() => _roomManager.loadPersistedRoomId();
 
-  Future<void> leaveRoom() => _roomManager.leaveCurrentRoom();
+  Future<void> leaveRoom() async {
+    _loggingService.captureEvent(
+      'leaveRoom requested',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'room.leave',
+    );
+    await _roomManager.leaveCurrentRoom();
+  }
 
-  Future<void> inviteToSyncRoom({required String userId}) =>
-      _roomManager.inviteUser(userId);
+  Future<void> inviteToSyncRoom({required String userId}) async {
+    _loggingService.captureEvent(
+      'inviteToSyncRoom requested user=$userId room=${_roomManager.currentRoomId}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'room.invite',
+    );
+    await _roomManager.inviteUser(userId);
+  }
+
+  Future<void> acceptInvite(SyncRoomInvite invite) async {
+    _loggingService.captureEvent(
+      'acceptInvite requested room=${invite.roomId} from=${invite.senderId}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'room.acceptInvite',
+    );
+    await _roomManager.acceptInvite(invite);
+  }
 
   List<DeviceKeys> getUnverifiedDevices() {
     return _gateway.unverifiedDevices();

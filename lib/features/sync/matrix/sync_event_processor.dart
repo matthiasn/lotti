@@ -108,6 +108,11 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       final eventForPath = _attachmentIndex.find(indexKey);
       if (eventForPath == null) {
         // Descriptor not yet available; let caller retry later.
+        _logging.captureEvent(
+          'smart.fetch.miss path=$jsonPath key=$indexKey',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
         throw FileSystemException(
           'attachment descriptor not yet available',
           jsonPath,
@@ -121,6 +126,11 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         }
         final jsonString = utf8.decode(bytes);
         await saveJson(candidate, jsonString);
+        _logging.captureEvent(
+          'smart.json.written path=$jsonPath bytes=${bytes.length}',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
       } catch (e, st) {
         _logging.captureException(
           e,
@@ -148,6 +158,11 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
             normalized.startsWith(path.separator) ? normalized : '/$relative';
         final eventForPath = _attachmentIndex.find(indexKey);
         if (eventForPath == null) {
+          _logging.captureEvent(
+            'smart.fetch.miss(noVc) path=$jsonPath key=$indexKey',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
           throw FileSystemException(
             'attachment descriptor not yet available',
             jsonPath,
@@ -161,6 +176,11 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           }
           final jsonString = utf8.decode(bytes);
           await saveJson(candidate, jsonString);
+          _logging.captureEvent(
+            'smart.json.written(noVc) path=$jsonPath bytes=${bytes.length}',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
         } catch (e, st) {
           _logging.captureException(
             e,

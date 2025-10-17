@@ -3,8 +3,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -68,6 +70,63 @@ class _RoomConfigState extends ConsumerState<RoomConfig>
   bool showCam = false;
   final joinRoomController = TextEditingController();
   String manualRoomId = '';
+  final MobileScannerController _scannerController = MobileScannerController();
+  bool _inviting = false;
+  String? _lastCode;
+  DateTime? _lastScanAt;
+  StreamSubscription<SyncRoomInvite>? _inviteSub;
+  bool _dialogOpen = false;
+
+  @override
+  void dispose() {
+    _inviteSub?.cancel();
+    _scannerController.dispose();
+    joinRoomController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for incoming invites to show accept dialog
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final matrixService = ref.read(matrixServiceProvider);
+      _inviteSub =
+          matrixService.inviteRequests.listen((SyncRoomInvite invite) async {
+        if (!mounted || _dialogOpen) return;
+        _dialogOpen = true;
+        try {
+          final accept = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Room invite'),
+                  content: Text(
+                      'Invite to room ${invite.roomId} from ${invite.senderId}. Accept?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Accept'),
+                    ),
+                  ],
+                ),
+              ) ??
+              false;
+          if (accept) {
+            await ref.read(matrixServiceProvider).acceptInvite(invite);
+            if (mounted) setState(() {});
+          }
+        } catch (_) {
+          // ignore dialog errors
+        } finally {
+          _dialogOpen = false;
+        }
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +166,10 @@ class _RoomConfigState extends ConsumerState<RoomConfig>
               child: SizedBox(
                 height: camDimension,
                 width: camDimension,
-                child: MobileScanner(onDetect: _handleBarcode),
+                child: MobileScanner(
+                  controller: _scannerController,
+                  onDetect: _handleBarcode,
+                ),
               ),
             ),
         ] else ...[
@@ -140,15 +202,38 @@ class _RoomConfigState extends ConsumerState<RoomConfig>
   }
 
   Future<void> _handleBarcode(BarcodeCapture barcodes) async {
+    if (_inviting) return;
     final barcode = barcodes.barcodes.firstOrNull;
     final userId = barcode?.rawValue;
-    if (userId != null) {
+    if (userId == null || userId.isEmpty) return;
+
+    final now = DateTime.now();
+    if (_lastCode == userId &&
+        _lastScanAt != null &&
+        now.difference(_lastScanAt!) < const Duration(seconds: 2)) {
+      return; // drop duplicate scans within window
+    }
+
+    _lastCode = userId;
+    _lastScanAt = now;
+    _inviting = true;
+    try {
+      await _scannerController.stop();
+    } catch (_) {
+      // best-effort
+    }
+
+    try {
       await ref
           .read(matrixRoomControllerProvider.notifier)
           .inviteToRoom(userId);
-      setState(() {
-        showCam = false;
-      });
+      if (mounted) {
+        setState(() {
+          showCam = false;
+        });
+      }
+    } finally {
+      _inviting = false;
     }
   }
 

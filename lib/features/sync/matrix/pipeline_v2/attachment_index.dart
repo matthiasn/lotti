@@ -27,6 +27,11 @@ class AttachmentIndex {
         // case callers use that form.
         final noSlash = rp.startsWith('/') ? rp.substring(1) : rp;
         _byPath[noSlash] = e;
+        _logging?.captureEvent(
+          'attachmentIndex.record path=$key mime=$mimetype id=${e.eventId}',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'attachmentIndex.record',
+        );
       }
     } catch (err) {
       _logging?.captureEvent(
@@ -43,6 +48,14 @@ class AttachmentIndex {
     final key2 = relativePath.startsWith('/')
         ? relativePath.substring(1)
         : '/$relativePath';
-    return _byPath[key1] ?? _byPath[key2];
+    final hit = _byPath[key1] ?? _byPath[key2];
+    _logging?.captureEvent(
+      hit == null
+          ? 'attachmentIndex.miss path=$relativePath alt=$key2'
+          : 'attachmentIndex.hit path=$relativePath id=${hit.eventId}',
+      domain: 'MATRIX_SYNC_V2',
+      subDomain: 'attachmentIndex.find',
+    );
+    return hit;
   }
 }
