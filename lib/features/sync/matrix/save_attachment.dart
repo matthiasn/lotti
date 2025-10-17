@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
-Future<void> saveAttachment(
+/// Downloads and saves an attachment if it isn't already present on disk.
+///
+/// Returns true if a new file was written, false if it was skipped or failed.
+Future<bool> saveAttachment(
   Event event, {
   required LoggingService loggingService,
   required Directory documentsDirectory,
@@ -16,6 +19,21 @@ Future<void> saveAttachment(
 
     try {
       if (relativePath != null) {
+        final filePath = '${documentsDirectory.path}$relativePath';
+        final file = File(filePath);
+        // Fast-path dedupe: if the file already exists and is non-empty,
+        // skip re-downloading to avoid repeated writes and log spam.
+        if (file.existsSync()) {
+          try {
+            final len = file.lengthSync();
+            if (len > 0) {
+              return false; // already present
+            }
+          } catch (_) {
+            // If querying length fails, fall through to re-download.
+          }
+        }
+
         loggingService.captureEvent(
           'downloading $relativePath',
           domain: 'MATRIX_SERVICE',
@@ -25,7 +43,7 @@ Future<void> saveAttachment(
         final matrixFile = await event.downloadAndDecryptAttachment();
         await _writeToFile(
           matrixFile.bytes,
-          '${documentsDirectory.path}$relativePath',
+          filePath,
           loggingService,
         );
         loggingService.captureEvent(
@@ -33,6 +51,7 @@ Future<void> saveAttachment(
           domain: 'MATRIX_SERVICE',
           subDomain: 'saveAttachment',
         );
+        return true;
       }
     } catch (exception, stackTrace) {
       loggingService.captureException(
@@ -43,6 +62,7 @@ Future<void> saveAttachment(
       );
     }
   }
+  return false;
 }
 
 Future<void> _writeToFile(

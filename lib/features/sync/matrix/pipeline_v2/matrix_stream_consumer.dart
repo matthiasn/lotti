@@ -158,6 +158,9 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   late final MetricsCounters _metrics;
   final Set<String> _pendingJsonPaths = <String>{};
+  DateTime? _lastAttachmentOnlyRescanAt;
+  static const Duration _minAttachmentOnlyRescanGap =
+      Duration(milliseconds: 500);
 
   // Tracks eventIds that reported rows=0 while predicted status suggests
   // incoming is newer (missing base). These should be retried and block
@@ -539,27 +542,29 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
 
     // First pass: prefetch attachments for remote events.
-    var sawAttachmentPrefetch = false;
+    var sawAttachmentPrefetch = false; // true only if a new file was written
     for (final e in ordered) {
       if (ec.MatrixEventClassifier.shouldPrefetchAttachment(
           e, _client.userID)) {
         try {
-          await saveAttachment(
+          if (_collectMetrics) _metrics.incPrefetch();
+          final wrote = await saveAttachment(
             e,
             loggingService: _loggingService,
             documentsDirectory: _documentsDirectory,
           );
-          if (_collectMetrics) _metrics.incPrefetch();
           final rp = e.content['relativePath'];
           if (rp is String && rp.isNotEmpty) {
+            // Track last prefetched path regardless of write to preserve
+            // diagnostics even when files are already present.
             _metrics.addLastPrefetched(rp);
-            // If this path was pending during apply, trigger an immediate scan
-            // now that the attachment exists.
-            if (_pendingJsonPaths.remove(rp)) {
+            // If this path was pending during apply and we just wrote it,
+            // trigger an immediate scan now that the attachment exists.
+            if (wrote && _pendingJsonPaths.remove(rp)) {
               unawaited(_scanLiveTimeline());
             }
           }
-          sawAttachmentPrefetch = true;
+          if (wrote) sawAttachmentPrefetch = true;
         } catch (err, st) {
           _loggingService.captureException(
             err,
@@ -723,13 +728,52 @@ class MatrixStreamConsumer implements SyncPipeline {
         (sawAttachmentPrefetch || syncPayloadEventsSeen > 0)) {
       // Defensive: if we saw activity but could not advance and had no explicit
       // failures, schedule a small tail rescan to catch ordering edge-cases.
+      if (syncPayloadEventsSeen == 0 && sawAttachmentPrefetch) {
+        final now = _now();
+        final last = _lastAttachmentOnlyRescanAt;
+        if (last == null ||
+            now.difference(last) >= _minAttachmentOnlyRescanGap) {
+          _lastAttachmentOnlyRescanAt = now;
+          _loggingService.captureEvent(
+            'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'noAdvance.rescan',
+          );
+          _liveScanTimer?.cancel();
+          _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
+            unawaited(_scanLiveTimeline());
+          });
+        }
+      } else {
+        _loggingService.captureEvent(
+          'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'noAdvance.rescan',
+        );
+        _liveScanTimer?.cancel();
+        _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
+          unawaited(_scanLiveTimeline());
+        });
+      }
+    }
+
+    // Double-scan when attachments were prefetched: run an immediate scan and
+    // a second scan shortly after to catch text events that may land after the
+    // attachment in the SDK's live list.
+    if (sawAttachmentPrefetch) {
       _loggingService.captureEvent(
-        'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
+        'doubleScan.attachment immediate',
         domain: 'MATRIX_SYNC_V2',
-        subDomain: 'noAdvance.rescan',
+        subDomain: 'doubleScan',
       );
+      unawaited(_scanLiveTimeline());
       _liveScanTimer?.cancel();
-      _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
+      _liveScanTimer = Timer(const Duration(milliseconds: 200), () {
+        _loggingService.captureEvent(
+          'doubleScan.attachment delayed',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'doubleScan',
+        );
         unawaited(_scanLiveTimeline());
       });
     }

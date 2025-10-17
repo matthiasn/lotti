@@ -352,8 +352,11 @@ void main() {
           .thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
       when(() => att.senderId).thenReturn('@other:server');
       when(() => att.attachmentMimetype).thenReturn('image/jpeg');
+      // Use a unique, non-existent path to guarantee a new write occurs
+      final uniqueRelPath =
+          '/mct_no_advance_${DateTime.now().microsecondsSinceEpoch}.bin';
       when(() => att.content)
-          .thenReturn(<String, dynamic>{'relativePath': '/tmp/x'});
+          .thenReturn(<String, dynamic>{'relativePath': uniqueRelPath});
       when(() => att.downloadAndDecryptAttachment()).thenAnswer((_) async =>
           MatrixFile(bytes: Uint8List.fromList(const [0]), name: 'x.jpg'));
 
@@ -361,6 +364,15 @@ void main() {
       when(() => timeline.cancelSubscriptions()).thenReturn(null);
       when(() => room.getTimeline(limit: any(named: 'limit')))
           .thenAnswer((_) async => timeline);
+      // Also stub the callback overload used for live timeline attachment
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
 
       when(() => logger.captureEvent(any<String>(),
           domain: 'MATRIX_SYNC_V2',
