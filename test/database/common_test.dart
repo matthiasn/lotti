@@ -217,15 +217,16 @@ void main() {
       // Create first backup
       await createDbBackup(fileName);
 
-      // Create second backup immediately - timestamp format includes milliseconds
-      // which should be sufficient to create unique filenames
+      // Wait a bit to ensure a different timestamp
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      // Create second backup
       await createDbBackup(fileName);
 
-      // Verify at least one backup file exists (could be 1 or 2 depending on timing)
-      // The main point is that backups are created without errors
+      // Verify that two distinct backup files were created
       final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
       final backupFiles = backupDir.listSync();
-      expect(backupFiles.length, greaterThanOrEqualTo(1));
+      expect(backupFiles.length, equals(2));
     });
 
     test('backup preserves binary data', () async {
