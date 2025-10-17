@@ -184,6 +184,7 @@ Future<void> registerSingletons() async {
     documentsDirectory: documentsDirectory,
     enableSyncV2: enableSyncV2,
     collectV2Metrics: collectV2Metrics,
+    attachmentIndex: attachmentIndex,
   );
 
   getIt

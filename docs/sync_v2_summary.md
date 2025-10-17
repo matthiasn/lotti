@@ -250,3 +250,40 @@ Benefits
 - Rationale
   - Keeps the stream stable by avoiding JSON write storms while ensuring media is readily available when referenced.
   - One decision point for JSON correctness (vector clocks), optional on-missing prefetch for media responsiveness.
+
+### AttachmentIndex and Loader Details
+
+- Single shared instance
+  - The consumer and the Smart loader MUST share the same `AttachmentIndex`.
+  - Enforced by construction: `MatrixService` now requires an `AttachmentIndex` and passes it to both sides (no fallbacks).
+  - Why: avoids split-index races where `record()` and `find()` operate on different instances (observed as miss → record → miss).
+
+- Path normalization and robust recording
+  - Index records any event that includes `content.relativePath` (not just those with attachment mimetypes). This is robust to SDK MIME quirks.
+  - Keys are stored in both forms: with leading slash (`/path`) and without (`path`). Lookups try both, eliminating format mismatches.
+  - File: `lib/features/sync/matrix/pipeline_v2/attachment_index.dart`.
+
+- SmartJournalEntityLoader behavior
+  - With incoming vector clock: compare to local; fetch JSON only if newer/concurrent; write atomically (temp + rename); then parse + apply.
+  - Without vector clock: if JSON missing/empty, fetch via `AttachmentIndex`; otherwise read local.
+  - After parsing JSON, ensure referenced media (images/audio) only if missing; write atomically.
+  - Logging added for diagnostics:
+    - `smart.fetch.miss` / `smart.json.written` for JSON
+    - `smart.media.ensure` / `smart.media.written` for media
+  - File: `lib/features/sync/matrix/sync_event_processor.dart`.
+
+- Consumer first pass logging
+  - For any event with a `relativePath`, logs a compact summary of the attachment: id, path, mime, msgtype, hasUrl, hasFile.
+  - Still downloads only media (image/audio/video) on-missing; JSON is never downloaded here.
+  - Files: `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart`.
+
+- Missing descriptor handling
+  - If a text apply misses a JSON descriptor (`attachment descriptor not yet available`), it is treated as a retriable failure.
+  - We keep retrying beyond the normal cap for this specific condition and avoid marking the event as handled, so the marker does not advance spuriously.
+  - File: `matrix_stream_consumer.dart` (`retry.missingAttachment`).
+
+### Invite Flow (desktop QR) – Brief
+
+- Invites are only surfaced when targeted to this client (Matrix `state_key == client.userID`).
+- The QR page shows an accept dialog when an invite arrives while that page is open.
+- Files: `gateway/matrix_sdk_gateway.dart` (filter), `ui/matrix_logged_in_config_page.dart` (prompt).

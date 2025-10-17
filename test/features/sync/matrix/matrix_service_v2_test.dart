@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -129,6 +130,7 @@ void main() {
       sessionManager: sessionManager,
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
   }
 
@@ -220,6 +222,7 @@ void main() {
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: testPipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
 
     final metrics = await service.getV2Metrics();
@@ -282,6 +285,7 @@ void main() {
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: testPipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
 
     final metrics = await service.getV2Metrics();
@@ -346,6 +350,7 @@ void main() {
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: pipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
 
     await service.forceV2Rescan();
@@ -404,6 +409,7 @@ void main() {
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: pipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
 
     final text = await service.getSyncDiagnosticsText();

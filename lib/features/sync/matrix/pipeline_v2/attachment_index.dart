@@ -18,7 +18,6 @@ class AttachmentIndex {
   void record(Event e) {
     try {
       final mimetype = e.attachmentMimetype;
-      if (mimetype.isEmpty) return;
       final rp = e.content['relativePath'];
       if (rp is String && rp.isNotEmpty) {
         final key = rp.startsWith('/') ? rp : '/$rp';

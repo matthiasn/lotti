@@ -24,7 +24,6 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -42,6 +41,7 @@ class MatrixService {
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
     required Directory documentsDirectory,
+    required AttachmentIndex attachmentIndex,
     bool enableSyncV2 = false,
     bool collectV2Metrics = false,
     bool ownsActivityGate = false,
@@ -52,7 +52,6 @@ class MatrixService {
     MatrixTimelineListener? timelineListener,
     SyncLifecycleCoordinator? lifecycleCoordinator,
     SyncEngine? syncEngine,
-    AttachmentIndex? attachmentIndex,
     // Test-only seam to inject a V2 pipeline
     @visibleForTesting MatrixStreamConsumer? v2PipelineOverride,
   })  : _gateway = gateway,
@@ -129,10 +128,7 @@ class MatrixService {
                   eventProcessor: _eventProcessor,
                   readMarkerService: _readMarkerService,
                   documentsDirectory: documentsDirectory,
-                  attachmentIndex: attachmentIndex ??
-                      (getIt.isRegistered<AttachmentIndex>()
-                          ? getIt<AttachmentIndex>()
-                          : AttachmentIndex(logging: _loggingService)),
+                  attachmentIndex: attachmentIndex,
                   collectMetrics: collectV2Metrics,
                 )
               : null);

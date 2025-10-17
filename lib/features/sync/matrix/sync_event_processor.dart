@@ -125,6 +125,23 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           throw const FileSystemException('empty attachment bytes');
         }
         final jsonString = utf8.decode(bytes);
+        // Parse first to validate vector clock freshness before writing.
+        final decoded = json.decode(jsonString) as Map<String, dynamic>;
+        final downloaded = JournalEntity.fromJson(decoded);
+        final downloadedVc = downloaded.meta.vectorClock;
+        if (downloadedVc != null) {
+          final status = VectorClock.compare(downloadedVc, incomingVectorClock);
+          // If the downloaded JSON is older than the incoming vector clock,
+          // do not write it; let the caller retry when the new descriptor lands.
+          if (status == VclockStatus.b_gt_a) {
+            _logging.captureEvent(
+              'smart.fetch.stale_vc path=$jsonPath expected=$incomingVectorClock got=$downloadedVc',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'SmartLoader.fetch',
+            );
+            throw const FileSystemException('stale attachment json');
+          }
+        }
         await saveJson(candidate, jsonString);
         _logging.captureEvent(
           'smart.json.written path=$jsonPath bytes=${bytes.length}',
