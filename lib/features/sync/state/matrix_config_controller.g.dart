@@ -7,7 +7,7 @@ part of 'matrix_config_controller.dart';
 // **************************************************************************
 
 String _$matrixConfigControllerHash() =>
-    r'780e099d3106f7897f712278bf6fd8855e1bf3fa';
+    r'a091c9998b61c507f3f735ca9818c8d4a66445ea';
 
 /// See also [MatrixConfigController].
 @ProviderFor(MatrixConfigController)

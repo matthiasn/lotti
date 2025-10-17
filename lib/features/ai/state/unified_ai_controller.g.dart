@@ -459,7 +459,7 @@ class _CategoryChangesProviderElement
 }
 
 String _$triggerNewInferenceHash() =>
-    r'27e353c2a746eb739424aea5f762d3247384e523';
+    r'7498c5784266cb41975d8b32d33266592c8cfaf0';
 
 /// Provider to trigger a new inference run
 ///
@@ -636,7 +636,7 @@ class _TriggerNewInferenceProviderElement
 }
 
 String _$unifiedAiControllerHash() =>
-    r'00fef65afa16b766e88316fa852c13a8c37e71fb';
+    r'62483791f0d5e5c41b09e892e3e463c23cb742d0';
 
 abstract class _$UnifiedAiController
     extends BuildlessAutoDisposeNotifier<UnifiedAiState> {
