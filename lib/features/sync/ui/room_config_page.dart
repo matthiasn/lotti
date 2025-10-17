@@ -1,13 +1,10 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/state/matrix_room_provider.dart';
-import 'package:lotti/features/sync/ui/invite_dialog_helper.dart';
+import 'package:lotti/features/sync/ui/invite_listener_mixin.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -67,6 +64,7 @@ abstract class RoomConfigStateAccess {
 }
 
 class _RoomConfigState extends ConsumerState<RoomConfig>
+    with InviteListenerMixin<RoomConfig>
     implements RoomConfigStateAccess {
   bool showCam = false;
   final joinRoomController = TextEditingController();
@@ -75,12 +73,10 @@ class _RoomConfigState extends ConsumerState<RoomConfig>
   bool _inviting = false;
   String? _lastCode;
   DateTime? _lastScanAt;
-  StreamSubscription<SyncRoomInvite>? _inviteSub;
-  bool _dialogOpen = false;
 
   @override
   void dispose() {
-    _inviteSub?.cancel();
+    disposeFallbackInviteListener();
     _scannerController.dispose();
     joinRoomController.dispose();
     super.dispose();
@@ -89,24 +85,8 @@ class _RoomConfigState extends ConsumerState<RoomConfig>
   @override
   void initState() {
     super.initState();
-    // Fallback invite listener only when no central listener is active.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (InviteDialogScope.globalListenerActive) return;
-      final matrixService = ref.read(matrixServiceProvider);
-      _inviteSub =
-          matrixService.inviteRequests.listen((SyncRoomInvite invite) async {
-        if (!mounted || _dialogOpen) return;
-        _dialogOpen = true;
-        try {
-          final accept = await showInviteDialog(context, invite);
-          if (accept) {
-            await ref.read(matrixServiceProvider).acceptInvite(invite);
-            if (mounted) setState(() {});
-          }
-        } finally {
-          _dialogOpen = false;
-        }
-      });
+    setupFallbackInviteListener(onAccepted: () {
+      if (mounted) setState(() {});
     });
   }
 

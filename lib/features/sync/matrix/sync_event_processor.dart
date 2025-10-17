@@ -62,10 +62,10 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     VectorClock? incomingVectorClock,
   }) async {
     final targetFile = resolveJsonCandidateFile(jsonPath);
-    final normalized = path.normalize(jsonPath);
-    final relative = normalized.startsWith(path.separator)
-        ? normalized.substring(1)
-        : normalized;
+    // Build a canonical index key once and reuse it to avoid inconsistencies
+    // across platforms (Windows vs. POSIX). The key always uses forward slashes
+    // and has a single leading '/'. Any leading '/' or '\\' characters are trimmed.
+    final indexKey = _buildIndexKey(jsonPath);
     // If we have an incoming vector clock, decide whether a fetch is needed.
     if (incomingVectorClock != null) {
       try {
@@ -89,8 +89,6 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       }
 
       // Resolve descriptor via AttachmentIndex
-      final indexKey =
-          normalized.startsWith(path.separator) ? normalized : '/$relative';
       final eventForPath = _attachmentIndex.find(indexKey);
       if (eventForPath == null) {
         // Descriptor not yet available; let caller retry later.
@@ -127,6 +125,15 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
             );
             throw const FileSystemException('stale attachment json');
           }
+        } else {
+          // An incoming VC is expected, but the downloaded JSON lacks one –
+          // treat as invalid to avoid writing potentially stale content.
+          _logging.captureEvent(
+            'smart.fetch.missing_vc path=$jsonPath expected=$incomingVectorClock',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
+          throw const FileSystemException('missing attachment vector clock');
         }
         await saveJson(targetFile.path, jsonString);
         _logging.captureEvent(
@@ -157,8 +164,6 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         needsFetch = true;
       }
       if (needsFetch) {
-        final indexKey =
-            normalized.startsWith(path.separator) ? normalized : '/$relative';
         final eventForPath = _attachmentIndex.find(indexKey);
         if (eventForPath == null) {
           _logging.captureEvent(
@@ -205,6 +210,18 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     return entity;
   }
 
+  // Construct a canonical index key for AttachmentIndex lookups.
+  // - Normalizes separators using POSIX rules so keys always use '/'
+  // - Trims any leading '/' or '\\' characters
+  // - Returns the path with a single leading '/'
+  String _buildIndexKey(String rawPath) {
+    // Normalize with POSIX semantics and coerce backslashes to forward slashes.
+    final normalizedPosix =
+        path.posix.normalize(rawPath.replaceAll(r'\\', '/'));
+    final trimmed = normalizedPosix.replaceFirst(RegExp(r'^[\\/]+'), '');
+    return '/$trimmed';
+  }
+
   Future<void> _ensureMediaOnMissing(JournalEntity e) async {
     switch (e) {
       case JournalImage():
@@ -223,7 +240,8 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       {String? mediaType}) async {
     final docDir = getDocumentsDirectory();
     final rp = relativePath;
-    final rpRel = rp.startsWith(path.separator) ? rp.substring(1) : rp;
+    // Trim any leading '/' or '\\' to avoid accidental absolute paths on Windows.
+    final rpRel = rp.replaceFirst(RegExp(r'^[\\/]+'), '');
     final fp = path.normalize(path.join(docDir.path, rpRel));
     final f = File(fp);
     try {
@@ -240,7 +258,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       );
     }
 
-    final descriptorKey = rp.startsWith('/') ? rp : '/$rp';
+    final descriptorKey = _buildIndexKey(rp);
     final ev = _attachmentIndex.find(descriptorKey);
     if (ev == null) {
       _logging.captureEvent(

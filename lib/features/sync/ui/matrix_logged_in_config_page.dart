@@ -1,12 +1,10 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
-import 'package:lotti/features/sync/ui/invite_dialog_helper.dart';
+import 'package:lotti/features/sync/ui/invite_listener_mixin.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
@@ -80,37 +78,19 @@ class HomeserverLoggedInWidget extends ConsumerStatefulWidget {
 }
 
 class _HomeserverLoggedInWidgetState
-    extends ConsumerState<HomeserverLoggedInWidget> {
-  StreamSubscription<SyncRoomInvite>? _inviteSub;
-  bool _dialogOpen = false;
-
+    extends ConsumerState<HomeserverLoggedInWidget>
+    with InviteListenerMixin<HomeserverLoggedInWidget> {
   @override
   void initState() {
     super.initState();
-    // Fallback invite listener only when no central listener is active.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (InviteDialogScope.globalListenerActive) return;
-      final matrixService = ref.read(matrixServiceProvider);
-      _inviteSub =
-          matrixService.inviteRequests.listen((SyncRoomInvite invite) async {
-        if (!mounted || _dialogOpen) return;
-        _dialogOpen = true;
-        try {
-          final accept = await showInviteDialog(context, invite);
-          if (accept) {
-            await ref.read(matrixServiceProvider).acceptInvite(invite);
-            if (mounted) setState(() {});
-          }
-        } finally {
-          _dialogOpen = false;
-        }
-      });
+    setupFallbackInviteListener(onAccepted: () {
+      if (mounted) setState(() {});
     });
   }
 
   @override
   void dispose() {
-    _inviteSub?.cancel();
+    disposeFallbackInviteListener();
     super.dispose();
   }
 
