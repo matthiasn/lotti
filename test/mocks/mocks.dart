@@ -21,6 +21,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -127,6 +128,8 @@ class MockFts5Db extends Mock implements Fts5Db {}
 class MockTimeService extends Mock implements TimeService {}
 
 class MockLoggingDb extends Mock implements LoggingDb {}
+
+class MockLoggingService extends Mock implements LoggingService {}
 
 class MockEditorDb extends Mock implements EditorDb {}
 
