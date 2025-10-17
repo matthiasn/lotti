@@ -166,6 +166,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   DateTime? _lastAttachmentOnlyRescanAt;
   static const Duration _minAttachmentOnlyRescanGap =
       Duration(milliseconds: 500);
+  static const int _liveScanTailLimit = 50;
+  static const Duration _attachmentTsGate = Duration(seconds: 2);
 
   // Tracks eventIds that reported rows=0 while predicted status suggests
   // incoming is newer (missing base). These should be retried and block
@@ -197,6 +199,23 @@ class MatrixStreamConsumer implements SyncPipeline {
       _seenEventIds.remove(oldest);
     }
     return false;
+  }
+
+  // Tracks sync payload events that have completed processing to avoid
+  // duplicate apply work across overlapping ingestion paths.
+  final Set<String> _completedSyncIds = <String>{};
+  final Queue<String> _completedSyncOrder = Queue<String>();
+  static const int _completedSyncCapacity = 5000;
+
+  bool _wasCompletedSync(String id) => _completedSyncIds.contains(id);
+  void _recordCompletedSync(String id) {
+    if (_completedSyncIds.add(id)) {
+      _completedSyncOrder.addLast(id);
+      while (_completedSyncOrder.length > _completedSyncCapacity) {
+        final oldest = _completedSyncOrder.removeFirst();
+        _completedSyncIds.remove(oldest);
+      }
+    }
   }
 
   Duration _computeBackoff(int attempts) =>
@@ -512,7 +531,23 @@ class MatrixStreamConsumer implements SyncPipeline {
       final events = List<Event>.from(tl.events)
         ..sort(TimelineEventOrdering.compare);
       final idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
-      var slice = idx >= 0 ? events.sublist(idx + 1) : events;
+      var slice = idx >= 0
+          ? events.sublist(idx + 1)
+          : (events.isEmpty
+              ? events
+              : events.sublist(
+                  (events.length - _liveScanTailLimit).clamp(0, events.length),
+                ));
+      // Filter tail by timestamp threshold to avoid reprocessing older
+      // unrelated attachments after marker advancement.
+      if (slice.isNotEmpty && _lastProcessedTs != null) {
+        final cutoff =
+            _lastProcessedTs!.toInt() - _attachmentTsGate.inMilliseconds;
+        slice = slice
+            .where((e) =>
+                TimelineEventOrdering.timestamp(e) >= cutoff)
+            .toList();
+      }
       if (slice.isNotEmpty) {
         // Dedup live-scan events by id to avoid duplicate first-pass work.
         slice = tu.dedupEventsByIdPreserveOrder(slice);
@@ -589,6 +624,23 @@ class MatrixStreamConsumer implements SyncPipeline {
       final dup = _isDuplicateAndRecordSeen(e.eventId);
       if (dup && ec.MatrixEventClassifier.isAttachment(e)) {
         continue; // skip record/observe/prefetch for duplicate attachments
+      }
+      // Also skip re-applying the same sync payload event if it already
+      // completed on another ingestion path.
+      if (dup && ec.MatrixEventClassifier.isSyncPayloadEvent(e)) {
+        if (_wasCompletedSync(e.eventId)) {
+          continue;
+        }
+      }
+      // Timestamp gate: skip first-pass attachment handling when the event is
+      // clearly older than the last processed sync payload (with a small
+      // margin). This reduces unrelated audio churn on text-only updates.
+      if (_lastProcessedTs != null &&
+          ec.MatrixEventClassifier.isAttachment(e)) {
+        final ts = TimelineEventOrdering.timestamp(e);
+        if (ts < _lastProcessedTs!.toInt() - _attachmentTsGate.inMilliseconds) {
+          continue;
+        }
       }
       // Always record descriptors when a relativePath is present, even if the
       // SDK doesn't classify it as an attachment (robust to MIME quirks).
@@ -736,6 +788,11 @@ class MatrixStreamConsumer implements SyncPipeline {
           )) {
         latestTs = ts;
         latestEventId = id;
+      }
+      // Record completed sync payloads to suppress duplicate applies across
+      // overlapping ingestion paths (e.g., live scan + client stream).
+      if ((processedOk || treatAsHandled) && isSyncPayloadEvent) {
+        _recordCompletedSync(id);
       }
     }
 
