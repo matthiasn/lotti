@@ -6,7 +6,7 @@ part of 'matrix_stats_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$matrixStatsStreamHash() => r'4602e828daae3c78ebde2ba433211f97000fb51a';
+String _$matrixStatsStreamHash() => r'f65363ebb78af16342af4b7347dc68febafaf1b7';
 
 /// See also [matrixStatsStream].
 @ProviderFor(matrixStatsStream)
@@ -25,7 +25,7 @@ final matrixStatsStreamProvider =
 // ignore: unused_element
 typedef MatrixStatsStreamRef = AutoDisposeStreamProviderRef<MatrixStats>;
 String _$matrixStatsControllerHash() =>
-    r'f47aefcbef34c857fe26e5f1069c95f451b1517d';
+    r'494709d34289d70c6583df085d70c6c5c59c76fb';
 
 /// See also [MatrixStatsController].
 @ProviderFor(MatrixStatsController)

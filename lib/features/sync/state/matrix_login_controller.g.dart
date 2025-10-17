@@ -6,7 +6,7 @@ part of 'matrix_login_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$loginStateStreamHash() => r'799f4deff791f17893c37e2ae3eeaaad184486b0';
+String _$loginStateStreamHash() => r'4fd12bd9f4848820865ea30bde95611b52ea971b';
 
 /// See also [loginStateStream].
 @ProviderFor(loginStateStream)
@@ -39,7 +39,7 @@ final isLoggedInProvider = AutoDisposeFutureProvider<bool>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef IsLoggedInRef = AutoDisposeFutureProviderRef<bool>;
-String _$loggedInUserIdHash() => r'ca80d49453e2b9d26d4fdbcada7311ea5f2fbeea';
+String _$loggedInUserIdHash() => r'a17212733481cd9f1b5b0ed356bcbaf4a675207d';
 
 /// See also [loggedInUserId].
 @ProviderFor(loggedInUserId)
@@ -57,7 +57,7 @@ final loggedInUserIdProvider = AutoDisposeFutureProvider<String?>.internal(
 // ignore: unused_element
 typedef LoggedInUserIdRef = AutoDisposeFutureProviderRef<String?>;
 String _$matrixLoginControllerHash() =>
-    r'b6b08d979ec2e6ebfe25ecf9c11f05d81a69f134';
+    r'c8dc0869b85df72976c8abffe680c1064e518ae2';
 
 /// See also [MatrixLoginController].
 @ProviderFor(MatrixLoginController)
