@@ -31,6 +31,17 @@ class _FakeMatrixLoginController extends MatrixLoginController {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() {
+    // mocktail requires a fallback value for custom types used with any()/captureAny
+    registerFallbackValue(
+      SyncRoomInvite(
+        roomId: '!dummy:server',
+        senderId: '@dummy:server',
+        matchesExistingRoom: false,
+      ),
+    );
+  });
+
   late MockMatrixService mockMatrixService;
 
   setUp(() {
@@ -158,6 +169,45 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('null'), findsOneWidget);
+    });
+
+    testWidgets('shows invite dialog and accepts invite', (tester) async {
+      final controller = StreamController<SyncRoomInvite>.broadcast();
+      addTearDown(controller.close);
+      when(() => mockMatrixService.inviteRequests)
+          .thenAnswer((_) => controller.stream);
+      when(() => mockMatrixService.acceptInvite(any()))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const HomeserverLoggedInWidget(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            loggedInUserIdProvider.overrideWith(
+              (ref) => Future.value('@user:matrix.org'),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      controller.add(
+        SyncRoomInvite(
+          roomId: '!room:server',
+          senderId: '@alice:server',
+          matchesExistingRoom: false,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      await tester.tap(find.text('Accept'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockMatrixService.acceptInvite(any())).called(1);
     });
   });
 

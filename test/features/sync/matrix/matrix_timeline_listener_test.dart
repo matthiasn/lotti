@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_lambdas
+// ignore_for_file: unnecessary_lambdas, cascade_invocations
 
 import 'dart:async';
 import 'dart:io';
@@ -133,6 +133,27 @@ void main() {
     listener.enqueueTimelineRefresh();
 
     expect(listener.clientRunner.enqueuedCount, 1);
+  });
+
+  test('enqueueTimelineRefresh coalesces duplicate requests', () async {
+    final gate = Completer<void>();
+    when(() => mockActivityGate.waitUntilIdle()).thenAnswer((_) async {
+      await gate.future; // keep the first callback in-flight
+    });
+
+    expect(listener.clientRunner.enqueuedCount, 0);
+
+    listener.enqueueTimelineRefresh();
+    // Enqueue again immediately; should be ignored while one is queued/running.
+    listener.enqueueTimelineRefresh();
+
+    // Allow microtask queue to schedule the runner loop.
+    await Future<void>.delayed(Duration.zero);
+
+    expect(listener.clientRunner.enqueuedCount, 1);
+
+    // Unblock to avoid dangling futures in test teardown.
+    gate.complete();
   });
 
   test('dispose cancels timeline subscriptions and closes runner', () async {

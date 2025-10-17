@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
@@ -52,6 +53,16 @@ class _FakeMatrixRoomController extends MatrixRoomController {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    registerFallbackValue(
+      SyncRoomInvite(
+        roomId: '!dummy:server',
+        senderId: '@dummy:server',
+        matchesExistingRoom: false,
+      ),
+    );
+  });
 
   late MockMatrixService mockMatrixService;
 
@@ -199,6 +210,46 @@ void main() {
       expect(inviteCalled, isTrue);
       expect(invitedUserId, '@friend:server');
       expect(showCamAfter, isFalse);
+    });
+
+    testWidgets('invite stream shows dialog and accepts invite',
+        (tester) async {
+      final controller = StreamController<SyncRoomInvite>.broadcast();
+      addTearDown(controller.close);
+      when(() => mockMatrixService.inviteRequests)
+          .thenAnswer((_) => controller.stream);
+      when(() => mockMatrixService.acceptInvite(any()))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(
+              () => _FakeMatrixRoomController(initialRoom: '!room:server'),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      controller.add(
+        SyncRoomInvite(
+          roomId: '!room:server',
+          senderId: '@bob:server',
+          matchesExistingRoom: true,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      await tester.tap(find.text('Accept'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockMatrixService.acceptInvite(any())).called(1);
     });
   });
 }
