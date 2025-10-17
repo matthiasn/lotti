@@ -72,7 +72,7 @@ void main() {
       () => mockLoggingService.captureEvent(
         'downloading /matrix/file.bin',
         domain: 'MATRIX_SERVICE',
-        subDomain: 'writeToFile',
+        subDomain: 'saveAttachment.download',
       ),
     ).called(1);
     verify(

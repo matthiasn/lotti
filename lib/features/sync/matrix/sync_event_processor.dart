@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -246,36 +247,12 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
             throw const FileSystemException('empty attachment bytes');
           }
           // Atomic write of media bytes
-          final tmpPath =
-              '$fp.tmp.${DateTime.now().microsecondsSinceEpoch}.$pid.media';
-          final tmpFile = File(tmpPath);
-          await tmpFile.parent.create(recursive: true);
-          await tmpFile.writeAsBytes(bytes, flush: true);
-          try {
-            await tmpFile.rename(fp);
-          } on FileSystemException catch (_) {
-            try {
-              // Best effort fallback
-              if (File(fp).existsSync()) {
-                final bak = '$fp.bak.${DateTime.now().microsecondsSinceEpoch}';
-                try {
-                  await File(fp).rename(bak);
-                } catch (_) {}
-              }
-              await tmpFile.rename(fp);
-            } catch (e, st) {
-              _logging.captureException(
-                e,
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'SmartLoader.writeMedia',
-                stackTrace: st,
-              );
-              try {
-                await tmpFile.delete();
-              } catch (_) {}
-              rethrow;
-            }
-          }
+          await atomicWriteBytes(
+            bytes: bytes,
+            filePath: fp,
+            logging: _logging,
+            subDomain: 'SmartLoader.writeMedia',
+          );
         } catch (e, st) {
           _logging.captureException(
             e,
@@ -307,35 +284,12 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           if (bytes.isEmpty) {
             throw const FileSystemException('empty attachment bytes');
           }
-          final tmpPath =
-              '$fp.tmp.${DateTime.now().microsecondsSinceEpoch}.$pid.media';
-          final tmpFile = File(tmpPath);
-          await tmpFile.parent.create(recursive: true);
-          await tmpFile.writeAsBytes(bytes, flush: true);
-          try {
-            await tmpFile.rename(fp);
-          } on FileSystemException catch (_) {
-            try {
-              if (File(fp).existsSync()) {
-                final bak = '$fp.bak.${DateTime.now().microsecondsSinceEpoch}';
-                try {
-                  await File(fp).rename(bak);
-                } catch (_) {}
-              }
-              await tmpFile.rename(fp);
-            } catch (e, st) {
-              _logging.captureException(
-                e,
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'SmartLoader.writeMedia',
-                stackTrace: st,
-              );
-              try {
-                await tmpFile.delete();
-              } catch (_) {}
-              rethrow;
-            }
-          }
+          await atomicWriteBytes(
+            bytes: bytes,
+            filePath: fp,
+            logging: _logging,
+            subDomain: 'SmartLoader.writeMedia',
+          );
         } catch (e, st) {
           _logging.captureException(
             e,
