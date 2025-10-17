@@ -107,7 +107,8 @@ class EditorDb extends _$EditorDb {
           ..where(
             (EditorDrafts draft) =>
                 draft.entryId.equals(entryId) &
-                draft.status.equals(_draftStatusDraft),
+                draft.status.equals(_draftStatusDraft) &
+                draft.lastSaved.equals(lastSaved),
           ))
         .write(const EditorDraftsCompanion(status: Value(_draftStatusSaved)));
   }
