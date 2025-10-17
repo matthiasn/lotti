@@ -3,8 +3,15 @@ import 'dart:async';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
+/// Function invoked to flush a pending read marker to the server.
 typedef ReadMarkerFlush = Future<void> Function(Room room, String eventId);
 
+/// Debounced read‑marker publisher.
+///
+/// - Coalesces rapid updates into a single flush after debounce.
+/// - Ensures the last pending marker is flushed on dispose(), so the next
+///   session does not start "one behind".
+/// - Captures exceptions via LoggingService instead of surfacing them.
 class ReadMarkerManager {
   ReadMarkerManager({
     required Duration debounce,
@@ -22,6 +29,8 @@ class ReadMarkerManager {
   String? _pendingEventId;
   Room? _pendingRoom;
 
+  /// Schedule a marker update for [room] to [eventId]. Subsequent calls within
+  /// the debounce window replace the pending ID.
   void schedule(Room room, String eventId) {
     _pendingEventId = eventId;
     _pendingRoom = room;
@@ -59,6 +68,7 @@ class ReadMarkerManager {
     });
   }
 
+  /// Flushes any pending marker immediately and cancels the debounce timer.
   void dispose() {
     // If there is a pending marker when disposing, flush it synchronously to
     // avoid starting the next session one event behind.

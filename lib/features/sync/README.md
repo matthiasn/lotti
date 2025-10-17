@@ -134,14 +134,40 @@ that keeps the pipeline testable and observable.
    logged in and the room has been hydrated. Synchronisation continues
    automatically while both devices are idle.
 
+### Data Flow (V2)
+
+V2 replaces the multi-pass drain with a stream-first consumer:
+
+- Attach-time catch-up: backfills/paginates until the last processed event is
+  present, then processes strictly after it (no rewind before the marker).
+- Micro-batches: orders oldest→newest with in-batch de-duplication by event ID.
+- Attachment prefetch: downloads remote attachments referenced by text payloads
+  before processing to ensure files exist when applying JSON.
+- Marker advancement: monotonic by server timestamp with eventId tie-breaker;
+  remote updates are guarded to avoid downgrades.
+- Rescans: schedules a tail rescan on activity without advancement, and after
+  any advancement. Attachment-only rescans are throttled and only scheduled
+  when at least one new file was written.
+
+Key helpers:
+- `pipeline_v2/catch_up_strategy.dart`: no-rewind catch-up via SDK seam and
+  snapshot-limit escalation fallback.
+- `pipeline_v2/attachment_index.dart`: in-memory relativePath→event map used by
+  the apply phase.
+- `matrix/sync_event_processor.dart` smart loader: vector-clock aware JSON
+  fetching that uses `AttachmentIndex` to fetch newer JSON for same-path
+  updates before applying.
+- `matrix/read_marker_service.dart`: remote monotonic guard comparing candidate
+  vs `fullyRead` using the timeline when available.
+
 ## Diagnostics & Logging
 
 - Use `matrixServiceProvider.read().getDiagnosticInfo()` in debug builds to
   inspect saved room IDs, active room state, lifecycle activity, joined rooms,
   and login status. Note: typed V2 metrics are not included in this payload; use
   `MatrixService.getV2Metrics()` or the Matrix Stats UI instead.
-- Key log domains: `MATRIX_SERVICE`, `SYNC_ENGINE`, `SYNC_ROOM_MANAGER`,
-  `SYNC_EVENT_PROCESSOR`, `SYNC_READ_MARKER`, and `OUTBOX`.
+- Key log domains: `MATRIX_SERVICE`, `MATRIX_SYNC_V2`, `SYNC_ENGINE`,
+  `SYNC_ROOM_MANAGER`, `SYNC_EVENT_PROCESSOR`, `SYNC_READ_MARKER`, and `OUTBOX`.
 - Typical messages include invite acceptance/filters, hydration retries, send
   attempts, and timeline processing outcomes.
 
@@ -235,13 +261,21 @@ behaviour using Matrix Stats and logs.
   - `TimelineEventOrdering.compare` uses timestamp ordering; on equal timestamps,
     events are ordered lexicographically by event ID. `isNewer` applies the same
     rule to ensure monotonic advancement.
+- Vector‑clock aware JSON
+  - `SmartJournalEntityLoader` reads local JSON first; if a vector clock is
+    provided and the local is older, it uses `AttachmentIndex` to fetch the
+    newer JSON, writes it atomically, then applies it.
 - File operations
-  - JSON writes are now atomic: write to a `*.tmp` file and asynchronously rename
-    to the final path. Windows-safe fallback cleans up `*.bak`/`*.tmp` on success
-    and avoids partial/empty reads. Avoid using `renameSync`.
+  - JSON writes are atomic: write to a `*.tmp` file then rename to the final
+    path. A best-effort fallback moves an existing target aside as `*.bak` to
+    make the rename succeed; temporary/backup files are cleaned up when possible.
+  - Attachment writes use the same atomic pattern. Existing non-empty files are
+    not re-downloaded; prefetch and rescan logic gate on “new file written”.
 - Read markers
   - `SyncReadMarkerService` gates updates via `client.isLogged()` and prefers
     room-level `setReadMarker`; falls back to timeline-level when available.
+  - Remote monotonic guard: only advance if the candidate is strictly newer
+    than the current `fullyRead` by server timestamp + eventId tie-breaker.
 
 
 ## References
