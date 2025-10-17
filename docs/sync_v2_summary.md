@@ -25,6 +25,16 @@ Recent changes (Oct 2025)
   detect “not in room” instead of parsing error strings. Code: `session_manager.dart`,
   `sync_room_manager.dart`.
 
+### Review Feedback (action items)
+- Extract atomic write/rename into a shared utility used by both
+  `lib/features/sync/matrix/sync_event_processor.dart` and
+  `lib/features/sync/matrix/save_attachment.dart` to ensure a single,
+  well-tested implementation (temp → best-effort backup → rename → restore on failure).
+- Replace silent `catch (_) {}` blocks in the atomic write flows with logging via
+  `LoggingService.captureException` (or `debugPrint`) so filesystem issues are visible in logs.
+  Keep the flows best-effort, but record the exception and stack for diagnostics.
+  This applies to the backup/restore paths and temp-file cleanup.
+
 1) Read‑marker reliability
 - Immediate local persist on advance:
   - Save both `LAST_READ_MATRIX_EVENT_ID` and `LAST_READ_MATRIX_EVENT_TS`.

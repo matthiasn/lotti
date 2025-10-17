@@ -6,8 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/ui/invite_dialog_helper.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -100,35 +103,19 @@ class _HomeserverLoggedInWidgetState
         if (!mounted || _dialogOpen) return;
         _dialogOpen = true;
         try {
-          final accept = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(context.messages.settingsMatrixRoomInviteTitle),
-                  content: Text(
-                    context.messages.settingsMatrixRoomInviteMessage(
-                      invite.roomId,
-                      invite.senderId,
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(false),
-                      child: Text(context.messages.settingsMatrixCancel),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(true),
-                      child: Text(context.messages.settingsMatrixAccept),
-                    ),
-                  ],
-                ),
-              ) ??
-              false;
+          final accept = await showInviteDialog(context, invite);
           if (accept) {
             await ref.read(matrixServiceProvider).acceptInvite(invite);
             if (mounted) setState(() {});
           }
-        } catch (_) {
-          // ignore dialog errors
+        } catch (e, st) {
+          // Log instead of silently swallowing errors
+          getIt<LoggingService>().captureException(
+            e,
+            domain: 'SYNC_UI',
+            subDomain: 'InviteDialog.show',
+            stackTrace: st,
+          );
         } finally {
           _dialogOpen = false;
         }
