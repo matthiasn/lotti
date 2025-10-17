@@ -2183,11 +2183,11 @@ void main() {
       await consumer.initialize();
       await consumer.start();
 
-      // Expect processing of e0..e9 due to startup rewind floor
+      // Expect processing strictly after the marker (no rewind floor)
       verify(() => processor.process(
             event: any<Event>(named: 'event'),
             journalDb: journalDb,
-          )).called(10);
+          )).called(9);
     });
 
     test('filters events from other rooms and batches via flush timer',

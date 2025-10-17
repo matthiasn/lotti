@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:lotti/database/database.dart';
@@ -180,6 +181,23 @@ class MatrixStreamConsumer implements SyncPipeline {
   late final rc.CircuitBreaker _circuit;
   late final rc.RetryTracker _retryTracker;
   late final ReadMarkerManager _readMarkerManager;
+
+  // Recent eventId LRU to suppress duplicate first-pass work for attachments
+  // across overlapping ingestion paths (client stream + live timeline).
+  final Set<String> _seenEventIds = <String>{};
+  final Queue<String> _seenEventOrder = Queue<String>();
+  static const int _seenEventCapacity = 5000;
+
+  bool _isDuplicateAndRecordSeen(String id) {
+    if (_seenEventIds.contains(id)) return true;
+    _seenEventIds.add(id);
+    _seenEventOrder.addLast(id);
+    while (_seenEventOrder.length > _seenEventCapacity) {
+      final oldest = _seenEventOrder.removeFirst();
+      _seenEventIds.remove(oldest);
+    }
+    return false;
+  }
 
   Duration _computeBackoff(int attempts) =>
       tu.computeExponentialBackoff(attempts);
@@ -462,7 +480,6 @@ class MatrixStreamConsumer implements SyncPipeline {
         lastEventId: _lastProcessedEventId,
         backfill: _backfill ?? SdkPaginationCompat.backfillUntilContains,
         logging: _loggingService,
-        rewindCount: 3,
         thresholdTsMillis: thresholdTs,
       );
       if (slice.isNotEmpty) {
@@ -495,8 +512,10 @@ class MatrixStreamConsumer implements SyncPipeline {
       final events = List<Event>.from(tl.events)
         ..sort(TimelineEventOrdering.compare);
       final idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
-      final slice = idx >= 0 ? events.sublist(idx + 1) : events;
+      var slice = idx >= 0 ? events.sublist(idx + 1) : events;
       if (slice.isNotEmpty) {
+        // Dedup live-scan events by id to avoid duplicate first-pass work.
+        slice = tu.dedupEventsByIdPreserveOrder(slice);
         await _processOrdered(slice);
         if (_collectMetrics) {
           _loggingService.captureEvent(
@@ -565,6 +584,12 @@ class MatrixStreamConsumer implements SyncPipeline {
     // First pass: prefetch attachments for remote events.
     var sawAttachmentPrefetch = false; // true only if a new file was written
     for (final e in ordered) {
+      // Skip duplicate attachment work if we've already seen this eventId.
+      // Keep processing for sync payload events to ensure apply/retry semantics.
+      final dup = _isDuplicateAndRecordSeen(e.eventId);
+      if (dup && ec.MatrixEventClassifier.isAttachment(e)) {
+        continue; // skip record/observe/prefetch for duplicate attachments
+      }
       // Always record descriptors when a relativePath is present, even if the
       // SDK doesn't classify it as an attachment (robust to MIME quirks).
       final rpAny = e.content['relativePath'];
@@ -594,7 +619,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           // best-effort logging
         }
         if (_pendingJsonPaths.remove(rpAny)) {
-          unawaited(_scanLiveTimeline());
+          _scheduleLiveScan();
         }
       }
 
@@ -611,7 +636,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           final rp = e.content['relativePath'];
           if (wrote && rp is String && rp.isNotEmpty) {
             if (_pendingJsonPaths.remove(rp)) {
-              unawaited(_scanLiveTimeline());
+              _scheduleLiveScan();
             }
           }
           if (wrote) sawAttachmentPrefetch = true;
@@ -627,35 +652,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         }
       }
 
-      // Perform actual background download only for media (not JSON).
-      if (ec.MatrixEventClassifier.shouldPrefetchAttachment(
-          e, _client.userID)) {
-        try {
-          final wrote = await saveAttachment(
-            e,
-            loggingService: _loggingService,
-            documentsDirectory: _documentsDirectory,
-          );
-          final rp = e.content['relativePath'];
-          if (wrote && rp is String && rp.isNotEmpty) {
-            // If this path was pending during apply and we just wrote it,
-            // trigger an immediate scan now that the attachment exists.
-            if (_pendingJsonPaths.remove(rp)) {
-              unawaited(_scanLiveTimeline());
-            }
-          }
-          if (wrote) sawAttachmentPrefetch = true;
-        } catch (err, st) {
-          _loggingService.captureException(
-            err,
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'prefetch',
-            stackTrace: st,
-          );
-          if (_collectMetrics) _metrics.incFailures();
-          // Continue with the next event; do not abort the batch on prefetch failures.
-        }
-      }
+      // (prefetch handled above)
     }
 
     // Second pass: process text events and compute advancement.
