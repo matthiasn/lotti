@@ -18,6 +18,14 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
   DateTime? _dateTo;
 
   @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _dateFrom = now.subtract(const Duration(hours: 24));
+    _dateTo = now;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final dateFrom = _dateFrom;
     final dateTo = _dateTo;
