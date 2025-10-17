@@ -58,7 +58,7 @@ void main() {
         .thenAnswer((_) async => matrixFile);
     when(() => matrixFile.bytes).thenReturn(bytes);
 
-    await saveAttachment(
+    final wrote = await saveAttachment(
       mockEvent,
       loggingService: mockLoggingService,
       documentsDirectory: tempDir,
@@ -82,6 +82,7 @@ void main() {
         subDomain: 'saveAttachment',
       ),
     ).called(1);
+    expect(wrote, isTrue);
   });
 
   test('captures exception when download fails', () async {
@@ -91,7 +92,7 @@ void main() {
     when(() => mockEvent.downloadAndDecryptAttachment())
         .thenThrow(const FileSystemException('permission denied'));
 
-    await saveAttachment(
+    final wrote = await saveAttachment(
       mockEvent,
       loggingService: mockLoggingService,
       documentsDirectory: tempDir,
@@ -105,5 +106,6 @@ void main() {
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).called(1);
+    expect(wrote, isFalse);
   });
 }

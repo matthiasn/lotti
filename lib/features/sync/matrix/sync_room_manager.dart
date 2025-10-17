@@ -129,18 +129,20 @@ class SyncRoomManager {
     } catch (error, stackTrace) {
       // If the homeserver reports that this device/user is not in the room,
       // treat this as a successful local leave: clear persisted state anyway.
-      final message = error.toString();
-      final looksLikeNotInRoom =
-          message.contains('not in room') || message.contains('M_FORBIDDEN');
+      var notInRoom = false;
+      if (error is MatrixException) {
+        final code = error.errcode;
+        notInRoom = code == 'M_FORBIDDEN' || code == 'M_NOT_FOUND';
+      }
 
       _loggingService.captureException(
         error,
         domain: 'SYNC_ROOM_MANAGER',
-        subDomain: looksLikeNotInRoom ? 'leaveRoom.notInRoom' : 'leaveRoom',
+        subDomain: notInRoom ? 'leaveRoom.notInRoom' : 'leaveRoom',
         stackTrace: stackTrace,
       );
 
-      if (looksLikeNotInRoom) {
+      if (notInRoom) {
         try {
           await _settingsDb.removeSettingsItem(matrixRoomKey);
           _currentRoom = null;

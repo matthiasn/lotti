@@ -357,7 +357,9 @@ Future<_IngestOutcome> _ingestAndComputeLatest({
   for (final event in events) {
     final isRemoteEvent = event.senderId != listener.client.userID;
     if (isRemoteEvent && event.attachmentMimetype.isNotEmpty) {
-      await saveAttachment(
+      // Intentionally ignore boolean; prefetch is best-effort here and
+      // processing continues regardless. We still await to avoid races.
+      final _ = await saveAttachment(
         event,
         loggingService: loggingService,
         documentsDirectory: documentsDirectory,

@@ -496,14 +496,11 @@ class MatrixStreamConsumer implements SyncPipeline {
         );
         return;
       }
-      final thresholdTs =
-          _lastProcessedTs != null ? (_lastProcessedTs!.toInt() - 1) : null;
       final slice = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: _lastProcessedEventId,
         backfill: _backfill ?? SdkPaginationCompat.backfillUntilContains,
         logging: _loggingService,
-        thresholdTsMillis: thresholdTs,
       );
       if (slice.isNotEmpty) {
         if (_collectMetrics) _metrics.incCatchupBatches();

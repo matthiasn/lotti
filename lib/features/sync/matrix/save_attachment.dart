@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:path/path.dart' as p;
 import 'package:matrix/matrix.dart';
 
 /// Downloads and saves an attachment if it isn't already present on disk.
@@ -19,8 +20,18 @@ Future<bool> saveAttachment(
 
     try {
       if (relativePath != null) {
-        final filePath = '${documentsDirectory.path}$relativePath';
-        final file = File(filePath);
+        // Build a safe, normalized path under documentsDirectory.
+        var rel =
+            relativePath is String ? relativePath : relativePath.toString();
+        if (p.isAbsolute(rel)) {
+          final prefix = p.rootPrefix(rel);
+          rel = rel.substring(prefix.length);
+        }
+        final resolved = p.normalize(p.join(documentsDirectory.path, rel));
+        if (!p.isWithin(documentsDirectory.path, resolved)) {
+          throw const FileSystemException('Path traversal detected');
+        }
+        final file = File(resolved);
         // Fast-path dedupe: if the file already exists and is non-empty,
         // skip re-downloading to avoid repeated writes and log spam.
         if (file.existsSync()) {
@@ -43,7 +54,7 @@ Future<bool> saveAttachment(
         final matrixFile = await event.downloadAndDecryptAttachment();
         await _writeToFile(
           matrixFile.bytes,
-          filePath,
+          resolved,
           loggingService,
         );
         loggingService.captureEvent(
@@ -65,6 +76,19 @@ Future<bool> saveAttachment(
   return false;
 }
 
+/// Writes bytes to [filePath] atomically using a temporary file + rename.
+///
+/// Rationale: On some platforms (notably Windows), `File.rename` will fail if
+/// the destination already exists or is open by another process. To remain
+/// robust and avoid partial writes, we:
+/// - write to a uniquely named temp file and flush it;
+/// - attempt a direct rename to the target;
+/// - if that fails, we best-effort move any existing target aside (to a
+///   timestamped .bak), retry the rename, then clean up the backup;
+/// - on error, we delete the temp file and restore the original when possible.
+///
+/// This keeps the operation effectively atomic for readers while handling the
+/// cross‑platform rename semantics and in‑use destination edge cases.
 Future<void> _writeToFile(
   Uint8List? data,
   String filePath,

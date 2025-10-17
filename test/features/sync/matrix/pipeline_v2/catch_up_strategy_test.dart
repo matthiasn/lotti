@@ -111,8 +111,7 @@ void main() {
       }
     });
 
-    test('time-based rewind paginates until threshold and slices by ts',
-        () async {
+    test('with no marker id, returns snapshot events (no rewind)', () async {
       final room = MockRoom();
       final log = MockLogging();
       final tl = MockTimeline();
@@ -159,8 +158,6 @@ void main() {
         page++;
       });
 
-      // Threshold at 205ms should page back once and slice from ts >= 205
-      const threshold = 205;
       final slice = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: null,
@@ -173,53 +170,12 @@ void main() {
           required LoggingService logging,
         }) async =>
             true,
-        thresholdTsMillis: threshold,
       );
 
       expect(slice, isNotEmpty);
-      expect(slice.first.originServerTs.millisecondsSinceEpoch,
-          greaterThanOrEqualTo(threshold));
-      verify(() => tl.cancelSubscriptions()).called(1);
-    });
-
-    test('count floor (rewindCount) applies when marker id present', () async {
-      final room = MockRoom();
-      final log = MockLogging();
-      final tl = MockTimeline();
-
-      // Build ts 1..10 with ids e1..e10
-      final events = List<Event>.generate(10, (i) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn('e${i + 1}');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i + 1));
-        return e;
-      });
-
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
-      when(() => tl.events).thenAnswer((_) => events);
-      when(() => tl.cancelSubscriptions()).thenReturn(null);
-      // No requestHistory needed here
-
-      // Marker at e8 with rewindCount=3 => start at e6 (idx 7 + 1 - 3)
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
-        room: room,
-        lastEventId: 'e8',
-        logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            true,
-        rewindCount: 3,
-        thresholdTsMillis: 9, // would otherwise slice near e9
-      );
-
-      expect(slice.first.eventId, 'e6');
+      // No threshold slicing; returns current window (300..309)
+      expect(slice.first.originServerTs.millisecondsSinceEpoch, 300);
+      expect(slice.last.originServerTs.millisecondsSinceEpoch, 309);
       verify(() => tl.cancelSubscriptions()).called(1);
     });
   });

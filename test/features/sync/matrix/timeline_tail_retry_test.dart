@@ -167,8 +167,9 @@ void main() {
       loggingService: logging,
       roomManager: roomManager,
       client: client,
-    )..lastReadEventContextId = r'$e0';
-    ctx.timeline = live;
+    )
+      ..lastReadEventContextId = r'$e0'
+      ..timeline = live;
 
     when(() => logging.captureEvent(
           any<String>(),

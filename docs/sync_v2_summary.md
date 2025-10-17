@@ -91,8 +91,7 @@ Marker lifecycle
 Startup
 - `MATRIX_SYNC_V2 start.liveScan` (first live scan)
 - `MATRIX_SYNC_V2 start.catchUpRetry` (when a stored marker exists)
-- `MATRIX_SYNC_V2 catchup.rewind` (count floor) and/or
-- `MATRIX_SYNC_V2 catchup.rewindTs` (time‑based slice)
+  (Rewind logs removed; rewind is disabled by default with N=0)
 
 Live recovery
 - `MATRIX_SYNC_V2 noAdvance.rescan` (activity w/o advancement)
@@ -108,9 +107,8 @@ Live recovery
 1) Startup catch‑up (no new events)
 - Expect:
   - `start.liveScan` and, if marker exists, `start.catchUpRetry`.
-  - If id known: `catchup.rewind` with `rewindCount=3`.
-  - If ts known: `catchup.rewindTs`.
-- Then apply `rows>0`, `marker.local`, `marker.flush`, and `setReadMarker`.
+  - No rewind: process strictly after the marker (rewindCount=0).
+  - Then apply `rows>0`, `marker.local`, `marker.flush`, and `setReadMarker`.
 
 2) Online updates (both devices running)
 - For attachments:
@@ -132,12 +130,11 @@ Live recovery
 
 ## Tests (new/updated)
 - `test/features/sync/matrix/pipeline_v2/catch_up_strategy_test.dart`
-  - Time‑based rewind pagination + slicing by ts
-  - Count floor (rewindCount) applies when marker id is present
+  - Backfill until marker is present; process strictly after (no rewind)
 - `test/features/sync/matrix/pipeline_v2/matrix_stream_consumer_test.dart`
   - Persist id + ts on marker advancement
   - Tail rescan on “activity but no advancement”
-  - Existing test adjusted for rewind floor
+  - Existing tests adjusted for no-rewind behavior
 - `test/features/sync/matrix/pipeline_v2/read_marker_manager_test.dart`
   - Dispose flushes pending marker; exceptions captured
 - `test/features/sync/matrix/read_marker_service_test.dart`
@@ -153,8 +150,7 @@ Ordering
 
 Startup
 - Backfill until last id contained; replay strictly after it.
-- Count floor: replay 3 items before the marker id (cheap, safe).
-- If ts known, also slice from `ts(marker) − 1ms` (no caps) to avoid skipping same-timestamp neighbors.
+- No rewind: do not replay items before the marker (rewindCount=0). Backfill ensures the marker is included.
 - Initial live scan + scheduled catch‑up retry after room hydration.
 
 Live
@@ -203,7 +199,7 @@ Same-path updates (newer content with the same filename)
 
 ## Design Rationale
 - Local is authoritative; remote is a hint only to avoid skipping messages.
-- Rewind (id floor + time) prefers small replays (safe with vector clocks) over any chance of missing items.
+- No rewind: rely on backfill to include the marker, then process strictly after. Duplicate replays are cheap when they occur elsewhere (vector clocks, idempotent apply).
 - Double scans and tail scans eliminate ordering/timing races on live streams.
 
 ## Message‑Driven JSON Apply
@@ -304,7 +300,7 @@ Benefits
   - Prevents unrelated older audio/image descriptors from being re‑observed after a text‑only edit.
   - File: `matrix_stream_consumer.dart`.
 
-- Prefetch and rewind
+- Prefetch (no rewind)
   - Removed duplicate media prefetch block; prefetch runs once and only for media (never JSON).
   - Catch‑up rewind disabled (N=0); backlog safety remains via backfill.
 
