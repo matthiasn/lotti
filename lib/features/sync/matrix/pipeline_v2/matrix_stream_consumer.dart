@@ -548,18 +548,47 @@ class MatrixStreamConsumer implements SyncPipeline {
     // First pass: prefetch attachments for remote events.
     var sawAttachmentPrefetch = false; // true only if a new file was written
     for (final e in ordered) {
-      // Always record attachment descriptors to the index (no side effects).
-      if (ec.MatrixEventClassifier.isAttachment(e)) {
+      // Always record descriptors when a relativePath is present, even if the
+      // SDK doesn't classify it as an attachment (robust to MIME quirks).
+      final rpAny = e.content['relativePath'];
+      if (rpAny is String && rpAny.isNotEmpty) {
         _attachmentIndex?.record(e);
-        // Count and record attachments for diagnostics regardless of media type.
-        if (_collectMetrics) _metrics.incPrefetch();
-        final rp = e.content['relativePath'];
-        if (rp is String && rp.isNotEmpty) {
-          _metrics.addLastPrefetched(rp);
-          // If a JSON apply previously failed waiting for this path, rescan now
-          if (_pendingJsonPaths.remove(rp)) {
-            unawaited(_scanLiveTimeline());
+        if (_collectMetrics) {
+          // Count an attachment observed and record path for diagnostics.
+          _metrics.incPrefetch();
+          _metrics.addLastPrefetched(rpAny);
+        }
+        if (_pendingJsonPaths.remove(rpAny)) {
+          unawaited(_scanLiveTimeline());
+        }
+      }
+
+      // For metrics and optional background media download, continue using the
+      // classifier's attachment predicate (media only).
+      if (ec.MatrixEventClassifier.shouldPrefetchAttachment(
+          e, _client.userID)) {
+        try {
+          final wrote = await saveAttachment(
+            e,
+            loggingService: _loggingService,
+            documentsDirectory: _documentsDirectory,
+          );
+          final rp = e.content['relativePath'];
+          if (wrote && rp is String && rp.isNotEmpty) {
+            if (_pendingJsonPaths.remove(rp)) {
+              unawaited(_scanLiveTimeline());
+            }
           }
+          if (wrote) sawAttachmentPrefetch = true;
+        } catch (err, st) {
+          _loggingService.captureException(
+            err,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'prefetch',
+            stackTrace: st,
+          );
+          if (_collectMetrics) _metrics.incFailures();
+          // Continue with the next event; do not abort the batch on prefetch failures.
         }
       }
 

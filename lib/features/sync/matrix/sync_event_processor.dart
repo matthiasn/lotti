@@ -85,6 +85,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       );
     }
 
+    final targetFile = File(candidate);
     // If we have an incoming vector clock, decide whether a fetch is needed.
     if (incomingVectorClock != null) {
       try {
@@ -128,6 +129,47 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           stackTrace: st,
         );
         rethrow;
+      }
+    } else {
+      // No incoming vector clock: fetch if file is missing/empty, else read.
+      var needsFetch = false;
+      try {
+        if (!targetFile.existsSync()) {
+          needsFetch = true;
+        } else {
+          final len = targetFile.lengthSync();
+          needsFetch = len == 0;
+        }
+      } catch (_) {
+        needsFetch = true;
+      }
+      if (needsFetch) {
+        final indexKey =
+            normalized.startsWith(path.separator) ? normalized : '/$relative';
+        final eventForPath = _attachmentIndex.find(indexKey);
+        if (eventForPath == null) {
+          throw FileSystemException(
+            'attachment descriptor not yet available',
+            jsonPath,
+          );
+        }
+        try {
+          final matrixFile = await eventForPath.downloadAndDecryptAttachment();
+          final bytes = matrixFile.bytes;
+          if (bytes.isEmpty) {
+            throw const FileSystemException('empty attachment bytes');
+          }
+          final jsonString = utf8.decode(bytes);
+          await saveJson(candidate, jsonString);
+        } catch (e, st) {
+          _logging.captureException(
+            e,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetchJson.noVc',
+            stackTrace: st,
+          );
+          rethrow;
+        }
       }
     }
 

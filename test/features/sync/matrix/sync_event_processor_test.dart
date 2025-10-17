@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -369,6 +370,54 @@ void main() {
       getIt.allowReassignment = true;
       tempDir = await Directory.systemTemp.createTemp('smart_loader_test');
       getIt.registerSingleton<Directory>(tempDir);
+    });
+
+    test('fetches JSON when no VC and file missing via AttachmentIndex',
+        () async {
+      // Build a simple text entry JSON path and index descriptor
+      const relJson = '/text_entries/2024-01-01/abc.text.json';
+      final index = AttachmentIndex();
+      final ev = MockEvent();
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.content).thenReturn({'relativePath': relJson});
+      final entity = JournalEntry(
+        meta: Metadata(
+          id: 'abc',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        entryText: const EntryText(plainText: 'hello'),
+      );
+      final jsonBytes = utf8.encode(jsonEncode(entity.toJson()));
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async => MatrixFile(
+            bytes: Uint8List.fromList(jsonBytes),
+            name: 'abc.text.json',
+          ));
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+
+      final loaded = await loader.load(jsonPath: relJson);
+      expect(
+        loaded.maybeMap(
+          journalEntry: (j) => j.entryText?.plainText,
+          orElse: () => null,
+        ),
+        'hello',
+      );
+
+      // File exists under temp doc dir
+      final docDir = getIt<Directory>().path;
+      final normalized =
+          relJson.startsWith(path.separator) ? relJson.substring(1) : relJson;
+      final f = File(path.join(docDir, normalized));
+      expect(f.existsSync(), isTrue);
+      expect(f.lengthSync(), greaterThan(0));
     });
 
     tearDown(() async {

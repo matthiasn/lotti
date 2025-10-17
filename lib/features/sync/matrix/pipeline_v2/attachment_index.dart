@@ -21,7 +21,12 @@ class AttachmentIndex {
       if (mimetype.isEmpty) return;
       final rp = e.content['relativePath'];
       if (rp is String && rp.isNotEmpty) {
-        _byPath[rp] = e;
+        final key = rp.startsWith('/') ? rp : '/$rp';
+        _byPath[key] = e;
+        // For robustness, also record a variant without the leading slash in
+        // case callers use that form.
+        final noSlash = rp.startsWith('/') ? rp.substring(1) : rp;
+        _byPath[noSlash] = e;
       }
     } catch (err) {
       _logging?.captureEvent(
@@ -33,5 +38,11 @@ class AttachmentIndex {
   }
 
   /// Returns the last-seen attachment event for [relativePath], or null.
-  Event? find(String relativePath) => _byPath[relativePath];
+  Event? find(String relativePath) {
+    final key1 = relativePath;
+    final key2 = relativePath.startsWith('/')
+        ? relativePath.substring(1)
+        : '/$relativePath';
+    return _byPath[key1] ?? _byPath[key2];
+  }
 }
