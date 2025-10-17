@@ -47,10 +47,11 @@ Future<File> getDatabaseFile(String dbFileName) async {
 Future<void> createDbBackup(String fileName) async {
   final file = await getDatabaseFile(fileName);
   final ts = DateFormat(_backupTimestampFormat).format(DateTime.now());
-  final backupDir = await Directory('${file.parent.path}/$_backupDirectoryName')
-      .create(recursive: true);
-  await file
-      .copy('${backupDir.path}/$_backupFilePrefix$ts$_backupFileExtension');
+  final backupDir =
+      await Directory(p.join(file.parent.path, _backupDirectoryName))
+          .create(recursive: true);
+  await file.copy(
+      p.join(backupDir.path, '$_backupFilePrefix$ts$_backupFileExtension'));
 }
 
 /// Opens a database connection with lazy initialization.
