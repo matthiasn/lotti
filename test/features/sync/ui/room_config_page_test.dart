@@ -251,5 +251,43 @@ void main() {
 
       verify(() => mockMatrixService.acceptInvite(any())).called(1);
     });
+
+    testWidgets('duplicate barcode within window is ignored', (tester) async {
+      final controller = _FakeMatrixRoomController(initialRoom: '!room:server');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(() => controller),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(RoomConfig)) as StatefulElement;
+      final handle = element.state as RoomConfigStateAccess;
+      handle.showCamForTesting = true;
+
+      // First scan triggers invite
+      await handle.handleBarcodeForTesting(
+        const BarcodeCapture(barcodes: [Barcode(rawValue: '@friend:server')]),
+      );
+      await tester.pump();
+      expect(controller.inviteCalled, isTrue);
+
+      // Reset flag to observe a second call
+      controller.inviteCalled = false;
+
+      // Second scan with same code within 2 seconds should be ignored
+      await handle.handleBarcodeForTesting(
+        const BarcodeCapture(barcodes: [Barcode(rawValue: '@friend:server')]),
+      );
+      await tester.pump();
+      expect(controller.inviteCalled, isFalse);
+    });
   });
 }

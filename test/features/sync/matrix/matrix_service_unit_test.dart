@@ -79,6 +79,8 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class MockSecureStorage extends Mock implements SecureStorage {}
 
+class _MockMatrixException extends Mock implements MatrixException {}
+
 class MockSyncLifecycleCoordinator extends Mock
     implements SyncLifecycleCoordinator {}
 
@@ -1203,6 +1205,26 @@ void main() {
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
+    });
+
+    test('connect clears persisted room on MatrixException not-in-room',
+        () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+      isLogged = true;
+      when(() => sessionRoomManager.loadPersistedRoomId())
+          .thenAnswer((_) async => '!room:server');
+      when(() => sessionClient.getRoomById('!room:server')).thenReturn(null);
+      final mex = _MockMatrixException();
+      when(() => mex.errcode).thenReturn('M_NOT_FOUND');
+      when(() => sessionRoomManager.joinRoom('!room:server')).thenThrow(mex);
+
+      await sessionManager.connect(shouldAttemptLogin: true);
+      verify(() => sessionRoomManager.clearPersistedRoom(
+          subDomain: 'connect.join.clear')).called(1);
     });
   });
 

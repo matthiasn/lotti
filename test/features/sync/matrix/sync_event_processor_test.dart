@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -574,5 +575,190 @@ void main() {
       expect(mediaFile.lengthSync(), greaterThan(0));
       verify(ev.downloadAndDecryptAttachment).called(1);
     });
+
+    test('returns local entity when incoming VC is equal or older', () async {
+      // Arrange a local entity JSON with a particular vector clock
+      const localVc = VectorClock({'a': 2});
+      final entity = JournalEntry(
+        meta: Metadata(
+          id: 'vc-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          vectorClock: localVc,
+        ),
+        entryText: const EntryText(plainText: 'local'),
+      );
+      const relJson = '/text_entries/2024-01-01/vc-1.text.json';
+      final jsonPath = relJson.startsWith(path.separator)
+          ? path.join(tempDir.path, relJson.substring(1))
+          : path.join(tempDir.path, relJson);
+      File(jsonPath)
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+      final index = AttachmentIndex();
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+
+      // Incoming VC is equal -> loader must return local without fetching
+      final loaded = await loader.load(
+        jsonPath: relJson,
+        incomingVectorClock: const VectorClock({'a': 2}),
+      );
+      expect(
+        loaded.maybeMap(
+          journalEntry: (j) => j.entryText?.plainText,
+          orElse: () => null,
+        ),
+        'local',
+      );
+    });
+
+    test('VC path: index miss throws and logs fetch.miss', () async {
+      const relJson = '/text_entries/2024-01-01/missing.text.json';
+      final index = AttachmentIndex(logging: loggingService);
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      when(() => loggingService.captureEvent(
+            any<Object>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          )).thenAnswer((_) {});
+      await expectLater(
+        () => loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'n': 1}),
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+      verify(
+        () => loggingService.captureEvent(
+          contains('smart.fetch.miss path=$relJson'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+    });
+
+    test('rejects stale downloaded JSON vs incoming VC', () async {
+      // Incoming VC is newer than downloaded JSON -> throw
+      const relJson = '/text_entries/2024-01-01/stale.text.json';
+      final index = AttachmentIndex(logging: loggingService);
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('evt-stale');
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.content).thenReturn({'relativePath': relJson});
+      final downloaded = JournalEntry(
+        meta: Metadata(
+          id: 'stale-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          vectorClock: const VectorClock({'n': 1}),
+        ),
+        entryText: const EntryText(plainText: 'old'),
+      );
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async => MatrixFile(
+            bytes:
+                Uint8List.fromList(jsonEncode(downloaded.toJson()).codeUnits),
+            name: 'stale.text.json',
+          ));
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      await expectLater(
+        () => loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'n': 2}),
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+      verify(
+        () => loggingService.captureEvent(
+          contains('smart.fetch.stale_vc path=$relJson'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+    });
+
+    test('no-VC path: does not fetch when file exists and non-empty', () async {
+      const relJson = '/text_entries/2024-01-01/present.text.json';
+      final entity = JournalEntry(
+        meta: Metadata(
+          id: 'present-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        entryText: const EntryText(plainText: 'present'),
+      );
+      final jsonPath = relJson.startsWith(path.separator)
+          ? path.join(tempDir.path, relJson.substring(1))
+          : path.join(tempDir.path, relJson);
+      File(jsonPath)
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+      var downloads = 0;
+      final index = AttachmentIndex();
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('evt-present');
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+        downloads++;
+        return MatrixFile(bytes: Uint8List.fromList(const []), name: 'x');
+      });
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.content).thenReturn({'relativePath': relJson});
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      final loaded = await loader.load(jsonPath: relJson);
+      expect(
+          loaded.maybeMap(
+              journalEntry: (j) => j.entryText?.plainText, orElse: () => null),
+          'present');
+      expect(downloads, 0);
+    });
+  });
+
+  test('journal entity loader exception logs missingAttachment subdomain',
+      () async {
+    const message = SyncMessage.journalEntity(
+      id: 'entity-id',
+      jsonPath: '/entity.json',
+      vectorClock: null,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalEntityLoader.load(jsonPath: '/entity.json'))
+        .thenThrow(const FileSystemException('missing'));
+
+    await expectLater(
+      () => processor.process(event: event, journalDb: journalDb),
+      throwsA(isA<FileSystemException>()),
+    );
+    verify(
+      () => loggingService.captureException(
+        any<Object>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SyncEventProcessor.missingAttachment',
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).called(1);
   });
 }

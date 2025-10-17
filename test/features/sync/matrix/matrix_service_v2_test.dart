@@ -140,6 +140,50 @@ void main() {
     expect(metrics, isNull);
   });
 
+  test('getV2Metrics returns null when collectV2Metrics is false', () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+
+    final service = MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: MockMatrixMessageSender(),
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      attachmentIndex: AttachmentIndex(logging: logging),
+    );
+
+    expect(await service.getV2Metrics(), isNull);
+  });
+
   test('getV2Metrics returns metrics when V2 enabled', () async {
     final service = makeService(enableV2: true);
     final metrics = await service.getV2Metrics();

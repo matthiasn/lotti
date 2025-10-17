@@ -108,4 +108,48 @@ void main() {
     ).called(1);
     expect(wrote, isFalse);
   });
+
+  test('skips download when file already exists and is non-empty', () async {
+    final existing = File('${tempDir.path}/matrix/exist.bin')
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(const [1, 2]);
+
+    when(() => mockEvent.attachmentMimetype)
+        .thenReturn('application/octet-stream');
+    when(() => mockEvent.content)
+        .thenReturn({'relativePath': '/matrix/exist.bin'});
+
+    final wrote = await saveAttachment(
+      mockEvent,
+      loggingService: mockLoggingService,
+      documentsDirectory: tempDir,
+    );
+
+    // Should not overwrite, and should not attempt download
+    expect(existing.existsSync(), isTrue);
+    verifyNever(() => mockEvent.downloadAndDecryptAttachment());
+    expect(wrote, isFalse);
+  });
+
+  test('rejects path traversal attempts and logs', () async {
+    when(() => mockEvent.attachmentMimetype).thenReturn('image/png');
+    // Absolute path will be normalized; ensure it tries to escape root
+    final absolute =
+        Platform.isWindows ? r'C:\windows\system32\evil.bin' : '/etc/passwd';
+    when(() => mockEvent.content).thenReturn({'relativePath': absolute});
+
+    final wrote = await saveAttachment(
+      mockEvent,
+      loggingService: mockLoggingService,
+      documentsDirectory: tempDir,
+    );
+
+    expect(wrote, isFalse);
+    verify(() => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'saveAttachment',
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        )).called(1);
+  });
 }

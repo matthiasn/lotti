@@ -1515,6 +1515,438 @@ void main() {
             )).called(1);
       });
     });
+
+    test('drops after retry cap for non-attachment failure (fakeAsync)',
+        () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+        when(() => room.getTimeline(
+              onNewEvent: any(named: 'onNewEvent'),
+              onInsert: any(named: 'onInsert'),
+              onChange: any(named: 'onChange'),
+              onRemove: any(named: 'onRemove'),
+              onUpdate: any(named: 'onUpdate'),
+            )).thenAnswer((_) async => timeline);
+
+        // An event that is a sync payload
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('C1');
+        when(() => ev.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+        when(() => ev.senderId).thenReturn('@other:server');
+        when(() => ev.attachmentMimetype).thenReturn('');
+        when(() => ev.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(() => ev.roomId).thenReturn('!room:server');
+        when(() => timeline.events).thenReturn(<Event>[ev]);
+
+        // Fail processing always
+        when(() => processor.process(event: ev, journalDb: journalDb))
+            .thenThrow(Exception('fail'));
+
+        when(() => logger.captureEvent(any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+        when(() => logger.captureException(any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'))).thenReturn(null);
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          collectMetrics: true,
+          maxRetriesPerEvent: 1,
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        // First attempt fails and schedules retry; advance enough time to allow the follow-up scan
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        // After retry cap, processor should log retry.cap
+        verify(() => logger.captureEvent(
+              any<String>(),
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'retry.cap',
+            )).called(greaterThanOrEqualTo(1));
+      });
+    });
+
+    test('missing attachment continues retry beyond cap (fakeAsync)', () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+        when(() => room.getTimeline(
+              onNewEvent: any(named: 'onNewEvent'),
+              onInsert: any(named: 'onInsert'),
+              onChange: any(named: 'onChange'),
+              onRemove: any(named: 'onRemove'),
+              onUpdate: any(named: 'onUpdate'),
+            )).thenAnswer((_) async => timeline);
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('A1');
+        when(() => ev.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+        when(() => ev.senderId).thenReturn('@other:server');
+        when(() => ev.attachmentMimetype).thenReturn('');
+        // Encode a journalEntity with a jsonPath so the consumer records pendingJsonPaths
+        final textPayload =
+            base64.encode(utf8.encode(json.encode(<String, dynamic>{
+          'runtimeType': 'journalEntity',
+          'jsonPath': '/x/test.json',
+        })));
+        when(() => ev.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(() => ev.text).thenReturn(textPayload);
+        when(() => ev.roomId).thenReturn('!room:server');
+        when(() => timeline.events).thenReturn(<Event>[ev]);
+
+        // Fail with FileSystemException so it is treated as missing attachment
+        when(() => processor.process(event: ev, journalDb: journalDb))
+            .thenThrow(const FileSystemException('nope'));
+
+        when(() => logger.captureEvent(any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+        when(() => logger.captureException(any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'))).thenReturn(null);
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          collectMetrics: true,
+          maxRetriesPerEvent: 1,
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        // Should not log retry.cap; instead keep retrying as missingAttachment
+        verify(() => logger.captureEvent(
+              any<String>(),
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'retry.missingAttachment',
+            )).called(greaterThanOrEqualTo(1));
+        expect(consumer.metricsSnapshot()['retryStateSize'],
+            greaterThanOrEqualTo(1));
+      });
+    });
+
+    test('marker.local exceptions are captured (fakeAsync)', () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+        when(() => settingsDb.saveSettingsItem(any(), any()))
+            .thenThrow(Exception('save failed'));
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+        when(() => room.getTimeline(
+              onNewEvent: any(named: 'onNewEvent'),
+              onInsert: any(named: 'onInsert'),
+              onChange: any(named: 'onChange'),
+              onRemove: any(named: 'onRemove'),
+              onUpdate: any(named: 'onUpdate'),
+            )).thenAnswer((_) async => timeline);
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('M1');
+        when(() => ev.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
+        when(() => ev.senderId).thenReturn('@other:server');
+        when(() => ev.attachmentMimetype).thenReturn('');
+        when(() => ev.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(() => ev.roomId).thenReturn('!room:server');
+        when(() => timeline.events).thenReturn(<Event>[ev]);
+
+        when(() => processor.process(event: ev, journalDb: journalDb))
+            .thenAnswer((_) async {});
+        when(() => logger.captureEvent(any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+        when(() => logger.captureException(any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'))).thenReturn(null);
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          collectMetrics: true,
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        async.elapse(const Duration(milliseconds: 200));
+        async.flushMicrotasks();
+
+        verify(() => logger.captureException(
+              any<Object>(),
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'marker.local',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            )).called(greaterThanOrEqualTo(1));
+      });
+    });
+
+    test('doubleScan logs emitted when attachment prefetched (fakeAsync)',
+        () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+        when(() => room.getTimeline(
+              onNewEvent: any(named: 'onNewEvent'),
+              onInsert: any(named: 'onInsert'),
+              onChange: any(named: 'onChange'),
+              onRemove: any(named: 'onRemove'),
+              onUpdate: any(named: 'onUpdate'),
+            )).thenAnswer((_) async => timeline);
+
+        final att = MockEvent();
+        when(() => att.eventId).thenReturn('dup1');
+        when(() => att.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(10));
+        when(() => att.senderId).thenReturn('@other:server');
+        when(() => att.attachmentMimetype).thenReturn('image/jpeg');
+        const rel = '/images/2024/a.jpg';
+        when(() => att.content)
+            .thenReturn(<String, dynamic>{'relativePath': rel});
+        when(() => att.downloadAndDecryptAttachment()).thenAnswer((_) async =>
+            MatrixFile(bytes: Uint8List.fromList(const [1, 2]), name: 'a.jpg'));
+
+        when(() => timeline.events).thenReturn(<Event>[att]);
+        when(() => logger.captureEvent(any<dynamic>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'))).thenReturn(null);
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          collectMetrics: true,
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        // Advance to let processing and delayed double-scan run
+        async.elapse(const Duration(milliseconds: 300));
+        async.flushMicrotasks();
+
+        verify(() => logger.captureEvent(
+              'doubleScan.attachment immediate',
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'doubleScan',
+            )).called(1);
+        verify(() => logger.captureEvent(
+              'doubleScan.attachment delayed',
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'doubleScan',
+            )).called(1);
+      });
+    });
+
+    test(
+        'attachment duplicate suppression avoids duplicate downloads (fakeAsync)',
+        () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+        when(() => room.getTimeline(
+              onNewEvent: any(named: 'onNewEvent'),
+              onInsert: any(named: 'onInsert'),
+              onChange: any(named: 'onChange'),
+              onRemove: any(named: 'onRemove'),
+              onUpdate: any(named: 'onUpdate'),
+            )).thenAnswer((_) async => timeline);
+
+        final att1 = MockEvent();
+        when(() => att1.eventId).thenReturn('ATT');
+        when(() => att1.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(10));
+        when(() => att1.senderId).thenReturn('@other:server');
+        when(() => att1.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => att1.content)
+            .thenReturn(<String, dynamic>{'relativePath': '/images/x.jpg'});
+        var downloads = 0;
+        when(() => att1.downloadAndDecryptAttachment()).thenAnswer((_) async {
+          downloads++;
+          return MatrixFile(
+              bytes: Uint8List.fromList(const [1]), name: 'x.jpg');
+        });
+
+        // Second event with the same id to exercise duplicate suppression
+        final att2 = MockEvent();
+        when(() => att2.eventId).thenReturn('ATT');
+        when(() => att2.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(10));
+        when(() => att2.senderId).thenReturn('@other:server');
+        when(() => att2.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => att2.content)
+            .thenReturn(<String, dynamic>{'relativePath': '/images/x.jpg'});
+        when(() => att2.downloadAndDecryptAttachment()).thenAnswer((_) async {
+          downloads++;
+          return MatrixFile(
+              bytes: Uint8List.fromList(const [1]), name: 'x.jpg');
+        });
+
+        when(() => timeline.events).thenReturn(<Event>[att1, att2]);
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          collectMetrics: true,
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        async.elapse(const Duration(milliseconds: 200));
+        async.flushMicrotasks();
+
+        expect(downloads, 1);
+      });
+    });
     test('does not advance marker on newer non-sync event', () async {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
