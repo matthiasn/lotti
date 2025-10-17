@@ -10,6 +10,21 @@ This note captures the current V2 pipeline behavior, recent fixes, logs to look 
 
 ## What We Fixed/Added
 
+Recent changes (Oct 2025)
+- Removed rewind from both implementation and docs:
+  Catch‑up always backfills until the marker is present and processes strictly after.
+  Code: `pipeline_v2/catch_up_strategy.dart`, consumer call‑site.
+- Hardened attachment writes:
+  Safe path join/normalize under app documents dir, with symlink‑aware parent
+  resolution. Atomic write (temp + rename) with backup/restore.
+  Code: `features/sync/matrix/save_attachment.dart`.
+- saveAttachment now returns `bool` indicating if a file was newly written;
+  the V2 pipeline already gates tail/double rescans on this.
+- Typed error handling:
+  Use `MatrixException.errcode` (e.g., `M_FORBIDDEN`, `M_NOT_FOUND`) to
+  detect “not in room” instead of parsing error strings. Code: `session_manager.dart`,
+  `sync_room_manager.dart`.
+
 1) Read‑marker reliability
 - Immediate local persist on advance:
   - Save both `LAST_READ_MATRIX_EVENT_ID` and `LAST_READ_MATRIX_EVENT_TS`.

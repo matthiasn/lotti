@@ -14,6 +14,19 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
+/// Timeline draining and processing helpers.
+///
+/// This module implements the legacy (non‑V2) processing loop used by
+/// MatrixService. It:
+/// - sorts the live/snapshot timeline into a stable oldest→newest view;
+/// - collects events strictly after the last read marker (no rewind);
+/// - prefetches attachments for remote events (best‑effort);
+/// - processes sync text events and computes the next advancing marker;
+/// - updates the remote read marker, guarded by a monotonic check.
+///
+/// Tail settle retries are applied only to the live timeline to avoid rapid
+/// loops on paginated snapshots. When no new events are found after the final
+/// pass, the drainer idles and relies on live timeline callbacks to re‑trigger.
 const _maxTimelineProcessingRetries = 5;
 
 class _IndexedEvent {
@@ -87,6 +100,7 @@ List<Event> _collectNewEvents(
   return candidateEvents;
 }
 
+/// Drains a Matrix timeline (live or snapshot) and applies new events.
 class TimelineDrainer {
   TimelineDrainer({
     required this.listener,
@@ -110,6 +124,10 @@ class TimelineDrainer {
   final TimelineConfig config;
   final TimelineMetrics? metrics;
 
+  /// Builds a stable view of [tl] and collects events strictly after
+  /// [lastReadEventContextId]. When [source] is 'live' and we are positioned at
+  /// the tail with no candidates yet, performs tiny intra‑pass waits (from
+  /// config.retryDelays) to give the SDK time to settle.
   Future<List<Event>> computeFromTimeline({
     required Timeline tl,
     required String source,
@@ -173,6 +191,11 @@ class TimelineDrainer {
     return newEvents;
   }
 
+  /// Performs up to config.maxDrainPasses sync passes:
+  /// - syncs the client each pass;
+  /// - checks the live timeline first, then escalates snapshot limits;
+  /// - processes any new events and advances the read marker;
+  /// - schedules a single follow‑up after advancement; otherwise idles.
   Future<void> drain() async {
     for (var pass = 0; pass < config.maxDrainPasses; pass++) {
       if (config.collectMetrics) metrics?.drainPasses++;
@@ -342,6 +365,8 @@ class TimelineDrainer {
   }
 }
 
+/// Prefetches attachments (best‑effort), processes events and computes the
+/// latest advancing read marker for the batch.
 Future<_IngestOutcome> _ingestAndComputeLatest({
   required List<Event> events,
   required TimelineContext listener,
