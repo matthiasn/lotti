@@ -58,7 +58,7 @@ void main() {
   });
   // Helper to normalize leading separators across platforms so that
   // path.join(docDir, rel) never treats rel as absolute.
-  String _stripLeadingSlashes(String s) =>
+  String stripLeadingSlashes(String s) =>
       s.replaceFirst(RegExp(r'^[\\/]+'), '');
 
   late MockEvent event;
@@ -418,7 +418,7 @@ void main() {
 
       // File exists under temp doc dir
       final docDir = getIt<Directory>().path;
-      final normalized = _stripLeadingSlashes(relJson);
+      final normalized = stripLeadingSlashes(relJson);
       final f = File(path.join(docDir, normalized));
       expect(f.existsSync(), isTrue);
       expect(f.lengthSync(), greaterThan(0));
@@ -449,15 +449,14 @@ void main() {
         ),
       );
       final relJson = '${getRelativeImagePath(image)}.json';
-      final jsonPathImg =
-          path.join(tempDir.path, _stripLeadingSlashes(relJson));
+      final jsonPathImg = path.join(tempDir.path, stripLeadingSlashes(relJson));
       final jsonFile = File(jsonPathImg);
       await jsonFile.create(recursive: true);
       await jsonFile.writeAsString(jsonEncode(image.toJson()));
 
       final relMedia = getRelativeImagePath(image);
       final mediaPathImg =
-          path.join(tempDir.path, _stripLeadingSlashes(relMedia));
+          path.join(tempDir.path, stripLeadingSlashes(relMedia));
       final mediaFile = File(mediaPathImg);
       expect(mediaFile.existsSync(), isFalse);
 
@@ -504,8 +503,7 @@ void main() {
         ),
       );
       final relJson = '${getRelativeImagePath(image)}.json';
-      final jsonPathImg =
-          path.join(tempDir.path, _stripLeadingSlashes(relJson));
+      final jsonPathImg = path.join(tempDir.path, stripLeadingSlashes(relJson));
       File(jsonPathImg)
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(image.toJson()));
@@ -566,7 +564,7 @@ void main() {
       ).called(1);
     });
 
-    test('throws when image media missing and descriptor not indexed',
+    test('throws and logs when image media missing and descriptor not indexed',
         () async {
       final image = JournalImage(
         meta: Metadata(
@@ -585,13 +583,13 @@ void main() {
       );
       final relJson = '${getRelativeImagePath(image)}.json';
       final jsonPathMissing =
-          path.join(tempDir.path, _stripLeadingSlashes(relJson));
+          path.join(tempDir.path, stripLeadingSlashes(relJson));
       final createdJson = File(jsonPathMissing)
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(image.toJson()));
       expect(createdJson.existsSync(), isTrue);
 
-      final index = AttachmentIndex();
+      final index = AttachmentIndex(logging: loggingService);
       final loader = SmartJournalEntityLoader(
         attachmentIndex: index,
         loggingService: loggingService,
@@ -600,6 +598,13 @@ void main() {
         () => loader.load(jsonPath: relJson),
         throwsA(isA<FileSystemException>()),
       );
+      verify(
+        () => loggingService.captureEvent(
+          contains('smart.media.miss path=${getRelativeImagePath(image)}'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetchMedia',
+        ),
+      ).called(1);
     });
 
     test('ensures missing audio media via AttachmentIndex', () async {
@@ -620,15 +625,14 @@ void main() {
         ),
       );
       final relJson = '${AudioUtils.getRelativeAudioPath(audio)}.json';
-      final jsonPathAud =
-          path.join(tempDir.path, _stripLeadingSlashes(relJson));
+      final jsonPathAud = path.join(tempDir.path, stripLeadingSlashes(relJson));
       File(jsonPathAud)
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(audio.toJson()));
 
       final relMedia = AudioUtils.getRelativeAudioPath(audio);
       final mediaPathAud =
-          path.join(tempDir.path, _stripLeadingSlashes(relMedia));
+          path.join(tempDir.path, stripLeadingSlashes(relMedia));
       final mediaFile = File(mediaPathAud);
       expect(mediaFile.existsSync(), isFalse);
 
@@ -669,7 +673,7 @@ void main() {
         entryText: const EntryText(plainText: 'local'),
       );
       const relJson = '/text_entries/2024-01-01/vc-1.text.json';
-      final jsonPath = path.join(tempDir.path, _stripLeadingSlashes(relJson));
+      final jsonPath = path.join(tempDir.path, stripLeadingSlashes(relJson));
       File(jsonPath)
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(entity.toJson()));
@@ -780,7 +784,7 @@ void main() {
         ),
         entryText: const EntryText(plainText: 'present'),
       );
-      final jsonPath = path.join(tempDir.path, _stripLeadingSlashes(relJson));
+      final jsonPath = path.join(tempDir.path, stripLeadingSlashes(relJson));
       File(jsonPath)
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(entity.toJson()));

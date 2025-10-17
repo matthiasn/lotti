@@ -200,86 +200,63 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   }
 
   Future<void> _ensureMediaOnMissing(JournalEntity e) async {
-    final docDir = getDocumentsDirectory();
     switch (e) {
       case JournalImage():
-        final rp = getRelativeImagePath(e);
-        final rpRel = rp.startsWith(path.separator) ? rp.substring(1) : rp;
-        final fp = path.normalize(path.join(docDir.path, rpRel));
-        final f = File(fp);
-        try {
-          if (f.existsSync()) {
-            final len = f.lengthSync();
-            if (len > 0) return; // present
-          }
-        } catch (_) {}
-        final ev = _attachmentIndex.find(rp.startsWith('/') ? rp : '/$rp');
-        if (ev == null) {
-          // No descriptor yet; rely on retry path/upstream.
-          throw FileSystemException(
-              'attachment descriptor not yet available', rp);
-        }
-        try {
-          final file = await ev.downloadAndDecryptAttachment();
-          final bytes = file.bytes;
-          if (bytes.isEmpty) {
-            throw const FileSystemException('empty attachment bytes');
-          }
-          // Atomic write of media bytes
-          await atomicWriteBytes(
-            bytes: bytes,
-            filePath: fp,
-            logging: _logging,
-            subDomain: 'SmartLoader.writeMedia',
-          );
-        } catch (e, st) {
-          _logging.captureException(
-            e,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetchMedia',
-            stackTrace: st,
-          );
-          rethrow;
-        }
+        await _ensureMediaFile(getRelativeImagePath(e), mediaType: 'image');
       case JournalAudio():
-        final rp = AudioUtils.getRelativeAudioPath(e);
-        final rpRel = rp.startsWith(path.separator) ? rp.substring(1) : rp;
-        final fp = path.normalize(path.join(docDir.path, rpRel));
-        final f = File(fp);
-        try {
-          if (f.existsSync()) {
-            final len = f.lengthSync();
-            if (len > 0) return; // present
-          }
-        } catch (_) {}
-        final ev = _attachmentIndex.find(rp.startsWith('/') ? rp : '/$rp');
-        if (ev == null) {
-          throw FileSystemException(
-              'attachment descriptor not yet available', rp);
-        }
-        try {
-          final file = await ev.downloadAndDecryptAttachment();
-          final bytes = file.bytes;
-          if (bytes.isEmpty) {
-            throw const FileSystemException('empty attachment bytes');
-          }
-          await atomicWriteBytes(
-            bytes: bytes,
-            filePath: fp,
-            logging: _logging,
-            subDomain: 'SmartLoader.writeMedia',
-          );
-        } catch (e, st) {
-          _logging.captureException(
-            e,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetchMedia',
-            stackTrace: st,
-          );
-          rethrow;
-        }
+        await _ensureMediaFile(
+          AudioUtils.getRelativeAudioPath(e),
+          mediaType: 'audio',
+        );
       default:
         return; // No media to ensure
+    }
+  }
+
+  Future<void> _ensureMediaFile(String relativePath,
+      {String? mediaType}) async {
+    final docDir = getDocumentsDirectory();
+    final rp = relativePath;
+    final rpRel = rp.startsWith(path.separator) ? rp.substring(1) : rp;
+    final fp = path.normalize(path.join(docDir.path, rpRel));
+    final f = File(fp);
+    try {
+      if (f.existsSync()) {
+        final len = f.lengthSync();
+        if (len > 0) return; // present
+      }
+    } catch (_) {}
+
+    final descriptorKey = rp.startsWith('/') ? rp : '/$rp';
+    final ev = _attachmentIndex.find(descriptorKey);
+    if (ev == null) {
+      _logging.captureEvent(
+        'smart.media.miss path=$rp key=$descriptorKey',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetchMedia',
+      );
+      throw FileSystemException('attachment descriptor not yet available', rp);
+    }
+    try {
+      final file = await ev.downloadAndDecryptAttachment();
+      final bytes = file.bytes;
+      if (bytes.isEmpty) {
+        throw const FileSystemException('empty attachment bytes');
+      }
+      await atomicWriteBytes(
+        bytes: bytes,
+        filePath: fp,
+        logging: _logging,
+        subDomain: 'SmartLoader.writeMedia',
+      );
+    } catch (e, st) {
+      _logging.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetchMedia',
+        stackTrace: st,
+      );
+      rethrow;
     }
   }
 }

@@ -99,7 +99,7 @@ void main() {
     when(() => ev.originServerTs)
         .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
     when(() => ev.attachmentMimetype).thenReturn('application/json');
-    final relPath = '/text_entries/2024-01-01/exist.text.json';
+    const relPath = '/text_entries/2024-01-01/exist.text.json';
     when(() => ev.content).thenReturn({'relativePath': relPath});
     when(() => timeline.events).thenReturn(<Event>[ev]);
     when(() => timeline.cancelSubscriptions()).thenReturn(null);

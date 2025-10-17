@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/services/logging_service.dart';
@@ -99,7 +100,7 @@ Future<void> atomicWriteString({
   String domain = 'MATRIX_SERVICE',
 }) async {
   await atomicWriteBytes(
-    bytes: text.codeUnits,
+    bytes: utf8.encode(text),
     filePath: filePath,
     logging: logging,
     subDomain: subDomain,
