@@ -80,6 +80,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     int maxBatch = 200,
     Duration markerDebounce = const Duration(milliseconds: 300),
     int? maxRetriesPerEvent,
+    Duration circuitCooldown = const Duration(seconds: 30),
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,
@@ -106,7 +107,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _retryTtl = const Duration(minutes: 10),
         _retryMaxEntries = 2000,
         _circuitFailureThreshold = 50,
-        _circuitCooldown = const Duration(seconds: 30) {
+        _circuitCooldown = circuitCooldown {
     _retryTracker = rc.RetryTracker(
       ttl: _retryTtl,
       maxEntries: _retryMaxEntries,

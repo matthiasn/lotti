@@ -59,6 +59,89 @@ void main() {
     registerFallbackValue(_FakeEvent());
   });
 
+  test('attachment observe increments prefetch counter', () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+
+    when(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logger.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => session.timelineEvents).thenAnswer((_) => const Stream.empty());
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => null);
+
+    // Attachment-like event with relativePath triggers observe metrics.
+    final ev = MockEvent();
+    when(() => ev.eventId).thenReturn('att-x');
+    when(() => ev.roomId).thenReturn('!room:server');
+    when(() => ev.senderId).thenReturn('@other:server');
+    when(() => ev.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+    when(() => ev.attachmentMimetype).thenReturn('application/json');
+    when(() => ev.content)
+        .thenReturn({'relativePath': '/text_entries/2024-01-01/x.json'});
+    when(() => timeline.events).thenReturn(<Event>[ev]);
+    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
+    when(() => room.getTimeline(
+          limit: any(named: 'limit'),
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        )).thenAnswer((_) async => timeline);
+
+    when(() => processor.process(
+        event: any<Event>(named: 'event'),
+        journalDb: journalDb)).thenAnswer((_) async {});
+    when(() => readMarker.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+        )).thenAnswer((_) async {});
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+      collectMetrics: true,
+      circuitCooldown: const Duration(milliseconds: 200),
+    );
+
+    await consumer.initialize();
+    await consumer.start();
+
+    final metrics = consumer.metricsSnapshot();
+    expect(metrics['lastPrefetchedCount'], 1);
+    // 'prefetch' total should be >=1 after observe
+    expect(metrics['prefetch'], greaterThanOrEqualTo(1));
+  });
+
   test('does not doubleScan when attachment already exists (no new write)',
       () async {
     final session = MockMatrixSessionManager();
