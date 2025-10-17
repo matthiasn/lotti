@@ -107,7 +107,7 @@ that keeps the pipeline testable and observable.
   - `maxDrainPasses = 3`
   - `timelineLimits = [100, 300, 500, 1000]`
   - `retryDelays = [60ms, 120ms]`
-  - `readMarkerFollowUpDelay = 150ms`
+  - `readMarkerFollowUpDelay = 500ms`
   - `collectMetrics = false`
 - `TimelineConfig.lowEnd` provides a conservative preset for constrained
   devices (fewer passes, smaller limits, shorter delays).

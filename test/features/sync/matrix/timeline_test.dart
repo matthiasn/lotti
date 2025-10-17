@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart';
+import 'package:lotti/features/sync/matrix/timeline_config.dart';
 import 'package:lotti/features/sync/matrix/timeline_context.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -220,6 +221,11 @@ void main() {
       eventProcessor: mockEventProcessor,
       documentsDirectory: tempDir,
       failureCounts: failureCounts,
+      // Use a short follow-up delay to keep the test deterministic
+      // regardless of production defaults.
+      config: const TimelineConfig(
+        readMarkerFollowUpDelay: Duration(milliseconds: 100),
+      ),
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 200));

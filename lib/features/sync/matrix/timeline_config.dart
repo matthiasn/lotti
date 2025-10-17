@@ -23,7 +23,7 @@ class TimelineConfig {
       Duration(milliseconds: 60),
       Duration(milliseconds: 120),
     ],
-    this.readMarkerFollowUpDelay = const Duration(milliseconds: 150),
+    this.readMarkerFollowUpDelay = const Duration(milliseconds: 500),
     this.collectMetrics = false,
   });
 

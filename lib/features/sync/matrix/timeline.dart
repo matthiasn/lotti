@@ -138,16 +138,17 @@ class TimelineDrainer {
       lastReadEventContextId,
     );
 
-    // If empty and we're at the tail, do tiny intra-pass waits to allow the
-    // SDK to apply the newest event into the live list.
+    // If empty and we're at the tail of the LIVE timeline, do tiny intra-pass
+    // waits to allow the SDK to apply the newest event into the live list.
     final atTail = lastReadEventContextId != null &&
         lastReadPosition >= 0 &&
         lastReadPosition == sortedEvents.length - 1;
-    if (newEvents.isEmpty && atTail) {
+    final isLive = source == 'live';
+    if (newEvents.isEmpty && atTail && isLive) {
       for (final delay in config.retryDelays) {
         if (config.collectMetrics) metrics?.retryAttempts++;
         loggingService.captureEvent(
-          'Empty snapshot at tail; retrying after ${delay.inMilliseconds}ms '
+          'Empty live timeline at tail; retrying after ${delay.inMilliseconds}ms '
           '(pass ${pass + 1}, source: $source${usedLimit > 0 ? ', limit: $usedLimit' : ''})',
           domain: 'MATRIX_SERVICE',
           subDomain: 'timeline.debug',
@@ -240,15 +241,12 @@ class TimelineDrainer {
           );
           continue;
         }
+        // Final pass: idle without scheduling a rapid follow-up. Rely on
+        // live timeline callbacks to re-trigger drains when new events arrive.
         loggingService.captureEvent(
-          'Timeline follow-up scheduled (empty snapshot) - room: $roomId',
+          'No new events in pass ${pass + 1}; idle – waiting for live timeline callbacks.',
           domain: 'MATRIX_SERVICE',
           subDomain: 'timeline.debug',
-        );
-        unawaited(
-          Future<void>.delayed(config.readMarkerFollowUpDelay).then((_) {
-            listener.enqueueTimelineRefresh();
-          }),
         );
         break;
       }

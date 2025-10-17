@@ -170,6 +170,9 @@ class MatrixTimelineListener implements TimelineContext {
   /// Schedules a timeline refresh through the internal runner.
   @override
   void enqueueTimelineRefresh() {
+    // Coalesce refresh requests: if one is already queued or running,
+    // there is no benefit in queuing more.
+    if (_clientRunner.queueSize > 0) return;
     _clientRunner.enqueueRequest(null);
   }
 
