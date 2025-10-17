@@ -70,15 +70,52 @@ Future<void> _writeToFile(
   String filePath,
   LoggingService loggingService,
 ) async {
-  if (data != null) {
-    final file = await File(filePath).create(recursive: true);
-    await file.writeAsBytes(data);
-  } else {
+  if (data == null) {
     debugPrint('No bytes for $filePath');
     loggingService.captureEvent(
       'No bytes for $filePath',
       domain: 'INBOX',
       subDomain: 'writeToFile',
     );
+    return;
+  }
+
+  // Ensure parent directory exists
+  final target = File(filePath);
+  await target.parent.create(recursive: true);
+
+  // Atomic write: temp file + rename
+  final tmpPath = '$filePath.tmp.${DateTime.now().microsecondsSinceEpoch}.$pid';
+  final tmpFile = File(tmpPath);
+  await tmpFile.writeAsBytes(data, flush: true);
+
+  try {
+    await tmpFile.rename(filePath);
+  } on FileSystemException catch (_) {
+    String? bakPath;
+    var movedAside = false;
+    try {
+      bakPath = '$filePath.bak.${DateTime.now().microsecondsSinceEpoch}.$pid';
+      try {
+        await target.rename(bakPath);
+        movedAside = true;
+      } catch (_) {}
+      await tmpFile.rename(filePath);
+      if (movedAside) {
+        try {
+          await File(bakPath).delete();
+        } catch (_) {}
+      }
+    } catch (e) {
+      try {
+        await tmpFile.delete();
+      } catch (_) {}
+      try {
+        if (movedAside && bakPath != null) {
+          await File(bakPath).rename(filePath);
+        }
+      } catch (_) {}
+      rethrow;
+    }
   }
 }

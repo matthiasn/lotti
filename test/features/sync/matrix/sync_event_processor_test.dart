@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -9,11 +10,14 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
@@ -119,13 +123,16 @@ void main() {
       vectorClock: null,
       status: SyncEntryStatus.initial,
     );
-    when(() => journalEntityLoader.load('/entity.json'))
-        .thenAnswer((_) async => fallbackJournalEntity);
+    when(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+        )).thenAnswer((_) async => fallbackJournalEntity);
     when(() => event.text).thenReturn(encodeMessage(message));
 
     await processor.process(event: event, journalDb: journalDb);
 
-    verify(() => journalEntityLoader.load('/entity.json')).called(1);
+    verify(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+        )).called(1);
     verify(() => journalDb.updateJournalEntity(fallbackJournalEntity))
         .called(1);
     verify(
@@ -149,8 +156,9 @@ void main() {
     when(() => event.text).thenReturn(encodeMessage(message));
 
     // Loader returns the canonical fallback entity
-    when(() => journalEntityLoader.load('/entity.json'))
-        .thenAnswer((_) async => fallbackJournalEntity);
+    when(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+        )).thenAnswer((_) async => fallbackJournalEntity);
 
     // DB lookup for prediction throws to exercise logging + default status
     when(() => journalDb.journalEntityById(fallbackJournalEntity.meta.id))
@@ -276,8 +284,9 @@ void main() {
       status: SyncEntryStatus.initial,
     );
     when(() => event.text).thenReturn(encodeMessage(message));
-    when(() => journalEntityLoader.load('/entity.json'))
-        .thenThrow(Exception('load failed'));
+    when(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+        )).thenThrow(Exception('load failed'));
 
     await expectLater(
       () => processor.process(event: event, journalDb: journalDb),
@@ -319,7 +328,7 @@ void main() {
       await writeEntity('entity.json');
 
       const loader = FileSyncJournalEntityLoader();
-      final entity = await loader.load('/entity.json');
+      final entity = await loader.load(jsonPath: '/entity.json');
 
       expect(entity.meta.id, fallbackJournalEntity.meta.id);
     });
@@ -328,7 +337,7 @@ void main() {
       await writeEntity('nested/entity.json');
 
       const loader = FileSyncJournalEntityLoader();
-      final entity = await loader.load('nested/entity.json');
+      final entity = await loader.load(jsonPath: 'nested/entity.json');
 
       expect(entity.meta.id, fallbackJournalEntity.meta.id);
     });
@@ -344,11 +353,177 @@ void main() {
       const loader = FileSyncJournalEntityLoader();
 
       expect(
-        () => loader.load('../${path.basename(externalFile.path)}'),
+        () => loader.load(jsonPath: '../${path.basename(externalFile.path)}'),
         throwsA(isA<FileSystemException>()),
       );
 
       externalDir.deleteSync(recursive: true);
+    });
+  });
+
+  group('SmartJournalEntityLoader media ensure', () {
+    late Directory tempDir;
+
+    setUp(() async {
+      await getIt.reset();
+      getIt.allowReassignment = true;
+      tempDir = await Directory.systemTemp.createTemp('smart_loader_test');
+      getIt.registerSingleton<Directory>(tempDir);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('ensures missing image media via AttachmentIndex', () async {
+      // Arrange: JSON for an image entity exists, media file does not.
+      final image = JournalImage(
+        meta: Metadata(
+          id: 'img-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: ImageData(
+          imageId: 'img-1',
+          imageDirectory: '/images/2024-01-01/',
+          imageFile: 'picture.jpg',
+          capturedAt: DateTime.now(),
+        ),
+      );
+      final relJson = '${getRelativeImagePath(image)}.json';
+      final jsonPathImg = relJson.startsWith(path.separator)
+          ? path.join(tempDir.path, relJson.substring(1))
+          : path.join(tempDir.path, relJson);
+      final jsonFile = File(jsonPathImg);
+      await jsonFile.create(recursive: true);
+      await jsonFile.writeAsString(jsonEncode(image.toJson()));
+
+      final relMedia = getRelativeImagePath(image);
+      final mediaPathImg = relMedia.startsWith(path.separator)
+          ? path.join(tempDir.path, relMedia.substring(1))
+          : path.join(tempDir.path, relMedia);
+      final mediaFile = File(mediaPathImg);
+      expect(mediaFile.existsSync(), isFalse);
+
+      // Index contains a descriptor for the media path.
+      final index = AttachmentIndex();
+      final ev = MockEvent();
+      when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
+      when(() => ev.content).thenReturn({'relativePath': relMedia});
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async => MatrixFile(
+            bytes: Uint8List.fromList([1, 2, 3]),
+            name: 'picture.jpg',
+          ));
+      index.record(ev);
+
+      // Act: Load via smart loader (no incoming VC needed for media ensure).
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      final loaded = await loader.load(jsonPath: relJson);
+
+      // Assert entity and media written.
+      expect(loaded.meta.id, 'img-1');
+      expect(mediaFile.existsSync(), isTrue);
+      expect(mediaFile.lengthSync(), greaterThan(0));
+      verify(ev.downloadAndDecryptAttachment).called(1);
+    });
+
+    test('throws when image media missing and descriptor not indexed',
+        () async {
+      final image = JournalImage(
+        meta: Metadata(
+          id: 'img-2',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: ImageData(
+          imageId: 'img-2',
+          imageDirectory: '/images/2024-01-01/',
+          imageFile: 'missing.jpg',
+          capturedAt: DateTime.now(),
+        ),
+      );
+      final relJson = '${getRelativeImagePath(image)}.json';
+      final jsonPathMissing = relJson.startsWith(path.separator)
+          ? path.join(tempDir.path, relJson.substring(1))
+          : path.join(tempDir.path, relJson);
+      final createdJson = File(jsonPathMissing)
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(image.toJson()));
+      expect(createdJson.existsSync(), isTrue);
+
+      final index = AttachmentIndex();
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      await expectLater(
+        () => loader.load(jsonPath: relJson),
+        throwsA(isA<FileSystemException>()),
+      );
+    });
+
+    test('ensures missing audio media via AttachmentIndex', () async {
+      final audio = JournalAudio(
+        meta: Metadata(
+          id: 'aud-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: AudioData(
+          audioDirectory: '/audio/2024-01-01/',
+          audioFile: 'clip.aac',
+          duration: const Duration(seconds: 1),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+      final relJson = '${AudioUtils.getRelativeAudioPath(audio)}.json';
+      final jsonPathAud = relJson.startsWith(path.separator)
+          ? path.join(tempDir.path, relJson.substring(1))
+          : path.join(tempDir.path, relJson);
+      File(jsonPathAud)
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(audio.toJson()));
+
+      final relMedia = AudioUtils.getRelativeAudioPath(audio);
+      final mediaPathAud = relMedia.startsWith(path.separator)
+          ? path.join(tempDir.path, relMedia.substring(1))
+          : path.join(tempDir.path, relMedia);
+      final mediaFile = File(mediaPathAud);
+      expect(mediaFile.existsSync(), isFalse);
+
+      final index = AttachmentIndex();
+      final ev = MockEvent();
+      when(() => ev.attachmentMimetype).thenReturn('audio/aac');
+      when(() => ev.content).thenReturn({'relativePath': relMedia});
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async => MatrixFile(
+            bytes: Uint8List.fromList([9, 9, 9]),
+            name: 'clip.aac',
+          ));
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      final loaded = await loader.load(jsonPath: relJson);
+
+      expect(loaded.meta.id, 'aud-1');
+      expect(mediaFile.existsSync(), isTrue);
+      expect(mediaFile.lengthSync(), greaterThan(0));
+      verify(ev.downloadAndDecryptAttachment).called(1);
     });
   });
 }

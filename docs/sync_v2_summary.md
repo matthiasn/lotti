@@ -57,6 +57,28 @@ This note captures the current V2 pipeline behavior, recent fixes, logs to look 
   - Prevents rapid-fire scheduling under large attachment bursts.
   - Code: `matrix_stream_consumer.dart` (attachment-only throttle)
 
+6) Vector‑clock aware prefetch (same‑path updates)
+- Problem: entries reuse the same `jsonPath` filename across versions. A pure
+  "file exists" check can wrongly skip newer content.
+- Solution: make prefetch decisions using the vector clock embedded in the
+  text message (SyncMessage), not the filename alone.
+  - First pass (per batch): parse text events (`SyncJournalEntity`) and build
+    an in‑memory map `path → incomingVectorClock`.
+  - Prefetch policy per attachment:
+    - If file does not exist → download.
+    - If file exists → read local `meta.vectorClock` from JSON; if
+      `incomingVectorClock` exists and is strictly newer than local →
+      re‑download; else skip.
+  - Fallback: if the attachment lands before the corresponding text event (so
+    we don’t have `incomingVectorClock` yet), skip re‑download on the first
+    pass; when the text arrives in a later batch, the newer vector clock will
+    cause a one‑time re‑download.
+- Scans remain gated on "new file written" and subject to the 500 ms
+  attachment‑only throttle — preventing both misses and storms.
+- Code touch points (when implemented):
+  - Prefetch phase: `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart`
+  - Message decode / vector clock semantics: `lib/features/sync/matrix/sync_event_processor.dart`, `lib/features/sync/model/sync_message.dart`
+
 ## Logs To Watch
 
 Marker lifecycle
@@ -169,6 +191,12 @@ Attachment prefetch storm (high CPU/network, noisy logs)
   - Gate rescans (tail + double) on “new file written”, not merely “attachment present”.
   - Attachment-only tail rescans are throttled by a 500 ms minimum gap.
   - Metrics still record prefetch attempts and lastPrefetched paths for diagnostics.
+
+Same-path updates (newer content with the same filename)
+- Symptom: updates can be skipped if dedupe uses existence only.
+- Status: addressed by vector‑clock aware prefetch (see What We Fixed/Added → 6).
+- Validation: for a burst of updates on the same `jsonPath`, mobile should
+  re‑download exactly when `incomingVectorClock` > local, then advance marker.
 - Code touch points:
   - Attachment prefetch call site: `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart:547` (prefetch loop) and rescan triggers at `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart:729`, `:742`, `:748`.
   - Attachment writer/dedupe: `lib/features/sync/matrix/save_attachment.dart`.
@@ -177,3 +205,48 @@ Attachment prefetch storm (high CPU/network, noisy logs)
 - Local is authoritative; remote is a hint only to avoid skipping messages.
 - Rewind (id floor + time) prefers small replays (safe with vector clocks) over any chance of missing items.
 - Double scans and tail scans eliminate ordering/timing races on live streams.
+
+## Message‑Driven JSON Apply
+
+Motivation
+- JSON `journalEntity` files reuse the same `jsonPath` across versions. Prefetching by filename causes storms and can skip newer content if we only check for existence.
+- The authoritative version is carried in the text message (`SyncMessage.journalEntity`), which includes `jsonPath`, `vectorClock`, and `status`.
+
+Approach
+- Treat the text message as the decision point:
+  - Parse `jsonPath` and `incomingVectorClock` from the event text.
+  - Read local JSON (if any) and compare `meta.vectorClock`.
+  - If incoming is strictly newer or concurrent → fetch JSON bytes and write atomically; then apply to DB.
+  - If older/equal → skip fetch and apply.
+- Conflicts (`concurrent`) continue to be recorded in the sync DB for manual resolution. Marker still advances.
+
+Implementation plan
+- Consumer:
+  - Eliminate JSON prefetch; file events no longer trigger downloads/rescans.
+  - Optionally maintain an AttachmentIndex mapping `relativePath → latest descriptor` as file events arrive (no side effects).
+- Loader:
+  - Replace the current file loader with a smart loader which:
+    - Reads local JSON when up‑to‑date
+    - Otherwise resolves a descriptor and downloads JSON bytes
+    - Writes atomically (temp + rename), then returns parsed entity
+- Apply:
+  - SyncEventProcessor uses the smart loader; apply logic remains the same (DB updates, metrics, conflict reporting).
+
+Benefits
+- Correctness: vector clocks, not filenames, decide when to fetch/write.
+- Stability: no JSON prefetch storms; rescans occur only on meaningful changes and remain throttled for attachment‑only activity.
+- Simplicity: single decision point (text) for JSON; file events become an index source.
+
+### Media Prefetch (Images/Audio/Video)
+
+- Policy
+  - Prefetch media on-missing: download images/audio/video when attachment events arrive and the file is not on disk.
+  - Never prefetch JSON; JSON is applied via the message‑driven path above.
+  - Do not trigger rescans from media; prefetch must not affect the pipeline schedule.
+- Implementation
+  - Attachment events are always recorded into an in‑memory `AttachmentIndex` keyed by `relativePath`.
+  - The consumer increments a `prefetch` counter and records `lastPrefetched` paths for diagnostics for all attachments, but only downloads media (`image/*`, `audio/*`, `video/*`).
+  - JSON writes happen during apply using `AttachmentIndex` and atomic write (temp + rename) when the incoming vector clock is newer or concurrent.
+- Rationale
+  - Keeps the stream stable by avoiding JSON write storms while ensuring media is readily available when referenced.
+  - One decision point for JSON correctness (vector clocks), optional on-missing prefetch for media responsiveness.

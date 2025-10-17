@@ -20,6 +20,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -149,6 +150,8 @@ Future<void> registerSingletons() async {
     journalDb: journalDb,
     documentsDirectory: documentsDirectory,
   );
+  // Shared in-memory index of latest attachment events keyed by relativePath.
+  final attachmentIndex = AttachmentIndex(logging: loggingService);
   final readMarkerService = SyncReadMarkerService(
     settingsDb: settingsDb,
     loggingService: loggingService,
@@ -157,6 +160,10 @@ Future<void> registerSingletons() async {
     loggingService: loggingService,
     updateNotifications: getIt<UpdateNotifications>(),
     aiConfigRepository: aiConfigRepository,
+    journalEntityLoader: SmartJournalEntityLoader(
+      attachmentIndex: attachmentIndex,
+      loggingService: loggingService,
+    ),
   );
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
@@ -182,6 +189,7 @@ Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<MatrixSyncGateway>(matrixGateway)
     ..registerSingleton<MatrixMessageSender>(matrixMessageSender)
+    ..registerSingleton<AttachmentIndex>(attachmentIndex)
     ..registerSingleton<SyncReadMarkerService>(readMarkerService)
     ..registerSingleton<SyncEventProcessor>(syncEventProcessor)
     ..registerSingleton<MatrixService>(matrixService)

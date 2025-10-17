@@ -6,6 +6,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_event_classifier.dart'
     as ec;
@@ -71,6 +72,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required SyncEventProcessor eventProcessor,
     required SyncReadMarkerService readMarkerService,
     required Directory documentsDirectory,
+    AttachmentIndex? attachmentIndex,
     bool collectMetrics = false,
     DateTime Function()? now,
     Duration flushInterval = const Duration(milliseconds: 150),
@@ -92,6 +94,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _eventProcessor = eventProcessor,
         _readMarkerService = readMarkerService,
         _documentsDirectory = documentsDirectory,
+        _attachmentIndex = attachmentIndex,
         _collectMetrics = collectMetrics,
         _now = now ?? DateTime.now,
         _flushInterval = flushInterval,
@@ -134,6 +137,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final SyncEventProcessor _eventProcessor;
   final SyncReadMarkerService _readMarkerService;
   final Directory _documentsDirectory;
+  final AttachmentIndex? _attachmentIndex;
   final bool _collectMetrics;
   final DateTime Function() _now;
   final Future<bool> Function({
@@ -544,23 +548,35 @@ class MatrixStreamConsumer implements SyncPipeline {
     // First pass: prefetch attachments for remote events.
     var sawAttachmentPrefetch = false; // true only if a new file was written
     for (final e in ordered) {
+      // Always record attachment descriptors to the index (no side effects).
+      if (ec.MatrixEventClassifier.isAttachment(e)) {
+        _attachmentIndex?.record(e);
+        // Count and record attachments for diagnostics regardless of media type.
+        if (_collectMetrics) _metrics.incPrefetch();
+        final rp = e.content['relativePath'];
+        if (rp is String && rp.isNotEmpty) {
+          _metrics.addLastPrefetched(rp);
+          // If a JSON apply previously failed waiting for this path, rescan now
+          if (_pendingJsonPaths.remove(rp)) {
+            unawaited(_scanLiveTimeline());
+          }
+        }
+      }
+
+      // Perform actual background download only for media (not JSON).
       if (ec.MatrixEventClassifier.shouldPrefetchAttachment(
           e, _client.userID)) {
         try {
-          if (_collectMetrics) _metrics.incPrefetch();
           final wrote = await saveAttachment(
             e,
             loggingService: _loggingService,
             documentsDirectory: _documentsDirectory,
           );
           final rp = e.content['relativePath'];
-          if (rp is String && rp.isNotEmpty) {
-            // Track last prefetched path regardless of write to preserve
-            // diagnostics even when files are already present.
-            _metrics.addLastPrefetched(rp);
+          if (wrote && rp is String && rp.isNotEmpty) {
             // If this path was pending during apply and we just wrote it,
             // trigger an immediate scan now that the attachment exists.
-            if (wrote && _pendingJsonPaths.remove(rp)) {
+            if (_pendingJsonPaths.remove(rp)) {
               unawaited(_scanLiveTimeline());
             }
           }

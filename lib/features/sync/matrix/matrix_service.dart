@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -50,6 +52,7 @@ class MatrixService {
     MatrixTimelineListener? timelineListener,
     SyncLifecycleCoordinator? lifecycleCoordinator,
     SyncEngine? syncEngine,
+    AttachmentIndex? attachmentIndex,
     // Test-only seam to inject a V2 pipeline
     @visibleForTesting MatrixStreamConsumer? v2PipelineOverride,
   })  : _gateway = gateway,
@@ -126,6 +129,10 @@ class MatrixService {
                   eventProcessor: _eventProcessor,
                   readMarkerService: _readMarkerService,
                   documentsDirectory: documentsDirectory,
+                  attachmentIndex: attachmentIndex ??
+                      (getIt.isRegistered<AttachmentIndex>()
+                          ? getIt<AttachmentIndex>()
+                          : AttachmentIndex(logging: _loggingService)),
                   collectMetrics: collectV2Metrics,
                 )
               : null);
