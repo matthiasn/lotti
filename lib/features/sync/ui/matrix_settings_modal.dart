@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/ui/invite_dialog_helper.dart';
 import 'package:lotti/features/sync/ui/login/sync_login_modal_page.dart';
 import 'package:lotti/features/sync/ui/matrix_logged_in_config_page.dart';
 import 'package:lotti/features/sync/ui/matrix_stats_page.dart';
@@ -36,6 +40,8 @@ class MatrixSettingsCardTestHandle {
 class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard>
     implements MatrixSettingsCardStateAccess {
   late final ValueNotifier<int> pageIndexNotifier;
+  StreamSubscription<SyncRoomInvite>? _inviteSub;
+  bool _inviteOpen = false;
 
   @override
   void initState() {
@@ -45,6 +51,7 @@ class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard>
 
   @override
   void dispose() {
+    _inviteSub?.cancel();
     pageIndexNotifier.dispose();
     super.dispose();
   }
@@ -73,6 +80,27 @@ class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard>
       icon: Icons.sync,
       onTap: () {
         updatePageIndexForTesting();
+        // Subscribe to invites for the lifetime of the modal to avoid
+        // duplicate page-level listeners.
+        final matrixService = ref.read(matrixServiceProvider);
+        _inviteSub?.cancel();
+        InviteDialogScope.globalListenerActive = true;
+        _inviteSub =
+            matrixService.inviteRequests.listen((SyncRoomInvite invite) async {
+          if (!mounted || _inviteOpen) return;
+          _inviteOpen = true;
+          try {
+            if (!mounted) return;
+            // ignore: use_build_context_synchronously
+            final accept = await showInviteDialog(context, invite);
+            if (!mounted) return;
+            if (accept) {
+              await ref.read(matrixServiceProvider).acceptInvite(invite);
+            }
+          } finally {
+            _inviteOpen = false;
+          }
+        });
 
         ModalUtils.showMultiPageModal<void>(
           context: context,
@@ -99,7 +127,11 @@ class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard>
               pageIndexNotifier: pageIndexNotifier,
             ),
           ],
-        );
+        ).whenComplete(() {
+          _inviteSub?.cancel();
+          _inviteSub = null;
+          InviteDialogScope.globalListenerActive = false;
+        });
       },
     );
   }

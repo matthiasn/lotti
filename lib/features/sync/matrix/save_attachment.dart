@@ -1,10 +1,14 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:path/path.dart' as p;
 
-Future<void> saveAttachment(
+/// Downloads and saves an attachment if it isn't already present on disk.
+///
+/// Returns true if a new file was written, false if it was skipped or failed.
+Future<bool> saveAttachment(
   Event event, {
   required LoggingService loggingService,
   required Directory documentsDirectory,
@@ -16,23 +20,52 @@ Future<void> saveAttachment(
 
     try {
       if (relativePath != null) {
+        // Build a safe, normalized path under documentsDirectory.
+        var rel =
+            relativePath is String ? relativePath : relativePath.toString();
+        if (p.isAbsolute(rel)) {
+          final prefix = p.rootPrefix(rel);
+          rel = rel.substring(prefix.length);
+        }
+        final resolved = p.normalize(p.join(documentsDirectory.path, rel));
+        if (!p.isWithin(documentsDirectory.path, resolved)) {
+          throw const FileSystemException('Path traversal detected');
+        }
+        // We control the documents directory; skip symlink parent resolution.
+        // The containment check on the resolved file path is sufficient.
+        final file = File(resolved);
+        // Fast-path dedupe: if the file already exists and is non-empty,
+        // skip re-downloading to avoid repeated writes and log spam.
+        if (file.existsSync()) {
+          try {
+            final len = file.lengthSync();
+            if (len > 0) {
+              return false; // already present
+            }
+          } catch (_) {
+            // If querying length fails, fall through to re-download.
+          }
+        }
+
         loggingService.captureEvent(
           'downloading $relativePath',
           domain: 'MATRIX_SERVICE',
-          subDomain: 'writeToFile',
+          subDomain: 'saveAttachment.download',
         );
 
         final matrixFile = await event.downloadAndDecryptAttachment();
-        await _writeToFile(
-          matrixFile.bytes,
-          '${documentsDirectory.path}$relativePath',
-          loggingService,
+        await atomicWriteBytes(
+          bytes: matrixFile.bytes,
+          filePath: resolved,
+          logging: loggingService,
+          subDomain: 'saveAttachment.write',
         );
         loggingService.captureEvent(
           'wrote file $relativePath',
           domain: 'MATRIX_SERVICE',
           subDomain: 'saveAttachment',
         );
+        return true;
       }
     } catch (exception, stackTrace) {
       loggingService.captureException(
@@ -43,22 +76,5 @@ Future<void> saveAttachment(
       );
     }
   }
-}
-
-Future<void> _writeToFile(
-  Uint8List? data,
-  String filePath,
-  LoggingService loggingService,
-) async {
-  if (data != null) {
-    final file = await File(filePath).create(recursive: true);
-    await file.writeAsBytes(data);
-  } else {
-    debugPrint('No bytes for $filePath');
-    loggingService.captureEvent(
-      'No bytes for $filePath',
-      domain: 'INBOX',
-      subDomain: 'writeToFile',
-    );
-  }
+  return false;
 }

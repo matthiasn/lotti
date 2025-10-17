@@ -102,6 +102,36 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('logs exception when room-level update fails and no timeline',
+        () async {
+      when(() => client.isLogged()).thenReturn(true);
+      final exception = Exception('room setReadMarker failed');
+      when(() => room.setReadMarker(any())).thenThrow(exception);
+      when(
+        () => loggingService.captureException(
+          exception,
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) {});
+
+      await service.updateReadMarker(
+        client: client,
+        room: room,
+        eventId: r'$event',
+      );
+
+      verify(
+        () => loggingService.captureException(
+          exception,
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
   });
 }
 

@@ -54,5 +54,11 @@ List<Event> dedupEventsByIdPreserveOrder(List<Event> events) {
 /// Whether an event should have its attachment prefetched before processing.
 bool shouldPrefetchAttachment(Event e, String? currentUserId) {
   final isRemote = e.senderId != currentUserId;
-  return isRemote && e.attachmentMimetype.isNotEmpty;
+  final mime = e.attachmentMimetype;
+  if (mime.isEmpty) return false;
+  // Prefetch only media; exclude JSON (application/json) and other non-media.
+  final isMedia = mime.startsWith('image/') ||
+      mime.startsWith('audio/') ||
+      mime.startsWith('video/');
+  return isRemote && isMedia;
 }

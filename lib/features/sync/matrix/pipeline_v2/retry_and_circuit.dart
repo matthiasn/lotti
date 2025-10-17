@@ -1,5 +1,9 @@
 import 'package:meta/meta.dart';
 
+/// Tracks per-event retry state with TTL pruning and a max size cap.
+///
+/// Stores attempts and the next due time. Provides helpers to check whether an
+/// event is currently blocked, mark all due, and prune stale entries.
 class RetryTracker {
   RetryTracker({
     required this.ttl,
@@ -37,6 +41,8 @@ class RetryTracker {
     }
   }
 
+  /// Removes entries older than [ttl] and enforces [maxEntries] by trimming the
+  /// oldest nextDue values first.
   void prune(DateTime now) {
     if (_map.isEmpty) return;
     _map.removeWhere((_, info) => now.difference(info.nextDue) > ttl);
@@ -57,6 +63,8 @@ class _RetryInfo {
   final DateTime nextDue;
 }
 
+/// Simple circuit breaker that opens after [failureThreshold] consecutive
+/// failures and stays open for [cooldown].
 class CircuitBreaker {
   CircuitBreaker({
     required this.failureThreshold,
@@ -79,8 +87,8 @@ class CircuitBreaker {
     return null;
   }
 
-  /// Records [count] failures, opening the circuit if the threshold is
-  /// reached. Returns true if the circuit transitioned to open.
+  /// Records [count] failures, opening the circuit if the threshold is reached.
+  /// Returns true if the circuit transitioned to open.
   bool recordFailures(int count, DateTime now) {
     _consecutiveFailures += count;
     if (_consecutiveFailures >= failureThreshold) {
@@ -90,7 +98,7 @@ class CircuitBreaker {
     return false;
   }
 
-  /// Resets the consecutive failure counter, closing the circuit on next check.
+  /// Resets the consecutive failure counter.
   void reset() {
     _consecutiveFailures = 0;
   }

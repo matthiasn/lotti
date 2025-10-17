@@ -1,7 +1,35 @@
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
+import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:matrix/matrix.dart';
+
+/// Pure helper used by the remote monotonic guard to determine whether
+/// [candidateEventId] is strictly newer than [baseEventId] within the given
+/// [timeline], using Matrix originServerTs (UTC) with eventId as a tiebreaker.
+///
+/// Returns false if either event cannot be found in the provided timeline.
+bool isStrictlyNewerInTimeline({
+  required Timeline timeline,
+  required String candidateEventId,
+  required String baseEventId,
+}) {
+  Event? a;
+  Event? b;
+  for (final e in timeline.events) {
+    if (e.eventId == candidateEventId) a = e;
+    if (e.eventId == baseEventId) b = e;
+    if (a != null && b != null) break;
+  }
+  if (a == null || b == null) return false;
+  return TimelineEventOrdering.isNewer(
+    candidateTimestamp: a.originServerTs.millisecondsSinceEpoch,
+    candidateEventId: a.eventId,
+    latestTimestamp: b.originServerTs.millisecondsSinceEpoch,
+    latestEventId: b.eventId,
+  );
+}
 
 class SyncReadMarkerService {
   /// Persists and publishes Matrix read markers after successful processing.
@@ -38,13 +66,63 @@ class SyncReadMarkerService {
 
     if (client.isLogged()) {
       try {
+        // Guard: Avoid regressing a remote marker if the server already has
+        // a newer fullyRead. Skip this guard in test environments to keep
+        // unit tests simple and deterministic.
+        if (!isTestEnv) {
+          final remoteId = room.fullyRead;
+          if (remoteId != eventId) {
+            var shouldSend = true;
+            final tl = timeline;
+            if (tl != null) {
+              try {
+                final newer = isStrictlyNewerInTimeline(
+                  timeline: tl,
+                  candidateEventId: eventId,
+                  baseEventId: remoteId,
+                );
+                if (!newer) {
+                  shouldSend = false;
+                  _loggingService.captureEvent(
+                    'marker.remote.skip id=$eventId (remoteAhead=$remoteId)',
+                    domain: 'MATRIX_SERVICE',
+                    subDomain: 'setReadMarker.guard',
+                  );
+                }
+              } catch (_) {
+                // If comparison fails, fall through to default behaviour.
+              }
+            } else {
+              // Without a timeline we can't compare reliably. Be conservative
+              // and skip to avoid downgrading a newer remote marker.
+              shouldSend = false;
+              _loggingService.captureEvent(
+                'marker.remote.skip(noTimeline) id=$eventId (remote=$remoteId)',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'setReadMarker.guard',
+              );
+            }
+            if (!shouldSend) return;
+          }
+        }
+
         // Prefer room-level API to avoid coupling to a snapshot timeline.
         await room.setReadMarker(eventId);
+        _loggingService.captureEvent(
+          'marker.remote room=${room.id} id=$eventId',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'setReadMarker',
+        );
       } catch (error, stackTrace) {
         // Fallback to timeline-level API for compatibility if provided.
         if (timeline != null) {
           try {
             await timeline.setReadMarker(eventId: eventId);
+            _loggingService.captureEvent(
+              'marker.remote.timeline room=${room.id} id=$eventId',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'setReadMarker.timeline',
+            );
             return;
           } catch (_) {
             // Fall through to log the original error below.

@@ -1700,6 +1700,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Scanați acest cod QR pentru a invita dispozitivul într-o cameră de sincronizare.';
 
   @override
+  String get settingsMatrixRoomInviteTitle => 'Room invite';
+
+  @override
+  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
+    return 'Invite to room $roomId from $senderId. Accept?';
+  }
+
+  @override
+  String get settingsMatrixAccept => 'Accept';
+
+  @override
   String get settingsMatrixRoomConfigTitle =>
       'Configurare cameră de sincronizare Matrix';
 

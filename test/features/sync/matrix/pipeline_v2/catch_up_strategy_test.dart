@@ -110,6 +110,74 @@ void main() {
         verify(() => tl.cancelSubscriptions()).called(1);
       }
     });
+
+    test('with no marker id, returns snapshot events (no rewind)', () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final tl = MockTimeline();
+
+      // Start with newer window (ts 300..309), then page older (200..209), then (100..109)
+      final window300 = List<Event>.generate(10, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e3_$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(300 + i));
+        return e;
+      });
+      final window200 = List<Event>.generate(10, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e2_$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(200 + i));
+        return e;
+      });
+      final window100 = List<Event>.generate(10, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e1_$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(100 + i));
+        return e;
+      });
+
+      // Events getter returns current window snapshot
+      var current = window300;
+      when(() => tl.events).thenAnswer((_) => current);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => tl);
+
+      // Allow pagination twice
+      var page = 0;
+      when(() => tl.canRequestHistory).thenAnswer((_) => page < 2);
+      when(() => tl.requestHistory()).thenAnswer((_) async {
+        if (page == 0) {
+          current = window200;
+        } else if (page == 1) {
+          current = window100;
+        }
+        page++;
+      });
+
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: null,
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async =>
+            true,
+      );
+
+      expect(slice, isNotEmpty);
+      // No threshold slicing; returns current window (300..309)
+      expect(slice.first.originServerTs.millisecondsSinceEpoch, 300);
+      expect(slice.last.originServerTs.millisecondsSinceEpoch, 309);
+      verify(() => tl.cancelSubscriptions()).called(1);
+    });
   });
 }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:lotti/database/database.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_event_classifier.dart'
     as ec;
@@ -71,12 +73,14 @@ class MatrixStreamConsumer implements SyncPipeline {
     required SyncEventProcessor eventProcessor,
     required SyncReadMarkerService readMarkerService,
     required Directory documentsDirectory,
+    AttachmentIndex? attachmentIndex,
     bool collectMetrics = false,
     DateTime Function()? now,
     Duration flushInterval = const Duration(milliseconds: 150),
     int maxBatch = 200,
-    Duration markerDebounce = const Duration(milliseconds: 600),
+    Duration markerDebounce = const Duration(milliseconds: 300),
     int? maxRetriesPerEvent,
+    Duration circuitCooldown = const Duration(seconds: 30),
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,
@@ -92,6 +96,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _eventProcessor = eventProcessor,
         _readMarkerService = readMarkerService,
         _documentsDirectory = documentsDirectory,
+        _attachmentIndex = attachmentIndex,
         _collectMetrics = collectMetrics,
         _now = now ?? DateTime.now,
         _flushInterval = flushInterval,
@@ -102,7 +107,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _retryTtl = const Duration(minutes: 10),
         _retryMaxEntries = 2000,
         _circuitFailureThreshold = 50,
-        _circuitCooldown = const Duration(seconds: 30) {
+        _circuitCooldown = circuitCooldown {
     _retryTracker = rc.RetryTracker(
       ttl: _retryTtl,
       maxEntries: _retryMaxEntries,
@@ -120,6 +125,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         client: _client,
         room: room,
         eventId: id,
+        timeline: _liveTimeline,
       ),
       logging: _loggingService,
     );
@@ -133,6 +139,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final SyncEventProcessor _eventProcessor;
   final SyncReadMarkerService _readMarkerService;
   final Directory _documentsDirectory;
+  final AttachmentIndex? _attachmentIndex;
   final bool _collectMetrics;
   final DateTime Function() _now;
   final Future<bool> Function({
@@ -157,6 +164,11 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   late final MetricsCounters _metrics;
   final Set<String> _pendingJsonPaths = <String>{};
+  DateTime? _lastAttachmentOnlyRescanAt;
+  static const Duration _minAttachmentOnlyRescanGap =
+      Duration(milliseconds: 500);
+  static const int _liveScanTailLimit = 50;
+  static const Duration _attachmentTsGate = Duration(seconds: 2);
 
   // Tracks eventIds that reported rows=0 while predicted status suggests
   // incoming is newer (missing base). These should be retried and block
@@ -172,6 +184,44 @@ class MatrixStreamConsumer implements SyncPipeline {
   late final rc.CircuitBreaker _circuit;
   late final rc.RetryTracker _retryTracker;
   late final ReadMarkerManager _readMarkerManager;
+
+  // Recent eventId LRU to suppress duplicate first-pass work for attachments
+  // across overlapping ingestion paths (client stream + live timeline).
+  final Set<String> _seenEventIds = <String>{};
+  final Queue<String> _seenEventOrder = Queue<String>();
+  static const int _seenEventCapacity = 5000;
+
+  bool _isDuplicateAndRecordSeen(String id) {
+    if (_seenEventIds.contains(id)) return true;
+    _seenEventIds.add(id);
+    _seenEventOrder.addLast(id);
+    while (_seenEventOrder.length > _seenEventCapacity) {
+      final oldest = _seenEventOrder.removeFirst();
+      _seenEventIds.remove(oldest);
+    }
+    return false;
+  }
+
+  // Tracks sync payload events that have completed processing to avoid
+  // duplicate apply work across overlapping ingestion paths.
+  final Set<String> _completedSyncIds = <String>{};
+  final Queue<String> _completedSyncOrder = Queue<String>();
+  static const int _completedSyncCapacity = 5000;
+
+  bool _wasCompletedSync(String id) => _completedSyncIds.contains(id);
+  void _recordCompletedSync(String id) {
+    if (_completedSyncIds.add(id)) {
+      _completedSyncOrder.addLast(id);
+      while (_completedSyncOrder.length > _completedSyncCapacity) {
+        final oldest = _completedSyncOrder.removeFirst();
+        _completedSyncIds.remove(oldest);
+      }
+    }
+  }
+
+  // Tracks sync payload eventIds currently processing to avoid duplicate
+  // applies across overlapping ingestion paths.
+  final Set<String> _inFlightSyncIds = <String>{};
 
   Duration _computeBackoff(int attempts) =>
       tu.computeExponentialBackoff(attempts);
@@ -250,7 +300,15 @@ class MatrixStreamConsumer implements SyncPipeline {
         final nextAttempts = attempts + 1;
         final backoff = _computeBackoff(nextAttempts);
         final due = _now().add(backoff);
-        if (nextAttempts >= _maxRetriesPerEvent) {
+        // If this looks like a missing attachment/descriptor scenario, keep the
+        // event blocking and do not advance the marker even after the retry cap.
+        // We detect this via a FileSystemException earlier, which records the
+        // jsonPath into _pendingJsonPaths. When present, continue scheduling
+        // retries and avoid marking as handled.
+        final jp = _extractJsonPath(e);
+        final isMissingAttachment =
+            jp != null && _pendingJsonPaths.contains(jp);
+        if (nextAttempts >= _maxRetriesPerEvent && !isMissingAttachment) {
           _retryTracker.clear(id);
           treatAsHandled = true;
           _loggingService.captureEvent(
@@ -263,7 +321,16 @@ class MatrixStreamConsumer implements SyncPipeline {
             _bumpDroppedType(_extractRuntimeType(e));
           }
         } else {
+          // Keep retrying (or start retrying) for missing attachments and normal failures
+          // below the cap.
           _retryTracker.scheduleNext(id, nextAttempts, due);
+          if (isMissingAttachment) {
+            _loggingService.captureEvent(
+              'missingAttachment keepRetrying: $id (attempts=$nextAttempts)',
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'retry.missingAttachment',
+            );
+          }
         }
         nextDue = due;
         // Record pending JSON path for faster recovery when the failure is
@@ -300,6 +367,12 @@ class MatrixStreamConsumer implements SyncPipeline {
     // Ensure room snapshot is hydrated similarly to V1.
     await _roomManager.initialize();
     _lastProcessedEventId = await getLastReadMatrixEventId(_settingsDb);
+    try {
+      final ts = await getLastReadMatrixEventTs(_settingsDb);
+      if (ts != null) _lastProcessedTs = ts;
+    } catch (_) {
+      // optional
+    }
     _initialized = true;
   }
 
@@ -339,6 +412,30 @@ class MatrixStreamConsumer implements SyncPipeline {
           onUpdate: _scheduleLiveScan,
         );
         _liveTimeline = tl;
+        // Proactively scan once at startup so we don't rely on a fresh
+        // incoming event to kick the first processing pass.
+        _loggingService.captureEvent(
+          'v2 start: scheduling initial liveScan',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'start.liveScan',
+        );
+        _liveScanTimer?.cancel();
+        _liveScanTimer = Timer(const Duration(milliseconds: 80), () {
+          unawaited(_scanLiveTimeline());
+        });
+        // If we had a stored lastProcessed marker, ensure we run catch-up once
+        // more shortly after the room is ready. This covers the case where the
+        // room snapshot became available only after start(), and the first
+        // catch-up attempt had no active room.
+        if (_lastProcessedEventId != null) {
+          _loggingService.captureEvent(
+            'v2 start: scheduling catchUp retry',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'start.catchUpRetry',
+          );
+          unawaited(Future<void>.delayed(const Duration(milliseconds: 150))
+              .then((_) => _attachCatchUp()));
+        }
       } catch (e, st) {
         _loggingService.captureException(
           e,
@@ -436,8 +533,25 @@ class MatrixStreamConsumer implements SyncPipeline {
       final events = List<Event>.from(tl.events)
         ..sort(TimelineEventOrdering.compare);
       final idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
-      final slice = idx >= 0 ? events.sublist(idx + 1) : events;
+      var slice = idx >= 0
+          ? events.sublist(idx + 1)
+          : (events.isEmpty
+              ? events
+              : events.sublist(
+                  (events.length - _liveScanTailLimit).clamp(0, events.length),
+                ));
+      // Filter tail by timestamp threshold to avoid reprocessing older
+      // unrelated attachments after marker advancement.
+      if (slice.isNotEmpty && _lastProcessedTs != null) {
+        final cutoff =
+            _lastProcessedTs!.toInt() - _attachmentTsGate.inMilliseconds;
+        slice = slice
+            .where((e) => TimelineEventOrdering.timestamp(e) >= cutoff)
+            .toList();
+      }
       if (slice.isNotEmpty) {
+        // Dedup live-scan events by id to avoid duplicate first-pass work.
+        slice = tu.dedupEventsByIdPreserveOrder(slice);
         await _processOrdered(slice);
         if (_collectMetrics) {
           _loggingService.captureEvent(
@@ -504,25 +618,81 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
 
     // First pass: prefetch attachments for remote events.
+    var sawAttachmentPrefetch = false; // true only if a new file was written
     for (final e in ordered) {
+      // Skip duplicate attachment work if we've already seen this eventId.
+      // Keep processing for sync payload events to ensure apply/retry semantics.
+      final dup = _isDuplicateAndRecordSeen(e.eventId);
+      if (dup && ec.MatrixEventClassifier.isAttachment(e)) {
+        continue; // skip record/observe/prefetch for duplicate attachments
+      }
+      // Also skip re-applying the same sync payload event if it already
+      // completed on another ingestion path.
+      if (dup && ec.MatrixEventClassifier.isSyncPayloadEvent(e)) {
+        if (_wasCompletedSync(e.eventId)) {
+          continue;
+        }
+      }
+      // Timestamp gate: skip first-pass attachment handling when the event is
+      // clearly older than the last processed sync payload (with a small
+      // margin). This reduces unrelated audio churn on text-only updates.
+      if (_lastProcessedTs != null &&
+          ec.MatrixEventClassifier.isAttachment(e)) {
+        final ts = TimelineEventOrdering.timestamp(e);
+        if (ts < _lastProcessedTs!.toInt() - _attachmentTsGate.inMilliseconds) {
+          continue;
+        }
+      }
+      // Always record descriptors when a relativePath is present, even if the
+      // SDK doesn't classify it as an attachment (robust to MIME quirks).
+      final rpAny = e.content['relativePath'];
+      if (rpAny is String && rpAny.isNotEmpty) {
+        _attachmentIndex?.record(e);
+        if (_collectMetrics) {
+          // Count an attachment observed and record path for diagnostics.
+          _metrics
+            ..incPrefetch()
+            ..addLastPrefetched(rpAny);
+        }
+        try {
+          final mime = e.attachmentMimetype;
+          final content = e.content;
+          final hasUrl = content.containsKey('url') ||
+              content.containsKey('mxc') ||
+              content.containsKey('mxcUrl') ||
+              content.containsKey('uri');
+          final hasEnc = content.containsKey('file');
+          final msgType = content['msgtype'];
+          _loggingService.captureEvent(
+            'attachmentEvent id=${e.eventId} path=$rpAny mime=$mime msgtype=$msgType hasUrl=$hasUrl hasFile=$hasEnc',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'attachment.observe',
+          );
+        } catch (_) {
+          // best-effort logging
+        }
+        if (_pendingJsonPaths.remove(rpAny)) {
+          _scheduleLiveScan();
+        }
+      }
+
+      // For metrics and optional background media download, continue using the
+      // classifier's attachment predicate (media only).
       if (ec.MatrixEventClassifier.shouldPrefetchAttachment(
           e, _client.userID)) {
         try {
-          await saveAttachment(
+          final wrote = await saveAttachment(
             e,
             loggingService: _loggingService,
             documentsDirectory: _documentsDirectory,
           );
-          if (_collectMetrics) _metrics.incPrefetch();
           final rp = e.content['relativePath'];
-          if (rp is String && rp.isNotEmpty) {
-            _metrics.addLastPrefetched(rp);
-            // If this path was pending during apply, trigger an immediate scan
-            // now that the attachment exists.
+          if (wrote && rp is String && rp.isNotEmpty) {
             if (_pendingJsonPaths.remove(rp)) {
-              unawaited(_scanLiveTimeline());
+              _scheduleLiveScan();
             }
           }
+          if (wrote) sawAttachmentPrefetch = true;
         } catch (err, st) {
           _loggingService.captureException(
             err,
@@ -534,6 +704,8 @@ class MatrixStreamConsumer implements SyncPipeline {
           // Continue with the next event; do not abort the batch on prefetch failures.
         }
       }
+
+      // (prefetch handled above)
     }
 
     // Second pass: process text events and compute advancement.
@@ -543,6 +715,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     var hadFailure = false;
     var batchFailures = 0;
     DateTime? earliestNextDue;
+    var syncPayloadEventsSeen = 0;
     for (final e in ordered) {
       final ts = TimelineEventOrdering.timestamp(e);
       final id = e.eventId;
@@ -552,30 +725,21 @@ class MatrixStreamConsumer implements SyncPipeline {
           false; // allow advancement even if skipped by retry cap
       var isSyncPayloadEvent = false;
 
+      // If this looks like a sync payload and another ingestion path is already
+      // processing it, skip to avoid duplicate applies.
+      final isPotentialSync = ec.MatrixEventClassifier.isSyncPayloadEvent(e);
+      if (isPotentialSync && _inFlightSyncIds.contains(id)) {
+        // Defer; the completing path will record completion and advancement.
+        continue;
+      }
+
       if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
           content['msgtype'] == syncMessageType) {
         isSyncPayloadEvent = true;
-        final outcome = await _processSyncPayloadEvent(e);
-        processedOk = outcome.processedOk;
-        treatAsHandled = outcome.treatAsHandled;
-        if (outcome.hadFailure) hadFailure = true;
-        if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
-        if (outcome.nextDue != null &&
-            (earliestNextDue == null ||
-                outcome.nextDue!.isBefore(earliestNextDue))) {
-          earliestNextDue = outcome.nextDue;
-        }
-      } else {
-        // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
-        final validFallback = ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
-            content['msgtype'] != syncMessageType;
-
-        if (validFallback) {
-          isSyncPayloadEvent = true;
-          final outcome = await _processSyncPayloadEvent(
-            e,
-            dropSuffix: ' (no-msgtype)',
-          );
+        syncPayloadEventsSeen++;
+        _inFlightSyncIds.add(id);
+        try {
+          final outcome = await _processSyncPayloadEvent(e);
           processedOk = outcome.processedOk;
           treatAsHandled = outcome.treatAsHandled;
           if (outcome.hadFailure) hadFailure = true;
@@ -585,12 +749,41 @@ class MatrixStreamConsumer implements SyncPipeline {
                   outcome.nextDue!.isBefore(earliestNextDue))) {
             earliestNextDue = outcome.nextDue;
           }
-          if (processedOk && _collectMetrics) {
-            _loggingService.captureEvent(
-              'v2 processed via no-msgtype fallback: $id',
-              domain: 'MATRIX_SYNC_V2',
-              subDomain: 'fallback',
+        } finally {
+          _inFlightSyncIds.remove(id);
+        }
+      } else {
+        // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
+        final validFallback = ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+            content['msgtype'] != syncMessageType;
+
+        if (validFallback) {
+          isSyncPayloadEvent = true;
+          syncPayloadEventsSeen++;
+          _inFlightSyncIds.add(id);
+          try {
+            final outcome = await _processSyncPayloadEvent(
+              e,
+              dropSuffix: ' (no-msgtype)',
             );
+            processedOk = outcome.processedOk;
+            treatAsHandled = outcome.treatAsHandled;
+            if (outcome.hadFailure) hadFailure = true;
+            if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
+            if (outcome.nextDue != null &&
+                (earliestNextDue == null ||
+                    outcome.nextDue!.isBefore(earliestNextDue))) {
+              earliestNextDue = outcome.nextDue;
+            }
+            if (processedOk && _collectMetrics) {
+              _loggingService.captureEvent(
+                'v2 processed via no-msgtype fallback: $id',
+                domain: 'MATRIX_SYNC_V2',
+                subDomain: 'fallback',
+              );
+            }
+          } finally {
+            _inFlightSyncIds.remove(id);
           }
         } else {
           // Do not count attachment events as "skipped" — they are part of
@@ -615,6 +808,11 @@ class MatrixStreamConsumer implements SyncPipeline {
         latestTs = ts;
         latestEventId = id;
       }
+      // Record completed sync payloads to suppress duplicate applies across
+      // overlapping ingestion paths (e.g., live scan + client stream).
+      if ((processedOk || treatAsHandled) && isSyncPayloadEvent) {
+        _recordCompletedSync(id);
+      }
     }
 
     if (latestEventId != null && latestTs != null) {
@@ -627,8 +825,37 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (shouldAdvance) {
         _lastProcessedEventId = latestEventId;
         _lastProcessedTs = latestTs;
+        // Persist locally immediately to avoid losing progress if the app
+        // backgrounds or exits before the debounced remote flush fires.
+        try {
+          await setLastReadMatrixEventId(latestEventId, _settingsDb);
+          _loggingService.captureEvent(
+            'marker.local id=$latestEventId',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'marker.local',
+          );
+          await setLastReadMatrixEventTs(latestTs.toInt(), _settingsDb);
+          _loggingService.captureEvent(
+            'marker.local.ts ts=${latestTs.toInt()}',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'marker.local',
+          );
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'marker.local',
+            stackTrace: st,
+          );
+        }
         _readMarkerManager.schedule(room, latestEventId);
         _circuit.reset(); // reset on successful advancement
+        // Nudge a quick tail rescan to catch immediately subsequent events
+        // that may have landed while we were applying this batch.
+        _liveScanTimer?.cancel();
+        _liveScanTimer = Timer(const Duration(milliseconds: 100), () {
+          unawaited(_scanLiveTimeline());
+        });
       }
     }
 
@@ -648,6 +875,58 @@ class MatrixStreamConsumer implements SyncPipeline {
       final delay = msh.computeNextScanDelay(now, earliestNextDue);
       _liveScanTimer?.cancel();
       _liveScanTimer = Timer(delay, () {
+        unawaited(_scanLiveTimeline());
+      });
+    } else if (latestEventId == null &&
+        (sawAttachmentPrefetch || syncPayloadEventsSeen > 0)) {
+      // Defensive: if we saw activity but could not advance and had no explicit
+      // failures, schedule a small tail rescan to catch ordering edge-cases.
+      if (syncPayloadEventsSeen == 0 && sawAttachmentPrefetch) {
+        final now = _now();
+        final last = _lastAttachmentOnlyRescanAt;
+        if (last == null ||
+            now.difference(last) >= _minAttachmentOnlyRescanGap) {
+          _lastAttachmentOnlyRescanAt = now;
+          _loggingService.captureEvent(
+            'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'noAdvance.rescan',
+          );
+          _liveScanTimer?.cancel();
+          _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
+            unawaited(_scanLiveTimeline());
+          });
+        }
+      } else {
+        _loggingService.captureEvent(
+          'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'noAdvance.rescan',
+        );
+        _liveScanTimer?.cancel();
+        _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
+          unawaited(_scanLiveTimeline());
+        });
+      }
+    }
+
+    // Double-scan when attachments were prefetched: run an immediate scan and
+    // a second scan shortly after to catch text events that may land after the
+    // attachment in the SDK's live list.
+    if (sawAttachmentPrefetch) {
+      _loggingService.captureEvent(
+        'doubleScan.attachment immediate',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'doubleScan',
+      );
+      unawaited(_scanLiveTimeline());
+      _liveScanTimer?.cancel();
+      _liveScanTimer = Timer(const Duration(milliseconds: 200), () {
+        _loggingService.captureEvent(
+          'doubleScan.attachment delayed',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'doubleScan',
+        );
         unawaited(_scanLiveTimeline());
       });
     }

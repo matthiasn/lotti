@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
@@ -53,10 +54,22 @@ class _FakeMatrixRoomController extends MatrixRoomController {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() {
+    registerFallbackValue(
+      SyncRoomInvite(
+        roomId: '!dummy:server',
+        senderId: '@dummy:server',
+        matchesExistingRoom: false,
+      ),
+    );
+  });
+
   late MockMatrixService mockMatrixService;
 
   setUp(() {
     mockMatrixService = MockMatrixService();
+    when(() => mockMatrixService.inviteRequests)
+        .thenAnswer((_) => const Stream<SyncRoomInvite>.empty());
   });
 
   group('roomConfigPage sticky action bar', () {
@@ -197,6 +210,84 @@ void main() {
       expect(inviteCalled, isTrue);
       expect(invitedUserId, '@friend:server');
       expect(showCamAfter, isFalse);
+    });
+
+    testWidgets('invite stream shows dialog and accepts invite',
+        (tester) async {
+      final controller = StreamController<SyncRoomInvite>.broadcast();
+      addTearDown(controller.close);
+      when(() => mockMatrixService.inviteRequests)
+          .thenAnswer((_) => controller.stream);
+      when(() => mockMatrixService.acceptInvite(any()))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(
+              () => _FakeMatrixRoomController(initialRoom: '!room:server'),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      controller.add(
+        SyncRoomInvite(
+          roomId: '!room:server',
+          senderId: '@bob:server',
+          matchesExistingRoom: true,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      await tester.tap(find.text('Accept'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockMatrixService.acceptInvite(any())).called(1);
+    });
+
+    testWidgets('duplicate barcode within window is ignored', (tester) async {
+      final controller = _FakeMatrixRoomController(initialRoom: '!room:server');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(() => controller),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(RoomConfig)) as StatefulElement;
+      final handle = element.state as RoomConfigStateAccess;
+      handle.showCamForTesting = true;
+
+      // First scan triggers invite
+      await handle.handleBarcodeForTesting(
+        const BarcodeCapture(barcodes: [Barcode(rawValue: '@friend:server')]),
+      );
+      await tester.pump();
+      expect(controller.inviteCalled, isTrue);
+
+      // Reset flag to observe a second call
+      controller.inviteCalled = false;
+
+      // Second scan with same code within 2 seconds should be ignored
+      await handle.handleBarcodeForTesting(
+        const BarcodeCapture(barcodes: [Barcode(rawValue: '@friend:server')]),
+      );
+      await tester.pump();
+      expect(controller.inviteCalled, isFalse);
     });
   });
 }

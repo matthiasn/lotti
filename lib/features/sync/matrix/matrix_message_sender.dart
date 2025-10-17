@@ -74,6 +74,18 @@ class MatrixMessageSender {
     );
 
     try {
+      // For journal entity messages, upload JSON (and attachments) first so
+      // descriptors are available before the text event is processed.
+      if (message is SyncJournalEntity) {
+        final payloadSent = await _sendJournalEntityPayload(
+          room: room,
+          message: message,
+        );
+        if (!payloadSent) {
+          return false;
+        }
+      }
+
       final encodedMessage = json.encode(message);
       final eventId = await room.sendTextEvent(
         base64.encode(utf8.encode(encodedMessage)),
@@ -96,17 +108,6 @@ class MatrixMessageSender {
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
-
-      if (message is SyncJournalEntity) {
-        final payloadSent = await _sendJournalEntityPayload(
-          room: room,
-          message: message,
-        );
-
-        if (!payloadSent) {
-          return false;
-        }
-      }
 
       onSent();
       return true;

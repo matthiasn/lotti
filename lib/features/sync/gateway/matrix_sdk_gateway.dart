@@ -108,13 +108,19 @@ class MatrixSdkGateway implements MatrixSyncGateway {
       }) event) {
     final content = event.state.content as Map<String, dynamic>?;
     final membership = content?['membership'];
+    final stateKey = event.state.stateKey;
     if (event.state.type == 'm.room.member' && membership == 'invite') {
-      _inviteController.add(
-        RoomInviteEvent(
-          roomId: event.roomId,
-          senderId: event.state.senderId,
-        ),
-      );
+      final target = stateKey;
+      // Only surface invites targeted at this client (state_key == userID)
+      if (target == _client.userID) {
+        _inviteController.add(
+          RoomInviteEvent(
+            roomId: event.roomId,
+            senderId: event.state.senderId,
+            targetUserId: target,
+          ),
+        );
+      }
     }
   }
 

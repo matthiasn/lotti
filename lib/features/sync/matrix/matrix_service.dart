@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -40,6 +41,7 @@ class MatrixService {
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
     required Directory documentsDirectory,
+    required AttachmentIndex attachmentIndex,
     bool enableSyncV2 = false,
     bool collectV2Metrics = false,
     bool ownsActivityGate = false,
@@ -126,6 +128,7 @@ class MatrixService {
                   eventProcessor: _eventProcessor,
                   readMarkerService: _readMarkerService,
                   documentsDirectory: documentsDirectory,
+                  attachmentIndex: attachmentIndex,
                   collectMetrics: collectV2Metrics,
                 )
               : null);
@@ -329,10 +332,32 @@ class MatrixService {
 
   Future<String?> getRoom() => _roomManager.loadPersistedRoomId();
 
-  Future<void> leaveRoom() => _roomManager.leaveCurrentRoom();
+  Future<void> leaveRoom() async {
+    _loggingService.captureEvent(
+      'leaveRoom requested',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'room.leave',
+    );
+    await _roomManager.leaveCurrentRoom();
+  }
 
-  Future<void> inviteToSyncRoom({required String userId}) =>
-      _roomManager.inviteUser(userId);
+  Future<void> inviteToSyncRoom({required String userId}) async {
+    _loggingService.captureEvent(
+      'inviteToSyncRoom requested user=$userId room=${_roomManager.currentRoomId}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'room.invite',
+    );
+    await _roomManager.inviteUser(userId);
+  }
+
+  Future<void> acceptInvite(SyncRoomInvite invite) async {
+    _loggingService.captureEvent(
+      'acceptInvite requested room=${invite.roomId} from=${invite.senderId}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'room.acceptInvite',
+    );
+    await _roomManager.acceptInvite(invite);
+  }
 
   List<DeviceKeys> getUnverifiedDevices() {
     return _gateway.unverifiedDevices();

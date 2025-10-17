@@ -3219,6 +3219,24 @@ abstract class AppLocalizations {
   /// **'Scan this QR code to invite device to a sync room.'**
   String get settingsMatrixQrTextPage;
 
+  /// No description provided for @settingsMatrixRoomInviteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Room invite'**
+  String get settingsMatrixRoomInviteTitle;
+
+  /// No description provided for @settingsMatrixRoomInviteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite to room {roomId} from {senderId}. Accept?'**
+  String settingsMatrixRoomInviteMessage(String roomId, String senderId);
+
+  /// No description provided for @settingsMatrixAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get settingsMatrixAccept;
+
   /// No description provided for @settingsMatrixRoomConfigTitle.
   ///
   /// In en, this message translates to:

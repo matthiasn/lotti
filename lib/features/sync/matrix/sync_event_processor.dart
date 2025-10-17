@@ -6,18 +6,25 @@ import 'dart:io';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path/path.dart' as path;
 
 /// Abstraction for loading journal entities and related attachments when
 /// processing sync messages.
 abstract class SyncJournalEntityLoader {
-  Future<JournalEntity> load(String jsonPath);
+  Future<JournalEntity> load({
+    required String jsonPath,
+    VectorClock? incomingVectorClock,
+  });
 }
 
 /// Loads journal entities from the documents directory on disk.
@@ -25,22 +32,263 @@ class FileSyncJournalEntityLoader implements SyncJournalEntityLoader {
   const FileSyncJournalEntityLoader();
 
   @override
-  Future<JournalEntity> load(String jsonPath) async {
+  Future<JournalEntity> load({
+    required String jsonPath,
+    VectorClock? incomingVectorClock,
+  }) async {
+    final candidateFile = resolveJsonCandidateFile(jsonPath);
+    final docPath = path.normalize(getDocumentsDirectory().path);
+    final jsonRelative = path.relative(candidateFile.path, from: docPath);
+    return readEntityFromJson(jsonRelative);
+  }
+}
+
+/// Smart loader that ensures JSON presence/currency based on an incoming vector
+/// clock. It uses the AttachmentIndex to fetch missing/stale JSON and writes
+/// atomically before parsing.
+class SmartJournalEntityLoader implements SyncJournalEntityLoader {
+  SmartJournalEntityLoader({
+    required AttachmentIndex attachmentIndex,
+    required LoggingService loggingService,
+  })  : _attachmentIndex = attachmentIndex,
+        _logging = loggingService;
+
+  final AttachmentIndex _attachmentIndex;
+  final LoggingService _logging;
+
+  @override
+  Future<JournalEntity> load({
+    required String jsonPath,
+    VectorClock? incomingVectorClock,
+  }) async {
+    final targetFile = resolveJsonCandidateFile(jsonPath);
+    // Build a canonical index key once and reuse it to avoid inconsistencies
+    // across platforms (Windows vs. POSIX). The key always uses forward slashes
+    // and has a single leading '/'. Any leading '/' or '\\' characters are trimmed.
+    final indexKey = _buildIndexKey(jsonPath);
+    // If we have an incoming vector clock, decide whether a fetch is needed.
+    if (incomingVectorClock != null) {
+      try {
+        final local =
+            await const FileSyncJournalEntityLoader().load(jsonPath: jsonPath);
+        final localVc = local.meta.vectorClock;
+        if (localVc != null) {
+          final status = VectorClock.compare(localVc, incomingVectorClock);
+          if (status == VclockStatus.a_gt_b || status == VclockStatus.equal) {
+            return local; // local is current or newer; no fetch
+          }
+        }
+      } catch (e, st) {
+        // Missing or unreadable local JSON – proceed to fetch via index, but log for diagnostics.
+        _logging.captureException(
+          e,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.localRead',
+          stackTrace: st,
+        );
+      }
+
+      // Resolve descriptor via AttachmentIndex
+      final eventForPath = _attachmentIndex.find(indexKey);
+      if (eventForPath == null) {
+        // Descriptor not yet available; let caller retry later.
+        _logging.captureEvent(
+          'smart.fetch.miss path=$jsonPath key=$indexKey',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+        throw FileSystemException(
+          'attachment descriptor not yet available',
+          jsonPath,
+        );
+      }
+      try {
+        final matrixFile = await eventForPath.downloadAndDecryptAttachment();
+        final bytes = matrixFile.bytes;
+        if (bytes.isEmpty) {
+          throw const FileSystemException('empty attachment bytes');
+        }
+        final jsonString = utf8.decode(bytes);
+        // Parse first to validate vector clock freshness before writing.
+        final decoded = json.decode(jsonString) as Map<String, dynamic>;
+        final downloaded = JournalEntity.fromJson(decoded);
+        final downloadedVc = downloaded.meta.vectorClock;
+        if (downloadedVc != null) {
+          final status = VectorClock.compare(downloadedVc, incomingVectorClock);
+          // If the downloaded JSON is older than the incoming vector clock,
+          // do not write it; let the caller retry when the new descriptor lands.
+          if (status == VclockStatus.b_gt_a) {
+            _logging.captureEvent(
+              'smart.fetch.stale_vc path=$jsonPath expected=$incomingVectorClock got=$downloadedVc',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'SmartLoader.fetch',
+            );
+            throw const FileSystemException('stale attachment json');
+          }
+        } else {
+          // An incoming VC is expected, but the downloaded JSON lacks one –
+          // treat as invalid to avoid writing potentially stale content.
+          _logging.captureEvent(
+            'smart.fetch.missing_vc path=$jsonPath expected=$incomingVectorClock',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
+          throw const FileSystemException('missing attachment vector clock');
+        }
+        await saveJson(targetFile.path, jsonString);
+        _logging.captureEvent(
+          'smart.json.written path=$jsonPath bytes=${bytes.length}',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+      } catch (e, st) {
+        _logging.captureException(
+          e,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetchJson',
+          stackTrace: st,
+        );
+        rethrow;
+      }
+    } else {
+      // No incoming vector clock: fetch if file is missing/empty, else read.
+      var needsFetch = false;
+      try {
+        if (!targetFile.existsSync()) {
+          needsFetch = true;
+        } else {
+          final len = targetFile.lengthSync();
+          needsFetch = len == 0;
+        }
+      } catch (_) {
+        needsFetch = true;
+      }
+      if (needsFetch) {
+        final eventForPath = _attachmentIndex.find(indexKey);
+        if (eventForPath == null) {
+          _logging.captureEvent(
+            'smart.fetch.miss(noVc) path=$jsonPath key=$indexKey',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
+          throw FileSystemException(
+            'attachment descriptor not yet available',
+            jsonPath,
+          );
+        }
+        try {
+          final matrixFile = await eventForPath.downloadAndDecryptAttachment();
+          final bytes = matrixFile.bytes;
+          if (bytes.isEmpty) {
+            throw const FileSystemException('empty attachment bytes');
+          }
+          final jsonString = utf8.decode(bytes);
+          await saveJson(targetFile.path, jsonString);
+          _logging.captureEvent(
+            'smart.json.written(noVc) path=$jsonPath bytes=${bytes.length}',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
+        } catch (e, st) {
+          _logging.captureException(
+            e,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetchJson.noVc',
+            stackTrace: st,
+          );
+          rethrow;
+        }
+      }
+    }
+
+    // Read and return the entity from disk (either pre-existing or freshly written).
+    final entity =
+        await const FileSyncJournalEntityLoader().load(jsonPath: jsonPath);
+
+    // Ensure referenced media exists only when mentioned by JSON, and only if missing.
+    await _ensureMediaOnMissing(entity);
+    return entity;
+  }
+
+  // Construct a canonical index key for AttachmentIndex lookups.
+  // - Normalizes separators using POSIX rules so keys always use '/'
+  // - Trims any leading '/' or '\\' characters
+  // - Returns the path with a single leading '/'
+  String _buildIndexKey(String rawPath) {
+    // Normalize with POSIX semantics and coerce backslashes to forward slashes.
+    final normalizedPosix =
+        path.posix.normalize(rawPath.replaceAll(r'\\', '/'));
+    final trimmed = normalizedPosix.replaceFirst(RegExp(r'^[\\/]+'), '');
+    return '/$trimmed';
+  }
+
+  Future<void> _ensureMediaOnMissing(JournalEntity e) async {
+    switch (e) {
+      case JournalImage():
+        await _ensureMediaFile(getRelativeImagePath(e), mediaType: 'image');
+      case JournalAudio():
+        await _ensureMediaFile(
+          AudioUtils.getRelativeAudioPath(e),
+          mediaType: 'audio',
+        );
+      default:
+        return; // No media to ensure
+    }
+  }
+
+  Future<void> _ensureMediaFile(String relativePath,
+      {String? mediaType}) async {
     final docDir = getDocumentsDirectory();
-    final normalized = path.normalize(jsonPath);
-    final relative = normalized.startsWith(path.separator)
-        ? normalized.substring(1)
-        : normalized;
-    final candidate = path.normalize(path.join(docDir.path, relative));
-    final docPath = path.normalize(docDir.path);
-    if (!path.isWithin(docPath, candidate) && docPath != candidate) {
-      throw FileSystemException(
-        'jsonPath resolves outside documents directory',
-        jsonPath,
+    final rp = relativePath;
+    // Trim any leading '/' or '\\' to avoid accidental absolute paths on Windows.
+    final rpRel = rp.replaceFirst(RegExp(r'^[\\/]+'), '');
+    final fp = path.normalize(path.join(docDir.path, rpRel));
+    final f = File(fp);
+    try {
+      if (f.existsSync()) {
+        final len = f.lengthSync();
+        if (len > 0) return; // present
+      }
+    } catch (e, st) {
+      _logging.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.pathCheck',
+        stackTrace: st,
       );
     }
-    final jsonRelative = path.relative(candidate, from: docPath);
-    return readEntityFromJson(jsonRelative);
+
+    final descriptorKey = _buildIndexKey(rp);
+    final ev = _attachmentIndex.find(descriptorKey);
+    if (ev == null) {
+      _logging.captureEvent(
+        'smart.media.miss path=$rp key=$descriptorKey',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetchMedia',
+      );
+      throw FileSystemException('attachment descriptor not yet available', rp);
+    }
+    try {
+      final file = await ev.downloadAndDecryptAttachment();
+      final bytes = file.bytes;
+      if (bytes.isEmpty) {
+        throw const FileSystemException('empty attachment bytes');
+      }
+      await atomicWriteBytes(
+        bytes: bytes,
+        filePath: fp,
+        logging: _logging,
+        subDomain: 'SmartLoader.writeMedia',
+      );
+    } catch (e, st) {
+      _logging.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetchMedia',
+        stackTrace: st,
+      );
+      rethrow;
+    }
   }
 }
 
@@ -108,8 +356,10 @@ class SyncEventProcessor {
     switch (syncMessage) {
       case SyncJournalEntity(jsonPath: final jsonPath):
         try {
-          final journalEntity = await loader.load(jsonPath);
-          // Compute predicted vector-clock relation for diagnostics only when enabled.
+          final journalEntity = await loader.load(
+            jsonPath: jsonPath,
+            incomingVectorClock: syncMessage.vectorClock,
+          );
           var predictedStatus = VclockStatus.b_gt_a;
           if (applyObserver != null) {
             try {
@@ -121,8 +371,6 @@ class SyncEventProcessor {
                 predictedStatus = VectorClock.compare(vcA, vcB0);
               }
             } catch (e, st) {
-              // Best-effort prediction only: log unexpected failures so they
-              // don't get silently swallowed, and keep a safe default.
               _loggingService.captureException(
                 e,
                 domain: 'MATRIX_SERVICE',

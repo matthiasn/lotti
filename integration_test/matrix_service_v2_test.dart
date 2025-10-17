@@ -19,6 +19,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -85,6 +86,7 @@ MatrixService _createMatrixService({
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
     enableSyncV2: enableSyncV2,
+    attachmentIndex: AttachmentIndex(logging: loggingService),
   );
 }
 

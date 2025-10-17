@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -129,6 +130,7 @@ void main() {
       sessionManager: sessionManager,
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
   }
 
@@ -136,6 +138,50 @@ void main() {
     final service = makeService(enableV2: false);
     final metrics = await service.getV2Metrics();
     expect(metrics, isNull);
+  });
+
+  test('getV2Metrics returns null when collectV2Metrics is false', () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+
+    final service = MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: MockMatrixMessageSender(),
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      attachmentIndex: AttachmentIndex(logging: logging),
+    );
+
+    expect(await service.getV2Metrics(), isNull);
   });
 
   test('getV2Metrics returns metrics when V2 enabled', () async {
@@ -220,6 +266,7 @@ void main() {
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: testPipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
 
     final metrics = await service.getV2Metrics();
@@ -282,6 +329,7 @@ void main() {
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: testPipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
 
     final metrics = await service.getV2Metrics();
@@ -346,6 +394,7 @@ void main() {
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: pipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
 
     await service.forceV2Rescan();
@@ -404,6 +453,7 @@ void main() {
       timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       v2PipelineOverride: pipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
     );
 
     final text = await service.getSyncDiagnosticsText();

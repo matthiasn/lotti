@@ -23,6 +23,8 @@ class MockRoomInviteEvent extends Mock implements RoomInviteEvent {}
 
 class MockClient extends Mock implements Client {}
 
+class MockMatrixException extends Mock implements MatrixException {}
+
 void main() {
   late MockMatrixGateway gateway;
   late MockSettingsDb settingsDb;
@@ -194,6 +196,53 @@ void main() {
     verify(() => gateway.leaveRoom('!room:server')).called(1);
     verify(() => settingsDb.removeSettingsItem(matrixRoomKey)).called(1);
     expect(manager.currentRoom, isNull);
+    expect(manager.currentRoomId, isNull);
+  });
+
+  test('leaveCurrentRoom clears state when server says not in room', () async {
+    when(() => settingsDb.itemByKey(matrixRoomKey))
+        .thenAnswer((_) async => '!room:server');
+    // Throw a MatrixException with M_NOT_FOUND
+    final mex = MockMatrixException();
+    when(() => mex.errcode).thenReturn('M_NOT_FOUND');
+    when(() => gateway.leaveRoom('!room:server')).thenThrow(mex);
+
+    await manager.initialize();
+    await manager.leaveCurrentRoom();
+
+    verify(() => settingsDb.removeSettingsItem(matrixRoomKey)).called(1);
+    expect(manager.currentRoomId, isNull);
+  });
+
+  test('acceptInvite delegates to joinRoom and logs', () async {
+    when(() => gateway.joinRoom('!inv:server')).thenAnswer((_) async {});
+    when(() => settingsDb.saveSettingsItem(matrixRoomKey, '!inv:server'))
+        .thenAnswer((_) async => 1);
+    final invite = SyncRoomInvite(
+      roomId: '!inv:server',
+      senderId: '@alice:server',
+      matchesExistingRoom: false,
+    );
+
+    await manager.acceptInvite(invite);
+
+    verify(() => gateway.joinRoom('!inv:server')).called(1);
+    verify(() => settingsDb.saveSettingsItem(matrixRoomKey, '!inv:server'))
+        .called(1);
+  });
+
+  test('clearPersistedRoom clears state and logs', () async {
+    when(() => settingsDb.removeSettingsItem(matrixRoomKey))
+        .thenAnswer((_) async {});
+    // prime a current room id
+    when(() => settingsDb.itemByKey(matrixRoomKey))
+        .thenAnswer((_) async => '!room:server');
+    await manager.initialize();
+    expect(manager.currentRoomId, '!room:server');
+
+    await manager.clearPersistedRoom();
+
+    verify(() => settingsDb.removeSettingsItem(matrixRoomKey)).called(1);
     expect(manager.currentRoomId, isNull);
   });
 }

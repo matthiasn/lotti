@@ -22,6 +22,13 @@ import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
 /// Coordinates Matrix timeline subscriptions and processing for the sync room.
+///
+/// Responsibilities
+/// - Attaches a live `Timeline` with callbacks and schedules drains.
+/// - Maintains a bounded pending buffer (1000) for decrypted events.
+/// - Batches processing to 500 items to control memory usage.
+/// - Coalesces refresh requests so only one run is queued/running at a time.
+/// - Debounces remote read‑marker flush and guarantees a flush on dispose.
 class MatrixTimelineListener implements TimelineContext {
   MatrixTimelineListener({
     required MatrixSessionManager sessionManager,
@@ -170,6 +177,9 @@ class MatrixTimelineListener implements TimelineContext {
   /// Schedules a timeline refresh through the internal runner.
   @override
   void enqueueTimelineRefresh() {
+    // Coalesce refresh requests: if one is already queued or running,
+    // there is no benefit in queuing more.
+    if (_clientRunner.queueSize > 0) return;
     _clientRunner.enqueueRequest(null);
   }
 

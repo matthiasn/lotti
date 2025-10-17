@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
@@ -78,6 +79,8 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class MockSecureStorage extends Mock implements SecureStorage {}
 
+class _MockMatrixException extends Mock implements MatrixException {}
+
 class MockSyncLifecycleCoordinator extends Mock
     implements SyncLifecycleCoordinator {}
 
@@ -116,6 +119,7 @@ class TestableMatrixService extends MatrixService {
     required super.eventProcessor,
     required super.secureStorage,
     required super.documentsDirectory,
+    required super.attachmentIndex,
     required this.onStartKeyVerification,
     required this.onListenTimeline,
     super.roomManager,
@@ -297,6 +301,7 @@ void main() {
       roomManager: mockRoomManager,
       sessionManager: mockSessionManager,
       timelineListener: mockTimelineListener,
+      attachmentIndex: AttachmentIndex(logging: mockLoggingService),
     );
   });
 
@@ -330,6 +335,7 @@ void main() {
       roomManager: mockRoomManager,
       sessionManager: mockSessionManager,
       syncEngine: mockSyncEngine,
+      attachmentIndex: AttachmentIndex(logging: mockLoggingService),
     );
 
     expect(defaultService.timeline, isNull);
@@ -648,6 +654,7 @@ void main() {
         timelineListener: mockTimelineListener,
         lifecycleCoordinator: mismatchedCoordinator,
         syncEngine: mockSyncEngine,
+        attachmentIndex: AttachmentIndex(logging: mockLoggingService),
       ),
       throwsArgumentError,
     );
@@ -681,6 +688,7 @@ void main() {
       timelineListener: mockTimelineListener,
       lifecycleCoordinator: sharedCoordinator,
       syncEngine: mockSyncEngine,
+      attachmentIndex: AttachmentIndex(logging: mockLoggingService),
     );
 
     final result = await serviceWithEngine.connect();
@@ -969,6 +977,7 @@ void main() {
       sessionManager: extraSessionManager,
       timelineListener: extraTimelineListener,
       ownsActivityGate: true,
+      attachmentIndex: AttachmentIndex(logging: mockLoggingService),
     );
 
     await extraService.dispose();
@@ -1197,6 +1206,26 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('connect clears persisted room on MatrixException not-in-room',
+        () async {
+      sessionManager.matrixConfig ??= const MatrixConfig(
+        homeServer: 'https://example.org',
+        user: '@user:server',
+        password: 'pw',
+      );
+      isLogged = true;
+      when(() => sessionRoomManager.loadPersistedRoomId())
+          .thenAnswer((_) async => '!room:server');
+      when(() => sessionClient.getRoomById('!room:server')).thenReturn(null);
+      final mex = _MockMatrixException();
+      when(() => mex.errcode).thenReturn('M_NOT_FOUND');
+      when(() => sessionRoomManager.joinRoom('!room:server')).thenThrow(mex);
+
+      await sessionManager.connect(shouldAttemptLogin: true);
+      verify(() => sessionRoomManager.clearPersistedRoom(
+          subDomain: 'connect.join.clear')).called(1);
+    });
   });
 
   group('MatrixService lifecycle', () {
@@ -1231,6 +1260,7 @@ void main() {
         readMarkerService: mockReadMarkerService,
         eventProcessor: mockEventProcessor,
         secureStorage: mockSecureStorage,
+        attachmentIndex: AttachmentIndex(logging: mockLoggingService),
         roomManager: mockRoomManager,
         sessionManager: mockSessionManager,
         timelineListener: mockTimelineListener,

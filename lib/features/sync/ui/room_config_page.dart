@@ -1,9 +1,9 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_room_provider.dart';
+import 'package:lotti/features/sync/ui/invite_listener_mixin.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -64,10 +64,31 @@ abstract class RoomConfigStateAccess {
 }
 
 class _RoomConfigState extends ConsumerState<RoomConfig>
+    with InviteListenerMixin<RoomConfig>
     implements RoomConfigStateAccess {
   bool showCam = false;
   final joinRoomController = TextEditingController();
   String manualRoomId = '';
+  final MobileScannerController _scannerController = MobileScannerController();
+  bool _inviting = false;
+  String? _lastCode;
+  DateTime? _lastScanAt;
+
+  @override
+  void dispose() {
+    disposeFallbackInviteListener();
+    _scannerController.dispose();
+    joinRoomController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    setupFallbackInviteListener(onAccepted: () {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +128,10 @@ class _RoomConfigState extends ConsumerState<RoomConfig>
               child: SizedBox(
                 height: camDimension,
                 width: camDimension,
-                child: MobileScanner(onDetect: _handleBarcode),
+                child: MobileScanner(
+                  controller: _scannerController,
+                  onDetect: _handleBarcode,
+                ),
               ),
             ),
         ] else ...[
@@ -140,15 +164,38 @@ class _RoomConfigState extends ConsumerState<RoomConfig>
   }
 
   Future<void> _handleBarcode(BarcodeCapture barcodes) async {
+    if (_inviting) return;
     final barcode = barcodes.barcodes.firstOrNull;
     final userId = barcode?.rawValue;
-    if (userId != null) {
+    if (userId == null || userId.isEmpty) return;
+
+    final now = DateTime.now();
+    if (_lastCode == userId &&
+        _lastScanAt != null &&
+        now.difference(_lastScanAt!) < const Duration(seconds: 2)) {
+      return; // drop duplicate scans within window
+    }
+
+    _lastCode = userId;
+    _lastScanAt = now;
+    _inviting = true;
+    try {
+      await _scannerController.stop();
+    } catch (_) {
+      // best-effort
+    }
+
+    try {
       await ref
           .read(matrixRoomControllerProvider.notifier)
           .inviteToRoom(userId);
-      setState(() {
-        showCam = false;
-      });
+      if (mounted) {
+        setState(() {
+          showCam = false;
+        });
+      }
+    } finally {
+      _inviting = false;
     }
   }
 

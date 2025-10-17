@@ -78,6 +78,16 @@ class MatrixSessionManager {
               subDomain: 'connect.join',
               stackTrace: stackTrace,
             );
+            var notInRoom = false;
+            if (error is MatrixException) {
+              final code = error.errcode;
+              notInRoom = code == 'M_FORBIDDEN' || code == 'M_NOT_FOUND';
+            }
+            if (notInRoom) {
+              await _roomManager.clearPersistedRoom(
+                subDomain: 'connect.join.clear',
+              );
+            }
           }
         }
       }

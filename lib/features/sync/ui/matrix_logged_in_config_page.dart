@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/ui/invite_listener_mixin.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
@@ -77,10 +78,20 @@ class HomeserverLoggedInWidget extends ConsumerStatefulWidget {
 }
 
 class _HomeserverLoggedInWidgetState
-    extends ConsumerState<HomeserverLoggedInWidget> {
+    extends ConsumerState<HomeserverLoggedInWidget>
+    with InviteListenerMixin<HomeserverLoggedInWidget> {
   @override
   void initState() {
     super.initState();
+    setupFallbackInviteListener(onAccepted: () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    disposeFallbackInviteListener();
+    super.dispose();
   }
 
   @override
