@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:path/path.dart' as p;
 import 'package:matrix/matrix.dart';
+import 'package:path/path.dart' as p;
 
 /// Downloads and saves an attachment if it isn't already present on disk.
 ///

@@ -103,17 +103,21 @@ class _HomeserverLoggedInWidgetState
           final accept = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Room invite'),
+                  title: Text(context.messages.settingsMatrixRoomInviteTitle),
                   content: Text(
-                      'Invite to room ${invite.roomId} from ${invite.senderId}. Accept?'),
+                    context.messages.settingsMatrixRoomInviteMessage(
+                      invite.roomId,
+                      invite.senderId,
+                    ),
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(false),
-                      child: const Text('Cancel'),
+                      child: Text(context.messages.settingsMatrixCancel),
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(true),
-                      child: const Text('Accept'),
+                      child: Text(context.messages.settingsMatrixAccept),
                     ),
                   ],
                 ),

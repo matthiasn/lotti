@@ -1692,6 +1692,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Scan this QR code to invite device to a sync room.';
 
   @override
+  String get settingsMatrixRoomInviteTitle => 'Room invite';
+
+  @override
+  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
+    return 'Invite to room $roomId from $senderId. Accept?';
+  }
+
+  @override
+  String get settingsMatrixAccept => 'Accept';
+
+  @override
   String get settingsMatrixRoomConfigTitle => 'Matrix Sync Room Setup';
 
   @override

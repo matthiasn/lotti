@@ -591,6 +591,15 @@
   "settingsMatrixPasswordTooShort": "Password too short",
   "settingsMatrixPreviousPage": "Previous Page",
   "settingsMatrixQrTextPage": "Scan this QR code to invite device to a sync room.",
+  "settingsMatrixRoomInviteTitle": "Room invite",
+  "settingsMatrixRoomInviteMessage": "Invite to room {roomId} from {senderId}. Accept?",
+  "@settingsMatrixRoomInviteMessage": {
+    "placeholders": {
+      "roomId": { "type": "String" },
+      "senderId": { "type": "String" }
+    }
+  },
+  "settingsMatrixAccept": "Accept",
   "settingsMatrixRoomConfigTitle": "Matrix Sync Room Setup",
   "settingsMatrixStartVerificationLabel": "Start Verification",
   "settingsMatrixStatsTitle": "Matrix Stats",
