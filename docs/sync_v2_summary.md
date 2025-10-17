@@ -218,8 +218,8 @@ Same-path updates (newer content with the same filename)
 - Status: addressed by vector‑clock aware prefetch (see What We Fixed/Added → 6).
 - Validation: for a burst of updates on the same `jsonPath`, mobile should
   re‑download exactly when `incomingVectorClock` > local, then advance marker.
-- Code touch points:
-  - Attachment prefetch call site: `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart:547` (prefetch loop) and rescan triggers at `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart:729`, `:742`, `:748`.
+- Code touch points (up-to-date, without line numbers):
+  - Attachment prefetch loop and rescan triggers: `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart`.
   - Attachment writer/dedupe: `lib/features/sync/matrix/save_attachment.dart`.
 
 ## Design Rationale

@@ -78,8 +78,14 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
             return local; // local is current or newer; no fetch
           }
         }
-      } catch (_) {
-        // Missing or unreadable local JSON – proceed to fetch via index.
+      } catch (e, st) {
+        // Missing or unreadable local JSON – proceed to fetch via index, but log for diagnostics.
+        _logging.captureException(
+          e,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.localRead',
+          stackTrace: st,
+        );
       }
 
       // Resolve descriptor via AttachmentIndex
@@ -225,7 +231,14 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         final len = f.lengthSync();
         if (len > 0) return; // present
       }
-    } catch (_) {}
+    } catch (e, st) {
+      _logging.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.pathCheck',
+        stackTrace: st,
+      );
+    }
 
     final descriptorKey = rp.startsWith('/') ? rp : '/$rp';
     final ev = _attachmentIndex.find(descriptorKey);
