@@ -36,20 +36,9 @@ class FileSyncJournalEntityLoader implements SyncJournalEntityLoader {
     required String jsonPath,
     VectorClock? incomingVectorClock,
   }) async {
-    final docDir = getDocumentsDirectory();
-    final normalized = path.normalize(jsonPath);
-    final relative = normalized.startsWith(path.separator)
-        ? normalized.substring(1)
-        : normalized;
-    final candidate = path.normalize(path.join(docDir.path, relative));
-    final docPath = path.normalize(docDir.path);
-    if (!path.isWithin(docPath, candidate) && docPath != candidate) {
-      throw FileSystemException(
-        'jsonPath resolves outside documents directory',
-        jsonPath,
-      );
-    }
-    final jsonRelative = path.relative(candidate, from: docPath);
+    final candidateFile = resolveJsonCandidateFile(jsonPath);
+    final docPath = path.normalize(getDocumentsDirectory().path);
+    final jsonRelative = path.relative(candidateFile.path, from: docPath);
     return readEntityFromJson(jsonRelative);
   }
 }
@@ -72,21 +61,11 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     required String jsonPath,
     VectorClock? incomingVectorClock,
   }) async {
-    final docDir = getDocumentsDirectory();
+    final targetFile = resolveJsonCandidateFile(jsonPath);
     final normalized = path.normalize(jsonPath);
     final relative = normalized.startsWith(path.separator)
         ? normalized.substring(1)
         : normalized;
-    final candidate = path.normalize(path.join(docDir.path, relative));
-    final docPath = path.normalize(docDir.path);
-    if (!path.isWithin(docPath, candidate) && docPath != candidate) {
-      throw FileSystemException(
-        'jsonPath resolves outside documents directory',
-        jsonPath,
-      );
-    }
-
-    final targetFile = File(candidate);
     // If we have an incoming vector clock, decide whether a fetch is needed.
     if (incomingVectorClock != null) {
       try {
@@ -143,7 +122,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
             throw const FileSystemException('stale attachment json');
           }
         }
-        await saveJson(candidate, jsonString);
+        await saveJson(targetFile.path, jsonString);
         _logging.captureEvent(
           'smart.json.written path=$jsonPath bytes=${bytes.length}',
           domain: 'MATRIX_SERVICE',
@@ -193,7 +172,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
             throw const FileSystemException('empty attachment bytes');
           }
           final jsonString = utf8.decode(bytes);
-          await saveJson(candidate, jsonString);
+          await saveJson(targetFile.path, jsonString);
           _logging.captureEvent(
             'smart.json.written(noVc) path=$jsonPath bytes=${bytes.length}',
             domain: 'MATRIX_SERVICE',

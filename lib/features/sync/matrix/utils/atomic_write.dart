@@ -17,7 +17,7 @@ import 'package:lotti/services/logging_service.dart';
 Future<void> atomicWriteBytes({
   required List<int> bytes,
   required String filePath,
-  required LoggingService logging,
+  LoggingService? logging,
   String subDomain = 'atomicWrite',
   String domain = 'MATRIX_SERVICE',
 }) async {
@@ -39,7 +39,7 @@ Future<void> atomicWriteBytes({
           await File(filePath).rename(bakPath);
           movedAside = true;
         } catch (e) {
-          logging.captureEvent(
+          logging?.captureEvent(
             'moveAside.failed path=$filePath err=$e',
             domain: domain,
             subDomain: subDomain,
@@ -51,7 +51,7 @@ Future<void> atomicWriteBytes({
         try {
           await File(bakPath).delete();
         } catch (e) {
-          logging.captureEvent(
+          logging?.captureEvent(
             'cleanup.bakDelete.failed path=$bakPath err=$e',
             domain: domain,
             subDomain: subDomain,
@@ -62,7 +62,7 @@ Future<void> atomicWriteBytes({
       try {
         await tmpFile.delete();
       } catch (e2) {
-        logging.captureEvent(
+        logging?.captureEvent(
           'cleanup.tmpDelete.failed path=$tmpPath err=$e2',
           domain: domain,
           subDomain: subDomain,
@@ -73,13 +73,13 @@ Future<void> atomicWriteBytes({
           await File(bakPath).rename(filePath);
         }
       } catch (e3) {
-        logging.captureEvent(
+        logging?.captureEvent(
           'restore.failed path=$filePath bak=$bakPath err=$e3',
           domain: domain,
           subDomain: subDomain,
         );
       }
-      logging.captureException(
+      logging?.captureException(
         e,
         domain: domain,
         subDomain: subDomain,
@@ -94,7 +94,7 @@ Future<void> atomicWriteBytes({
 Future<void> atomicWriteString({
   required String text,
   required String filePath,
-  required LoggingService logging,
+  LoggingService? logging,
   String subDomain = 'atomicWrite',
   String domain = 'MATRIX_SERVICE',
 }) async {

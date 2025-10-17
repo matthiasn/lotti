@@ -33,3 +33,8 @@ Future<bool> showInviteDialog(
 
   return result ?? false;
 }
+
+/// Global scope marker to indicate a central invite listener is active.
+class InviteDialogScope {
+  static bool globalListenerActive = false;
+}

@@ -179,5 +179,30 @@ void main() {
       // Just testing that it returns a Directory
       expect(await findDocumentsDirectory(), isA<Directory>());
     });
+
+    test(
+        'resolveJsonCandidateFile resolves inside docs dir and strips leading /',
+        () {
+      final file = resolveJsonCandidateFile(
+        '/text_entries/2021-11-30/test-id.text.json',
+      );
+      final file2 = resolveJsonCandidateFile(
+        'text_entries/2021-11-30/test-id.text.json',
+      );
+      final expected =
+          '${docDir.path}/text_entries/2021-11-30/test-id.text.json';
+      expect(file.path, expected);
+      expect(file2.path, expected);
+    });
+
+    test('resolveJsonCandidateFile rejects path traversal outside docs', () {
+      final escape = Platform.isWindows
+          ? r'..\..\..\Windows\System32\drivers\etc\hosts'
+          : '../../../etc/passwd';
+      expect(
+        () => resolveJsonCandidateFile(escape),
+        throwsA(isA<FileSystemException>()),
+      );
+    });
   });
 }

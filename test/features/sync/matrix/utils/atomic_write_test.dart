@@ -86,4 +86,39 @@ void main() {
     );
     expect(await File(path).readAsString(), '{"a":1}');
   });
+
+  test('atomicWriteBytes logs and rethrows when destination is a directory',
+      () async {
+    // Create a directory at the destination path so rename will fail
+    final path = p.join(tempDir.path, 'dest');
+    Directory(path).createSync(recursive: true);
+
+    await expectLater(
+      () => atomicWriteBytes(
+        bytes: [1, 2, 3],
+        filePath: path, // points to an existing directory
+        logging: logging,
+      ),
+      throwsA(isA<FileSystemException>()),
+    );
+
+    // We expect an exception capture for the failed rename fallback
+    verify(
+      () => logging.captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).called(1);
+
+    // Ensure no temp leftovers remain alongside the directory
+    final leftovers = Directory(tempDir.path)
+        .listSync()
+        .whereType<File>()
+        .map((f) => p.basename(f.path))
+        .where((name) => name.startsWith('dest.tmp.'))
+        .toList();
+    expect(leftovers, isEmpty);
+  });
 }

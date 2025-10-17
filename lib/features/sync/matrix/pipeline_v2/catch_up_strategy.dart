@@ -73,7 +73,9 @@ class CatchUpStrategy {
         }
       }
       if (idx >= 0) {
-        final start = (idx + 1).clamp(0, events.length);
+        var start = idx + 1;
+        if (start < 0) start = 0;
+        if (start > events.length) start = events.length;
         return events.sublist(start);
       }
       return events;

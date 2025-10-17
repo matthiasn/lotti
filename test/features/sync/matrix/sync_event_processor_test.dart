@@ -56,6 +56,10 @@ void main() {
     registerFallbackValue(measurableWater);
     registerFallbackValue(fallbackAiConfig);
   });
+  // Helper to normalize leading separators across platforms so that
+  // path.join(docDir, rel) never treats rel as absolute.
+  String _stripLeadingSlashes(String s) =>
+      s.replaceFirst(RegExp(r'^[\\/]+'), '');
 
   late MockEvent event;
   late MockJournalDb journalDb;
@@ -414,8 +418,7 @@ void main() {
 
       // File exists under temp doc dir
       final docDir = getIt<Directory>().path;
-      final normalized =
-          relJson.startsWith(path.separator) ? relJson.substring(1) : relJson;
+      final normalized = _stripLeadingSlashes(relJson);
       final f = File(path.join(docDir, normalized));
       expect(f.existsSync(), isTrue);
       expect(f.lengthSync(), greaterThan(0));
@@ -446,23 +449,22 @@ void main() {
         ),
       );
       final relJson = '${getRelativeImagePath(image)}.json';
-      final jsonPathImg = relJson.startsWith(path.separator)
-          ? path.join(tempDir.path, relJson.substring(1))
-          : path.join(tempDir.path, relJson);
+      final jsonPathImg =
+          path.join(tempDir.path, _stripLeadingSlashes(relJson));
       final jsonFile = File(jsonPathImg);
       await jsonFile.create(recursive: true);
       await jsonFile.writeAsString(jsonEncode(image.toJson()));
 
       final relMedia = getRelativeImagePath(image);
-      final mediaPathImg = relMedia.startsWith(path.separator)
-          ? path.join(tempDir.path, relMedia.substring(1))
-          : path.join(tempDir.path, relMedia);
+      final mediaPathImg =
+          path.join(tempDir.path, _stripLeadingSlashes(relMedia));
       final mediaFile = File(mediaPathImg);
       expect(mediaFile.existsSync(), isFalse);
 
       // Index contains a descriptor for the media path.
       final index = AttachmentIndex();
       final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('evt-img-empty');
       when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
       when(() => ev.content).thenReturn({'relativePath': relMedia});
       when(ev.downloadAndDecryptAttachment).thenAnswer((_) async => MatrixFile(
@@ -485,6 +487,85 @@ void main() {
       verify(ev.downloadAndDecryptAttachment).called(1);
     });
 
+    test('image media ensure logs and throws on empty bytes', () async {
+      final image = JournalImage(
+        meta: Metadata(
+          id: 'img-empty',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        data: ImageData(
+          imageId: 'img-empty',
+          imageDirectory: '/images/2024-01-01/',
+          imageFile: 'empty.jpg',
+          capturedAt: DateTime.now(),
+        ),
+      );
+      final relJson = '${getRelativeImagePath(image)}.json';
+      final jsonPathImg =
+          path.join(tempDir.path, _stripLeadingSlashes(relJson));
+      File(jsonPathImg)
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(image.toJson()));
+
+      final relMedia = getRelativeImagePath(image);
+      final index = AttachmentIndex();
+      final ev = MockEvent();
+      when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
+      when(() => ev.content).thenReturn({'relativePath': relMedia});
+      when(ev.downloadAndDecryptAttachment)
+          .thenAnswer((_) async => MatrixFile(bytes: Uint8List(0), name: 'x'));
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      await expectLater(
+        () => loader.load(jsonPath: relJson),
+        throwsA(isA<FileSystemException>()),
+      );
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetchMedia',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    test('no-VC JSON fetch logs and throws on empty bytes', () async {
+      const relJson = '/text_entries/2024-02-01/empty.text.json';
+      final index = AttachmentIndex();
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('evt-json-empty');
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.content).thenReturn({'relativePath': relJson});
+      when(ev.downloadAndDecryptAttachment)
+          .thenAnswer((_) async => MatrixFile(bytes: Uint8List(0), name: 'x'));
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      await expectLater(
+        () => loader.load(jsonPath: relJson),
+        throwsA(isA<FileSystemException>()),
+      );
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetchJson.noVc',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
     test('throws when image media missing and descriptor not indexed',
         () async {
       final image = JournalImage(
@@ -503,9 +584,8 @@ void main() {
         ),
       );
       final relJson = '${getRelativeImagePath(image)}.json';
-      final jsonPathMissing = relJson.startsWith(path.separator)
-          ? path.join(tempDir.path, relJson.substring(1))
-          : path.join(tempDir.path, relJson);
+      final jsonPathMissing =
+          path.join(tempDir.path, _stripLeadingSlashes(relJson));
       final createdJson = File(jsonPathMissing)
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(image.toJson()));
@@ -540,17 +620,15 @@ void main() {
         ),
       );
       final relJson = '${AudioUtils.getRelativeAudioPath(audio)}.json';
-      final jsonPathAud = relJson.startsWith(path.separator)
-          ? path.join(tempDir.path, relJson.substring(1))
-          : path.join(tempDir.path, relJson);
+      final jsonPathAud =
+          path.join(tempDir.path, _stripLeadingSlashes(relJson));
       File(jsonPathAud)
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(audio.toJson()));
 
       final relMedia = AudioUtils.getRelativeAudioPath(audio);
-      final mediaPathAud = relMedia.startsWith(path.separator)
-          ? path.join(tempDir.path, relMedia.substring(1))
-          : path.join(tempDir.path, relMedia);
+      final mediaPathAud =
+          path.join(tempDir.path, _stripLeadingSlashes(relMedia));
       final mediaFile = File(mediaPathAud);
       expect(mediaFile.existsSync(), isFalse);
 
@@ -591,9 +669,7 @@ void main() {
         entryText: const EntryText(plainText: 'local'),
       );
       const relJson = '/text_entries/2024-01-01/vc-1.text.json';
-      final jsonPath = relJson.startsWith(path.separator)
-          ? path.join(tempDir.path, relJson.substring(1))
-          : path.join(tempDir.path, relJson);
+      final jsonPath = path.join(tempDir.path, _stripLeadingSlashes(relJson));
       File(jsonPath)
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(entity.toJson()));
@@ -704,9 +780,7 @@ void main() {
         ),
         entryText: const EntryText(plainText: 'present'),
       );
-      final jsonPath = relJson.startsWith(path.separator)
-          ? path.join(tempDir.path, relJson.substring(1))
-          : path.join(tempDir.path, relJson);
+      final jsonPath = path.join(tempDir.path, _stripLeadingSlashes(relJson));
       File(jsonPath)
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(entity.toJson()));

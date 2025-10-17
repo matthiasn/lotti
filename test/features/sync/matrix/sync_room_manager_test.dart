@@ -207,6 +207,7 @@ void main() {
     when(() => mex.errcode).thenReturn('M_NOT_FOUND');
     when(() => gateway.leaveRoom('!room:server')).thenThrow(mex);
 
+    await manager.initialize();
     await manager.leaveCurrentRoom();
 
     verify(() => settingsDb.removeSettingsItem(matrixRoomKey)).called(1);
