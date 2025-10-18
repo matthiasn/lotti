@@ -139,6 +139,31 @@ class MatrixService {
       // Wire DB-apply diagnostics from the processor into the V2 pipeline
       if (_v2Pipeline != null) {
         _eventProcessor.applyObserver = _v2Pipeline!.reportDbApplyDiagnostics;
+        // Proactively kick a forceRescan(includeCatchUp=true) shortly after startup
+        // to avoid gaps if the consumer started before room readiness or network flakiness.
+        unawaited(Future<void>.delayed(const Duration(milliseconds: 300))
+            .then((_) async {
+          try {
+            _loggingService.captureEvent(
+              'service.forceRescan.startup includeCatchUp=true',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan',
+            );
+            await _v2Pipeline!.forceRescan();
+            _loggingService.captureEvent(
+              'service.forceRescan.startup.done',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan',
+            );
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan.startup',
+              stackTrace: st,
+            );
+          }
+        }));
       }
       final coordinator = lifecycleCoordinator ??
           SyncLifecycleCoordinator(
@@ -181,7 +206,17 @@ class MatrixService {
         // Kick a catch-up + scan; handle async errors inside the task.
         unawaited(() async {
           try {
+            _loggingService.captureEvent(
+              'service.forceRescan.connectivity includeCatchUp=true',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan',
+            );
             await _v2Pipeline?.forceRescan();
+            _loggingService.captureEvent(
+              'service.forceRescan.connectivity.done',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan',
+            );
           } catch (e, st) {
             // Log exceptions to aid debugging, but do not crash.
             _loggingService.captureException(

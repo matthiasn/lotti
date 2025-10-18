@@ -607,6 +607,70 @@ void main() {
     expect(called, 1);
   });
 
+  test('startup triggers V2 forceRescan includeCatchUp=true', () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+
+    final pipeline = _TestV2Pipeline2(
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      loggingService: logging,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+    );
+    var called = 0;
+    pipeline.onForceRescan = ({required bool includeCatchUp}) async {
+      called++;
+      expect(includeCatchUp, isTrue);
+    };
+
+    MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: MockMatrixMessageSender(),
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      collectV2Metrics: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      v2PipelineOverride: pipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
+    );
+
+    // Allow delayed startup forceRescan to fire
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    expect(called, 1);
+  });
+
   test('connectivity handler logs exceptions from V2 forceRescan', () async {
     final gateway = MockMatrixSyncGateway();
     final logging = MockLoggingService();

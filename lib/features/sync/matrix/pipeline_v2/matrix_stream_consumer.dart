@@ -169,6 +169,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   final List<Event> _pending = <Event>[];
   Timer? _flushTimer;
   Timer? _liveScanTimer;
+  Timer? _initialCatchUpRetryTimer;
+  DateTime? _initialCatchUpStartAt;
+  int _initialCatchUpAttempts = 0;
+  bool _initialCatchUpCompleted = false;
+  bool _firstStreamEventCatchUpTriggered = false;
   final Duration _flushInterval;
   final int _maxBatch;
   final Duration _markerDebounce;
@@ -416,8 +421,10 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   @override
   Future<void> start() async {
-    // Ensure room snapshot exists, then catch up and attach streaming.
+    // Ensure room snapshot exists, then run an initial catch‑up BEFORE any
+    // live scans or marker advancement to avoid skipping backlog.
     if (_roomManager.currentRoom == null) {
+      final hydrateStart = _now();
       try {
         await _roomManager.hydrateRoomSnapshot(client: _client);
       } catch (e, st) {
@@ -428,12 +435,43 @@ class MatrixStreamConsumer implements SyncPipeline {
           stackTrace: st,
         );
       }
+      // Wait deterministically for room readiness with a bounded timeout.
+      // Total wait ~10s (50 × 200ms). This avoids races where the live scan
+      // would start before the room becomes available and skip backlog.
+      for (var i = 0; i < 50 && _roomManager.currentRoom == null; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+      final hydrateElapsed = _now().difference(hydrateStart).inMilliseconds;
+      _loggingService.captureEvent(
+        'start.hydrateRoom.ready=${_roomManager.currentRoom != null} after ${hydrateElapsed}ms',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'start',
+      );
     }
-    await _attachCatchUp();
+    // Attempt catch‑up only when we have an active room; otherwise we'll rely
+    // on the later scheduled retry once the room is ready.
+    if (_roomManager.currentRoom != null) {
+      await _attachCatchUp();
+    }
+    // Ensure we eventually run initial catch‑up even if the room was not yet
+    // ready — schedule a retry loop that cancels itself once catch‑up runs.
+    if (_roomManager.currentRoom == null) {
+      _scheduleInitialCatchUpRetry();
+    }
     await _sub?.cancel();
     _sub = _sessionManager.timelineEvents.listen((event) {
       final roomId = _roomManager.currentRoomId;
       if (roomId == null || event.roomId != roomId) return;
+      if (!_initialCatchUpCompleted && !_firstStreamEventCatchUpTriggered) {
+        _firstStreamEventCatchUpTriggered = true;
+        _loggingService.captureEvent(
+          'catchup.trigger.onFirstStreamEvent',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'catchup',
+        );
+        // Attempt a catch-up + live scan in the background.
+        unawaited(forceRescan());
+      }
       _enqueue(event);
     });
 
@@ -450,8 +488,8 @@ class MatrixStreamConsumer implements SyncPipeline {
           onUpdate: _scheduleLiveScan,
         );
         _liveTimeline = tl;
-        // Proactively scan once at startup so we don't rely on a fresh
-        // incoming event to kick the first processing pass.
+        // Proactively scan once at startup, now that initial catch‑up has run
+        // (or been attempted) to avoid skipping backlog.
         _loggingService.captureEvent(
           'v2 start: scheduling initial liveScan',
           domain: 'MATRIX_SYNC_V2',
@@ -496,6 +534,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     _sub = null;
     _flushTimer?.cancel();
     _liveScanTimer?.cancel();
+    _initialCatchUpRetryTimer?.cancel();
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
@@ -536,16 +575,30 @@ class MatrixStreamConsumer implements SyncPipeline {
         );
         return;
       }
+      _loggingService.captureEvent(
+        'catchup.start lastEventId=${_lastProcessedEventId ?? 'null'}',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'catchup',
+      );
       final slice = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: _lastProcessedEventId,
         backfill: _backfill ?? SdkPaginationCompat.backfillUntilContains,
         logging: _loggingService,
       );
+      _loggingService.captureEvent(
+        'catchup.done events=${slice.length}',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'catchup',
+      );
       if (slice.isNotEmpty) {
         if (_collectMetrics) _metrics.incCatchupBatches();
         await _processOrdered(slice);
       }
+      // Initial catch-up attempt considered completed (even if empty). Cancel any pending retries.
+      _initialCatchUpRetryTimer?.cancel();
+      _initialCatchUpRetryTimer = null;
+      _initialCatchUpCompleted = true;
     } catch (e, st) {
       _loggingService.captureException(
         e,
@@ -554,6 +607,41 @@ class MatrixStreamConsumer implements SyncPipeline {
         stackTrace: st,
       );
     }
+  }
+
+  void _scheduleInitialCatchUpRetry() {
+    _initialCatchUpRetryTimer?.cancel();
+    final start = _initialCatchUpStartAt ?? _now();
+    _initialCatchUpStartAt = start;
+    final elapsed = _now().difference(start);
+    // Give up after ~15 minutes of trying; logs will indicate timeout.
+    const maxWait = Duration(minutes: 15);
+    if (elapsed >= maxWait) {
+      _loggingService.captureEvent(
+        'catchup.timeout after ${elapsed.inSeconds}s',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'catchup',
+      );
+      return;
+    }
+    // Exponential backoff starting at 200ms, capping at 10s, no jitter.
+    final delay = tu.computeExponentialBackoff(
+      _initialCatchUpAttempts,
+    );
+    _initialCatchUpAttempts++;
+    _initialCatchUpRetryTimer = Timer(delay, () {
+      if (_initialCatchUpCompleted) return;
+      if (_roomManager.currentRoom != null) {
+        unawaited(_attachCatchUp());
+      } else {
+        _loggingService.captureEvent(
+          'waiting for room for initial catch-up (attempt=$_initialCatchUpAttempts, delay=${delay.inMilliseconds}ms)',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'catchup',
+        );
+        _scheduleInitialCatchUpRetry();
+      }
+    });
   }
 
   Timeline? _liveTimeline;
@@ -972,10 +1060,20 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Force a rescan and optional catch-up to recover from potential gaps
   Future<void> forceRescan({bool includeCatchUp = true}) async {
     try {
+      _loggingService.captureEvent(
+        'forceRescan.start includeCatchUp=$includeCatchUp',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'forceRescan',
+      );
       if (includeCatchUp) {
         await _attachCatchUp();
       }
       await _scanLiveTimeline();
+      _loggingService.captureEvent(
+        'forceRescan.done includeCatchUp=$includeCatchUp',
+        domain: 'MATRIX_SYNC_V2',
+        subDomain: 'forceRescan',
+      );
     } catch (e, st) {
       _loggingService.captureException(
         e,
