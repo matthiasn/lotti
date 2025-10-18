@@ -39,6 +39,8 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
 
+//
+
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -431,6 +433,8 @@ void main() {
       }
     });
 
+    // (SmartJournalEntityLoader local-read logging tests deferred)
+
     test('ensures missing image media via AttachmentIndex', () async {
       // Arrange: JSON for an image entity exists, media file does not.
       final image = JournalImage(
@@ -813,6 +817,8 @@ void main() {
       expect(downloads, 0);
     });
   });
+
+  // (EntryLink logging tests deferred)
 
   test('journal entity loader exception logs missingAttachment subdomain',
       () async {

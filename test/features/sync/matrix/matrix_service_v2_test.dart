@@ -113,6 +113,30 @@ void main() {
     when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
     when(() => lifecycleCoordinator.reconcileLifecycleState())
         .thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
 
     return MatrixService(
       gateway: gateway,
@@ -162,6 +186,10 @@ void main() {
     when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
     when(() => lifecycleCoordinator.reconcileLifecycleState())
         .thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
 
     final service = MatrixService(
       gateway: gateway,
@@ -361,6 +389,10 @@ void main() {
     when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
     when(() => lifecycleCoordinator.reconcileLifecycleState())
         .thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
 
     final pipeline = _TestV2Pipeline2(
       sessionManager: sessionManager,
@@ -578,8 +610,14 @@ void main() {
     final controller = StreamController<List<ConnectivityResult>>.broadcast();
     addTearDown(controller.close);
 
+    // Ensure async disposals are stubbed to Futures for service.dispose()
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
+
     // Construct service with injected connectivity stream and pipeline
-    MatrixService(
+    final matrixService = MatrixService(
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
@@ -600,6 +638,7 @@ void main() {
       connectivityStream: controller.stream,
       attachmentIndex: AttachmentIndex(logging: logging),
     );
+    addTearDown(() => matrixService.dispose());
 
     // Simulate connectivity regained
     controller.add(<ConnectivityResult>[ConnectivityResult.wifi]);
@@ -628,6 +667,10 @@ void main() {
     when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
     when(() => lifecycleCoordinator.reconcileLifecycleState())
         .thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
 
     final pipeline = _TestV2Pipeline2(
       sessionManager: sessionManager,
@@ -645,7 +688,7 @@ void main() {
       expect(includeCatchUp, isTrue);
     };
 
-    MatrixService(
+    final matrixService = MatrixService(
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
@@ -665,6 +708,7 @@ void main() {
       v2PipelineOverride: pipeline,
       attachmentIndex: AttachmentIndex(logging: logging),
     );
+    addTearDown(() => matrixService.dispose());
 
     // Allow delayed startup forceRescan to fire
     await Future<void>.delayed(const Duration(milliseconds: 400));
@@ -696,6 +740,10 @@ void main() {
     when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
     when(() => lifecycleCoordinator.reconcileLifecycleState())
         .thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
 
     final pipeline = _TestV2Pipeline2(
       sessionManager: sessionManager,
@@ -713,7 +761,7 @@ void main() {
     final controller = StreamController<List<ConnectivityResult>>.broadcast();
     addTearDown(controller.close);
 
-    MatrixService(
+    final matrixService = MatrixService(
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
@@ -734,6 +782,7 @@ void main() {
       connectivityStream: controller.stream,
       attachmentIndex: AttachmentIndex(logging: logging),
     );
+    addTearDown(() => matrixService.dispose());
 
     controller.add(<ConnectivityResult>[ConnectivityResult.ethernet]);
     await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -741,6 +790,167 @@ void main() {
           any<Object>(),
           domain: 'MATRIX_SERVICE',
           subDomain: 'connectivity',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        )).called(1);
+  });
+
+  test('startup forceRescan logs success', () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    when(() => logging.captureEvent(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        )).thenReturn(null);
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
+
+    var called = 0;
+    final pipeline = _TestV2Pipeline2(
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      loggingService: logging,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+    )..onForceRescan = ({required bool includeCatchUp}) async {
+        called++;
+      };
+
+    final service = MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: MockMatrixMessageSender(),
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      collectV2Metrics: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      v2PipelineOverride: pipeline,
+      connectivityStream: const Stream<List<ConnectivityResult>>.empty(),
+      attachmentIndex: AttachmentIndex(logging: logging),
+    );
+    addTearDown(() => service.dispose());
+
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+
+    verify(() => logging.captureEvent(
+          'service.forceRescan.startup includeCatchUp=true',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'v2.forceRescan',
+        )).called(1);
+    verify(() => logging.captureEvent(
+          'service.forceRescan.startup.done',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'v2.forceRescan',
+        )).called(1);
+    expect(called, 1);
+  });
+
+  test('startup forceRescan logs and handles exception', () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    when(() => logging.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        )).thenReturn(null);
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
+    when(() => timelineListener.dispose()).thenAnswer((_) async {});
+    when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.dispose()).thenAnswer((_) async {});
+
+    final pipeline = _TestV2Pipeline2(
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      loggingService: logging,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+    )..onForceRescan = ({required bool includeCatchUp}) async {
+        throw Exception('boom');
+      };
+
+    final service = MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: MockMatrixMessageSender(),
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      collectV2Metrics: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      v2PipelineOverride: pipeline,
+      connectivityStream: const Stream<List<ConnectivityResult>>.empty(),
+      attachmentIndex: AttachmentIndex(logging: logging),
+    );
+    addTearDown(() => service.dispose());
+
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+
+    verify(() => logging.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'v2.forceRescan.startup',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         )).called(1);
   });

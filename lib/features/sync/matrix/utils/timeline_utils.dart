@@ -52,14 +52,23 @@ List<Event> dedupEventsByIdPreserveOrder(List<Event> events) {
 }
 
 /// Whether an event should have its attachment prefetched before processing.
-bool shouldPrefetchAttachment(Event e, String? currentUserId) {
-  final mime = e.attachmentMimetype;
-  if (mime.isEmpty) return false;
+bool shouldPrefetchAttachment(Event e, String? _) {
+  final raw = e.attachmentMimetype;
+  if (raw.isEmpty) return false;
+  // Normalize and strip any parameters (e.g., "; charset=utf-8").
+  final mime = raw.split(';').first.trim().toLowerCase();
+
   // Prefetch media and JSON descriptors for cross-device hydration.
-  final isSupported = mime.startsWith('image/') ||
+  final isMedia = mime.startsWith('image/') ||
       mime.startsWith('audio/') ||
-      mime.startsWith('video/') ||
-      mime == 'application/json';
+      mime.startsWith('video/');
+  final isJson = mime == 'application/json';
+  // Match application/*+json (e.g., application/ld+json, application/activity+json).
+  final isStructuredJson = mime.startsWith('application/') &&
+      mime.contains('/') &&
+      mime.split('/')[1].endsWith('+json');
+
+  final isSupported = isMedia || isJson || isStructuredJson;
   // Sender-agnostic: downloading again is safe due to atomic dedupe and
   // enables cross-device sync for self-sent messages.
   return isSupported;
