@@ -93,7 +93,9 @@ class CatchUpStrategy {
         // timestamp since the stored last sync ts (when provided).
         var startByCount = idx + 1;
         if (preContextCount > 0) {
-          startByCount = (idx + 1 - preContextCount).clamp(0, events.length);
+          startByCount = idx + 1 - preContextCount;
+          if (startByCount < 0) startByCount = 0;
+          if (startByCount > events.length) startByCount = events.length;
         }
         var startByTs = idx + 1;
         if (preContextSinceTs != null) {
@@ -105,7 +107,7 @@ class CatchUpStrategy {
           }
           startByTs = i;
         }
-        var start = math.min(startByCount, startByTs);
+        var start = startByCount < startByTs ? startByCount : startByTs;
         if (start < 0) start = 0;
         if (start > events.length) start = events.length;
         return events.sublist(start);

@@ -672,7 +672,26 @@ class MatrixStreamConsumer implements SyncPipeline {
     _initialCatchUpRetryTimer = Timer(delay, () {
       if (_initialCatchUpCompleted) return;
       if (_roomManager.currentRoom != null) {
-        unawaited(_attachCatchUp());
+        // Attempt catch-up and ensure we continue retrying until it marks
+        // completion. Capture and log errors before rescheduling.
+        _attachCatchUp().then((_) {
+          if (!_initialCatchUpCompleted) {
+            _loggingService.captureEvent(
+              'catchup.retry.reschedule (not completed)',
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'catchup',
+            );
+            _scheduleInitialCatchUpRetry();
+          }
+        }).catchError((Object error, StackTrace st) {
+          _loggingService.captureException(
+            error,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'catchup.retry',
+            stackTrace: st,
+          );
+          _scheduleInitialCatchUpRetry();
+        });
       } else {
         _loggingService.captureEvent(
           'waiting for room for initial catch-up (attempt=$_initialCatchUpAttempts, delay=${delay.inMilliseconds}ms)',
