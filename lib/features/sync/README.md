@@ -239,6 +239,11 @@ Key helpers:
 - Catch-up and Pagination
   - On attach, V2 attempts SDK pagination/backfill first (best-effort across
     SDK versions); if unavailable, it falls back to escalating snapshot limits.
+  - Startup lookback: include a bounded pre-context since the last processed
+    timestamp and up to a fixed number of events before the stored marker to
+    provide context for attachment descriptors (no rewind of payloads).
+  - Initial catch-up is retried with exponential backoff and gives up after
+    roughly 15 minutes; logs will indicate `catchup.timeout`.
 - Reliability safeguards
   - Streaming micro-batches are ordered oldest→newest; attachments are prefetched
     before processing. Retries apply exponential backoff with TTL and a size cap;
@@ -247,6 +252,9 @@ Key helpers:
     to avoid silently skipping payloads when non-sync events arrive late.
   - A heartbeat rescan (every 5s) runs; if the last marker isn’t in the live
     window, a focused catch-up recovers gaps.
+  - Service nudges: shortly after startup and whenever connectivity resumes,
+    `MatrixService` triggers a `forceRescan(includeCatchUp=true)` to close any
+    gaps introduced while offline or before room readiness.
 
 ### Reliability tracker
 

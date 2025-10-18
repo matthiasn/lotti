@@ -29,6 +29,26 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
+/// MatrixService
+///
+/// High-level façade for Matrix-based encrypted sync. Composes the SDK gateway,
+/// session/room managers, message sender, timeline listener (V1), and, when
+/// enabled via the `enable_sync_v2` flag, the stream-first V2 pipeline
+/// (`MatrixStreamConsumer`).
+///
+/// V2 integration highlights
+/// - Wires `SyncEventProcessor.applyObserver` to surface DB-apply diagnostics
+///   into the pipeline’s typed metrics.
+/// - Proactively triggers a `forceRescan(includeCatchUp=true)` shortly after
+///   startup to avoid gaps if the consumer starts before the room is fully
+///   ready or network is flaky.
+/// - On connectivity regain, nudges the pipeline again with a force rescan to
+///   recover from offline-created bursts.
+/// - Exposes `getV2Metrics()`, `forceV2Rescan()`, `retryV2Now()`, and
+///   `getSyncDiagnosticsText()` for UI (Matrix Stats) and tooling.
+///
+/// V1 remains available when V2 is disabled; lifecycle orchestration is unified
+/// via `SyncEngine` and `SyncLifecycleCoordinator`.
 class MatrixService {
   MatrixService({
     required MatrixSyncGateway gateway,
