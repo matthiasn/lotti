@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_event_classifier.dart'
@@ -19,7 +20,6 @@ import 'package:lotti/features/sync/matrix/pipeline_v2/read_marker_manager.dart'
 import 'package:lotti/features/sync/matrix/pipeline_v2/retry_and_circuit.dart'
     as rc;
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
-import 'package:lotti/features/sync/matrix/save_attachment.dart';
 import 'package:lotti/features/sync/matrix/sdk_pagination_compat.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -569,28 +569,14 @@ class MatrixStreamConsumer implements SyncPipeline {
     final tl = _liveTimeline;
     if (tl == null) return;
     try {
-      final events = List<Event>.from(tl.events)
-        ..sort(TimelineEventOrdering.compare);
-      final idx = tu.findLastIndexByEventId(events, _lastProcessedEventId);
-      var slice = idx >= 0
-          ? events.sublist(idx + 1)
-          : (events.isEmpty
-              ? events
-              : events.sublist(
-                  (events.length - _liveScanTailLimit).clamp(0, events.length),
-                ));
-      // Filter tail by timestamp threshold to avoid reprocessing older
-      // unrelated attachments after marker advancement.
-      if (slice.isNotEmpty && _lastProcessedTs != null) {
-        final cutoff =
-            _lastProcessedTs!.toInt() - _attachmentTsGate.inMilliseconds;
-        slice = slice
-            .where((e) => TimelineEventOrdering.timestamp(e) >= cutoff)
-            .toList();
-      }
+      final slice = msh.buildLiveScanSlice(
+        timelineEvents: tl.events,
+        lastEventId: _lastProcessedEventId,
+        tailLimit: _liveScanTailLimit,
+        lastTimestamp: _lastProcessedTs,
+        tsGate: _attachmentTsGate,
+      );
       if (slice.isNotEmpty) {
-        // Dedup live-scan events by id to avoid duplicate first-pass work.
-        slice = tu.dedupEventsByIdPreserveOrder(slice);
         await _processOrdered(slice);
         if (_collectMetrics) {
           _loggingService.captureEvent(
@@ -658,6 +644,7 @@ class MatrixStreamConsumer implements SyncPipeline {
 
     // First pass: prefetch attachments for remote events.
     var sawAttachmentPrefetch = false; // true only if a new file was written
+    const ingestor = AttachmentIngestor();
     for (final e in ordered) {
       // Skip duplicate attachment work if we've already seen this eventId.
       // Keep processing for sync payload events to ensure apply/retry semantics.
@@ -672,80 +659,22 @@ class MatrixStreamConsumer implements SyncPipeline {
           continue;
         }
       }
-      // Always record descriptors when a relativePath is present, even if the
-      // SDK doesn't classify it as an attachment (robust to MIME quirks).
-      final rpAny = e.content['relativePath'];
-      if (rpAny is String && rpAny.isNotEmpty) {
-        _attachmentIndex?.record(e);
-        if (_collectMetrics) {
-          // Count an attachment observed and record path for diagnostics.
-          _metrics
-            ..incPrefetch()
-            ..addLastPrefetched(rpAny);
-        }
-        try {
-          final mime = e.attachmentMimetype;
-          final content = e.content;
-          final hasUrl = content.containsKey('url') ||
-              content.containsKey('mxc') ||
-              content.containsKey('mxcUrl') ||
-              content.containsKey('uri');
-          final hasEnc = content.containsKey('file');
-          final msgType = content['msgtype'];
-          _loggingService.captureEvent(
-            'attachmentEvent id=${e.eventId} path=$rpAny mime=$mime msgtype=$msgType hasUrl=$hasUrl hasFile=$hasEnc',
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'attachment.observe',
-          );
-        } catch (_) {
-          // best-effort logging
-        }
-        if (_descriptorCatchUp?.removeIfPresent(rpAny) ?? false) {
-          _scheduleLiveScan();
-          // Accelerate recovery by marking retries due immediately.
-          unawaited(retryNow());
-        }
-      }
-
-      // Timestamp gate: skip first-pass attachment prefetch when the event is
-      // clearly older than the last processed sync payload (with a small
-      // margin). This reduces unrelated audio churn on text-only updates.
-      if (_lastProcessedTs != null &&
-          ec.MatrixEventClassifier.isAttachment(e)) {
-        final ts = TimelineEventOrdering.timestamp(e);
-        if (ts < _lastProcessedTs!.toInt() - _attachmentTsGate.inMilliseconds) {
-          continue;
-        }
-      }
-
-      // For metrics and optional background media download, continue using the
-      // classifier's attachment predicate (media only).
-      if (ec.MatrixEventClassifier.shouldPrefetchAttachment(
-          e, _client.userID)) {
-        try {
-          final wrote = await saveAttachment(
-            e,
-            loggingService: _loggingService,
-            documentsDirectory: _documentsDirectory,
-          );
-          final rp = e.content['relativePath'];
-          if (wrote && rp is String && rp.isNotEmpty) {
-            if (_descriptorCatchUp?.removeIfPresent(rp) ?? false) {
-              _scheduleLiveScan();
-            }
-          }
-          if (wrote) sawAttachmentPrefetch = true;
-        } catch (err, st) {
-          _loggingService.captureException(
-            err,
-            domain: 'MATRIX_SYNC_V2',
-            subDomain: 'prefetch',
-            stackTrace: st,
-          );
-          if (_collectMetrics) _metrics.incFailures();
-          // Continue with the next event; do not abort the batch on prefetch failures.
-        }
-      }
+      // Centralize descriptor record + optional media prefetch logic.
+      final wrote = await ingestor.process(
+        event: e,
+        logging: _loggingService,
+        documentsDirectory: _documentsDirectory,
+        attachmentIndex: _attachmentIndex,
+        collectMetrics: _collectMetrics,
+        metrics: _metrics,
+        lastProcessedTs: _lastProcessedTs,
+        attachmentTsGate: _attachmentTsGate,
+        currentUserId: _client.userID,
+        descriptorCatchUp: _descriptorCatchUp,
+        scheduleLiveScan: _scheduleLiveScan,
+        retryNow: retryNow,
+      );
+      if (wrote) sawAttachmentPrefetch = true;
 
       // (prefetch handled above)
     }
