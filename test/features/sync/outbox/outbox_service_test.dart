@@ -155,8 +155,7 @@ void main() {
     when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
         .thenAnswer((_) async => 1);
     // Ensure activity gate can construct if needed
-    when(() => userActivityService.lastActivity)
-        .thenReturn(DateTime.now());
+    when(() => userActivityService.lastActivity).thenReturn(DateTime.now());
     when(() => userActivityService.activityStream)
         .thenAnswer((_) => const Stream<DateTime>.empty());
 
@@ -342,7 +341,8 @@ void main() {
   });
 
   group('enqueueMessage', () {
-    test('stores relative attachment path for initial journal entry and schedules',
+    test(
+        'stores relative attachment path for initial journal entry and schedules',
         () async {
       final capturedCompanions = <OutboxCompanion>[];
       when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))

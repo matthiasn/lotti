@@ -81,6 +81,11 @@ class MatrixStreamConsumer implements SyncPipeline {
     Duration markerDebounce = const Duration(milliseconds: 300),
     int? maxRetriesPerEvent,
     Duration circuitCooldown = const Duration(seconds: 30),
+    // Live-scan look-behind tuning (test seams)
+    bool liveScanIncludeLookBehind = true,
+    int liveScanInitialAuditScans = 5,
+    int? liveScanInitialAuditTail,
+    int liveScanSteadyTail = 100,
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,
@@ -107,7 +112,11 @@ class MatrixStreamConsumer implements SyncPipeline {
         _retryTtl = const Duration(minutes: 10),
         _retryMaxEntries = 2000,
         _circuitFailureThreshold = 50,
-        _circuitCooldown = circuitCooldown {
+        _circuitCooldown = circuitCooldown,
+        _liveScanIncludeLookBehind = liveScanIncludeLookBehind,
+        _liveScanSteadyTail = liveScanSteadyTail,
+        _overrideAuditTail = liveScanInitialAuditTail,
+        _liveScanAuditScansRemaining = liveScanInitialAuditScans {
     _retryTracker = rc.RetryTracker(
       ttl: _retryTtl,
       maxEntries: _retryMaxEntries,
@@ -166,6 +175,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   bool _initialized = false;
   String? _lastProcessedEventId;
   num? _lastProcessedTs;
+  // Captured at initialize() for attach-time anchoring and sizing initial
+  // audit tails. These represent the persisted "last sync" marker when we
+  // start this session, before we process any new events.
+  String? _startupLastProcessedEventId;
+  num? _startupLastProcessedTs;
   final List<Event> _pending = <Event>[];
   Timer? _flushTimer;
   Timer? _liveScanTimer;
@@ -187,6 +201,13 @@ class MatrixStreamConsumer implements SyncPipeline {
       Duration(milliseconds: 500);
   static const int _liveScanTailLimit = 50;
   static const Duration _attachmentTsGate = Duration(seconds: 2);
+  // Live-scan look-behind policy. Can be tuned via constructor (test seams).
+  final bool _liveScanIncludeLookBehind;
+  int _liveScanAuditScansRemaining;
+  int _liveScanAuditTail =
+      300; // sized later based on offline delta or override
+  final int _liveScanSteadyTail;
+  final int? _overrideAuditTail; // optional override for tests
 
   // Tracks eventIds that reported rows=0 while predicted status suggests
   // incoming is newer (missing base). These should be retried and block
@@ -416,6 +437,14 @@ class MatrixStreamConsumer implements SyncPipeline {
     } catch (_) {
       // optional
     }
+    // Capture startup marker for attach-time anchoring and log it for visibility.
+    _startupLastProcessedEventId = _lastProcessedEventId;
+    _startupLastProcessedTs = _lastProcessedTs;
+    _loggingService.captureEvent(
+      'startup.marker id=${_startupLastProcessedEventId ?? 'null'} ts=${_startupLastProcessedTs?.toInt() ?? 'null'}',
+      domain: 'MATRIX_SYNC_V2',
+      subDomain: 'startup.marker',
+    );
     _initialized = true;
   }
 
@@ -488,6 +517,9 @@ class MatrixStreamConsumer implements SyncPipeline {
           onUpdate: _scheduleLiveScan,
         );
         _liveTimeline = tl;
+        // Size the initial audit tail based on offline delta (or override).
+        _liveScanAuditTail =
+            _overrideAuditTail ?? _computeAuditTailCountByDelta();
         // Proactively scan once at startup, now that initial catch‑up has run
         // (or been attempted) to avoid skipping backlog.
         _loggingService.captureEvent(
@@ -580,11 +612,19 @@ class MatrixStreamConsumer implements SyncPipeline {
         domain: 'MATRIX_SYNC_V2',
         subDomain: 'catchup',
       );
+      final preSinceTs = _startupLastProcessedTs == null
+          ? null
+          : (_startupLastProcessedTs!.toInt() - 1000); // small skew buffer
       final slice = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: _lastProcessedEventId,
         backfill: _backfill ?? SdkPaginationCompat.backfillUntilContains,
         logging: _loggingService,
+        // Ensure we also include a bounded pre-context since the stored last
+        // sync timestamp, escalating pagination as needed.
+        preContextSinceTs: preSinceTs,
+        preContextCount: 300,
+        maxLookback: 8000,
       );
       _loggingService.captureEvent(
         'catchup.done events=${slice.length}',
@@ -657,18 +697,44 @@ class MatrixStreamConsumer implements SyncPipeline {
     final tl = _liveTimeline;
     if (tl == null) return;
     try {
-      final slice = msh.buildLiveScanSlice(
+      // Build the normal strictly-after slice (no timestamp gating for
+      // payload discovery; gating applies only to attachment prefetch).
+      final afterSlice = msh.buildLiveScanSlice(
         timelineEvents: tl.events,
         lastEventId: _lastProcessedEventId,
         tailLimit: _liveScanTailLimit,
-        lastTimestamp: _lastProcessedTs,
+        lastTimestamp: null,
         tsGate: _attachmentTsGate,
       );
-      if (slice.isNotEmpty) {
-        await _processOrdered(slice);
+      List<Event> combined;
+      if (_liveScanIncludeLookBehind) {
+        // Merge bounded look-behind tail.
+        var tail = _liveScanSteadyTail;
+        if (_liveScanAuditScansRemaining > 0) {
+          tail = _liveScanAuditTail;
+          _liveScanAuditScansRemaining--;
+        }
+        final tailSlice = msh.buildLiveScanSlice(
+          timelineEvents: tl.events,
+          lastEventId: null,
+          tailLimit: tail,
+          lastTimestamp: null,
+          tsGate: _attachmentTsGate,
+        );
+        if (_collectMetrics) {
+          _metrics.recordLookBehindMerge(tail);
+        }
+        combined = [...afterSlice, ...tailSlice]
+          ..sort(TimelineEventOrdering.compare);
+      } else {
+        combined = [...afterSlice]..sort(TimelineEventOrdering.compare);
+      }
+      final deduped = tu.dedupEventsByIdPreserveOrder(combined);
+      if (deduped.isNotEmpty) {
+        await _processOrdered(deduped);
         if (_collectMetrics) {
           _loggingService.captureEvent(
-            'v2 liveScan processed=${slice.length} latest=${_lastProcessedEventId ?? 'null'}',
+            'v2 liveScan processed=${deduped.length} latest=${_lastProcessedEventId ?? 'null'}',
             domain: 'MATRIX_SYNC_V2',
             subDomain: 'liveScan',
           );
@@ -682,6 +748,17 @@ class MatrixStreamConsumer implements SyncPipeline {
         stackTrace: st,
       );
     }
+  }
+
+  int _computeAuditTailCountByDelta() {
+    final ts = _startupLastProcessedTs;
+    if (ts == null) return 200;
+    final nowMs = _now().millisecondsSinceEpoch;
+    final deltaMs = nowMs - ts.toInt();
+    final deltaH = deltaMs / (1000 * 60 * 60);
+    if (deltaH >= 48) return 400;
+    if (deltaH >= 12) return 300;
+    return 200;
   }
 
   // (helper removed; all call sites use utils)

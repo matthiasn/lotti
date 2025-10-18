@@ -22,6 +22,9 @@ class MetricsCounters {
   int skippedByRetryLimit = 0;
   int retriesScheduled = 0;
   int circuitOpens = 0;
+  // Live-scan look-behind observability
+  int lookBehindMerges = 0;
+  int lastLookBehindTail = 0;
 
   int dbApplied = 0;
   int dbIgnoredByVectorClock = 0;
@@ -97,6 +100,12 @@ class MetricsCounters {
     circuitOpens++;
   }
 
+  void recordLookBehindMerge(int tail) {
+    if (!collect) return;
+    lookBehindMerges++;
+    lastLookBehindTail = tail;
+  }
+
   // DB metrics are tracked regardless of collect
   void incDbApplied() => dbApplied++;
   void incDbIgnoredByVectorClock() => dbIgnoredByVectorClock++;
@@ -115,7 +124,7 @@ class MetricsCounters {
     required int retryStateSize,
     required bool circuitIsOpen,
   }) {
-    return MetricsUtils.buildSnapshot(
+    final base = MetricsUtils.buildSnapshot(
       processed: processed,
       skipped: skipped,
       failures: failures,
@@ -134,7 +143,11 @@ class MetricsCounters {
       lastPrefetched: lastPrefetched,
       retryStateSize: retryStateSize,
       circuitOpen: circuitIsOpen,
-    )..putIfAbsent('dbMissingBase', () => dbMissingBase);
+    )
+      ..putIfAbsent('dbMissingBase', () => dbMissingBase)
+      ..putIfAbsent('lookBehindMerges', () => lookBehindMerges)
+      ..putIfAbsent('lastLookBehindTail', () => lastLookBehindTail);
+    return base;
   }
 
   String buildFlushLog({required int retriesPending}) {

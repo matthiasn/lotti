@@ -178,6 +178,91 @@ void main() {
       expect(slice.last.originServerTs.millisecondsSinceEpoch, 309);
       verify(() => tl.cancelSubscriptions()).called(1);
     });
+
+    test('includes pre-context by count even when strictly-after is non-empty',
+        () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final tl = MockTimeline();
+
+      // Build ordered events: o1(ts=100), x1(ts=150), x2(ts=200)
+      Event mk(String id, int ts) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn(id);
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        return e;
+      }
+
+      final events = <Event>[mk('o1', 100), mk('x1', 150), mk('x2', 200)];
+
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => tl);
+      when(() => tl.events).thenReturn(events);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'x1',
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async {
+          // Marker already present; no need to paginate.
+          return true;
+        },
+        preContextCount: 2, // should include o1 and x1
+      );
+
+      // Start should rewind to include o1 (pre-context), not just strictly-after x1
+      expect(slice.map((e) => e.eventId), ['o1', 'x1', 'x2']);
+      verify(() => tl.cancelSubscriptions()).called(1);
+    });
+
+    test('includes pre-context by timestamp (since last sync)', () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final tl = MockTimeline();
+
+      // o1(ts=100), x1(ts=150), x2(ts=200)
+      Event mk(String id, int ts) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn(id);
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        return e;
+      }
+
+      final events = <Event>[mk('o1', 100), mk('x1', 150), mk('x2', 200)];
+
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => tl);
+      when(() => tl.events).thenReturn(events);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+      const sinceTs = 120; // include everything >= 120 -> [x1, x2]
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'x1',
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async =>
+            true,
+        preContextSinceTs: sinceTs,
+      );
+
+      expect(slice.map((e) => e.eventId), ['x1', 'x2']);
+      verify(() => tl.cancelSubscriptions()).called(1);
+    });
   });
 }
 

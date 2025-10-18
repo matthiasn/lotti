@@ -60,6 +60,8 @@ class V2MetricsSection extends StatelessWidget {
       'dbIgnoredByVectorClock': 'DB Ignored (VectorClock)',
       'conflictsCreated': 'Conflicts',
       'dbMissingBase': 'DB Missing Base',
+      'lookBehindMerges': 'Look-behind Merges',
+      'lastLookBehindTail': 'Last Look-behind Tail',
     };
     return pretty[key] ?? key;
   }
@@ -89,11 +91,17 @@ class V2MetricsSection extends StatelessWidget {
             k == 'dbIgnoredByVectorClock' ||
             k == 'conflictsCreated' ||
             k == 'dbMissingBase');
-    return {
+    final lookBehind = _select(
+        v2, (k) => k == 'lookBehindMerges' || k == 'lastLookBehindTail');
+    final sections = <String, List<MapEntry<String, int>>>{
       'Throughput': throughput,
       'Reliability': reliability,
       'DB Apply': db,
     };
+    if (lookBehind.isNotEmpty) {
+      sections['Look-behind'] = lookBehind;
+    }
+    return sections;
   }
 
   @override

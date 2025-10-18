@@ -4,6 +4,8 @@
 - Created a task on mobile while desktop was offline; multiple checklist items and audio generated.
 - After desktop came online with the app running: nothing showed initially; after restart only some items appeared; several checklist items and an audio/time entry were missing.
 
+Update (latest test after the last 9 commits): Only two images attached to the task appeared on desktop; the task itself, its checklist items, and the audio did not. This was with the desktop offline during creation, then brought online.
+
 ## Key Evidence (logs)
 - Missing JSON descriptor when applying a SyncJournalEntity:
   - `SmartLoader.localRead PathNotFoundException … checklist_item … .json`
@@ -17,6 +19,19 @@
 - Descriptor recording delayed or skipped for older attachments:
   - Many `attachmentIndex.record …` for recent audio entries;
   - No corresponding `attachmentIndex.record` for the missing older checklist_item path.
+
+Additional evidence from the latest run (2025-10-18):
+- Mobile OUTBOX sent all parts for the new task:
+  - Task JSON: `/tasks/2025-10-18/57119552-6bec-5b88-81e3-54ab7981d309.task.json` (e.g., $z0MnHU5…, $xwi3_0…)
+  - Audio JSON+file: `/audio/2025-10-18/2025-10-18_21-53-33-737.m4a(.json)` (e.g., $s4n6bz…, $9NGzkA…)
+  - Checklist JSON: `/checklist/2025-10-18/b3d9fc40-ac64-11f0-a767-53fbb4528cdf.checklist.json` (e.g., $QYh2Xb…)
+  - EntryLink present (metrics `byType=entryLink=5`).
+- Desktop on attach shows:
+  - `catchup.start lastEventId=$9Opi…` → `catchup.done events=0` (twice).
+  - Only image attachments observed + downloaded (e.g., `/images/…exif.jpg(.json)`), none for `/tasks/…`, `/audio/…`, `/checklist/…`.
+  - Flush metrics show only `journalEntity` from image/exif flows; no `entryLink`.
+
+Interpretation: Desktop’s catch‑up found 0 events strictly after its local marker. Live scan then also sliced strictly after the marker and applied a timestamp gate, so the older payloads (created while desktop was offline) were never considered. Later image events were seen because they arrived after the marker, producing the misleading “only some images showed up”.
 
 ## Root Causes
 1) Missing-attachment events get dropped by the early retry-cap guard
@@ -34,7 +49,11 @@
 
 4) Catch-up visibility and targeting
    - Files: `lib/features/sync/matrix/pipeline_v2/catch_up_strategy.dart`, `matrix_stream_consumer.dart`
-   - Observation: Metrics show `catchup=0` throughout the failing window; either catch-up ran and returned empty slices (not counted), or the retry path didn’t trigger. When descriptors are missing for pending jsonPaths, we should bias catch-up to ensure descriptor discovery quickly.
+  - Observation: Metrics show `catchup=0` throughout the failing window; either catch-up ran and returned empty slices (not counted), or the retry path didn’t trigger. When descriptors are missing for pending jsonPaths, we should bias catch-up to ensure descriptor discovery quickly.
+
+5) Live-scan strictly-after-marker combined with timestamp gate skips older payloads
+   - Where: `CatchUpStrategy.collectEventsForCatchUp`, `MatrixStreamConsumer._scanLiveTimeline`
+   - Behavior: If the local `lastEventId` points to a newer live event, catch‑up returns 0 (no strictly‑after events). The subsequent live scan also slices strictly after `lastEventId` and applies a timestamp gate, so older payloads (the entire offline burst) never enter the apply path. Because they never attempt to apply, no pending jsonPaths are tracked either, and descriptor catch‑up does not help.
 
 ## Implementation Plan
 
@@ -85,6 +104,18 @@
   - Smart loader logs `attachmentIndex.hit` and `smart.json.written` just before successful applies.
   - Metrics show `catchup > 0` at startup and after connectivity regained.
   - All checklist items, audio, and time tracking entries appear without a restart.
+
+8) Look‑behind fallback when strictly‑after slice is empty
+- Files: `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart`, `matrix_stream_helpers.dart`
+- Change:
+  - In `_scanLiveTimeline()`, if the computed slice (events strictly after `lastEventId`) is empty, build a fallback slice that ignores the marker: pass `lastEventId=null` and `lastTimestamp=null` to include the last N events (tail), then process it. Deduplication and marker advancement logic already prevent regressions; older events will not advance the marker but will be applied.
+  - Keep the timestamp gate for media prefetch only (already done in `AttachmentIngestor`); do not exclude payloads in the fallback.
+- Outcome: Receiver can recover offline‑created bursts that accidentally ended up “behind” the local marker.
+
+9) Catch‑up escalation when strictly‑after slice is empty
+- Files: `lib/features/sync/matrix/pipeline_v2/catch_up_strategy.dart`
+- Change: When `idx >= 0` and `events.sublist(idx + 1)` is empty, return a bounded look‑behind (e.g., the last 200 events) as a guarded fallback. Prefer conservative defaults and rely on dedup + marker guard.
+- Outcome: Initial attach can self‑heal gaps without relying solely on live‑scan fallback.
 
 ## File Touch Points (for implementation)
 - `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart`
@@ -163,4 +194,4 @@ Delivered since drafting the plan (key commits referenced by file):
 - Optional follow‑ups (post‑stabilization):
   - Move toward targeted `retryNow` by jsonPath→eventId mapping (instead of global retryNow) for sharper recovery.
   - Add a startup log that prints the resolved documents directory path for quick confirmation in field logs.
-
+  - Consider widening the first live‑scan tail (`_liveScanTailLimit`) after a cold start or when catch‑up returns 0, to further reduce “almost there but not quite” cases.
