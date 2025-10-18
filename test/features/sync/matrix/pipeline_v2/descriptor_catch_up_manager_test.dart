@@ -185,8 +185,12 @@ void main() {
     expect(retryNowCalls, 0);
   });
 
-  test('cancelSubscriptions exception is suppressed', () async {
+  test('cancelSubscriptions exception is logged and suppressed', () async {
     final logging = MockLoggingService();
+    when(() => logging.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
     final index = AttachmentIndex(logging: logging);
     final roomManager = MockSyncRoomManager();
     final room = MockRoom();
@@ -208,6 +212,115 @@ void main() {
     );
     await manager.debugRunNow();
     expect(manager.runs, 1);
+    verify(() => logging.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'descriptorCatchUp.cleanup',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        )).called(1);
+  });
+
+  test(
+      'rapid add/remove during async run schedules another run after stable window',
+      () {
+    fakeAsync((async) async {
+      final logging = MockLoggingService();
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      final index = AttachmentIndex(logging: logging);
+      final roomManager = MockSyncRoomManager();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      when(() => timeline.events).thenReturn(<Event>[]);
+      // Delay getTimeline to simulate async work during which pending changes occur
+      when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer(
+        (_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+          return timeline;
+        },
+      );
+      when(() => roomManager.currentRoom).thenReturn(room);
+
+      final manager = DescriptorCatchUpManager(
+        logging: logging,
+        attachmentIndex: index,
+        roomManager: roomManager,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+        now: () =>
+            DateTime.fromMillisecondsSinceEpoch(async.elapsed.inMilliseconds),
+      )..addPending('a.json');
+
+      // Wait past stability window to kick off first run
+      async.elapse(const Duration(seconds: 2));
+      expect(manager.runs, 0);
+
+      // While run is in-flight, change pending to reset stability
+      async.elapse(const Duration(milliseconds: 100));
+      manager.addPending('b.json');
+
+      // Allow first run to complete
+      async.elapse(const Duration(milliseconds: 500));
+      expect(manager.runs, 1);
+
+      // Next run should be scheduled and occur only after another stable window
+      async.elapse(const Duration(seconds: 1));
+      expect(manager.runs, 1);
+      async.elapse(const Duration(seconds: 1));
+      expect(manager.runs, 2);
+    });
+  });
+
+  test('_runCatchUp exception is logged (timer path)', () {
+    fakeAsync((async) async {
+      final logging = MockLoggingService();
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      final index = AttachmentIndex(logging: logging);
+      final roomManager = MockSyncRoomManager();
+      final room = MockRoom();
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenThrow(Exception('snapshot error'));
+      when(() => roomManager.currentRoom).thenReturn(room);
+
+      final manager = DescriptorCatchUpManager(
+        logging: logging,
+        attachmentIndex: index,
+        roomManager: roomManager,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+        now: () =>
+            DateTime.fromMillisecondsSinceEpoch(async.elapsed.inMilliseconds),
+      )..addPending('x.json');
+
+      // Trigger timer
+      async
+        ..elapse(const Duration(seconds: 2))
+        // Allow microtasks to run
+        ..flushMicrotasks();
+
+      // Exception should be logged; runs should remain 0 since early failure
+      verify(() => logging.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'descriptorCatchUp',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          )).called(greaterThanOrEqualTo(1));
+      expect(manager.runs, 0);
+    });
   });
   // Additional behavior is covered indirectly by MatrixStreamConsumer tests.
 }
+// ignore_for_file:

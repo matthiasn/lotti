@@ -141,7 +141,15 @@ class DescriptorCatchUpManager {
       } finally {
         try {
           snapshot.cancelSubscriptions();
-        } catch (_) {}
+        } catch (e, st) {
+          // Log cleanup failures to aid debugging; do not rethrow.
+          _logging.captureException(
+            e,
+            domain: 'MATRIX_SYNC_V2',
+            subDomain: 'descriptorCatchUp.cleanup',
+            stackTrace: st,
+          );
+        }
       }
       _runs++;
       _logging.captureEvent(

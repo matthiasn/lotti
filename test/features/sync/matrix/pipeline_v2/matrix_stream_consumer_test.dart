@@ -1550,13 +1550,13 @@ void main() {
         async.elapse(const Duration(seconds: 2));
         async.flushMicrotasks();
         final mAfterCatchup = consumer.metricsSnapshot();
-        expect(mAfterCatchup['descriptorCatchupRuns'], greaterThanOrEqualTo(1));
+        expect(mAfterCatchup['descriptorCatchUpRuns'], greaterThanOrEqualTo(1));
         // Pending remains until descriptor lands
         expect(mAfterCatchup['pendingJsonPaths'], 1);
-        // Metrics expose pending jsonPaths (1) and descriptorCatchupRuns (=0)
+        // Metrics expose pending jsonPaths (1) and descriptorCatchUpRuns (>=0)
         final m0 = consumer.metricsSnapshot();
         expect(m0['pendingJsonPaths'], 1);
-        expect(m0['descriptorCatchupRuns'], isNonNegative);
+        expect(m0['descriptorCatchUpRuns'], isNonNegative);
 
         // 2) Later, the attachment arrives and is prefetched
         final fileEvent = MockEvent();

@@ -1,7 +1,9 @@
 // ignore_for_file: unnecessary_lambdas
 
+import 'dart:async';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -89,7 +91,6 @@ void main() {
   MatrixService makeService({required bool enableV2}) {
     final gateway = MockMatrixSyncGateway();
     final logging = MockLoggingService();
-    final messageSender = MockMatrixMessageSender();
     final journalDb = MockJournalDb();
     final settingsDb = MockSettingsDb();
     final readMarker = MockSyncReadMarkerService();
@@ -117,7 +118,7 @@ void main() {
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
-      messageSender: messageSender,
+      messageSender: MockMatrixMessageSender(),
       journalDb: journalDb,
       settingsDb: settingsDb,
       readMarkerService: readMarker,
@@ -180,7 +181,6 @@ void main() {
       lifecycleCoordinator: lifecycleCoordinator,
       attachmentIndex: AttachmentIndex(logging: logging),
     );
-
     expect(await service.getV2Metrics(), isNull);
   });
 
@@ -268,6 +268,8 @@ void main() {
       v2PipelineOverride: testPipeline,
       attachmentIndex: AttachmentIndex(logging: logging),
     );
+    expect(service, isNotNull);
+    expect(service.debugV2Pipeline, isNotNull);
 
     final metrics = await service.getV2Metrics();
     expect(metrics, isNotNull);
@@ -461,10 +463,222 @@ void main() {
     expect(text.contains('dbApplied=2'), isTrue);
   });
 
+  test('forceV2Rescan handles overlapping calls gracefully', () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final messageSender = MockMatrixMessageSender();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+
+    final pipeline = _TestV2Pipeline2(
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      loggingService: logging,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+    );
+    var calls = 0;
+    pipeline.onForceRescan = ({required bool includeCatchUp}) async {
+      calls++;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    };
+
+    final service = MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: messageSender,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      collectV2Metrics: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      v2PipelineOverride: pipeline,
+      attachmentIndex: AttachmentIndex(logging: logging),
+    );
+
+    // Trigger two rescans overlapping in time
+    final f1 = service.forceV2Rescan();
+    final f2 = service.forceV2Rescan();
+    await Future.wait([f1, f2]);
+    expect(calls, 2);
+  });
+
   test('getDiagnosticInfo does not include v2Metrics (typed-only)', () async {
     final service = makeService(enableV2: true);
     final info = await service.getDiagnosticInfo();
     expect(info.containsKey('v2Metrics'), isFalse);
+  });
+
+  test('connectivity resumes triggers V2 forceRescan (includeCatchUp=true)',
+      () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+
+    final pipeline = _TestV2Pipeline2(
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      loggingService: logging,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+    );
+    var called = 0;
+    pipeline.onForceRescan = ({required bool includeCatchUp}) async {
+      called++;
+      expect(includeCatchUp, isTrue);
+    };
+
+    final controller = StreamController<List<ConnectivityResult>>.broadcast();
+    addTearDown(controller.close);
+
+    // Construct service with injected connectivity stream and pipeline
+    MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: MockMatrixMessageSender(),
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      collectV2Metrics: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      v2PipelineOverride: pipeline,
+      connectivityStream: controller.stream,
+      attachmentIndex: AttachmentIndex(logging: logging),
+    );
+
+    // Simulate connectivity regained
+    controller.add(<ConnectivityResult>[ConnectivityResult.wifi]);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    expect(called, 1);
+  });
+
+  test('connectivity handler logs exceptions from V2 forceRescan', () async {
+    final gateway = MockMatrixSyncGateway();
+    final logging = MockLoggingService();
+    when(() => logging.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final readMarker = MockSyncReadMarkerService();
+    final processor = MockSyncEventProcessor();
+    final storage = MockSecureStorage();
+    final sessionManager = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final timelineListener = MockMatrixTimelineListener();
+    final lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    final client = MockClient();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => lifecycleCoordinator.updateHooks(
+          onLogin: any(named: 'onLogin'),
+          onLogout: any(named: 'onLogout'),
+        )).thenReturn(null);
+    when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
+    when(() => lifecycleCoordinator.reconcileLifecycleState())
+        .thenAnswer((_) async {});
+
+    final pipeline = _TestV2Pipeline2(
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      loggingService: logging,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+    )..onForceRescan = ({required bool includeCatchUp}) async {
+        throw Exception('fail');
+      };
+
+    final controller = StreamController<List<ConnectivityResult>>.broadcast();
+    addTearDown(controller.close);
+
+    MatrixService(
+      gateway: gateway,
+      loggingService: logging,
+      activityGate: TestUserActivityGate(TestUserActivityService()),
+      messageSender: MockMatrixMessageSender(),
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      readMarkerService: readMarker,
+      eventProcessor: processor,
+      secureStorage: storage,
+      documentsDirectory: Directory.systemTemp,
+      enableSyncV2: true,
+      collectV2Metrics: true,
+      roomManager: roomManager,
+      sessionManager: sessionManager,
+      timelineListener: timelineListener,
+      lifecycleCoordinator: lifecycleCoordinator,
+      v2PipelineOverride: pipeline,
+      connectivityStream: controller.stream,
+      attachmentIndex: AttachmentIndex(logging: logging),
+    );
+
+    controller.add(<ConnectivityResult>[ConnectivityResult.ethernet]);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    verify(() => logging.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'connectivity',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        )).called(1);
   });
 }
 

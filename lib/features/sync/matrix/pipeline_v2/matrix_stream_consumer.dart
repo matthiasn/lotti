@@ -204,7 +204,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final Queue<String> _seenEventOrder = Queue<String>();
   static const int _seenEventCapacity = 5000;
 
-  // (moved to DescriptorCatchUpManager)
+  // Descriptor-related catch-up logic now lives in DescriptorCatchUpManager.
 
   bool _isDuplicateAndRecordSeen(String id) {
     if (_seenEventIds.contains(id)) return true;
@@ -913,7 +913,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         ..putIfAbsent(
             'pendingJsonPaths', () => _descriptorCatchUp?.pendingLength ?? 0)
         ..putIfAbsent(
-            'descriptorCatchupRuns', () => _descriptorCatchUp?.runs ?? 0);
+            'descriptorCatchUpRuns', () => _descriptorCatchUp?.runs ?? 0);
 
   // Called by SyncEventProcessor via observer to record DB apply results
   void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {

@@ -54,6 +54,8 @@ class MatrixService {
     SyncEngine? syncEngine,
     // Test-only seam to inject a V2 pipeline
     @visibleForTesting MatrixStreamConsumer? v2PipelineOverride,
+    // Optional seam to inject connectivity changes (for tests)
+    this.connectivityStream,
   })  : _gateway = gateway,
         _loggingService = loggingService,
         _activityGate = activityGate,
@@ -165,9 +167,9 @@ class MatrixService {
     incomingKeyVerificationRunnerStream =
         incomingKeyVerificationRunnerController.stream;
 
-    _connectivitySubscription = Connectivity()
-        .onConnectivityChanged
-        .listen((List<ConnectivityResult> result) {
+    _connectivitySubscription =
+        (connectivityStream ?? Connectivity().onConnectivityChanged)
+            .listen((List<ConnectivityResult> result) {
       if ({
         ConnectivityResult.wifi,
         ConnectivityResult.mobile,
@@ -176,11 +178,20 @@ class MatrixService {
         _timelineListener.enqueueTimelineRefresh();
         // Also nudge the V2 pipeline to run a catch-up + live scan when
         // connectivity resumes, improving recovery for offline-created bursts.
-        try {
-          _v2Pipeline?.forceRescan();
-        } catch (_) {
-          // best-effort only
-        }
+        // Kick a catch-up + scan; handle async errors inside the task.
+        unawaited(() async {
+          try {
+            await _v2Pipeline?.forceRescan();
+          } catch (e, st) {
+            // Log exceptions to aid debugging, but do not crash.
+            _loggingService.captureException(
+              e,
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'connectivity',
+              stackTrace: st,
+            );
+          }
+        }());
       }
     });
   }
@@ -204,6 +215,8 @@ class MatrixService {
   MatrixStreamConsumer? _v2Pipeline;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  // Optional seam for tests to inject a connectivity stream.
+  final Stream<List<ConnectivityResult>>? connectivityStream;
 
   Client get client => _sessionManager.client;
 
