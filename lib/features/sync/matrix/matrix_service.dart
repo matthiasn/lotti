@@ -174,6 +174,13 @@ class MatrixService {
         ConnectivityResult.ethernet,
       }.intersection(result.toSet()).isNotEmpty) {
         _timelineListener.enqueueTimelineRefresh();
+        // Also nudge the V2 pipeline to run a catch-up + live scan when
+        // connectivity resumes, improving recovery for offline-created bursts.
+        try {
+          _v2Pipeline?.forceRescan();
+        } catch (_) {
+          // best-effort only
+        }
       }
     });
   }

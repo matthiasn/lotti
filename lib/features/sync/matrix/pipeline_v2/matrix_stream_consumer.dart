@@ -9,13 +9,13 @@ import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_event_classifier.dart'
     as ec;
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_helpers.dart'
     as msh;
 import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_counters.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/read_marker_manager.dart';
-// metrics_utils is used indirectly via MetricsCounters.snapshot
 import 'package:lotti/features/sync/matrix/pipeline_v2/retry_and_circuit.dart'
     as rc;
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -129,6 +129,18 @@ class MatrixStreamConsumer implements SyncPipeline {
       ),
       logging: _loggingService,
     );
+    // Initialize descriptor catch-up manager to proactively discover
+    // attachment descriptors for pending jsonPaths.
+    if (_attachmentIndex != null) {
+      _descriptorCatchUp = DescriptorCatchUpManager(
+        logging: _loggingService,
+        attachmentIndex: _attachmentIndex!,
+        roomManager: _roomManager,
+        scheduleLiveScan: _scheduleLiveScan,
+        retryNow: retryNow,
+        now: _now,
+      );
+    }
   }
 
   final MatrixSessionManager _sessionManager;
@@ -163,7 +175,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Catch-up window is handled by strategy with sensible defaults.
 
   late final MetricsCounters _metrics;
-  final Set<String> _pendingJsonPaths = <String>{};
+  // Descriptor-focused catch-up helper (manages pending jsonPaths)
+  DescriptorCatchUpManager? _descriptorCatchUp;
   DateTime? _lastAttachmentOnlyRescanAt;
   static const Duration _minAttachmentOnlyRescanGap =
       Duration(milliseconds: 500);
@@ -190,6 +203,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   final Set<String> _seenEventIds = <String>{};
   final Queue<String> _seenEventOrder = Queue<String>();
   static const int _seenEventCapacity = 5000;
+
+  // (moved to DescriptorCatchUpManager)
 
   bool _isDuplicateAndRecordSeen(String id) {
     if (_seenEventIds.contains(id)) return true;
@@ -256,16 +271,39 @@ class MatrixStreamConsumer implements SyncPipeline {
 
     final attempts = _retryTracker.attempts(id);
     if (attempts >= _maxRetriesPerEvent) {
-      treatAsHandled = true;
-      _retryTracker.clear(id);
-      _loggingService.captureEvent(
-        'dropping after retry cap$dropSuffix: $id (attempts=$attempts)',
-        domain: 'MATRIX_SYNC_V2',
-        subDomain: 'retry.cap',
-      );
-      if (_collectMetrics) {
-        _metrics.incSkippedByRetryLimit();
-        _bumpDroppedType(_extractRuntimeType(e));
+      // Special-case: if this event is blocked by a missing attachment
+      // descriptor (jsonPath tracked in _pendingJsonPaths), keep retrying and
+      // do not treat as handled. This aligns with intended behavior to block
+      // advancement until descriptors land.
+      final jpAtCap = _extractJsonPath(e);
+      final isMissingAtCap =
+          jpAtCap != null && (_descriptorCatchUp?.contains(jpAtCap) ?? false);
+      if (isMissingAtCap) {
+        processedOk = false;
+        hadFailure = true;
+        final nextAttempts = attempts + 1;
+        final backoff = _computeBackoff(nextAttempts);
+        final due = _now().add(backoff);
+        _retryTracker.scheduleNext(id, nextAttempts, due);
+        nextDue = due;
+        _loggingService.captureEvent(
+          'missingAttachment keepRetrying: $id (attempts=$nextAttempts)',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'retry.missingAttachment',
+        );
+        if (_collectMetrics) _metrics.incRetriesScheduled();
+      } else {
+        treatAsHandled = true;
+        _retryTracker.clear(id);
+        _loggingService.captureEvent(
+          'dropping after retry cap$dropSuffix: $id (attempts=$attempts)',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'retry.cap',
+        );
+        if (_collectMetrics) {
+          _metrics.incSkippedByRetryLimit();
+          _bumpDroppedType(_extractRuntimeType(e));
+        }
       }
     } else if (processedOk) {
       try {
@@ -307,7 +345,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         // retries and avoid marking as handled.
         final jp = _extractJsonPath(e);
         final isMissingAttachment =
-            jp != null && _pendingJsonPaths.contains(jp);
+            jp != null && (_descriptorCatchUp?.contains(jp) ?? false);
         if (nextAttempts >= _maxRetriesPerEvent && !isMissingAttachment) {
           _retryTracker.clear(id);
           treatAsHandled = true;
@@ -338,7 +376,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         if (err is FileSystemException) {
           final jp = _extractJsonPath(e);
           if (jp != null) {
-            _pendingJsonPaths.add(jp);
+            _descriptorCatchUp?.addPending(jp);
           }
         }
         _loggingService.captureException(
@@ -459,6 +497,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     _flushTimer?.cancel();
     _liveScanTimer?.cancel();
     _readMarkerManager.dispose();
+    _descriptorCatchUp?.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
     try {
       _liveTimeline?.cancelSubscriptions();
@@ -633,16 +672,6 @@ class MatrixStreamConsumer implements SyncPipeline {
           continue;
         }
       }
-      // Timestamp gate: skip first-pass attachment handling when the event is
-      // clearly older than the last processed sync payload (with a small
-      // margin). This reduces unrelated audio churn on text-only updates.
-      if (_lastProcessedTs != null &&
-          ec.MatrixEventClassifier.isAttachment(e)) {
-        final ts = TimelineEventOrdering.timestamp(e);
-        if (ts < _lastProcessedTs!.toInt() - _attachmentTsGate.inMilliseconds) {
-          continue;
-        }
-      }
       // Always record descriptors when a relativePath is present, even if the
       // SDK doesn't classify it as an attachment (robust to MIME quirks).
       final rpAny = e.content['relativePath'];
@@ -671,8 +700,21 @@ class MatrixStreamConsumer implements SyncPipeline {
         } catch (_) {
           // best-effort logging
         }
-        if (_pendingJsonPaths.remove(rpAny)) {
+        if (_descriptorCatchUp?.removeIfPresent(rpAny) ?? false) {
           _scheduleLiveScan();
+          // Accelerate recovery by marking retries due immediately.
+          unawaited(retryNow());
+        }
+      }
+
+      // Timestamp gate: skip first-pass attachment prefetch when the event is
+      // clearly older than the last processed sync payload (with a small
+      // margin). This reduces unrelated audio churn on text-only updates.
+      if (_lastProcessedTs != null &&
+          ec.MatrixEventClassifier.isAttachment(e)) {
+        final ts = TimelineEventOrdering.timestamp(e);
+        if (ts < _lastProcessedTs!.toInt() - _attachmentTsGate.inMilliseconds) {
+          continue;
         }
       }
 
@@ -688,7 +730,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           );
           final rp = e.content['relativePath'];
           if (wrote && rp is String && rp.isNotEmpty) {
-            if (_pendingJsonPaths.remove(rp)) {
+            if (_descriptorCatchUp?.removeIfPresent(rp) ?? false) {
               _scheduleLiveScan();
             }
           }
@@ -938,7 +980,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   Map<String, int> metricsSnapshot() => _metrics.snapshot(
         retryStateSize: _retryTracker.size(),
         circuitIsOpen: _circuit.isOpen(_now()),
-      );
+      )
+        ..putIfAbsent(
+            'pendingJsonPaths', () => _descriptorCatchUp?.pendingLength ?? 0)
+        ..putIfAbsent(
+            'descriptorCatchupRuns', () => _descriptorCatchUp?.runs ?? 0);
 
   // Called by SyncEventProcessor via observer to record DB apply results
   void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {
