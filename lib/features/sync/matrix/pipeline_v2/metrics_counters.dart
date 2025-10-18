@@ -138,6 +138,13 @@ class MetricsCounters {
   }
 
   String buildFlushLog({required int retriesPending}) {
-    return 'v2 metrics flush=$flushes processed=$processed skipped=$skipped failures=$failures prefetch=$prefetch catchup=$catchupBatches skippedByRetry=$skippedByRetryLimit retriesScheduled=$retriesScheduled retriesPending=$retriesPending';
+    final base =
+        'v2 metrics flush=$flushes processed=$processed skipped=$skipped failures=$failures prefetch=$prefetch catchup=$catchupBatches skippedByRetry=$skippedByRetryLimit retriesScheduled=$retriesScheduled retriesPending=$retriesPending';
+    // Append a compact processedByType breakdown (e.g., entryLink=3,journalEntity=10)
+    if (processedByType.isEmpty) return base;
+    final entries = processedByType.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final byType = entries.map((e) => '${e.key}=${e.value}').join(',');
+    return '$base byType=$byType';
   }
 }

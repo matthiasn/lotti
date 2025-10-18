@@ -99,3 +99,68 @@
 ## Notes
 - This plan preserves the V2 design principles: message-driven JSON application (vector-clock aware), minimal rewinds, and stable streaming. The fixes address two correctness gaps (retry drop and descriptor recording) and improve recovery paths (connectivity and catch-up targeting).
 
+---
+
+## Progress Update (Implemented)
+
+Delivered since drafting the plan (key commits referenced by file):
+
+- Descriptor catch-up hardening
+  - Added in-flight guard to prevent overlapping runs; reschedules when a run is already executing.
+  - File: `lib/features/sync/matrix/pipeline_v2/descriptor_catch_up_manager.dart`
+  - Tests: timer stability window, rapid add/remove defers next run, exception logging on cleanup and timer path, and new “no concurrent runs” test.
+
+- Connectivity recovery
+  - On connectivity regained, V2 is nudged via an unawaited `forceRescan(includeCatchUp: true)`; errors are logged without blocking the UI thread.
+  - File: `lib/features/sync/matrix/matrix_service.dart`
+
+- Attachment ingest and prefetch policy
+  - Prefetch now includes JSON descriptors and is sender‑agnostic (still safe due to atomic writes and dedupe). This reduces time‑to‑apply when text arrives before descriptor.
+  - File: `lib/features/sync/matrix/utils/timeline_utils.dart`
+
+- SmartLoader local read logging
+  - Downgraded the expected “first local read miss” from exception to an info event (`smart.local.miss`), keeping error logs meaningful. Unexpected read failures still log as exceptions.
+  - File: `lib/features/sync/matrix/sync_event_processor.dart`
+
+- Observability upgrades
+  - Outbox: per‑message type logs on enqueue and send (includes SyncEntryLink with from/to IDs) to trace whether links were actually queued/sent.
+    - Files: `lib/features/sync/outbox/outbox_service.dart`, `lib/features/sync/outbox/outbox_processor.dart`
+  - V2 metrics: flush line now appends a compact processedByType breakdown (e.g., `byType=entryLink=3,journalEntity=27`).
+    - File: `lib/features/sync/matrix/pipeline_v2/metrics_counters.dart`
+  - EntryLink apply logging on receiver: `apply.entryLink from=… to=… rows=…`.
+    - File: `lib/features/sync/matrix/sync_event_processor.dart`
+
+- Metrics naming and hygiene
+  - Fixed `descriptorCatchUpRuns` naming in metrics snapshot.
+  - Removed a dead comment and added cleanup error logging in descriptor catch‑up.
+
+- Test coverage
+  - Expanded consumer, helper, and service tests including connectivity hooks, pending-jsonPath flows, and in‑flight guard tests.
+
+## What We’re Still Investigating
+
+- EntryLink occasionally missing after offline creation
+  - Symptom: entity arrives on mobile, but link is not present immediately when the device comes online.
+  - Hypotheses being validated:
+    - Sender outbox didn’t enqueue the link for that flow (now visible via new OUTBOX enqueue/send logs).
+    - Delivery lag: link sent later and applied after UI snapshot (receiver now logs `apply.entryLink`).
+    - UI refresh timing unrelated to pipeline (DB verify via `linksForEntryIds` if needed).
+  - Next: reproduce with new logs; if enqueue/send is correct but apply still missing, add a minimal retry around upsertLink (unlikely) or inspect UI refresh path.
+
+- Descriptor/text ordering races
+  - We now treat first local JSON reads as expected misses and fetch via `AttachmentIndex`. Logs show the pattern: `smart.local.miss` → `attachmentIndex.hit` → `smart.json.written` → apply.
+  - We will keep an eye on rare late descriptor arrivals; descriptor catch‑up guard and JSON prefetch reduce window further.
+
+## Next Steps
+
+- Monitor a desktop→mobile (mobile initially offline) run with new logs:
+  - Desktop: OUTBOX `enqueue type=…` and `sending type=…` should include `SyncEntryLink` for the created pair.
+  - Mobile: metrics flush `byType=…entryLink=…` increments; `apply.entryLink` lines confirm application.
+
+- If a link is still missing while enqueue/send occurred:
+  - Capture the relevant event IDs, confirm DB state on device (`linksForEntryIds`), and instrument UI refresh if needed.
+
+- Optional follow‑ups (post‑stabilization):
+  - Move toward targeted `retryNow` by jsonPath→eventId mapping (instead of global retryNow) for sharper recovery.
+  - Add a startup log that prints the resolved documents directory path for quick confirmation in field logs.
+

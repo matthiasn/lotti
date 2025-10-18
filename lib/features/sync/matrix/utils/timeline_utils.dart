@@ -53,12 +53,14 @@ List<Event> dedupEventsByIdPreserveOrder(List<Event> events) {
 
 /// Whether an event should have its attachment prefetched before processing.
 bool shouldPrefetchAttachment(Event e, String? currentUserId) {
-  final isRemote = e.senderId != currentUserId;
   final mime = e.attachmentMimetype;
   if (mime.isEmpty) return false;
-  // Prefetch only media; exclude JSON (application/json) and other non-media.
-  final isMedia = mime.startsWith('image/') ||
+  // Prefetch media and JSON descriptors for cross-device hydration.
+  final isSupported = mime.startsWith('image/') ||
       mime.startsWith('audio/') ||
-      mime.startsWith('video/');
-  return isRemote && isMedia;
+      mime.startsWith('video/') ||
+      mime == 'application/json';
+  // Sender-agnostic: downloading again is safe due to atomic dedupe and
+  // enables cross-device sync for self-sent messages.
+  return isSupported;
 }

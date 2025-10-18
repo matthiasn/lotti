@@ -83,19 +83,18 @@ void main() {
   });
 
   group('shouldPrefetchAttachment', () {
-    test('true when remote sender and has attachment', () {
+    test('true when media/json regardless of sender', () {
       final e = MockEvent();
       when(() => e.senderId).thenReturn('@other:hs');
       when(() => e.attachmentMimetype).thenReturn('image/png');
       expect(shouldPrefetchAttachment(e, '@me:hs'), isTrue);
+      final eSelf = MockEvent();
+      when(() => eSelf.senderId).thenReturn('@me:hs');
+      when(() => eSelf.attachmentMimetype).thenReturn('application/json');
+      expect(shouldPrefetchAttachment(eSelf, '@me:hs'), isTrue);
     });
 
-    test('false when local sender or no attachment', () {
-      final e1 = MockEvent();
-      when(() => e1.senderId).thenReturn('@me:hs');
-      when(() => e1.attachmentMimetype).thenReturn('image/png');
-      expect(shouldPrefetchAttachment(e1, '@me:hs'), isFalse);
-
+    test('false when no attachment', () {
       final e2 = MockEvent();
       when(() => e2.senderId).thenReturn('@other:hs');
       when(() => e2.attachmentMimetype).thenReturn('');

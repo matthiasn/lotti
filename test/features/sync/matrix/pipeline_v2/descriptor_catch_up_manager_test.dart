@@ -321,6 +321,65 @@ void main() {
       expect(manager.runs, 0);
     });
   });
+
+  test('does not run catch-up concurrently (in-flight guard)', () {
+    fakeAsync((async) async {
+      final logging = MockLoggingService();
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      final index = AttachmentIndex(logging: logging);
+      final roomManager = MockSyncRoomManager();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      when(() => timeline.events).thenReturn(<Event>[]);
+
+      var concurrent = 0;
+      var maxConcurrent = 0;
+      when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer(
+        (_) async {
+          concurrent++;
+          if (concurrent > maxConcurrent) maxConcurrent = concurrent;
+          // Keep this run in-flight for a bit
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+          concurrent--;
+          return timeline;
+        },
+      );
+      when(() => roomManager.currentRoom).thenReturn(room);
+
+      final manager = DescriptorCatchUpManager(
+        logging: logging,
+        attachmentIndex: index,
+        roomManager: roomManager,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+        now: () =>
+            DateTime.fromMillisecondsSinceEpoch(async.elapsed.inMilliseconds),
+      )..addPending('a.json');
+
+      // Trigger first run
+      async
+        ..elapse(const Duration(seconds: 2))
+        // While first run is in progress, add another pending to request another pass
+        ..elapse(const Duration(milliseconds: 100));
+      manager.addPending('b.json');
+
+      // Let first run finish and the subsequent scheduled run occur
+      async
+        ..elapse(const Duration(milliseconds: 500))
+        // After completion, another stable window elapses and a second run should happen
+        ..elapse(const Duration(seconds: 2));
+
+      expect(manager.runs, greaterThanOrEqualTo(2));
+      expect(maxConcurrent, 1);
+    });
+  });
   // Additional behavior is covered indirectly by MatrixStreamConsumer tests.
 }
 // ignore_for_file:

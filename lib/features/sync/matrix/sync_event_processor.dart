@@ -78,8 +78,16 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
             return local; // local is current or newer; no fetch
           }
         }
+      } on FileSystemException {
+        // Expected when text arrives before the descriptor: treat as a local miss.
+        // We fetch via AttachmentIndex below; log as an info event rather than exception.
+        _logging.captureEvent(
+          'smart.local.miss path=$jsonPath',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.localMiss',
+        );
       } catch (e, st) {
-        // Missing or unreadable local JSON – proceed to fetch via index, but log for diagnostics.
+        // Unexpected read failure – keep as exception for diagnostics.
         _logging.captureException(
           e,
           domain: 'MATRIX_SERVICE',
@@ -410,7 +418,16 @@ class SyncEventProcessor {
           rethrow;
         }
       case SyncEntryLink(entryLink: final entryLink):
-        await journalDb.upsertEntryLink(entryLink);
+        final rows = await journalDb.upsertEntryLink(entryLink);
+        try {
+          _loggingService.captureEvent(
+            'apply entryLink from=${entryLink.fromId} to=${entryLink.toId} rows=$rows',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply.entryLink',
+          );
+        } catch (_) {
+          // best-effort logging only
+        }
         _updateNotifications.notify(
           {entryLink.fromId, entryLink.toId},
           fromSync: true,

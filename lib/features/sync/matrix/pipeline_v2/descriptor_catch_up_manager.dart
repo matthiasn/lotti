@@ -47,6 +47,7 @@ class DescriptorCatchUpManager {
   Timer? _timer;
   DateTime? _lastChanged;
   int _runs = 0;
+  bool _isRunning = false;
 
   static const Duration _delay = Duration(seconds: 2);
 
@@ -103,12 +104,31 @@ class DescriptorCatchUpManager {
       final now = _now();
       final stable = now.difference(last) >= _delay;
       if (stable && _pending.isNotEmpty) {
-        // Fire and forget; internal logs capture exceptions.
-        unawaited(_runCatchUp());
+        // Avoid overlapping runs; if one is in-flight, reschedule a new check.
+        if (_isRunning) {
+          _scheduleCheck();
+        } else {
+          // Fire and forget; internal logs capture exceptions.
+          unawaited(_guardedRunCatchUp());
+        }
       } else {
         _scheduleCheck();
       }
     });
+  }
+
+  Future<void> _guardedRunCatchUp() async {
+    if (_isRunning) return; // Double-guard
+    _isRunning = true;
+    try {
+      await _runCatchUp();
+    } finally {
+      _isRunning = false;
+      // If changes accumulated while running, schedule another pass.
+      if (_pending.isNotEmpty) {
+        _scheduleCheck();
+      }
+    }
   }
 
   Future<void> _runCatchUp() async {
