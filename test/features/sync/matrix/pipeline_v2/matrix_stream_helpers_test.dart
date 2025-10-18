@@ -124,5 +124,101 @@ void main() {
       expect(ignoredReasonFromStatus('equal'), 'equal');
       expect(ignoredReasonFromStatus('x'), 'unknown');
     });
+
+    test('buildLiveScanSlice slices strictly after lastEventId', () {
+      final e1 = MockEvent();
+      when(() => e1.eventId).thenReturn('a');
+      when(() => e1.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      final e2 = MockEvent();
+      when(() => e2.eventId).thenReturn('b');
+      when(() => e2.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+      final e3 = MockEvent();
+      when(() => e3.eventId).thenReturn('c');
+      when(() => e3.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(3));
+
+      final slice = buildLiveScanSlice(
+        timelineEvents: [e2, e1, e3],
+        lastEventId: 'b',
+        tailLimit: 50,
+        lastTimestamp: null,
+        tsGate: const Duration(seconds: 2),
+      );
+      expect(slice.map((e) => e.eventId), ['c']);
+    });
+
+    test('buildLiveScanSlice returns last N when no lastEventId', () {
+      final es = <MockEvent>[];
+      for (var i = 0; i < 5; i++) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        es.add(e);
+      }
+      final slice = buildLiveScanSlice(
+        timelineEvents: es,
+        lastEventId: null,
+        tailLimit: 2,
+        lastTimestamp: null,
+        tsGate: const Duration(seconds: 2),
+      );
+      expect(slice.map((e) => e.eventId), ['e3', 'e4']);
+    });
+
+    test('buildLiveScanSlice applies timestamp cutoff', () {
+      final older = MockEvent();
+      when(() => older.eventId).thenReturn('old');
+      when(() => older.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      final newer = MockEvent();
+      when(() => newer.eventId).thenReturn('new');
+      when(() => newer.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(3000));
+
+      final slice = buildLiveScanSlice(
+        timelineEvents: [older, newer],
+        lastEventId: null,
+        tailLimit: 10,
+        lastTimestamp: 3000, // cutoff = 3000 - 2000 = 1000
+        tsGate: const Duration(seconds: 2),
+      );
+      expect(slice.map((e) => e.eventId), ['old', 'new']);
+
+      final slice2 = buildLiveScanSlice(
+        timelineEvents: [older, newer],
+        lastEventId: null,
+        tailLimit: 10,
+        lastTimestamp: 3500, // cutoff = 3500 - 2000 = 1500 -> drop 'old'
+        tsGate: const Duration(seconds: 2),
+      );
+      expect(slice2.map((e) => e.eventId), ['new']);
+    });
+
+    test('buildLiveScanSlice deduplicates by eventId preserving order', () {
+      final a1 = MockEvent();
+      when(() => a1.eventId).thenReturn('a');
+      when(() => a1.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      final a2 = MockEvent();
+      when(() => a2.eventId).thenReturn('a');
+      when(() => a2.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      final b = MockEvent();
+      when(() => b.eventId).thenReturn('b');
+      when(() => b.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+
+      final slice = buildLiveScanSlice(
+        timelineEvents: [a2, b, a1],
+        lastEventId: null,
+        tailLimit: 10,
+        lastTimestamp: null,
+        tsGate: const Duration(seconds: 2),
+      );
+      expect(slice.map((e) => e.eventId), ['a', 'b']);
+    });
   });
 }

@@ -140,6 +140,14 @@ void main() {
     expect(metrics['lastPrefetchedCount'], 1);
     // 'prefetch' total should be >=1 after observe
     expect(metrics['prefetch'], greaterThanOrEqualTo(1));
+    // Logs include attachment.observe with the expected path
+    verify(() => logger.captureEvent(
+          any<String>(
+              that: contains(
+                  'attachmentEvent id=att-x path=/text_entries/2024-01-01/x.json')),
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'attachment.observe',
+        )).called(greaterThanOrEqualTo(1));
   });
 
   test('does not doubleScan when attachment already exists (no new write)',
@@ -439,6 +447,146 @@ void main() {
       }
     });
 
+    test(
+        'integration: text missing then descriptor + media triggers observe logs and doubleScan',
+        () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+        final events = <Event>[];
+        when(() => timeline.events).thenReturn(events);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+
+        final onTimelineController = StreamController<Event>.broadcast();
+        addTearDown(onTimelineController.close);
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => onTimelineController.stream);
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+        when(() => room.getTimeline(
+              limit: any(named: 'limit'),
+              onNewEvent: any(named: 'onNewEvent'),
+              onInsert: any(named: 'onInsert'),
+              onChange: any(named: 'onChange'),
+              onRemove: any(named: 'onRemove'),
+              onUpdate: any(named: 'onUpdate'),
+            )).thenAnswer((_) async => timeline);
+        when(() => logger.captureEvent(any<dynamic>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'))).thenReturn(null);
+
+        var calls = 0;
+        when(() => processor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: journalDb,
+            )).thenAnswer((_) async {
+          calls++;
+          if (calls == 1) throw const FileSystemException('missing');
+        });
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          documentsDirectory: Directory.systemTemp,
+          collectMetrics: true,
+        );
+
+        await consumer.initialize();
+        await consumer.start();
+
+        // Text sync payload referencing JSON path, will fail => pending jsonPath
+        final textEvent = MockEvent();
+        when(() => textEvent.eventId).thenReturn('TXT');
+        when(() => textEvent.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+        when(() => textEvent.senderId).thenReturn('@other:server');
+        when(() => textEvent.attachmentMimetype).thenReturn('');
+        when(() => textEvent.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        final textPayload = base64.encode(
+          utf8.encode(json.encode(<String, dynamic>{
+            'runtimeType': 'journalEntity',
+            'jsonPath': '/sub/integration.json',
+          })),
+        );
+        when(() => textEvent.text).thenReturn(textPayload);
+        when(() => textEvent.roomId).thenReturn('!room:server');
+        onTimelineController.add(textEvent);
+        async.flushMicrotasks();
+
+        // Descriptor event for the jsonPath, then a media event to trigger doubleScan
+        final descEvent = MockEvent();
+        when(() => descEvent.eventId).thenReturn('DESC');
+        when(() => descEvent.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+        when(() => descEvent.senderId).thenReturn('@other:server');
+        when(() => descEvent.attachmentMimetype).thenReturn('application/json');
+        when(() => descEvent.content).thenReturn(
+            <String, dynamic>{'relativePath': '/sub/integration.json'});
+        when(() => descEvent.roomId).thenReturn('!room:server');
+
+        final imgEvent = MockEvent();
+        when(() => imgEvent.eventId).thenReturn('IMG');
+        when(() => imgEvent.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(3));
+        when(() => imgEvent.senderId).thenReturn('@other:server');
+        when(() => imgEvent.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => imgEvent.content).thenReturn(
+            <String, dynamic>{'relativePath': '/media/integration.jpg'});
+        when(() => imgEvent.downloadAndDecryptAttachment()).thenAnswer(
+            (_) async => MatrixFile(
+                bytes: Uint8List.fromList(const [1, 2]),
+                name: 'integration.jpg'));
+        when(() => imgEvent.roomId).thenReturn('!room:server');
+
+        onTimelineController
+          ..add(descEvent)
+          ..add(imgEvent);
+        async.elapse(const Duration(milliseconds: 50));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 300));
+        async.flushMicrotasks();
+
+        // Logs: attachment.observe for descriptor and doubleScan logs from media
+        verify(() => logger.captureEvent(
+              any<String>(
+                  that: contains(
+                      'attachmentEvent id=DESC path=/sub/integration.json')),
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'attachment.observe',
+            )).called(greaterThanOrEqualTo(1));
+        verify(() => logger.captureEvent(
+              'doubleScan.attachment immediate',
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'doubleScan',
+            )).called(1);
+        verify(() => logger.captureEvent(
+              'doubleScan.attachment delayed',
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'doubleScan',
+            )).called(1);
+      });
+    });
     test('live-scan tail ts filter excludes older attachments (fakeAsync)',
         () async {
       fakeAsync((async) async {
@@ -1398,6 +1546,17 @@ void main() {
         async.flushMicrotasks();
         // After first failure, a retry is scheduled
         expect(consumer.metricsSnapshot()['retriesScheduled'], 1);
+        // After stability window (2s), descriptor catch-up runs
+        async.elapse(const Duration(seconds: 2));
+        async.flushMicrotasks();
+        final mAfterCatchup = consumer.metricsSnapshot();
+        expect(mAfterCatchup['descriptorCatchupRuns'], greaterThanOrEqualTo(1));
+        // Pending remains until descriptor lands
+        expect(mAfterCatchup['pendingJsonPaths'], 1);
+        // Metrics expose pending jsonPaths (1) and descriptorCatchupRuns (=0)
+        final m0 = consumer.metricsSnapshot();
+        expect(m0['pendingJsonPaths'], 1);
+        expect(m0['descriptorCatchupRuns'], isNonNegative);
 
         // 2) Later, the attachment arrives and is prefetched
         final fileEvent = MockEvent();
@@ -1425,8 +1584,17 @@ void main() {
 
         // Processor should have been invoked a second time and succeeded
         expect(calls, greaterThanOrEqualTo(2));
-        final m = consumer.metricsSnapshot();
-        expect(m['lastPrefetchedCount'], greaterThanOrEqualTo(1));
+        final m1 = consumer.metricsSnapshot();
+        expect(m1['lastPrefetchedCount'], greaterThanOrEqualTo(1));
+        // Pending cleared returns to 0
+        expect(m1['pendingJsonPaths'], 0);
+        // Logs include attachment.observe for the descriptor
+        verify(() => logger.captureEvent(
+              any<String>(
+                  that: contains('attachmentEvent id=F1 path=/sub/test.json')),
+              domain: 'MATRIX_SYNC_V2',
+              subDomain: 'attachment.observe',
+            )).called(greaterThanOrEqualTo(1));
       });
     });
     test('respects maxBatch cap by flushing immediately (fakeAsync)', () async {
