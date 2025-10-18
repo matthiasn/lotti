@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:lotti/services/logging_service.dart';
@@ -72,7 +70,8 @@ class CatchUpStrategy {
         final reachedStart = events.length < limit;
         final reachedCap = limit >= maxLookback;
         if (reachedStart || reachedCap) break;
-        limit = math.min(limit * 2, maxLookback);
+        final doubled = limit * 2;
+        limit = doubled > maxLookback ? maxLookback : doubled;
         final next = await room.getTimeline(limit: limit);
         try {
           final nextEvents = List<Event>.from(next.events)
@@ -93,7 +92,10 @@ class CatchUpStrategy {
         // timestamp since the stored last sync ts (when provided).
         var startByCount = idx + 1;
         if (preContextCount > 0) {
-          startByCount = idx + 1 - preContextCount;
+          // Include exactly [preContextCount] events BEFORE the marker, and
+          // also include the marker itself. That means rewinding by
+          // preContextCount from the marker index (idx).
+          startByCount = idx - preContextCount;
           if (startByCount < 0) startByCount = 0;
           if (startByCount > events.length) startByCount = events.length;
         }

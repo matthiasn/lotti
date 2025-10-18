@@ -19,18 +19,17 @@ void main() {
   });
 
   test('recordLookBehindMerge tracks count and last tail', () {
-    final metrics = MetricsCounters(collect: true);
-    metrics.recordLookBehindMerge(100);
-    metrics.recordLookBehindMerge(200);
-    metrics.recordLookBehindMerge(300);
+    final metrics = MetricsCounters(collect: true)
+      ..recordLookBehindMerge(100)
+      ..recordLookBehindMerge(200)
+      ..recordLookBehindMerge(300);
     final snapshot = metrics.snapshot(retryStateSize: 0, circuitIsOpen: false);
     expect(snapshot['lookBehindMerges'], 3);
     expect(snapshot['lastLookBehindTail'], 300);
   });
 
   test('recordLookBehindMerge respects collect flag', () {
-    final metrics = MetricsCounters(collect: false);
-    metrics.recordLookBehindMerge(100);
+    final metrics = MetricsCounters()..recordLookBehindMerge(100);
     final snapshot = metrics.snapshot(retryStateSize: 0, circuitIsOpen: false);
     expect(snapshot['lookBehindMerges'], 0);
     expect(snapshot['lastLookBehindTail'], 0);

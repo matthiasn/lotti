@@ -263,6 +263,138 @@ void main() {
       expect(slice.map((e) => e.eventId), ['x1', 'x2']);
       verify(() => tl.cancelSubscriptions()).called(1);
     });
+
+    test('preContextCount=1 includes exactly one before marker and marker',
+        () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final tl = MockTimeline();
+
+      // Ordered events: e0(ts=100), m(ts=150)[marker], e1(ts=200)
+      Event mk(String id, int ts) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn(id);
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        return e;
+      }
+
+      final e0 = mk('e0', 100);
+      final m = mk('m', 150);
+      final e1 = mk('e1', 200);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => tl);
+      when(() => tl.events).thenReturn(<Event>[e0, m, e1]);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'm',
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async =>
+            true,
+        preContextCount: 1,
+      );
+
+      // Expect exactly one event before the marker and the marker present.
+      expect(slice.map((e) => e.eventId), ['e0', 'm', 'e1']);
+      verify(() => tl.cancelSubscriptions()).called(1);
+    });
+
+    test('preContextSinceTs equals earliest timestamp does not over-include',
+        () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final tl = MockTimeline();
+
+      // Earliest ts is 100; marker at 150; latest 200
+      Event mk(String id, int ts) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn(id);
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        return e;
+      }
+
+      final e0 = mk('e0', 100);
+      final m = mk('m', 150);
+      final e1 = mk('e1', 200);
+
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => tl);
+      when(() => tl.events).thenReturn(<Event>[e0, m, e1]);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'm',
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async =>
+            true,
+        preContextSinceTs: 100, // equals earliest
+      );
+
+      // Expect inclusion from the earliest, with no over-inclusion, and marker present
+      expect(slice.map((e) => e.eventId), ['e0', 'm', 'e1']);
+      verify(() => tl.cancelSubscriptions()).called(1);
+    });
+
+    test('marker missing with preContext does not escalate or over-include',
+        () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final tl = MockTimeline();
+
+      // Simple window e0..e2, marker not present
+      final events = List<Event>.generate(3, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(100 + i));
+        return e;
+      });
+
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => tl);
+      when(() => tl.events).thenReturn(events);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+      // Simulate backfill attempted but marker still missing (attempted=true)
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'missing',
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async =>
+            true,
+        preContextCount: 5,
+        preContextSinceTs: 50,
+      );
+
+      // With marker missing and backfill attempted, pre-context should not trigger
+      // escalation or over-inclusion. Return current snapshot as-is.
+      expect(slice.length, events.length);
+      expect(slice.map((e) => e.eventId).toList(),
+          events.map((e) => e.eventId).toList());
+      verify(() => tl.cancelSubscriptions()).called(1);
+    });
   });
 }
 
