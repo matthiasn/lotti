@@ -151,9 +151,7 @@ class DescriptorCatchUpManager {
           if (rp is String && rp.isNotEmpty) {
             _attachmentIndex.record(e);
             recorded++;
-            if (_pending.contains(rp) ||
-                _pending
-                    .contains(rp.startsWith('/') ? rp.substring(1) : '/$rp')) {
+            if (contains(rp)) {
               pendingHits++;
             }
           }

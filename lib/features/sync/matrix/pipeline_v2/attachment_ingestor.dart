@@ -96,12 +96,8 @@ class AttachmentIngestor {
         );
         if (wrote) {
           wroteMedia = true;
-          final rp = event.content['relativePath'];
-          if (rp is String && rp.isNotEmpty) {
-            if (descriptorCatchUp?.removeIfPresent(rp) ?? false) {
-              scheduleLiveScan();
-            }
-          }
+          // Descriptor pending clearance (and retryNow) is handled above when
+          // the descriptor path is observed. No need to repeat here.
         }
       } catch (err, st) {
         logging.captureException(

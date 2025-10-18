@@ -130,7 +130,7 @@ void main() {
     );
 
     expect(wrote, isTrue);
-    expect(liveScanCalls, 2); // observe + after write
+    expect(liveScanCalls, 1); // schedule on descriptor removal only
     expect(File('${tmp.path}/media/x.jpg').existsSync(), isTrue);
   });
 

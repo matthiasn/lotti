@@ -141,8 +141,8 @@ class MatrixService {
         _eventProcessor.applyObserver = _v2Pipeline!.reportDbApplyDiagnostics;
         // Proactively kick a forceRescan(includeCatchUp=true) shortly after startup
         // to avoid gaps if the consumer started before room readiness or network flakiness.
-        unawaited(Future<void>.delayed(const Duration(milliseconds: 300))
-            .then((_) async {
+        unawaited(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 300));
           try {
             _loggingService.captureEvent(
               'service.forceRescan.startup includeCatchUp=true',
@@ -163,7 +163,7 @@ class MatrixService {
               stackTrace: st,
             );
           }
-        }));
+        }());
       }
       final coordinator = lifecycleCoordinator ??
           SyncLifecycleCoordinator(
