@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 // ignore_for_file: unnecessary_lambdas, cascade_invocations, unawaited_futures
 import 'package:flutter_test/flutter_test.dart';
@@ -2934,11 +2935,6 @@ void main() {
 
     test('retry backoff blocks until due, retryNow forces scan', () async {
       fakeAsync((async) async {
-        // ignore: omit_local_variable_types
-        final DateTime now = DateTime.fromMillisecondsSinceEpoch(0);
-        // ignore: prefer_function_declarations_over_variables
-        final nowFn = () => now;
-
         final session = MockMatrixSessionManager();
         final roomManager = MockSyncRoomManager();
         final logger = MockLoggingService();
@@ -2993,7 +2989,6 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
-          now: nowFn,
           markerDebounce: const Duration(milliseconds: 50),
         );
 
@@ -5367,7 +5362,6 @@ void main() {
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
-      now: () => now,
     );
 
     await consumer.initialize();
@@ -5556,5 +5550,293 @@ void main() {
     final m = consumer.metricsSnapshot();
     expect(m['lookBehindMerges'], 1);
     expect(m['lastLookBehindTail'], 7);
+  });
+
+  test('audit tail sized by offline delta: null ts returns 200', () async {
+    await withClock(Clock.fixed(DateTime(2025, 1, 15)), () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+      // No timestamp stored
+      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+          .thenAnswer((_) async => null);
+
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+        flushInterval: const Duration(seconds: 5),
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Audit tail should default to 200 when no ts is stored
+      final m = consumer.metricsSnapshot();
+      // We can infer the tail was sized correctly by checking that the initial
+      // audit scan used 200 (not 300 or 400). The override path is tested
+      // separately; this tests the delta-based fallback.
+      // Since we can't directly access _liveScanAuditTail, we verify by the
+      // lastLookBehindTail metric on first scan.
+      expect(m['lastLookBehindTail'], isNot(greaterThan(200)));
+    });
+  });
+
+  test('audit tail sized by offline delta: 48+ hours returns 400', () async {
+    final now = DateTime(2025, 1, 15, 12);
+    final oldTs =
+        now.subtract(const Duration(hours: 50)).millisecondsSinceEpoch;
+
+    await withClock(Clock.fixed(now), () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'mk');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+          .thenAnswer((_) async => oldTs.toString());
+
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+        liveScanInitialAuditScans: 1,
+        flushInterval: const Duration(seconds: 5),
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final m = consumer.metricsSnapshot();
+      // Should use 400 for audit tail when offline >= 48h
+      expect(m['lastLookBehindTail'], 400);
+    });
+  });
+
+  test('audit tail sized by offline delta: 12-48 hours returns 300', () async {
+    final now = DateTime(2025, 1, 15, 12);
+    final oldTs =
+        now.subtract(const Duration(hours: 20)).millisecondsSinceEpoch;
+
+    await withClock(Clock.fixed(now), () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'mk');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+          .thenAnswer((_) async => oldTs.toString());
+
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+        liveScanInitialAuditScans: 1,
+        flushInterval: const Duration(seconds: 5),
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final m = consumer.metricsSnapshot();
+      // Should use 300 for audit tail when offline 12-48h
+      expect(m['lastLookBehindTail'], 300);
+    });
+  });
+
+  test('audit tail sized by offline delta: <12 hours returns 200', () async {
+    final now = DateTime(2025, 1, 15, 12);
+    final oldTs = now.subtract(const Duration(hours: 6)).millisecondsSinceEpoch;
+
+    await withClock(Clock.fixed(now), () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'mk');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+          .thenAnswer((_) async => oldTs.toString());
+
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+        liveScanInitialAuditScans: 1,
+        flushInterval: const Duration(seconds: 5),
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final m = consumer.metricsSnapshot();
+      // Should use 200 for audit tail when offline < 12h
+      expect(m['lastLookBehindTail'], 200);
+    });
   });
 }

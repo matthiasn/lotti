@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -75,7 +76,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     required Directory documentsDirectory,
     AttachmentIndex? attachmentIndex,
     bool collectMetrics = false,
-    DateTime Function()? now,
     Duration flushInterval = const Duration(milliseconds: 150),
     int maxBatch = 200,
     Duration markerDebounce = const Duration(milliseconds: 300),
@@ -103,7 +103,6 @@ class MatrixStreamConsumer implements SyncPipeline {
         _documentsDirectory = documentsDirectory,
         _attachmentIndex = attachmentIndex,
         _collectMetrics = collectMetrics,
-        _now = now ?? DateTime.now,
         _flushInterval = flushInterval,
         _maxBatch = maxBatch,
         _markerDebounce = markerDebounce,
@@ -147,7 +146,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         roomManager: _roomManager,
         scheduleLiveScan: _scheduleLiveScan,
         retryNow: retryNow,
-        now: _now,
+        now: clock.now,
       );
     }
   }
@@ -162,7 +161,6 @@ class MatrixStreamConsumer implements SyncPipeline {
   final Directory _documentsDirectory;
   final AttachmentIndex? _attachmentIndex;
   final bool _collectMetrics;
-  final DateTime Function() _now;
   final Future<bool> Function({
     required Timeline timeline,
     required String? lastEventId,
@@ -286,7 +284,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     DateTime? nextDue;
 
     final id = e.eventId;
-    final now = _now();
+    final now = clock.now();
     final blockedUntil = _retryTracker.blockedUntil(id, now);
 
     if (blockedUntil != null) {
@@ -309,7 +307,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         hadFailure = true;
         final nextAttempts = attempts + 1;
         final backoff = _computeBackoff(nextAttempts);
-        final due = _now().add(backoff);
+        final due = clock.now().add(backoff);
         _retryTracker.scheduleNext(id, nextAttempts, due);
         nextDue = due;
         _loggingService.captureEvent(
@@ -343,7 +341,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           failureDelta = 0; // apply-level retry, not an exception
           final nextAttempts = attempts + 1;
           final backoff = _computeBackoff(nextAttempts);
-          final due = _now().add(backoff);
+          final due = clock.now().add(backoff);
           _retryTracker.scheduleNext(id, nextAttempts, due);
           nextDue = due;
           _loggingService.captureEvent(
@@ -363,7 +361,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         failureDelta = 1;
         final nextAttempts = attempts + 1;
         final backoff = _computeBackoff(nextAttempts);
-        final due = _now().add(backoff);
+        final due = clock.now().add(backoff);
         // If this looks like a missing attachment/descriptor scenario, keep the
         // event blocking and do not advance the marker even after the retry cap.
         // We detect this via a FileSystemException earlier, which records the
@@ -453,7 +451,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     // Ensure room snapshot exists, then run an initial catch‑up BEFORE any
     // live scans or marker advancement to avoid skipping backlog.
     if (_roomManager.currentRoom == null) {
-      final hydrateStart = _now();
+      final hydrateStart = clock.now();
       try {
         await _roomManager.hydrateRoomSnapshot(client: _client);
       } catch (e, st) {
@@ -470,7 +468,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       for (var i = 0; i < 50 && _roomManager.currentRoom == null; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 200));
       }
-      final hydrateElapsed = _now().difference(hydrateStart).inMilliseconds;
+      final hydrateElapsed = clock.now().difference(hydrateStart).inMilliseconds;
       _loggingService.captureEvent(
         'start.hydrateRoom.ready=${_roomManager.currentRoom != null} after ${hydrateElapsed}ms',
         domain: 'MATRIX_SYNC_V2',
@@ -651,9 +649,9 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   void _scheduleInitialCatchUpRetry() {
     _initialCatchUpRetryTimer?.cancel();
-    final start = _initialCatchUpStartAt ?? _now();
+    final start = _initialCatchUpStartAt ?? clock.now();
     _initialCatchUpStartAt = start;
-    final elapsed = _now().difference(start);
+    final elapsed = clock.now().difference(start);
     // Give up after ~15 minutes of trying; logs will indicate timeout.
     const maxWait = Duration(minutes: 15);
     if (elapsed >= maxWait) {
@@ -772,7 +770,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   int _computeAuditTailCountByDelta() {
     final ts = _startupLastProcessedTs;
     if (ts == null) return 200;
-    final nowMs = _now().millisecondsSinceEpoch;
+    final nowMs = clock.now().millisecondsSinceEpoch;
     final deltaMs = nowMs - ts.toInt();
     final deltaH = deltaMs / (1000 * 60 * 60);
     if (deltaH >= 48) return 400;
@@ -816,7 +814,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     if (room == null || ordered.isEmpty) return;
 
     // Circuit breaker: if open, skip processing and schedule a follow-up scan.
-    final nowStart = _now();
+    final nowStart = clock.now();
     final remaining = _circuit.remainingCooldown(nowStart);
     if (remaining != null) {
       _liveScanTimer?.cancel();
@@ -1017,7 +1015,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     // If we encountered retriable failures (e.g., attachments not yet
     // available), schedule a follow-up scan to pick them up shortly.
     if (hadFailure) {
-      final openedNow = _circuit.recordFailures(batchFailures, _now());
+      final openedNow = _circuit.recordFailures(batchFailures, clock.now());
       if (openedNow) {
         if (_collectMetrics) _metrics.incCircuitOpens();
         _loggingService.captureEvent(
@@ -1026,7 +1024,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           subDomain: 'circuit',
         );
       }
-      final now = _now();
+      final now = clock.now();
       final delay = msh.computeNextScanDelay(now, earliestNextDue);
       _liveScanTimer?.cancel();
       _liveScanTimer = Timer(delay, () {
@@ -1037,7 +1035,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       // Defensive: if we saw activity but could not advance and had no explicit
       // failures, schedule a small tail rescan to catch ordering edge-cases.
       if (syncPayloadEventsSeen == 0 && sawAttachmentPrefetch) {
-        final now = _now();
+        final now = clock.now();
         final last = _lastAttachmentOnlyRescanAt;
         if (last == null ||
             now.difference(last) >= _minAttachmentOnlyRescanGap) {
@@ -1087,12 +1085,12 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
 
     // Prune retry state map to avoid unbounded growth.
-    _retryTracker.prune(_now());
+    _retryTracker.prune(clock.now());
   }
 
   Map<String, int> metricsSnapshot() => _metrics.snapshot(
         retryStateSize: _retryTracker.size(),
-        circuitIsOpen: _circuit.isOpen(_now()),
+        circuitIsOpen: _circuit.isOpen(clock.now()),
       )
         ..putIfAbsent(
             'pendingJsonPaths', () => _descriptorCatchUp?.pendingLength ?? 0)
@@ -1184,7 +1182,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   Future<void> retryNow() async {
     try {
       if (_retryTracker.size() == 0) return;
-      final now = _now();
+      final now = clock.now();
       _retryTracker.markAllDueNow(now);
       await _scanLiveTimeline();
     } catch (e, st) {
