@@ -468,7 +468,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       for (var i = 0; i < 50 && _roomManager.currentRoom == null; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 200));
       }
-      final hydrateElapsed = clock.now().difference(hydrateStart).inMilliseconds;
+      final hydrateElapsed =
+          clock.now().difference(hydrateStart).inMilliseconds;
       _loggingService.captureEvent(
         'start.hydrateRoom.ready=${_roomManager.currentRoom != null} after ${hydrateElapsed}ms',
         domain: 'MATRIX_SYNC_V2',

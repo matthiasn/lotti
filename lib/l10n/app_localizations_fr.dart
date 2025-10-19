@@ -574,6 +574,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checklistSuggestionsTitle => 'Suggestions d\'actions';
 
   @override
+  String get checklistExportAsMarkdown => 'Export checklist as Markdown';
+
+  @override
+  String get checklistMarkdownCopied => 'Checklist copied as Markdown';
+
+  @override
+  String get checklistShareHint => 'Long press to share';
+
+  @override
+  String get checklistNothingToExport => 'No items to export';
+
+  @override
+  String get checklistExportFailed => 'Export failed';
+
+  @override
   String get checklistsTitle => 'Listes de contrôle';
 
   @override

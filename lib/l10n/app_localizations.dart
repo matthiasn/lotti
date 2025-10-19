@@ -1119,6 +1119,36 @@ abstract class AppLocalizations {
   /// **'Suggested Action Items'**
   String get checklistSuggestionsTitle;
 
+  /// No description provided for @checklistExportAsMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Export checklist as Markdown'**
+  String get checklistExportAsMarkdown;
+
+  /// No description provided for @checklistMarkdownCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist copied as Markdown'**
+  String get checklistMarkdownCopied;
+
+  /// No description provided for @checklistShareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long press to share'**
+  String get checklistShareHint;
+
+  /// No description provided for @checklistNothingToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'No items to export'**
+  String get checklistNothingToExport;
+
+  /// No description provided for @checklistExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed'**
+  String get checklistExportFailed;
+
   /// No description provided for @checklistsTitle.
   ///
   /// In en, this message translates to:

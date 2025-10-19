@@ -37,6 +37,25 @@ The main interface for viewing and editing tasks, featuring:
 - Reorderable list of checklist items
 - Add new item functionality
 - Delete and rename options
+- Edit and Export controls in the header (edit first, then export)
+
+##### Export and Share Checklists
+
+- Copy as Markdown
+  - Click the export icon to copy the entire checklist as GitHub‑flavored Markdown.
+  - Format per line: `- [ ] Task` for incomplete, `- [x] Task` for complete.
+  - Preserves item order; skips deleted items; trims and sanitizes titles.
+  - Designed for pasting into Linear, GitHub, and other Markdown editors.
+
+- Share for Messenger/Email
+  - Long‑press (mobile) or secondary‑click/right‑click (desktop) the export icon to open the system share sheet.
+  - Format per line: `⬜ Task` (incomplete) or `✅ Task` (complete), no hyphen — optimal for chat and email clients.
+  - The email subject uses the checklist title.
+  - macOS share previews are system‑controlled; spacing cannot be customized.
+
+- UX details
+  - Desktop shows an export tooltip; mobile suppresses the tooltip so long‑press triggers share.
+  - After the first successful copy on mobile, a one‑time SnackBar hints: “Long press to share”.
 
 **ChecklistItemWidget**: Individual checklist item with:
 - Checkbox for completion toggle
