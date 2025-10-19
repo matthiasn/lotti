@@ -29,6 +29,26 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
+/// MatrixService
+///
+/// High-level façade for Matrix-based encrypted sync. Composes the SDK gateway,
+/// session/room managers, message sender, timeline listener (V1), and, when
+/// enabled via the `enable_sync_v2` flag, the stream-first V2 pipeline
+/// (`MatrixStreamConsumer`).
+///
+/// V2 integration highlights
+/// - Wires `SyncEventProcessor.applyObserver` to surface DB-apply diagnostics
+///   into the pipeline’s typed metrics.
+/// - Proactively triggers a `forceRescan(includeCatchUp=true)` shortly after
+///   startup to avoid gaps if the consumer starts before the room is fully
+///   ready or network is flaky.
+/// - On connectivity regain, nudges the pipeline again with a force rescan to
+///   recover from offline-created bursts.
+/// - Exposes `getV2Metrics()`, `forceV2Rescan()`, `retryV2Now()`, and
+///   `getSyncDiagnosticsText()` for UI (Matrix Stats) and tooling.
+///
+/// V1 remains available when V2 is disabled; lifecycle orchestration is unified
+/// via `SyncEngine` and `SyncLifecycleCoordinator`.
 class MatrixService {
   MatrixService({
     required MatrixSyncGateway gateway,
@@ -54,6 +74,8 @@ class MatrixService {
     SyncEngine? syncEngine,
     // Test-only seam to inject a V2 pipeline
     @visibleForTesting MatrixStreamConsumer? v2PipelineOverride,
+    // Optional seam to inject connectivity changes (for tests)
+    this.connectivityStream,
   })  : _gateway = gateway,
         _loggingService = loggingService,
         _activityGate = activityGate,
@@ -137,6 +159,31 @@ class MatrixService {
       // Wire DB-apply diagnostics from the processor into the V2 pipeline
       if (_v2Pipeline != null) {
         _eventProcessor.applyObserver = _v2Pipeline!.reportDbApplyDiagnostics;
+        // Proactively kick a forceRescan(includeCatchUp=true) shortly after startup
+        // to avoid gaps if the consumer started before room readiness or network flakiness.
+        unawaited(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+          try {
+            _loggingService.captureEvent(
+              'service.forceRescan.startup includeCatchUp=true',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan',
+            );
+            await _v2Pipeline!.forceRescan();
+            _loggingService.captureEvent(
+              'service.forceRescan.startup.done',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan',
+            );
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan.startup',
+              stackTrace: st,
+            );
+          }
+        }());
       }
       final coordinator = lifecycleCoordinator ??
           SyncLifecycleCoordinator(
@@ -165,15 +212,41 @@ class MatrixService {
     incomingKeyVerificationRunnerStream =
         incomingKeyVerificationRunnerController.stream;
 
-    _connectivitySubscription = Connectivity()
-        .onConnectivityChanged
-        .listen((List<ConnectivityResult> result) {
+    _connectivitySubscription =
+        (connectivityStream ?? Connectivity().onConnectivityChanged)
+            .listen((List<ConnectivityResult> result) {
       if ({
         ConnectivityResult.wifi,
         ConnectivityResult.mobile,
         ConnectivityResult.ethernet,
       }.intersection(result.toSet()).isNotEmpty) {
         _timelineListener.enqueueTimelineRefresh();
+        // Also nudge the V2 pipeline to run a catch-up + live scan when
+        // connectivity resumes, improving recovery for offline-created bursts.
+        // Kick a catch-up + scan; handle async errors inside the task.
+        unawaited(() async {
+          try {
+            _loggingService.captureEvent(
+              'service.forceRescan.connectivity includeCatchUp=true',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan',
+            );
+            await _v2Pipeline?.forceRescan();
+            _loggingService.captureEvent(
+              'service.forceRescan.connectivity.done',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'v2.forceRescan',
+            );
+          } catch (e, st) {
+            // Log exceptions to aid debugging, but do not crash.
+            _loggingService.captureException(
+              e,
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'connectivity',
+              stackTrace: st,
+            );
+          }
+        }());
       }
     });
   }
@@ -197,6 +270,8 @@ class MatrixService {
   MatrixStreamConsumer? _v2Pipeline;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  // Optional seam for tests to inject a connectivity stream.
+  final Stream<List<ConnectivityResult>>? connectivityStream;
 
   Client get client => _sessionManager.client;
 

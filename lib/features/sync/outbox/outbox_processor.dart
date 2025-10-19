@@ -61,6 +61,16 @@ class OutboxProcessor {
 
     try {
       final syncMessage = _decodeMessage(nextItem);
+      // Log the decoded message type to improve visibility, especially for links
+      try {
+        _loggingService.captureEvent(
+          'sending type=${syncMessage.runtimeType} subject=${nextItem.subject}',
+          domain: 'OUTBOX',
+          subDomain: 'sendNext()',
+        );
+      } catch (_) {
+        // best-effort logging only
+      }
       final success = await _messageSender.send(syncMessage);
 
       if (!success) {

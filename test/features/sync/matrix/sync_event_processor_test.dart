@@ -39,6 +39,8 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
 
+//
+
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -431,6 +433,8 @@ void main() {
       }
     });
 
+    // (SmartJournalEntityLoader local-read logging tests deferred)
+
     test('ensures missing image media via AttachmentIndex', () async {
       // Arrange: JSON for an image entity exists, media file does not.
       final image = JournalImage(
@@ -812,6 +816,59 @@ void main() {
           'present');
       expect(downloads, 0);
     });
+  });
+
+  test('EntryLink apply logs from/to IDs and rows affected', () async {
+    final link = EntryLink.basic(
+      id: 'link-log',
+      fromId: 'from-id',
+      toId: 'to-id',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      vectorClock: null,
+    );
+    final message = SyncMessage.entryLink(
+      entryLink: link,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 1);
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(() => loggingService.captureEvent(
+          contains('apply entryLink from=from-id to=to-id rows=1'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'apply.entryLink',
+        )).called(1);
+  });
+
+  test('EntryLink apply continues when logging throws', () async {
+    final link = EntryLink.basic(
+      id: 'link-fail',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      vectorClock: null,
+    );
+    final message = SyncMessage.entryLink(
+      entryLink: link,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 1);
+    when(() => loggingService.captureEvent(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'apply.entryLink',
+        )).thenThrow(Exception('logging failed'));
+
+    // Should not throw - logging is best-effort
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(() => journalDb.upsertEntryLink(link)).called(1);
+    verify(() => updateNotifications.notify(any(), fromSync: true)).called(1);
   });
 
   test('journal entity loader exception logs missingAttachment subdomain',

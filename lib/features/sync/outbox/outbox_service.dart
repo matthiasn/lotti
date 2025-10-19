@@ -159,6 +159,11 @@ class OutboxService {
             subject: Value('$hostHash:$localCounter'),
           ),
         );
+        _loggingService.captureEvent(
+          'enqueue type=SyncJournalEntity subject=${'$hostHash:$localCounter'} id=${syncMessage.id} attachBytes=$fileLength',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
       }
 
       if (syncMessage is SyncEntityDefinition) {
@@ -170,11 +175,21 @@ class OutboxService {
             subject: Value('$hostHash:$localCounter'),
           ),
         );
+        _loggingService.captureEvent(
+          'enqueue type=SyncEntityDefinition subject=${'$hostHash:$localCounter'} id=${syncMessage.entityDefinition.id}',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
       }
 
       if (syncMessage is SyncEntryLink) {
         await _syncDatabase.addOutboxItem(
           commonFields.copyWith(subject: Value('$hostHash:link')),
+        );
+        _loggingService.captureEvent(
+          'enqueue type=SyncEntryLink subject=${'$hostHash:link'} from=${syncMessage.entryLink.fromId} to=${syncMessage.entryLink.toId}',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
         );
       }
 
@@ -182,11 +197,21 @@ class OutboxService {
         await _syncDatabase.addOutboxItem(
           commonFields.copyWith(subject: const Value('aiConfig')),
         );
+        _loggingService.captureEvent(
+          'enqueue type=SyncAiConfig subject=aiConfig id=${syncMessage.aiConfig.id}',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
       }
 
       if (syncMessage is SyncAiConfigDelete) {
         await _syncDatabase.addOutboxItem(
           commonFields.copyWith(subject: const Value('aiConfigDelete')),
+        );
+        _loggingService.captureEvent(
+          'enqueue type=SyncAiConfigDelete subject=aiConfigDelete id=${syncMessage.id}',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
         );
       }
 
@@ -195,6 +220,11 @@ class OutboxService {
           commonFields.copyWith(
             subject: Value('$hostHash:tag'),
           ),
+        );
+        _loggingService.captureEvent(
+          'enqueue type=SyncTagEntity subject=${'$hostHash:tag'} id=${syncMessage.tagEntity.id}',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
         );
       }
       unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));

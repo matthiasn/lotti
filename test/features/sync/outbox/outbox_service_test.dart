@@ -6,10 +6,14 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
@@ -31,6 +35,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockUserActivityGate extends Mock implements UserActivityGate {}
 
+class MockJournalDb extends Mock implements JournalDb {}
+
 class MockUserActivityService extends Mock implements UserActivityService {}
 
 class MockOutboxRepository extends Mock implements OutboxRepository {}
@@ -38,8 +44,6 @@ class MockOutboxRepository extends Mock implements OutboxRepository {}
 class MockOutboxMessageSender extends Mock implements OutboxMessageSender {}
 
 class MockOutboxProcessor extends Mock implements OutboxProcessor {}
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 class MockVectorClockService extends Mock implements VectorClockService {}
 
@@ -53,9 +57,9 @@ class TestableOutboxService extends OutboxService {
     required super.journalDb,
     required super.documentsDirectory,
     required super.userActivityService,
-    required super.repository,
-    required super.messageSender,
-    required super.processor,
+    super.repository,
+    super.messageSender,
+    super.processor,
     super.activityGate,
     super.ownsActivityGate,
   });
@@ -65,10 +69,10 @@ class TestableOutboxService extends OutboxService {
 
   @override
   Future<void> enqueueNextSendRequest({
-    Duration? delay,
+    Duration delay = const Duration(milliseconds: 1),
   }) async {
     enqueueCalls++;
-    lastDelay = delay ?? const Duration(milliseconds: 1);
+    lastDelay = delay;
   }
 }
 
@@ -80,7 +84,9 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'fallback'));
-    registerFallbackValue(const OutboxCompanion());
+    // Mocktail fallback for any<OutboxCompanion>() matchers
+    registerFallbackValue(OutboxCompanion.insert(message: 'm', subject: 's'));
+    registerFallbackValue(StackTrace.empty);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel,
             (MethodCall call) async {
@@ -89,14 +95,11 @@ void main() {
       }
       return 'wifi';
     });
-
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMessageHandler(
       'dev.fluttercommunity.plus/connectivity_status',
       (ByteData? message) async => null,
     );
-
-    registerFallbackValue(StackTrace.empty);
   });
 
   late MockSyncDatabase syncDatabase;
@@ -108,6 +111,7 @@ void main() {
   late MockVectorClockService vectorClockService;
   late MockUserActivityService userActivityService;
   late Directory documentsDirectory;
+  late OutboxService service;
   late bool hadDirectoryRegistered;
   Directory? previousDirectory;
 
@@ -134,15 +138,44 @@ void main() {
 
     when(() => processor.processQueue())
         .thenAnswer((_) async => OutboxProcessingResult.none);
+    when(() => loggingService.captureEvent(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        )).thenAnswer((_) {});
+    when(() => loggingService.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        )).thenAnswer((_) async {});
     when(() => vectorClockService.getHostHash())
-        .thenAnswer((_) async => 'hostHash');
-    when(() => vectorClockService.getHost()).thenAnswer((_) async => 'host');
+        .thenAnswer((_) async => 'hhash');
+    when(() => vectorClockService.getHost()).thenAnswer((_) async => 'hostA');
+    when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
+        .thenAnswer((_) async => 1);
+    // Ensure activity gate can construct if needed
     when(() => userActivityService.lastActivity).thenReturn(DateTime.now());
     when(() => userActivityService.activityStream)
         .thenAnswer((_) => const Stream<DateTime>.empty());
+
+    service = TestableOutboxService(
+      syncDatabase: syncDatabase,
+      loggingService: loggingService,
+      vectorClockService: vectorClockService,
+      journalDb: journalDb,
+      documentsDirectory: documentsDirectory,
+      userActivityService: userActivityService,
+      repository: repository,
+      messageSender: messageSender,
+      processor: processor,
+      activityGate: MockUserActivityGate(),
+      ownsActivityGate: false,
+    );
   });
 
-  tearDown(() {
+  tearDown(() async {
+    await service.dispose();
     if (documentsDirectory.existsSync()) {
       documentsDirectory.deleteSync(recursive: true);
     }
@@ -154,12 +187,118 @@ void main() {
     }
   });
 
+  test('enqueueMessage logs SyncEntityDefinition', () async {
+    final def = SyncMessage.entityDefinition(
+      entityDefinition: EntityDefinition.measurableDataType(
+        id: 'def-1',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        displayName: 'Water',
+        description: 'H2O',
+        unitName: 'ml',
+        version: 1,
+        vectorClock: null,
+      ),
+      status: SyncEntryStatus.initial,
+    );
+
+    await service.enqueueMessage(def);
+
+    verify(() => loggingService.captureEvent(
+          contains('type=SyncEntityDefinition'),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        )).called(1);
+  });
+
+  test('enqueueMessage logs SyncEntryLink with from/to', () async {
+    final link = SyncMessage.entryLink(
+      entryLink: EntryLink.basic(
+        id: 'l1',
+        fromId: 'A',
+        toId: 'B',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+      ),
+      status: SyncEntryStatus.initial,
+    );
+
+    await service.enqueueMessage(link);
+
+    verify(() => loggingService.captureEvent(
+          allOf([
+            contains('type=SyncEntryLink'),
+            contains('from=A'),
+            contains('to=B'),
+          ]),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        )).called(1);
+  });
+
+  test('enqueueMessage logs SyncAiConfig', () async {
+    final cfg = SyncMessage.aiConfig(
+      aiConfig: AiConfig.inferenceProvider(
+        id: 'cfg1',
+        baseUrl: 'https://example.org',
+        apiKey: 'k',
+        name: 'p',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.openAi,
+      ),
+      status: SyncEntryStatus.initial,
+    );
+
+    await service.enqueueMessage(cfg);
+
+    verify(() => loggingService.captureEvent(
+          contains('type=SyncAiConfig'),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        )).called(1);
+  });
+
+  test('enqueueMessage logs SyncAiConfigDelete', () async {
+    const del = SyncMessage.aiConfigDelete(id: 'cfg1');
+
+    await service.enqueueMessage(del);
+
+    verify(() => loggingService.captureEvent(
+          contains('type=SyncAiConfigDelete'),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        )).called(1);
+  });
+
+  test('enqueueMessage logs SyncTagEntity', () async {
+    final tag = SyncMessage.tagEntity(
+      tagEntity: TagEntity.genericTag(
+        id: 't1',
+        tag: 'alpha',
+        private: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+      ),
+      status: SyncEntryStatus.initial,
+    );
+
+    await service.enqueueMessage(tag);
+
+    verify(() => loggingService.captureEvent(
+          contains('type=SyncTagEntity'),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        )).called(1);
+  });
+
   test('dispose closes owned activity gate', () async {
     final ownedGate = MockUserActivityGate();
     when(ownedGate.waitUntilIdle).thenAnswer((_) async {});
     when(ownedGate.dispose).thenAnswer((_) async {});
 
-    final service = OutboxService(
+    final serviceOwned = OutboxService(
       syncDatabase: syncDatabase,
       loggingService: loggingService,
       vectorClockService: vectorClockService,
@@ -173,7 +312,7 @@ void main() {
       ownsActivityGate: true,
     );
 
-    await service.dispose();
+    await serviceOwned.dispose();
 
     verify(ownedGate.dispose).called(1);
   });
@@ -183,7 +322,7 @@ void main() {
     when(externalGate.waitUntilIdle).thenAnswer((_) async {});
     when(externalGate.dispose).thenAnswer((_) async {});
 
-    final service = OutboxService(
+    final serviceExternal = OutboxService(
       syncDatabase: syncDatabase,
       loggingService: loggingService,
       vectorClockService: vectorClockService,
@@ -196,13 +335,15 @@ void main() {
       activityGate: externalGate,
     );
 
-    await service.dispose();
+    await serviceExternal.dispose();
 
     verifyNever(externalGate.dispose);
   });
 
   group('enqueueMessage', () {
-    test('stores relative attachment path for initial journal entry', () async {
+    test(
+        'stores relative attachment path for initial journal entry and schedules',
+        () async {
       final capturedCompanions = <OutboxCompanion>[];
       when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
           .thenAnswer((invocation) async {
@@ -211,7 +352,7 @@ void main() {
         return 1;
       });
 
-      final service = TestableOutboxService(
+      final testService = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -230,7 +371,7 @@ void main() {
         updatedAt: sampleDate,
         dateFrom: sampleDate,
         dateTo: sampleDate,
-        vectorClock: const VectorClock({'host': 1}),
+        vectorClock: const VectorClock({'hostA': 1}),
       );
       final imageData = ImageData(
         capturedAt: sampleDate,
@@ -255,7 +396,7 @@ void main() {
         ..createSync(recursive: true)
         ..writeAsBytesSync(List<int>.filled(10, 42));
 
-      await service.enqueueMessage(
+      await testService.enqueueMessage(
         const SyncMessage.journalEntity(
           id: 'entry',
           jsonPath: jsonPath,
@@ -267,10 +408,12 @@ void main() {
       expect(capturedCompanions, hasLength(1));
       final companion = capturedCompanions.single;
       expect(companion.filePath.value, getRelativeAssetPath(imagePath));
-      expect(companion.subject.value, 'hostHash:1');
+      expect(companion.subject.value, 'hhash:1');
       expect(companion.status.value, OutboxStatus.pending.index);
-      verify(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
-          .called(1);
+
+      // Ensure scheduling happens after enqueue
+      expect(testService.enqueueCalls, 1);
+      expect(testService.lastDelay, const Duration(seconds: 1));
     });
   });
 
@@ -283,7 +426,7 @@ void main() {
       when(gate.waitUntilIdle).thenAnswer((_) async {});
       when(gate.dispose).thenAnswer((_) async {});
 
-      final service = TestableOutboxService(
+      final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -296,12 +439,12 @@ void main() {
         activityGate: gate,
       );
 
-      await service.sendNext();
+      await svc.sendNext();
 
       verifyNever(() => processor.processQueue());
-      expect(service.enqueueCalls, 0);
+      expect(svc.enqueueCalls, 0);
 
-      await service.dispose();
+      await svc.dispose();
     });
 
     test('schedules next run when processor requests it', () async {
@@ -317,7 +460,7 @@ void main() {
       when(gate.waitUntilIdle).thenAnswer((_) async {});
       when(gate.dispose).thenAnswer((_) async {});
 
-      final service = TestableOutboxService(
+      final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -330,13 +473,13 @@ void main() {
         activityGate: gate,
       );
 
-      await service.sendNext();
+      await svc.sendNext();
 
       verify(() => processor.processQueue()).called(1);
-      expect(service.enqueueCalls, 1);
-      expect(service.lastDelay, const Duration(seconds: 3));
+      expect(svc.enqueueCalls, 1);
+      expect(svc.lastDelay, const Duration(seconds: 3));
 
-      await service.dispose();
+      await svc.dispose();
     });
 
     test('does not reschedule when queue empty', () async {
@@ -349,7 +492,7 @@ void main() {
       when(gate.waitUntilIdle).thenAnswer((_) async {});
       when(gate.dispose).thenAnswer((_) async {});
 
-      final service = TestableOutboxService(
+      final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -362,10 +505,10 @@ void main() {
         activityGate: gate,
       );
 
-      await service.sendNext();
+      await svc.sendNext();
 
-      expect(service.enqueueCalls, 0);
-      await service.dispose();
+      expect(svc.enqueueCalls, 0);
+      await svc.dispose();
     });
 
     test('logs error and reschedules on failure', () async {
@@ -378,7 +521,7 @@ void main() {
       when(gate.waitUntilIdle).thenAnswer((_) async {});
       when(gate.dispose).thenAnswer((_) async {});
 
-      final service = TestableOutboxService(
+      final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -391,7 +534,7 @@ void main() {
         activityGate: gate,
       );
 
-      await service.sendNext();
+      await svc.sendNext();
 
       verify(
         () => loggingService.captureException(
@@ -401,10 +544,10 @@ void main() {
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
       ).called(1);
-      expect(service.enqueueCalls, 1);
-      expect(service.lastDelay, const Duration(seconds: 15));
+      expect(svc.enqueueCalls, 1);
+      expect(svc.lastDelay, const Duration(seconds: 15));
 
-      await service.dispose();
+      await svc.dispose();
     });
 
     test(
@@ -435,7 +578,7 @@ void main() {
       when(gate.waitUntilIdle).thenAnswer((_) async {});
       when(gate.dispose).thenAnswer((_) async {});
 
-      final service = TestableOutboxService(
+      final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -448,14 +591,14 @@ void main() {
         activityGate: gate,
       );
 
-      await service.sendNext();
+      await svc.sendNext();
 
       // After hitting the internal pass cap, service should schedule an
       // immediate continuation because items remain pending.
-      expect(service.enqueueCalls, 1);
-      expect(service.lastDelay, Duration.zero);
+      expect(svc.enqueueCalls, 1);
+      expect(svc.lastDelay, Duration.zero);
 
-      await service.dispose();
+      await svc.dispose();
     });
   });
 
@@ -476,7 +619,7 @@ void main() {
   test('constructs with matrixService fallback sender', () async {
     final matrixService = MockMatrixService();
 
-    final service = OutboxService(
+    final serviceWithMatrix = OutboxService(
       syncDatabase: syncDatabase,
       loggingService: loggingService,
       vectorClockService: vectorClockService,
@@ -486,7 +629,7 @@ void main() {
       matrixService: matrixService,
     );
 
-    await service.dispose();
+    await serviceWithMatrix.dispose();
   });
 
   test('MatrixOutboxMessageSender delegates to MatrixService', () async {

@@ -44,24 +44,25 @@ void main() {
       expect(MatrixEventClassifier.isSyncPayloadEvent(e), isFalse);
     });
 
-    test('shouldPrefetchAttachment true only for remote attachments', () {
-      final file = MockEvent();
-      when(() => file.senderId).thenReturn('@other:server');
-      when(() => file.attachmentMimetype).thenReturn('image/png');
-      expect(MatrixEventClassifier.shouldPrefetchAttachment(file, '@me:server'),
+    test('shouldPrefetchAttachment true for media and json (sender agnostic)',
+        () {
+      final image = MockEvent();
+      when(() => image.senderId).thenReturn('@other:server');
+      when(() => image.attachmentMimetype).thenReturn('image/png');
+      expect(
+          MatrixEventClassifier.shouldPrefetchAttachment(image, '@me:server'),
           isTrue);
 
-      final mine = MockEvent();
-      when(() => mine.senderId).thenReturn('@me:server');
-      when(() => mine.attachmentMimetype).thenReturn('image/png');
-      expect(MatrixEventClassifier.shouldPrefetchAttachment(mine, '@me:server'),
-          isFalse);
+      final json = MockEvent();
+      when(() => json.senderId).thenReturn('@me:server');
+      when(() => json.attachmentMimetype).thenReturn('application/json');
+      expect(MatrixEventClassifier.shouldPrefetchAttachment(json, '@me:server'),
+          isTrue);
 
-      final nofile = MockEvent();
-      when(() => nofile.senderId).thenReturn('@other:server');
-      when(() => nofile.attachmentMimetype).thenReturn('');
-      expect(
-          MatrixEventClassifier.shouldPrefetchAttachment(nofile, '@me:server'),
+      final none = MockEvent();
+      when(() => none.senderId).thenReturn('@other:server');
+      when(() => none.attachmentMimetype).thenReturn('');
+      expect(MatrixEventClassifier.shouldPrefetchAttachment(none, '@me:server'),
           isFalse);
     });
   });

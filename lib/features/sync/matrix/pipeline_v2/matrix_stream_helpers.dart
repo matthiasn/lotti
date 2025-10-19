@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
+import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:matrix/matrix.dart';
 
 /// Helpers for Matrix V2 streaming pipeline.
@@ -120,4 +122,37 @@ String ignoredReasonFromStatus(String status) {
     return 'equal';
   }
   return 'unknown';
+}
+
+/// Builds a live-scan slice from timeline events.
+///
+/// - Sorts chronologically ascending
+/// - If [lastEventId] is present: returns events strictly after it
+/// - Otherwise returns the last [tailLimit] events
+/// - Applies timestamp cutoff when [lastTimestamp] is provided
+/// - Deduplicates by eventId preserving order
+List<Event> buildLiveScanSlice({
+  required List<Event> timelineEvents,
+  required String? lastEventId,
+  required int tailLimit,
+  required num? lastTimestamp,
+  required Duration tsGate,
+}) {
+  final events = List<Event>.from(timelineEvents)
+    ..sort(TimelineEventOrdering.compare);
+  final idx = tu.findLastIndexByEventId(events, lastEventId);
+  var slice = idx >= 0
+      ? events.sublist(idx + 1)
+      : (events.isEmpty
+          ? events
+          : events.sublist(
+              (events.length - tailLimit).clamp(0, events.length),
+            ));
+  if (slice.isNotEmpty && lastTimestamp != null) {
+    final cutoff = lastTimestamp.toInt() - tsGate.inMilliseconds;
+    slice = slice
+        .where((e) => TimelineEventOrdering.timestamp(e) >= cutoff)
+        .toList();
+  }
+  return tu.dedupEventsByIdPreserveOrder(slice);
 }

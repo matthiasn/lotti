@@ -83,23 +83,55 @@ void main() {
   });
 
   group('shouldPrefetchAttachment', () {
-    test('true when remote sender and has attachment', () {
+    test('true when media/json regardless of sender', () {
       final e = MockEvent();
       when(() => e.senderId).thenReturn('@other:hs');
       when(() => e.attachmentMimetype).thenReturn('image/png');
       expect(shouldPrefetchAttachment(e, '@me:hs'), isTrue);
+      final eSelf = MockEvent();
+      when(() => eSelf.senderId).thenReturn('@me:hs');
+      when(() => eSelf.attachmentMimetype).thenReturn('application/json');
+      expect(shouldPrefetchAttachment(eSelf, '@me:hs'), isTrue);
     });
 
-    test('false when local sender or no attachment', () {
-      final e1 = MockEvent();
-      when(() => e1.senderId).thenReturn('@me:hs');
-      when(() => e1.attachmentMimetype).thenReturn('image/png');
-      expect(shouldPrefetchAttachment(e1, '@me:hs'), isFalse);
-
+    test('false when no attachment', () {
       final e2 = MockEvent();
       when(() => e2.senderId).thenReturn('@other:hs');
       when(() => e2.attachmentMimetype).thenReturn('');
       expect(shouldPrefetchAttachment(e2, '@me:hs'), isFalse);
+    });
+
+    test('handles MIME with charset parameter', () {
+      final e = MockEvent();
+      when(() => e.attachmentMimetype)
+          .thenReturn('application/json; charset=utf-8');
+      expect(shouldPrefetchAttachment(e, '@me:hs'), isTrue);
+    });
+
+    test('supports structured JSON types (application/*+json)', () {
+      final e1 = MockEvent();
+      when(() => e1.attachmentMimetype).thenReturn('application/ld+json');
+      expect(shouldPrefetchAttachment(e1, '@me:hs'), isTrue);
+
+      final e2 = MockEvent();
+      when(() => e2.attachmentMimetype).thenReturn('application/activity+json');
+      expect(shouldPrefetchAttachment(e2, '@me:hs'), isTrue);
+
+      final e3 = MockEvent();
+      when(() => e3.attachmentMimetype).thenReturn('application/geo+json');
+      expect(shouldPrefetchAttachment(e3, '@me:hs'), isTrue);
+    });
+
+    test('normalizes MIME type case', () {
+      final e = MockEvent();
+      when(() => e.attachmentMimetype).thenReturn('IMAGE/PNG');
+      expect(shouldPrefetchAttachment(e, '@me:hs'), isTrue);
+    });
+
+    test('rejects application types without +json suffix', () {
+      final e = MockEvent();
+      when(() => e.attachmentMimetype).thenReturn('application/pdf');
+      expect(shouldPrefetchAttachment(e, '@me:hs'), isFalse);
     });
   });
 }
