@@ -14,7 +14,8 @@ class TaskStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = task.data.status.color;
+    final brightness = Theme.of(context).brightness;
+    final backgroundColor = task.data.status.colorForBrightness(brightness);
     final label = task.data.status.localizedLabel(context);
 
     return Chip(

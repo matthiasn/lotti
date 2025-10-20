@@ -48,11 +48,13 @@ class ModernTaskCard extends StatelessWidget {
   }
 
   Widget _buildSubtitleRow(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+
     return Row(
       children: [
         ModernStatusChip(
           label: _getStatusLabel(context, task.data.status),
-          color: _getStatusColor(task.data.status),
+          color: task.data.status.colorForBrightness(brightness),
           icon: _getStatusIcon(task.data.status),
         ),
         if (task.data.due != null) ...[
@@ -76,18 +78,6 @@ class ModernTaskCard extends StatelessWidget {
         const Spacer(),
         CompactTaskProgress(taskId: task.id),
       ],
-    );
-  }
-
-  Color _getStatusColor(TaskStatus status) {
-    return status.map(
-      open: (_) => Colors.orange,
-      groomed: (_) => Colors.lightGreenAccent,
-      inProgress: (_) => Colors.blue,
-      blocked: (_) => Colors.red,
-      onHold: (_) => Colors.red,
-      done: (_) => Colors.green,
-      rejected: (_) => Colors.red,
     );
   }
 
