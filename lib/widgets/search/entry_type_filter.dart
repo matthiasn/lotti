@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:quiver/collection.dart';
 
@@ -12,16 +15,32 @@ class EntryTypeFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        return Wrap(
-          runSpacing: 10,
-          spacing: 5,
-          children: [
-            ...entryTypes.map(EntryTypeChip.new),
-            const EntryTypeAllChip(),
-            const SizedBox(width: 5),
-          ],
+    return StreamBuilder<Set<ConfigFlag>>(
+      stream: getIt<JournalDb>().watchConfigFlags(),
+      builder: (context, flagSnapshot) {
+        final flags = flagSnapshot.data ?? <ConfigFlag>{};
+        final flagLookup = <String, ConfigFlag>{
+          for (final flag in flags) flag.name: flag,
+        };
+
+        final enableEvents = flagLookup[enableEventsFlag]?.status ?? false;
+
+        final filteredEntryTypes = enableEvents
+            ? entryTypes
+            : entryTypes.where((type) => type != 'JournalEvent').toList();
+
+        return BlocBuilder<JournalPageCubit, JournalPageState>(
+          builder: (context, snapshot) {
+            return Wrap(
+              runSpacing: 10,
+              spacing: 5,
+              children: [
+                ...filteredEntryTypes.map(EntryTypeChip.new),
+                const EntryTypeAllChip(),
+                const SizedBox(width: 5),
+              ],
+            );
+          },
         );
       },
     );

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
 
 /// Modern version of create event item
@@ -21,21 +24,37 @@ class CreateEventItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ModernModalEntryTypeItem(
-      icon: Icons.event_rounded,
-      title: 'Event',
-      onTap: () async {
-        final event = await createEvent(
-          linkedId: linkedFromId,
-          categoryId: categoryId,
+    return StreamBuilder<Set<ConfigFlag>>(
+      stream: getIt<JournalDb>().watchConfigFlags(),
+      builder: (context, snapshot) {
+        final flags = snapshot.data ?? <ConfigFlag>{};
+        final flagLookup = <String, ConfigFlag>{
+          for (final flag in flags) flag.name: flag,
+        };
+
+        final enableEvents = flagLookup[enableEventsFlag]?.status ?? false;
+
+        if (!enableEvents) {
+          return const SizedBox.shrink();
+        }
+
+        return ModernModalEntryTypeItem(
+          icon: Icons.event_rounded,
+          title: 'Event',
+          onTap: () async {
+            final event = await createEvent(
+              linkedId: linkedFromId,
+              categoryId: categoryId,
+            );
+            if (!context.mounted) {
+              return;
+            }
+            if (event != null) {
+              beamToNamed('/journal/${event.meta.id}');
+            }
+            Navigator.of(context).pop();
+          },
         );
-        if (!context.mounted) {
-          return;
-        }
-        if (event != null) {
-          beamToNamed('/journal/${event.meta.id}');
-        }
-        Navigator.of(context).pop();
       },
     );
   }

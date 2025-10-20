@@ -656,6 +656,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la page Tableaux de bord dans la navigation principale. Affichez vos données et vos informations dans des tableaux de bord personnalisables.';
 
   @override
+  String get configFlagEnableEventsDescription =>
+      'Enable the Events feature to track and manage events in your journal.';
+
+  @override
   String get configFlagEnableHabitsPageDescription =>
       'Afficher la page Habitudes dans la navigation principale. Suivez et gérez vos habitudes quotidiennes ici.';
 
@@ -717,6 +721,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagEnableCalendarPage => 'Activer la page Calendrier';
+
+  @override
+  String get configFlagEnableEvents => 'Enable Events';
 
   @override
   String get configFlagUseCloudInferenceDescription =>

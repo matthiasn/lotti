@@ -649,6 +649,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the Dashboards page in the main navigation. View your data and insights in customizable dashboards.';
 
   @override
+  String get configFlagEnableEventsDescription =>
+      'Enable the Events feature to track and manage events in your journal.';
+
+  @override
   String get configFlagEnableHabitsPageDescription =>
       'Show the Habits page in the main navigation. Track and manage your daily habits here.';
 
@@ -709,6 +713,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagEnableCalendarPage => 'Enable Calendar page';
+
+  @override
+  String get configFlagEnableEvents => 'Enable Events';
 
   @override
   String get configFlagUseCloudInferenceDescription =>

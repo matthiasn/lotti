@@ -94,6 +94,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable notifications?',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableEventsFlag,
+    description: 'Enable Events?',
+    status: false,
+  ),
 };
 
 void main() {

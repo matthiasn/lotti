@@ -652,6 +652,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează pagina Tablouri de bord în navigarea principală. Vizualizați datele și informațiile dvs. în tablouri de bord personalizabile.';
 
   @override
+  String get configFlagEnableEventsDescription =>
+      'Enable the Events feature to track and manage events in your journal.';
+
+  @override
   String get configFlagEnableHabitsPageDescription =>
       'Afișează pagina Obiceiuri în navigarea principală. Urmăriți și gestionați-vă obiceiurile zilnice aici.';
 
@@ -714,6 +718,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagEnableCalendarPage => 'Activează pagina Calendar';
+
+  @override
+  String get configFlagEnableEvents => 'Enable Events';
 
   @override
   String get configFlagUseCloudInferenceDescription =>
