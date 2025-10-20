@@ -11,13 +11,13 @@ import 'package:lotti/themes/theme.dart';
 class AudioRecordingIndicatorConstants {
   const AudioRecordingIndicatorConstants._();
 
-  static const double indicatorWidth = 100;
-  static const double indicatorHeight = 25;
+  static const double indicatorWidth = 105;
+  static const double indicatorHeight = 24;
   static const double iconSize = 20;
   static const double borderRadius = 8;
   static const EdgeInsets textPadding = EdgeInsets.only(
     left: 2,
-    bottom: 4,
+    bottom: 1,
     right: 4,
   );
 }
@@ -67,29 +67,26 @@ class AudioRecordingIndicator extends ConsumerWidget {
               width: AudioRecordingIndicatorConstants.indicatorWidth,
               height: AudioRecordingIndicatorConstants.indicatorHeight,
               color: context.colorScheme.error,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        const Icon(
-                          Icons.mic_outlined,
-                          size: AudioRecordingIndicatorConstants.iconSize,
-                          color: Colors.black87,
-                        ),
-                        Padding(
-                          padding: AudioRecordingIndicatorConstants.textPadding,
-                          child: Text(
-                            formatDuration(state.progress),
-                            style: monospaceTextStyle.copyWith(
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ],
+                  const Icon(
+                    Icons.mic_outlined,
+                    size: AudioRecordingIndicatorConstants.iconSize,
+                    color: Colors.white,
+                  ),
+                  Padding(
+                    padding: AudioRecordingIndicatorConstants.textPadding,
+                    child: Text(
+                      formatDuration(state.progress),
+                      style: monoTabularStyle(
+                        fontSize: fontSizeMedium,
+                        color: Colors.white,
+                      ),
+                      strutStyle: const StrutStyle(
+                        height: 1,
+                        forceStrutHeight: true,
+                      ),
                     ),
                   ),
                 ],

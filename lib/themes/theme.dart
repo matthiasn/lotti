@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -358,6 +359,20 @@ TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
       fontWeight: FontWeight.bold,
       color: themeData.colorScheme.error,
     );
+
+// Utility style for monospaced, tabular-digit text with adjustable size.
+TextStyle monoTabularStyle({
+  required double fontSize,
+  Color? color,
+  FontWeight fontWeight = FontWeight.w500,
+}) {
+  return GoogleFonts.inconsolata(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+}
 
 TextStyle failButtonStyle() => TextStyle(
       fontSize: fontSizeMediumLarge,

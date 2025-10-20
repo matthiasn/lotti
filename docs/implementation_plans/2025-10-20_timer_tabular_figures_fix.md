@@ -25,24 +25,32 @@
 
 - Timers should feel static in position while values update.
 - Keep current sizes; only adjust font features to be tabular figures and monospace where warranted.
-- If space is tight (chips/headers), reserve a consistent width to prevent shifts (e.g., via a fixed‑width box sized to the widest representation).
+- If space is tight (chips/headers), reserve a consistent width to prevent shifts (e.g., via a
+  fixed‑width box sized to the widest representation).
 
 ## Architecture
 
 1) Centralize timer text styling
-   - Reuse existing `monospaceTextStyle` / `monospaceTextStyleSmall` from `lib/themes/theme.dart` which already include `FontFeature.tabularFigures()`.
-   - Add a small helper if beneficial (optional):
-     - `AppTheme.timerTextStyle({Color? color, double? fontSize})` returning a copy of `monospaceTextStyleSmall` with overrides.
+  - Reuse existing `monospaceTextStyle` / `monospaceTextStyleSmall` from `lib/themes/theme.dart`
+    which already include `FontFeature.tabularFigures()`.
+  - Add a small helper if beneficial (optional):
+    - `AppTheme.timerTextStyle({Color? color, double? fontSize})` returning a copy of
+      `monospaceTextStyleSmall` with overrides.
 
 2) Apply styling uniformly
-   - Journal entry card (in task context): ensure any running time label uses `monospaceTextStyle[Small]` or has `fontFeatures: [FontFeature.tabularFigures()]`.
-   - Task header progress (`CompactTaskProgress`): already uses tabular figures—verify and keep.
-   - Floating time indicator (`TimeRecordingIndicator`): already uses tabular figures—verify and keep.
-   - Entry detail footer (`DurationWidget` / `FormattedTime`): already uses tabular figures—verify and keep.
+  - Journal entry card (in task context): ensure any running time label uses
+    `monospaceTextStyle[Small]` or has `fontFeatures: [FontFeature.tabularFigures()]`.
+  - Task header progress (`CompactTaskProgress`): already uses tabular figures—verify and keep.
+  - Floating time indicator (`TimeRecordingIndicator`): use the same monospace + tabular style.
+  - Entry detail footer (`DurationWidget` / `FormattedTime`): use the same monospace + tabular style.
+  - Date/time header on cards: switch to the same monospace + tabular style for consistency.
+  - Audio recording indicator (bottom overlay): use the same monospace + tabular style; force white text for contrast in light mode.
 
 3) Prevent residual jitter in tight layouts
-   - For labels embedded in rows with dynamic width constraints, wrap timer text in a fixed or baseline width container sized for the maximum string for that surface (e.g., `88:88` or `88:88:88`).
-   - Keep truncation off for timers; they should always fit once the width is reserved.
+  - For labels embedded in rows with dynamic width constraints, wrap timer text in a fixed or
+    baseline width container sized for the maximum string for that surface (e.g., `88:88` or
+    `88:88:88`).
+  - Keep truncation off for timers; they should always fit once the width is reserved.
 
 ## Data Flow
 
@@ -60,18 +68,22 @@
 ## Testing Strategy
 
 1) Width‑stability unit/widget tests (RenderBox sizing)
-   - File(s):
-     - `test/features/tasks/ui/compact_task_progress_timer_text_test.dart`
-     - `test/widgets/misc/time_recording_indicator_timer_text_test.dart`
-     - `test/features/journal/ui/widgets/entry_details/duration_widget_timer_text_test.dart`
-     - If a timer text exists inside the journal card in task context, add: `test/features/journal/ui/widgets/list_cards/modern_journal_card_timer_text_test.dart`
-   - Approach:
-     - Pump the widget with two sample strings (e.g., `00:41`, `00:48`, and if HH:MM:SS `08:08:08`) using the same text style.
-     - Measure `RenderBox.size.width` and assert equality to verify tabular figures.
-     - Where width is reserved via a container, assert the container’s width remains constant across values.
+  - File(s):
+    - `test/features/tasks/ui/compact_task_progress_timer_text_test.dart`
+    - `test/widgets/misc/time_recording_indicator_timer_text_test.dart`
+    - `test/features/journal/ui/widgets/entry_details/duration_widget_timer_text_test.dart`
+    - If a timer text exists inside the journal card in task context, add:
+      `test/features/journal/ui/widgets/list_cards/modern_journal_card_timer_text_test.dart`
+  - Approach:
+    - Pump the widget with two sample strings (e.g., `00:41`, `00:48`, and if HH:MM:SS `08:08:08`)
+      using the same text style.
+    - Measure `RenderBox.size.width` and assert equality to verify tabular figures.
+    - Where width is reserved via a container, assert the container’s width remains constant across
+      values.
 
 2) Snapshot/golden (optional)
-   - A single small golden per surface to ensure visual parity if helpful, but the width assertion is primary.
+  - A single small golden per surface to ensure visual parity if helpful, but the width assertion is
+    primary.
 
 ## Performance
 
@@ -79,8 +91,11 @@
 
 ## Edge Cases & Handling
 
-- Fonts without tabular figures on some platforms: fallback remains our monospace style defined in theme, which already specifies tabular figures. If a platform still lacks them, enforced fixed container width will prevent jitter.
-- Surfaces displaying only minutes (no hours) should reserve space for hours (`HH:MM`) to avoid shift when crossing 59 → 60 minutes.
+- Fonts without tabular figures on some platforms: fallback remains our monospace style defined in
+  theme, which already specifies tabular figures. If a platform still lacks them, enforced fixed
+  container width will prevent jitter.
+- Surfaces displaying only minutes (no hours) should reserve space for hours (`HH:MM`) to avoid
+  shift when crossing 59 → 60 minutes.
 
 ## Files to Modify / Add
 
@@ -89,31 +104,39 @@
   - `lib/features/journal/ui/widgets/entry_details/duration_widget.dart` (tabular figures present)
   - `lib/features/tasks/ui/compact_task_progress.dart` (tabular figures present)
   - `lib/features/tasks/ui/linked_duration.dart` (uses `monospaceTextStyleSmall`)
-  - `lib/features/journal/ui/widgets/list_cards/modern_journal_card.dart` (inspect status row for any timer label; apply style or fixed width if present)
+  - `lib/features/journal/ui/widgets/list_cards/modern_journal_card.dart` (apply monospace+tabular to date/time header; set font to AppTheme.statusIndicatorFontSize)
+  - `lib/features/speech/ui/widgets/recording/audio_recording_indicator.dart` (monospace+tabular; white text in light mode; match height/width to time indicator; set font to AppTheme.statusIndicatorFontSize)
+  - `lib/widgets/misc/time_recording_indicator.dart` (monospace+tabular; align font size with audio indicator via AppTheme.statusIndicatorFontSize)
+  - `lib/features/journal/ui/widgets/entry_details/duration_widget.dart` (timer text uses AppTheme.statusIndicatorFontSize)
 - Optional helper:
   - `lib/themes/theme.dart` (add `AppTheme.timerTextStyle` if helpful)
 - Tests:
   - `test/features/tasks/ui/compact_task_progress_timer_text_test.dart`
   - `test/widgets/misc/time_recording_indicator_timer_text_test.dart`
   - `test/features/journal/ui/widgets/entry_details/duration_widget_timer_text_test.dart`
-  - `test/features/journal/ui/widgets/list_cards/modern_journal_card_timer_text_test.dart` (only if a timer text is actually rendered there)
+  - `test/features/journal/ui/widgets/list_cards/modern_journal_card_timer_text_test.dart` (only if
+    a timer text is actually rendered there)
 
 ## Rollout Plan
 
 1) Confirm all timer surfaces and add missing style/fixed‑width wrappers where needed.
 2) Add the width‑stability tests and run them locally.
 3) Run `make analyze` and `make test`; ensure zero analyzer warnings.
-4) Manual sanity check in task view (header + journal card), entry details, and the floating indicator while the timer is running.
+4) Manual sanity check in task view (header + journal card), entry details, and the floating
+   indicator while the timer is running.
 
 ## Open Questions
 
-- Do we want to unify all timer text through a single `AppTheme.timerTextStyle` helper for easier future changes? Proposed: yes, but optional. YES
-- If we find no timer text in the journal card for tasks (only the red dot), should we still reserve placeholder space to anticipate later? NO
+- Do we want to unify all timer text through a single `AppTheme.timerTextStyle` helper for easier
+  future changes? Proposed: yes, but optional. YES
+- If we find no timer text in the journal card for tasks (only the red dot), should we still reserve
+  placeholder space to anticipate later? NO
 
 ## Implementation Checklist
 
-- [ ] Audit all timer surfaces (journal card in task context, task header progress, floating indicator, entry detail footer)
-- [ ] Apply `monospaceTextStyle[Small]` or explicit `FontFeature.tabularFigures()` everywhere a timer renders
+- [ ] Audit all timer surfaces (journal card in task context, task header progress, floating
+  indicator, entry detail footer)
+- [ ] Apply `monoTabularStyle` + AppTheme.statusIndicatorFontSize everywhere a timer renders (footer, indicators, headers)
 - [ ] Add fixed‑width container where layout is tight or could still jitter
 - [ ] Add width‑stability tests for each surface
 - [ ] `make analyze` yields zero warnings
@@ -121,12 +144,12 @@
 
 ## Implementation discipline
 
-- Always ensure the analyzer has no complaints and everything compiles. Also run the formatter 
+- Always ensure the analyzer has no complaints and everything compiles. Also run the formatter
   frequently.
 - Prefer running commands via the dart-mcp server.
 - Only move on to adding new files when already created tests are all green.
-- Write meaningful tests that actually assert on valuable information. Refrain from adding BS 
+- Write meaningful tests that actually assert on valuable information. Refrain from adding BS
   assertions such as finding a row or whatnot. Focus on useful information.
 - Aim for full coverage of every code path.
-- Add CHANGELOG entry
-
+- Add CHANGELOG entry.
+- In most cases we prefer one test file for one implementation file.

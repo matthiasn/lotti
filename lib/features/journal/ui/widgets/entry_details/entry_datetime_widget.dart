@@ -28,6 +28,9 @@ class EntryDatetimeWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final style = monoTabularStyle(
+        fontSize: fontSizeMedium, color: context.colorScheme.outline);
+
     return GestureDetector(
       onTap: () =>
           EntryDateTimeMultiPageModal.show(entry: entry, context: context),
@@ -35,10 +38,7 @@ class EntryDatetimeWidget extends ConsumerWidget {
         padding: padding,
         child: Text(
           dfShorter.format(entry.meta.dateFrom),
-          style: context.textTheme.bodyMedium?.copyWith(
-            fontFeatures: [const FontFeature.tabularFigures()],
-            color: context.colorScheme.outline,
-          ),
+          style: style,
         ),
       ),
     );

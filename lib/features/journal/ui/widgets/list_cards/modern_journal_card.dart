@@ -111,14 +111,9 @@ class ModernJournalCard extends StatelessWidget {
                 children: [
                   Text(
                     _formatDate(),
-                    style: context.textTheme.bodySmall?.copyWith(
-                      fontFeatures: [const FontFeature.tabularFigures()],
-                      color: context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: AppTheme.alphaSurfaceVariant),
-                      fontSize: isCompact
-                          ? AppTheme.subtitleFontSizeCompact
-                          : AppTheme.subtitleFontSize,
-                    ),
+                    style: monoTabularStyle(
+                        fontSize: fontSizeMedium,
+                        color: context.colorScheme.outline),
                   ),
                   if (_shouldShowCategoryIcon()) ...[
                     const SizedBox(width: 8),

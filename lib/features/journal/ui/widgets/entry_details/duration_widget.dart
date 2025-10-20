@@ -6,6 +6,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -79,7 +80,7 @@ class DurationWidget extends ConsumerWidget {
                   child: IconButton(
                     icon: const Icon(Icons.fiber_manual_record_sharp),
                     iconSize: 20,
-                    tooltip: 'Record',
+                    tooltip: context.messages.addActionAddTimeRecording,
                     color: context.colorScheme.error,
                     onPressed: () {
                       if (entry != null) {
@@ -93,7 +94,7 @@ class DurationWidget extends ConsumerWidget {
                   child: IconButton(
                     icon: const Icon(Icons.stop),
                     iconSize: 20,
-                    tooltip: 'Stop',
+                    tooltip: context.messages.doneButton,
                     color: labelColor,
                     onPressed: () async {
                       await saveFn(stopRecording: true);
@@ -122,12 +123,8 @@ class FormattedTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      formatDuration(entryDuration(displayed)),
-      style: context.textTheme.bodyMedium?.copyWith(
-        fontFeatures: [const FontFeature.tabularFigures()],
-        color: labelColor,
-      ),
-    );
+    final style = monoTabularStyle(fontSize: fontSizeMedium, color: labelColor);
+    final text = formatDuration(entryDuration(displayed));
+    return Text(text, style: style);
   }
 }
