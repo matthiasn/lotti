@@ -77,5 +77,22 @@ void main() {
       expect(v.checklist, isFalse);
       expect(v.summary, isFalse);
     });
+
+    test('returns false for types with empty prompt lists', () {
+      final v = deriveAutomaticPromptVisibility(
+        automaticPrompts: {
+          AiResponseType.audioTranscription: [], // empty list should not count
+          AiResponseType.checklistUpdates: ['c1'],
+        },
+        hasLinkedTask: true,
+        userSpeechPreference: true,
+      );
+
+      // speech should be false because transcription list is empty
+      expect(v.speech, isFalse);
+      // checklist depends on speech being effectively enabled, so it's false too
+      expect(v.checklist, isFalse);
+      expect(v.summary, isFalse);
+    });
   });
 }

@@ -30,18 +30,14 @@ AutomaticPromptVisibility deriveAutomaticPromptVisibility({
   required bool hasLinkedTask,
   bool? userSpeechPreference,
 }) {
-  final hasTranscription = automaticPrompts != null &&
-      automaticPrompts.containsKey(AiResponseType.audioTranscription) &&
-      (automaticPrompts[AiResponseType.audioTranscription]?.isNotEmpty ??
-          false);
+  final hasTranscription =
+      automaticPrompts?[AiResponseType.audioTranscription]?.isNotEmpty ?? false;
 
-  final hasChecklist = automaticPrompts != null &&
-      automaticPrompts.containsKey(AiResponseType.checklistUpdates) &&
-      (automaticPrompts[AiResponseType.checklistUpdates]?.isNotEmpty ?? false);
+  final hasChecklist =
+      automaticPrompts?[AiResponseType.checklistUpdates]?.isNotEmpty ?? false;
 
-  final hasSummary = automaticPrompts != null &&
-      automaticPrompts.containsKey(AiResponseType.taskSummary) &&
-      (automaticPrompts[AiResponseType.taskSummary]?.isNotEmpty ?? false);
+  final hasSummary =
+      automaticPrompts?[AiResponseType.taskSummary]?.isNotEmpty ?? false;
 
   // Effective speech: user preference (default true) gated by availability
   final isSpeechEnabled = (userSpeechPreference ?? true) && hasTranscription;

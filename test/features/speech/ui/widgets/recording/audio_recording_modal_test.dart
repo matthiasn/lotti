@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_redundant_argument_values
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -673,7 +674,8 @@ void main() {
       );
     });
 
-    testWidgets('hides checkbox when summary prompts exist but no transcription',
+    testWidgets(
+        'hides checkbox when summary prompts exist but no transcription',
         (tester) async {
       final category = FakeCategoryDefinition(
         includeTranscriptionPrompts: false,
