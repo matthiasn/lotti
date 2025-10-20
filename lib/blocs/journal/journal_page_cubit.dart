@@ -119,7 +119,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     // Call fetchNextPage to trigger the initial load
     controller.fetchNextPage();
 
-    getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
+    _privateFlagSub =
+        getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
       _showPrivateEntries = showPrivate;
       emitState();
     });
@@ -147,7 +148,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     });
 
     // Listen to active feature flags and update local cache
-    getIt<JournalDb>().watchActiveConfigFlagNames().listen((configFlags) {
+    _configFlagsSub =
+        getIt<JournalDb>().watchActiveConfigFlagNames().listen((configFlags) {
       _enableEvents = configFlags.contains(enableEventsFlag);
       _enableHabits = configFlags.contains(enableHabitsPageFlag);
       _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
@@ -167,13 +169,11 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
     String idMapper(JournalEntity entity) => entity.meta.id;
 
-    _updateNotifications.updateStream
-        .throttleTime(
+    _updatesSub = _updateNotifications.updateStream.throttleTime(
       const Duration(milliseconds: 500),
       leading: false,
       trailing: true,
-    )
-        .listen((affectedIds) async {
+    ).listen((affectedIds) async {
       if (_isVisible) {
         final displayedIds =
             state.pagingController?.value.items?.map(idMapper).toSet() ??
@@ -201,6 +201,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   final JournalDb _db;
   final UpdateNotifications _updateNotifications;
+  StreamSubscription<Set<String>>? _configFlagsSub;
+  StreamSubscription<bool>? _privateFlagSub;
+  StreamSubscription<Set<String>>? _updatesSub;
   bool _isVisible = false;
   static const _pageSize = 50;
   Set<String> _selectedEntryTypes = entryTypes.toSet();
@@ -457,8 +460,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   @override
   Future<void> close() async {
+    try {
+      await _configFlagsSub?.cancel();
+      await _privateFlagSub?.cancel();
+      await _updatesSub?.cancel();
+    } catch (_) {
+      // ignore cancellation errors
+    }
     state.pagingController?.dispose();
-    await super.close();
+    return super.close();
   }
 }
 
