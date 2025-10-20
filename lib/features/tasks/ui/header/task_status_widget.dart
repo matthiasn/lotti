@@ -20,7 +20,8 @@ class TaskStatusWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusLabel = task.data.status.localizedLabel(context);
-    final color = task.data.status.color;
+    final brightness = Theme.of(context).brightness;
+    final color = task.data.status.colorForBrightness(brightness);
 
     Future<void> onTap() async {
       final newStatus = await ModalUtils.showSinglePageModal<String>(

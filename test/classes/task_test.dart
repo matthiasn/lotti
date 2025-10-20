@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -196,6 +197,219 @@ void main() {
 
       expect(updatedTask.data.languageCode, equals('ko'));
       expect(updatedTask.data.title, equals('Updated Title'));
+    });
+  });
+
+  group('TaskStatusExtension - colorForBrightness', () {
+    late DateTime testDate;
+
+    setUp(() {
+      testDate = DateTime(2024);
+    });
+
+    group('Light mode colors', () {
+      test('Open status returns dark orange in light mode', () {
+        final status = TaskStatus.open(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.light),
+          equals(const Color(0xFFE65100)),
+        );
+      });
+
+      test('Groomed status returns dark green in light mode', () {
+        final status = TaskStatus.groomed(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.light),
+          equals(const Color(0xFF2E7D32)),
+        );
+      });
+
+      test('InProgress status returns dark blue in light mode', () {
+        final status = TaskStatus.inProgress(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.light),
+          equals(const Color(0xFF1565C0)),
+        );
+      });
+
+      test('Blocked status returns dark red in light mode', () {
+        final status = TaskStatus.blocked(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+          reason: 'test reason',
+        );
+        expect(
+          status.colorForBrightness(Brightness.light),
+          equals(const Color(0xFFC62828)),
+        );
+      });
+
+      test('OnHold status returns dark red in light mode', () {
+        final status = TaskStatus.onHold(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+          reason: 'test reason',
+        );
+        expect(
+          status.colorForBrightness(Brightness.light),
+          equals(const Color(0xFFC62828)),
+        );
+      });
+
+      test('Done status returns dark green in light mode', () {
+        final status = TaskStatus.done(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.light),
+          equals(const Color(0xFF2E7D32)),
+        );
+      });
+
+      test('Rejected status returns dark red in light mode', () {
+        final status = TaskStatus.rejected(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.light),
+          equals(const Color(0xFFC62828)),
+        );
+      });
+    });
+
+    group('Dark mode colors', () {
+      test('Open status returns bright orange in dark mode', () {
+        final status = TaskStatus.open(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.dark),
+          equals(Colors.orange),
+        );
+      });
+
+      test('Groomed status returns light green accent in dark mode', () {
+        final status = TaskStatus.groomed(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.dark),
+          equals(Colors.lightGreenAccent),
+        );
+      });
+
+      test('InProgress status returns blue in dark mode', () {
+        final status = TaskStatus.inProgress(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.dark),
+          equals(Colors.blue),
+        );
+      });
+
+      test('Blocked status returns red in dark mode', () {
+        final status = TaskStatus.blocked(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+          reason: 'test reason',
+        );
+        expect(
+          status.colorForBrightness(Brightness.dark),
+          equals(Colors.red),
+        );
+      });
+
+      test('OnHold status returns red in dark mode', () {
+        final status = TaskStatus.onHold(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+          reason: 'test reason',
+        );
+        expect(
+          status.colorForBrightness(Brightness.dark),
+          equals(Colors.red),
+        );
+      });
+
+      test('Done status returns green in dark mode', () {
+        final status = TaskStatus.done(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.dark),
+          equals(Colors.green),
+        );
+      });
+
+      test('Rejected status returns red in dark mode', () {
+        final status = TaskStatus.rejected(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(
+          status.colorForBrightness(Brightness.dark),
+          equals(Colors.red),
+        );
+      });
+    });
+
+    group('Backward compatibility', () {
+      test('color getter defaults to dark mode colors', () {
+        final status = TaskStatus.groomed(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(status.color, equals(Colors.lightGreenAccent));
+      });
+
+      test('color getter returns dark mode orange for open status', () {
+        final status = TaskStatus.open(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(status.color, equals(Colors.orange));
+      });
+
+      test('color getter returns dark mode blue for in progress status', () {
+        final status = TaskStatus.inProgress(
+          id: 'test',
+          createdAt: testDate,
+          utcOffset: 0,
+        );
+        expect(status.color, equals(Colors.blue));
+      });
     });
   });
 }

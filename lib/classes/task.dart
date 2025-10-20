@@ -165,14 +165,21 @@ extension TaskStatusExtension on TaskStatus {
       };
 
   Color get color {
+    return colorForBrightness(Brightness.dark);
+  }
+
+  Color colorForBrightness(Brightness brightness) {
+    final isLight = brightness == Brightness.light;
+
     return switch (this) {
-      TaskOpen() => Colors.orange,
-      TaskGroomed() => Colors.lightGreenAccent,
-      TaskInProgress() => Colors.blue,
-      TaskBlocked() => Colors.red,
-      TaskOnHold() => Colors.red,
-      TaskDone() => Colors.green,
-      TaskRejected() => Colors.red,
+      TaskOpen() => isLight ? const Color(0xFFE65100) : Colors.orange,
+      TaskGroomed() =>
+        isLight ? const Color(0xFF2E7D32) : Colors.lightGreenAccent,
+      TaskInProgress() => isLight ? const Color(0xFF1565C0) : Colors.blue,
+      TaskBlocked() => isLight ? const Color(0xFFC62828) : Colors.red,
+      TaskOnHold() => isLight ? const Color(0xFFC62828) : Colors.red,
+      TaskDone() => isLight ? const Color(0xFF2E7D32) : Colors.green,
+      TaskRejected() => isLight ? const Color(0xFFC62828) : Colors.red,
     };
   }
 }
