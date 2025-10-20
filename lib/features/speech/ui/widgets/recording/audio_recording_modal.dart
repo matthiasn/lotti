@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
+import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
@@ -253,40 +253,13 @@ class _AudioRecordingModalContentState
 
     final category = categoryDetailsState.category;
 
-    if (category == null || category.automaticPrompts == null) {
-      return const SizedBox.shrink();
-    }
+    final visibility = deriveAutomaticPromptVisibility(
+      automaticPrompts: category?.automaticPrompts,
+      hasLinkedTask: widget.linkedId != null,
+      userSpeechPreference: state.enableSpeechRecognition,
+    );
 
-    final hasAutomaticTranscriptionPrompts = category.automaticPrompts!
-            .containsKey(AiResponseType.audioTranscription) &&
-        category
-            .automaticPrompts![AiResponseType.audioTranscription]!.isNotEmpty;
-
-    final hasAutomaticChecklistPrompts = category.automaticPrompts!
-            .containsKey(AiResponseType.checklistUpdates) &&
-        category.automaticPrompts![AiResponseType.checklistUpdates]!.isNotEmpty;
-
-    final hasAutomaticTaskSummaryPrompts =
-        category.automaticPrompts!.containsKey(AiResponseType.taskSummary) &&
-            category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
-
-    final showSpeechRecognitionCheckbox = hasAutomaticTranscriptionPrompts;
-
-    final isSpeechRecognitionEnabled =
-        (state.enableSpeechRecognition ?? true) &&
-            hasAutomaticTranscriptionPrompts;
-
-    final showChecklistUpdatesCheckbox = widget.linkedId != null &&
-        hasAutomaticChecklistPrompts &&
-        isSpeechRecognitionEnabled;
-
-    final showTaskSummaryCheckbox = widget.linkedId != null &&
-        hasAutomaticTaskSummaryPrompts &&
-        isSpeechRecognitionEnabled;
-
-    if (!showSpeechRecognitionCheckbox &&
-        !showChecklistUpdatesCheckbox &&
-        !showTaskSummaryCheckbox) {
+    if (visibility.none) {
       return const SizedBox.shrink();
     }
 
@@ -294,17 +267,19 @@ class _AudioRecordingModalContentState
       padding: const EdgeInsets.only(top: 8),
       child: Wrap(
         children: [
-          if (showSpeechRecognitionCheckbox)
+          if (visibility.speech)
             LottiAnimatedCheckbox(
+              key: const Key('speech_recognition_checkbox'),
               label: 'Speech Recognition',
               value: state.enableSpeechRecognition ?? true,
               onChanged: (value) {
                 controller.setEnableSpeechRecognition(enable: value);
               },
             ),
-          if (showChecklistUpdatesCheckbox) ...[
+          if (visibility.checklist) ...[
             const SizedBox(height: 4),
             LottiAnimatedCheckbox(
+              key: const Key('checklist_updates_checkbox'),
               label: 'Checklist Updates',
               value: state.enableChecklistUpdates ?? true,
               onChanged: (value) {
@@ -312,9 +287,10 @@ class _AudioRecordingModalContentState
               },
             ),
           ],
-          if (showTaskSummaryCheckbox) ...[
+          if (visibility.summary) ...[
             const SizedBox(height: 4),
             LottiAnimatedCheckbox(
+              key: const Key('task_summary_checkbox'),
               label: 'Task Summary',
               value: state.enableTaskSummary ?? true,
               onChanged: (value) {
