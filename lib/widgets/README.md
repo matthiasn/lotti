@@ -115,6 +115,8 @@ Radial menu interface for adding tags, providing an intuitive circular selection
 
 Located in `/lib/widgets/date_time/`
 
+Note: All timer and date labels across the app use a shared mono tabular style to prevent width “breathing” as digits change. In general, prefer using `monoTabularStyle` from `lib/themes/theme.dart` (tabular figures enabled) for any time strings rendered as `HH:MM` or `HH:MM:SS`.
+
 ### DateTimeBottomSheet
 Bottom sheet for selecting date and time values with a user-friendly interface.
 
@@ -187,6 +189,10 @@ Individual task count display component.
 
 ### TimeRecordingIndicator
 Visual indicator showing whether time recording is currently active.
+
+- Typography: Uses `monoTabularStyle` with tabular figures to ensure the duration text does not jitter as digits change.
+- Dimensions: Matches width/height with the audio recording indicator to keep overlays consistent.
+- Sizing: Font size aligns with `AppTheme.statusIndicatorFontSize`.
 
 ### TimeSpanSegmentedControl
 Segmented control for selecting time spans (day, week, month, year).
@@ -319,4 +325,3 @@ When adding new reusable widgets:
 2. Include comprehensive documentation in the widget file
 3. Add unit tests in the corresponding test directory
 4. Update this README with the new widget information
-5. Consider creating example usage in the widget documentation

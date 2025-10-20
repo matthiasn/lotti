@@ -43,11 +43,12 @@
 - Journal entry card (in task context): ensure any running time label uses
   `monospaceTextStyle[Small]` or has `fontFeatures: [FontFeature.tabularFigures()]`.
 - Task header progress (`CompactTaskProgress`): already uses tabular figures—verify and keep.
-- Floating time indicator (`TimeRecordingIndicator`): use the same monospace + tabular style.
+- Floating time indicator (`TimeRecordingIndicator`): use the same monospace + tabular style; use
+  `fontSizeMedium` for indicator legibility.
 - Entry detail footer (`DurationWidget` / `FormattedTime`): use the same monospace + tabular style.
 - Date/time header on cards: switch to the same monospace + tabular style for consistency.
-- Audio recording indicator (bottom overlay): use the same monospace + tabular style; force white
-  text for contrast in light mode.
+- Audio recording indicator (bottom overlay): use the same monospace + tabular style; use
+  `fontSizeMedium` for indicator legibility; force white text for contrast in light mode.
 
 3) Prevent residual jitter in tight layouts
 
@@ -84,8 +85,6 @@
 New (tasks timers)
 
 - test: add width-stability tests for tasks timers
-  - test/features/tasks/ui/compact_task_progress_timer_text_test.dart
-  - test/features/tasks/ui/linked_duration_timer_text_test.dart
 - fix(tasks): enforce monoTabularStyle
   - lib/features/tasks/ui/compact_task_progress.dart now uses monoTabularStyle with FontFeature.tabularFigures
   - lib/features/tasks/ui/linked_duration.dart now uses monoTabularStyle(fontSize: fontSizeSmall)
@@ -97,25 +96,19 @@ Styling parity is complete across all touched surfaces. Next focus: tests and co
 New (core + speech timers)
 
 - test: add width-stability tests for remaining surfaces
-  - test/features/journal/ui/widgets/entry_details/duration_widget_timer_text_test.dart (added)
-  - test/widgets/misc/time_recording_indicator_timer_text_test.dart (added)
-  - test/features/speech/ui/widgets/recording/audio_recording_indicator_timer_text_test.dart (added)
   - Used light-touch DI: Fake TimeService for the time recording indicator; provider override for audio recorder state
 
 ## Testing Strategy
 
 1) Width‑stability unit/widget tests (RenderBox sizing)
 
-- File(s):
-  - `test/features/tasks/ui/compact_task_progress_timer_text_test.dart` (added)
-  - `test/widgets/misc/time_recording_indicator_timer_text_test.dart`
+- Files:
+  - `test/features/tasks/ui/compact_task_progress_timer_text_test.dart`
+  - `test/features/tasks/ui/linked_duration_timer_text_test.dart`
   - `test/features/journal/ui/widgets/entry_details/duration_widget_timer_text_test.dart`
+  - `test/features/journal/ui/widgets/list_cards/modern_journal_card_timer_text_test.dart`
   - `test/widgets/misc/time_recording_indicator_timer_text_test.dart`
-  - If a timer text exists inside the journal card in task context, add:
-    `test/features/journal/ui/widgets/list_cards/modern_journal_card_timer_text_test.dart`
-  - Verify `EntryDatetimeWidget` date text uses tabular figures
-    `test/features/journal/ui/widgets/entry_details/entry_datetime_widget_test.dart`
-  - `test/features/tasks/ui/linked_duration_timer_text_test.dart` (added)
+  - `test/features/speech/ui/widgets/recording/audio_recording_indicator_timer_text_test.dart`
 - Approach:
   - Pump the widget with two sample strings (e.g., `00:41`, `00:48`, and if HH:MM:SS `08:08:08`)
     using the same text style.
@@ -150,20 +143,14 @@ New (core + speech timers)
   - `lib/features/journal/ui/widgets/list_cards/modern_journal_card.dart` (apply monospace+tabular
     to date/time header; set font to AppTheme.statusIndicatorFontSize)
   - `lib/features/speech/ui/widgets/recording/audio_recording_indicator.dart` (monospace+tabular;
-    white text in light mode; match height/width to time indicator; set font to
-    AppTheme.statusIndicatorFontSize)
-  - `lib/widgets/misc/time_recording_indicator.dart` (monospace+tabular; align font size with audio
-    indicator via AppTheme.statusIndicatorFontSize)
+    white text in light mode; match height/width to time indicator; use
+    `fontSizeMedium` for legibility in the overlay)
+  - `lib/widgets/misc/time_recording_indicator.dart` (monospace+tabular; use `fontSizeMedium` to
+    match the audio recording overlay)
   - `lib/features/journal/ui/widgets/entry_details/duration_widget.dart` (timer text uses
-    AppTheme.statusIndicatorFontSize)
+    `fontSizeMedium`)
 - Optional helper:
   - `lib/themes/theme.dart` (add `AppTheme.timerTextStyle` if helpful)
-- Tests:
-  - `test/features/tasks/ui/compact_task_progress_timer_text_test.dart`
-  - `test/widgets/misc/time_recording_indicator_timer_text_test.dart`
-  - `test/features/journal/ui/widgets/entry_details/duration_widget_timer_text_test.dart`
-  - `test/features/journal/ui/widgets/list_cards/modern_journal_card_timer_text_test.dart` (only if
-    a timer text is actually rendered there)
 
 ## Rollout Plan
 
@@ -184,12 +171,12 @@ New (core + speech timers)
 
 - [x] Audit all timer surfaces (journal card in task context, task header progress, floating
   indicator, entry detail footer)
-- [x] Apply `monoTabularStyle` + AppTheme.statusIndicatorFontSize everywhere a timer renders (
-  footer, indicators, headers)
+- [x] Apply `monoTabularStyle` across all timer text; indicators (time + recording) use
+  `fontSizeMedium` for legibility; other timer text uses appropriate sizes per context
 - [x] Add fixed‑width container where layout is tight or could still jitter (recording indicators)
 - [x] Add width‑stability tests for tasks timers (CompactTaskProgress, LinkedDuration)
 - [x] Add width‑stability tests for remaining surfaces (DurationWidget, indicators)
-- [ ] Add width‑stability test for card header date/time (if rendered)
+- [x] Add width‑stability test for card header date/time (if rendered)
 - [x] Manual verification across the identified screens
 
 ## Implementation discipline

@@ -11,16 +11,13 @@ import 'package:lotti/themes/theme.dart';
 class AudioRecordingIndicatorConstants {
   const AudioRecordingIndicatorConstants._();
 
-  // Increased slightly to account for tabular monospace digits + icon
-  // to avoid layout overflow at default text scale.
-  static const double indicatorWidth = 150;
   static const double indicatorHeight = 24;
   static const double iconSize = 20;
   static const double borderRadius = 8;
   static const EdgeInsets textPadding = EdgeInsets.only(
     left: 2,
     bottom: 1,
-    right: 4,
+    right: 10,
   );
 }
 
@@ -66,28 +63,22 @@ class AudioRecordingIndicator extends ConsumerWidget {
                   AudioRecordingIndicatorConstants.borderRadius),
             ),
             child: Container(
-              width: AudioRecordingIndicatorConstants.indicatorWidth,
               height: AudioRecordingIndicatorConstants.indicatorHeight,
               color: context.colorScheme.error,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.mic_outlined,
-                    size: AudioRecordingIndicatorConstants.iconSize,
-                    color: Colors.white,
-                  ),
+                  const SizedBox(width: 5),
+                  Icon(Icons.mic_outlined,
+                      size: AudioRecordingIndicatorConstants.iconSize,
+                      color: context.colorScheme.onError),
                   Padding(
                     padding: AudioRecordingIndicatorConstants.textPadding,
                     child: Text(
                       formatDuration(state.progress),
                       style: monoTabularStyle(
-                        fontSize: AppTheme.statusIndicatorFontSize,
-                        color: Colors.white,
-                      ),
-                      strutStyle: const StrutStyle(
-                        height: 1,
-                        forceStrutHeight: true,
+                        fontSize: fontSizeMedium,
+                        color: context.colorScheme.onError,
                       ),
                     ),
                   ),

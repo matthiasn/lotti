@@ -305,10 +305,6 @@ void main() {
       );
 
       expect(
-        indicatorSize.width,
-        AudioRecordingIndicatorConstants.indicatorWidth,
-      );
-      expect(
         indicatorSize.height,
         AudioRecordingIndicatorConstants.indicatorHeight,
       );
@@ -342,8 +338,7 @@ void main() {
           find.byKey(const Key('audio_recording_indicator')),
         );
 
-        // Width and height fixed by constants
-        expect(size.width, AudioRecordingIndicatorConstants.indicatorWidth);
+        // Height fixed by constants
         expect(size.height, AudioRecordingIndicatorConstants.indicatorHeight);
 
         if (previousSize != null) {

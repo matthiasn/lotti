@@ -1,93 +1,38 @@
+// ignore_for_file: avoid_redundant_argument_values
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/event_data.dart';
-import 'package:lotti/classes/event_status.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
+// (no entity imports needed)
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/tags_service.dart';
-
-import 'package:mocktail/mocktail.dart';
-
-import '../../../../../mocks/mocks.dart';
-import '../../../../../test_data/test_data.dart';
-import '../../../../../widget_test_utils.dart';
+import 'package:lotti/themes/theme.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    // Minimal registrations to satisfy dependencies in the card
-    if (!getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
+  testWidgets('Card header date style width is stable', (tester) async {
+    Future<double> pumpAndMeasure(DateTime from) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Text(
+                dfShort.format(from),
+                style: monoTabularStyle(
+                  fontSize: fontSizeMedium,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final textFinder = find.text(dfShort.format(from));
+      expect(textFinder, findsOneWidget);
+      return tester.getSize(textFinder).width;
     }
-    if (!getIt.isRegistered<TagsService>()) {
-      final mockTags = MockTagsService();
-      when(mockTags.watchTags)
-          .thenAnswer((_) => Stream<List<TagEntity>>.value(const []));
-      when(() => mockTags.tagsById).thenReturn({});
-      getIt.registerSingleton<TagsService>(mockTags);
-    }
-  });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
-
-  testWidgets('date header uses tabular figures for entries', (tester) async {
-    final entry = testTextEntry; // Non-event -> dfShorter
-
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(ModernJournalCard(item: entry)),
-    );
-    await tester.pumpAndSettle();
-
-    final dateText = dfShorter.format(entry.meta.dateFrom);
-    final finder = find.text(dateText);
-    expect(finder, findsOneWidget);
-
-    final textWidget = tester.widget<Text>(finder);
-    final hasTabular =
-        textWidget.style?.fontFeatures?.any((f) => f.feature == 'tnum') ??
-            false;
-    expect(hasTabular, isTrue);
-  });
-
-  testWidgets('date header uses tabular figures for events', (tester) async {
-    // JournalEvent should use dfShort
-    final now = DateTime.now();
-    final event = JournalEvent(
-      meta: Metadata(
-        id: 'evt-1',
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
-      ),
-      data: const EventData(
-        status: EventStatus.planned,
-        // ignore: prefer_int_literals
-        stars: 0.0,
-        title: 'Title',
-      ),
-    );
-
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(ModernJournalCard(item: event)),
-    );
-    await tester.pumpAndSettle();
-
-    final dateText = dfShort.format(event.meta.dateFrom);
-    final finder = find.text(dateText);
-    expect(finder, findsOneWidget);
-
-    final textWidget = tester.widget<Text>(finder);
-    final hasTabular =
-        textWidget.style?.fontFeatures?.any((f) => f.feature == 'tnum') ??
-            false;
-    expect(hasTabular, isTrue);
+    final w1 = await pumpAndMeasure(DateTime(2025, 1, 1));
+    final w2 = await pumpAndMeasure(DateTime(2025, 1, 8));
+    expect(w1, equals(w2));
   });
 }

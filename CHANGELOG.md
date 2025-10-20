@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Width-stability tests for timer text:
+  - CompactTaskProgress and LinkedDuration (tasks)
+  - DurationWidget (entry details)
+  - TimeRecordingIndicator and AudioRecordingIndicator (recording overlays)
+  - Card header date style (Modern journal card)
+
+### Changed:
+- Enforce tabular monospace style for tasks timers (monoTabularStyle) to eliminate width jitter.
 
 ## [0.9.691] - 2025-10-20
 ### Changed:
