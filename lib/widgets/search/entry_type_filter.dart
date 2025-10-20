@@ -1,30 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:quiver/collection.dart';
 
-class EntryTypeFilter extends StatelessWidget {
+class EntryTypeFilter extends ConsumerWidget {
   const EntryTypeFilter({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<Set<ConfigFlag>>(
-      stream: getIt<JournalDb>().watchConfigFlags(),
-      builder: (context, flagSnapshot) {
-        final flags = flagSnapshot.data ?? <ConfigFlag>{};
-        final flagLookup = <String, ConfigFlag>{
-          for (final flag in flags) flag.name: flag,
-        };
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
 
-        final enableEvents = flagLookup[enableEventsFlag]?.status ?? false;
-
+    return enableEventsAsync.when(
+      data: (enableEvents) {
         final filteredEntryTypes = enableEvents
             ? entryTypes
             : entryTypes.where((type) => type != 'JournalEvent').toList();
@@ -43,6 +37,8 @@ class EntryTypeFilter extends StatelessWidget {
           },
         );
       },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

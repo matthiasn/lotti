@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
@@ -70,6 +71,9 @@ void main() {
               'linked-id',
               categoryId: 'category-id',
             ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
           ),
         );
 
@@ -155,6 +159,9 @@ void main() {
               null, // no linkedId
               categoryId: 'test-category',
             ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
           ),
         );
 
@@ -210,6 +217,9 @@ void main() {
               linkedFromId,
               categoryId: 'test-category',
             ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
           ),
         );
 
@@ -246,6 +256,9 @@ void main() {
               null,
               categoryId: 'test-category',
             ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
           ),
         );
 
@@ -294,6 +307,9 @@ void main() {
             'linked-id',
             categoryId: 'category-id',
           ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
         ),
       );
 
@@ -416,6 +432,9 @@ void main() {
             'linked-id',
             categoryId: 'category-id',
           ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
         ),
       );
 
@@ -448,6 +467,9 @@ void main() {
             'linked-id',
             categoryId: 'category-id',
           ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
         ),
       );
 
@@ -476,6 +498,9 @@ void main() {
             'linked-id',
             categoryId: 'category-id',
           ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
         ),
       );
 

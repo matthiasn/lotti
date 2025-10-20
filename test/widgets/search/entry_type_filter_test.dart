@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -89,6 +90,9 @@ void main() {
             value: mockCubit,
             child: const EntryTypeFilter(),
           ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
         ),
       );
 
@@ -125,6 +129,9 @@ void main() {
             value: mockCubit,
             child: const EntryTypeFilter(),
           ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
         ),
       );
 
@@ -153,6 +160,9 @@ void main() {
             value: mockCubit,
             child: const EntryTypeFilter(),
           ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
         ),
       );
 
@@ -179,6 +189,9 @@ void main() {
             value: mockCubit,
             child: const EntryTypeFilter(),
           ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
         ),
       );
 
