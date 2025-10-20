@@ -1,3 +1,6 @@
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -80,6 +83,27 @@ void main() {
       // Close modal by tapping outside
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('date text uses tabular figures style',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDatetimeWidget(
+            entryId: testTextEntry.meta.id,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final finder = find.text(dfShorter.format(testTextEntry.meta.dateFrom));
+      expect(finder, findsOneWidget);
+
+      final text = tester.widget<Text>(finder);
+      final hasTabular = text.style?.fontFeatures
+              ?.any((ui.FontFeature ff) => ff.feature == 'tnum') ??
+          false;
+      expect(hasTabular, isTrue);
     });
   });
 }

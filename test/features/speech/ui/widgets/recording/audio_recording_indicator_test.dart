@@ -304,8 +304,52 @@ void main() {
         find.byKey(const Key('audio_recording_indicator')),
       );
 
-      expect(indicatorSize.width, 100);
-      expect(indicatorSize.height, 25);
+      expect(
+        indicatorSize.height,
+        AudioRecordingIndicatorConstants.indicatorHeight,
+      );
+    });
+
+    testWidgets('indicator width remains stable across durations',
+        (tester) async {
+      const durations = [
+        Duration(seconds: 5),
+        Duration(seconds: 18),
+        Duration(minutes: 1, seconds: 1),
+      ];
+
+      Size? previousSize;
+
+      for (final d in durations) {
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          dBFS: -160,
+          vu: -20,
+          progress: d,
+          showIndicator: true,
+          modalVisible: false,
+          language: 'en',
+        );
+
+        await tester.pumpWidget(makeTestableWidget(state));
+        await tester.pumpAndSettle();
+
+        final size = tester.getSize(
+          find.byKey(const Key('audio_recording_indicator')),
+        );
+
+        // Height fixed by constants
+        expect(size.height, AudioRecordingIndicatorConstants.indicatorHeight);
+
+        if (previousSize != null) {
+          expect(size, equals(previousSize));
+        }
+
+        previousSize = size;
+
+        // Clear tree before next iteration
+        await tester.pumpWidget(Container());
+      }
     });
 
     testWidgets('indicator has onTap callback configured', (tester) async {

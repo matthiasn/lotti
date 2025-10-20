@@ -37,10 +37,9 @@ class CompactTaskProgress extends ConsumerWidget {
         ? min(progress.inSeconds / estimate.inSeconds, 1)
         : 0.0;
 
-    final textStyle = TextStyle(
+    final textStyle = monoTabularStyle(
       fontSize: AppTheme.statusIndicatorFontSize,
       fontWeight: FontWeight.w600,
-      fontFeatures: const [FontFeature.tabularFigures()],
       color: context.colorScheme.onSurfaceVariant.withValues(
         alpha: AppTheme.alphaSurfaceVariant,
       ),

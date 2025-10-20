@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -64,19 +65,18 @@ class TimeRecordingIndicator extends StatelessWidget {
                     left: borderSide,
                   ),
                 ),
-                width: 105,
-                height: 30,
+                height: AudioRecordingIndicatorConstants.indicatorHeight,
                 child: Row(
                   children: [
                     const SizedBox(width: 10),
                     const TimeRecordingIndicatorDot(),
                     const SizedBox(width: 5),
                     Padding(
-                      padding: const EdgeInsets.only(left: 4),
+                      padding: AudioRecordingIndicatorConstants.textPadding,
                       child: Text(
                         durationString,
-                        style: const TextStyle(
-                          fontFeatures: [FontFeature.tabularFigures()],
+                        style: monoTabularStyle(
+                          fontSize: fontSizeMedium,
                         ),
                       ),
                     ),

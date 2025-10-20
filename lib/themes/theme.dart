@@ -359,6 +359,21 @@ TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
       color: themeData.colorScheme.error,
     );
 
+// Utility style for monospaced, tabular-digit text with adjustable size.
+TextStyle monoTabularStyle({
+  required double fontSize,
+  Color? color,
+  FontWeight fontWeight = FontWeight.w500,
+}) {
+  return TextStyle(
+    fontFamily: 'Inconsolata',
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+}
+
 TextStyle failButtonStyle() => TextStyle(
       fontSize: fontSizeMediumLarge,
       fontWeight: FontWeight.bold,
