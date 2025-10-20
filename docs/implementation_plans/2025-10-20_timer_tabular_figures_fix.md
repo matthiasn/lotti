@@ -166,6 +166,9 @@ New (core + speech timers)
   future changes? Proposed: yes, but optional. YES
 - If we find no timer text in the journal card for tasks (only the red dot), should we still reserve
   placeholder space to anticipate later? NO
+ - Deprecate `monospaceTextStyle` and `monospaceTextStyleSmall` in favor of `monoTabularStyle`?
+   Proposed: YES. Plan: mark as `@Deprecated`, optionally re-implement to delegate to
+   `monoTabularStyle` to preserve behavior, then migrate call sites incrementally.
 
 ## Implementation Checklist
 

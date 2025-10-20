@@ -604,11 +604,12 @@ class LogDetailPage extends StatelessWidget {
               '$timestamp $level $domain $subDomain\n\n$message\n\n$stacktrace';
 
           final headerStyle = level == 'ERROR'
-              ? monospaceTextStyle.copyWith(
+              ? monoTabularStyle(
+                  fontSize: fontSizeMedium,
                   color: context.colorScheme.error,
                   fontWeight: FontWeight.bold,
                 )
-              : monospaceTextStyle;
+              : monoTabularStyle(fontSize: fontSizeMedium);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(8),
@@ -631,13 +632,19 @@ class LogDetailPage extends StatelessWidget {
                   padding: EdgeInsets.only(top: 16),
                   child: Text('Message:'),
                 ),
-                SelectableText(message, style: monospaceTextStyle),
+                SelectableText(
+                  message,
+                  style: monoTabularStyle(fontSize: fontSizeMedium),
+                ),
                 if (stacktrace != null) ...[
                   const Padding(
                     padding: EdgeInsets.only(top: 16),
                     child: Text('Stack Trace:'),
                   ),
-                  SelectableText(stacktrace, style: monospaceTextStyle),
+                  SelectableText(
+                    stacktrace,
+                    style: monoTabularStyle(fontSize: fontSizeMedium),
+                  ),
                 ],
                 IconButton(
                   icon: Icon(MdiIcons.clipboardOutline),

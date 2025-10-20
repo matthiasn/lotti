@@ -21,7 +21,8 @@ class EntryTextWidget extends StatelessWidget {
         text,
         maxLines: maxLines,
         softWrap: true,
-        style: monospaceTextStyle.copyWith(
+        style: monoTabularStyle(
+          fontSize: fontSizeMedium,
           fontWeight: FontWeight.w300,
         ),
       ),

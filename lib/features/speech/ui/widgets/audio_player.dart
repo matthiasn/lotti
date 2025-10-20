@@ -102,7 +102,8 @@ class AudioPlayerWidget extends ConsumerWidget {
                   barHeight: 3,
                   thumbRadius: 5,
                   onSeek: cubit.seek,
-                  timeLabelTextStyle: monospaceTextStyle.copyWith(
+                  timeLabelTextStyle: monoTabularStyle(
+                    fontSize: fontSizeMedium,
                     color: context.colorScheme.outline,
                   ),
                 ),

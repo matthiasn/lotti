@@ -388,7 +388,8 @@ class _UnifiedAiProgressContentState
         }
 
         // Default: show the state (result or idle)
-        final textStyle = monospaceTextStyleSmall.copyWith(
+        final textStyle = monoTabularStyle(
+          fontSize: fontSizeSmall,
           fontWeight: FontWeight.w300,
         );
         return Padding(

@@ -124,7 +124,7 @@ class ConflictCard extends StatelessWidget {
         ),
         subtitle: Text(
           '${fromSerialized(conflict.serialized).meta.vectorClock}',
-          style: monospaceTextStyleSmall,
+          style: monoTabularStyle(fontSize: fontSizeSmall),
         ),
         onTap: () {
           beamToNamed('/settings/advanced/conflicts/${conflict.id}');
@@ -268,17 +268,17 @@ class ConflictDetailRoute extends StatelessWidget {
                     const Divider(),
                     Text(
                       'Local: ${local.meta.vectorClock}',
-                      style: monospaceTextStyleSmall,
+                      style: monoTabularStyle(fontSize: fontSizeSmall),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       'Resolved with local: ${localWithResolvedVectorClock.meta.vectorClock}',
-                      style: monospaceTextStyleSmall,
+                      style: monoTabularStyle(fontSize: fontSizeSmall),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       'From Sync: ${fromSync.meta.vectorClock}',
-                      style: monospaceTextStyleSmall,
+                      style: monoTabularStyle(fontSize: fontSizeSmall),
                     ),
                   ],
                 ),
