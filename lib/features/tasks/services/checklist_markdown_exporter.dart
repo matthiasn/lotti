@@ -5,17 +5,12 @@ import 'package:lotti/classes/journal_entities.dart';
 /// - Preserves input order.
 /// - Filters out null or deleted items.
 /// - Normalizes titles by trimming and collapsing newlines/tabs to spaces.
-String checklistItemsToMarkdown(Iterable<ChecklistItem?> items) {
-  final buffer = StringBuffer();
-  for (final item in items) {
-    if (item == null || item.isDeleted) continue;
-    final rawTitle = item.data.title;
-    final title = _sanitizeTitle(rawTitle);
-    final checked = item.data.isChecked ? 'x' : ' ';
-    buffer.writeln('- [$checked] $title');
-  }
-  return buffer.toString().trimRight();
-}
+String checklistItemsToMarkdown(Iterable<ChecklistItem?> items) =>
+    _exportChecklistItems(items, (item) {
+      final title = _sanitizeTitle(item.data.title);
+      final checked = item.data.isChecked ? 'x' : ' ';
+      return '- [$checked] $title';
+    });
 
 String _sanitizeTitle(String title) {
   final collapsed = title.replaceAll(RegExp(r'[\n\r\t]+'), ' ');
@@ -27,13 +22,21 @@ String _sanitizeTitle(String title) {
 /// Example line formats:
 /// - Unchecked: '⬜ Task title'
 /// - Checked:   '✅ Task title'
-String checklistItemsToEmojiList(Iterable<ChecklistItem?> items) {
+String checklistItemsToEmojiList(Iterable<ChecklistItem?> items) =>
+    _exportChecklistItems(items, (item) {
+      final title = _sanitizeTitle(item.data.title);
+      final box = item.data.isChecked ? '✅' : '⬜';
+      return '$box $title';
+    });
+
+String _exportChecklistItems(
+  Iterable<ChecklistItem?> items,
+  String Function(ChecklistItem item) formatLine,
+) {
   final buffer = StringBuffer();
   for (final item in items) {
     if (item == null || item.isDeleted) continue;
-    final title = _sanitizeTitle(item.data.title);
-    final box = item.data.isChecked ? '✅' : '⬜';
-    buffer.writeln('$box $title');
+    buffer.writeln(formatLine(item));
   }
   return buffer.toString().trimRight();
 }

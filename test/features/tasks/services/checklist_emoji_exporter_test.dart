@@ -52,5 +52,13 @@ void main() {
       ]);
       expect(text, '⬜ Keep This');
     });
+
+    test('replaces carriage returns and filters nulls', () {
+      final text = checklistItemsToEmojiList([
+        null,
+        makeItem(id: '1', title: 'CR\rTitle', isChecked: false),
+      ]);
+      expect(text, '⬜ CR Title');
+    });
   });
 }

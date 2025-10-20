@@ -34,4 +34,26 @@ void main() {
 
     expect(called, 1);
   });
+
+  testWidgets('does not show export icon when callback is null',
+      (tester) async {
+    await tester.pumpWidget(
+      WidgetTestBench(
+        child: ChecklistWidget(
+          id: 'id',
+          taskId: 'tid',
+          title: 'Title',
+          itemIds: const [],
+          onTitleSave: (_) {},
+          onCreateChecklistItem: (_) async => null,
+          completionRate: 0,
+          updateItemOrder: (_) async {},
+          // onExportMarkdown is null here
+        ),
+      ),
+    );
+
+    // No export icon should be rendered when callback is not provided
+    expect(find.byIcon(MdiIcons.exportVariant), findsNothing);
+  });
 }

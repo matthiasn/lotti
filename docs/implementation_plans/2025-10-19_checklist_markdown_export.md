@@ -221,3 +221,4 @@
 - Only move on to adding new files when already created tests are all green.
 - Write meaningful tests that actually assert on valuable information. Refrain from adding BS 
   assertions such as finding a row or whatnot. Focus on useful information.
+- Aim for full coverage of every code path.

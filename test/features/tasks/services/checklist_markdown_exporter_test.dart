@@ -70,5 +70,14 @@ void main() {
         '- [ ] Line1 Line2 Tab\n- [x] Spaced',
       );
     });
+
+    test('replaces carriage returns and filters nulls', () {
+      final md = checklistItemsToMarkdown([
+        null,
+        makeItem(id: '1', title: 'CR\rSeparated', isChecked: true),
+        null,
+      ]);
+      expect(md, '- [x] CR Separated');
+    });
   });
 }

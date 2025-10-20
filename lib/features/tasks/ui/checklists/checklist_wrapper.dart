@@ -7,8 +7,9 @@ import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/app_prefs_service.dart';
+import 'package:lotti/services/share_service.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 /// A convenience wrapper that wires a checklist instance to its state and
@@ -31,8 +32,23 @@ class ChecklistWrapper extends ConsumerWidget {
   final String taskId;
   final String? categoryId;
 
-  /// Track if the one‑time mobile “Long press to share” hint was shown.
-  static bool _shareTipShown = false;
+  /// Preferences key for the one‑time mobile “Long press to share” hint.
+  static const _shareHintSeenKey = 'seen_checklist_share_hint';
+
+  Future<List<ChecklistItem?>> _resolveChecklistItems(
+    WidgetRef ref,
+    Checklist checklist,
+  ) {
+    final futures =
+        checklist.data.linkedChecklistItems.map<Future<ChecklistItem?>>(
+      (id) => ref
+          .read(
+            checklistItemControllerProvider(id: id, taskId: taskId).future,
+          )
+          .catchError((Object _, StackTrace __) => null),
+    );
+    return Future.wait<ChecklistItem?>(futures);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,17 +106,7 @@ class ChecklistWrapper extends ConsumerWidget {
           final exportFailedMsg = context.messages.checklistExportFailed;
 
           try {
-            final futures =
-                checklist.data.linkedChecklistItems.map<Future<ChecklistItem?>>(
-              (id) => ref
-                  .read(
-                    checklistItemControllerProvider(id: id, taskId: taskId)
-                        .future,
-                  )
-                  .catchError((Object _, StackTrace __) => null),
-            );
-
-            final resolved = await Future.wait<ChecklistItem?>(futures);
+            final resolved = await _resolveChecklistItems(ref, checklist);
             final markdown = checklistItemsToMarkdown(resolved);
 
             if (markdown.isEmpty) {
@@ -112,14 +118,16 @@ class ChecklistWrapper extends ConsumerWidget {
 
             await ref.read(appClipboardProvider).writePlainText(markdown);
 
-            final effectiveMsg = (isMobile && !ChecklistWrapper._shareTipShown)
+            final prefs = makeSharedPrefsService();
+            final seen = await prefs.getBool(_shareHintSeenKey) ?? false;
+            final effectiveMsg = (!isTestEnv && !seen)
                 ? '$copiedMsg — $shareHintMsg'
                 : copiedMsg;
             messenger.showSnackBar(
               SnackBar(content: Text(effectiveMsg)),
             );
-            if (isMobile && !ChecklistWrapper._shareTipShown) {
-              ChecklistWrapper._shareTipShown = true;
+            if (!isTestEnv && !seen) {
+              await prefs.setBool(key: _shareHintSeenKey, value: true);
             }
           } catch (_) {
             messenger.showSnackBar(SnackBar(
@@ -130,29 +138,13 @@ class ChecklistWrapper extends ConsumerWidget {
         onShareMarkdown: () async {
           // Build the same markdown and trigger the platform share sheet.
           try {
-            final futures =
-                checklist.data.linkedChecklistItems.map<Future<ChecklistItem?>>(
-              (id) => ref
-                  .read(
-                    checklistItemControllerProvider(
-                      id: id,
-                      taskId: taskId,
-                    ).future,
-                  )
-                  .catchError((Object _, StackTrace __) => null),
-            );
-
-            final resolved = await Future.wait<ChecklistItem?>(futures);
+            final resolved = await _resolveChecklistItems(ref, checklist);
             final shareText = checklistItemsToEmojiList(resolved);
             if (shareText.isEmpty) {
               return; // nothing to share
             }
-            await SharePlus.instance.share(
-              ShareParams(
-                text: shareText,
-                subject: checklist.data.title,
-              ),
-            );
+            await ShareService.instance
+                .shareText(text: shareText, subject: checklist.data.title);
           } catch (_) {
             // Silently ignore share errors to avoid disrupting UX.
           }

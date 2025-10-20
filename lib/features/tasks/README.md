@@ -48,14 +48,14 @@ The main interface for viewing and editing tasks, featuring:
   - Designed for pasting into Linear, GitHub, and other Markdown editors.
 
 - Share for Messenger/Email
-  - Long‑press (mobile) or secondary‑click/right‑click (desktop) the export icon to open the system share sheet.
+  - Long‑press the export icon to open the system share sheet (works on mobile and desktop/macOS). Secondary‑click/right‑click also works on desktop.
   - Format per line: `⬜ Task` (incomplete) or `✅ Task` (complete), no hyphen — optimal for chat and email clients.
   - The email subject uses the checklist title.
   - macOS share previews are system‑controlled; spacing cannot be customized.
 
 - UX details
-  - Desktop shows an export tooltip; mobile suppresses the tooltip so long‑press triggers share.
-  - After the first successful copy on mobile, a one‑time SnackBar hints: “Long press to share”.
+  - Desktop shows an export tooltip; mobile suppresses the tooltip so long‑press triggers share. Long‑press also works on desktop.
+  - After the first successful copy, a one‑time SnackBar hints: “Long press to share”.
 
 **ChecklistItemWidget**: Individual checklist item with:
 - Checkbox for completion toggle

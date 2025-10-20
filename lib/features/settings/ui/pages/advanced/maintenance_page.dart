@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 class MaintenancePage extends StatelessWidget {
@@ -32,6 +33,25 @@ class MaintenancePage extends StatelessWidget {
           showBackButton: true,
           child: Column(
             children: [
+              AnimatedModernSettingsCardWithIcon(
+                title: 'Reset In‑App Hints',
+                subtitle: 'Clear one‑time tips and onboarding hints',
+                icon: Icons.tips_and_updates_outlined,
+                onTap: () async {
+                  final confirmed = await showConfirmationModal(
+                    context: context,
+                    message: 'Reset in‑app hints shown across the app?',
+                    confirmLabel: 'Confirm',
+                  );
+                  if (!confirmed) return;
+                  final removed = await clearPrefsByPrefix('seen_');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Reset $removed hint(s)')),
+                    );
+                  }
+                },
+              ),
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenanceDeleteEditorDb,
                 subtitle: context.messages.maintenanceDeleteEditorDbDescription,
