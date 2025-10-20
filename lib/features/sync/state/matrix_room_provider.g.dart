@@ -7,7 +7,7 @@ part of 'matrix_room_provider.dart';
 // **************************************************************************
 
 String _$matrixRoomControllerHash() =>
-    r'3bd29cb8c67d878bc4e17b5f6d5a194dca091145';
+    r'a7b0beef24beafaea7cf3cb58859edfd1713c07d';
 
 /// See also [MatrixRoomController].
 @ProviderFor(MatrixRoomController)

@@ -4,10 +4,13 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,10 +19,13 @@ import '../../../../../widget_test_utils.dart';
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
+class MockJournalDb extends Mock implements JournalDb {}
+
 void main() {
   group('Navigation Tests Setup', () {
     late MockNavService mockNavService;
     late MockPersistenceLogic mockPersistenceLogic;
+    late MockJournalDb mockDb;
 
     setUpAll(() {
       registerFallbackValue(StackTrace.empty);
@@ -34,9 +40,25 @@ void main() {
     setUp(() {
       mockNavService = MockNavService();
       mockPersistenceLogic = MockPersistenceLogic();
+      mockDb = MockJournalDb();
+
+      // Mock watchConfigFlags to return enableEventsFlag: true for these tests
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableEventsFlag,
+              description: 'Enable Events?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
       getIt
         ..registerSingleton<NavService>(mockNavService)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<JournalDb>(mockDb);
     });
 
     tearDown(getIt.reset);
@@ -49,6 +71,9 @@ void main() {
               'linked-id',
               categoryId: 'category-id',
             ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
           ),
         );
 
@@ -134,8 +159,13 @@ void main() {
               null, // no linkedId
               categoryId: 'test-category',
             ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
           ),
         );
+
+        await tester.pumpAndSettle();
 
         // Tap the event creation item
         await tester.tap(find.byType(ModernModalEntryTypeItem));
@@ -187,8 +217,13 @@ void main() {
               linkedFromId,
               categoryId: 'test-category',
             ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
           ),
         );
+
+        await tester.pumpAndSettle();
 
         // Tap the event creation item
         await tester.tap(find.byType(ModernModalEntryTypeItem));
@@ -221,8 +256,13 @@ void main() {
               null,
               categoryId: 'test-category',
             ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
           ),
         );
+
+        await tester.pumpAndSettle();
 
         // Tap the event creation item
         await tester.tap(find.byType(ModernModalEntryTypeItem));
@@ -235,6 +275,31 @@ void main() {
   });
 
   group('ModernCreateEventItem Tests', () {
+    late MockJournalDb mockDb;
+
+    setUp(() {
+      mockDb = MockJournalDb();
+
+      // Mock watchConfigFlags to return enableEventsFlag: true
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableEventsFlag,
+              description: 'Enable Events?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      getIt.registerSingleton<JournalDb>(mockDb);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
     testWidgets('renders correctly', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -242,8 +307,13 @@ void main() {
             'linked-id',
             categoryId: 'category-id',
           ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
         ),
       );
+
+      await tester.pumpAndSettle();
 
       // Verify the event item is rendered
       expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
@@ -325,6 +395,120 @@ void main() {
       expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
       expect(find.text('Screenshot'), findsOneWidget);
       expect(find.byIcon(Icons.screenshot_monitor_rounded), findsOneWidget);
+    });
+  });
+
+  group('CreateEventItem Flag Tests', () {
+    late MockJournalDb mockDb;
+
+    setUp(() {
+      mockDb = MockJournalDb();
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    testWidgets('hides Event item when enableEventsFlag is OFF',
+        (tester) async {
+      // Mock JournalDb.watchConfigFlags() to return enableEventsFlag: false
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableEventsFlag,
+              description: 'Enable Events?',
+              status: false,
+            ),
+          },
+        ]),
+      );
+
+      getIt.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const CreateEventItem(
+            'linked-id',
+            categoryId: 'category-id',
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: SizedBox.shrink() behavior (ModernModalEntryTypeItem not found)
+      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+      expect(find.text('Event'), findsNothing);
+    });
+
+    testWidgets('shows Event item when enableEventsFlag is ON', (tester) async {
+      // Mock JournalDb.watchConfigFlags() to return enableEventsFlag: true
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableEventsFlag,
+              description: 'Enable Events?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      getIt.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const CreateEventItem(
+            'linked-id',
+            categoryId: 'category-id',
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: ModernModalEntryTypeItem is found
+      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      // Assert: 'Event' text is found
+      expect(find.text('Event'), findsOneWidget);
+      // Assert: Icons.event_rounded is found
+      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+    });
+
+    testWidgets('defaults to hidden when flag data is null/empty',
+        (tester) async {
+      // Mock stream returns empty set
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
+      );
+
+      getIt.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const CreateEventItem(
+            'linked-id',
+            categoryId: 'category-id',
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: Widget is hidden (defaults to false)
+      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+      expect(find.text('Event'), findsNothing);
     });
   });
 }

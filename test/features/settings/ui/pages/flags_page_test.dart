@@ -52,6 +52,11 @@ void main() {
             description: 'Enable notifications?',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableEventsFlag,
+            description: 'Enable Events?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -151,6 +156,43 @@ void main() {
       await tester.pump();
 
       verify(() => mockDb.upsertConfigFlag(updatedFlag)).called(1);
+    });
+
+    testWidgets(
+        'displays enableEventsFlag with correct icon, title, and description',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(FlagsPage));
+
+      // Find the card for enableEventsFlag
+      final eventsFlagCard = find.widgetWithText(
+          AnimatedModernSettingsCardWithIcon,
+          context.messages.configFlagEnableEvents);
+      expect(eventsFlagCard, findsOneWidget);
+
+      // Assert: Description is present
+      expect(
+        find.descendant(
+          of: eventsFlagCard,
+          matching:
+              find.text(context.messages.configFlagEnableEventsDescription),
+        ),
+        findsOneWidget,
+      );
+
+      // Assert: Icon is present (Icons.event_rounded)
+      expect(find.byIcon(Icons.event_rounded), findsAtLeastNWidgets(1));
+
+      // Assert: Switch is present with correct initial value (false)
+      final eventsSwitch = tester.widget<Switch>(
+          find.descendant(of: eventsFlagCard, matching: find.byType(Switch)));
+      expect(eventsSwitch.value, isFalse);
     });
   });
 }

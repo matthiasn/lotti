@@ -11,3 +11,4 @@ const enableLoggingFlag = 'enable_logging';
 const enableHabitsPageFlag = 'enable_habits_page';
 const enableDashboardsPageFlag = 'enable_dashboards_page';
 const enableCalendarPageFlag = 'enable_calendar_page';
+const enableEventsFlag = 'enable_events';

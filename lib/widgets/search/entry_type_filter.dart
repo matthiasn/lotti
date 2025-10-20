@@ -1,29 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:quiver/collection.dart';
 
-class EntryTypeFilter extends StatelessWidget {
+class EntryTypeFilter extends ConsumerWidget {
   const EntryTypeFilter({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        return Wrap(
-          runSpacing: 10,
-          spacing: 5,
-          children: [
-            ...entryTypes.map(EntryTypeChip.new),
-            const EntryTypeAllChip(),
-            const SizedBox(width: 5),
-          ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
+
+    return enableEventsAsync.when(
+      data: (enableEvents) {
+        final filteredEntryTypes = enableEvents
+            ? entryTypes
+            : entryTypes.where((type) => type != 'JournalEvent').toList();
+
+        return BlocBuilder<JournalPageCubit, JournalPageState>(
+          builder: (context, snapshot) {
+            return Wrap(
+              runSpacing: 10,
+              spacing: 5,
+              children: [
+                ...filteredEntryTypes.map(EntryTypeChip.new),
+                EntryTypeAllChip(filteredEntryTypes: filteredEntryTypes),
+                const SizedBox(width: 5),
+              ],
+            );
+          },
         );
       },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }
@@ -67,7 +82,12 @@ class EntryTypeChip extends StatelessWidget {
 }
 
 class EntryTypeAllChip extends StatelessWidget {
-  const EntryTypeAllChip({super.key});
+  const EntryTypeAllChip({
+    required this.filteredEntryTypes,
+    super.key,
+  });
+
+  final List<String> filteredEntryTypes;
 
   @override
   Widget build(BuildContext context) {
@@ -77,14 +97,14 @@ class EntryTypeAllChip extends StatelessWidget {
 
         final isSelected = setsEqual(
           snapshot.selectedEntryTypes.toSet(),
-          entryTypes.toSet(),
+          filteredEntryTypes.toSet(),
         );
 
         void onTap() {
           if (isSelected) {
             cubit.clearSelectedEntryTypes();
           } else {
-            cubit.selectAllEntryTypes();
+            cubit.selectAllEntryTypes(filteredEntryTypes);
           }
           HapticFeedback.heavyImpact();
         }

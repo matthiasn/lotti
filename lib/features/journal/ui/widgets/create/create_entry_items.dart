@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
 
 /// Modern version of create event item
@@ -21,22 +23,34 @@ class CreateEventItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ModernModalEntryTypeItem(
-      icon: Icons.event_rounded,
-      title: 'Event',
-      onTap: () async {
-        final event = await createEvent(
-          linkedId: linkedFromId,
-          categoryId: categoryId,
+    final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
+
+    return enableEventsAsync.when(
+      data: (enableEvents) {
+        if (!enableEvents) {
+          return const SizedBox.shrink();
+        }
+
+        return ModernModalEntryTypeItem(
+          icon: Icons.event_rounded,
+          title: 'Event',
+          onTap: () async {
+            final event = await createEvent(
+              linkedId: linkedFromId,
+              categoryId: categoryId,
+            );
+            if (!context.mounted) {
+              return;
+            }
+            if (event != null) {
+              beamToNamed('/journal/${event.meta.id}');
+            }
+            Navigator.of(context).pop();
+          },
         );
-        if (!context.mounted) {
-          return;
-        }
-        if (event != null) {
-          beamToNamed('/journal/${event.meta.id}');
-        }
-        Navigator.of(context).pop();
       },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

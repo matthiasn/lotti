@@ -1251,6 +1251,12 @@ abstract class AppLocalizations {
   /// **'Show the Dashboards page in the main navigation. View your data and insights in customizable dashboards.'**
   String get configFlagEnableDashboardsPageDescription;
 
+  /// No description provided for @configFlagEnableEventsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the Events feature to create, track, and manage events in your journal.'**
+  String get configFlagEnableEventsDescription;
+
   /// No description provided for @configFlagEnableHabitsPageDescription.
   ///
   /// In en, this message translates to:
@@ -1358,6 +1364,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable Calendar page'**
   String get configFlagEnableCalendarPage;
+
+  /// No description provided for @configFlagEnableEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Events'**
+  String get configFlagEnableEvents;
 
   /// No description provided for @configFlagUseCloudInferenceDescription.
   ///

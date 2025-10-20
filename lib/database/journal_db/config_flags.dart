@@ -91,4 +91,11 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableEventsFlag,
+      description: 'Enable Events?',
+      status: false,
+    ),
+  );
 }

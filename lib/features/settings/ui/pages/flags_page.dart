@@ -26,6 +26,7 @@ class _FlagsPageState extends State<FlagsPage> {
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
     enableCalendarPageFlag,
+    enableEventsFlag,
   ];
 
   // Helper to get icon for each flag
@@ -53,6 +54,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return Icons.dashboard_rounded;
       case enableCalendarPageFlag:
         return Icons.calendar_today_rounded;
+      case enableEventsFlag:
+        return Icons.event_rounded;
       default:
         return Icons.settings;
     }
@@ -83,6 +86,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return context.messages.configFlagEnableDashboardsPageDescription;
       case enableCalendarPageFlag:
         return context.messages.configFlagEnableCalendarPageDescription;
+      case enableEventsFlag:
+        return context.messages.configFlagEnableEventsDescription;
       default:
         return flag.description;
     }
@@ -113,6 +118,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return context.messages.configFlagEnableDashboardsPage;
       case enableCalendarPageFlag:
         return context.messages.configFlagEnableCalendarPage;
+      case enableEventsFlag:
+        return context.messages.configFlagEnableEvents;
       default:
         return flag.name;
     }

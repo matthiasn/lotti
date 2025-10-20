@@ -654,6 +654,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeigt die Dashboard-Seite in der Hauptnavigation an. Zeigen Sie Ihre Daten und Erkenntnisse in anpassbaren Dashboards an.';
 
   @override
+  String get configFlagEnableEventsDescription =>
+      'Zeigen Sie die Ereignisfunktion an, um Ereignisse in Ihrem Journal zu erstellen, verfolgen und verwalten.';
+
+  @override
   String get configFlagEnableHabitsPageDescription =>
       'Zeigt die Seite \"Gewohnheiten\" in der Hauptnavigation an. Verfolgen und verwalten Sie hier Ihre täglichen Gewohnheiten.';
 
@@ -714,6 +718,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagEnableCalendarPage => 'Seite Kalender aktivieren';
+
+  @override
+  String get configFlagEnableEvents => 'Ereignisse aktivieren';
 
   @override
   String get configFlagUseCloudInferenceDescription =>
