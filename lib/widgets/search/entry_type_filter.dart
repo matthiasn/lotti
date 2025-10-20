@@ -30,7 +30,7 @@ class EntryTypeFilter extends ConsumerWidget {
               spacing: 5,
               children: [
                 ...filteredEntryTypes.map(EntryTypeChip.new),
-                const EntryTypeAllChip(),
+                EntryTypeAllChip(filteredEntryTypes: filteredEntryTypes),
                 const SizedBox(width: 5),
               ],
             );
@@ -82,7 +82,12 @@ class EntryTypeChip extends StatelessWidget {
 }
 
 class EntryTypeAllChip extends StatelessWidget {
-  const EntryTypeAllChip({super.key});
+  const EntryTypeAllChip({
+    required this.filteredEntryTypes,
+    super.key,
+  });
+
+  final List<String> filteredEntryTypes;
 
   @override
   Widget build(BuildContext context) {
@@ -92,14 +97,14 @@ class EntryTypeAllChip extends StatelessWidget {
 
         final isSelected = setsEqual(
           snapshot.selectedEntryTypes.toSet(),
-          entryTypes.toSet(),
+          filteredEntryTypes.toSet(),
         );
 
         void onTap() {
           if (isSelected) {
             cubit.clearSelectedEntryTypes();
           } else {
-            cubit.selectAllEntryTypes();
+            cubit.selectAllEntryTypes(filteredEntryTypes);
           }
           HapticFeedback.heavyImpact();
         }

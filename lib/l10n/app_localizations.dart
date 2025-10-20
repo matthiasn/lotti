@@ -1254,7 +1254,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableEventsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Enable the Events feature to track and manage events in your journal.'**
+  /// **'Show the Events feature to create, track, and manage events in your journal.'**
   String get configFlagEnableEventsDescription;
 
   /// No description provided for @configFlagEnableHabitsPageDescription.

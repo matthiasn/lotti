@@ -276,8 +276,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     persistEntryTypes();
   }
 
-  void selectAllEntryTypes() {
-    _selectedEntryTypes = entryTypes.toSet();
+  void selectAllEntryTypes([List<String>? types]) {
+    _selectedEntryTypes = (types ?? entryTypes).toSet();
     persistEntryTypes();
   }
 
