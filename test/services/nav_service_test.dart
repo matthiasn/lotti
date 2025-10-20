@@ -27,7 +27,7 @@ void main() {
       when(() => secureStorageMock.writeValue(lastRouteKey, any()))
           .thenAnswer((_) async {});
 
-      when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
+      when(() => mockJournalDb.watchActiveConfigFlagNames()).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([
           {
             enableCalendarPageFlag,

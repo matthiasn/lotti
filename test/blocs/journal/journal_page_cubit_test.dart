@@ -21,6 +21,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -83,6 +84,12 @@ void main() {
       // Mock JournalDb
       when(() => mockJournalDb.watchConfigFlag(any())).thenAnswer(
         (_) => Stream<bool>.fromIterable([false]),
+      );
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
+      );
+      when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([<String>{}]),
       );
       when(() => mockJournalDb.getTasks(
             ids: any(named: 'ids'),
@@ -465,9 +472,7 @@ void main() {
 
       // Wait for initialization
       await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Should have been called once during initialization
-      expect(refreshCallCount, equals(1));
+      final initialCount = refreshCallCount; // may perform >1 initial fetches
 
       // First, simulate being invisible
       cubit.updateVisibility(
@@ -476,8 +481,8 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      // Count should still be 1 (no refresh when invisible)
-      expect(refreshCallCount, equals(1));
+      // Count should remain unchanged (no refresh when invisible)
+      expect(refreshCallCount, equals(initialCount));
 
       // Now simulate becoming visible - this should trigger refreshQuery
       cubit.updateVisibility(
@@ -489,8 +494,8 @@ void main() {
       // Wait for the refresh to complete
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Should have been called again due to visibility change
-      expect(refreshCallCount, equals(2));
+      // Should have increased by exactly 1 due to visibility change
+      expect(refreshCallCount, equals(initialCount + 1));
 
       await cubit.close();
     });
@@ -521,9 +526,7 @@ void main() {
 
       // Wait for initialization
       await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Should have been called once during initialization
-      expect(refreshCallCount, equals(1));
+      final initialCount = refreshCallCount;
 
       // Simulate being invisible
       cubit.updateVisibility(
@@ -532,8 +535,8 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      // Count should still be 1
-      expect(refreshCallCount, equals(1));
+      // Count should still be unchanged
+      expect(refreshCallCount, equals(initialCount));
 
       // Stay invisible - this should NOT trigger refreshQuery
       cubit.updateVisibility(
@@ -543,8 +546,55 @@ void main() {
       // Wait to ensure no refresh happens
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Should still only have been called once (during initialization)
-      expect(refreshCallCount, equals(1));
+      // Should still be unchanged (no refresh while invisible)
+      expect(refreshCallCount, equals(initialCount));
+
+      await cubit.close();
+    });
+
+    test('intersects selected types with allowed feature-gated types',
+        () async {
+      // Arrange: enableEvents=true, enableDashboards=false, enableHabits=true
+      final mockJournalDb = getIt<JournalDb>();
+      when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([
+          {enableEventsFlag, enableHabitsPageFlag},
+        ]),
+      );
+
+      // Capture the types passed into getJournalEntities
+      List<String>? capturedTypes;
+      when(() => mockJournalDb.getJournalEntities(
+            types: any(named: 'types'),
+            starredStatuses: any(named: 'starredStatuses'),
+            privateStatuses: any(named: 'privateStatuses'),
+            flaggedStatuses: any(named: 'flaggedStatuses'),
+            ids: any(named: 'ids'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            categoryIds: any(named: 'categoryIds'),
+          )).thenAnswer((invocation) async {
+        capturedTypes = invocation.namedArguments[#types] as List<String>;
+        return [];
+      });
+
+      // Act
+      final cubit = JournalPageCubit(showTasks: false);
+      // Select all types intentionally
+      // ignore: cascade_invocations
+      cubit.selectAllEntryTypes(entryTypes);
+
+      // Wait briefly for stream + refresh to propagate
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Assert: 'MeasurementEntry' and 'QuantitativeEntry' are removed when dashboards disabled
+      expect(capturedTypes, isNotNull);
+      expect(capturedTypes!.contains('MeasurementEntry'), isFalse);
+      expect(capturedTypes!.contains('QuantitativeEntry'), isFalse);
+      // Assert: 'HabitCompletionEntry' remains when habits enabled
+      expect(capturedTypes!.contains('HabitCompletionEntry'), isTrue);
+      // Assert: 'JournalEvent' remains when events enabled
+      expect(capturedTypes!.contains('JournalEvent'), isTrue);
 
       await cubit.close();
     });

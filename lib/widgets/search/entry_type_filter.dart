@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/journal/utils/entry_type_gating.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
@@ -15,30 +17,31 @@ class EntryTypeFilter extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
+    final enableEvents =
+        ref.watch(configFlagProvider(enableEventsFlag)).value ?? false;
+    final enableHabits =
+        ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false;
+    final enableDashboards =
+        ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ?? false;
 
-    return enableEventsAsync.when(
-      data: (enableEvents) {
-        final filteredEntryTypes = enableEvents
-            ? entryTypes
-            : entryTypes.where((type) => type != 'JournalEvent').toList();
+    final filteredEntryTypes = computeAllowedEntryTypes(
+      events: enableEvents,
+      habits: enableHabits,
+      dashboards: enableDashboards,
+    );
 
-        return BlocBuilder<JournalPageCubit, JournalPageState>(
-          builder: (context, snapshot) {
-            return Wrap(
-              runSpacing: 10,
-              spacing: 5,
-              children: [
-                ...filteredEntryTypes.map(EntryTypeChip.new),
-                EntryTypeAllChip(filteredEntryTypes: filteredEntryTypes),
-                const SizedBox(width: 5),
-              ],
-            );
-          },
+    return BlocBuilder<JournalPageCubit, JournalPageState>(
+      builder: (context, snapshot) {
+        return Wrap(
+          runSpacing: 10,
+          spacing: 5,
+          children: [
+            ...filteredEntryTypes.map(EntryTypeChip.new),
+            EntryTypeAllChip(filteredEntryTypes: filteredEntryTypes),
+            const SizedBox(width: 5),
+          ],
         );
       },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }
@@ -70,7 +73,7 @@ class EntryTypeChip extends StatelessWidget {
         }
 
         return FilterChoiceChip(
-          label: entryTypeDisplayNames[entryType] ?? '',
+          label: _entryTypeLabel(context, entryType),
           isSelected: isSelected,
           onTap: onTap,
           onLongPress: onLongPress,
@@ -110,7 +113,7 @@ class EntryTypeAllChip extends StatelessWidget {
         }
 
         return FilterChoiceChip(
-          label: 'All',
+          label: context.messages.taskStatusAll,
           isSelected: isSelected,
           onTap: onTap,
           selectedColor: context.colorScheme.secondary,
@@ -120,18 +123,21 @@ class EntryTypeAllChip extends StatelessWidget {
   }
 }
 
-const entryTypeDisplayNames = {
-  'Task': 'Task',
-  'JournalEntry': 'Text',
-  'JournalEvent': 'Event',
-  'JournalAudio': 'Audio',
-  'JournalImage': 'Photo',
-  'MeasurementEntry': 'Measured',
-  'SurveyEntry': 'Survey',
-  'WorkoutEntry': 'Workout',
-  'HabitCompletionEntry': 'Habit',
-  'QuantitativeEntry': 'Health',
-  'Checklist': 'Checklist',
-  'ChecklistItem': 'ChecklistItem',
-  'AiResponse': 'AI Response',
-};
+String _entryTypeLabel(BuildContext context, String type) {
+  final labels = <String, String>{
+    'Task': context.messages.entryTypeLabelTask,
+    'JournalEntry': context.messages.entryTypeLabelJournalEntry,
+    'JournalEvent': context.messages.entryTypeLabelJournalEvent,
+    'JournalAudio': context.messages.entryTypeLabelJournalAudio,
+    'JournalImage': context.messages.entryTypeLabelJournalImage,
+    'MeasurementEntry': context.messages.entryTypeLabelMeasurementEntry,
+    'SurveyEntry': context.messages.entryTypeLabelSurveyEntry,
+    'WorkoutEntry': context.messages.entryTypeLabelWorkoutEntry,
+    'HabitCompletionEntry': context.messages.entryTypeLabelHabitCompletionEntry,
+    'QuantitativeEntry': context.messages.entryTypeLabelQuantitativeEntry,
+    'Checklist': context.messages.entryTypeLabelChecklist,
+    'ChecklistItem': context.messages.entryTypeLabelChecklistItem,
+    'AiResponse': context.messages.entryTypeLabelAiResponse,
+  };
+  return labels[type] ?? '';
+}

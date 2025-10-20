@@ -153,6 +153,18 @@ abstract class AppLocalizations {
   /// **'Text Entry'**
   String get addActionAddText;
 
+  /// No description provided for @addActionAddTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer'**
+  String get addActionAddTimer;
+
+  /// No description provided for @addActionImportImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Image'**
+  String get addActionImportImage;
+
   /// No description provided for @addActionAddTimeRecording.
   ///
   /// In en, this message translates to:
@@ -3020,6 +3032,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Images'**
   String get images;
+
+  /// No description provided for @entryTypeLabelTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get entryTypeLabelTask;
+
+  /// No description provided for @entryTypeLabelJournalEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get entryTypeLabelJournalEntry;
+
+  /// No description provided for @entryTypeLabelJournalEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get entryTypeLabelJournalEvent;
+
+  /// No description provided for @entryTypeLabelJournalAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get entryTypeLabelJournalAudio;
+
+  /// No description provided for @entryTypeLabelJournalImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get entryTypeLabelJournalImage;
+
+  /// No description provided for @entryTypeLabelMeasurementEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Measured'**
+  String get entryTypeLabelMeasurementEntry;
+
+  /// No description provided for @entryTypeLabelSurveyEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey'**
+  String get entryTypeLabelSurveyEntry;
+
+  /// No description provided for @entryTypeLabelWorkoutEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout'**
+  String get entryTypeLabelWorkoutEntry;
+
+  /// No description provided for @entryTypeLabelHabitCompletionEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit'**
+  String get entryTypeLabelHabitCompletionEntry;
+
+  /// No description provided for @entryTypeLabelQuantitativeEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get entryTypeLabelQuantitativeEntry;
+
+  /// No description provided for @entryTypeLabelChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get entryTypeLabelChecklist;
+
+  /// No description provided for @entryTypeLabelChecklistItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist Item'**
+  String get entryTypeLabelChecklistItem;
+
+  /// No description provided for @entryTypeLabelAiResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Response'**
+  String get entryTypeLabelAiResponse;
 
   /// No description provided for @taskSummaries.
   ///

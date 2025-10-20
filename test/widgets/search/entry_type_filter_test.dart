@@ -221,5 +221,140 @@ void main() {
 
       await flagController.close();
     });
+
+    testWidgets('filters out Habit chip when enableHabitsPageFlag is OFF',
+        (tester) async {
+      // Habits disabled
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableHabitsPageFlag,
+              description: 'Enable Habits Page?',
+              status: false,
+            ),
+          },
+        ]),
+      );
+
+      GetIt.I.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<JournalPageCubit>.value(
+            value: mockCubit,
+            child: const EntryTypeFilter(),
+          ),
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: Habit chip is hidden
+      expect(find.text('Habit'), findsNothing);
+    });
+
+    testWidgets('shows Habit chip when enableHabitsPageFlag is ON',
+        (tester) async {
+      // Habits enabled
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableHabitsPageFlag,
+              description: 'Enable Habits Page?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      GetIt.I.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<JournalPageCubit>.value(
+            value: mockCubit,
+            child: const EntryTypeFilter(),
+          ),
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: Habit chip is visible
+      expect(find.text('Habit'), findsOneWidget);
+    });
+
+    testWidgets(
+        'filters out Measured and Health when enableDashboardsPageFlag is OFF',
+        (tester) async {
+      // Dashboards disabled
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableDashboardsPageFlag,
+              description: 'Enable Dashboards Page?',
+              status: false,
+            ),
+          },
+        ]),
+      );
+
+      GetIt.I.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<JournalPageCubit>.value(
+            value: mockCubit,
+            child: const EntryTypeFilter(),
+          ),
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: Measured and Health chips are hidden
+      expect(find.text('Measured'), findsNothing);
+      expect(find.text('Health'), findsNothing);
+    });
+
+    testWidgets('shows Measured and Health when dashboards flag is ON',
+        (tester) async {
+      // Dashboards enabled
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableDashboardsPageFlag,
+              description: 'Enable Dashboards Page?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      GetIt.I.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<JournalPageCubit>.value(
+            value: mockCubit,
+            child: const EntryTypeFilter(),
+          ),
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: Measured and Health chips are visible
+      expect(find.text('Measured'), findsOneWidget);
+      expect(find.text('Health'), findsOneWidget);
+    });
   });
 }

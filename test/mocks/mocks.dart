@@ -42,6 +42,20 @@ MockTagsService mockTagsServiceWithTags(
 
 class MockJournalDb extends Mock implements JournalDb {
   Future<void> deleteLoggingDatabase() async {}
+
+  @override
+  Stream<Set<String>> watchActiveConfigFlagNames() {
+    try {
+      final result = super
+          .noSuchMethod(Invocation.method(#watchActiveConfigFlagNames, []));
+      if (result is Stream<Set<String>>) {
+        return result;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+    return Stream<Set<String>>.value(<String>{}).asBroadcastStream();
+  }
 }
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}

@@ -11,9 +11,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -144,6 +146,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       refreshQuery();
     });
 
+    // Listen to active feature flags and update local cache
+    getIt<JournalDb>().watchActiveConfigFlagNames().listen((configFlags) {
+      _enableEvents = configFlags.contains(enableEventsFlag);
+      _enableHabits = configFlags.contains(enableHabitsPageFlag);
+      _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
+      refreshQuery();
+    });
+
     if (isDesktop) {
       hotKeyManager.register(
         HotKey(
@@ -195,6 +205,11 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   static const _pageSize = 50;
   Set<String> _selectedEntryTypes = entryTypes.toSet();
   Set<DisplayFilter> _filters = {};
+
+  // Feature flags cached in the cubit
+  bool _enableEvents = false;
+  bool _enableHabits = false;
+  bool _enableDashboards = false;
 
   String _query = '';
   bool _showPrivateEntries = false;
@@ -382,7 +397,13 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 
   Future<List<JournalEntity>> _runQuery(int pageKey) async {
-    final types = state.selectedEntryTypes.toList();
+    // Intersect selected types with allowed based on feature flags
+    final allowed = computeAllowedEntryTypes(
+      events: _enableEvents,
+      habits: _enableHabits,
+      dashboards: _enableDashboards,
+    );
+    final types = state.selectedEntryTypes.where(allowed.contains).toList();
     await _fts5Search();
     final fullTextMatches = _fullTextMatches.toList();
     final ids = _query.isNotEmpty ? fullTextMatches : null;

@@ -170,7 +170,7 @@ void main() {
 
       when(
         () => mockJournalDb.getJournalEntities(
-          types: entryTypeStrings,
+          types: any(named: 'types'),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -217,7 +217,7 @@ void main() {
 
       when(
         () => mockJournalDb.getJournalEntities(
-          types: entryTypeStrings,
+          types: any(named: 'types'),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -296,7 +296,7 @@ void main() {
 
       when(
         () => mockJournalDb.getJournalEntities(
-          types: entryTypeStrings,
+          types: any(named: 'types'),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -380,7 +380,7 @@ void main() {
 
       when(
         () => mockJournalDb.getJournalEntities(
-          types: entryTypeStrings,
+          types: any(named: 'types'),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -467,7 +467,7 @@ void main() {
 
       when(
         () => mockJournalDb.getJournalEntities(
-          types: entryTypeStrings,
+          types: any(named: 'types'),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -557,7 +557,7 @@ void main() {
     testWidgets('pull to refresh works correctly', (tester) async {
       when(
         () => mockJournalDb.getJournalEntities(
-          types: entryTypeStrings,
+          types: any(named: 'types'),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -607,7 +607,7 @@ void main() {
 
       when(
         () => mockJournalDb.getJournalEntities(
-          types: entryTypeStrings,
+          types: any(named: 'types'),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -744,7 +744,7 @@ void main() {
 
       when(
         () => mockJournalDb.getJournalEntities(
-          types: entryTypeStrings,
+          types: any(named: 'types'),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
