@@ -3102,7 +3102,7 @@ abstract class AppLocalizations {
   /// No description provided for @entryTypeLabelChecklistItem.
   ///
   /// In en, this message translates to:
-  /// **'Checklist Item'**
+  /// **'To Do'**
   String get entryTypeLabelChecklistItem;
 
   /// No description provided for @entryTypeLabelAiResponse.

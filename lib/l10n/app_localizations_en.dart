@@ -1640,7 +1640,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get entryTypeLabelChecklist => 'Checklist';
 
   @override
-  String get entryTypeLabelChecklistItem => 'Checklist Item';
+  String get entryTypeLabelChecklistItem => 'To Do';
 
   @override
   String get entryTypeLabelAiResponse => 'AI Response';
@@ -2951,6 +2951,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get settingsCategoriesTitle => 'Categories';
+
+  @override
+  String get entryTypeLabelChecklistItem => 'To Do';
 
   @override
   String get settingsConflictsResolutionTitle => 'Sync Conflict Resolution';

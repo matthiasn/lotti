@@ -578,7 +578,7 @@
   "entryTypeLabelHabitCompletionEntry": "Habit",
   "entryTypeLabelQuantitativeEntry": "Health",
   "entryTypeLabelChecklist": "Checklist",
-  "entryTypeLabelChecklistItem": "Checklist Item",
+  "entryTypeLabelChecklistItem": "To Do",
   "entryTypeLabelAiResponse": "AI Response",
   "taskSummaries": "Task Summaries",
   "noPromptsForType": "No prompts available for this type",
