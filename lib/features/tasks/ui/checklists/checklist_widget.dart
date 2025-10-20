@@ -5,9 +5,17 @@ import 'package:lotti/features/tasks/ui/checklists/progress_indicator.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+/// Renders a single checklist with header and items.
+///
+/// Header shows a progress indicator, the checklist title, an edit button to
+/// rename the checklist, and an export button. Export interactions:
+/// - Tap/click export → copies the checklist as Markdown (`- [ ]` / `- [x]`).
+/// - Long‑press (mobile) or secondary‑click (desktop) export → opens the
+///   platform share sheet with an emoji list (⬜/✅) optimized for chat/email.
 class ChecklistWidget extends StatefulWidget {
   const ChecklistWidget({
     required this.title,
@@ -19,6 +27,8 @@ class ChecklistWidget extends StatefulWidget {
     required this.taskId,
     required this.updateItemOrder,
     this.onDelete,
+    this.onExportMarkdown,
+    this.onShareMarkdown,
     super.key,
   });
 
@@ -33,6 +43,14 @@ class ChecklistWidget extends StatefulWidget {
       updateItemOrder;
   final double completionRate;
   final VoidCallback? onDelete;
+
+  /// Called when the export button is activated (tap/click). Should copy the
+  /// checklist as Markdown to the clipboard and provide user feedback.
+  final VoidCallback? onExportMarkdown;
+
+  /// Called on long‑press (mobile) or secondary‑click (desktop) of the export
+  /// control to trigger a share sheet with an emoji‑based checklist.
+  final VoidCallback? onShareMarkdown;
 
   @override
   State<ChecklistWidget> createState() => _ChecklistWidgetState();
@@ -117,6 +135,23 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                         });
                       },
                     ),
+                    if (widget.onExportMarkdown != null)
+                      GestureDetector(
+                        onLongPress: widget.onShareMarkdown,
+                        onSecondaryTap: widget.onShareMarkdown,
+                        behavior: HitTestBehavior.opaque,
+                        child: IconButton(
+                          tooltip: isMobile
+                              ? null
+                              : context.messages.checklistExportAsMarkdown,
+                          icon: Icon(
+                            MdiIcons.exportVariant,
+                            color: context.colorScheme.outline,
+                            size: 20,
+                          ),
+                          onPressed: widget.onExportMarkdown,
+                        ),
+                      ),
                   ],
                 ),
               ),

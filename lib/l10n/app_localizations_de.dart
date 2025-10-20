@@ -572,7 +572,48 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistSuggestionsTitle => 'Vorgeschlagene Aktionspunkte';
 
   @override
+  String get checklistExportAsMarkdown => 'Export checklist as Markdown';
+
+  @override
+  String get checklistMarkdownCopied => 'Checklist copied as Markdown';
+
+  @override
+  String get checklistShareHint => 'Long press to share';
+
+  @override
+  String get checklistNothingToExport => 'No items to export';
+
+  @override
+  String get checklistExportFailed => 'Export failed';
+
+  @override
   String get checklistsTitle => 'Checklisten';
+
+  @override
+  String get settingsResetHintsTitle => 'Reset In‑App Hints';
+
+  @override
+  String get settingsResetHintsSubtitle =>
+      'Clear one‑time tips and onboarding hints';
+
+  @override
+  String get settingsResetHintsConfirmQuestion =>
+      'Reset in‑app hints shown across the app?';
+
+  @override
+  String get settingsResetHintsConfirm => 'Confirm';
+
+  @override
+  String settingsResetHintsResult(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Reset $count hints',
+      one: 'Reset one hint',
+      zero: 'Reset zero hints',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get colorLabel => 'Farbe:';

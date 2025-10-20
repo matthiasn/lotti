@@ -1119,11 +1119,71 @@ abstract class AppLocalizations {
   /// **'Suggested Action Items'**
   String get checklistSuggestionsTitle;
 
+  /// No description provided for @checklistExportAsMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Export checklist as Markdown'**
+  String get checklistExportAsMarkdown;
+
+  /// No description provided for @checklistMarkdownCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist copied as Markdown'**
+  String get checklistMarkdownCopied;
+
+  /// No description provided for @checklistShareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long press to share'**
+  String get checklistShareHint;
+
+  /// No description provided for @checklistNothingToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'No items to export'**
+  String get checklistNothingToExport;
+
+  /// No description provided for @checklistExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed'**
+  String get checklistExportFailed;
+
   /// No description provided for @checklistsTitle.
   ///
   /// In en, this message translates to:
   /// **'Checklists'**
   String get checklistsTitle;
+
+  /// No description provided for @settingsResetHintsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset In‑App Hints'**
+  String get settingsResetHintsTitle;
+
+  /// No description provided for @settingsResetHintsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear one‑time tips and onboarding hints'**
+  String get settingsResetHintsSubtitle;
+
+  /// No description provided for @settingsResetHintsConfirmQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset in‑app hints shown across the app?'**
+  String get settingsResetHintsConfirmQuestion;
+
+  /// No description provided for @settingsResetHintsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get settingsResetHintsConfirm;
+
+  /// No description provided for @settingsResetHintsResult.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Reset zero hints} one{Reset one hint} other{Reset {count} hints}}'**
+  String settingsResetHintsResult(int count);
 
   /// No description provided for @colorLabel.
   ///
