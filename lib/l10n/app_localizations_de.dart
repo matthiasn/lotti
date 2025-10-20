@@ -655,7 +655,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagEnableEventsDescription =>
-      'Enable the Events feature to track and manage events in your journal.';
+      'Zeigen Sie die Ereignisfunktion an, um Ereignisse in Ihrem Journal zu erstellen, verfolgen und verwalten.';
 
   @override
   String get configFlagEnableHabitsPageDescription =>
@@ -720,7 +720,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get configFlagEnableCalendarPage => 'Seite Kalender aktivieren';
 
   @override
-  String get configFlagEnableEvents => 'Enable Events';
+  String get configFlagEnableEvents => 'Ereignisse aktivieren';
 
   @override
   String get configFlagUseCloudInferenceDescription =>

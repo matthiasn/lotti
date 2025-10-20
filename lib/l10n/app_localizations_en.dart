@@ -650,7 +650,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagEnableEventsDescription =>
-      'Enable the Events feature to track and manage events in your journal.';
+      'Show the Events feature to create, track, and manage events in your journal.';
 
   @override
   String get configFlagEnableHabitsPageDescription =>
