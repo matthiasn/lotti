@@ -6,6 +6,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.691] - 2025-10-20
+### Changed:
+- Audio recorder: improve prompt checkbox visibility for better contrast and readability
+
+## [0.9.690] - 2025-10-20
+### Added:
+- Export checklist as Markdown from the checklist view (#2331)
+- Share checklist via the iOS/macOS share sheet (#2331)
+
+## [0.9.689] - 2025-10-19
+### Changed:
+- Upgraded dependencies across the project (#2330)
+
+## [0.9.688] - 2025-10-19
+### Changed:
+- Improve initial synchronization reliability and speed at app start (#2329)
+
+## [0.9.687] - 2025-10-17
+### Changed:
+- Harden v2 sync with stronger error handling and state management (#2327)
+
+## [0.9.686] - 2025-10-14
+### Fixed:
+- Clamp bottom navigation index to a valid range to avoid out-of-bounds selection (#2323)
+
+## [0.9.685] - 2025-10-14
+### Added:
+- Drag and drop audio to quickly add or import audio content (#2322)
+
+## [0.9.684] - 2025-10-13
+### Changed:
+- Refined sync stats UI for clearer labels and improved readability (#2321)
+
+## [0.9.682] - 2025-10-12
+### Added:
+- Copy as plain text from supported views (#2319)
+- Copy as Markdown with formatting preserved (#2319)
+
+## [0.9.680] - 2025-10-12
+### Changed:
+- Improve sync reliability with better retry and state handling (#2317)
+
+## [0.9.679] - 2025-10-12
+### Changed:
+- Upgraded Matrix SDK to 3.0.0 and adapted usage where necessary (#2316)
+
+## [0.9.678] - 2025-10-12
+### Added:
+- Emoji input and rendering support on Linux (#2318)
+
+## [0.9.677] - 2025-10-10
+### Fixed:
+- Issue where sync could lag one event behind (#2313)
+
+## [0.9.676] - 2025-10-09
+### Changed:
+- Internal sync code cleanup and refactoring to reduce complexity (#2308)
+
+## [0.9.675] - 2025-10-07
+### Changed:
+- Extract session, room, and timeline managers into dedicated components (#2304)
+### Fixed:
+- Auto-join bug in Matrix integration (M6) (#2304)
+
+## [0.9.674] - 2025-10-06
+### Added:
+- Exponential backoff for sync retry strategy to improve stability on flaky networks (#2299)
+
+## [0.9.673] - 2025-10-06
+### Changed:
+- Sync maintenance refactor and tidy-up of helpers and lifecycles (#2300)
+
+## [0.9.672] - 2025-10-06
+### Changed:
+- Improve sync login resilience with better recovery from transient errors (#2298)
+
+## [0.9.671] - 2025-10-05
+### Fixed:
+- Clipped text in editor (#2293)
+
+## [0.9.670] - 2025-10-04
+### Changed:
+- Update task summaries when changing the app language to keep content in sync (#2291)
+
 ## [0.9.669] - 2025-09-27
 
 ### Changed:
