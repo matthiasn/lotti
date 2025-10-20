@@ -59,7 +59,7 @@ class InfoText extends StatelessWidget {
     return Text(
       text,
       maxLines: maxLines,
-      style: monospaceTextStyle,
+      style: monoTabularStyle(fontSize: fontSizeMedium),
     );
   }
 }

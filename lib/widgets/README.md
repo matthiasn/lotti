@@ -192,7 +192,7 @@ Visual indicator showing whether time recording is currently active.
 
 - Typography: Uses `monoTabularStyle` with tabular figures to ensure the duration text does not jitter as digits change.
 - Dimensions: Matches width/height with the audio recording indicator to keep overlays consistent.
-- Sizing: Font size aligns with `AppTheme.statusIndicatorFontSize`.
+- Sizing: Font size aligns with `fontSizeMedium`.
 
 ### TimeSpanSegmentedControl
 Segmented control for selecting time spans (day, week, month, year).

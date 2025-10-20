@@ -291,18 +291,6 @@ const chartTooltipStyleBold = TextStyle(
   fontWeight: FontWeight.bold,
 );
 
-const monospaceTextStyle = TextStyle(
-  fontSize: fontSizeMedium,
-  fontWeight: FontWeight.w500,
-  fontFeatures: [
-    FontFeature.tabularFigures(),
-  ],
-);
-
-final TextStyle monospaceTextStyleSmall = monospaceTextStyle.copyWith(
-  fontSize: fontSizeSmall,
-);
-
 const appBarTextStyle = TextStyle(
   fontSize: fontSizeMedium,
   fontWeight: FontWeight.bold,

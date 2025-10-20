@@ -653,7 +653,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagEnableEventsDescription =>
-      'Afișați funcția Evenimente pentru a crea, urmări și gestiona evenimente în jurnal.';
+      'Show the Events feature to create, track, and manage events in your journal.';
 
   @override
   String get configFlagEnableHabitsPageDescription =>
@@ -720,7 +720,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get configFlagEnableCalendarPage => 'Activează pagina Calendar';
 
   @override
-  String get configFlagEnableEvents => 'Activați Evenimente';
+  String get configFlagEnableEvents => 'Enable Events';
 
   @override
   String get configFlagUseCloudInferenceDescription =>
