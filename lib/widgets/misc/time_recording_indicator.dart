@@ -65,7 +65,7 @@ class TimeRecordingIndicator extends StatelessWidget {
                     left: borderSide,
                   ),
                 ),
-                width: 105,
+                width: AudioRecordingIndicatorConstants.indicatorWidth,
                 height: AudioRecordingIndicatorConstants.indicatorHeight,
                 child: Row(
                   children: [
@@ -76,7 +76,9 @@ class TimeRecordingIndicator extends StatelessWidget {
                       padding: AudioRecordingIndicatorConstants.textPadding,
                       child: Text(
                         durationString,
-                        style: monoTabularStyle(fontSize: fontSizeMedium),
+                        style: monoTabularStyle(
+                          fontSize: AppTheme.statusIndicatorFontSize,
+                        ),
                       ),
                     ),
                   ],

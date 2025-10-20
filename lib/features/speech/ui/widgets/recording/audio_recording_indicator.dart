@@ -11,7 +11,9 @@ import 'package:lotti/themes/theme.dart';
 class AudioRecordingIndicatorConstants {
   const AudioRecordingIndicatorConstants._();
 
-  static const double indicatorWidth = 105;
+  // Increased slightly to account for tabular monospace digits + icon
+  // to avoid layout overflow at default text scale.
+  static const double indicatorWidth = 150;
   static const double indicatorHeight = 24;
   static const double iconSize = 20;
   static const double borderRadius = 8;
@@ -80,7 +82,7 @@ class AudioRecordingIndicator extends ConsumerWidget {
                     child: Text(
                       formatDuration(state.progress),
                       style: monoTabularStyle(
-                        fontSize: fontSizeMedium,
+                        fontSize: AppTheme.statusIndicatorFontSize,
                         color: Colors.white,
                       ),
                       strutStyle: const StrutStyle(

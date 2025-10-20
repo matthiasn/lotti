@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -366,7 +365,8 @@ TextStyle monoTabularStyle({
   Color? color,
   FontWeight fontWeight = FontWeight.w500,
 }) {
-  return GoogleFonts.inconsolata(
+  return TextStyle(
+    fontFamily: 'Inconsolata',
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,

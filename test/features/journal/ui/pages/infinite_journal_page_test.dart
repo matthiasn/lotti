@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -47,12 +48,14 @@ void main() {
   final entryTypeStrings = entryTypes.toList();
 
   group('JournalPage Widget Tests - ', () {
-    setUpAll(() {
+    setUpAll(() async {
       setFakeDocumentsPath();
       ensureMpvInitialized();
 
       registerFallbackValue(FakeMeasurementData());
       VisibilityDetectorController.instance.updateInterval = Duration.zero;
+      // Avoid GoogleFonts attempting network fetches during tests
+      GoogleFonts.config.allowRuntimeFetching = false;
     });
 
     setUp(() async {
