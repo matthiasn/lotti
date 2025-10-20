@@ -28,7 +28,8 @@ class LinkedDuration extends ConsumerWidget {
     final progress = state.progress;
     final estimate = state.estimate;
 
-    final durationStyle = monospaceTextStyleSmall.copyWith(
+    final durationStyle = monoTabularStyle(
+      fontSize: fontSizeSmall,
       color: (progress > estimate)
           ? context.colorScheme.error
           : context.colorScheme.outline,

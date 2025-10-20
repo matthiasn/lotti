@@ -81,14 +81,33 @@
   - Normalized sizes against shared constants; adjusted indicator dimensions.
 - docs: add plan (e7fe83932)
 
+New (tasks timers)
+
+- test: add width-stability tests for tasks timers
+  - test/features/tasks/ui/compact_task_progress_timer_text_test.dart
+  - test/features/tasks/ui/linked_duration_timer_text_test.dart
+- fix(tasks): enforce monoTabularStyle
+  - lib/features/tasks/ui/compact_task_progress.dart now uses monoTabularStyle with FontFeature.tabularFigures
+  - lib/features/tasks/ui/linked_duration.dart now uses monoTabularStyle(fontSize: fontSizeSmall)
+- test: DI setup for tasks tests
+  - Register TimeService in GetIt within tests to satisfy TaskProgressController initializer
+
 Styling parity is complete across all touched surfaces. Next focus: tests and coverage.
+
+New (core + speech timers)
+
+- test: add width-stability tests for remaining surfaces
+  - test/features/journal/ui/widgets/entry_details/duration_widget_timer_text_test.dart (added)
+  - test/widgets/misc/time_recording_indicator_timer_text_test.dart (added)
+  - test/features/speech/ui/widgets/recording/audio_recording_indicator_timer_text_test.dart (added)
+  - Used light-touch DI: Fake TimeService for the time recording indicator; provider override for audio recorder state
 
 ## Testing Strategy
 
 1) Width‑stability unit/widget tests (RenderBox sizing)
 
 - File(s):
-  - `test/features/tasks/ui/compact_task_progress_timer_text_test.dart`
+  - `test/features/tasks/ui/compact_task_progress_timer_text_test.dart` (added)
   - `test/widgets/misc/time_recording_indicator_timer_text_test.dart`
   - `test/features/journal/ui/widgets/entry_details/duration_widget_timer_text_test.dart`
   - `test/widgets/misc/time_recording_indicator_timer_text_test.dart`
@@ -96,6 +115,7 @@ Styling parity is complete across all touched surfaces. Next focus: tests and co
     `test/features/journal/ui/widgets/list_cards/modern_journal_card_timer_text_test.dart`
   - Verify `EntryDatetimeWidget` date text uses tabular figures
     `test/features/journal/ui/widgets/entry_details/entry_datetime_widget_test.dart`
+  - `test/features/tasks/ui/linked_duration_timer_text_test.dart` (added)
 - Approach:
   - Pump the widget with two sample strings (e.g., `00:41`, `00:48`, and if HH:MM:SS `08:08:08`)
     using the same text style.
@@ -167,9 +187,10 @@ Styling parity is complete across all touched surfaces. Next focus: tests and co
 - [x] Apply `monoTabularStyle` + AppTheme.statusIndicatorFontSize everywhere a timer renders (
   footer, indicators, headers)
 - [x] Add fixed‑width container where layout is tight or could still jitter (recording indicators)
-- [ ] Add width‑stability tests for each surface (DurationWidget, indicators, card header)
-- [ ] `make analyze` yields zero warnings
-- [ ] Manual verification across the identified screens
+- [x] Add width‑stability tests for tasks timers (CompactTaskProgress, LinkedDuration)
+- [x] Add width‑stability tests for remaining surfaces (DurationWidget, indicators)
+- [ ] Add width‑stability test for card header date/time (if rendered)
+- [x] Manual verification across the identified screens
 
 ## Implementation discipline
 
@@ -180,5 +201,9 @@ Styling parity is complete across all touched surfaces. Next focus: tests and co
 - Write meaningful tests that actually assert on valuable information. Refrain from adding BS
   assertions such as finding a row or whatnot. Focus on useful information.
 - Aim for full coverage of every code path.
+- Every widget we touch should get as close to full test coverage as is reasonable, with meaningful
+  tests.
 - Add CHANGELOG entry.
+- Update the feature README files we touch such that they match reality in the codebase, not 
+  only for what we touch but in their entirety.
 - In most cases we prefer one test file for one implementation file.
