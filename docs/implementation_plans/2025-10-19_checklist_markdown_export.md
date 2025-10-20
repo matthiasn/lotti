@@ -163,62 +163,64 @@
 - Should we include the checklist title as a Markdown heading optionally? (Default proposed: no, to
   maximize frictionless pasting into Linear.) - No, don't add checklist title.
 - Do we need a transient modal to pick “Copy vs Share”, or is a single-tap copy sufficient with a
-  long-press/context alternative for Share? - No modal, long press for share seems like a good 
-  idea if we get to that.
+  long-press/context alternative for Share? - No modal, long press for share seems like a good idea
+  if we get to that.
 
 ## Implementation Checklist
 
-- [ ] Generator builds correct Markdown across edge cases
-- [ ] Export icon present and accessible in header
-- [ ] Copy action uses `AppClipboard` and shows localized SnackBar
-- [ ] Share action available on mobile via `share_plus`
-- [ ] i18n keys added and generated
-- [ ] Unit and widget tests added and passing
-- [ ] `make analyze` yields zero warnings
+- [x] Generator builds correct Markdown across edge cases
+- [x] Export icon present and accessible in header
+- [x] Copy action uses `AppClipboard` and shows localized SnackBar
+- [x] Share action available on mobile via `share_plus`
+- [x] i18n keys added and generated
+- [x] Unit and widget tests added and passing
+- [x] `make analyze` yields zero warnings
 
 ## Implementation Summary (as built)
 
 - Generators
-  - `checklistItemsToMarkdown` produces `- [ ]` / `- [x]` lines (preserves order, trims titles, skips deleted).
-  - `checklistItemsToEmojiList` produces `⬜` / `✅` lines for messenger/email sharing.
+    - `checklistItemsToMarkdown` produces `- [ ]` / `- [x]` lines (preserves order, trims titles,
+      skips deleted).
+    - `checklistItemsToEmojiList` produces `⬜` / `✅` lines for messenger/email sharing.
 
 - UI integration
-  - `ChecklistWidget` header shows edit first, then export.
-  - Export IconButton wrapped in a `GestureDetector` for:
-    - Tap/click → copy Markdown
-    - Long‑press (mobile) and secondary‑click (desktop) → share emoji list
-  - Tooltip shown on desktop; suppressed on mobile so long‑press fires.
+    - `ChecklistWidget` header shows edit first, then export.
+    - Export IconButton wrapped in a `GestureDetector` for:
+        - Tap/click → copy Markdown
+        - Long‑press (mobile) and secondary‑click (desktop) → share emoji list
+    - Tooltip shown on desktop; suppressed on mobile so long‑press fires.
 
 - Copy flow
-  - Uses `appClipboardProvider` to copy; shows SnackBar.
-  - One‑time mobile hint appended to the SnackBar: “Long press to share”.
+    - Uses `appClipboardProvider` to copy; shows SnackBar.
+    - One‑time mobile hint appended to the SnackBar: “Long press to share”.
 
 - Share flow
-  - Uses `SharePlus.instance.share(ShareParams(text: ..., subject: ...))`.
-  - Subject is checklist title; text is emoji list for better chat/email readability.
+    - Uses `SharePlus.instance.share(ShareParams(text: ..., subject: ...))`.
+    - Subject is checklist title; text is emoji list for better chat/email readability.
 
 - i18n
-  - Added ARB keys for: export tooltip, copy success, share hint, empty list, and export failure.
-  - All strings are referenced via generated getters (gen‑l10n).
+    - Added ARB keys for: export tooltip, copy success, share hint, empty list, and export failure.
+    - All strings are referenced via generated getters (gen‑l10n).
 
 - Files
-  - Exporters: `lib/features/tasks/services/checklist_markdown_exporter.dart`
-  - UI: `lib/features/tasks/ui/checklists/checklist_widget.dart`, `lib/features/tasks/ui/checklists/checklist_wrapper.dart`
-  - Tests: `test/features/tasks/services/checklist_markdown_exporter_test.dart`,
-    `test/features/tasks/services/checklist_emoji_exporter_test.dart`,
-    `test/features/tasks/ui/checklists/checklist_export_button_test.dart`,
-    `test/features/tasks/ui/checklists/checklist_wrapper_export_test.dart`
+    - Exporters: `lib/features/tasks/services/checklist_markdown_exporter.dart`
+    - UI: `lib/features/tasks/ui/checklists/checklist_widget.dart`,
+      `lib/features/tasks/ui/checklists/checklist_wrapper.dart`
+    - Tests: `test/features/tasks/services/checklist_markdown_exporter_test.dart`,
+      `test/features/tasks/services/checklist_emoji_exporter_test.dart`,
+      `test/features/tasks/ui/checklists/checklist_export_button_test.dart`,
+      `test/features/tasks/ui/checklists/checklist_wrapper_export_test.dart`
 
 - Notes
-  - macOS share sheet preview spacing is system‑controlled; no styling hook via `share_plus`.
-  - Markdown copy intentionally excludes a heading for cleaner pasting into Linear/GitHub.
+    - macOS share sheet preview spacing is system‑controlled; no styling hook via `share_plus`.
+    - Markdown copy intentionally excludes a heading for cleaner pasting into Linear/GitHub.
 
 ## Implementation discipline
 
-- Always ensure the analyzer has no complaints and everything compiles. Also run the formatter 
+- Always ensure the analyzer has no complaints and everything compiles. Also run the formatter
   frequently.
 - Prefer running commands via the dart-mcp server.
 - Only move on to adding new files when already created tests are all green.
-- Write meaningful tests that actually assert on valuable information. Refrain from adding BS 
+- Write meaningful tests that actually assert on valuable information. Refrain from adding BS
   assertions such as finding a row or whatnot. Focus on useful information.
 - Aim for full coverage of every code path.

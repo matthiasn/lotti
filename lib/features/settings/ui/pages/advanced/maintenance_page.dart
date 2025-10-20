@@ -34,20 +34,24 @@ class MaintenancePage extends StatelessWidget {
           child: Column(
             children: [
               AnimatedModernSettingsCardWithIcon(
-                title: 'Reset In‑App Hints',
-                subtitle: 'Clear one‑time tips and onboarding hints',
+                title: context.messages.settingsResetHintsTitle,
+                subtitle: context.messages.settingsResetHintsSubtitle,
                 icon: Icons.tips_and_updates_outlined,
                 onTap: () async {
                   final confirmed = await showConfirmationModal(
                     context: context,
-                    message: 'Reset in‑app hints shown across the app?',
-                    confirmLabel: 'Confirm',
+                    message: context.messages.settingsResetHintsConfirmQuestion,
+                    confirmLabel: context.messages.settingsResetHintsConfirm,
                   );
                   if (!confirmed) return;
                   final removed = await clearPrefsByPrefix('seen_');
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Reset $removed hint(s)')),
+                      SnackBar(
+                        content: Text(
+                          context.messages.settingsResetHintsResult(removed),
+                        ),
+                      ),
                     );
                   }
                 },

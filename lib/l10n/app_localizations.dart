@@ -1155,6 +1155,36 @@ abstract class AppLocalizations {
   /// **'Checklists'**
   String get checklistsTitle;
 
+  /// No description provided for @settingsResetHintsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset In‑App Hints'**
+  String get settingsResetHintsTitle;
+
+  /// No description provided for @settingsResetHintsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear one‑time tips and onboarding hints'**
+  String get settingsResetHintsSubtitle;
+
+  /// No description provided for @settingsResetHintsConfirmQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset in‑app hints shown across the app?'**
+  String get settingsResetHintsConfirmQuestion;
+
+  /// No description provided for @settingsResetHintsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get settingsResetHintsConfirm;
+
+  /// No description provided for @settingsResetHintsResult.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Reset zero hints} one{Reset one hint} other{Reset {count} hints}}'**
+  String settingsResetHintsResult(int count);
+
   /// No description provided for @colorLabel.
   ///
   /// In en, this message translates to:
