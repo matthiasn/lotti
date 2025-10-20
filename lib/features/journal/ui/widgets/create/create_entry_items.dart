@@ -4,6 +4,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -23,34 +24,29 @@ class CreateEventItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
+    final enableEvents =
+        ref.watch(configFlagProvider(enableEventsFlag)).value ?? false;
 
-    return enableEventsAsync.when(
-      data: (enableEvents) {
-        if (!enableEvents) {
-          return const SizedBox.shrink();
-        }
+    if (!enableEvents) {
+      return const SizedBox.shrink();
+    }
 
-        return ModernModalEntryTypeItem(
-          icon: Icons.event_rounded,
-          title: 'Event',
-          onTap: () async {
-            final event = await createEvent(
-              linkedId: linkedFromId,
-              categoryId: categoryId,
-            );
-            if (!context.mounted) {
-              return;
-            }
-            if (event != null) {
-              beamToNamed('/journal/${event.meta.id}');
-            }
-            Navigator.of(context).pop();
-          },
+    return ModernModalEntryTypeItem(
+      icon: Icons.event_rounded,
+      title: context.messages.addActionAddEvent,
+      onTap: () async {
+        final event = await createEvent(
+          linkedId: linkedFromId,
+          categoryId: categoryId,
         );
+        if (!context.mounted) {
+          return;
+        }
+        if (event != null) {
+          beamToNamed('/journal/${event.meta.id}');
+        }
+        Navigator.of(context).pop();
       },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }
@@ -70,7 +66,7 @@ class CreateTaskItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ModernModalEntryTypeItem(
       icon: Icons.task_alt_rounded,
-      title: 'Task',
+      title: context.messages.addActionAddTask,
       onTap: () async {
         final task = await createTask(
           linkedId: linkedFromId,
@@ -103,7 +99,7 @@ class CreateAudioItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ModernModalEntryTypeItem(
       icon: Icons.mic_none_rounded,
-      title: 'Audio',
+      title: context.messages.addActionAddAudioRecording,
       onTap: () {
         Navigator.of(context).pop();
         AudioRecordingModal.show(
@@ -132,7 +128,7 @@ class CreateTimerItem extends ConsumerWidget {
 
     return ModernModalEntryTypeItem(
       icon: Icons.timer_outlined,
-      title: 'Timer',
+      title: context.messages.addActionAddTimer,
       onTap: () {
         createTimerEntry(linked: linked);
         Navigator.of(context).pop();
@@ -156,7 +152,7 @@ class CreateTextItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ModernModalEntryTypeItem(
       icon: Icons.notes_rounded,
-      title: 'Text',
+      title: context.messages.addActionAddText,
       onTap: () async {
         await createTextEntry(
           linkedId: linkedFromId,
@@ -185,7 +181,7 @@ class ImportImageItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ModernModalEntryTypeItem(
       icon: Icons.photo_library_rounded,
-      title: 'Import Image',
+      title: context.messages.addActionImportImage,
       onTap: () async {
         await importImageAssets(
           context,
@@ -215,7 +211,7 @@ class CreateScreenshotItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ModernModalEntryTypeItem(
       icon: Icons.screenshot_monitor_rounded,
-      title: 'Screenshot',
+      title: context.messages.addActionAddScreenshot,
       onTap: () async {
         await createScreenshot(
           linkedId: linkedFromId,
@@ -254,7 +250,7 @@ class PasteImageItem extends ConsumerWidget {
 
     return ModernModalEntryTypeItem(
       icon: Icons.content_paste_rounded,
-      title: 'Paste Image',
+      title: context.messages.addActionAddImageFromClipboard,
       onTap: () {
         Navigator.of(context).pop();
         ref.read(provider.notifier).paste();

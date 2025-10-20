@@ -1,16 +1,22 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/consts.dart';
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({
-    super.key,
-  });
+class SettingsPage extends ConsumerWidget {
+  const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enableHabits =
+        ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false;
+    final enableDashboards =
+        ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ?? false;
+
     return SliverBoxAdapterPage(
       title: context.messages.navTabTitleSettings,
       child: Column(
@@ -21,12 +27,13 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.psychology_rounded,
             onTap: () => context.beamToNamed('/settings/ai'),
           ),
-          AnimatedModernSettingsCardWithIcon(
-            title: context.messages.settingsHabitsTitle,
-            subtitle: 'Manage your habits and routines',
-            icon: Icons.repeat_rounded,
-            onTap: () => context.beamToNamed('/settings/habits'),
-          ),
+          if (enableHabits)
+            AnimatedModernSettingsCardWithIcon(
+              title: context.messages.settingsHabitsTitle,
+              subtitle: 'Manage your habits and routines',
+              icon: Icons.repeat_rounded,
+              onTap: () => context.beamToNamed('/settings/habits'),
+            ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsCategoriesTitle,
             subtitle: 'Categories with AI settings',
@@ -39,18 +46,20 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.label_rounded,
             onTap: () => context.beamToNamed('/settings/tags'),
           ),
-          AnimatedModernSettingsCardWithIcon(
-            title: context.messages.settingsDashboardsTitle,
-            subtitle: 'Customize your dashboard views',
-            icon: Icons.dashboard_rounded,
-            onTap: () => context.beamToNamed('/settings/dashboards'),
-          ),
-          AnimatedModernSettingsCardWithIcon(
-            title: context.messages.settingsMeasurablesTitle,
-            subtitle: 'Configure measurable data types',
-            icon: Icons.trending_up_rounded,
-            onTap: () => context.beamToNamed('/settings/measurables'),
-          ),
+          if (enableDashboards)
+            AnimatedModernSettingsCardWithIcon(
+              title: context.messages.settingsDashboardsTitle,
+              subtitle: 'Customize your dashboard views',
+              icon: Icons.dashboard_rounded,
+              onTap: () => context.beamToNamed('/settings/dashboards'),
+            ),
+          if (enableDashboards)
+            AnimatedModernSettingsCardWithIcon(
+              title: context.messages.settingsMeasurablesTitle,
+              subtitle: 'Configure measurable data types',
+              icon: Icons.trending_up_rounded,
+              onTap: () => context.beamToNamed('/settings/measurables'),
+            ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsThemingTitle,
             subtitle: 'Customize app appearance and themes',

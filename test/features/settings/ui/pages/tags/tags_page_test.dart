@@ -32,7 +32,7 @@ void main() {
       final secureStorageMock = MockSecureStorage();
 
       when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([{}]),
+        (_) => Stream<Set<String>>.fromIterable([<String>{}]),
       );
 
       getIt

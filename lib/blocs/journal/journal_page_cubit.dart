@@ -11,9 +11,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -117,7 +119,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     // Call fetchNextPage to trigger the initial load
     controller.fetchNextPage();
 
-    getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
+    _privateFlagSub =
+        getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
       _showPrivateEntries = showPrivate;
       emitState();
     });
@@ -144,6 +147,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       refreshQuery();
     });
 
+    // Listen to active feature flags and update local cache
+    _configFlagsSub =
+        getIt<JournalDb>().watchActiveConfigFlagNames().listen((configFlags) {
+      _enableEvents = configFlags.contains(enableEventsFlag);
+      _enableHabits = configFlags.contains(enableHabitsPageFlag);
+      _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
+      refreshQuery();
+    });
+
     if (isDesktop) {
       hotKeyManager.register(
         HotKey(
@@ -157,13 +169,11 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
     String idMapper(JournalEntity entity) => entity.meta.id;
 
-    _updateNotifications.updateStream
-        .throttleTime(
+    _updatesSub = _updateNotifications.updateStream.throttleTime(
       const Duration(milliseconds: 500),
       leading: false,
       trailing: true,
-    )
-        .listen((affectedIds) async {
+    ).listen((affectedIds) async {
       if (_isVisible) {
         final displayedIds =
             state.pagingController?.value.items?.map(idMapper).toSet() ??
@@ -191,10 +201,18 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   final JournalDb _db;
   final UpdateNotifications _updateNotifications;
+  StreamSubscription<Set<String>>? _configFlagsSub;
+  StreamSubscription<bool>? _privateFlagSub;
+  StreamSubscription<Set<String>>? _updatesSub;
   bool _isVisible = false;
   static const _pageSize = 50;
   Set<String> _selectedEntryTypes = entryTypes.toSet();
   Set<DisplayFilter> _filters = {};
+
+  // Feature flags cached in the cubit
+  bool _enableEvents = false;
+  bool _enableHabits = false;
+  bool _enableDashboards = false;
 
   String _query = '';
   bool _showPrivateEntries = false;
@@ -382,7 +400,13 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 
   Future<List<JournalEntity>> _runQuery(int pageKey) async {
-    final types = state.selectedEntryTypes.toList();
+    // Intersect selected types with allowed based on feature flags
+    final allowed = computeAllowedEntryTypes(
+      events: _enableEvents,
+      habits: _enableHabits,
+      dashboards: _enableDashboards,
+    );
+    final types = state.selectedEntryTypes.where(allowed.contains).toList();
     await _fts5Search();
     final fullTextMatches = _fullTextMatches.toList();
     final ids = _query.isNotEmpty ? fullTextMatches : null;
@@ -436,8 +460,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   @override
   Future<void> close() async {
+    try {
+      await _configFlagsSub?.cancel();
+      await _privateFlagSub?.cancel();
+      await _updatesSub?.cancel();
+    } catch (_) {
+      // ignore cancellation errors
+    }
     state.pagingController?.dispose();
-    await super.close();
+    return super.close();
   }
 }
 

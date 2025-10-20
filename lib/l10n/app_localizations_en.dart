@@ -33,6 +33,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addActionAddText => 'Text Entry';
 
   @override
+  String get addActionAddTimer => 'Timer';
+
+  @override
+  String get addActionImportImage => 'Import Image';
+
+  @override
   String get addActionAddTimeRecording => 'Timer Entry';
 
   @override
@@ -1601,6 +1607,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get images => 'Images';
 
   @override
+  String get entryTypeLabelTask => 'Task';
+
+  @override
+  String get entryTypeLabelJournalEntry => 'Text';
+
+  @override
+  String get entryTypeLabelJournalEvent => 'Event';
+
+  @override
+  String get entryTypeLabelJournalAudio => 'Audio';
+
+  @override
+  String get entryTypeLabelJournalImage => 'Photo';
+
+  @override
+  String get entryTypeLabelMeasurementEntry => 'Measured';
+
+  @override
+  String get entryTypeLabelSurveyEntry => 'Survey';
+
+  @override
+  String get entryTypeLabelWorkoutEntry => 'Workout';
+
+  @override
+  String get entryTypeLabelHabitCompletionEntry => 'Habit';
+
+  @override
+  String get entryTypeLabelQuantitativeEntry => 'Health';
+
+  @override
+  String get entryTypeLabelChecklist => 'Checklist';
+
+  @override
+  String get entryTypeLabelChecklistItem => 'To Do';
+
+  @override
+  String get entryTypeLabelAiResponse => 'AI Response';
+
+  @override
   String get taskSummaries => 'Task Summaries';
 
   @override
@@ -2906,6 +2951,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get settingsCategoriesTitle => 'Categories';
+
+  @override
+  String get entryTypeLabelChecklistItem => 'To Do';
 
   @override
   String get settingsConflictsResolutionTitle => 'Sync Conflict Resolution';

@@ -44,6 +44,7 @@
   "checklistSuggestionsOutdated": "Obsolète",
   "checklistSuggestionsRunning": "Réflexion sur les suggestions non suivies...",
   "checklistSuggestionsTitle": "Suggestions d'actions",
+  "entryTypeLabelChecklistItem": "To Do",
   "colorLabel": "Couleur :",
   "colorPickerError": "Couleur hexadécimale invalide",
   "colorPickerHint": "Saisir la couleur hexadécimale ou choisir",

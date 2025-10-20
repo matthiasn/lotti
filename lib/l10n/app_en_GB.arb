@@ -164,6 +164,7 @@
   "journalUnlinkConfirm": "YES, UNLINK ENTRY",
   "journalUnlinkHint": "Unlink",
   "journalUnlinkQuestion": "Are you sure you want to unlink this entry?",
+  "entryTypeLabelChecklistItem": "To Do",
   "maintenanceDeleteEditorDb": "Delete editor drafts database",
   "maintenanceDeleteEditorDbDescription": "Delete editor drafts database",
   "maintenanceDeleteLoggingDb": "Delete logging database",

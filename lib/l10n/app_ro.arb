@@ -44,6 +44,7 @@
   "checklistSuggestionsOutdated": "Depășite",
   "checklistSuggestionsRunning": "Se gândește la sugestii netrimise...",
   "checklistSuggestionsTitle": "Sugestii de acțiuni",
+  "entryTypeLabelChecklistItem": "To Do",
   "colorLabel": "Culoare:",
   "colorPickerError": "Culoare Hex invalidă",
   "colorPickerHint": "Introduceți culoarea Hex sau alegeți",

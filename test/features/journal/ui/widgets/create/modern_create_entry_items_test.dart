@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -315,9 +316,12 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify the event item is rendered
+      // Verify the event item is rendered (localized)
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ModernModalEntryTypeItem)),
+      )!;
       expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
-      expect(find.text('Event'), findsOneWidget);
+      expect(find.text(l10n.addActionAddEvent), findsOneWidget);
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
     });
   });
@@ -333,9 +337,12 @@ void main() {
         ),
       );
 
-      // Verify the audio item is rendered
+      // Verify the audio item is rendered (localized)
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ModernModalEntryTypeItem)),
+      )!;
       expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
-      expect(find.text('Audio'), findsOneWidget);
+      expect(find.text(l10n.addActionAddAudioRecording), findsOneWidget);
       expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
     });
   });
@@ -355,9 +362,12 @@ void main() {
         ),
       );
 
-      // Verify the text item is rendered
+      // Verify the text item is rendered (localized)
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ModernModalEntryTypeItem)),
+      )!;
       expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
-      expect(find.text('Text'), findsOneWidget);
+      expect(find.text(l10n.addActionAddText), findsOneWidget);
       expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
     });
   });
@@ -373,9 +383,12 @@ void main() {
         ),
       );
 
-      // Verify the import image item is rendered
+      // Verify the import image item is rendered (localized)
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ModernModalEntryTypeItem)),
+      )!;
       expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
-      expect(find.text('Import Image'), findsOneWidget);
+      expect(find.text(l10n.addActionImportImage), findsOneWidget);
       expect(find.byIcon(Icons.photo_library_rounded), findsOneWidget);
     });
   });
@@ -391,9 +404,12 @@ void main() {
         ),
       );
 
-      // Verify the screenshot item is rendered
+      // Verify the screenshot item is rendered (localized)
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ModernModalEntryTypeItem)),
+      )!;
       expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
-      expect(find.text('Screenshot'), findsOneWidget);
+      expect(find.text(l10n.addActionAddScreenshot), findsOneWidget);
       expect(find.byIcon(Icons.screenshot_monitor_rounded), findsOneWidget);
     });
   });
@@ -441,8 +457,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: SizedBox.shrink() behavior (ModernModalEntryTypeItem not found)
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(Scaffold)),
+      )!;
       expect(find.byType(ModernModalEntryTypeItem), findsNothing);
-      expect(find.text('Event'), findsNothing);
+      expect(find.text(l10n.addActionAddEvent), findsNothing);
     });
 
     testWidgets('shows Event item when enableEventsFlag is ON', (tester) async {
@@ -475,10 +494,12 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Assert: ModernModalEntryTypeItem is found
+      // Assert: ModernModalEntryTypeItem is found and localized text visible
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ModernModalEntryTypeItem)),
+      )!;
       expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
-      // Assert: 'Event' text is found
-      expect(find.text('Event'), findsOneWidget);
+      expect(find.text(l10n.addActionAddEvent), findsOneWidget);
       // Assert: Icons.event_rounded is found
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
     });
@@ -507,8 +528,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: Widget is hidden (defaults to false)
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(Scaffold)),
+      )!;
       expect(find.byType(ModernModalEntryTypeItem), findsNothing);
-      expect(find.text('Event'), findsNothing);
+      expect(find.text(l10n.addActionAddEvent), findsNothing);
     });
   });
 }

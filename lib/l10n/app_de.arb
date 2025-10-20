@@ -44,6 +44,7 @@
   "checklistSuggestionsOutdated": "Veraltet",
   "checklistSuggestionsRunning": "Denke über nicht verfolgte Vorschläge nach...",
   "checklistSuggestionsTitle": "Vorgeschlagene Aktionspunkte",
+  "entryTypeLabelChecklistItem": "To Do",
   "colorLabel": "Farbe:",
   "colorPickerError": "Ungültige Hex-Farbe",
   "colorPickerHint": "Hex-Farbe eingeben oder auswählen",
