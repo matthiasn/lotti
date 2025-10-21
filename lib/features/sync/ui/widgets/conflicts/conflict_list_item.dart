@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/settings/ui/view_models/conflict_list_item_view_model.dart';
+import 'package:lotti/features/sync/ui/view_models/conflict_list_item_view_model.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';

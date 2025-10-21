@@ -118,7 +118,7 @@ class _SyncListScaffoldState<T, F extends Enum>
   void didUpdateWidget(covariant SyncListScaffold<T, F> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!widget.filters.containsKey(_selectedFilter)) {
-      _selectedFilter = widget.filters.keys.firstWhere((_) => true);
+      _selectedFilter = widget.filters.keys.first;
     }
   }
 
