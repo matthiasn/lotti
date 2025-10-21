@@ -59,10 +59,22 @@ class SyncReadMarkerService {
     required String eventId,
     Timeline? timeline,
   }) async {
+    final isServerEventId = eventId.startsWith(r'$');
+    if (!isServerEventId) {
+      _loggingService.captureEvent(
+        'marker.remote.skip(nonServerId) id=$eventId',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'setReadMarker.guard',
+      );
+    }
     await setLastReadMatrixEventId(
       eventId,
       _settingsDb,
     );
+
+    if (!isServerEventId) {
+      return; // keep local marker only
+    }
 
     if (client.isLogged()) {
       try {
@@ -135,6 +147,14 @@ class SyncReadMarkerService {
           subDomain: 'setReadMarker',
         );
       } catch (error, stackTrace) {
+        if (error is MatrixException && error.errcode == 'M_UNKNOWN') {
+          _loggingService.captureEvent(
+            'marker.remote.missingEvent id=$eventId (M_UNKNOWN)',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'setReadMarker',
+          );
+          return;
+        }
         // Fallback to timeline-level API for compatibility if provided.
         if (timeline != null) {
           try {

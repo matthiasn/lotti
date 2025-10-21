@@ -41,10 +41,10 @@ void main() {
       await svc.updateReadMarker(
         client: client,
         room: room,
-        eventId: 'e1',
+        eventId: r'$e1',
       );
 
-      verify(() => room.setReadMarker('e1')).called(1);
+      verify(() => room.setReadMarker(r'$e1')).called(1);
     });
 
     test('allows when no timeline snapshot is provided', () async {
@@ -55,18 +55,42 @@ void main() {
       final svc = SyncReadMarkerService(settingsDb: db, loggingService: log);
 
       when(() => client.isLogged()).thenReturn(true);
-      when(() => room.fullyRead).thenReturn('r');
+      when(() => room.fullyRead).thenReturn(r'$remote');
       when(() => room.setReadMarker(any())).thenAnswer((_) async {});
       when(() => db.saveSettingsItem(any(), any())).thenAnswer((_) async => 1);
 
       await svc.updateReadMarker(
         client: client,
         room: room,
-        eventId: 'e2',
+        eventId: r'$e2',
         timeline: null,
       );
 
-      verify(() => room.setReadMarker('e2')).called(1);
+      verify(() => room.setReadMarker(r'$e2')).called(1);
+    });
+
+    test('skips remote update when event id is not server-assigned', () async {
+      final client = MockClient();
+      final room = MockRoom();
+      final log = MockLogging();
+      final db = MockSettingsDb();
+      final svc = SyncReadMarkerService(settingsDb: db, loggingService: log);
+
+      when(() => client.isLogged()).thenReturn(true);
+      when(() => db.saveSettingsItem(any(), any())).thenAnswer((_) async => 1);
+
+      await svc.updateReadMarker(
+        client: client,
+        room: room,
+        eventId: 'lotti-123',
+      );
+
+      verifyNever(() => room.setReadMarker(any()));
+      verify(() => log.captureEvent(
+            'marker.remote.skip(nonServerId) id=lotti-123',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'setReadMarker.guard',
+          )).called(1);
     });
 
     test('blocks when both visible and candidate is not newer', () async {
@@ -81,12 +105,12 @@ void main() {
 
       when(() => client.isLogged()).thenReturn(true);
       when(() => client.deviceName).thenReturn('dev');
-      when(() => room.fullyRead).thenReturn('r');
+      when(() => room.fullyRead).thenReturn(r'$remote');
       when(() => room.setReadMarker(any())).thenAnswer((_) async {});
       when(() => db.saveSettingsItem(any(), any())).thenAnswer((_) async => 1);
 
-      when(() => older.eventId).thenReturn('e');
-      when(() => newer.eventId).thenReturn('r');
+      when(() => older.eventId).thenReturn(r'$e');
+      when(() => newer.eventId).thenReturn(r'$remote');
       when(() => older.originServerTs)
           .thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
       when(() => newer.originServerTs)
@@ -99,7 +123,7 @@ void main() {
       await svc.updateReadMarker(
         client: client,
         room: room,
-        eventId: 'e',
+        eventId: r'$e',
         timeline: tl,
       );
       // restore
@@ -124,12 +148,12 @@ void main() {
       final svc = SyncReadMarkerService(settingsDb: db, loggingService: log);
 
       when(() => client.isLogged()).thenReturn(true);
-      when(() => room.fullyRead).thenReturn('r');
+      when(() => room.fullyRead).thenReturn(r'$remote');
       when(() => room.setReadMarker(any())).thenAnswer((_) async {});
       when(() => db.saveSettingsItem(any(), any())).thenAnswer((_) async => 1);
 
-      when(() => older.eventId).thenReturn('r');
-      when(() => newer.eventId).thenReturn('e');
+      when(() => older.eventId).thenReturn(r'$remote');
+      when(() => newer.eventId).thenReturn(r'$e');
       when(() => older.originServerTs)
           .thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
       when(() => newer.originServerTs)
@@ -139,11 +163,11 @@ void main() {
       await svc.updateReadMarker(
         client: client,
         room: room,
-        eventId: 'e',
+        eventId: r'$e',
         timeline: tl,
       );
 
-      verify(() => room.setReadMarker('e')).called(1);
+      verify(() => room.setReadMarker(r'$e')).called(1);
     });
 
     test('allows when either base or candidate not visible in timeline',
@@ -157,11 +181,11 @@ void main() {
       final svc = SyncReadMarkerService(settingsDb: db, loggingService: log);
 
       when(() => client.isLogged()).thenReturn(true);
-      when(() => room.fullyRead).thenReturn('r');
+      when(() => room.fullyRead).thenReturn(r'$remote');
       when(() => room.setReadMarker(any())).thenAnswer((_) async {});
       when(() => db.saveSettingsItem(any(), any())).thenAnswer((_) async => 1);
 
-      when(() => only.eventId).thenReturn('e');
+      when(() => only.eventId).thenReturn(r'$e');
       when(() => only.originServerTs)
           .thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
       when(() => tl.events).thenReturn(<Event>[only]);
@@ -169,11 +193,11 @@ void main() {
       await svc.updateReadMarker(
         client: client,
         room: room,
-        eventId: 'e',
+        eventId: r'$e',
         timeline: tl,
       );
 
-      verify(() => room.setReadMarker('e')).called(1);
+      verify(() => room.setReadMarker(r'$e')).called(1);
     });
 
     test('does not attempt remote update when client not logged', () async {
@@ -189,7 +213,7 @@ void main() {
       await svc.updateReadMarker(
         client: client,
         room: room,
-        eventId: 'e',
+        eventId: r'$e',
       );
 
       verifyNever(() => room.setReadMarker(any()));
@@ -215,11 +239,11 @@ void main() {
       await svc.updateReadMarker(
         client: client,
         room: room,
-        eventId: 'e',
+        eventId: r'$e',
         timeline: tl,
       );
 
-      verify(() => tl.setReadMarker(eventId: 'e')).called(1);
+      verify(() => tl.setReadMarker(eventId: r'$e')).called(1);
     });
 
     test('logs exception when room and timeline updates both fail', () async {
@@ -242,7 +266,7 @@ void main() {
       await svc.updateReadMarker(
         client: client,
         room: room,
-        eventId: 'e',
+        eventId: r'$e',
         timeline: tl,
       );
 
@@ -264,7 +288,7 @@ void main() {
       final svc = SyncReadMarkerService(settingsDb: db, loggingService: log);
 
       when(() => client.isLogged()).thenReturn(true);
-      when(() => room.fullyRead).thenReturn('r');
+      when(() => room.fullyRead).thenReturn(r'$remote');
       when(() => room.setReadMarker(any())).thenAnswer((_) async {});
       when(() => db.saveSettingsItem(any(), any())).thenAnswer((_) async => 1);
 
@@ -273,11 +297,11 @@ void main() {
       await svc.updateReadMarker(
         client: client,
         room: room,
-        eventId: 'e',
+        eventId: r'$e',
         timeline: tl,
       );
 
-      verify(() => room.setReadMarker('e')).called(1);
+      verify(() => room.setReadMarker(r'$e')).called(1);
     });
   });
 }
