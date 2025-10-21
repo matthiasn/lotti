@@ -221,8 +221,8 @@ Key helpers:
 
 - Sync now has a top-level Settings entry: `/settings/sync`.
   - The tile is only visible when the Matrix sync flag is enabled.
-- Matrix Sync Settings lives under `/settings/sync/matrix` and launches the
-  existing setup modal plus links to Matrix-specific maintenance tools.
+- Matrix Sync Settings is surfaced as a card on `/settings/sync` that launches
+  the existing modal flow (no intermediate page).
 - Matrix Sync Maintenance is a dedicated page under
   `/settings/sync/matrix/maintenance` for deleting the Sync database,
   replaying sync definitions, and forcing a re-sync window.

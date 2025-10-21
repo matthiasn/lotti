@@ -25,7 +25,7 @@ class MatrixSyncMaintenancePage extends StatelessWidget {
             AnimatedModernSettingsCardWithIcon(
               title: context.messages.maintenanceDeleteSyncDb,
               subtitle: context.messages.maintenanceDeleteSyncDbDescription,
-              icon: Icons.delete_rounded,
+              icon: Icons.sync_rounded,
               onTap: () async {
                 final confirmed = await showConfirmationModal(
                   context: context,

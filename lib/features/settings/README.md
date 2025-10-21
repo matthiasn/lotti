@@ -13,12 +13,11 @@ This module contains the Settings experience and its feature pages.
 ## Sync section
 
 - Sync Settings: `/settings/sync`
-  - Matrix Sync Settings: `/settings/sync/matrix`
-    - Launches the existing multi-step Matrix setup/login modal
-    - Maintenance tools: `/settings/sync/matrix/maintenance`
-      - Delete Sync Database
-      - Sync definitions (tags, dashboards, habits, etc.)
-      - Re-sync messages
+  - Matrix Sync Settings card launches the existing modal flow (no extra page)
+  - Matrix Sync Maintenance: `/settings/sync/matrix/maintenance`
+    - Delete Sync Database
+    - Sync definitions (tags, dashboards, habits, etc.)
+    - Re-sync messages
   - Outbox Monitor: `/settings/sync/outbox`
   - Matrix Stats: `/settings/sync/stats`
   - Conflicts: linked from Sync, still routed under advanced paths

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/sync/ui/matrix_settings_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -17,13 +18,8 @@ class SyncSettingsPage extends StatelessWidget {
         title: context.messages.settingsMatrixTitle,
         child: Column(
           children: [
-            // 1) Matrix sync settings hub
-            AnimatedModernSettingsCardWithIcon(
-              title: context.messages.settingsMatrixTitle,
-              subtitle: 'Configure end-to-end encrypted sync',
-              icon: Icons.sync,
-              onTap: () => context.beamToNamed('/settings/sync/matrix'),
-            ),
+            // 1) Matrix sync setup modal (top-level)
+            const MatrixSettingsCard(),
             AnimatedModernSettingsCardWithIcon(
               title: context.messages.settingsMatrixMaintenanceTitle,
               subtitle: context.messages.settingsMatrixMaintenanceSubtitle,
