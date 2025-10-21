@@ -17,6 +17,7 @@ import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
+import 'package:lotti/features/sync/matrix/stats_signature.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
@@ -253,6 +254,9 @@ class MatrixService {
     });
   }
 
+  static const Duration _statsDebounceDuration = Duration(
+      milliseconds: 500); // Balance UI responsiveness vs emission rate.
+
   final MatrixSyncGateway _gateway;
   final LoggingService _loggingService;
   final UserActivityGate _activityGate;
@@ -313,7 +317,7 @@ class MatrixService {
       messageCounts: Map<String, int>.from(messageCounts),
       sentCount: sentCount,
     );
-    final sig = _statsSignature(snapshot);
+    final sig = buildMatrixStatsSignature(snapshot);
     if (sig == _lastEmittedStatsSig) {
       return; // no-op: identical payload as last emission
     }
@@ -332,29 +336,13 @@ class MatrixService {
       return;
     }
     if (_statsEmitTimer != null) return;
-    _statsEmitTimer = Timer(const Duration(milliseconds: 500), () {
+    _statsEmitTimer = Timer(_statsDebounceDuration, () {
       _statsEmitTimer = null;
       if (_statsDirty) {
         _statsDirty = false;
         _emitStatsNow();
       }
     });
-  }
-
-  String _statsSignature(MatrixStats stats) {
-    final keys = stats.messageCounts.keys.toList()..sort();
-    final b = StringBuffer()
-      ..write('sent=')
-      ..write(stats.sentCount)
-      ..write(';');
-    for (final k in keys) {
-      b
-        ..write(k)
-        ..write('=')
-        ..write(stats.messageCounts[k] ?? 0)
-        ..write(';');
-    }
-    return b.toString();
   }
 
   void incrementSentCountOf(String type) {

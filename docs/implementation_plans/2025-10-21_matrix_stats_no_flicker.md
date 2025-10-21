@@ -58,19 +58,19 @@
 
 ### Phase 2 — Stabilize Subpanels (P0)
 
-- Sent panel (`_MessageCountsView`):
+- Sent panel (`MessageCountsView`):
   - Keep `ref.listenManual` + local snapshot with cleanup.
   - Add equality guard (signature of keys + counts) to avoid redundant `setState`.
   - Optional: wrap in `RepaintBoundary` to isolate paint work.
   - File: `lib/features/sync/ui/matrix_stats/incoming_stats.dart:176`.
-- V2 panel (`_V2MetricsPanel`):
+- V2 panel (`MatrixV2MetricsPanel`):
   - Retain 2s polling and signature gating; never swap to “no data”.
   - Optional: `RepaintBoundary`.
   - File: `lib/features/sync/ui/matrix_stats/incoming_stats.dart:159`.
 
 Status: Completed
-- `_MessageCountsView` uses `ref.listenManual` with signature guard and local snapshot; wrapped in `RepaintBoundary`.
-- `_V2MetricsPanel` polls every 2s, updates only on signature change, maintains `lastUpdated`; wrapped in `RepaintBoundary`.
+- `MessageCountsView` uses `ref.listenManual` with signature guard and local snapshot; wrapped in `RepaintBoundary`.
+- `MatrixV2MetricsPanel` polls every 2s, updates only on signature change, maintains `lastUpdated`; wrapped in `RepaintBoundary`.
 
 ### Phase 3 — Emission Cadence & Guarding (P0/P1)
 
@@ -98,8 +98,8 @@ Status: Completed
 
 ## Data Flow
 
-- Service → Sent stats stream (debounced, emit‑on‑change) → `_MessageCountsView` via `ref.listenManual` → local snapshot → tiles.
-- Service → V2 metrics snapshot (pull every 2s) → `_V2MetricsPanel` with signature gating → stable shell.
+- Service → Sent stats stream (debounced, emit‑on‑change) → `MessageCountsView` via `ref.listenManual` → local snapshot → tiles.
+- Service → V2 metrics snapshot (pull every 2s) → `MatrixV2MetricsPanel` with signature gating → stable shell.
 - No provider watches in the page parent; no cross‑panel dependencies.
 
 ## Files to Modify / Add
@@ -180,10 +180,17 @@ Test runs
 - Target debounce for sent stats under extreme throughput: keep 500 ms or move to 700 ms?
 - Do we want a tiny per‑tile debounce if a specific type oscillates frequently?
 
+## Post-Review Follow-Ups
+
+- [x] Extract `_statsDebounceDuration` constant in `matrix_service.dart` to replace the inline 500 ms magic number.
+- [x] Add a widget test that verifies `MessageCountsView` closes its subscription on dispose to guard against leaks.
+- [x] Consolidate the duplicate stats signature logic (service vs. incoming stats) into a shared helper.
+- [x] Split `incoming_stats.dart` into smaller widgets/modules (MessageCountsView, MatrixV2MetricsPanel) with dedicated tests.
+
 ## Implementation Checklist
 
 - [x] Remove `ref.watch(matrixStatsControllerProvider)` from `SyncStatsPage`; always render `IncomingStats`.
-- [x] Add equality guard to `_MessageCountsView` before `setState`.
+- [x] Add equality guard to `MessageCountsView` before `setState`.
 - [x] Optional `RepaintBoundary` around both subpanels.
 - [x] Add last‑emitted signature guard in `MatrixService` before emitting stats.
 - [x] Harden `SyncReadMarkerService.updateReadMarker` (`M_UNKNOWN` handling).  (P2)
@@ -192,7 +199,7 @@ Test runs
 ## What Changed (Recap)
 
 - Stopped page‑level rebuilds: `SyncStatsPage` renders a stable shell and embeds `IncomingStats` without watching providers.
-- Subtrees isolated and repaint‑bounded: `_MessageCountsView` and `_V2MetricsPanel` wrapped in `RepaintBoundary`.
+- Subtrees isolated and repaint‑bounded: `MessageCountsView` and `MatrixV2MetricsPanel` wrapped in `RepaintBoundary`.
 - Stable “Sent” updates: `ref.listenManual` + local snapshot + signature guard to avoid redundant `setState`.
 - V2 metrics stability: polling with signature gating and `lastUpdated` timestamp; refresh/force‑rescan/retry now/copy diagnostics wired.
 - Service emit‑on‑change: 500 ms debounce + last‑emitted signature equality; test‑mode bypass for determinism.
