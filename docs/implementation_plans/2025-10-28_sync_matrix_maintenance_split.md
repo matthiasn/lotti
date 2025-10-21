@@ -127,7 +127,7 @@
   - Update `test/features/settings/ui/pages/maintenance_page_test.dart` to remove expectations for
     the three moved cards and ensure remaining actions still work.
 
-6) Regression Sweep
+5) Regression Sweep
   - Run analyzer (`dart-mcp.analyze_files`) and targeted widget tests; follow with relevant suites
     once code changes are complete.
 

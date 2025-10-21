@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Matrix Stats now keeps per-type "Sent" counts stable while the page stays flicker-free on mobile and desktop.
 - Read markers no longer spam `M_UNKNOWN` errors—local-only IDs are skipped and expected misses are logged once.
+- Moved Matrix sync maintenance actions (delete sync database, re-sync definitions/messages) to the new Matrix Sync Maintenance page under Sync Settings; the FTS5 rebuild remains in Advanced.
 
 ## [0.9.692] - 2025-10-20
 ### Changed:
@@ -19,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Clean up Advanced: remove Matrix/Outbox/Conflicts tiles; keep Logs, Health Import (mobile), Maintenance, About
   - Route matching for Sync pages now uses exact path matching for robustness
   - Localize new user-facing strings (tile subtitles and error text)
-- Relocate Matrix maintenance actions (Delete Sync Database, Sync definitions, Re-sync) to `/settings/sync/matrix/maintenance`, keep FTS5 rebuild under Advanced, surface maintenance via a top-level card while the Matrix setup modal stays one tap away, and update documentation/tests accordingly.
 
 ## [0.9.691] - 2025-10-20
 ### Changed:
