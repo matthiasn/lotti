@@ -83,8 +83,8 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      // Title and card content present
-      expect(find.text('Matrix Stats'), findsWidgets);
+      // Title and card content present (single title expected)
+      expect(find.text('Matrix Stats'), findsOneWidget);
     });
   });
 }

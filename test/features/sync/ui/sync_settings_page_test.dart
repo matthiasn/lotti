@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -43,7 +44,14 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Matrix Sync Settings'), findsWidgets);
+      // Assert the card title specifically (not the page app bar)
+      expect(
+        find.descendant(
+          of: find.byType(AnimatedModernSettingsCardWithIcon),
+          matching: find.text('Matrix Sync Settings'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Sync Outbox'), findsOneWidget);
       expect(find.text('Matrix Stats'), findsOneWidget);
     });

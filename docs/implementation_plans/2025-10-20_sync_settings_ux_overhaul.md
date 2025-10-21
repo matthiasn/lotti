@@ -30,7 +30,7 @@
 ## UX and Interaction
 
 - Settings → Sync (new top-level tile).
-  - Visible only when `enableSyncFlag` is true.
+  - Visible only when `enableMatrixFlag` is true.
   - Navigates to a new Sync Settings page with:
     - Sync Stats (top-level entry) → new full-page view of `IncomingStats`.
     - Outbox Monitor → existing list view, but without the extra toggle.
@@ -50,7 +50,7 @@
   - `/settings/sync/outbox` → OutboxMonitorPage
 - Gate Sync pages on the sync feature flag:
   - At minimum, conditionally render the Sync tile and rely on direct navigation being rare.
-  - Preferably, add a lightweight `SyncFeatureGate` (wrapper widget) that reads `enableSyncFlag` and
+  - Preferably, add a lightweight `SyncFeatureGate` (wrapper widget) that reads `enableMatrixFlag` and
     shows child or redirects back to `/settings` when disabled.
 
 2) Settings landing page
@@ -59,7 +59,7 @@
   - Title: reuse `context.messages.settingsMatrixTitle` (or add a new localized string if needed).
   - Subtitle: concise description (e.g., “Configure sync and view stats”).
   - Icon: `Icons.sync`.
-  - Visibility: wrap in a `StreamBuilder` watching `JournalDb.watchConfigFlag(enableSyncFlag)`; hide
+  - Visibility: wrap in a `StreamBuilder` watching `JournalDb.watchConfigFlag(enableMatrixFlag)`; hide
     when false.
   - `onTap`: `context.beamToNamed('/settings/sync')`.
 
@@ -95,7 +95,7 @@
 
 - No functional changes to sync pipelines or outbox DB watching.
 - Sync Stats continues to read from existing providers/services via `IncomingStats`.
-- The global `enableSyncFlag` drives visibility and gating.
+- The global `enableMatrixFlag` drives visibility and gating.
 
 ## i18n / Strings
 
@@ -127,7 +127,7 @@
 2) Visibility tests
 
 - Widget tests for `SettingsPage` to assert:
-  - Sync tile appears when `enableSyncFlag` is true; disappears when false (mock
+  - Sync tile appears when `enableMatrixFlag` is true; disappears when false (mock
     `JournalDb.watchConfigFlag`).
 
 3) Outbox UI tests
@@ -174,14 +174,13 @@
 4) Remove Matrix Settings card and Outbox tile from Advanced.
 5) Update tests and fix analyzer warnings.
 6) Manual verification on macOS and iOS simulators:
-  - Toggle `enableSyncFlag` to verify visibility and routing.
+  - Toggle `enableMatrixFlag` to verify visibility and routing.
   - Navigate to Sync Stats and Outbox; confirm UI and behavior.
 7) Open PR, address automated review feedback, merge.
 
 ## Open Questions
 
-- Feature flag source of truth: use `enableSyncFlag` only, or also gate on `enableMatrixFlag`?
-  => enableMatrixFlag as the source of truth, remove enableSyncFlag together with the toggle 
+- Feature flag source of truth: use `enableMatrixFlag` as the single source of truth for visibility and gating.
 - Keep Matrix settings as a modal or evolve into full-page flows later? Proposed: keep modal for now
   to limit scope.
 
