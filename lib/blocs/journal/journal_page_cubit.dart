@@ -169,11 +169,13 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
     String idMapper(JournalEntity entity) => entity.meta.id;
 
-    _updatesSub = _updateNotifications.updateStream.throttleTime(
+    _updatesSub = _updateNotifications.updateStream
+        .throttleTime(
       const Duration(milliseconds: 500),
       leading: false,
       trailing: true,
-    ).listen((affectedIds) async {
+    )
+        .listen((affectedIds) async {
       if (_isVisible) {
         final displayedIds =
             state.pagingController?.value.items?.map(idMapper).toSet() ??
@@ -364,7 +366,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       return;
     }
 
-    debugPrint('Refreshing and fetching page');
     state.pagingController!.refresh();
     state.pagingController!.fetchNextPage();
   }

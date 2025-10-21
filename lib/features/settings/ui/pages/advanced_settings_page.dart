@@ -1,13 +1,9 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
-import 'package:lotti/features/sync/ui/matrix_settings_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AdvancedSettingsPage extends StatelessWidget {
   const AdvancedSettingsPage({super.key});
@@ -18,26 +14,6 @@ class AdvancedSettingsPage extends StatelessWidget {
       title: context.messages.settingsAdvancedTitle,
       child: Column(
         children: [
-          const MatrixSettingsCard(),
-          AnimatedModernSettingsCardWithIcon(
-            title: context.messages.settingsSyncOutboxTitle,
-            subtitle: context.messages.settingsAdvancedOutboxSubtitle,
-            icon: Icons.mail,
-            onTap: () =>
-                context.beamToNamed('/settings/advanced/outbox_monitor'),
-            trailing: OutboxBadgeIcon(
-              icon: Icon(
-                MdiIcons.mailboxOutline,
-                color: context.colorScheme.primary.withValues(alpha: 0.9),
-              ),
-            ),
-          ),
-          AnimatedModernSettingsCardWithIcon(
-            title: context.messages.settingsConflictsTitle,
-            subtitle: context.messages.settingsAdvancedConflictsSubtitle,
-            icon: Icons.warning_rounded,
-            onTap: () => context.beamToNamed('/settings/advanced/conflicts'),
-          ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsLogsTitle,
             subtitle: context.messages.settingsAdvancedLogsSubtitle,

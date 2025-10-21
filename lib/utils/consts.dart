@@ -1,6 +1,5 @@
 const privateFlag = 'private';
 const enableNotificationsFlag = 'enable_notifications';
-const enableSyncFlag = 'enable_sync';
 const recordLocationFlag = 'record_location';
 const enableMatrixFlag = 'enable_matrix';
 const enableSyncV2Flag = 'enable_sync_v2';

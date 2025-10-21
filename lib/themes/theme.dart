@@ -390,7 +390,19 @@ TextStyle searchLabelStyle() => TextStyle(
     );
 
 ThemeData withOverrides(ThemeData themeData) {
+  // Use a slightly lighter, scheme-derived background in dark mode.
+  // This keeps the background darker than cards (which use surfaceContainer*)
+  // while avoiding a pure-black canvas. It also aligns the app bar and
+  // bottom navigation bar tones via canvasColor.
+  final isDark = themeData.brightness == Brightness.dark;
+  final darkScaffold =
+      isDark ? themeData.colorScheme.surface : null; // leave light theme as-is
+
   return themeData.copyWith(
+      scaffoldBackgroundColor:
+          darkScaffold ?? themeData.scaffoldBackgroundColor,
+      // Align Material canvas (used by bottom bars) with the scaffold.
+      canvasColor: darkScaffold ?? themeData.canvasColor,
       cardTheme: themeData.cardTheme.copyWith(
         clipBehavior: Clip.hardEdge,
         shape: RoundedRectangleBorder(
@@ -398,8 +410,8 @@ ThemeData withOverrides(ThemeData themeData) {
         ),
       ),
       appBarTheme: themeData.appBarTheme.copyWith(
-        backgroundColor: themeData.scaffoldBackgroundColor,
-        elevation: 0, // Modern flat design
+        backgroundColor: darkScaffold ?? themeData.scaffoldBackgroundColor,
+        elevation: 10,
         shadowColor: Colors.transparent,
       ),
       sliderTheme: themeData.sliderTheme.copyWith(
@@ -415,7 +427,7 @@ ThemeData withOverrides(ThemeData themeData) {
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         clipBehavior: Clip.hardEdge,
-        elevation: 0, // Modern flat design
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),

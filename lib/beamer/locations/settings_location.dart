@@ -28,6 +28,8 @@ import 'package:lotti/features/settings/ui/pages/tags/create_tag_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tag_edit_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tags_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/sync/ui/sync_settings_page.dart';
+import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 
 class SettingsLocation extends BeamLocation<BeamState> {
   SettingsLocation(RouteInformation super.routeInformation);
@@ -36,6 +38,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
   List<String> get pathPatterns => [
         '/settings',
         '/settings/ai',
+        '/settings/sync',
+        '/settings/sync/stats',
+        '/settings/sync/outbox',
         '/settings/tags',
         '/settings/tags/:tagEntityId',
         '/settings/tags/create/:tagType',
@@ -55,7 +60,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/flags',
         '/settings/theming',
         '/settings/advanced',
-        '/settings/outbox_monitor',
         '/settings/logging',
         '/settings/advanced/logging/:logEntryId',
         '/settings/advanced/conflicts/:conflictId',
@@ -68,6 +72,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
     bool pathContains(String s) => state.uri.path.contains(s);
     bool pathContainsKey(String s) => state.pathParameters.containsKey(s);
+    final path = state.uri.path;
 
     return [
       const BeamPage(
@@ -82,6 +87,27 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey('settings-ai'),
           title: 'AI Settings',
           child: AiSettingsPage(),
+        ),
+
+      // Sync Settings (exact matches for robustness)
+      if (path == '/settings/sync')
+        const BeamPage(
+          key: ValueKey('settings-sync'),
+          title: 'Sync Settings',
+          child: SyncSettingsPage(),
+        ),
+
+      if (path == '/settings/sync/stats')
+        const BeamPage(
+          key: ValueKey('settings-sync-stats'),
+          title: 'Sync Stats',
+          child: SyncStatsPage(),
+        ),
+
+      if (path == '/settings/sync/outbox')
+        const BeamPage(
+          key: ValueKey('settings-sync-outbox'),
+          child: OutboxMonitorPage(),
         ),
 
       // New Categories Implementation (Riverpod)
@@ -247,12 +273,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-advanced'),
           child: AdvancedSettingsPage(),
-        ),
-
-      if (pathContains('advanced/outbox_monitor'))
-        const BeamPage(
-          key: ValueKey('settings-outbox_monitor'),
-          child: OutboxMonitorPage(),
         ),
 
       if (pathContains('advanced/logging'))

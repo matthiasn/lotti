@@ -180,6 +180,5 @@ Future<String?> getIdFromSavedRoute() async {
 }
 
 void beamToNamed(String path, {Object? data}) {
-  debugPrint('beamToNamed $path');
   getIt<NavService>().beamToNamed(path, data: data);
 }

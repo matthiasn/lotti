@@ -217,6 +217,20 @@ Key helpers:
 - When extending the sync feature, update both this README and the architecture
   documents so the narrative stays aligned with the implementation.
 
+## UI & Navigation (2025-10)
+
+- Sync now has a top-level Settings entry: `/settings/sync`.
+  - The tile is only visible when the Matrix sync flag is enabled.
+- Outbox Monitor lives under `/settings/sync/outbox` and no longer exposes
+  its own on/off toggle. The global Matrix sync flag governs enablement.
+- Matrix Stats is a full page under `/settings/sync/stats`, rendered in a
+  styled card with a large, subtle loading indicator.
+- Advanced Settings no longer contains Matrix/Outbox/Conflicts tiles; those
+  have moved under Sync (Conflicts is still routed under advanced paths but
+  linked from the Sync page).
+- Beamer route matching for the Sync section uses exact path matching to avoid
+  brittle substring checks.
+
 ## Sync V2 – Rollout & Observability
 
 - Enabling V2

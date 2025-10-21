@@ -1938,6 +1938,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsSyncOutboxTitle => 'Sync-Postausgang';
 
   @override
+  String get settingsSyncSubtitle => 'Configure sync and view stats';
+
+  @override
+  String get settingsSyncStatsSubtitle => 'Inspect sync pipeline metrics';
+
+  @override
+  String get matrixStatsError => 'Error loading Matrix stats';
+
+  @override
   String get settingsTagsDeleteTooltip => 'Tag löschen';
 
   @override

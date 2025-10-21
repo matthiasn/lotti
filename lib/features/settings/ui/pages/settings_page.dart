@@ -1,9 +1,11 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -39,6 +41,20 @@ class SettingsPage extends ConsumerWidget {
             subtitle: 'Categories with AI settings',
             icon: Icons.category_rounded,
             onTap: () => context.beamToNamed('/settings/categories'),
+          ),
+          // Sync (feature-gated by Matrix flag) — positioned below Categories
+          StreamBuilder<bool>(
+            stream: getIt<JournalDb>().watchConfigFlag(enableMatrixFlag),
+            builder: (context, snap) {
+              final enabled = snap.data ?? false;
+              if (!enabled) return const SizedBox.shrink();
+              return AnimatedModernSettingsCardWithIcon(
+                title: context.messages.settingsMatrixTitle,
+                subtitle: context.messages.settingsSyncSubtitle,
+                icon: Icons.sync,
+                onTap: () => context.beamToNamed('/settings/sync'),
+              );
+            },
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsTagsTitle,

@@ -35,7 +35,8 @@ void main() {
   tearDown(getIt.reset);
 
   group('AdvancedSettingsPage', () {
-    testWidgets('renders all cards', (tester) async {
+    testWidgets('renders advanced-only cards (no sync items here)',
+        (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const Material(child: AdvancedSettingsPage()),
@@ -46,16 +47,16 @@ void main() {
 
       final context = tester.element(find.byType(AdvancedSettingsPage));
 
-      // Verify all cards are present
-      expect(find.text(context.messages.settingsMatrixTitle), findsOneWidget);
-      expect(
-          find.text(context.messages.settingsSyncOutboxTitle), findsOneWidget);
-      expect(
-          find.text(context.messages.settingsConflictsTitle), findsOneWidget);
+      // Verify advanced-only cards are present
       expect(find.text(context.messages.settingsLogsTitle), findsOneWidget);
       expect(
           find.text(context.messages.settingsMaintenanceTitle), findsOneWidget);
       expect(find.text(context.messages.settingsAboutTitle), findsOneWidget);
+
+      // Verify sync-related items moved away from Advanced
+      expect(find.text(context.messages.settingsMatrixTitle), findsNothing);
+      expect(find.text(context.messages.settingsSyncOutboxTitle), findsNothing);
+      expect(find.text(context.messages.settingsConflictsTitle), findsNothing);
     });
 
     testWidgets('shows health import card on mobile', (tester) async {
