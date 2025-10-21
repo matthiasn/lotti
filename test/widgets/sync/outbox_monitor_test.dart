@@ -1,4 +1,6 @@
-import 'package:flutter/widgets.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
@@ -110,6 +112,74 @@ void main() {
           .toList();
       expect(errorItems, hasLength(1));
       expect(errorItems.first.showRetry, isTrue);
+    });
+
+    testWidgets('renders empty state when no outbox items', (tester) async {
+      syncDatabaseMock = mockSyncDatabaseWithCount(0);
+      when(() => syncDatabaseMock.watchOutboxItems()).thenAnswer(
+        (_) => Stream<List<OutboxItem>>.fromIterable([
+          <OutboxItem>[],
+        ]),
+      );
+
+      getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
+
+      final outboxCubitMock = mockOutboxCubit(OutboxState.online());
+
+      await tester.pumpWidget(
+        BlocProvider<OutboxCubit>(
+          lazy: false,
+          create: (BuildContext context) => outboxCubitMock,
+          child: makeTestableWidget(
+            const SizedBox(
+              width: 500,
+              height: 1000,
+              child: OutboxMonitorPage(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Outbox is clear'), findsOneWidget);
+      expect(find.textContaining('0 items'), findsOneWidget);
+    });
+
+    testWidgets('shows loader before first snapshot then empty state',
+        (tester) async {
+      syncDatabaseMock = mockSyncDatabaseWithCount(0);
+      final controller = StreamController<List<OutboxItem>>();
+      when(() => syncDatabaseMock.watchOutboxItems())
+          .thenAnswer((_) => controller.stream);
+
+      getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
+
+      final outboxCubitMock = mockOutboxCubit(OutboxState.online());
+
+      await tester.pumpWidget(
+        BlocProvider<OutboxCubit>(
+          lazy: false,
+          create: (BuildContext context) => outboxCubitMock,
+          child: makeTestableWidget(
+            const SizedBox(
+              width: 500,
+              height: 1000,
+              child: OutboxMonitorPage(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      controller.add(<OutboxItem>[]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Outbox is clear'), findsOneWidget);
+      await controller.close();
     });
   });
 }

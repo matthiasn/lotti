@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -65,6 +67,72 @@ void main() {
       expect(find.text('Resolved · 1 item'), findsOneWidget);
       expect(find.textContaining('Entity: Text'), findsOneWidget);
       expect(find.textContaining('ID: id'), findsOneWidget);
+    });
+    testWidgets('shows empty state when streams emit no conflicts',
+        (tester) async {
+      when(() => mockJournalDb.watchConflicts(ConflictStatus.resolved))
+          .thenAnswer(
+        (_) => Stream<List<Conflict>>.fromIterable([
+          <Conflict>[],
+        ]),
+      );
+
+      when(() => mockJournalDb.watchConflicts(ConflictStatus.unresolved))
+          .thenAnswer(
+        (_) => Stream<List<Conflict>>.fromIterable([
+          <Conflict>[],
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const SizedBox(
+            width: 500,
+            height: 1000,
+            child: ConflictsPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('No conflicts detected'), findsOneWidget);
+      expect(find.textContaining('0 items'), findsWidgets);
+    });
+
+    testWidgets('shows loader before the first conflict snapshot',
+        (tester) async {
+      final unresolvedController = StreamController<List<Conflict>>();
+      final resolvedController = StreamController<List<Conflict>>();
+
+      when(() => mockJournalDb.watchConflicts(ConflictStatus.unresolved))
+          .thenAnswer((_) => unresolvedController.stream);
+      when(() => mockJournalDb.watchConflicts(ConflictStatus.resolved))
+          .thenAnswer((_) => resolvedController.stream);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const SizedBox(
+            width: 500,
+            height: 1000,
+            child: ConflictsPage(),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      unresolvedController.add(<Conflict>[]);
+      resolvedController.add(<Conflict>[]);
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('No conflicts detected'), findsOneWidget);
+
+      await unresolvedController.close();
+      await resolvedController.close();
     });
   });
 }
