@@ -752,28 +752,16 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
       final deduped = tu.dedupEventsByIdPreserveOrder(combined);
       if (deduped.isNotEmpty) {
-        // Optionally drop older/equal sync payloads to avoid repeated
-        // no-op processing during steady live scans. Attachments are kept
-        // to allow prefetch/descriptor observation.
-        final toProcess = _dropOldPayloadsInLiveScan
-            ? deduped.where((e) {
-                if (!ec.MatrixEventClassifier.isSyncPayloadEvent(e)) {
-                  return true;
-                }
-                final ts = TimelineEventOrdering.timestamp(e);
-                final isNewer = TimelineEventOrdering.isNewer(
-                  candidateTimestamp: ts,
-                  candidateEventId: e.eventId,
-                  latestTimestamp: _lastProcessedTs,
-                  latestEventId: _lastProcessedEventId,
-                );
-                if (!isNewer && _retryTracker.attempts(e.eventId) == 0) {
-                  if (_collectMetrics) _metrics.incSkipped();
-                  return false;
-                }
-                return true;
-              }).toList()
-            : deduped;
+        // Use helper to optionally drop older/equal payloads while keeping
+        // attachments and retries.
+        final toProcess = msh.filterSyncPayloadsByMonotonic(
+          events: deduped,
+          dropOldSyncPayloads: _dropOldPayloadsInLiveScan,
+          lastTimestamp: _lastProcessedTs,
+          lastEventId: _lastProcessedEventId,
+          hasAttempts: (id) => _retryTracker.attempts(id) > 0,
+          onSkipped: _collectMetrics ? _metrics.incSkipped : null,
+        );
 
         if (toProcess.isNotEmpty) {
           await _processOrdered(toProcess);
