@@ -618,12 +618,12 @@ void main() {
             .having(
               (stats) => stats.messageCounts['sent'],
               'messageCounts[sent]',
-              2,
+              3,
             ),
       ),
     );
 
-    service.incrementSentCount();
+    service.incrementSentCountOf('sent');
 
     expect(service.sentCount, 1);
     await statsFuture;

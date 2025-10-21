@@ -254,5 +254,30 @@ void main() {
             stackTrace: any<dynamic>(named: 'stackTrace'),
           )).called(1);
     });
+
+    test('allows when timeline.events throws during comparison', () async {
+      final client = MockClient();
+      final room = MockRoom();
+      final log = MockLogging();
+      final db = MockSettingsDb();
+      final tl = MockTimeline();
+      final svc = SyncReadMarkerService(settingsDb: db, loggingService: log);
+
+      when(() => client.isLogged()).thenReturn(true);
+      when(() => room.fullyRead).thenReturn('r');
+      when(() => room.setReadMarker(any())).thenAnswer((_) async {});
+      when(() => db.saveSettingsItem(any(), any())).thenAnswer((_) async => 1);
+
+      when(() => tl.events).thenThrow(Exception('boom'));
+
+      await svc.updateReadMarker(
+        client: client,
+        room: room,
+        eventId: 'e',
+        timeline: tl,
+      );
+
+      verify(() => room.setReadMarker('e')).called(1);
+    });
   });
 }

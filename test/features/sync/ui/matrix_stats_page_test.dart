@@ -82,12 +82,12 @@ void main() {
       ),
     );
 
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.textContaining('Sent messages: 5'), findsOneWidget);
-    expect(find.text('m.text'), findsOneWidget);
+    expect(find.text('Sent (m.text)'), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
-    expect(find.text('m.image'), findsOneWidget);
+    expect(find.text('Sent (m.image)'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
   });
 
@@ -199,7 +199,8 @@ void main() {
     expect(refreshCount, 2);
   });
 
-  testWidgets('shows no-data message when V2 metrics are null', (tester) async {
+  testWidgets('renders stable section when V2 metrics are null',
+      (tester) async {
     final stats = MatrixStats(
       sentCount: 0,
       messageCounts: const {},
@@ -221,11 +222,12 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    // Localized string from l10n: settingsMatrixV2MetricsNoData
-    expect(find.textContaining('Sync V2 Metrics: no data'), findsOneWidget);
+    // We no longer show a special no-data banner; the section header remains.
+    expect(find.textContaining('Sync V2 Metrics'), findsOneWidget);
   });
 
-  testWidgets('IncomingStats shows progress while loading', (tester) async {
+  testWidgets('IncomingStats renders stable shell while loading',
+      (tester) async {
     final completer = Completer<MatrixStats>();
 
     await tester.pumpWidget(
@@ -241,15 +243,14 @@ void main() {
     );
 
     await tester.pump();
-
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.textContaining('Sync V2 Metrics'), findsOneWidget);
 
     completer.complete(
       MatrixStats(sentCount: 0, messageCounts: const {}),
     );
   });
 
-  testWidgets('IncomingStats shows progress indicator on error',
+  testWidgets('IncomingStats builds even when controller throws',
       (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -263,8 +264,7 @@ void main() {
     );
 
     await tester.pump();
-
-    expect(find.textContaining('Error loading Matrix stats'), findsOneWidget);
+    expect(find.textContaining('Sync V2 Metrics'), findsOneWidget);
   });
 
   testWidgets('IncomingStats shows DB-apply metrics and legend tooltip',

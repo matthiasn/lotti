@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -14,14 +13,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-
-class _LoadingMatrixStatsController extends MatrixStatsController {
-  @override
-  Future<MatrixStats> build() async {
-    // Never completes to force loading state
-    return Completer<MatrixStats>().future;
-  }
-}
 
 class _ImmediateMatrixStatsController extends MatrixStatsController {
   @override
@@ -52,22 +43,23 @@ void main() {
 
     tearDown(getIt.reset);
 
-    testWidgets('shows large spinner while loading', (tester) async {
+    testWidgets('renders page without page-level loader', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const SyncStatsPage(),
           overrides: [
-            matrixStatsControllerProvider
-                .overrideWith(_LoadingMatrixStatsController.new),
+            // Provide matrixService to avoid provider errors; page does not
+            // watch stats provider anymore.
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
           ],
         ),
       );
 
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      // Let entrance animations complete to avoid pending timers, but keep
-      // stats future unresolved so spinner stays.
-      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('Matrix Stats'), findsOneWidget);
+      // Allow entrance animations to settle so no pending timers remain.
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('shows stats card when data available', (tester) async {
