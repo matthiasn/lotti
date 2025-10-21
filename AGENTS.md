@@ -77,3 +77,19 @@
 - Uphold high standards: DRY where sensible, proper modularity, and strong testability.
 - Use `fvm` for all `flutter` commands.
 - Read `test/README.md` at session start and update it with relevant new information.
+
+## Implementation discipline
+
+- Always ensure the analyzer has no complaints and everything compiles. Also run the formatter
+  frequently.
+- Prefer running commands via the dart-mcp server.
+- Only move on to adding new files when already created tests are all green.
+- Write meaningful tests that actually assert on valuable information. Refrain from adding BS
+  assertions such as finding a row or whatnot. Focus on useful information.
+- Aim for full coverage of every code path.
+- Every widget we touch should get as close to full test coverage as is reasonable, with meaningful
+  tests.
+- Add CHANGELOG entry.
+- Update the feature README files we touch such that they match reality in the codebase, not only
+  for what we touch but in their entirety.
+- In most cases we prefer one test file for one implementation file.

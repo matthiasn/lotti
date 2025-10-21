@@ -37,7 +37,8 @@ class _ThrowingMatrixStatsController extends MatrixStatsController {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('IncomingStats shows loading state', (tester) async {
+  testWidgets('IncomingStats renders stable shell while loading',
+      (tester) async {
     final completer = Completer<MatrixStats>();
     final mockSvc = _MockMatrixService();
     when(() => mockSvc.getV2Metrics()).thenAnswer((_) async => null);
@@ -52,10 +53,12 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    // No page-level spinner anymore; stable section header is present.
+    expect(find.textContaining('Sync V2 Metrics'), findsOneWidget);
   });
 
-  testWidgets('IncomingStats shows error state', (tester) async {
+  testWidgets('IncomingStats builds even when controller throws',
+      (tester) async {
     final mockSvc = _MockMatrixService();
     when(() => mockSvc.getV2Metrics()).thenAnswer((_) async => null);
     await tester.pumpWidget(
@@ -69,11 +72,11 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.textContaining('Error loading Matrix stats'), findsOneWidget);
+    // No page-level error message; stable section header is present.
+    expect(find.textContaining('Sync V2 Metrics'), findsOneWidget);
   });
 
-  testWidgets(
-      'IncomingStats refresh invalidates metrics and shows no-data message',
+  testWidgets('IncomingStats refresh triggers service when metrics empty',
       (tester) async {
     final mockSvc = _MockMatrixService();
     when(() => mockSvc.sentCount).thenReturn(0);
@@ -95,8 +98,8 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.textContaining('Sync V2 Metrics: no data'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('matrixStats.refresh.noData')));
+    expect(find.textContaining('Sync V2 Metrics'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('matrixStats.refresh.metrics')));
     await tester.pumpAndSettle();
     verify(() => mockSvc.getV2Metrics()).called(greaterThan(0));
   });

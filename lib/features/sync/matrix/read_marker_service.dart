@@ -53,16 +53,37 @@ class SyncReadMarkerService {
   /// - [eventId]: The event ID to advance the read marker to.
   /// - [timeline]: Optional timeline snapshot; used as a compatibility fallback
   ///   when the room-level update fails.
+  ///
+  /// The method is intentionally defensive:
+  /// - Non-server event IDs (local placeholders such as `lotti-…`) are skipped
+  ///   for remote updates but still persisted locally so we do not regress the
+  ///   stored marker.
+  /// - Matrix `M_UNKNOWN` errors ("Could not find event …") are treated as
+  ///   informational noise; they are logged once and suppressed to avoid
+  ///   spamming the error channel while we wait for the server to learn about
+  ///   the event.
   Future<void> updateReadMarker({
     required Client client,
     required Room room,
     required String eventId,
     Timeline? timeline,
   }) async {
+    final isServerEventId = eventId.startsWith(r'$');
+    if (!isServerEventId) {
+      _loggingService.captureEvent(
+        'marker.remote.skip(nonServerId) id=$eventId',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'setReadMarker.guard',
+      );
+    }
     await setLastReadMatrixEventId(
       eventId,
       _settingsDb,
     );
+
+    if (!isServerEventId) {
+      return; // keep local marker only
+    }
 
     if (client.isLogged()) {
       try {
@@ -135,6 +156,14 @@ class SyncReadMarkerService {
           subDomain: 'setReadMarker',
         );
       } catch (error, stackTrace) {
+        if (error is MatrixException && error.errcode == 'M_UNKNOWN') {
+          _loggingService.captureEvent(
+            'marker.remote.missingEvent id=$eventId (M_UNKNOWN)',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'setReadMarker',
+          );
+          return;
+        }
         // Fallback to timeline-level API for compatibility if provided.
         if (timeline != null) {
           try {

@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_lambdas
+// ignore_for_file: unnecessary_lambdas, avoid_redundant_argument_values
 
 import 'dart:async';
 import 'dart:convert';
@@ -7,8 +7,12 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
@@ -25,10 +29,12 @@ import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/platform.dart' show isTestEnv;
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 // No internal SDK controllers in tests
@@ -618,15 +624,48 @@ void main() {
             .having(
               (stats) => stats.messageCounts['sent'],
               'messageCounts[sent]',
-              2,
+              3,
             ),
       ),
     );
 
-    service.incrementSentCount();
+    service.incrementSentCountOf('sent');
 
     expect(service.sentCount, 1);
     await statsFuture;
+  });
+
+  test('debounce emits a single consolidated snapshot, then new one on change',
+      () async {
+    // Temporarily disable test-mode fast path to exercise debounce logic.
+    final prevIsTestEnv = isTestEnv;
+    isTestEnv = false;
+    addTearDown(() => isTestEnv = prevIsTestEnv);
+
+    // Listen for emissions.
+    final emissions = <MatrixStats>[];
+    final sub = service.messageCountsController.stream.listen(emissions.add);
+    addTearDown(() => sub.cancel());
+
+    // Perform two increments within the debounce window.
+    service
+      ..incrementSentCountOf('sent')
+      ..incrementSentCountOf('sent');
+
+    // Wait longer than the debounce duration to allow a single emit.
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+
+    expect(emissions.length, 1);
+    expect(emissions.first.sentCount, 2);
+    expect(emissions.first.messageCounts['sent'], 2);
+
+    // A further change should trigger another emission after debounce.
+    service.incrementSentCountOf('sent');
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+
+    expect(emissions.length, 2);
+    expect(emissions.last.sentCount, 3);
+    expect(emissions.last.messageCounts['sent'], 3);
   });
 
   test('constructor throws when syncEngine lifecycle coordinator mismatched',
@@ -705,6 +744,32 @@ void main() {
     late SyncMessage message;
     late MockRoom currentRoom;
     late List<DeviceKeys> devices;
+
+    Future<void> sendAndExpectType(
+      SyncMessage syncMessage,
+      String expectedKey,
+    ) async {
+      service.messageCounts.clear();
+      service.sentCount = 0;
+
+      when(
+        () => mockMessageSender.sendMatrixMessage(
+          message: any(named: 'message'),
+          context: any(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onSent = invocation.namedArguments[#onSent] as void Function();
+        onSent();
+        return true;
+      });
+
+      final result = await service.sendMatrixMsg(syncMessage);
+
+      expect(result, isTrue);
+      expect(service.sentCount, 1);
+      expect(service.messageCounts[expectedKey], 1);
+    }
 
     setUp(() {
       message = const SyncMessage.aiConfigDelete(id: 'abc');
@@ -809,6 +874,113 @@ void main() {
       await statsFuture;
       expect(service.sentCount, 1);
     });
+
+    test('tracks journalEntity type in sent stats', () async {
+      const syncMessage = SyncMessage.journalEntity(
+        id: 'journal-1',
+        jsonPath: '/journal/1',
+        vectorClock: VectorClock({'node': 1}),
+        status: SyncEntryStatus.initial,
+      );
+
+      await sendAndExpectType(syncMessage, 'journalEntity');
+    });
+
+    test('tracks entityDefinition type in sent stats', () async {
+      final entityDefinition = EntityDefinition.measurableDataType(
+        id: 'entity-1',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024, 1, 2),
+        displayName: 'Entity',
+        description: 'desc',
+        unitName: 'unit',
+        version: 1,
+        vectorClock: const VectorClock({'node': 1}),
+      );
+      final syncMessage = SyncMessage.entityDefinition(
+        entityDefinition: entityDefinition,
+        status: SyncEntryStatus.update,
+      );
+
+      await sendAndExpectType(syncMessage, 'entityDefinition');
+    });
+
+    test('tracks tagEntity type in sent stats', () async {
+      final tag = TagEntity.genericTag(
+        id: 'tag-1',
+        tag: 'tag',
+        private: false,
+        createdAt: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 2),
+        vectorClock: const VectorClock({'node': 1}),
+      );
+      final syncMessage = SyncMessage.tagEntity(
+        tagEntity: tag,
+        status: SyncEntryStatus.initial,
+      );
+
+      await sendAndExpectType(syncMessage, 'tagEntity');
+    });
+
+    test('tracks entryLink type in sent stats', () async {
+      final link = EntryLink.basic(
+        id: 'link-1',
+        fromId: 'from',
+        toId: 'to',
+        createdAt: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 2),
+        vectorClock: const VectorClock({'node': 1}),
+      );
+      final syncMessage = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.initial,
+      );
+
+      await sendAndExpectType(syncMessage, 'entryLink');
+    });
+
+    test('tracks aiConfig type in sent stats', () async {
+      final aiConfig = AiConfig.model(
+        id: 'model-1',
+        name: 'Model',
+        providerModelId: 'provider-model',
+        inferenceProviderId: 'provider',
+        createdAt: DateTime(2024, 1, 1),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      );
+      final syncMessage = SyncMessage.aiConfig(
+        aiConfig: aiConfig,
+        status: SyncEntryStatus.initial,
+      );
+
+      await sendAndExpectType(syncMessage, 'aiConfig');
+    });
+
+    test('tracks aiConfigDelete type in sent stats', () async {
+      const syncMessage = SyncMessage.aiConfigDelete(id: 'delete-1');
+
+      await sendAndExpectType(syncMessage, 'aiConfigDelete');
+    });
+  });
+
+  test('dispose cancels pending stats emit timer', () async {
+    final prevIsTestEnv = isTestEnv;
+    isTestEnv = false;
+    addTearDown(() => isTestEnv = prevIsTestEnv);
+
+    final errors = <Object>[];
+
+    await runZonedGuarded(() async {
+      service.incrementSentCountOf('timer');
+      await service.dispose();
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    }, (error, stackTrace) {
+      errors.add(error);
+    });
+
+    expect(errors, isEmpty);
   });
 
   test('logout ignores timeline when already null', () async {

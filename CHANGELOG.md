@@ -4,14 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-### Added:
-- Width-stability tests for timer text:
-  - CompactTaskProgress and LinkedDuration (tasks)
-  - DurationWidget (entry details)
-  - TimeRecordingIndicator and AudioRecordingIndicator (recording overlays)
-  - Card header date style (Modern journal card)
+# [Unreleased]
+### Changed
+- Matrix Stats now keeps per-type "Sent" counts stable while the page stays flicker-free on mobile and desktop.
+- Read markers no longer spam `M_UNKNOWN` errors—local-only IDs are skipped and expected misses are logged once.
 
+## [0.9.692] - 2025-10-20
 ### Changed:
 - Enforce tabular monospace style for tasks timers (monoTabularStyle) to eliminate width jitter.
 - Sync UX overhaul:

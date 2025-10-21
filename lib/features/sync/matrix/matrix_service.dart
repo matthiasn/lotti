@@ -17,6 +17,7 @@ import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
+import 'package:lotti/features/sync/matrix/stats_signature.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/platform.dart' show isTestEnv;
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
@@ -252,6 +254,9 @@ class MatrixService {
     });
   }
 
+  static const Duration _statsDebounceDuration = Duration(
+      milliseconds: 500); // Balance UI responsiveness vs emission rate.
+
   final MatrixSyncGateway _gateway;
   final LoggingService _loggingService;
   final UserActivityGate _activityGate;
@@ -302,14 +307,48 @@ class MatrixService {
   int sentCount = 0;
 
   final StreamController<MatrixStats> messageCountsController;
-  void incrementSentCount() {
-    sentCount = sentCount + 1;
-    messageCountsController.add(
-      MatrixStats(
-        messageCounts: messageCounts,
-        sentCount: sentCount,
-      ),
+  Timer? _statsEmitTimer;
+  bool _statsDirty = false;
+  String? _lastEmittedStatsSig;
+
+  void _emitStatsNow() {
+    // Prepare snapshot to avoid consumers mutating our internal map.
+    final snapshot = MatrixStats(
+      messageCounts: Map<String, int>.from(messageCounts),
+      sentCount: sentCount,
     );
+    final sig = buildMatrixStatsSignature(snapshot);
+    if (sig == _lastEmittedStatsSig) {
+      return; // no-op: identical payload as last emission
+    }
+    _lastEmittedStatsSig = sig;
+    messageCountsController.add(snapshot);
+  }
+
+  void _scheduleStatsEmit() {
+    _statsDirty = true;
+    if (isTestEnv) {
+      // In tests, emit immediately for determinism.
+      _statsEmitTimer?.cancel();
+      _statsEmitTimer = null;
+      _statsDirty = false;
+      _emitStatsNow();
+      return;
+    }
+    if (_statsEmitTimer != null) return;
+    _statsEmitTimer = Timer(_statsDebounceDuration, () {
+      _statsEmitTimer = null;
+      if (_statsDirty) {
+        _statsDirty = false;
+        _emitStatsNow();
+      }
+    });
+  }
+
+  void incrementSentCountOf(String type) {
+    sentCount = sentCount + 1;
+    messageCounts.update(type, (v) => v + 1, ifAbsent: () => 1);
+    _scheduleStatsEmit();
   }
 
   KeyVerificationRunner? keyVerificationRunner;
@@ -363,6 +402,13 @@ class MatrixService {
     );
   }
 
+  /// Sends a Matrix sync payload and records basic "sent" metrics.
+  ///
+  /// Every [`SyncMessage`] variant is mapped to a coarse message-type bucket
+  /// (`journalEntity`, `entityDefinition`, `tagEntity`, `entryLink`,
+  /// `aiConfig`, `aiConfigDelete`). When the SDK reports a successful send, the
+  /// corresponding counter is incremented and debounced stats are emitted to the
+  /// Matrix Stats UI.
   Future<bool> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
@@ -375,6 +421,16 @@ class MatrixService {
       targetRoom = client.getRoomById(myRoomId) ?? targetRoom;
     }
 
+    // Track a coarse-grained sent type for stats
+    final sentType = syncMessage.map(
+      journalEntity: (_) => 'journalEntity',
+      entityDefinition: (_) => 'entityDefinition',
+      tagEntity: (_) => 'tagEntity',
+      entryLink: (_) => 'entryLink',
+      aiConfig: (_) => 'aiConfig',
+      aiConfigDelete: (_) => 'aiConfigDelete',
+    );
+
     return _messageSender.sendMatrixMessage(
       message: syncMessage,
       context: MatrixMessageContext(
@@ -382,7 +438,7 @@ class MatrixService {
         syncRoom: targetRoom,
         unverifiedDevices: getUnverifiedDevices(),
       ),
-      onSent: incrementSentCount,
+      onSent: () => incrementSentCountOf(sentType),
     );
   }
 
@@ -513,6 +569,7 @@ class MatrixService {
     await keyVerificationController.close();
     await incomingKeyVerificationRunnerController.close();
     await incomingKeyVerificationController.close();
+    _statsEmitTimer?.cancel();
     await _connectivitySubscription?.cancel();
     await _syncEngine.dispose();
 
