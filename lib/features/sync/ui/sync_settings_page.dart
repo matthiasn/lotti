@@ -18,8 +18,15 @@ class SyncSettingsPage extends StatelessWidget {
         title: context.messages.settingsMatrixTitle,
         child: Column(
           children: [
-            // 1) Sync setup / Matrix settings
+            // 1) Matrix sync setup modal (top-level)
             const MatrixSettingsCard(),
+            AnimatedModernSettingsCardWithIcon(
+              title: context.messages.settingsMatrixMaintenanceTitle,
+              subtitle: context.messages.settingsMatrixMaintenanceSubtitle,
+              icon: Icons.build_outlined,
+              onTap: () =>
+                  context.beamToNamed('/settings/sync/matrix/maintenance'),
+            ),
 
             // 2) Outbox Monitor
             AnimatedModernSettingsCardWithIcon(

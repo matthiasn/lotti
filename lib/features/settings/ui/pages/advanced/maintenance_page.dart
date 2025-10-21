@@ -6,8 +6,6 @@ import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart'
 import 'package:lotti/features/sync/ui/action_item_suggestions_removal_modal.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/features/sync/ui/purge_modal.dart';
-import 'package:lotti/features/sync/ui/re_sync_modal.dart';
-import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
@@ -92,30 +90,6 @@ class MaintenancePage extends StatelessWidget {
                 },
               ),
               AnimatedModernSettingsCardWithIcon(
-                title: context.messages.maintenanceDeleteSyncDb,
-                subtitle: context.messages.maintenanceDeleteSyncDbDescription,
-                icon: Icons.sync_rounded,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message: context.messages
-                        .maintenanceDeleteDatabaseQuestion('Sync'),
-                    confirmLabel:
-                        context.messages.maintenanceDeleteDatabaseConfirm,
-                  );
-                  if (confirmed && context.mounted) {
-                    await maintenance.deleteSyncDb();
-                  }
-                },
-              ),
-              AnimatedModernSettingsCardWithIcon(
-                title: context.messages.maintenanceSyncDefinitions,
-                subtitle:
-                    context.messages.maintenanceSyncDefinitionsDescription,
-                icon: Icons.sync_alt_rounded,
-                onTap: () => SyncModal.show(context),
-              ),
-              AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenancePurgeDeleted,
                 subtitle: context.messages.maintenancePurgeDeletedDescription,
                 icon: Icons.delete_forever_rounded,
@@ -133,12 +107,6 @@ class MaintenancePage extends StatelessWidget {
                 subtitle: context.messages.maintenanceRecreateFts5Description,
                 icon: Icons.search_rounded,
                 onTap: () => Fts5RecreateModal.show(context),
-              ),
-              AnimatedModernSettingsCardWithIcon(
-                title: context.messages.maintenanceReSync,
-                subtitle: context.messages.maintenanceReSyncDescription,
-                icon: Icons.refresh_rounded,
-                onTap: () => ReSyncModal.show(context),
               ),
             ],
           ),
