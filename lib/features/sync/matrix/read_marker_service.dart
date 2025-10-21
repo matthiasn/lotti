@@ -66,43 +66,75 @@ class SyncReadMarkerService {
 
     if (client.isLogged()) {
       try {
-        // Guard: Avoid regressing a remote marker if the server already has
+        // Guard: Avoid regressing a remote marker when the server already has
         // a newer fullyRead. Skip this guard in test environments to keep
-        // unit tests simple and deterministic.
+        // unit tests deterministic. If the remote marker is empty/unknown or
+        // the base/candidate events are not visible in the provided timeline,
+        // prefer sending to avoid getting stuck behind.
         if (!isTestEnv) {
           final remoteId = room.fullyRead;
           if (remoteId != eventId) {
-            var shouldSend = true;
+            var allowSend = true;
             final tl = timeline;
-            if (tl != null) {
+
+            if (remoteId.isEmpty) {
+              // No remote marker yet – allow advancement to seed it.
+              allowSend = true;
+              _loggingService.captureEvent(
+                'marker.remote.allow(emptyRemote) id=$eventId',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'setReadMarker.guard',
+              );
+            } else if (tl == null) {
+              // Without a timeline we can't reliably compare; allow to avoid stalls.
+              allowSend = true;
+              _loggingService.captureEvent(
+                'marker.remote.allow(noTimeline) id=$eventId (remote=$remoteId)',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'setReadMarker.guard',
+              );
+            } else {
+              // Compare strictly only if both events are present in the timeline.
               try {
-                final newer = isStrictlyNewerInTimeline(
-                  timeline: tl,
-                  candidateEventId: eventId,
-                  baseEventId: remoteId,
-                );
-                if (!newer) {
-                  shouldSend = false;
+                Event? cand;
+                Event? base;
+                for (final e in tl.events) {
+                  if (e.eventId == eventId) cand = e;
+                  if (e.eventId == remoteId) base = e;
+                  if (cand != null && base != null) break;
+                }
+                if (cand != null && base != null) {
+                  final newer = TimelineEventOrdering.isNewer(
+                    candidateTimestamp:
+                        cand.originServerTs.millisecondsSinceEpoch,
+                    candidateEventId: cand.eventId,
+                    latestTimestamp: base.originServerTs.millisecondsSinceEpoch,
+                    latestEventId: base.eventId,
+                  );
+                  if (!newer) {
+                    allowSend = false;
+                    _loggingService.captureEvent(
+                      'marker.remote.skip id=$eventId (remoteAhead=$remoteId)',
+                      domain: 'MATRIX_SERVICE',
+                      subDomain: 'setReadMarker.guard',
+                    );
+                  }
+                } else {
+                  // If either event is not visible, prefer sending.
+                  allowSend = true;
                   _loggingService.captureEvent(
-                    'marker.remote.skip id=$eventId (remoteAhead=$remoteId)',
+                    'marker.remote.allow(unseen) id=$eventId (remote=$remoteId)',
                     domain: 'MATRIX_SERVICE',
                     subDomain: 'setReadMarker.guard',
                   );
                 }
               } catch (_) {
-                // If comparison fails, fall through to default behaviour.
+                // On comparison failure, fall back to allowing send.
+                allowSend = true;
               }
-            } else {
-              // Without a timeline we can't compare reliably. Be conservative
-              // and skip to avoid downgrading a newer remote marker.
-              shouldSend = false;
-              _loggingService.captureEvent(
-                'marker.remote.skip(noTimeline) id=$eventId (remote=$remoteId)',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'setReadMarker.guard',
-              );
             }
-            if (!shouldSend) return;
+
+            if (!allowSend) return;
           }
         }
 

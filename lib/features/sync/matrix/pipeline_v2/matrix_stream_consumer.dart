@@ -86,6 +86,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     int liveScanInitialAuditScans = 5,
     int? liveScanInitialAuditTail,
     int liveScanSteadyTail = 100,
+    bool dropOldPayloadsInLiveScan = false,
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,
@@ -114,6 +115,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _circuitCooldown = circuitCooldown,
         _liveScanIncludeLookBehind = liveScanIncludeLookBehind,
         _liveScanSteadyTail = liveScanSteadyTail,
+        _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
         _overrideAuditTail = liveScanInitialAuditTail,
         _liveScanAuditScansRemaining = liveScanInitialAuditScans {
     _retryTracker = rc.RetryTracker(
@@ -206,6 +208,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       300; // sized later based on offline delta or override
   final int _liveScanSteadyTail;
   final int? _overrideAuditTail; // optional override for tests
+  final bool _dropOldPayloadsInLiveScan;
 
   // Tracks eventIds that reported rows=0 while predicted status suggests
   // incoming is newer (missing base). These should be retried and block
@@ -749,10 +752,35 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
       final deduped = tu.dedupEventsByIdPreserveOrder(combined);
       if (deduped.isNotEmpty) {
-        await _processOrdered(deduped);
+        // Optionally drop older/equal sync payloads to avoid repeated
+        // no-op processing during steady live scans. Attachments are kept
+        // to allow prefetch/descriptor observation.
+        final toProcess = _dropOldPayloadsInLiveScan
+            ? deduped.where((e) {
+                if (!ec.MatrixEventClassifier.isSyncPayloadEvent(e)) {
+                  return true;
+                }
+                final ts = TimelineEventOrdering.timestamp(e);
+                final isNewer = TimelineEventOrdering.isNewer(
+                  candidateTimestamp: ts,
+                  candidateEventId: e.eventId,
+                  latestTimestamp: _lastProcessedTs,
+                  latestEventId: _lastProcessedEventId,
+                );
+                if (!isNewer && _retryTracker.attempts(e.eventId) == 0) {
+                  if (_collectMetrics) _metrics.incSkipped();
+                  return false;
+                }
+                return true;
+              }).toList()
+            : deduped;
+
+        if (toProcess.isNotEmpty) {
+          await _processOrdered(toProcess);
+        }
         if (_collectMetrics) {
           _loggingService.captureEvent(
-            'v2 liveScan processed=${deduped.length} latest=${_lastProcessedEventId ?? 'null'}',
+            'v2 liveScan processed=${toProcess.length} latest=${_lastProcessedEventId ?? 'null'}',
             domain: 'MATRIX_SYNC_V2',
             subDomain: 'liveScan',
           );

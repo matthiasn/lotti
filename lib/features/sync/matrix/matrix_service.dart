@@ -152,6 +152,7 @@ class MatrixService {
                   documentsDirectory: documentsDirectory,
                   attachmentIndex: attachmentIndex,
                   collectMetrics: collectV2Metrics,
+                  dropOldPayloadsInLiveScan: true,
                 )
               : null);
       _v2Pipeline = pipeline;
