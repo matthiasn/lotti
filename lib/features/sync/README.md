@@ -115,6 +115,9 @@ that keeps the pipeline testable and observable.
   - `drainPasses`, `eventsProcessed`, `retryAttempts`, `totalProcessingTime`.
   Metrics increments are gated by `collectMetrics` to avoid hot-path overhead.
   A threshold log is emitted when drain passes exceed 2.
+- The Matrix stats panel deduplicates identical metric payloads and only bumps
+  the `Last updated` label when the metrics signature changes, keeping manual
+  refreshes from faking recency.
 
 ### Documentation & Artefacts
 
