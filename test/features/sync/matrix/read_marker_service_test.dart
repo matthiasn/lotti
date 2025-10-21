@@ -19,6 +19,8 @@ class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockEvent extends Mock implements Event {}
 
+class MockMatrixException extends Mock implements MatrixException {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(MockRoom());
@@ -91,6 +93,48 @@ void main() {
             domain: 'MATRIX_SERVICE',
             subDomain: 'setReadMarker.guard',
           )).called(1);
+    });
+
+    test('logs and suppresses M_UNKNOWN errors from room.setReadMarker',
+        () async {
+      final client = MockClient();
+      final room = MockRoom();
+      final log = MockLogging();
+      final db = MockSettingsDb();
+      final tl = MockTimeline();
+      final svc = SyncReadMarkerService(settingsDb: db, loggingService: log);
+
+      final matrixException = MockMatrixException();
+      when(() => matrixException.errcode).thenReturn('M_UNKNOWN');
+
+      when(() => client.isLogged()).thenReturn(true);
+      when(() => client.deviceName).thenReturn('dev');
+      when(() => room.fullyRead).thenReturn('');
+      when(() => room.id).thenReturn('!room');
+      when(() => room.setReadMarker(any())).thenThrow(matrixException);
+      when(() => db.saveSettingsItem(any(), any())).thenAnswer((_) async => 1);
+
+      await svc.updateReadMarker(
+        client: client,
+        room: room,
+        eventId: r'$missing',
+        timeline: tl,
+      );
+
+      verify(() => db.saveSettingsItem(any(), any())).called(1);
+      verify(() => room.setReadMarker(r'$missing')).called(1);
+      verify(() => log.captureEvent(
+            any<String>(
+                that: contains(
+                    r'marker.remote.missingEvent id=$missing (M_UNKNOWN)')),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'setReadMarker',
+          )).called(1);
+      verifyNever(() => tl.setReadMarker(eventId: any(named: 'eventId')));
+      verifyNever(() => log.captureException(any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<dynamic>(named: 'stackTrace')));
     });
 
     test('blocks when both visible and candidate is not newer', () async {
