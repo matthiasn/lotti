@@ -33,6 +33,7 @@ final Map<double, String> _speedLabelMap =
   2: '2x',
 });
 
+/// Minimal audio player card embedding play controls, progress, and speed toggle.
 class AudioPlayerWidget extends ConsumerWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
 
@@ -70,6 +71,7 @@ class AudioPlayerWidget extends ConsumerWidget {
   }
 }
 
+/// Provides responsive layout selection for the audio player card.
 class _AudioPlayerCardShell extends StatelessWidget {
   const _AudioPlayerCardShell({
     required this.journalAudio,
@@ -100,6 +102,7 @@ class _AudioPlayerCardShell extends StatelessWidget {
   }
 }
 
+/// Horizontal row containing play control, progress bar, timestamps, and speed toggle.
 class _PlayerBody extends StatelessWidget {
   const _PlayerBody({
     required this.cubit,
@@ -194,6 +197,7 @@ class _PlayerBody extends StatelessWidget {
   }
 }
 
+/// Circular primary play/pause button with progress ring animation.
 class _PlayButton extends StatelessWidget {
   const _PlayButton({
     required this.isPlaying,
@@ -301,6 +305,7 @@ class _PlayButton extends StatelessWidget {
   }
 }
 
+/// Displays the current playback speed and cycles through presets on tap.
 class _SpeedButton extends StatelessWidget {
   const _SpeedButton({
     required this.cubit,

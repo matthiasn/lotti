@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.696+3384
+version: 0.9.697+3385
 
 msix_config:
   display_name: LottiApp
@@ -18,7 +18,6 @@ environment:
   sdk: '>=3.0.1 <4.0.0'
 
 dependencies:
-  audio_video_progress_bar: ^2.0.1
   beamer: ^1.5.2
   bloc: ^9.0.0
   cached_network_image: ^3.2.0

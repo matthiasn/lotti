@@ -29,7 +29,7 @@
 - `AudioPlayerState` already tracks `progress`, `totalDuration`, `speed`, and button
   status—sufficient for richer UI.
 - `AudioPlayerCubit` exposes play/pause/stop/speed adjustments; we can reuse actions without
-  modification.
+  modification. (Stop control will remain internal only, not surfaced as UI.)
 - Tests (`test/features/speech/ui/widgets/audio_player_test.dart` ?) absent; need coverage for
   redesigned widget.
 - Feature README (`features/speech/README.md`) does not describe the audio playback UI.
@@ -40,9 +40,7 @@
   gradient stroke, and consistent padding.
 - Layout:
   - Left: Circular play/pause button with progress ring.
-  - Center: Track title/timecodes stacked vertically; progress bar beneath with custom painter
-    indicating buffer + played segments.
-  - Right: Secondary actions (stop, speed selector) in a pill with dividers.
+  - Center/Right: Progress bar with inline timestamps and a small speed selector pill.
 - Use `LayoutBuilder` to switch between horizontal (>=360 px) and vertical compact mode (<360 px).
 - Build progress indicator with `CustomPaint` + `GestureDetector` for scrubbing, fallback to
   `LinearProgressIndicator` when disabled.
@@ -60,9 +58,8 @@
 
 - Refactor `AudioPlayerWidget` into composable private widgets:
   - `_AudioPlayerCardShell`
-  - `_PrimaryControls` (play/pause)
-  - `_ProgressBar` (custom painter + gestures)
-  - `_SecondaryControls` (stop, speed, transcripts toggle)
+  - `_PlayerBody` (play/pause, progress bar, speed pill)
+  - `_AudioProgressBar` (custom painter + gestures)
 - Ensure state is derived solely from `AudioPlayerState`.
 - Introduce responsive `Flex` layout with breakpoints and intrinsic width guards.
 
@@ -78,21 +75,19 @@
 
 ### Phase 4 — Compact Mode Handling (P0)
 
-- Add layout switch for narrow widths: vertical stack with controls on top, progress below.
-- Use `MediaQuery.sizeOf(context)` guard to avoid overflow warnings.
-- Write constraint tests to ensure rendering down to 280 px without overflow.
+- Keep single-row layout responsive below 360 px while protecting tap targets; add tests down to
+  280 px.
 
 ### Phase 5 — Accessibility & Localization (P0/P1)
 
-- Provide descriptive `Semantics` labels for controls (play, pause, scrub, speed).
-- Add localized tooltip strings if missing (`messages.audioPlayerPlayTooltip`, etc.).
+- Provide descriptive `Semantics` labels for play/pause, scrubbing, and speed changes.
 - Verify contrast ratios meet WCAG in dark/light themes.
 
 ### Phase 6 — Tests & Docs (P0)
 
 - Add widget tests:
   - Layout smoke test for wide and narrow constraints.
-  - Interaction tests for play/pause taps, scrubbing updates, speed menu.
+  - Interaction tests for play/pause taps, scrubbing updates, speed cycling.
   - Semantics test ensuring labels/states exposed.
 - Update `features/speech/README.md` with new UI description and screenshot placeholder.
 - Append changelog entry noting audio player redesign.
@@ -186,7 +181,8 @@
   - Screen reader pass (VoiceOver) confirming announcements for primary controls.
   - Keyboard navigation: tab order, space/enter triggers, arrow key scrubbing.
   - Scrub gesture accuracy verified at 10%, 50%, 90% durations.
-  - Regression pass for transcript toggles to ensure no overlapping focus states.
+  - Regression pass for playback transitions (play/pause, speed changes) to ensure no unexpected
+    overlays or desync.
 
 
 ## Risks & Mitigations
@@ -212,5 +208,6 @@
 ## Follow-Up Opportunities
 
 - Waveform visualization prototype tracked as a separate initiative.
+- Keyboard control on desktop.
 - Evaluate segmented speed control UI after gathering analytics on usage of existing menu.
 - Consider sharing glass card primitives across other media widgets for consistency.

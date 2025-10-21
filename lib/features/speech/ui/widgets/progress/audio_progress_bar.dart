@@ -16,6 +16,7 @@ String formatAudioDuration(Duration duration) {
   return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 }
 
+/// Custom painted progress bar with buffered overlay and gesture-driven scrubbing.
 class AudioProgressBar extends StatelessWidget {
   const AudioProgressBar({
     required this.progress,
