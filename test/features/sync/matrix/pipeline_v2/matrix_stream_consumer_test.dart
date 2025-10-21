@@ -380,6 +380,7 @@ void main() {
 
       final snap = consumer.metricsSnapshot();
       expect(snap['dbEntryLinkNoop'], 1);
+      expect(snap['droppedByType.entryLink'], 1);
       final diag = consumer.diagnosticsStrings();
       expect(diag['entryLink.noops'], '1');
     });

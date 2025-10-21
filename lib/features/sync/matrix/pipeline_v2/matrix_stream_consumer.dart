@@ -1138,6 +1138,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         } else {
           _metrics
             ..incDbEntryLinkNoop()
+            ..bumpDroppedType('entryLink')
             // Record in diagnostics ring buffer
             ..addLastIgnored('${diag.eventId}:entryLink.noop');
         }
