@@ -1,15 +1,13 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/selection/unified_toggle.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class OutboxMonitorPage extends StatefulWidget {
   const OutboxMonitorPage({
@@ -33,56 +31,50 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OutboxCubit, OutboxState>(
-      builder: (_, OutboxState state) {
-        return StreamBuilder<List<OutboxItem>>(
-          stream: stream,
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<List<OutboxItem>> snapshot,
-          ) {
-            final items = snapshot.data ?? [];
-            final onlineStatus = state is! OutboxDisabled;
+    return StreamBuilder<List<OutboxItem>>(
+      stream: stream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<OutboxItem>> snapshot,
+      ) {
+        final items = snapshot.data ?? [];
 
-            void onValueChanged(String value) {
-              setState(() {
-                _selectedValue = value;
-                if (_selectedValue == 'all') {
-                  stream = _db.watchOutboxItems();
-                }
-                if (_selectedValue == 'pending') {
-                  stream = _db.watchOutboxItems(
-                    statuses: [OutboxStatus.pending],
-                  );
-                }
-                if (_selectedValue == 'error') {
-                  stream = _db.watchOutboxItems(
-                    statuses: [OutboxStatus.error],
-                  );
-                }
-              });
+        void onValueChanged(String value) {
+          setState(() {
+            _selectedValue = value;
+            if (_selectedValue == 'all') {
+              stream = _db.watchOutboxItems();
             }
+            if (_selectedValue == 'pending') {
+              stream = _db.watchOutboxItems(
+                statuses: [OutboxStatus.pending],
+              );
+            }
+            if (_selectedValue == 'error') {
+              stream = _db.watchOutboxItems(
+                statuses: [OutboxStatus.error],
+              );
+            }
+          });
+        }
 
-            return Scaffold(
-              appBar: OutboxAppBar(
-                onlineStatus: onlineStatus,
-                selectedValue: _selectedValue,
-                onValueChanged: onValueChanged,
-              ),
-              body: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(8),
-                children: List.generate(
-                  items.length,
-                  (int index) {
-                    return OutboxItemCard(
-                      item: items.elementAt(index),
-                    );
-                  },
-                ),
-              ),
-            );
-          },
+        return Scaffold(
+          appBar: OutboxAppBar(
+            selectedValue: _selectedValue,
+            onValueChanged: onValueChanged,
+          ),
+          body: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(8),
+            children: List.generate(
+              items.length,
+              (int index) {
+                return OutboxItemCard(
+                  item: items.elementAt(index),
+                );
+              },
+            ),
+          ),
         );
       },
     );
@@ -170,84 +162,54 @@ const toolbarHeight = 88.0;
 
 class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
   const OutboxAppBar({
-    required this.onlineStatus,
     required this.selectedValue,
     required this.onValueChanged,
     super.key,
   });
 
-  final bool onlineStatus;
   final String selectedValue;
   final void Function(String value) onValueChanged;
 
   @override
-  Size get preferredSize => const Size.fromHeight(toolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      title: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                context.messages.settingsSyncOutboxTitle,
-                style: appBarTextStyle,
-              ),
-              const SizedBox(width: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(context.messages.outboxMonitorSwitchLabel),
-                  const SizedBox(width: 8),
-                  UnifiedToggle(
-                    value: onlineStatus,
-                    onChanged: (_) {
-                      context.read<OutboxCubit>().toggleStatus();
-                    },
-                    variant: UnifiedToggleVariant.cupertino,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          CupertinoSegmentedControl(
+    return TitleWidgetAppBar(
+      title: Text(context.messages.settingsSyncOutboxTitle,
+          style: appBarTextStyleNew),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: CupertinoSegmentedControl(
             groupValue: selectedValue,
             onValueChanged: onValueChanged,
             children: {
-              'pending': SizedBox(
-                width: 64,
-                height: 32,
-                child: Center(
-                  child: Text(
-                    context.messages.outboxMonitorLabelPending,
-                    style: segmentItemStyle,
-                  ),
+              'pending': Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  context.messages.outboxMonitorLabelPending,
+                  style: segmentItemStyle,
                 ),
               ),
-              'error': SizedBox(
-                child: Center(
-                  child: Text(
-                    context.messages.outboxMonitorLabelError,
-                    style: segmentItemStyle,
-                  ),
+              'error': Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  context.messages.outboxMonitorLabelError,
+                  style: segmentItemStyle,
                 ),
               ),
-              'all': SizedBox(
-                child: Center(
-                  child: Text(
-                    context.messages.outboxMonitorLabelAll,
-                    style: segmentItemStyle,
-                  ),
+              'all': Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  context.messages.outboxMonitorLabelAll,
+                  style: segmentItemStyle,
                 ),
               ),
             },
           ),
-        ],
-      ),
-      toolbarHeight: toolbarHeight,
-      centerTitle: true,
+        ),
+      ],
     );
   }
 }

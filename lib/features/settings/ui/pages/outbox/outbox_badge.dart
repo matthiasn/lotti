@@ -14,7 +14,7 @@ class OutboxBadgeIcon extends StatelessWidget {
   final Widget icon;
 
   late final Stream<bool> flagStream =
-      getIt<JournalDb>().watchConfigFlag(enableSyncFlag);
+      getIt<JournalDb>().watchConfigFlag(enableMatrixFlag);
 
   late final Stream<int> outboxCountStream =
       getIt<SyncDatabase>().watchOutboxCount();

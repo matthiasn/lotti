@@ -28,7 +28,6 @@ Directory setupTestDirectory() {
 
 final Set<String> expectedActiveFlagNames = {
   privateFlag,
-  enableSyncFlag,
   enableTooltipFlag,
 };
 
@@ -43,11 +42,7 @@ final expectedFlags = <ConfigFlag>{
     description: 'Record geolocation?',
     status: false,
   ),
-  const ConfigFlag(
-    name: enableSyncFlag,
-    description: 'Enable sync? (requires restart)',
-    status: true,
-  ),
+  // enableSyncFlag removed; enableMatrixFlag is the source of truth for sync visibility
   const ConfigFlag(
     name: enableMatrixFlag,
     description: 'Enable Matrix Sync',

@@ -56,6 +56,20 @@ class MockJournalDb extends Mock implements JournalDb {
     }
     return Stream<Set<String>>.value(<String>{}).asBroadcastStream();
   }
+
+  @override
+  Stream<bool> watchConfigFlag(String flagName) {
+    try {
+      final result =
+          super.noSuchMethod(Invocation.method(#watchConfigFlag, [flagName]));
+      if (result is Stream<bool>) {
+        return result;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+    return Stream<bool>.value(false).asBroadcastStream();
+  }
 }
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
@@ -128,7 +142,7 @@ MockJournalDb mockJournalDbWithSyncFlag({
   final mock = MockJournalDb();
   when(mock.close).thenAnswer((_) async {});
 
-  when(() => mock.watchConfigFlag(enableSyncFlag)).thenAnswer(
+  when(() => mock.watchConfigFlag(enableMatrixFlag)).thenAnswer(
     (_) => Stream<bool>.fromIterable([enabled]),
   );
 

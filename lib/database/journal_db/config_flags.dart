@@ -13,13 +13,6 @@ Future<void> initConfigFlags(
     ),
   );
   await db.insertFlagIfNotExists(
-    ConfigFlag(
-      name: enableSyncFlag,
-      description: 'Enable sync? (requires restart)',
-      status: inMemoryDatabase,
-    ),
-  );
-  await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: enableMatrixFlag,
       description: 'Enable Matrix Sync',

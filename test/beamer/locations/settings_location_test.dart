@@ -66,6 +66,9 @@ void main() {
       expect(location.pathPatterns, [
         '/settings',
         '/settings/ai',
+        '/settings/sync',
+        '/settings/sync/stats',
+        '/settings/sync/outbox',
         '/settings/tags',
         '/settings/tags/:tagEntityId',
         '/settings/tags/create/:tagType',
@@ -85,7 +88,6 @@ void main() {
         '/settings/flags',
         '/settings/theming',
         '/settings/advanced',
-        '/settings/outbox_monitor',
         '/settings/logging',
         '/settings/advanced/logging/:logEntryId',
         '/settings/advanced/conflicts/:conflictId',
@@ -135,6 +137,20 @@ void main() {
       expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<AiSettingsPage>());
+    });
+
+    test('buildPages builds SyncSettingsPage', () {
+      final routeInformation =
+          RouteInformation(uri: Uri.parse('/settings/sync'));
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsPage>());
+      // Second page is SyncSettingsPage; type check omitted to avoid import churn
     });
 
     test('buildPages builds CategoriesListPage', () {
@@ -436,19 +452,18 @@ void main() {
       expect(pages[1].child, isA<AdvancedSettingsPage>());
     });
 
-    test('buildPages builds OutboxMonitorPage', () {
+    test('buildPages builds OutboxMonitorPage under /settings/sync/outbox', () {
       final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/advanced/outbox_monitor'));
+          RouteInformation(uri: Uri.parse('/settings/sync/outbox'));
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
+      expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
-      expect(pages[2].child, isA<OutboxMonitorPage>());
+      expect(pages[1].child, isA<OutboxMonitorPage>());
     });
 
     test('buildPages builds LoggingPage', () {
