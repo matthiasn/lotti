@@ -18,7 +18,6 @@ String formatAudioDuration(Duration duration) {
 }
 
 /// Custom painted progress bar with buffered overlay and gesture-driven scrubbing.
-/// Custom painted progress bar with buffered overlay and gesture-driven scrubbing.
 class AudioProgressBar extends StatefulWidget {
   const AudioProgressBar({
     required this.progress,
@@ -290,6 +289,12 @@ class _ProgressBarPainter extends CustomPainter {
   bool shouldRepaint(_ProgressBarPainter oldDelegate) {
     return progressRatio != oldDelegate.progressRatio ||
         bufferedRatio != oldDelegate.bufferedRatio ||
-        progressColor != oldDelegate.progressColor;
+        progressColor != oldDelegate.progressColor ||
+        backgroundColor != oldDelegate.backgroundColor ||
+        bufferedColor != oldDelegate.bufferedColor ||
+        glowColor != oldDelegate.glowColor ||
+        thumbColor != oldDelegate.thumbColor ||
+        trackHeight != oldDelegate.trackHeight ||
+        thumbRadius != oldDelegate.thumbRadius;
   }
 }
