@@ -23,6 +23,12 @@ const personTagColor = Color.fromRGBO(55, 201, 154, 1);
 const storyTagColor = Color.fromRGBO(200, 120, 0, 1);
 const starredGold = Color.fromRGBO(255, 215, 0, 1);
 
+// Task status colors
+const taskStatusDarkRed = Color(0xFFC62828);
+const taskStatusDarkGreen = Color(0xFF2E7D32);
+const taskStatusDarkOrange = Color(0xFFE65100);
+const taskStatusDarkBlue = Color(0xFF1565C0);
+
 final Color secondaryTextColor = oldPrimaryColor.desaturate(70).darken(20);
 final Color chartTextColor = nickel;
 
