@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_list_item_view_model.dart';
@@ -26,7 +28,7 @@ class OutboxListItem extends StatelessWidget {
     final trailing = showRetry && onRetry != null
         ? FilledButton.icon(
             key: ValueKey('outboxRetry-${item.id}'),
-            onPressed: () => onRetry!.call(),
+            onPressed: () => unawaited(onRetry!.call()),
             icon: const Icon(Icons.replay_rounded),
             label: Text(viewModel.retryButtonLabel),
           )

@@ -2439,6 +2439,12 @@ abstract class AppLocalizations {
   /// **'Retry scheduled'**
   String get outboxMonitorRetryQueued;
 
+  /// No description provided for @outboxMonitorRetryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed. Please try again.'**
+  String get outboxMonitorRetryFailed;
+
   /// No description provided for @outboxMonitorEmptyTitle.
   ///
   /// In en, this message translates to:

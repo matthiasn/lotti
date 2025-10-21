@@ -1303,6 +1303,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get outboxMonitorRetryQueued => 'Retry scheduled';
 
   @override
+  String get outboxMonitorRetryFailed => 'Retry failed. Please try again.';
+
+  @override
   String get outboxMonitorEmptyTitle => 'Outbox is clear';
 
   @override

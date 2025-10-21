@@ -103,6 +103,7 @@ class ConflictListItemViewModel {
   }
 
   static String _titleCase(String value, String locale) {
-    return toBeginningOfSentenceCase(value, locale);
+    final String? formatted = toBeginningOfSentenceCase(value, locale);
+    return formatted ?? value;
   }
 }

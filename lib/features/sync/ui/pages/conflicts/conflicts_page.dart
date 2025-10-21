@@ -58,16 +58,30 @@ class _ConflictsPageState extends State<ConflictsPage> {
     controller
       ..onListen = () {
         unresolvedSubscription =
-            _db.watchConflicts(ConflictStatus.unresolved).listen((value) {
-          unresolved = value;
-          emitIfReady();
-        });
+            _db.watchConflicts(ConflictStatus.unresolved).listen(
+          (value) {
+            unresolved = value;
+            emitIfReady();
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            if (!controller.isClosed) {
+              controller.addError(error, stackTrace);
+            }
+          },
+        );
 
         resolvedSubscription =
-            _db.watchConflicts(ConflictStatus.resolved).listen((value) {
-          resolved = value;
-          emitIfReady();
-        });
+            _db.watchConflicts(ConflictStatus.resolved).listen(
+          (value) {
+            resolved = value;
+            emitIfReady();
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            if (!controller.isClosed) {
+              controller.addError(error, stackTrace);
+            }
+          },
+        );
       }
       ..onPause = () {
         unresolvedSubscription?.pause();
@@ -80,8 +94,13 @@ class _ConflictsPageState extends State<ConflictsPage> {
       ..onCancel = () async {
         await unresolvedSubscription?.cancel();
         await resolvedSubscription?.cancel();
+        unresolvedSubscription = null;
+        resolvedSubscription = null;
         unresolved = null;
         resolved = null;
+        if (!controller.isClosed) {
+          await controller.close();
+        }
       };
 
     return controller.stream;

@@ -468,6 +468,7 @@
   "outboxMonitorRetryConfirmMessage": "Retry this sync item now?",
   "outboxMonitorRetryConfirmLabel": "Retry Now",
   "outboxMonitorRetryQueued": "Retry scheduled",
+  "outboxMonitorRetryFailed": "Retry failed. Please try again.",
   "outboxMonitorEmptyTitle": "Outbox is clear",
   "outboxMonitorEmptyDescription": "There are no sync items in this view.",
   "outboxMonitorSwitchLabel": "enabled",

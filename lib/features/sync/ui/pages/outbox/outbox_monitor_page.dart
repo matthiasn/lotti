@@ -6,6 +6,7 @@ import 'package:lotti/features/sync/ui/widgets/outbox/outbox_list_item.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 enum _OutboxListFilter {
@@ -36,21 +37,38 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
     );
     if (!confirmed) return;
 
-    await _db.updateOutboxItem(
-      OutboxCompanion(
-        id: drift.Value(item.id),
-        status: drift.Value(OutboxStatus.pending.index),
-        retries: drift.Value(item.retries + 1),
-        updatedAt: drift.Value(DateTime.now()),
-      ),
-    );
+    try {
+      await _db.updateOutboxItem(
+        OutboxCompanion(
+          id: drift.Value(item.id),
+          status: drift.Value(OutboxStatus.pending.index),
+          retries: drift.Value(item.retries + 1),
+          updatedAt: drift.Value(DateTime.now()),
+        ),
+      );
 
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.messages.outboxMonitorRetryQueued),
-      ),
-    );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.messages.outboxMonitorRetryQueued),
+        ),
+      );
+    } catch (error, stackTrace) {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'OUTBOX',
+        subDomain: 'retry_item',
+        stackTrace: stackTrace,
+      );
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.messages.outboxMonitorRetryFailed),
+        ),
+      );
+    }
   }
 
   @override

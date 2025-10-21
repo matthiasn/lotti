@@ -30,7 +30,10 @@ class OutboxListItemViewModel {
   }) {
     final locale = Localizations.localeOf(context).toString();
     final theme = Theme.of(context);
-    final status = OutboxStatus.values[item.status];
+    final statusIndex = item.status;
+    final status = statusIndex >= 0 && statusIndex < OutboxStatus.values.length
+        ? OutboxStatus.values[statusIndex]
+        : OutboxStatus.values.first;
     final messages = context.messages;
 
     final timestamp = df.format(item.createdAt);
@@ -72,7 +75,8 @@ class OutboxListItemViewModel {
       message: item.message,
     );
 
-    final subjectValue = item.subject.isNotEmpty ? item.subject.trim() : null;
+    final trimmedSubject = item.subject.trim();
+    final subjectValue = trimmedSubject.isEmpty ? null : trimmedSubject;
 
     final trimmedAttachment = item.filePath?.trim();
     final hasAttachment =
@@ -156,7 +160,7 @@ class OutboxListItemViewModel {
   }
 
   static String _titleCase(String value, String locale) {
-    final formatted = toBeginningOfSentenceCase(value, locale);
-    return formatted;
+    final String? formatted = toBeginningOfSentenceCase(value, locale);
+    return formatted ?? value;
   }
 }
