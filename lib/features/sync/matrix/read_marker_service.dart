@@ -74,20 +74,13 @@ class SyncReadMarkerService {
         if (!isTestEnv) {
           final remoteId = room.fullyRead;
           if (remoteId != eventId) {
-            var allowSend = true;
-            final tl = timeline;
-
             if (remoteId.isEmpty) {
-              // No remote marker yet – allow advancement to seed it.
-              allowSend = true;
               _loggingService.captureEvent(
                 'marker.remote.allow(emptyRemote) id=$eventId',
                 domain: 'MATRIX_SERVICE',
                 subDomain: 'setReadMarker.guard',
               );
-            } else if (tl == null) {
-              // Without a timeline we can't reliably compare; allow to avoid stalls.
-              allowSend = true;
+            } else if (timeline == null) {
               _loggingService.captureEvent(
                 'marker.remote.allow(noTimeline) id=$eventId (remote=$remoteId)',
                 domain: 'MATRIX_SERVICE',
@@ -98,7 +91,7 @@ class SyncReadMarkerService {
               try {
                 Event? cand;
                 Event? base;
-                for (final e in tl.events) {
+                for (final e in timeline.events) {
                   if (e.eventId == eventId) cand = e;
                   if (e.eventId == remoteId) base = e;
                   if (cand != null && base != null) break;
@@ -112,16 +105,15 @@ class SyncReadMarkerService {
                     latestEventId: base.eventId,
                   );
                   if (!newer) {
-                    allowSend = false;
                     _loggingService.captureEvent(
                       'marker.remote.skip id=$eventId (remoteAhead=$remoteId)',
                       domain: 'MATRIX_SERVICE',
                       subDomain: 'setReadMarker.guard',
                     );
+                    return; // Guard clause: block regression
                   }
                 } else {
                   // If either event is not visible, prefer sending.
-                  allowSend = true;
                   _loggingService.captureEvent(
                     'marker.remote.allow(unseen) id=$eventId (remote=$remoteId)',
                     domain: 'MATRIX_SERVICE',
@@ -129,12 +121,9 @@ class SyncReadMarkerService {
                   );
                 }
               } catch (_) {
-                // On comparison failure, fall back to allowing send.
-                allowSend = true;
+                // On comparison failure, allow advancing.
               }
             }
-
-            if (!allowSend) return;
           }
         }
 
