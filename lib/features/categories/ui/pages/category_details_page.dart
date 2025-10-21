@@ -18,6 +18,7 @@ import 'package:lotti/features/categories/ui/widgets/category_prompt_selection.d
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -230,7 +231,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(context.messages.saveSuccessful),
-        backgroundColor: Colors.green,
+        backgroundColor: successColor,
       ),
     );
     Navigator.of(context).pop();
