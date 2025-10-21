@@ -153,6 +153,96 @@ void main() {
     expect(find.textContaining('Last updated:'), findsOneWidget);
   });
 
+  testWidgets('Retry Now button triggers MatrixService.retryV2Now',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 0,
+      messageCounts: const {},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
+      (_) async => V2Metrics.fromMap({'processed': 1}),
+    );
+    when(() => mockMatrixService.retryV2Now()).thenAnswer((_) async {});
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('matrixStats.retryNow')));
+    await tester.pump();
+    verify(() => mockMatrixService.retryV2Now()).called(1);
+  });
+
+  testWidgets('V2 metrics signature gating keeps lastUpdated on identical map',
+      (tester) async {
+    final stats = MatrixStats(
+      sentCount: 0,
+      messageCounts: const {},
+    );
+
+    var map = {'processed': 2, 'failures': 0, 'retriesScheduled': 0};
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+    when(() => mockMatrixService.getV2Metrics())
+        .thenAnswer((_) async => V2Metrics.fromMap(map));
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const IncomingStats(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixStatsControllerProvider
+              .overrideWith(() => _FakeMatrixStatsController(stats)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Grab initial "Last updated" text
+    final lastUpdatedFinder = find.textContaining('Last updated').first;
+    final initialText = tester.widget<Text>(lastUpdatedFinder).data ??
+        tester.widget<Text>(lastUpdatedFinder).toStringShort();
+
+    // Trigger refresh with identical map; time should not change.
+    // Use runAsync to advance real time since DateTime.now() is used.
+    await tester.tap(find.byIcon(Icons.refresh_rounded).first);
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(seconds: 1));
+    });
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    final afterSameText = tester.widget<Text>(lastUpdatedFinder).data ??
+        tester.widget<Text>(lastUpdatedFinder).toStringShort();
+    expect(afterSameText, initialText);
+
+    // Change map and trigger refresh; time should update
+    map = {'processed': 3, 'failures': 0, 'retriesScheduled': 0};
+    when(() => mockMatrixService.getV2Metrics())
+        .thenAnswer((_) async => V2Metrics.fromMap(map));
+    await tester.tap(find.byIcon(Icons.refresh_rounded).first);
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(seconds: 1));
+    });
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    final afterChangeText = tester.widget<Text>(lastUpdatedFinder).data ??
+        tester.widget<Text>(lastUpdatedFinder).toStringShort();
+    expect(afterChangeText, isNot(equals(initialText)));
+  });
+
   testWidgets('refresh button invalidates provider and updates metrics',
       (tester) async {
     final stats = MatrixStats(
@@ -485,6 +575,85 @@ void main() {
     // Called at least once by the diagnostics section plus this button.
     verify(() => mockMatrixService.getSyncDiagnosticsText())
         .called(greaterThan(0));
+  });
+
+  testWidgets('preserves scroll offset via PageStorageKey', (tester) async {
+    final stats = MatrixStats(
+      sentCount: 0,
+      messageCounts: const {},
+    );
+
+    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
+
+    // Create a long metrics payload to ensure the page scrolls.
+    final longMap = <String, int>{
+      'processed': 10,
+      'failures': 0,
+      'retriesScheduled': 0,
+      'prefetch': 5,
+      'flushes': 5,
+      'catchupBatches': 2,
+      'skipped': 0,
+      'skippedByRetryLimit': 0,
+      'circuitOpens': 0,
+      'dbApplied': 42,
+      'dbIgnoredByVectorClock': 0,
+      'conflictsCreated': 0,
+      'dbMissingBase': 0,
+      'dbEntryLinkNoop': 0,
+      'lookBehindMerges': 0,
+      'lastLookBehindTail': 0,
+    };
+    for (var i = 0; i < 30; i++) {
+      longMap['processed.type$i'] = i;
+      longMap['droppedByType.type$i'] = i;
+    }
+    when(() => mockMatrixService.getV2Metrics())
+        .thenAnswer((_) async => V2Metrics.fromMap(longMap));
+
+    final bucket = PageStorageBucket();
+
+    Future<void> pumpWithBucket() async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          PageStorage(
+            bucket: bucket,
+            child: const IncomingStats(),
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixStatsControllerProvider
+                .overrideWith(() => _FakeMatrixStatsController(stats)),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await pumpWithBucket();
+
+    // Scroll down a bit.
+    final scrollableFinder = find.descendant(
+      of: find.byKey(const PageStorageKey('matrixStatsScroll')),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(
+      find.byKey(const PageStorageKey('matrixStatsScroll')),
+      const Offset(0, -400),
+    );
+    await tester.pumpAndSettle();
+
+    final scrollState1 = tester.state<ScrollableState>(scrollableFinder);
+    final offsetBefore = scrollState1.position.pixels;
+    expect(offsetBefore, greaterThan(0));
+
+    // Rebuild with the same PageStorage bucket; offset should persist.
+    await pumpWithBucket();
+
+    final scrollState2 = tester.state<ScrollableState>(scrollableFinder);
+    final offsetAfter = scrollState2.position.pixels;
+    expect(offsetAfter, closeTo(offsetBefore, 1.0));
   });
 
   testWidgets('Tooltips contain expected messages and snackbar duration holds',

@@ -43,6 +43,24 @@ void main() {
 
     tearDown(getIt.reset);
 
+    testWidgets('gates page when feature disabled', (tester) async {
+      // Feature flag off
+      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) => Stream<bool>.value(false));
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SyncStatsPage(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      await tester.pump();
+      // No Matrix Stats title rendered when gated.
+      expect(find.text('Matrix Stats'), findsNothing);
+    });
+
     testWidgets('renders page without page-level loader', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

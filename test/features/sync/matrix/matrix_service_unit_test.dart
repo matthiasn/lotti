@@ -29,6 +29,7 @@ import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/platform.dart' show isTestEnv;
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 // No internal SDK controllers in tests
@@ -627,6 +628,39 @@ void main() {
 
     expect(service.sentCount, 1);
     await statsFuture;
+  });
+
+  test('debounce emits a single consolidated snapshot, then new one on change',
+      () async {
+    // Temporarily disable test-mode fast path to exercise debounce logic.
+    final prevIsTestEnv = isTestEnv;
+    isTestEnv = false;
+    addTearDown(() => isTestEnv = prevIsTestEnv);
+
+    // Listen for emissions.
+    final emissions = <MatrixStats>[];
+    final sub = service.messageCountsController.stream.listen(emissions.add);
+    addTearDown(() => sub.cancel());
+
+    // Perform two increments within the debounce window.
+    service
+      ..incrementSentCountOf('sent')
+      ..incrementSentCountOf('sent');
+
+    // Wait longer than the debounce duration to allow a single emit.
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+
+    expect(emissions.length, 1);
+    expect(emissions.first.sentCount, 2);
+    expect(emissions.first.messageCounts['sent'], 2);
+
+    // A further change should trigger another emission after debounce.
+    service.incrementSentCountOf('sent');
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+
+    expect(emissions.length, 2);
+    expect(emissions.last.sentCount, 3);
+    expect(emissions.last.messageCounts['sent'], 3);
   });
 
   test('constructor throws when syncEngine lifecycle coordinator mismatched',
