@@ -53,6 +53,15 @@ class SyncReadMarkerService {
   /// - [eventId]: The event ID to advance the read marker to.
   /// - [timeline]: Optional timeline snapshot; used as a compatibility fallback
   ///   when the room-level update fails.
+  ///
+  /// The method is intentionally defensive:
+  /// - Non-server event IDs (local placeholders such as `lotti-…`) are skipped
+  ///   for remote updates but still persisted locally so we do not regress the
+  ///   stored marker.
+  /// - Matrix `M_UNKNOWN` errors ("Could not find event …") are treated as
+  ///   informational noise; they are logged once and suppressed to avoid
+  ///   spamming the error channel while we wait for the server to learn about
+  ///   the event.
   Future<void> updateReadMarker({
     required Client client,
     required Room room,

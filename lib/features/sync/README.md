@@ -283,6 +283,11 @@ behaviour using Matrix Stats and logs.
   - `TimelineEventOrdering.compare` uses timestamp ordering; on equal timestamps,
     events are ordered lexicographically by event ID. `isNewer` applies the same
     rule to ensure monotonic advancement.
+- Sent metrics
+  - `MatrixService.sendMatrixMsg` maps each `SyncMessage` variant to a typed bucket
+    (`journalEntity`, `entityDefinition`, `tagEntity`, `entryLink`, `aiConfig`,
+    `aiConfigDelete`) and debounces emissions; unit tests cover each variant along
+    with timer cancellation on `dispose`.
 - Vector‑clock aware JSON
   - `SmartJournalEntityLoader` reads local JSON first; if a vector clock is
     provided and the local is older, it uses `AttachmentIndex` to fetch the
@@ -296,6 +301,9 @@ behaviour using Matrix Stats and logs.
 - Read markers
   - `SyncReadMarkerService` gates updates via `client.isLogged()` and prefers
     room-level `setReadMarker`; falls back to timeline-level when available.
+  - Non-server/local event IDs (e.g., `lotti-…`) are persisted locally but skipped for
+    remote updates; matching M_UNKNOWN responses are logged once and suppressed to
+    avoid noisy error streams.
   - Remote monotonic guard: only advance if the candidate is strictly newer
     than the current `fullyRead` by server timestamp + eventId tie-breaker.
 

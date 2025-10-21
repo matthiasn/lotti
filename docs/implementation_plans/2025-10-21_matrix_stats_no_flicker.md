@@ -81,11 +81,9 @@ Status: Completed
 
 ### Phase 4 — Read‑Marker Error Hardening (P2)
 
-- In `SyncReadMarkerService.updateReadMarker`, catch `M_UNKNOWN … Could not find event` and:
-  - downgrade to warn‑level log,
-  - do not notify UI providers or invalidate stats,
-  - schedule retry after next successful sync or skip silently.
-- File: `lib/features/sync/matrix/read_marker_service.dart:131`.
+- Status: Completed
+- In `SyncReadMarkerService.updateReadMarker`, guard against non-server (local) event IDs and skip remote updates. Catch `M_UNKNOWN … Could not find event`, log once, and keep the locally persisted marker without bubbling the exception.
+- Files: `lib/features/sync/matrix/read_marker_service.dart`, `test/features/sync/matrix/read_marker_service_test.dart` (adds regression coverage).
 
 ### Phase 5 — Instrumentation (Dev Only) (P1)
 
@@ -144,6 +142,15 @@ Status: Updated and extended; targeted suites passing.
   - Toggles `isTestEnv = false` to exercise debounce path; two increments within window emit once; subsequent change emits again.
   - File: `test/features/sync/matrix/matrix_service_unit_test.dart`
 
+- Service: stats coverage
+  - Message type mapping verified for journal/entity/tag/entryLink/aiConfig/aiConfigDelete variants.
+  - Dispose cancels pending stats timer even when debounced emits are scheduled.
+  - Files: `test/features/sync/matrix/matrix_service_unit_test.dart`
+
+- Read marker hardening
+  - Non-server event IDs skipped, M_UNKNOWN suppression logged, local persistence verified.
+  - File: `test/features/sync/matrix/read_marker_service_test.dart`
+
 Analyzer
 - Zero warnings; formatted.
 
@@ -179,7 +186,7 @@ Test runs
 - [x] Add equality guard to `_MessageCountsView` before `setState`.
 - [x] Optional `RepaintBoundary` around both subpanels.
 - [x] Add last‑emitted signature guard in `MatrixService` before emitting stats.
-- [ ] Harden `SyncReadMarkerService.updateReadMarker` (`M_UNKNOWN` handling).  (P2)
+- [x] Harden `SyncReadMarkerService.updateReadMarker` (`M_UNKNOWN` handling).  (P2)
 - [x] Analyzer: zero warnings; format code; run unit/widget tests.
 
 ## What Changed (Recap)
@@ -189,11 +196,13 @@ Test runs
 - Stable “Sent” updates: `ref.listenManual` + local snapshot + signature guard to avoid redundant `setState`.
 - V2 metrics stability: polling with signature gating and `lastUpdated` timestamp; refresh/force‑rescan/retry now/copy diagnostics wired.
 - Service emit‑on‑change: 500 ms debounce + last‑emitted signature equality; test‑mode bypass for determinism.
+- Stats coverage: message type mapping and timer cancellation exercised via unit tests to prevent regressions.
+- Read marker hardening: skip non-server IDs and silently handle server-side M_UNKNOWN responses while preserving local state.
 
 ## Next
 
-- Read‑marker error hardening (P2): suppress expected `M_UNKNOWN` in `SyncReadMarkerService.updateReadMarker` and avoid noisy logs.
 - Optional: add rebuild‑count instrumentation in tests to assert no redundant `setState` in the Sent panel.
+- Consider snapshot isolation and signature dedupe assertions (see test coverage critique follow-ups).
 
 
 ## Implementation discipline
