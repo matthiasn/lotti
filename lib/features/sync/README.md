@@ -7,6 +7,20 @@ protocol. Since the 2025-10-06 refactor the sync stack is composed of
 constructor-injected services, Riverpod providers, and a coordinated lifecycle
 that keeps the pipeline testable and observable.
 
+## UI Surfaces
+
+- Sync Settings (under `/settings/sync`) now pulls its Outbox and Conflicts list pages from
+  `lib/features/sync/ui/...`, using a shared `SyncListScaffold` for filter chips, inline summaries,
+  and animated empty/loading states.
+- `OutboxListItem` + `OutboxListItemViewModel` format payload metadata, retries, attachments, and
+  retry affordances; retry actions are confirmed before requeueing.
+- `ConflictListItem` + `ConflictListItemViewModel` present entity context, vector clock details, and
+  semantics labels for accessibility. Tapping navigates to the existing conflict detail route.
+- Tests for these surfaces live alongside other sync UI coverage under
+  `test/features/sync/ui/...` with cross-cutting widget smoke tests in `test/widgets/sync`
+  (see `test/widgets/sync/conflict_list_item_test.dart` and
+  `test/widgets/sync/sync_list_scaffold_test.dart` for dedicated widget coverage).
+
 ## Architecture
 
 ### Core Services
@@ -231,11 +245,15 @@ Key helpers:
   replaying sync definitions, and forcing a re-sync window.
 - Outbox Monitor lives under `/settings/sync/outbox` and no longer exposes
   its own on/off toggle. The global Matrix sync flag governs enablement.
+- Outbox Monitor adopts the shared `SyncListScaffold` with modern cards,
+  segmented filters, payload metadata, and confirmation-backed retry actions.
 - Matrix Stats is a full page under `/settings/sync/stats`, rendered in a
   styled card with a large, subtle loading indicator.
 - Advanced Settings no longer contains Matrix/Outbox/Conflicts tiles; those
   have moved under Sync (Conflicts is still routed under advanced paths but
   linked from the Sync page).
+- Conflicts list pages now use the shared scaffold with modern cards,
+  entity badges, and inline counts for resolved/unresolved filters.
 - Beamer route matching for the Sync section uses exact path matching to avoid
   brittle substring checks.
 

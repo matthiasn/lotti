@@ -2379,11 +2379,23 @@ abstract class AppLocalizations {
   /// **'sent'**
   String get outboxMonitorLabelSent;
 
+  /// No description provided for @outboxMonitorLabelSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'success'**
+  String get outboxMonitorLabelSuccess;
+
   /// No description provided for @outboxMonitorNoAttachment.
   ///
   /// In en, this message translates to:
   /// **'no attachment'**
   String get outboxMonitorNoAttachment;
+
+  /// No description provided for @outboxMonitorRetriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retries'**
+  String get outboxMonitorRetriesLabel;
 
   /// No description provided for @outboxMonitorRetries.
   ///
@@ -2397,11 +2409,137 @@ abstract class AppLocalizations {
   /// **'retry'**
   String get outboxMonitorRetry;
 
+  /// No description provided for @outboxMonitorSubjectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject'**
+  String get outboxMonitorSubjectLabel;
+
+  /// No description provided for @outboxMonitorAttachmentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment'**
+  String get outboxMonitorAttachmentLabel;
+
+  /// No description provided for @outboxMonitorRetryConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry this sync item now?'**
+  String get outboxMonitorRetryConfirmMessage;
+
+  /// No description provided for @outboxMonitorRetryConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry Now'**
+  String get outboxMonitorRetryConfirmLabel;
+
+  /// No description provided for @outboxMonitorRetryQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry scheduled'**
+  String get outboxMonitorRetryQueued;
+
+  /// No description provided for @outboxMonitorRetryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed. Please try again.'**
+  String get outboxMonitorRetryFailed;
+
+  /// No description provided for @outboxMonitorEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbox is clear'**
+  String get outboxMonitorEmptyTitle;
+
+  /// No description provided for @outboxMonitorEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no sync items in this view.'**
+  String get outboxMonitorEmptyDescription;
+
   /// No description provided for @outboxMonitorSwitchLabel.
   ///
   /// In en, this message translates to:
   /// **'enabled'**
   String get outboxMonitorSwitchLabel;
+
+  /// No description provided for @syncListPayloadKindLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload'**
+  String get syncListPayloadKindLabel;
+
+  /// No description provided for @syncListUnknownPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown payload'**
+  String get syncListUnknownPayload;
+
+  /// No description provided for @syncPayloadJournalEntity.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal entry'**
+  String get syncPayloadJournalEntity;
+
+  /// No description provided for @syncPayloadEntityDefinition.
+  ///
+  /// In en, this message translates to:
+  /// **'Entity definition'**
+  String get syncPayloadEntityDefinition;
+
+  /// No description provided for @syncPayloadTagEntity.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag entity'**
+  String get syncPayloadTagEntity;
+
+  /// No description provided for @syncPayloadEntryLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry link'**
+  String get syncPayloadEntryLink;
+
+  /// No description provided for @syncPayloadAiConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'AI configuration'**
+  String get syncPayloadAiConfig;
+
+  /// No description provided for @syncPayloadAiConfigDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'AI configuration delete'**
+  String get syncPayloadAiConfigDelete;
+
+  /// No description provided for @syncListCountSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} · {itemCount, plural, =0{0 items} =1{1 item} other{{itemCount} items}}'**
+  String syncListCountSummary(String label, int itemCount);
+
+  /// No description provided for @conflictsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No conflicts detected'**
+  String get conflictsEmptyTitle;
+
+  /// No description provided for @conflictsEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is in sync right now. Resolved items stay available in the other filter.'**
+  String get conflictsEmptyDescription;
+
+  /// No description provided for @conflictEntityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Entity'**
+  String get conflictEntityLabel;
+
+  /// No description provided for @conflictIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get conflictIdLabel;
 
   /// No description provided for @promptAddOrRemoveModelsButton.
   ///

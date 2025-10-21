@@ -458,10 +458,43 @@
   "outboxMonitorLabelError": "error",
   "outboxMonitorLabelPending": "pending",
   "outboxMonitorLabelSent": "sent",
+  "outboxMonitorLabelSuccess": "success",
   "outboxMonitorNoAttachment": "no attachment",
+  "outboxMonitorRetriesLabel": "Retries",
   "outboxMonitorRetries": "retries",
   "outboxMonitorRetry": "retry",
+  "outboxMonitorSubjectLabel": "Subject",
+  "outboxMonitorAttachmentLabel": "Attachment",
+  "outboxMonitorRetryConfirmMessage": "Retry this sync item now?",
+  "outboxMonitorRetryConfirmLabel": "Retry Now",
+  "outboxMonitorRetryQueued": "Retry scheduled",
+  "outboxMonitorRetryFailed": "Retry failed. Please try again.",
+  "outboxMonitorEmptyTitle": "Outbox is clear",
+  "outboxMonitorEmptyDescription": "There are no sync items in this view.",
   "outboxMonitorSwitchLabel": "enabled",
+  "syncListPayloadKindLabel": "Payload",
+  "syncListUnknownPayload": "Unknown payload",
+  "syncPayloadJournalEntity": "Journal entry",
+  "syncPayloadEntityDefinition": "Entity definition",
+  "syncPayloadTagEntity": "Tag entity",
+  "syncPayloadEntryLink": "Entry link",
+  "syncPayloadAiConfig": "AI configuration",
+  "syncPayloadAiConfigDelete": "AI configuration delete",
+  "syncListCountSummary": "{label} · {itemCount, plural, =0{0 items} =1{1 item} other{{itemCount} items}}",
+  "@syncListCountSummary": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "itemCount": {
+        "type": "int"
+      }
+    }
+  },
+  "conflictsEmptyTitle": "No conflicts detected",
+  "conflictsEmptyDescription": "Everything is in sync right now. Resolved items stay available in the other filter.",
+  "conflictEntityLabel": "Entity",
+  "conflictIdLabel": "ID",
   "promptAddOrRemoveModelsButton": "Add or Remove Models",
   "promptAddPageTitle": "Add Prompt",
   "promptAiResponseTypeDescription": "Format of the expected response",

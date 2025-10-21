@@ -8,10 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Matrix Stats now keeps per-type "Sent" counts stable while the page stays flicker-free on mobile and desktop.
 - Read markers no longer spam `M_UNKNOWN` errors—local-only IDs are skipped and expected misses are logged once.
-- Moved Matrix sync maintenance actions (delete sync database, re-sync definitions/messages) to the new Matrix Sync Maintenance page under Sync Settings; the FTS5 rebuild remains in Advanced.
+- Moved Matrix sync maintenance actions (delete sync database, re-sync definitions/messages) to the new Matrix Sync Maintenance page under Sync Settings.
+- Sync Outbox and Sync Conflicts list pages now use modern cards with segmented filters, inline counts, and polished empty states via the shared sync list scaffold.
+- Added dedicated widget tests for `ConflictListItem` and `SyncListScaffold` covering filters, semantics, and interaction paths.
 
 ### Fixed
 - Matrix Stats `Last updated` label now stays stable when metrics payloads are unchanged, eliminating refresh jitter.
+- Guarded sync list filters against invalid persisted enum indexes on conflicts/outbox pages to prevent `RangeError`.
 
 ## [0.9.692] - 2025-10-20
 ### Changed:

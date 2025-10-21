@@ -1258,7 +1258,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get outboxMonitorLabelSent => 'sent';
 
   @override
+  String get outboxMonitorLabelSuccess => 'success';
+
+  @override
   String get outboxMonitorNoAttachment => 'no attachment';
+
+  @override
+  String get outboxMonitorRetriesLabel => 'Retries';
 
   @override
   String get outboxMonitorRetries => 'retries';
@@ -1267,7 +1273,81 @@ class AppLocalizationsEn extends AppLocalizations {
   String get outboxMonitorRetry => 'retry';
 
   @override
+  String get outboxMonitorSubjectLabel => 'Subject';
+
+  @override
+  String get outboxMonitorAttachmentLabel => 'Attachment';
+
+  @override
+  String get outboxMonitorRetryConfirmMessage => 'Retry this sync item now?';
+
+  @override
+  String get outboxMonitorRetryConfirmLabel => 'Retry Now';
+
+  @override
+  String get outboxMonitorRetryQueued => 'Retry scheduled';
+
+  @override
+  String get outboxMonitorRetryFailed => 'Retry failed. Please try again.';
+
+  @override
+  String get outboxMonitorEmptyTitle => 'Outbox is clear';
+
+  @override
+  String get outboxMonitorEmptyDescription =>
+      'There are no sync items in this view.';
+
+  @override
   String get outboxMonitorSwitchLabel => 'enabled';
+
+  @override
+  String get syncListPayloadKindLabel => 'Payload';
+
+  @override
+  String get syncListUnknownPayload => 'Unknown payload';
+
+  @override
+  String get syncPayloadJournalEntity => 'Journal entry';
+
+  @override
+  String get syncPayloadEntityDefinition => 'Entity definition';
+
+  @override
+  String get syncPayloadTagEntity => 'Tag entity';
+
+  @override
+  String get syncPayloadEntryLink => 'Entry link';
+
+  @override
+  String get syncPayloadAiConfig => 'AI configuration';
+
+  @override
+  String get syncPayloadAiConfigDelete => 'AI configuration delete';
+
+  @override
+  String syncListCountSummary(String label, int itemCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      itemCount,
+      locale: localeName,
+      other: '$itemCount items',
+      one: '1 item',
+      zero: '0 items',
+    );
+    return '$label · $_temp0';
+  }
+
+  @override
+  String get conflictsEmptyTitle => 'No conflicts detected';
+
+  @override
+  String get conflictsEmptyDescription =>
+      'Everything is in sync right now. Resolved items stay available in the other filter.';
+
+  @override
+  String get conflictEntityLabel => 'Entity';
+
+  @override
+  String get conflictIdLabel => 'ID';
 
   @override
   String get promptAddOrRemoveModelsButton => 'Add or Remove Models';

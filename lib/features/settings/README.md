@@ -21,6 +21,9 @@ This module contains the Settings experience and its feature pages.
   - Outbox Monitor: `/settings/sync/outbox`
   - Matrix Stats: `/settings/sync/stats`
   - Conflicts: linked from Sync, still routed under advanced paths
+- Sync list pages (Outbox Monitor, Conflicts) now live under the sync feature
+  module (`lib/features/sync/ui/...`). See `lib/features/sync/README.md` for the
+  shared scaffold + card implementation details.
 
 ## Advanced section
 
