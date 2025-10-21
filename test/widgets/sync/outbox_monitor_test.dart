@@ -84,30 +84,32 @@ void main() {
       final pendingControlFinder =
           find.byKey(const ValueKey('syncFilter-pending'));
       expect(pendingControlFinder, findsOneWidget);
-      final allControlFinder = find.byKey(const ValueKey('syncFilter-all'));
-      expect(allControlFinder, findsOneWidget);
-      final errorControlFinder =
-          find.byKey(const ValueKey('syncFilter-error'));
+      final successControlFinder =
+          find.byKey(const ValueKey('syncFilter-success'));
+      expect(successControlFinder, findsOneWidget);
+      final errorControlFinder = find.byKey(const ValueKey('syncFilter-error'));
       expect(errorControlFinder, findsOneWidget);
 
       expect(find.text('Pending · 1 item'), findsOneWidget);
       expect(find.text('Retries: 1 Retry'), findsOneWidget);
       expect(find.byType(OutboxListItem), findsNWidgets(1));
 
+      await tester.tap(find.text('Success'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Success · 1 item'), findsOneWidget);
+      expect(find.byType(OutboxListItem), findsNWidgets(1));
+
       await tester.tap(find.text('Error'));
       await tester.pumpAndSettle();
 
-      final errorItems = tester.widgetList<OutboxListItem>(
-        find.byType(OutboxListItem),
-      ).toList();
+      final errorItems = tester
+          .widgetList<OutboxListItem>(
+            find.byType(OutboxListItem),
+          )
+          .toList();
       expect(errorItems, hasLength(1));
       expect(errorItems.first.showRetry, isTrue);
-
-      await tester.tap(find.text('All'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Retries: 2 Retries'), findsOneWidget);
-      expect(find.byType(OutboxListItem), findsNWidgets(3));
     });
   });
 }

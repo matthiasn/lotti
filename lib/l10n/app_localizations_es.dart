@@ -1269,6 +1269,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get outboxMonitorLabelSent => 'enviado';
 
   @override
+  String get outboxMonitorLabelSuccess => 'success';
+
+  @override
   String get outboxMonitorNoAttachment => 'sin archivo adjunto';
 
   @override

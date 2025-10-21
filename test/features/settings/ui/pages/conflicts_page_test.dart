@@ -51,7 +51,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Sync Conflicts'), findsOneWidget);
-      expect(find.byKey(const ValueKey('syncFilter-unresolved')), findsOneWidget);
+      expect(
+          find.byKey(const ValueKey('syncFilter-unresolved')), findsOneWidget);
       expect(find.byKey(const ValueKey('syncFilter-resolved')), findsOneWidget);
 
       expect(find.text('Unresolved · 1 item'), findsOneWidget);

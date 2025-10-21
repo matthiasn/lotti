@@ -16,6 +16,8 @@ class SyncFilterOption<T> {
     required this.labelBuilder,
     required this.predicate,
     this.icon,
+    this.selectedColor,
+    this.selectedForegroundColor,
   });
 
   /// Builds the localized label shown in the segmented control.
@@ -26,6 +28,12 @@ class SyncFilterOption<T> {
 
   /// Optional icon rendered next to the label.
   final IconData? icon;
+
+  /// Optional background color applied when the segment is selected.
+  final Color? selectedColor;
+
+  /// Optional foreground color applied when the segment is selected.
+  final Color? selectedForegroundColor;
 }
 
 /// Reusable scaffold for sync-oriented list pages with segmented filters,
@@ -282,41 +290,44 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
         horizontal: AppTheme.cardPadding,
         vertical: AppTheme.cardPaddingCompact,
       ),
-      child: SegmentedButton<F>(
-        segments: filters.entries.map((entry) {
-          final label = toBeginningOfSentenceCase(
-            entry.value.labelBuilder(context),
-            locale,
-          );
-          final count = counts[entry.key] ?? 0;
-          return ButtonSegment<F>(
-            value: entry.key,
-            icon: entry.value.icon == null
-                ? null
-                : Icon(
-                    entry.value.icon,
-                    size: AppTheme.iconSizeCompact,
-                  ),
-            label: _SegmentLabel(
-              label: label,
-              count: count,
-              filter: entry.key.name,
+      child: Center(
+        child: SegmentedButton<F>(
+          segments: filters.entries.map((entry) {
+            final rawLabel = entry.value.labelBuilder(context);
+            final label = toBeginningOfSentenceCase(
+              rawLabel,
+              locale,
+            );
+            final count = counts[entry.key] ?? 0;
+            return ButtonSegment<F>(
+              value: entry.key,
+              icon: entry.value.icon == null
+                  ? null
+                  : Icon(
+                      entry.value.icon,
+                      size: AppTheme.iconSizeCompact,
+                    ),
+              label: _SegmentLabel(
+                label: label,
+                count: count,
+                filter: entry.key.name,
+              ),
+            );
+          }).toList(),
+          showSelectedIcon: false,
+          style: ButtonStyle(
+            padding: WidgetStateProperty.all<EdgeInsets>(
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
-          );
-        }).toList(),
-        showSelectedIcon: false,
-        style: ButtonStyle(
-          padding: WidgetStateProperty.all<EdgeInsets>(
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
+          selected: {selected},
+          onSelectionChanged: (newSelection) {
+            if (newSelection.isEmpty) {
+              return;
+            }
+            onChanged(newSelection.first);
+          },
         ),
-        selected: {selected},
-        onSelectionChanged: (newSelection) {
-          if (newSelection.isEmpty) {
-            return;
-          }
-          onChanged(newSelection.first);
-        },
       ),
     );
   }

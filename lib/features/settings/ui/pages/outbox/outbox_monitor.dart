@@ -10,8 +10,8 @@ import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 enum _OutboxListFilter {
   pending,
+  success,
   error,
-  all,
 }
 
 class OutboxMonitorPage extends StatefulWidget {
@@ -55,23 +55,31 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final filters = <_OutboxListFilter, SyncFilterOption<OutboxItem>>{
       _OutboxListFilter.pending: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelPending,
         predicate: (OutboxItem item) =>
             OutboxStatus.values[item.status] == OutboxStatus.pending,
         icon: Icons.schedule_rounded,
+        selectedColor: Colors.orange,
+        selectedForegroundColor: Colors.white,
+      ),
+      _OutboxListFilter.success: SyncFilterOption<OutboxItem>(
+        labelBuilder: (context) => context.messages.outboxMonitorLabelSuccess,
+        predicate: (OutboxItem item) =>
+            OutboxStatus.values[item.status] == OutboxStatus.sent,
+        icon: Icons.check_circle_outline_rounded,
+        selectedColor: Colors.green,
+        selectedForegroundColor: Colors.white,
       ),
       _OutboxListFilter.error: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelError,
         predicate: (OutboxItem item) =>
             OutboxStatus.values[item.status] == OutboxStatus.error,
         icon: Icons.error_outline_rounded,
-      ),
-      _OutboxListFilter.all: SyncFilterOption<OutboxItem>(
-        labelBuilder: (context) => context.messages.outboxMonitorLabelAll,
-        predicate: (OutboxItem _) => true,
-        icon: Icons.list_alt_rounded,
+        selectedColor: colorScheme.error,
+        selectedForegroundColor: colorScheme.onError,
       ),
     };
 

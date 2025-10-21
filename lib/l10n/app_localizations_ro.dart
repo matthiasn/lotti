@@ -1264,6 +1264,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get outboxMonitorLabelSent => 'trimis';
 
   @override
+  String get outboxMonitorLabelSuccess => 'success';
+
+  @override
   String get outboxMonitorNoAttachment => 'fără atașament';
 
   @override

@@ -2379,6 +2379,12 @@ abstract class AppLocalizations {
   /// **'sent'**
   String get outboxMonitorLabelSent;
 
+  /// No description provided for @outboxMonitorLabelSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'success'**
+  String get outboxMonitorLabelSuccess;
+
   /// No description provided for @outboxMonitorNoAttachment.
   ///
   /// In en, this message translates to:
