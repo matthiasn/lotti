@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/themes/colors.dart';
 
 void main() {
   group('TaskData', () {
@@ -201,186 +202,124 @@ void main() {
   });
 
   group('TaskStatusExtension - colorForBrightness', () {
-    late DateTime testDate;
-
-    setUp(() {
-      testDate = DateTime(2024);
-    });
+    final testDate = DateTime(2024);
 
     group('Light mode colors', () {
-      test('Open status returns dark orange in light mode', () {
-        final status = TaskStatus.open(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.light),
-          equals(const Color(0xFFE65100)),
-        );
-      });
+      final testCases = <(String, TaskStatus, Color)>[
+        (
+          'Open',
+          TaskStatus.open(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusDarkOrange,
+        ),
+        (
+          'Groomed',
+          TaskStatus.groomed(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusDarkGreen,
+        ),
+        (
+          'In Progress',
+          TaskStatus.inProgress(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusDarkBlue,
+        ),
+        (
+          'Blocked',
+          TaskStatus.blocked(
+            id: 'test',
+            createdAt: testDate,
+            utcOffset: 0,
+            reason: 'test reason',
+          ),
+          taskStatusDarkRed,
+        ),
+        (
+          'On Hold',
+          TaskStatus.onHold(
+            id: 'test',
+            createdAt: testDate,
+            utcOffset: 0,
+            reason: 'test reason',
+          ),
+          taskStatusDarkRed,
+        ),
+        (
+          'Done',
+          TaskStatus.done(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusDarkGreen,
+        ),
+        (
+          'Rejected',
+          TaskStatus.rejected(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusDarkRed,
+        ),
+      ];
 
-      test('Groomed status returns dark green in light mode', () {
-        final status = TaskStatus.groomed(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.light),
-          equals(const Color(0xFF2E7D32)),
-        );
-      });
-
-      test('InProgress status returns dark blue in light mode', () {
-        final status = TaskStatus.inProgress(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.light),
-          equals(const Color(0xFF1565C0)),
-        );
-      });
-
-      test('Blocked status returns dark red in light mode', () {
-        final status = TaskStatus.blocked(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-          reason: 'test reason',
-        );
-        expect(
-          status.colorForBrightness(Brightness.light),
-          equals(const Color(0xFFC62828)),
-        );
-      });
-
-      test('OnHold status returns dark red in light mode', () {
-        final status = TaskStatus.onHold(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-          reason: 'test reason',
-        );
-        expect(
-          status.colorForBrightness(Brightness.light),
-          equals(const Color(0xFFC62828)),
-        );
-      });
-
-      test('Done status returns dark green in light mode', () {
-        final status = TaskStatus.done(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.light),
-          equals(const Color(0xFF2E7D32)),
-        );
-      });
-
-      test('Rejected status returns dark red in light mode', () {
-        final status = TaskStatus.rejected(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.light),
-          equals(const Color(0xFFC62828)),
-        );
-      });
+      for (final (name, status, expectedColor) in testCases) {
+        test('$name status returns correct color in light mode', () {
+          expect(
+            status.colorForBrightness(Brightness.light),
+            equals(expectedColor),
+          );
+        });
+      }
     });
 
     group('Dark mode colors', () {
-      test('Open status returns bright orange in dark mode', () {
-        final status = TaskStatus.open(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.dark),
-          equals(Colors.orange),
-        );
-      });
+      final testCases = <(String, TaskStatus, Color)>[
+        (
+          'Open',
+          TaskStatus.open(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusOrange,
+        ),
+        (
+          'Groomed',
+          TaskStatus.groomed(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusLightGreenAccent,
+        ),
+        (
+          'In Progress',
+          TaskStatus.inProgress(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusBlue,
+        ),
+        (
+          'Blocked',
+          TaskStatus.blocked(
+            id: 'test',
+            createdAt: testDate,
+            utcOffset: 0,
+            reason: 'test reason',
+          ),
+          taskStatusRed,
+        ),
+        (
+          'On Hold',
+          TaskStatus.onHold(
+            id: 'test',
+            createdAt: testDate,
+            utcOffset: 0,
+            reason: 'test reason',
+          ),
+          taskStatusRed,
+        ),
+        (
+          'Done',
+          TaskStatus.done(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusGreen,
+        ),
+        (
+          'Rejected',
+          TaskStatus.rejected(id: 'test', createdAt: testDate, utcOffset: 0),
+          taskStatusRed,
+        ),
+      ];
 
-      test('Groomed status returns light green accent in dark mode', () {
-        final status = TaskStatus.groomed(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.dark),
-          equals(Colors.lightGreenAccent),
-        );
-      });
-
-      test('InProgress status returns blue in dark mode', () {
-        final status = TaskStatus.inProgress(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.dark),
-          equals(Colors.blue),
-        );
-      });
-
-      test('Blocked status returns red in dark mode', () {
-        final status = TaskStatus.blocked(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-          reason: 'test reason',
-        );
-        expect(
-          status.colorForBrightness(Brightness.dark),
-          equals(Colors.red),
-        );
-      });
-
-      test('OnHold status returns red in dark mode', () {
-        final status = TaskStatus.onHold(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-          reason: 'test reason',
-        );
-        expect(
-          status.colorForBrightness(Brightness.dark),
-          equals(Colors.red),
-        );
-      });
-
-      test('Done status returns green in dark mode', () {
-        final status = TaskStatus.done(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.dark),
-          equals(Colors.green),
-        );
-      });
-
-      test('Rejected status returns red in dark mode', () {
-        final status = TaskStatus.rejected(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(
-          status.colorForBrightness(Brightness.dark),
-          equals(Colors.red),
-        );
-      });
+      for (final (name, status, expectedColor) in testCases) {
+        test('$name status returns correct color in dark mode', () {
+          expect(
+            status.colorForBrightness(Brightness.dark),
+            equals(expectedColor),
+          );
+        });
+      }
     });
 
     group('Backward compatibility', () {

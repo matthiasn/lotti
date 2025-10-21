@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 part 'task.freezed.dart';
@@ -172,14 +173,14 @@ extension TaskStatusExtension on TaskStatus {
     final isLight = brightness == Brightness.light;
 
     return switch (this) {
-      TaskOpen() => isLight ? const Color(0xFFE65100) : Colors.orange,
+      TaskOpen() => isLight ? taskStatusDarkOrange : taskStatusOrange,
       TaskGroomed() =>
-        isLight ? const Color(0xFF2E7D32) : Colors.lightGreenAccent,
-      TaskInProgress() => isLight ? const Color(0xFF1565C0) : Colors.blue,
-      TaskBlocked() => isLight ? const Color(0xFFC62828) : Colors.red,
-      TaskOnHold() => isLight ? const Color(0xFFC62828) : Colors.red,
-      TaskDone() => isLight ? const Color(0xFF2E7D32) : Colors.green,
-      TaskRejected() => isLight ? const Color(0xFFC62828) : Colors.red,
+        isLight ? taskStatusDarkGreen : taskStatusLightGreenAccent,
+      TaskInProgress() => isLight ? taskStatusDarkBlue : taskStatusBlue,
+      TaskBlocked() => isLight ? taskStatusDarkRed : taskStatusRed,
+      TaskOnHold() => isLight ? taskStatusDarkRed : taskStatusRed,
+      TaskDone() => isLight ? taskStatusDarkGreen : taskStatusGreen,
+      TaskRejected() => isLight ? taskStatusDarkRed : taskStatusRed,
     };
   }
 }
