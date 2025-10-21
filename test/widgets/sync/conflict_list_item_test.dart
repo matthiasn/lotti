@@ -55,6 +55,17 @@ void main() {
         startsWith(data.expectedSemanticsLabel),
       );
 
+      final resolvedData = _buildConflictData(status: ConflictStatus.resolved);
+      final resolvedStatusLabel = toBeginningOfSentenceCase(
+        localizations.conflictsResolved,
+        localizations.localeName,
+      );
+      expect(
+        resolvedData.expectedSemanticsLabel,
+        '$resolvedStatusLabel, ${resolvedData.timestampLabel}, '
+        '${localizations.entryTypeLabelJournalEntry}',
+      );
+
       semanticsHandle.dispose();
 
       await tester.tap(find.byType(InkWell));
@@ -91,10 +102,13 @@ _ConflictTestData _buildConflictData({
   );
   final timestampLabel = df.format(createdAt);
   final l10n = AppLocalizationsEn();
-  final semanticsLabel = '${toBeginningOfSentenceCase(
-    l10n.conflictsUnresolved,
-    l10n.localeName,
-  )}, $timestampLabel, ${l10n.entryTypeLabelJournalEntry}';
+  final baseStatusLabel = status == ConflictStatus.resolved
+      ? l10n.conflictsResolved
+      : l10n.conflictsUnresolved;
+  final formattedStatusLabel =
+      toBeginningOfSentenceCase(baseStatusLabel, l10n.localeName);
+  final semanticsLabel =
+      '$formattedStatusLabel, $timestampLabel, ${l10n.entryTypeLabelJournalEntry}';
 
   return _ConflictTestData(
     conflict: conflict,
