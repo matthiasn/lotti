@@ -7,6 +7,18 @@ protocol. Since the 2025-10-06 refactor the sync stack is composed of
 constructor-injected services, Riverpod providers, and a coordinated lifecycle
 that keeps the pipeline testable and observable.
 
+## UI Surfaces
+
+- Sync Settings (under `/settings/sync`) now pulls its Outbox and Conflicts list pages from
+  `lib/features/sync/ui/...`, using a shared `SyncListScaffold` for filter chips, inline summaries,
+  and animated empty/loading states.
+- `OutboxListItem` + `OutboxListItemViewModel` format payload metadata, retries, attachments, and
+  retry affordances; retry actions are confirmed before requeueing.
+- `ConflictListItem` + `ConflictListItemViewModel` present entity context, vector clock details, and
+  semantics labels for accessibility. Tapping navigates to the existing conflict detail route.
+- Tests for these surfaces live alongside other sync UI coverage under
+  `test/features/sync/ui/...` with cross-cutting widget smoke tests in `test/widgets/sync`.
+
 ## Architecture
 
 ### Core Services

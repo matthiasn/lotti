@@ -2,10 +2,11 @@
 
 ## Summary
 
-- Rebuild the Sync Outbox and Sync Conflicts list pages around the modern card system so they
-  present like a polished Series A product.
-- Align headers, filters, spacing, and empty states with the rest of Settings by introducing a
-  shared sync list scaffold.
+- Shared `SyncListScaffold`, `OutboxListItem`, and `ConflictListItem` now power the refreshed sync
+  list experience; next we need to relocate everything into `lib/features/sync` to match the feature
+  boundaries.
+- Headers, filters, spacing, and empty states have been modernized with chips + inline summaries;
+  we still owe additional test coverage (empty/loading, retry confirmation, semantics).
 - Preserve existing data streams and interactions (retry, deep links) while tightening
   accessibility, localization, and tests.
 
@@ -27,25 +28,29 @@
 
 ## Findings
 
-- Outbox monitor still uses a raw `Scaffold` with `CupertinoSegmentedControl` and manual `Card`
-  tinting, producing cramped spacing and inconsistent color tokens.
-  - File: `lib/features/settings/ui/pages/outbox/outbox_monitor.dart:33`
-- Outbox cards format multiline subtitles with manual `\n` joins, lack icons, and only allow retry
-  via whole-card tap; typography ignores new title/subtitle styles.
-  - File: `lib/features/settings/ui/pages/outbox/outbox_monitor.dart:125`
-- Conflicts list mirrors the same legacy pattern, including `CupertinoSegmentedControl`, no empty
-  state, and basic `Card` styling with minimal hierarchy.
-  - File: `lib/features/settings/ui/pages/advanced/conflicts_page.dart:52`
-- Both pages surface lower-case filter labels (`pending`, `all`, `resolved`) that bypass
-  localization casing and clash with new segmented-button theming.
-  - File: `lib/features/settings/ui/pages/outbox/outbox_monitor.dart:188`
-  - File: `lib/features/settings/ui/pages/advanced/conflicts_page.dart:71`
-- Widget tests assert on the literal lowercase labels, so changing to localized polished text will
-  require test updates.
-  - File: `test/widgets/sync/outbox_monitor_test.dart:51`
-  - File: `test/features/settings/ui/pages/conflicts_page_test.dart:36`
-- Neither page handles the empty state gracefully; when streams emit an empty list the body is just
-  blank black.
+- Modern list polish shipped for Outbox and Conflicts, but the code still lives under
+  `lib/features/settings/...`; we need to relocate the shared scaffold, list items, and pages into
+  `lib/features/sync/...` (plus move tests accordingly) so the feature structure and custom lint
+  expectations line up.
+  - Files: `lib/features/settings/ui/pages/outbox/outbox_monitor.dart`,
+    `lib/features/settings/ui/pages/advanced/conflicts_page.dart`,
+    `lib/features/settings/ui/widgets/sync_list_scaffold.dart`,
+    `lib/features/settings/ui/widgets/outbox/outbox_list_item.dart`,
+    `lib/features/settings/ui/widgets/conflicts/conflict_list_item.dart`,
+    `lib/features/settings/ui/view_models/*`
+- `SyncListScaffold` owns the empty/loading states and chip filters now, yet we still lack direct
+  widget coverage for empty/loading transitions or filter semantics. Tests only exercise the happy
+  path with populated data.
+  - Files: `test/widgets/sync/outbox_monitor_test.dart`,
+    `test/features/settings/ui/pages/conflicts_page_test.dart`
+- `OutboxListItemViewModel` and `ConflictListItemViewModel` encapsulate formatting logic but have no
+  dedicated unit tests; edge cases (attachments missing, localized retry plurals, resolved conflicts
+  semantics) remain unverified.
+  - Files: `lib/features/settings/ui/view_models/outbox_list_item_view_model.dart`,
+    `lib/features/settings/ui/view_models/conflict_list_item_view_model.dart`
+- Outbox filter chips rely on hard-coded accent colors (`Colors.orange`, `Colors.green`); we should
+  switch to tokens from `ColorScheme`/`AppTheme` for consistency.
+  - File: `lib/features/settings/ui/pages/outbox/outbox_monitor.dart`
 
 ## Design Overview
 
@@ -86,40 +91,41 @@
 
 ### Phase 2 — Outbox Card Modernization (P0)
 
-- Status: Planned
-- Refactor `OutboxMonitorPage` to use the new scaffold and segmented button enum (
-  Pending/Error/All).
-- Build `OutboxListItemViewModel` to format retries, attachment labels, and action availability.
-- Render rows with `ModernBaseCard`, `ModernCardContent`, `ModernStatusChip`, and a trailing retry
-  button (using existing `OutboxCompanion` update) that launches a confirmation modal before
-  proceeding.
-- Highlight attachment presence with icons and allow tap to copy file path (if provided).
+- Status: Delivered ✅ (pending theme + module follow-ups)
+- `OutboxMonitorPage` now consumes `SyncListScaffold` and `OutboxListItemViewModel`; filter chips
+  default to Pending/Error/Success with localized title case labels.
+- Retry affordance moved to a trailing button with confirmation modal; attachments, payload kind,
+  and subject metadata are surfaced as structured rows.
+- Follow-ups:
+  - Move page + widgets/view models beneath `lib/features/sync/ui/...`.
+  - Swap chip colors to use `ColorScheme.tertiary/primary/error` helpers instead of hard-coded
+    `Colors.orange`/`Colors.green`.
 
 ### Phase 3 — Conflicts Card Modernization (P0)
 
-- Status: Planned
-- Migrate `ConflictsPage` onto `SyncListScaffold` with filters for unresolved/resolved.
-- Introduce `ConflictListItemViewModel` encapsulating vector clock snippet, conflict kind, and
-  navigation callback.
-- Use `ModernStatusChip` (Resolved vs Unresolved), include mini badges for entity type (journal
-  entry/task), and adopt consistent typography.
+- Status: Delivered ✅ (pending module relocation + tests)
+- `ConflictsPage` now uses `SyncListScaffold` with localized unresolved/resolved chips and new card
+  presentation via `ConflictListItem`.
+- Vector clock summaries, entity labels, and semantics strings are handled by
+  `ConflictListItemViewModel`.
+- Follow-ups: relocate page/view model/widget into `lib/features/sync` and add unit/widget tests
+  covering resolved conflicts and semantics labels.
 
 ### Phase 4 — Empty & Loading States (P1)
 
-- Status: Planned
-- Provide descriptive empty states (“No pending outbox items”) using `EmptyStateWidget`.
-- Show a center `CircularProgressIndicator.adaptive` while the first snapshot is loading.
-- Add inline count summary above the list (e.g., “6 pending items”) to mirror segmented badge
-  totals.
+- Status: In progress
+- Empty/loading states and inline count summaries ship inside `SyncListScaffold`; polish carries
+  through both list pages.
+- Follow-up: add widget tests that exercise empty/loading paths and verify the localized copy.
 
 ### Phase 5 — QA, Docs, and Polish (P0)
 
-- Status: Planned
-- Update widget tests to cover new segmented buttons, empty-state rendering, retry button behavior,
-  and navigation.
+- Status: Ongoing
+- Updated widget tests assert on localized filter labels and retry chips, but empty-state coverage
+  is still missing; add focused tests for both lists plus view-model unit coverage.
 - Refresh `lib/features/settings/README.md`, `lib/features/sync/README.md`, and `CHANGELOG.md` to
-  document the visual overhaul.
-- Verify analyzer/test runs and capture before/after screenshots for review.
+  reflect the new sync section ownership and card polish (README updated, changelog pending).
+- Continue to gate merges on clean `dart-mcp.analyze_files`/`dart-mcp.run_tests`.
 
 ## Data Flow
 
@@ -174,18 +180,20 @@
 ## Files to Modify / Add
 
 - Modify:
-  - `lib/features/settings/ui/pages/outbox/outbox_monitor.dart`
-  - `lib/features/settings/ui/pages/advanced/conflicts_page.dart`
-  - `test/widgets/sync/outbox_monitor_test.dart`
-  - `test/features/settings/ui/pages/conflicts_page_test.dart`
+  - `lib/features/sync/ui/pages/outbox/outbox_monitor_page.dart` (relocated from settings)
+  - `lib/features/sync/ui/pages/conflicts/conflicts_page.dart`
+  - `lib/features/sync/ui/widgets/sync_list_scaffold.dart`
+  - `lib/features/sync/ui/widgets/outbox/outbox_list_item.dart`
+  - `lib/features/sync/ui/widgets/conflicts/conflict_list_item.dart`
+  - `lib/features/sync/ui/view_models/outbox_list_item_view_model.dart`
+  - `lib/features/sync/ui/view_models/conflict_list_item_view_model.dart`
   - `lib/features/settings/README.md`
   - `lib/features/sync/README.md`
   - `CHANGELOG.md`
+  - Tests under `test/features/sync/ui/...` and `test/widgets/sync/...`
 - Add:
-  - `lib/features/settings/ui/widgets/sync_list_scaffold.dart`
-  - `lib/features/settings/ui/widgets/outbox/outbox_list_item.dart` (or similar helper)
-  - `lib/features/settings/ui/widgets/conflicts/conflict_list_item.dart`
-  - Supporting view-models or mappers under `lib/features/settings/ui/view_models/`
+  - Focused unit tests for `OutboxListItemViewModel` and `ConflictListItemViewModel`
+  - Widget tests covering scaffold empty/loading states (likely under `test/features/sync/ui/pages/`)
 
 ## Decisions
 
@@ -195,15 +203,18 @@
 
 ## Implementation Checklist
 
-- [ ] Implement shared `SyncListScaffold` + filter widgets with loading/empty support.
-- [ ] Refactor Outbox monitor to use new scaffold, cards, and retry affordances.
-- [ ] Refactor Conflicts list to new scaffold with modern cards and chips.
-- [ ] Update localization usages (title case labels) and adjust tests accordingly.
-- [ ] Add empty state coverage and interaction tests (filter toggles, retry).
+- [x] Implement shared `SyncListScaffold` + filter widgets with loading/empty support.
+- [x] Refactor Outbox monitor to use new scaffold, cards, and retry affordances.
+- [x] Refactor Conflicts list to new scaffold with modern cards and chips.
+- [x] Update localization usages (title case labels) and adjust widget smoke tests.
+- [ ] Relocate sync list pages/widgets/view models into `lib/features/sync/...` and update imports.
+- [ ] Replace hard-coded filter colors with theme tokens.
+- [ ] Add empty-state/loading widget coverage plus unit tests for the new view models.
 - [ ] Refresh Settings and Sync READMEs plus `CHANGELOG.md` entry.
 - [ ] Run `dart-mcp.analyze_files`, `dart-mcp.dart_format`, and targeted `dart-mcp.run_tests`.
 
 ## Next
 
+- Land the module relocation (move sync list UI + tests under `features/sync`) and run analyzer/tests.
 - Revisit the conflict detail page styling once list polish ships.
 - Consider surfacing aggregate diagnostics (counts, last sync) above the lists as a follow-up.
