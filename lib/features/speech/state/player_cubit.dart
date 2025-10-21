@@ -43,6 +43,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
             ? state.totalDuration
             : duration;
 
+    if (clamped == state.progress) {
+      return;
+    }
+
     emit(state.copyWith(progress: clamped));
   }
 
@@ -163,34 +167,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         stackTrace: stackTrace,
       );
     }
-  }
-
-  Future<void> stop() async {
-    try {
-      await _audioPlayer.stop();
-      emit(
-        state.copyWith(
-          status: AudioPlayerStatus.stopped,
-          progress: Duration.zero,
-          pausedAt: Duration.zero,
-          buffered: Duration.zero,
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingService.captureException(
-        exception,
-        domain: 'player_cubit',
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  void toggleTranscriptsList() {
-    emit(
-      state.copyWith(
-        showTranscriptsList: !state.showTranscriptsList,
-      ),
-    );
   }
 
   @override

@@ -26,21 +26,6 @@ class TestAudioPlayerCubit extends Cubit<AudioPlayerState> {
   void updateProgress(Duration duration) {
     emit(state.copyWith(progress: duration));
   }
-
-  void toggleTranscriptsList() {
-    emit(state.copyWith(showTranscriptsList: !state.showTranscriptsList));
-  }
-
-  void stop() {
-    emit(
-      state.copyWith(
-        status: AudioPlayerStatus.stopped,
-        progress: Duration.zero,
-        pausedAt: Duration.zero,
-        buffered: Duration.zero,
-      ),
-    );
-  }
 }
 
 void main() {
@@ -82,30 +67,6 @@ void main() {
       const testDuration = Duration(seconds: 5);
       playerCubit.updateProgress(testDuration);
       expect(playerCubit.state.progress, equals(testDuration));
-    });
-
-    test('toggleTranscriptsList toggles visibility', () {
-      // Initial state is false
-      expect(playerCubit.state.showTranscriptsList, false);
-
-      // First toggle
-      playerCubit.toggleTranscriptsList();
-      expect(playerCubit.state.showTranscriptsList, true);
-
-      // Second toggle
-      playerCubit.toggleTranscriptsList();
-      expect(playerCubit.state.showTranscriptsList, false);
-    });
-
-    test('stop resets playback state', () {
-      playerCubit
-        ..updateProgress(const Duration(seconds: 12))
-        ..stop();
-
-      expect(playerCubit.state.status, AudioPlayerStatus.stopped);
-      expect(playerCubit.state.progress, Duration.zero);
-      expect(playerCubit.state.pausedAt, Duration.zero);
-      expect(playerCubit.state.buffered, Duration.zero);
     });
   });
 }

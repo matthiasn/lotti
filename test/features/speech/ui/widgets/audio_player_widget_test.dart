@@ -26,7 +26,6 @@ void main() {
 
     when(() => cubit.play()).thenAnswer((_) async {});
     when(() => cubit.pause()).thenAnswer((_) async {});
-    when(() => cubit.stop()).thenAnswer((_) async {});
     when(() => cubit.seek(any<Duration>())).thenAnswer((_) async {});
     when(() => cubit.setSpeed(any<double>())).thenAnswer((_) async {});
   });

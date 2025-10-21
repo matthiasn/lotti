@@ -122,6 +122,7 @@
 - Ensure custom painter renders in O(1); use `RepaintBoundary` around progress bar.
 - Avoid rebuilding on every progress tick by leveraging `AnimatedBuilder` with `ValueListenable` or
   throttled `setState`.
+- Add lightweight throttling to `updateProgress` if DevTools reveals frame drops on slower devices.
 
 ## Edge Cases & Handling
 

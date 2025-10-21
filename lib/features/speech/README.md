@@ -60,14 +60,13 @@ Immutable state model using Freezed for the recording feature.
 - `linkedId`: Optional ID to link recording to existing entry
 
 #### AudioPlayerCubit (`state/player_cubit.dart`)
-Bloc wrapper around `media_kit` playback. It keeps audio progress, buffering, speed, and transcript
-visibility in sync with the UI.
+Bloc wrapper around `media_kit` playback. It keeps audio progress, buffering, speed, and play state
+in sync with the UI.
 
 **Responsibilities:**
 - Loads the selected `JournalAudio` asset (`setAudioNote`) and hydrates total duration
-- Drives playback (`play`, `pause`, `stop`, `seek`, `setSpeed`) while clamping progress updates
+- Drives playback (`play`, `pause`, `seek`, `setSpeed`) while clamping progress updates
 - Exposes buffer progress for the custom progress bar
-- Toggles transcript visibility without leaking state to unrelated cards
 - Emits robust error logging through `LoggingService`
 
 ### Repositories

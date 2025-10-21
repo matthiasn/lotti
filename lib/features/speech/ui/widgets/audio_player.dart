@@ -11,27 +11,18 @@ import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dar
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
-final Map<double, double> _speedToggleMap =
-    Map<double, double>.unmodifiable(<double, double>{
-  0.5: 0.75,
-  0.75: 1,
-  1: 1.25,
-  1.25: 1.5,
-  1.5: 1.75,
-  1.75: 2,
-  2: 0.5,
-});
+const List<double> _speedSequence = <double>[
+  0.5,
+  0.75,
+  1,
+  1.25,
+  1.5,
+  1.75,
+  2,
+];
 
-final Map<double, String> _speedLabelMap =
-    Map<double, String>.unmodifiable(<double, String>{
-  0.5: '0.5x',
-  0.75: '0.75x',
-  1: '1x',
-  1.25: '1.25x',
-  1.5: '1.5x',
-  1.75: '1.75x',
-  2: '2x',
-});
+const double _compactControlSpacing = 14;
+const double _standardControlSpacing = 20;
 
 /// Minimal audio player card embedding play controls, progress, and speed toggle.
 class AudioPlayerWidget extends ConsumerWidget {
@@ -162,7 +153,9 @@ class _PlayerBody extends StatelessWidget {
           progressRatio: progressRatio,
           onPressed: handleTap,
         ),
-        SizedBox(width: isCompact ? 14 : 20),
+        SizedBox(
+          width: isCompact ? _compactControlSpacing : _standardControlSpacing,
+        ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -320,8 +313,8 @@ class _SpeedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final label = _speedLabelMap[currentSpeed] ?? '1x';
-    final nextSpeed = _speedToggleMap[currentSpeed] ?? 1;
+    final label = _speedLabel(currentSpeed);
+    final nextSpeed = _nextSpeed(currentSpeed);
 
     final child = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -362,6 +355,29 @@ class _SpeedButton extends StatelessWidget {
       ),
     );
   }
+}
+
+double _nextSpeed(double current) {
+  final index = _speedSequence.indexOf(current);
+  if (index == -1) {
+    return 1;
+  }
+  final nextIndex = (index + 1) % _speedSequence.length;
+  return _speedSequence[nextIndex];
+}
+
+String _speedLabel(double speed) {
+  if (speed == speed.roundToDouble()) {
+    return '${speed.toStringAsFixed(0)}x';
+  }
+  var text = speed.toString();
+  if (text.contains('.') && text.endsWith('0')) {
+    text = text.replaceAll(RegExp(r'0+$'), '');
+    if (text.endsWith('.')) {
+      text = text.substring(0, text.length - 1);
+    }
+  }
+  return '${text}x';
 }
 
 class _PlayButtonRingPainter extends CustomPainter {
