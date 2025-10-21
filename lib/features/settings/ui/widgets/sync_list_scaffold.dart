@@ -285,97 +285,148 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final entries = filters.entries.toList(growable: false);
     return ModernBaseCard(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.cardPadding,
-        vertical: AppTheme.cardPaddingCompact,
+        horizontal: AppTheme.spacingMedium,
+        vertical: AppTheme.spacingMedium,
       ),
-      child: Center(
-        child: SegmentedButton<F>(
-          segments: filters.entries.map((entry) {
-            final rawLabel = entry.value.labelBuilder(context);
-            final label = toBeginningOfSentenceCase(
-              rawLabel,
-              locale,
-            );
-            final count = counts[entry.key] ?? 0;
-            return ButtonSegment<F>(
-              value: entry.key,
-              icon: entry.value.icon == null
-                  ? null
-                  : Icon(
-                      entry.value.icon,
-                      size: AppTheme.iconSizeCompact,
-                    ),
-              label: _SegmentLabel(
-                label: label,
-                count: count,
-                filter: entry.key.name,
-              ),
-            );
-          }).toList(),
-          showSelectedIcon: false,
-          style: ButtonStyle(
-            padding: WidgetStateProperty.all<EdgeInsets>(
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-          ),
-          selected: {selected},
-          onSelectionChanged: (newSelection) {
-            if (newSelection.isEmpty) {
-              return;
-            }
-            onChanged(newSelection.first);
-          },
-        ),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: AppTheme.spacingMedium,
+        runSpacing: AppTheme.spacingSmall,
+        children: entries.map((entry) {
+          final rawLabel = entry.value.labelBuilder(context);
+          final label = toBeginningOfSentenceCase(rawLabel, locale);
+          final count = counts[entry.key] ?? 0;
+          final selectedColor = entry.value.selectedColor ??
+              Theme.of(context).colorScheme.primary;
+          final selectedForeground = entry.value.selectedForegroundColor ??
+              Theme.of(context).colorScheme.onPrimary;
+
+          return _SegmentChip(
+            label: label,
+            count: count,
+            filter: entry.key.name,
+            icon: entry.value.icon,
+            isSelected: selected == entry.key,
+            selectedColor: selectedColor,
+            selectedForegroundColor: selectedForeground,
+            onTap: () => onChanged(entry.key),
+          );
+        }).toList(),
       ),
     );
   }
 }
 
-class _SegmentLabel extends StatelessWidget {
-  const _SegmentLabel({
+class _SegmentChip extends StatelessWidget {
+  const _SegmentChip({
     required this.label,
     required this.count,
     required this.filter,
+    required this.icon,
+    required this.isSelected,
+    required this.selectedColor,
+    required this.selectedForegroundColor,
+    required this.onTap,
   });
 
   final String label;
   final int count;
   final String filter;
+  final IconData? icon;
+  final bool isSelected;
+  final Color? selectedColor;
+  final Color selectedForegroundColor;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = context.textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final foregroundColor =
+        isSelected ? selectedForegroundColor : colorScheme.onSurface;
+    final iconColor =
+        isSelected ? selectedForegroundColor : colorScheme.onSurfaceVariant;
+    final countBackground = isSelected
+        ? selectedColor?.withValues(alpha: 0.22)
+        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.28);
+    final countForeground =
+        isSelected ? selectedForegroundColor : colorScheme.onSurfaceVariant;
+
     return Semantics(
+      button: true,
+      toggled: isSelected,
       label: '$label, $count',
-      child: Row(
-        key: ValueKey('syncFilter-$filter'),
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: textTheme.titleSmall,
-          ),
-          const SizedBox(width: AppTheme.spacingSmall),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4,
-            ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(
+          AppTheme.cardBorderRadius / 1.6,
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius / 1.6),
+          onTap: onTap,
+          child: AnimatedContainer(
+            key: ValueKey('syncFilter-$filter'),
+            duration: const Duration(milliseconds: AppTheme.animationDuration),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
             decoration: BoxDecoration(
-              color: context.colorScheme.primary.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              count.toString(),
-              style: textTheme.bodySmall?.copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-                fontWeight: FontWeight.w600,
+              color: isSelected
+                  ? selectedColor
+                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.26),
+              borderRadius:
+                  BorderRadius.circular(AppTheme.cardBorderRadius / 1.6),
+              border: Border.all(
+                color: isSelected
+                    ? selectedColor ?? colorScheme.primary
+                    : colorScheme.outline.withValues(alpha: 0.08),
+                width: isSelected ? 1.4 : 1,
               ),
             ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: AppTheme.iconSizeCompact,
+                    color: iconColor,
+                  ),
+                  const SizedBox(width: AppTheme.spacingSmall),
+                ],
+                Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: textTheme.titleSmall?.copyWith(
+                    color: foregroundColor,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingSmall),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: countBackground,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    count.toString(),
+                    style: textTheme.bodySmall?.copyWith(
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                      fontWeight: FontWeight.w600,
+                      color: countForeground,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

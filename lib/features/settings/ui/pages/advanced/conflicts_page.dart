@@ -89,18 +89,23 @@ class _ConflictsPageState extends State<ConflictsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final filters = <_ConflictListFilter, SyncFilterOption<Conflict>>{
       _ConflictListFilter.unresolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsUnresolved,
         predicate: (conflict) =>
             ConflictStatus.values[conflict.status] == ConflictStatus.unresolved,
         icon: Icons.report_problem_outlined,
+        selectedColor: Colors.amber,
+        selectedForegroundColor: Colors.black,
       ),
       _ConflictListFilter.resolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsResolved,
         predicate: (conflict) =>
             ConflictStatus.values[conflict.status] == ConflictStatus.resolved,
         icon: Icons.verified_outlined,
+        selectedColor: colorScheme.primary,
+        selectedForegroundColor: colorScheme.onPrimary,
       ),
     };
 
