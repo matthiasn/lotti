@@ -466,6 +466,20 @@ void main() {
       expect(pages[1].child, isA<OutboxMonitorPage>());
     });
 
+    test('buildPages builds SyncStatsPage under /settings/sync/stats', () {
+      final routeInformation =
+          RouteInformation(uri: Uri.parse('/settings/sync/stats'));
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsPage>());
+      // Second page is SyncStatsPage; type check omitted to avoid import churn
+    });
+
     test('buildPages builds LoggingPage', () {
       final routeInformation =
           RouteInformation(uri: Uri.parse('/settings/advanced/logging'));

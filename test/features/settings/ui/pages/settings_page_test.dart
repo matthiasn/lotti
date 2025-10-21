@@ -70,6 +70,40 @@ void main() {
       expect(find.text('Advanced Settings'), findsOneWidget);
     });
 
+    testWidgets('shows Sync tile when Matrix flag is ON', (tester) async {
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableHabitsPageFlag,
+              description: 'Enable Habits Page?',
+              status: true,
+            ),
+            const ConfigFlag(
+              name: enableDashboardsPageFlag,
+              description: 'Enable Dashboards Page?',
+              status: true,
+            ),
+          }
+        ]),
+      );
+      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) => Stream<bool>.value(true));
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SettingsPage(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Matrix Sync Settings'), findsOneWidget);
+    });
+
     testWidgets('hides Habits when enableHabitsPageFlag is OFF',
         (tester) async {
       when(mockJournalDb.watchConfigFlags).thenAnswer(

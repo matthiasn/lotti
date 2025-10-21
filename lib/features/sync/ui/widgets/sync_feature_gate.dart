@@ -22,10 +22,13 @@ class SyncFeatureGate extends StatelessWidget {
         final enabled = snap.data ?? false;
         if (enabled) return child;
 
-        // If disabled, navigate back to Settings after first frame.
+        // If disabled, try to navigate back to Settings after first frame.
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
+          if (!context.mounted) return;
+          try {
             Beamer.of(context).beamToNamed('/settings');
+          } catch (_) {
+            // In tests or contexts without Beamer, just render nothing.
           }
         });
         return const SizedBox.shrink();
