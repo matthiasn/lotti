@@ -111,9 +111,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       // New Categories Implementation (Riverpod)
-      if (pathContains('categories') &&
-          !pathContains('create') &&
-          !pathContainsKey('categoryId'))
+      if (pathContains('categories'))
         const BeamPage(
           key: ValueKey('settings-categories'),
           child: new_categories.CategoriesListPage(),
