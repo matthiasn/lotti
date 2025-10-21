@@ -1,18 +1,21 @@
 import 'package:drift/drift.dart' as drift;
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/settings/ui/widgets/outbox/outbox_list_item.dart';
+import 'package:lotti/features/settings/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
+
+enum _OutboxListFilter {
+  pending,
+  error,
+  all,
+}
 
 class OutboxMonitorPage extends StatefulWidget {
-  const OutboxMonitorPage({
-    super.key,
-  });
+  const OutboxMonitorPage({super.key});
 
   @override
   State<OutboxMonitorPage> createState() => _OutboxMonitorPageState();
@@ -20,196 +23,74 @@ class OutboxMonitorPage extends StatefulWidget {
 
 class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   final SyncDatabase _db = getIt<SyncDatabase>();
-  late Stream<List<OutboxItem>> stream =
-      _db.watchOutboxItems(statuses: [OutboxStatus.pending]);
-  String _selectedValue = 'pending';
 
-  @override
-  void initState() {
-    super.initState();
-  }
+  late final Stream<List<OutboxItem>> _stream = _db.watchOutboxItems();
 
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<OutboxItem>>(
-      stream: stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<OutboxItem>> snapshot,
-      ) {
-        final items = snapshot.data ?? [];
-
-        void onValueChanged(String value) {
-          setState(() {
-            _selectedValue = value;
-            if (_selectedValue == 'all') {
-              stream = _db.watchOutboxItems();
-            }
-            if (_selectedValue == 'pending') {
-              stream = _db.watchOutboxItems(
-                statuses: [OutboxStatus.pending],
-              );
-            }
-            if (_selectedValue == 'error') {
-              stream = _db.watchOutboxItems(
-                statuses: [OutboxStatus.error],
-              );
-            }
-          });
-        }
-
-        return Scaffold(
-          appBar: OutboxAppBar(
-            selectedValue: _selectedValue,
-            onValueChanged: onValueChanged,
-          ),
-          body: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(8),
-            children: List.generate(
-              items.length,
-              (int index) {
-                return OutboxItemCard(
-                  item: items.elementAt(index),
-                );
-              },
-            ),
-          ),
-        );
-      },
+  Future<void> _retryItem(BuildContext context, OutboxItem item) async {
+    final confirmed = await showConfirmationModal(
+      context: context,
+      message: context.messages.outboxMonitorRetryConfirmMessage,
+      confirmLabel: context.messages.outboxMonitorRetryConfirmLabel,
+      cancelLabel: context.messages.cancelButton,
+      isDestructive: false,
     );
-  }
-}
+    if (!confirmed) return;
 
-class OutboxItemCard extends StatelessWidget {
-  OutboxItemCard({
-    required this.item,
-    super.key,
-  });
+    await _db.updateOutboxItem(
+      OutboxCompanion(
+        id: drift.Value(item.id),
+        status: drift.Value(OutboxStatus.pending.index),
+        retries: drift.Value(item.retries + 1),
+        updatedAt: drift.Value(DateTime.now()),
+      ),
+    );
 
-  final SyncDatabase _db = getIt<SyncDatabase>();
-  final OutboxItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final statusEnum = OutboxStatus.values[item.status];
-
-    String getStringFromStatus(OutboxStatus x) {
-      switch (x) {
-        case OutboxStatus.pending:
-          return context.messages.outboxMonitorLabelPending;
-        case OutboxStatus.sent:
-          return context.messages.outboxMonitorLabelSent;
-        case OutboxStatus.error:
-          return context.messages.outboxMonitorLabelError;
-      }
-    }
-
-    final status = getStringFromStatus(statusEnum);
-
-    Color cardColor(OutboxStatus status) {
-      switch (statusEnum) {
-        case OutboxStatus.pending:
-          return Theme.of(context).primaryColorLight;
-        case OutboxStatus.error:
-          return context.colorScheme.error;
-        case OutboxStatus.sent:
-          return Theme.of(context).primaryColor;
-      }
-    }
-
-    final retriesText = item.retries == 1
-        ? context.messages.outboxMonitorRetry
-        : context.messages.outboxMonitorRetries;
-
-    return Padding(
-      padding: const EdgeInsets.all(2),
-      child: Card(
-        color: cardColor(statusEnum).withAlpha(102),
-        child: ListTile(
-          contentPadding: const EdgeInsets.only(left: 24, right: 24),
-          title: Text(
-            '${df.format(item.createdAt)} - $status',
-            style: const TextStyle(fontSize: fontSizeMedium),
-          ),
-          subtitle: Text(
-            '${item.retries} $retriesText \n'
-            '${item.filePath ?? context.messages.outboxMonitorNoAttachment}',
-            style: const TextStyle(
-              fontWeight: FontWeight.w200,
-              fontSize: fontSizeSmall,
-            ),
-          ),
-          onTap: () {
-            if (statusEnum == OutboxStatus.error) {
-              _db.updateOutboxItem(
-                OutboxCompanion(
-                  id: drift.Value(item.id),
-                  status: drift.Value(OutboxStatus.pending.index),
-                  retries: drift.Value(item.retries + 1),
-                  updatedAt: drift.Value(DateTime.now()),
-                ),
-              );
-            }
-          },
-        ),
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.messages.outboxMonitorRetryQueued),
       ),
     );
   }
-}
-
-const toolbarHeight = 88.0;
-
-class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const OutboxAppBar({
-    required this.selectedValue,
-    required this.onValueChanged,
-    super.key,
-  });
-
-  final String selectedValue;
-  final void Function(String value) onValueChanged;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    return TitleWidgetAppBar(
-      title: Text(context.messages.settingsSyncOutboxTitle,
-          style: appBarTextStyleNew),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: CupertinoSegmentedControl(
-            groupValue: selectedValue,
-            onValueChanged: onValueChanged,
-            children: {
-              'pending': Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  context.messages.outboxMonitorLabelPending,
-                  style: segmentItemStyle,
-                ),
-              ),
-              'error': Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  context.messages.outboxMonitorLabelError,
-                  style: segmentItemStyle,
-                ),
-              ),
-              'all': Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  context.messages.outboxMonitorLabelAll,
-                  style: segmentItemStyle,
-                ),
-              ),
-            },
-          ),
-        ),
-      ],
+    final filters = <_OutboxListFilter, SyncFilterOption<OutboxItem>>{
+      _OutboxListFilter.pending: SyncFilterOption<OutboxItem>(
+        labelBuilder: (context) => context.messages.outboxMonitorLabelPending,
+        predicate: (OutboxItem item) =>
+            OutboxStatus.values[item.status] == OutboxStatus.pending,
+        icon: Icons.schedule_rounded,
+      ),
+      _OutboxListFilter.error: SyncFilterOption<OutboxItem>(
+        labelBuilder: (context) => context.messages.outboxMonitorLabelError,
+        predicate: (OutboxItem item) =>
+            OutboxStatus.values[item.status] == OutboxStatus.error,
+        icon: Icons.error_outline_rounded,
+      ),
+      _OutboxListFilter.all: SyncFilterOption<OutboxItem>(
+        labelBuilder: (context) => context.messages.outboxMonitorLabelAll,
+        predicate: (OutboxItem _) => true,
+        icon: Icons.list_alt_rounded,
+      ),
+    };
+
+    return SyncListScaffold<OutboxItem, _OutboxListFilter>(
+      title: context.messages.settingsSyncOutboxTitle,
+      stream: _stream,
+      filters: filters,
+      initialFilter: _OutboxListFilter.pending,
+      emptyIcon: Icons.inbox_rounded,
+      emptyTitleBuilder: (ctx) => ctx.messages.outboxMonitorEmptyTitle,
+      emptyDescriptionBuilder: (ctx) =>
+          ctx.messages.outboxMonitorEmptyDescription,
+      countSummaryBuilder: (ctx, label, count) =>
+          ctx.messages.syncListCountSummary(label, count),
+      itemBuilder: (ctx, OutboxItem item) => OutboxListItem(
+        item: item,
+        showRetry: OutboxStatus.values[item.status] == OutboxStatus.error,
+        onRetry: () => _retryItem(ctx, item),
+      ),
     );
   }
 }

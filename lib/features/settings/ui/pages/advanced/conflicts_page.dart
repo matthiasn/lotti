@@ -1,5 +1,4 @@
-import 'package:enum_to_string/enum_to_string.dart';
-import 'package:flutter/cupertino.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
@@ -7,7 +6,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/settings/ui/widgets/conflicts/conflict_list_item.dart';
+import 'package:lotti/features/settings/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -17,6 +17,11 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+
+enum _ConflictListFilter {
+  unresolved,
+  resolved,
+}
 
 class ConflictsPage extends StatefulWidget {
   const ConflictsPage({super.key});
@@ -28,107 +33,89 @@ class ConflictsPage extends StatefulWidget {
 class _ConflictsPageState extends State<ConflictsPage> {
   final JournalDb _db = getIt<JournalDb>();
 
-  late Stream<List<Conflict>> stream =
-      _db.watchConflicts(ConflictStatus.unresolved);
+  late final Stream<List<Conflict>> _stream = _watchAllConflicts();
 
-  String _selectedValue = 'unresolved';
+  Stream<List<Conflict>> _watchAllConflicts() {
+    final controller = StreamController<List<Conflict>>();
+    List<Conflict>? unresolved;
+    List<Conflict>? resolved;
 
-  @override
-  void initState() {
-    super.initState();
+    StreamSubscription<List<Conflict>>? unresolvedSubscription;
+    StreamSubscription<List<Conflict>>? resolvedSubscription;
+
+    void emitIfReady() {
+      if (unresolved == null || resolved == null) {
+        return;
+      }
+      final combined = <Conflict>[
+        ...unresolved!,
+        ...resolved!,
+      ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      controller.add(combined);
+    }
+
+    controller
+      ..onListen = () {
+        unresolvedSubscription =
+            _db.watchConflicts(ConflictStatus.unresolved).listen((value) {
+          unresolved = value;
+          emitIfReady();
+        });
+
+        resolvedSubscription =
+            _db.watchConflicts(ConflictStatus.resolved).listen((value) {
+          resolved = value;
+          emitIfReady();
+        });
+      }
+      ..onPause = () {
+        unresolvedSubscription?.pause();
+        resolvedSubscription?.pause();
+      }
+      ..onResume = () {
+        unresolvedSubscription?.resume();
+        resolvedSubscription?.resume();
+      }
+      ..onCancel = () async {
+        await unresolvedSubscription?.cancel();
+        await resolvedSubscription?.cancel();
+        unresolved = null;
+        resolved = null;
+      };
+
+    return controller.stream;
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Conflict>>(
-      stream: stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<Conflict>> snapshot,
-      ) {
-        final items = snapshot.data ?? [];
+    final filters = <_ConflictListFilter, SyncFilterOption<Conflict>>{
+      _ConflictListFilter.unresolved: SyncFilterOption<Conflict>(
+        labelBuilder: (ctx) => ctx.messages.conflictsUnresolved,
+        predicate: (conflict) =>
+            ConflictStatus.values[conflict.status] == ConflictStatus.unresolved,
+        icon: Icons.report_problem_outlined,
+      ),
+      _ConflictListFilter.resolved: SyncFilterOption<Conflict>(
+        labelBuilder: (ctx) => ctx.messages.conflictsResolved,
+        predicate: (conflict) =>
+            ConflictStatus.values[conflict.status] == ConflictStatus.resolved,
+        icon: Icons.verified_outlined,
+      ),
+    };
 
-        return Scaffold(
-          appBar: TitleAppBar(
-            title: context.messages.settingsConflictsTitle,
-            actions: [
-              CupertinoSegmentedControl(
-                selectedColor: Theme.of(context).primaryColor,
-                borderColor: Theme.of(context).primaryColor,
-                groupValue: _selectedValue,
-                onValueChanged: (String value) {
-                  setState(() {
-                    _selectedValue = value;
-                    if (_selectedValue == 'unresolved') {
-                      stream = _db.watchConflicts(ConflictStatus.unresolved);
-                    }
-                    if (_selectedValue == 'resolved') {
-                      stream = _db.watchConflicts(ConflictStatus.resolved);
-                    }
-                  });
-                },
-                children: {
-                  'unresolved': Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Text(
-                      context.messages.conflictsUnresolved,
-                      style: segmentItemStyle,
-                    ),
-                  ),
-                  'resolved': Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Text(
-                      context.messages.conflictsResolved,
-                      style: segmentItemStyle,
-                    ),
-                  ),
-                },
-              ),
-            ],
-          ),
-          body: ListView(
-            shrinkWrap: true,
-            children: List.generate(
-              items.length,
-              (int index) => ConflictCard(conflict: items.elementAt(index)),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-String statusString(Conflict conflict) {
-  return EnumToString.convertToString(ConflictStatus.values[conflict.status]);
-}
-
-class ConflictCard extends StatelessWidget {
-  const ConflictCard({
-    required this.conflict,
-    super.key,
-  });
-
-  final Conflict conflict;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.only(left: 24, right: 24),
-        title: Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Text(
-            '${df.format(conflict.createdAt)} - ${statusString(conflict)}',
-          ),
-        ),
-        subtitle: Text(
-          '${fromSerialized(conflict.serialized).meta.vectorClock}',
-          style: monoTabularStyle(fontSize: fontSizeSmall),
-        ),
-        onTap: () {
-          beamToNamed('/settings/advanced/conflicts/${conflict.id}');
-        },
+    return SyncListScaffold<Conflict, _ConflictListFilter>(
+      title: context.messages.settingsConflictsTitle,
+      stream: _stream,
+      filters: filters,
+      initialFilter: _ConflictListFilter.unresolved,
+      emptyIcon: Icons.verified_user_outlined,
+      emptyTitleBuilder: (ctx) => ctx.messages.conflictsEmptyTitle,
+      emptyDescriptionBuilder: (ctx) => ctx.messages.conflictsEmptyDescription,
+      countSummaryBuilder: (ctx, label, count) =>
+          ctx.messages.syncListCountSummary(label, count),
+      itemBuilder: (ctx, conflict) => ConflictListItem(
+        conflict: conflict,
+        onTap: () => beamToNamed('/settings/advanced/conflicts/${conflict.id}'),
       ),
     );
   }
