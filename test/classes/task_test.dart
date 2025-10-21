@@ -268,17 +268,17 @@ void main() {
         (
           'Open',
           TaskStatus.open(id: 'test', createdAt: testDate, utcOffset: 0),
-          Colors.orange,
+          taskStatusOrange,
         ),
         (
           'Groomed',
           TaskStatus.groomed(id: 'test', createdAt: testDate, utcOffset: 0),
-          Colors.lightGreenAccent,
+          taskStatusLightGreenAccent,
         ),
         (
           'In Progress',
           TaskStatus.inProgress(id: 'test', createdAt: testDate, utcOffset: 0),
-          Colors.blue,
+          taskStatusBlue,
         ),
         (
           'Blocked',
@@ -288,7 +288,7 @@ void main() {
             utcOffset: 0,
             reason: 'test reason',
           ),
-          Colors.red,
+          taskStatusRed,
         ),
         (
           'On Hold',
@@ -298,17 +298,17 @@ void main() {
             utcOffset: 0,
             reason: 'test reason',
           ),
-          Colors.red,
+          taskStatusRed,
         ),
         (
           'Done',
           TaskStatus.done(id: 'test', createdAt: testDate, utcOffset: 0),
-          Colors.green,
+          taskStatusGreen,
         ),
         (
           'Rejected',
           TaskStatus.rejected(id: 'test', createdAt: testDate, utcOffset: 0),
-          Colors.red,
+          taskStatusRed,
         ),
       ];
 

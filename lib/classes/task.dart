@@ -173,13 +173,14 @@ extension TaskStatusExtension on TaskStatus {
     final isLight = brightness == Brightness.light;
 
     return switch (this) {
-      TaskOpen() => isLight ? taskStatusDarkOrange : Colors.orange,
-      TaskGroomed() => isLight ? taskStatusDarkGreen : Colors.lightGreenAccent,
-      TaskInProgress() => isLight ? taskStatusDarkBlue : Colors.blue,
-      TaskBlocked() => isLight ? taskStatusDarkRed : Colors.red,
-      TaskOnHold() => isLight ? taskStatusDarkRed : Colors.red,
-      TaskDone() => isLight ? taskStatusDarkGreen : Colors.green,
-      TaskRejected() => isLight ? taskStatusDarkRed : Colors.red,
+      TaskOpen() => isLight ? taskStatusDarkOrange : taskStatusOrange,
+      TaskGroomed() =>
+        isLight ? taskStatusDarkGreen : taskStatusLightGreenAccent,
+      TaskInProgress() => isLight ? taskStatusDarkBlue : taskStatusBlue,
+      TaskBlocked() => isLight ? taskStatusDarkRed : taskStatusRed,
+      TaskOnHold() => isLight ? taskStatusDarkRed : taskStatusRed,
+      TaskDone() => isLight ? taskStatusDarkGreen : taskStatusGreen,
+      TaskRejected() => isLight ? taskStatusDarkRed : taskStatusRed,
     };
   }
 }
