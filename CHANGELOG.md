@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - Enforce tabular monospace style for tasks timers (monoTabularStyle) to eliminate width jitter.
+- Sync UX overhaul:
+  - Promote Sync to a top-level Settings entry (hidden when Matrix sync flag is off)
+  - Move Outbox Monitor under `/settings/sync/outbox` and remove redundant toggle
+  - Surface Matrix Stats as a full page under `/settings/sync/stats` with improved loading state
+  - Clean up Advanced: remove Matrix/Outbox/Conflicts tiles; keep Logs, Health Import (mobile), Maintenance, About
+  - Route matching for Sync pages now uses exact path matching for robustness
+  - Localize new user-facing strings (tile subtitles and error text)
 
 ## [0.9.691] - 2025-10-20
 ### Changed:
