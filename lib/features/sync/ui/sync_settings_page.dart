@@ -49,7 +49,7 @@ class SyncSettingsPage extends StatelessWidget {
             // 4) Sync Stats (full page)
             AnimatedModernSettingsCardWithIcon(
               title: context.messages.settingsMatrixStatsTitle,
-              subtitle: 'Inspect sync pipeline metrics',
+              subtitle: context.messages.settingsSyncStatsSubtitle,
               icon: Icons.bar_chart_rounded,
               onTap: () => context.beamToNamed('/settings/sync/stats'),
             ),

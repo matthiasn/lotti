@@ -72,6 +72,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
     bool pathContains(String s) => state.uri.path.contains(s);
     bool pathContainsKey(String s) => state.pathParameters.containsKey(s);
+    final path = state.uri.path;
 
     return [
       const BeamPage(
@@ -88,24 +89,22 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: AiSettingsPage(),
         ),
 
-      // Sync Settings
-      if (pathContains('sync') &&
-          !pathContains('stats') &&
-          !pathContains('outbox'))
+      // Sync Settings (exact matches for robustness)
+      if (path == '/settings/sync')
         const BeamPage(
           key: ValueKey('settings-sync'),
           title: 'Sync Settings',
           child: SyncSettingsPage(),
         ),
 
-      if (pathContains('sync/stats'))
+      if (path == '/settings/sync/stats')
         const BeamPage(
           key: ValueKey('settings-sync-stats'),
           title: 'Sync Stats',
           child: SyncStatsPage(),
         ),
 
-      if (pathContains('sync/outbox'))
+      if (path == '/settings/sync/outbox')
         const BeamPage(
           key: ValueKey('settings-sync-outbox'),
           child: OutboxMonitorPage(),

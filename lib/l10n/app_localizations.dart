@@ -3640,6 +3640,24 @@ abstract class AppLocalizations {
   /// **'Sync Outbox'**
   String get settingsSyncOutboxTitle;
 
+  /// No description provided for @settingsSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure sync and view stats'**
+  String get settingsSyncSubtitle;
+
+  /// No description provided for @settingsSyncStatsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect sync pipeline metrics'**
+  String get settingsSyncStatsSubtitle;
+
+  /// No description provided for @matrixStatsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading Matrix stats'**
+  String get matrixStatsError;
+
   /// No description provided for @settingsTagsDeleteTooltip.
   ///
   /// In en, this message translates to:

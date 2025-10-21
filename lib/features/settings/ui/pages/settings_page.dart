@@ -50,7 +50,7 @@ class SettingsPage extends ConsumerWidget {
               if (!enabled) return const SizedBox.shrink();
               return AnimatedModernSettingsCardWithIcon(
                 title: context.messages.settingsMatrixTitle,
-                subtitle: 'Configure sync and view stats',
+                subtitle: context.messages.settingsSyncSubtitle,
                 icon: Icons.sync,
                 onTap: () => context.beamToNamed('/settings/sync'),
               );

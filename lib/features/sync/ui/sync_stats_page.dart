@@ -33,7 +33,7 @@ class SyncStatsPage extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                'Error loading Matrix stats',
+                context.messages.matrixStatsError,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),

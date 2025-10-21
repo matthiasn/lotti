@@ -8,7 +8,7 @@
   in a modal flow).
 - Move Outbox Monitor under the Sync section and remove the redundant “enabled” toggle from the
   Outbox page. Ensure to use the sync config flag instead internal for the same decisions. Remove
-  then unused code.
+  the unused code.
 - Track a follow-up for restyling Sync Conflicts.
 
 ## Goals
@@ -89,7 +89,7 @@
 
 - In `lib/features/settings/ui/pages/advanced_settings_page.dart`:
   - Remove the `MatrixSettingsCard` tile and the Outbox tile.
-  - Keep Conflicts, Logs, Health Import (mobile), Maintenance, About.
+  - Keep Logs, Health Import (mobile), Maintenance, About.
 
 ## Data Flow
 
@@ -187,15 +187,15 @@
 
 ## Implementation Checklist
 
-- [ ] Add `/settings/sync`, `/settings/sync/stats`, `/settings/sync/outbox` to Beamer settings
+- [x] Add `/settings/sync`, `/settings/sync/stats`, `/settings/sync/outbox` to Beamer settings
   location
-- [ ] Add `SyncSettingsPage` and `SyncStatsPage` (with `IncomingStats`)
-- [ ] Add Sync tile to `SettingsPage` guarded by `enableMatrixFlag`
-- [ ] Move Outbox Monitor under `/settings/sync/outbox`
-- [ ] Remove UnifiedToggle from Outbox app bar
-- [ ] Remove MatrixSettingsCard and Outbox tile from Advanced page
-- [ ] Update/extend routing and widget tests
-- [ ] Verify analyzer: zero warnings; format code; run tests
+- [x] Add `SyncSettingsPage` and `SyncStatsPage` (with `IncomingStats`)
+- [x] Add Sync tile to `SettingsPage` guarded by `enableMatrixFlag`
+- [x] Move Outbox Monitor under `/settings/sync/outbox`
+- [x] Remove UnifiedToggle from Outbox app bar
+- [x] Remove MatrixSettingsCard and Outbox tile from Advanced page
+- [x] Update/extend routing and widget tests
+- [x] Verify analyzer: zero warnings; format code; run tests
 - [ ] Add CHANGELOG entry
 - [ ] Follow-up: Create task to restyle Sync Conflicts UI
 
