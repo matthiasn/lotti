@@ -30,6 +30,9 @@ import 'package:lotti/features/settings/ui/pages/tags/create_tag_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tag_edit_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tags_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
+import 'package:lotti/features/sync/ui/sync_settings_page.dart';
+import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -67,6 +70,7 @@ void main() {
         '/settings',
         '/settings/ai',
         '/settings/sync',
+        '/settings/sync/matrix/maintenance',
         '/settings/sync/stats',
         '/settings/sync/outbox',
         '/settings/tags',
@@ -151,6 +155,22 @@ void main() {
       expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsPage>());
       // Second page is SyncSettingsPage; type check omitted to avoid import churn
+    });
+
+    test('buildPages builds MatrixSyncMaintenancePage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/sync/matrix/maintenance'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<SyncSettingsPage>());
+      expect(pages[2].child, isA<MatrixSyncMaintenancePage>());
     });
 
     test('buildPages builds CategoriesListPage', () {
@@ -463,9 +483,10 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
+      expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<OutboxMonitorPage>());
+      expect(pages[1].child, isA<SyncSettingsPage>());
+      expect(pages[2].child, isA<OutboxMonitorPage>());
     });
 
     test('buildPages builds SyncStatsPage under /settings/sync/stats', () {
@@ -477,9 +498,10 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
+      expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsPage>());
-      // Second page is SyncStatsPage; type check omitted to avoid import churn
+      expect(pages[1].child, isA<SyncSettingsPage>());
+      expect(pages[2].child, isA<SyncStatsPage>());
     });
 
     test('buildPages builds LoggingPage', () {

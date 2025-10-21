@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
@@ -197,50 +198,50 @@ void main() {
     when(() => mockMatrixService.getV2Metrics())
         .thenAnswer((_) async => V2Metrics.fromMap(map));
 
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const IncomingStats(),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
+    final initialNow = DateTime(2024, 1, 1, 12);
+    var fakeNow = initialNow;
 
-    // Grab initial "Last updated" text
-    final lastUpdatedFinder = find.textContaining('Last updated').first;
-    final initialText = tester.widget<Text>(lastUpdatedFinder).data ??
-        tester.widget<Text>(lastUpdatedFinder).toStringShort();
+    await withClock(Clock(() => fakeNow), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const IncomingStats(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixStatsControllerProvider
+                .overrideWith(() => _FakeMatrixStatsController(stats)),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    // Trigger refresh with identical map; time should not change.
-    // Use runAsync to advance real time since DateTime.now() is used.
-    await tester.tap(find.byIcon(Icons.refresh_rounded).first);
-    await tester.runAsync(() async {
-      await Future<void>.delayed(const Duration(seconds: 1));
+      // Grab initial "Last updated" text
+      final lastUpdatedFinder = find.textContaining('Last updated').first;
+      final initialText = tester.widget<Text>(lastUpdatedFinder).data ??
+          tester.widget<Text>(lastUpdatedFinder).toStringShort();
+
+      // Trigger refresh with identical map; time should not change.
+      await tester.tap(find.byIcon(Icons.refresh_rounded).first);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      final afterSameText = tester.widget<Text>(lastUpdatedFinder).data ??
+          tester.widget<Text>(lastUpdatedFinder).toStringShort();
+      expect(afterSameText, initialText);
+
+      // Change map and trigger refresh; time should update
+      map = {'processed': 3, 'failures': 0, 'retriesScheduled': 0};
+      when(() => mockMatrixService.getV2Metrics())
+          .thenAnswer((_) async => V2Metrics.fromMap(map));
+      fakeNow = fakeNow.add(const Duration(seconds: 5));
+
+      await tester.tap(find.byIcon(Icons.refresh_rounded).first);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      final afterChangeText = tester.widget<Text>(lastUpdatedFinder).data ??
+          tester.widget<Text>(lastUpdatedFinder).toStringShort();
+      expect(afterChangeText, isNot(equals(initialText)));
     });
-    await tester.pump();
-    await tester.pumpAndSettle();
-
-    final afterSameText = tester.widget<Text>(lastUpdatedFinder).data ??
-        tester.widget<Text>(lastUpdatedFinder).toStringShort();
-    expect(afterSameText, initialText);
-
-    // Change map and trigger refresh; time should update
-    map = {'processed': 3, 'failures': 0, 'retriesScheduled': 0};
-    when(() => mockMatrixService.getV2Metrics())
-        .thenAnswer((_) async => V2Metrics.fromMap(map));
-    await tester.tap(find.byIcon(Icons.refresh_rounded).first);
-    await tester.runAsync(() async {
-      await Future<void>.delayed(const Duration(seconds: 1));
-    });
-    await tester.pump();
-    await tester.pumpAndSettle();
-
-    final afterChangeText = tester.widget<Text>(lastUpdatedFinder).data ??
-        tester.widget<Text>(lastUpdatedFinder).toStringShort();
-    expect(afterChangeText, isNot(equals(initialText)));
   });
 
   testWidgets('refresh button invalidates provider and updates metrics',

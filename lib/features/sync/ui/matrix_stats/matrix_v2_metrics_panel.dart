@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix/stats_signature.dart';
@@ -31,8 +32,7 @@ class MatrixV2MetricsPanelState extends ConsumerState<MatrixV2MetricsPanel>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _lastUpdated = DateTime.now();
-    _refreshOnce();
+    unawaited(_refreshOnce());
     _startPolling();
   }
 
@@ -44,14 +44,10 @@ class MatrixV2MetricsPanelState extends ConsumerState<MatrixV2MetricsPanel>
       try {
         final v2 = await ref.read(matrixServiceProvider).getV2Metrics();
         final map = v2?.toMap();
+        if (!mounted || map == null || map.isEmpty) return;
         final signature = metricsMapSignature(map);
-        if (map != null && map.isNotEmpty && signature != _lastSignature) {
-          if (!mounted) return;
-          setState(() {
-            _metricsMap = map;
-            _lastSignature = signature;
-            _lastUpdated = DateTime.now();
-          });
+        if (signature != _lastSignature) {
+          _applyMetricsUpdate(map);
         }
       } finally {
         _inFlight = false;
@@ -59,16 +55,27 @@ class MatrixV2MetricsPanelState extends ConsumerState<MatrixV2MetricsPanel>
     });
   }
 
-  void _refreshOnce() {
-    unawaited(() async {
-      final v2 = await ref.read(matrixServiceProvider).getV2Metrics();
-      final map = v2?.toMap();
-      if (!mounted || map == null || map.isEmpty) return;
-      setState(() {
-        _metricsMap = map;
-        _lastSignature = metricsMapSignature(map);
-      });
-    }());
+  Future<void> _refreshOnce({bool forceTimestamp = false}) async {
+    final v2 = await ref.read(matrixServiceProvider).getV2Metrics();
+    final map = v2?.toMap();
+    if (!mounted || map == null || map.isEmpty) return;
+    _applyMetricsUpdate(map, forceTimestamp: forceTimestamp);
+  }
+
+  void _applyMetricsUpdate(
+    Map<String, int> map, {
+    bool forceTimestamp = false,
+  }) {
+    final signature = metricsMapSignature(map);
+    final shouldUpdateTimestamp =
+        forceTimestamp || _lastSignature == null || signature != _lastSignature;
+    setState(() {
+      _metricsMap = map;
+      _lastSignature = signature;
+      if (shouldUpdateTimestamp) {
+        _lastUpdated = clock.now();
+      }
+    });
   }
 
   @override
@@ -83,14 +90,11 @@ class MatrixV2MetricsPanelState extends ConsumerState<MatrixV2MetricsPanel>
     super.dispose();
   }
 
-  void _refreshDiagnostics() {
+  void _refreshDiagnostics({bool forceTimestamp = false}) {
     ref
       ..invalidate(matrixV2MetricsFutureProvider)
       ..invalidate(matrixDiagnosticsTextProvider);
-    _refreshOnce();
-    setState(() {
-      _lastUpdated = DateTime.now();
-    });
+    unawaited(_refreshOnce(forceTimestamp: forceTimestamp));
   }
 
   @override
@@ -102,11 +106,11 @@ class MatrixV2MetricsPanelState extends ConsumerState<MatrixV2MetricsPanel>
       lastUpdatedLabel: context.messages.settingsMatrixLastUpdated,
       onForceRescan: () async {
         await ref.read(matrixServiceProvider).forceV2Rescan();
-        _refreshDiagnostics();
+        _refreshDiagnostics(forceTimestamp: true);
       },
       onRetryNow: () async {
         await ref.read(matrixServiceProvider).retryV2Now();
-        _refreshDiagnostics();
+        _refreshDiagnostics(forceTimestamp: true);
       },
       onCopyDiagnostics: () async {
         final svc = ref.read(matrixServiceProvider);
