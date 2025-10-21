@@ -17,7 +17,9 @@ that keeps the pipeline testable and observable.
 - `ConflictListItem` + `ConflictListItemViewModel` present entity context, vector clock details, and
   semantics labels for accessibility. Tapping navigates to the existing conflict detail route.
 - Tests for these surfaces live alongside other sync UI coverage under
-  `test/features/sync/ui/...` with cross-cutting widget smoke tests in `test/widgets/sync`.
+  `test/features/sync/ui/...` with cross-cutting widget smoke tests in `test/widgets/sync`
+  (see `test/widgets/sync/conflict_list_item_test.dart` and
+  `test/widgets/sync/sync_list_scaffold_test.dart` for dedicated widget coverage).
 
 ## Architecture
 

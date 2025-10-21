@@ -71,6 +71,13 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
     }
   }
 
+  OutboxStatus? _statusFromIndex(int statusIndex) {
+    if (statusIndex < 0 || statusIndex >= OutboxStatus.values.length) {
+      return null;
+    }
+    return OutboxStatus.values[statusIndex];
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -78,7 +85,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       _OutboxListFilter.pending: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelPending,
         predicate: (OutboxItem item) =>
-            OutboxStatus.values[item.status] == OutboxStatus.pending,
+            _statusFromIndex(item.status) == OutboxStatus.pending,
         icon: Icons.schedule_rounded,
         selectedColor: Colors.orange,
         selectedForegroundColor: Colors.white,
@@ -86,7 +93,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       _OutboxListFilter.success: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelSuccess,
         predicate: (OutboxItem item) =>
-            OutboxStatus.values[item.status] == OutboxStatus.sent,
+            _statusFromIndex(item.status) == OutboxStatus.sent,
         icon: Icons.check_circle_outline_rounded,
         selectedColor: Colors.green,
         selectedForegroundColor: Colors.white,
@@ -94,7 +101,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       _OutboxListFilter.error: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelError,
         predicate: (OutboxItem item) =>
-            OutboxStatus.values[item.status] == OutboxStatus.error,
+            _statusFromIndex(item.status) == OutboxStatus.error,
         icon: Icons.error_outline_rounded,
         selectedColor: colorScheme.error,
         selectedForegroundColor: colorScheme.onError,
@@ -114,7 +121,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
           ctx.messages.syncListCountSummary(label, count),
       itemBuilder: (ctx, OutboxItem item) => OutboxListItem(
         item: item,
-        showRetry: OutboxStatus.values[item.status] == OutboxStatus.error,
+        showRetry: _statusFromIndex(item.status) == OutboxStatus.error,
         onRetry: () => _retryItem(ctx, item),
       ),
     );

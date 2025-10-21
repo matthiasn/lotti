@@ -106,6 +106,13 @@ class _ConflictsPageState extends State<ConflictsPage> {
     return controller.stream;
   }
 
+  ConflictStatus? _statusFromIndex(int statusIndex) {
+    if (statusIndex < 0 || statusIndex >= ConflictStatus.values.length) {
+      return null;
+    }
+    return ConflictStatus.values[statusIndex];
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -113,7 +120,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
       _ConflictListFilter.unresolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsUnresolved,
         predicate: (conflict) =>
-            ConflictStatus.values[conflict.status] == ConflictStatus.unresolved,
+            _statusFromIndex(conflict.status) == ConflictStatus.unresolved,
         icon: Icons.report_problem_outlined,
         selectedColor: Colors.amber,
         selectedForegroundColor: Colors.black,
@@ -121,7 +128,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
       _ConflictListFilter.resolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsResolved,
         predicate: (conflict) =>
-            ConflictStatus.values[conflict.status] == ConflictStatus.resolved,
+            _statusFromIndex(conflict.status) == ConflictStatus.resolved,
         icon: Icons.verified_outlined,
         selectedColor: colorScheme.primary,
         selectedForegroundColor: colorScheme.onPrimary,
