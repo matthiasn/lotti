@@ -59,6 +59,17 @@ Immutable state model using Freezed for the recording feature.
 - `language`: Selected language for transcription
 - `linkedId`: Optional ID to link recording to existing entry
 
+#### AudioPlayerCubit (`state/player_cubit.dart`)
+Bloc wrapper around `media_kit` playback. It keeps audio progress, buffering, speed, and transcript
+visibility in sync with the UI.
+
+**Responsibilities:**
+- Loads the selected `JournalAudio` asset (`setAudioNote`) and hydrates total duration
+- Drives playback (`play`, `pause`, `stop`, `seek`, `setSpeed`) while clamping progress updates
+- Exposes buffer progress for the custom progress bar
+- Toggles transcript visibility without leaking state to unrelated cards
+- Emits robust error logging through `LoggingService`
+
 ### Repositories
 
 #### AudioRecorderRepository (`repository/audio_recorder_repository.dart`)
@@ -100,6 +111,17 @@ For detailed documentation of UI components, see [recording/README.md](ui/widget
 - `AudioRecordingModal`: Main recording interface with VU meter
 - `AudioRecordingIndicator`: Floating indicator for active recordings
 - `AnalogVuMeter`: Visual audio level display
+- `AudioPlayerWidget`: Minimal playback card with play/pause ring, progress bar, and speed toggle
+
+#### AudioPlayerWidget (`ui/widgets/audio_player.dart`)
+The compact playback card keeps focus on essential controls:
+
+- Circular play/pause button with animated progress ring
+- Custom `AudioProgressBar` showing buffered vs. played segments and supporting scrubbing
+- Tabular progress/total timestamps with an inline speed toggle pill
+
+The layout adapts for narrow constraints (<360 px) by reducing spacing while maintaining the same
+row-based structure. Supporting painter logic lives in `ui/widgets/progress/audio_progress_bar.dart`.
 
 ## Integration Points
 
@@ -144,6 +166,7 @@ The feature has comprehensive test coverage:
 - `audio_recording_modal_test.dart`: Modal UI and interactions
 - `audio_recording_indicator_test.dart`: Indicator behavior
 - `analog_vu_meter_test.dart`: VU meter rendering and animations
+- `audio_player_widget_test.dart`: Wide/compact layout behaviours, transcript reveal, play handling
 
 ### Test Execution
 ```bash

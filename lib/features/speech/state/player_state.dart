@@ -12,9 +12,9 @@ abstract class AudioPlayerState with _$AudioPlayerState {
     required Duration totalDuration,
     required Duration progress,
     required Duration pausedAt,
-    @Default(Duration.zero) Duration buffered,
     required double speed,
     required bool showTranscriptsList,
+    @Default(Duration.zero) Duration buffered,
     JournalAudio? audioNote,
   }) = _AudioPlayerState;
 }
