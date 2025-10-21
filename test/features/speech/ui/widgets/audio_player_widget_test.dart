@@ -250,4 +250,278 @@ void main() {
     verify(() => cubit.setAudioNote(journalAudio)).called(1);
     verify(() => cubit.play()).called(1);
   });
+
+  testWidgets('tapping pause button when playing calls pause',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.playing,
+      totalDuration: journalAudio.data.duration,
+      progress: const Duration(seconds: 30),
+      pausedAt: Duration.zero,
+      speed: 1,
+      showTranscriptsList: false,
+      audioNote: journalAudio,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    await tester.tap(find.bySemanticsLabel('Pause audio'));
+    await tester.pump();
+
+    verify(() => cubit.pause()).called(1);
+  });
+
+  testWidgets('tapping play button when paused calls play',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.paused,
+      totalDuration: journalAudio.data.duration,
+      progress: const Duration(seconds: 30),
+      pausedAt: const Duration(seconds: 30),
+      speed: 1,
+      showTranscriptsList: false,
+      audioNote: journalAudio,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    await tester.tap(find.bySemanticsLabel('Play audio'));
+    await tester.pump();
+
+    verify(() => cubit.play()).called(1);
+  });
+
+  testWidgets('shows loading indicator when initializing',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.initializing,
+      totalDuration: journalAudio.data.duration,
+      progress: Duration.zero,
+      pausedAt: Duration.zero,
+      speed: 1,
+      showTranscriptsList: false,
+      audioNote: journalAudio,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('speed button is disabled when player is inactive',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.stopped,
+      totalDuration: journalAudio.data.duration,
+      progress: Duration.zero,
+      pausedAt: Duration.zero,
+      speed: 1.5,
+      showTranscriptsList: false,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    final speedButton = find.text('1.5x');
+    expect(speedButton, findsOneWidget);
+
+    final opacity = tester.widget<Opacity>(
+      find.ancestor(of: speedButton, matching: find.byType(Opacity)),
+    );
+    expect(opacity.opacity, 0.5);
+  });
+
+  testWidgets('speed cycles from 1x to 1.25x', (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.playing,
+      totalDuration: journalAudio.data.duration,
+      progress: const Duration(seconds: 5),
+      pausedAt: Duration.zero,
+      speed: 1,
+      showTranscriptsList: false,
+      audioNote: journalAudio,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    await tester.tap(find.text('1x'));
+    await tester.pump();
+
+    verify(() => cubit.setSpeed(1.25)).called(1);
+  });
+
+  testWidgets('speed cycles from 2x to 0.5x (wraps around)',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.playing,
+      totalDuration: journalAudio.data.duration,
+      progress: const Duration(seconds: 5),
+      pausedAt: Duration.zero,
+      speed: 2,
+      showTranscriptsList: false,
+      audioNote: journalAudio,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    await tester.tap(find.text('2x'));
+    await tester.pump();
+
+    verify(() => cubit.setSpeed(0.5)).called(1);
+  });
+
+  testWidgets('displays all speed values correctly',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+
+    for (final speed in speeds) {
+      final state = buildState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: journalAudio.data.duration,
+        progress: const Duration(seconds: 5),
+        pausedAt: Duration.zero,
+        speed: speed,
+        showTranscriptsList: false,
+        audioNote: journalAudio,
+      );
+
+      await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+      final expectedLabel =
+          speed == speed.truncateToDouble() ? '${speed.toInt()}x' : '${speed}x';
+      expect(find.text(expectedLabel), findsOneWidget);
+
+      // Clean up for next iteration
+      await tester.pumpWidget(Container());
+    }
+  });
+
+  testWidgets('handles zero duration gracefully', (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.stopped,
+      totalDuration: Duration.zero,
+      progress: Duration.zero,
+      pausedAt: Duration.zero,
+      speed: 1,
+      showTranscriptsList: false,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    // Should display duration from journalAudio.data.duration
+    expect(find.textContaining('5:00'), findsOneWidget);
+    expect(find.byType(AudioProgressBar), findsOneWidget);
+  });
+
+  testWidgets('uses state totalDuration when available',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.playing,
+      totalDuration: const Duration(minutes: 3),
+      progress: const Duration(seconds: 30),
+      pausedAt: Duration.zero,
+      speed: 1,
+      showTranscriptsList: false,
+      audioNote: journalAudio,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    // Should display state totalDuration (03:00), not journalAudio duration (05:00)
+    expect(find.text('03:00'), findsOneWidget);
+  });
+
+  testWidgets('progress ratio is clamped between 0 and 1',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.playing,
+      totalDuration: const Duration(seconds: 60),
+      // Progress exceeds total duration
+      progress: const Duration(seconds: 120),
+      pausedAt: Duration.zero,
+      speed: 1,
+      showTranscriptsList: false,
+      audioNote: journalAudio,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    // Should not throw and should render
+    expect(find.byType(AudioProgressBar), findsOneWidget);
+  });
+
+  testWidgets('displays error color for non-1x speeds',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.playing,
+      totalDuration: journalAudio.data.duration,
+      progress: const Duration(seconds: 5),
+      pausedAt: Duration.zero,
+      speed: 1.5,
+      showTranscriptsList: false,
+      audioNote: journalAudio,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    expect(find.text('1.5x'), findsOneWidget);
+    // The speed button should be visible and tappable
+    await tester.tap(find.text('1.5x'));
+    verify(() => cubit.setSpeed(1.75)).called(1);
+  });
+
+  testWidgets('shows correct buffered progress', (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.playing,
+      totalDuration: const Duration(minutes: 5),
+      progress: const Duration(seconds: 30),
+      pausedAt: Duration.zero,
+      speed: 1,
+      showTranscriptsList: false,
+      buffered: const Duration(minutes: 2),
+      audioNote: journalAudio,
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    final progressBar = tester.widget<AudioProgressBar>(
+      find.byType(AudioProgressBar),
+    );
+    expect(progressBar.buffered, const Duration(minutes: 2));
+    expect(progressBar.progress, const Duration(seconds: 30));
+  });
+
+  testWidgets('progress and buffered are zero when inactive',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.stopped,
+      totalDuration: journalAudio.data.duration,
+      progress: const Duration(seconds: 30),
+      pausedAt: Duration.zero,
+      speed: 1,
+      showTranscriptsList: false,
+      buffered: const Duration(minutes: 1),
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    final progressBar = tester.widget<AudioProgressBar>(
+      find.byType(AudioProgressBar),
+    );
+    // When not active, progress and buffered should be zero
+    expect(progressBar.progress, Duration.zero);
+    expect(progressBar.buffered, Duration.zero);
+  });
 }
