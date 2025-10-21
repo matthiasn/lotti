@@ -21,6 +21,10 @@ This module contains the Settings experience and its feature pages.
   - Outbox Monitor: `/settings/sync/outbox`
   - Matrix Stats: `/settings/sync/stats`
   - Conflicts: linked from Sync, still routed under advanced paths
+- Sync list pages (Outbox Monitor, Conflicts) share `SyncListScaffold`
+  for segmented filters, inline count summaries, modern cards, and polished
+  empty/loading states. Outbox uses `OutboxListItem` for payload metadata and
+  retry affordances; Conflicts uses `ConflictListItem` for entity context.
 
 ## Advanced section
 

@@ -5,6 +5,8 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_monitor.dart';
+import 'package:lotti/features/settings/ui/widgets/outbox/outbox_list_item.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,19 +18,16 @@ void main() {
   final testDateTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   group('OutboxBadge Widget Tests - ', () {
-    setUp(() {});
+    setUp(() {
+      getIt.registerSingleton<UserActivityService>(UserActivityService());
+    });
     tearDown(getIt.reset);
 
     testWidgets('OutboxMonitor is rendered', (tester) async {
       const testCount = 999;
       syncDatabaseMock = mockSyncDatabaseWithCount(testCount);
 
-      when(
-        () => syncDatabaseMock.watchOutboxItems(
-          limit: any(named: 'limit'),
-          statuses: any(named: 'statuses'),
-        ),
-      ).thenAnswer(
+      when(() => syncDatabaseMock.watchOutboxItems()).thenAnswer(
         (_) => Stream<List<OutboxItem>>.fromIterable([
           [
             OutboxItem(
@@ -37,8 +36,8 @@ void main() {
               updatedAt: testDateTime,
               status: 1,
               retries: 0,
-              message: 'message',
-              subject: 'subject',
+              message: '{"runtimeType":"aiConfigDelete","id":"config-id"}',
+              subject: 'error-subject',
             ),
             OutboxItem(
               id: 2,
@@ -46,17 +45,17 @@ void main() {
               updatedAt: testDateTime,
               status: 0,
               retries: 1,
-              message: 'message',
-              subject: 'subject',
+              message: '{"runtimeType":"aiConfigDelete","id":"pending"}',
+              subject: 'pending-subject',
             ),
             OutboxItem(
-              id: 2,
+              id: 3,
               createdAt: testDateTime,
               updatedAt: testDateTime,
               status: 2,
               retries: 2,
-              message: 'message',
-              subject: 'subject',
+              message: '{"runtimeType":"aiConfigDelete","id":"sent"}',
+              subject: 'sent-subject',
             ),
           ]
         ]),
@@ -82,19 +81,33 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final pendingControlFinder = find.text('pending');
+      final pendingControlFinder =
+          find.byKey(const ValueKey('syncFilter-pending'));
       expect(pendingControlFinder, findsOneWidget);
-      final allControlFinder = find.text('all');
+      final allControlFinder = find.byKey(const ValueKey('syncFilter-all'));
       expect(allControlFinder, findsOneWidget);
-      final errorControlFinder = find.text('error');
+      final errorControlFinder =
+          find.byKey(const ValueKey('syncFilter-error'));
       expect(errorControlFinder, findsOneWidget);
 
-      await tester.tap(allControlFinder);
-      await tester.tap(errorControlFinder);
+      expect(find.text('Pending · 1 item'), findsOneWidget);
+      expect(find.text('Retries: 1 Retry'), findsOneWidget);
+      expect(find.byType(OutboxListItem), findsNWidgets(1));
 
-      expect(find.text('0 retries \nno attachment'), findsOneWidget);
-      expect(find.text('1 retry \nno attachment'), findsOneWidget);
-      expect(find.text('2 retries \nno attachment'), findsOneWidget);
+      await tester.tap(find.text('Error'));
+      await tester.pumpAndSettle();
+
+      final errorItems = tester.widgetList<OutboxListItem>(
+        find.byType(OutboxListItem),
+      ).toList();
+      expect(errorItems, hasLength(1));
+      expect(errorItems.first.showRetry, isTrue);
+
+      await tester.tap(find.text('All'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Retries: 2 Retries'), findsOneWidget);
+      expect(find.byType(OutboxListItem), findsNWidgets(3));
     });
   });
 }
