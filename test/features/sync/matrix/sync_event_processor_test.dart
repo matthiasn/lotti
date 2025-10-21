@@ -843,6 +843,42 @@ void main() {
         )).called(1);
   });
 
+  test('EntryLink no-op (rows=0) suppresses apply log and emits diag',
+      () async {
+    final link = EntryLink.basic(
+      id: 'link-noop',
+      fromId: 'from-id',
+      toId: 'to-id',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      vectorClock: null,
+    );
+    final message = SyncMessage.entryLink(
+      entryLink: link,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 0);
+
+    SyncApplyDiagnostics? seen;
+    processor.applyObserver = (d) => seen = d;
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    // No apply.entryLink log on rows=0
+    verifyNever(() => loggingService.captureEvent(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'apply.entryLink',
+        ));
+
+    // Diagnostics captured for pipeline
+    expect(seen, isNotNull);
+    expect(seen!.payloadType, 'entryLink');
+    expect(seen!.rowsAffected, 0);
+    expect(seen!.conflictStatus, 'entryLink.noop');
+  });
+
   test('EntryLink apply continues when logging throws', () async {
     final link = EntryLink.basic(
       id: 'link-fail',

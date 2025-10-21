@@ -220,5 +220,61 @@ void main() {
       );
       expect(slice.map((e) => e.eventId), ['a', 'b']);
     });
+
+    test(
+        'filterSyncPayloadsByMonotonic drops old payloads, keeps retries/attachments',
+        () {
+      Event mk(String id, int ts, {bool payload = true}) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn(id);
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        if (payload) {
+          final jsonPayload = <String, dynamic>{
+            'runtimeType': 'journalEntity',
+            'jsonPath': '/x.json',
+          };
+          final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
+          when(() => e.text).thenReturn(text);
+          when(() => e.attachmentMimetype).thenReturn('');
+        } else {
+          when(() => e.text).thenReturn('');
+          when(() => e.attachmentMimetype).thenReturn('image/png');
+        }
+        when(() => e.content).thenReturn(<String, dynamic>{});
+        return e;
+      }
+
+      final old = mk('E0', 100);
+      final equal = mk('E1', 200);
+      final newer = mk('E2', 201);
+      final att = mk('A1', 50, payload: false);
+      var skipped = 0;
+      final kept = filterSyncPayloadsByMonotonic(
+        events: [old, equal, newer, att],
+        dropOldSyncPayloads: true,
+        lastTimestamp: 200,
+        lastEventId: 'E1',
+        hasAttempts: (_) => false,
+        onSkipped: () => skipped++,
+      );
+      expect(kept.map((e) => e.eventId), containsAllInOrder(['E2', 'A1']));
+      expect(kept.any((e) => e.eventId == 'E0' || e.eventId == 'E1'), isFalse);
+      expect(skipped, 2);
+
+      // Mark equal as retrying -> kept
+      skipped = 0;
+      final kept2 = filterSyncPayloadsByMonotonic(
+        events: [old, equal, newer, att],
+        dropOldSyncPayloads: true,
+        lastTimestamp: 200,
+        lastEventId: 'E1',
+        hasAttempts: (id) => id == 'E1',
+        onSkipped: () => skipped++,
+      );
+      expect(kept2.map((e) => e.eventId), containsAll(['E1', 'E2', 'A1']));
+      expect(kept2.any((e) => e.eventId == 'E0'), isFalse);
+      expect(skipped, 1);
+    });
   });
 }

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/v2_metrics_section.dart';
@@ -18,7 +17,7 @@ class IncomingStats extends ConsumerStatefulWidget {
 class _IncomingStatsState extends ConsumerState<IncomingStats>
     with WidgetsBindingObserver {
   DateTime? _lastUpdated;
-  Future<V2Metrics?>? _metricsFuture;
+  Map<String, int>? _metricsMap;
   Timer? _pollTimer;
   bool _appActive = true;
   bool _inFlight = false;
@@ -30,7 +29,15 @@ class _IncomingStatsState extends ConsumerState<IncomingStats>
     WidgetsBinding.instance.addObserver(this);
     _lastUpdated = DateTime.now();
     // Initial typed metrics fetch (decoupled from messageCounts rebuilds).
-    _metricsFuture = ref.read(matrixServiceProvider).getV2Metrics();
+    // Initial metrics fetch
+    unawaited(() async {
+      final v2 = await ref.read(matrixServiceProvider).getV2Metrics();
+      if (!mounted) return;
+      setState(() {
+        _metricsMap = v2?.toMap();
+        _lastSig = _signature(_metricsMap);
+      });
+    }());
     _startPolling();
   }
 
@@ -39,9 +46,17 @@ class _IncomingStatsState extends ConsumerState<IncomingStats>
       ref
         ..invalidate(matrixV2MetricsFutureProvider)
         ..invalidate(matrixDiagnosticsTextProvider);
-      _metricsFuture = ref.read(matrixServiceProvider).getV2Metrics();
       _lastUpdated = DateTime.now();
     });
+    unawaited(() async {
+      final v2 = await ref.read(matrixServiceProvider).getV2Metrics();
+      if (!mounted) return;
+      setState(() {
+        _metricsMap = v2?.toMap();
+        _lastSig = _signature(_metricsMap);
+        _lastUpdated = DateTime.now();
+      });
+    }());
   }
 
   void _startPolling() {
@@ -55,7 +70,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats>
         final sig = _signature(map);
         if (sig != _lastSig) {
           setState(() {
-            _metricsFuture = Future<V2Metrics?>.value(v2);
+            _metricsMap = map;
             _lastSig = sig;
             _lastUpdated = DateTime.now();
           });
@@ -94,69 +109,34 @@ class _IncomingStatsState extends ConsumerState<IncomingStats>
 
   @override
   Widget build(BuildContext context) {
-    final stats = ref.watch(matrixStatsControllerProvider);
-
-    return stats.map(
-      data: (data) {
-        final value = data.value;
-        return SingleChildScrollView(
-          padding: EdgeInsets.zero,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${context.messages.settingsMatrixSentMessagesLabel} ${value.sentCount}',
-              ),
-              const SizedBox(height: 10),
-              DataTable(
-                columns: <DataColumn>[
-                  DataColumn(
-                    label: Text(
-                      context.messages.settingsMatrixMessageType,
-                      style: const TextStyle(fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      context.messages.settingsMatrixCount,
-                      style: const TextStyle(fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                ],
-                rows: <DataRow>[
-                  for (final k in (value.messageCounts.keys.toList()..sort()))
-                    DataRow(
-                      cells: <DataCell>[
-                        DataCell(Text(k)),
-                        DataCell(Text(value.messageCounts[k].toString())),
-                      ],
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              FutureBuilder<V2Metrics?>(
-                future: _metricsFuture,
-                builder: (context, snap) {
-                  final v2 = snap.data?.toMap();
-                  if (v2 == null || v2.isEmpty) {
-                    return Row(
-                      children: [
-                        Text(
-                          context.messages.settingsMatrixV2MetricsNoData,
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          key: const Key('matrixStats.refresh.noData'),
-                          tooltip: context.messages.settingsMatrixRefresh,
-                          icon: const Icon(Icons.refresh_rounded),
-                          onPressed: _refreshDiagnostics,
-                        ),
-                      ],
-                    );
-                  }
-
-                  return V2MetricsSection(
-                    metrics: v2,
+    return SingleChildScrollView(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _MessageCountsView(),
+          const SizedBox(height: 16),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 120),
+            child: (_metricsMap == null || _metricsMap!.isEmpty)
+                ? Row(
+                    key: const ValueKey('v2.noData'),
+                    children: [
+                      Text(
+                        context.messages.settingsMatrixV2MetricsNoData,
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        key: const Key('matrixStats.refresh.noData'),
+                        tooltip: context.messages.settingsMatrixRefresh,
+                        icon: const Icon(Icons.refresh_rounded),
+                        onPressed: _refreshDiagnostics,
+                      ),
+                    ],
+                  )
+                : V2MetricsSection(
+                    key: const ValueKey('v2.section'),
+                    metrics: _metricsMap!,
                     lastUpdated: _lastUpdated,
                     title: context.messages.settingsMatrixV2Metrics,
                     lastUpdatedLabel:
@@ -186,11 +166,57 @@ class _IncomingStatsState extends ConsumerState<IncomingStats>
                     fetchDiagnostics: () => ref
                         .read(matrixServiceProvider)
                         .getSyncDiagnosticsText(),
-                  );
-                },
-              ),
-            ],
+                  ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MessageCountsView extends ConsumerWidget {
+  const _MessageCountsView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(matrixStatsControllerProvider);
+    return stats.map(
+      data: (data) {
+        final value = data.value;
+        final keys = value.messageCounts.keys.toList()..sort();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${context.messages.settingsMatrixSentMessagesLabel} ${value.sentCount}',
+            ),
+            const SizedBox(height: 10),
+            DataTable(
+              columns: <DataColumn>[
+                DataColumn(
+                  label: Text(
+                    context.messages.settingsMatrixMessageType,
+                    style: const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    context.messages.settingsMatrixCount,
+                    style: const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                ),
+              ],
+              rows: <DataRow>[
+                for (final k in keys)
+                  DataRow(
+                    cells: <DataCell>[
+                      DataCell(Text(k)),
+                      DataCell(Text(value.messageCounts[k].toString())),
+                    ],
+                  ),
+              ],
+            ),
+          ],
         );
       },
       error: (error) => const Text(

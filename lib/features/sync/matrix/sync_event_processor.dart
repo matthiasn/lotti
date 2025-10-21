@@ -420,13 +420,31 @@ class SyncEventProcessor {
       case SyncEntryLink(entryLink: final entryLink):
         final rows = await journalDb.upsertEntryLink(entryLink);
         try {
-          _loggingService.captureEvent(
-            'apply entryLink from=${entryLink.fromId} to=${entryLink.toId} rows=$rows',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'apply.entryLink',
-          );
+          if (rows > 0) {
+            _loggingService.captureEvent(
+              'apply entryLink from=${entryLink.fromId} to=${entryLink.toId} rows=$rows',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'apply.entryLink',
+            );
+          }
         } catch (_) {
           // best-effort logging only
+        }
+        // Surface DB-apply diagnostics to the pipeline when available.
+        if (applyObserver != null) {
+          try {
+            final diag = SyncApplyDiagnostics(
+              eventId: event.eventId,
+              payloadType: 'entryLink',
+              entityId: '${entryLink.fromId}->${entryLink.toId}',
+              vectorClock: null,
+              rowsAffected: rows,
+              conflictStatus: rows == 0 ? 'entryLink.noop' : 'applied',
+            );
+            applyObserver!.call(diag);
+          } catch (_) {
+            // best-effort only
+          }
         }
         _updateNotifications.notify(
           {entryLink.fromId, entryLink.toId},

@@ -833,6 +833,23 @@ class JournalDb extends _$JournalDb {
 
   Future<int> upsertEntryLink(EntryLink link) async {
     if (link.fromId != link.toId) {
+      try {
+        // Equality precheck: if an entry with the same id exists and the
+        // serialized payload is identical, skip the UPSERT to avoid a no-op
+        // UPDATE and downstream log noise.
+        final existing = await (select(linkedEntries)
+              ..where((t) => t.id.equals(link.id)))
+            .getSingleOrNull();
+        if (existing != null) {
+          final incomingSerialized = jsonEncode(link);
+          if (existing.serialized == incomingSerialized) {
+            return 0; // no change needed
+          }
+        }
+      } catch (_) {
+        // Best-effort precheck only; fall through to UPSERT on failure.
+      }
+
       final res = into(linkedEntries).insertOnConflictUpdate(
         linkedDbEntity(link),
       );

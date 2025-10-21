@@ -467,7 +467,7 @@ void main() {
       eventProcessor: processor,
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
-    )..testMetrics = {'processed': 3, 'dbApplied': 2};
+    )..testMetrics = {'processed': 3, 'dbApplied': 2, 'dbEntryLinkNoop': 4};
 
     final service = MatrixService(
       gateway: gateway,
@@ -493,6 +493,7 @@ void main() {
     final text = await service.getSyncDiagnosticsText();
     expect(text.contains('processed=3'), isTrue);
     expect(text.contains('dbApplied=2'), isTrue);
+    expect(text.contains('dbEntryLinkNoop=4'), isTrue);
   });
 
   test('forceV2Rescan handles overlapping calls gracefully', () async {

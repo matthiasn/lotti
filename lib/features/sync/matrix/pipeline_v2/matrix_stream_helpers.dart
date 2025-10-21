@@ -156,3 +156,42 @@ List<Event> buildLiveScanSlice({
   }
   return tu.dedupEventsByIdPreserveOrder(slice);
 }
+
+/// Filters a list of events to optionally drop older/equal sync payloads while
+/// preserving attachments and any events with retry attempts.
+///
+/// - When [dropOldSyncPayloads] is false, returns [events] unchanged.
+/// - When true, a sync payload event is kept only if it is strictly newer than
+///   ([lastTimestamp], [lastEventId]) or when [hasAttempts] returns true for
+///   its eventId. Non‑payload events (attachments) are always kept.
+/// - Invokes [onSkipped] each time a payload is dropped (for metrics).
+List<Event> filterSyncPayloadsByMonotonic({
+  required List<Event> events,
+  required bool dropOldSyncPayloads,
+  required num? lastTimestamp,
+  required String? lastEventId,
+  required bool Function(String eventId) hasAttempts,
+  void Function()? onSkipped,
+}) {
+  if (!dropOldSyncPayloads) return events;
+  final kept = <Event>[];
+  for (final e in events) {
+    if (!isLikelySyncPayloadEvent(e)) {
+      kept.add(e);
+      continue;
+    }
+    final ts = TimelineEventOrdering.timestamp(e);
+    final newer = TimelineEventOrdering.isNewer(
+      candidateTimestamp: ts,
+      candidateEventId: e.eventId,
+      latestTimestamp: lastTimestamp,
+      latestEventId: lastEventId,
+    );
+    if (!newer && !hasAttempts(e.eventId)) {
+      onSkipped?.call();
+      continue;
+    }
+    kept.add(e);
+  }
+  return kept;
+}
