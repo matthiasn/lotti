@@ -122,11 +122,19 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   Future<void> seek(Duration newPosition) async {
     try {
       await _audioPlayer.seek(newPosition);
+      final newBuffered =
+          newPosition > state.buffered ? newPosition : state.buffered;
+
+      if (newPosition == state.progress &&
+          newPosition == state.pausedAt &&
+          newBuffered == state.buffered) {
+        return;
+      }
       emit(
         state.copyWith(
           progress: newPosition,
           pausedAt: newPosition,
-          buffered: newPosition > state.buffered ? newPosition : state.buffered,
+          buffered: newBuffered,
         ),
       );
     } catch (exception, stackTrace) {

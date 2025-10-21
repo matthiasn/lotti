@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -17,7 +18,8 @@ String formatAudioDuration(Duration duration) {
 }
 
 /// Custom painted progress bar with buffered overlay and gesture-driven scrubbing.
-class AudioProgressBar extends StatelessWidget {
+/// Custom painted progress bar with buffered overlay and gesture-driven scrubbing.
+class AudioProgressBar extends StatefulWidget {
   const AudioProgressBar({
     required this.progress,
     required this.buffered,
@@ -37,13 +39,24 @@ class AudioProgressBar extends StatelessWidget {
   final bool compact;
   final String? semanticLabel;
 
-  bool get _hasTotal => total.inMilliseconds > 0;
+  @override
+  State<AudioProgressBar> createState() => _AudioProgressBarState();
+}
+
+class _AudioProgressBarState extends State<AudioProgressBar> {
+  static const Duration _seekThrottleDelay = Duration(milliseconds: 60);
+
+  Timer? _throttleTimer;
+  DateTime? _lastSeekInvocation;
+  Duration? _pendingSeek;
+
+  bool get _hasTotal => widget.total.inMilliseconds > 0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final trackHeight = compact ? 6.0 : 8.0;
-    final thumbRadius = compact ? 6.0 : 7.5;
+    final trackHeight = widget.compact ? 6.0 : 8.0;
+    final thumbRadius = widget.compact ? 6.0 : 7.5;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -52,16 +65,18 @@ class AudioProgressBar extends StatelessWidget {
             : MediaQuery.sizeOf(context).width;
 
         final progressRatio = _hasTotal
-            ? (progress.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0)
+            ? (widget.progress.inMilliseconds / widget.total.inMilliseconds)
+                .clamp(0.0, 1.0)
             : 0.0;
 
         final bufferedRatio = _hasTotal
-            ? (buffered.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0)
+            ? (widget.buffered.inMilliseconds / widget.total.inMilliseconds)
+                .clamp(0.0, 1.0)
             : 0.0;
 
         final Widget bar = SizedBox(
           width: double.infinity,
-          height: compact ? 32 : 36,
+          height: widget.compact ? 32 : 36,
           child: RepaintBoundary(
             child: CustomPaint(
               painter: _ProgressBarPainter(
@@ -81,35 +96,100 @@ class AudioProgressBar extends StatelessWidget {
           ),
         );
 
-        if (!enabled || !_hasTotal) {
+        if (!widget.enabled || !_hasTotal) {
           return bar;
         }
 
-        void handle(Offset position) {
+        Duration durationForPosition(Offset position) {
           if (width <= 0) {
-            return;
+            return Duration.zero;
           }
           final ratio = (position.dx / width).clamp(0.0, 1.0);
-          final targetMs = (total.inMilliseconds * ratio).round();
-          onSeek(Duration(milliseconds: targetMs));
+          final targetMs = (widget.total.inMilliseconds * ratio).round();
+          return Duration(milliseconds: targetMs);
+        }
+
+        void handleImmediate(Offset position) {
+          final target = durationForPosition(position);
+          if (!_hasTotal) {
+            return;
+          }
+          _emitSeek(target);
+        }
+
+        void handleThrottled(Offset position) {
+          final target = durationForPosition(position);
+          if (!_hasTotal) {
+            return;
+          }
+          _scheduleSeek(target);
+        }
+
+        void handleDragEnd() {
+          if (_pendingSeek != null) {
+            widget.onSeek(_pendingSeek!);
+            _lastSeekInvocation = DateTime.now();
+            _pendingSeek = null;
+          }
+          _throttleTimer?.cancel();
+          _throttleTimer = null;
         }
 
         return Semantics(
-          label: semanticLabel ?? 'Audio timeline',
-          value: '${formatAudioDuration(progress)} of '
-              '${formatAudioDuration(total)}',
+          label: widget.semanticLabel ?? 'Audio timeline',
+          value: '${formatAudioDuration(widget.progress)} of '
+              '${formatAudioDuration(widget.total)}',
           increasedValue: 'Seek forward',
           decreasedValue: 'Seek backward',
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTapDown: (details) => handle(details.localPosition),
-            onHorizontalDragStart: (details) => handle(details.localPosition),
-            onHorizontalDragUpdate: (details) => handle(details.localPosition),
+            onTapDown: (details) => handleImmediate(details.localPosition),
+            onHorizontalDragStart: (details) =>
+                handleThrottled(details.localPosition),
+            onHorizontalDragUpdate: (details) =>
+                handleThrottled(details.localPosition),
+            onHorizontalDragEnd: (_) => handleDragEnd(),
+            onHorizontalDragCancel: handleDragEnd,
             child: bar,
           ),
         );
       },
     );
+  }
+
+  void _emitSeek(Duration target) {
+    widget.onSeek(target);
+    _lastSeekInvocation = DateTime.now();
+  }
+
+  void _scheduleSeek(Duration target) {
+    final now = DateTime.now();
+    final last = _lastSeekInvocation;
+    if (last == null || now.difference(last) >= _seekThrottleDelay) {
+      _emitSeek(target);
+      _pendingSeek = null;
+      _throttleTimer?.cancel();
+      _throttleTimer = null;
+      return;
+    }
+
+    _pendingSeek = target;
+    _throttleTimer ??= Timer(
+      _seekThrottleDelay - now.difference(last),
+      () {
+        if (_pendingSeek != null) {
+          _emitSeek(_pendingSeek!);
+          _pendingSeek = null;
+        }
+        _throttleTimer = null;
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _throttleTimer?.cancel();
+    super.dispose();
   }
 }
 

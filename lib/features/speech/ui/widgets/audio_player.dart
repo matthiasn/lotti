@@ -367,17 +367,10 @@ double _nextSpeed(double current) {
 }
 
 String _speedLabel(double speed) {
-  if (speed == speed.roundToDouble()) {
-    return '${speed.toStringAsFixed(0)}x';
+  if (speed == speed.truncateToDouble()) {
+    return '${speed.toInt()}x';
   }
-  var text = speed.toString();
-  if (text.contains('.') && text.endsWith('0')) {
-    text = text.replaceAll(RegExp(r'0+$'), '');
-    if (text.endsWith('.')) {
-      text = text.substring(0, text.length - 1);
-    }
-  }
-  return '${text}x';
+  return '${speed}x';
 }
 
 class _PlayButtonRingPainter extends CustomPainter {
