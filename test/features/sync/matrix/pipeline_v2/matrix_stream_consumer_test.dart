@@ -336,6 +336,53 @@ void main() {
   });
 
   group('MatrixStreamConsumer SDK pagination + streaming', () {
+    test('metrics track EntryLink no-ops via diagnostics', () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(null);
+      when(() => roomManager.currentRoomId).thenReturn(null);
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+      );
+
+      // Simulate an EntryLink no-op diagnostic
+      consumer.reportDbApplyDiagnostics(SyncApplyDiagnostics(
+        eventId: 'e1',
+        payloadType: 'entryLink',
+        entityId: 'A->B',
+        vectorClock: null,
+        rowsAffected: 0,
+        conflictStatus: 'entryLink.noop',
+      ));
+
+      final snap = consumer.metricsSnapshot();
+      expect(snap['dbEntryLinkNoop'], 1);
+      final diag = consumer.diagnosticsStrings();
+      expect(diag['entryLink.noops'], '1');
+    });
     test('uses SDK pagination seam when available', () async {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();

@@ -60,6 +60,7 @@ class V2MetricsSection extends StatelessWidget {
       'dbIgnoredByVectorClock': 'DB Ignored (VectorClock)',
       'conflictsCreated': 'Conflicts',
       'dbMissingBase': 'DB Missing Base',
+      'dbEntryLinkNoop': 'EntryLink No-ops',
       'lookBehindMerges': 'Look-behind Merges',
       'lastLookBehindTail': 'Last Look-behind Tail',
     };
@@ -90,7 +91,8 @@ class V2MetricsSection extends StatelessWidget {
             k == 'dbApplied' ||
             k == 'dbIgnoredByVectorClock' ||
             k == 'conflictsCreated' ||
-            k == 'dbMissingBase');
+            k == 'dbMissingBase' ||
+            k == 'dbEntryLinkNoop');
     final lookBehind = _select(
         v2, (k) => k == 'lookBehindMerges' || k == 'lastLookBehindTail');
     final sections = <String, List<MapEntry<String, int>>>{

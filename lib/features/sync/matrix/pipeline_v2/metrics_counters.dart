@@ -30,6 +30,7 @@ class MetricsCounters {
   int dbIgnoredByVectorClock = 0;
   int conflictsCreated = 0;
   int dbMissingBase = 0;
+  int dbEntryLinkNoop = 0;
 
   final Map<String, int> processedByType = <String, int>{};
   final Map<String, int> droppedByType = <String, int>{};
@@ -111,6 +112,7 @@ class MetricsCounters {
   void incDbIgnoredByVectorClock() => dbIgnoredByVectorClock++;
   void incConflictsCreated() => conflictsCreated++;
   void incDbMissingBase() => dbMissingBase++;
+  void incDbEntryLinkNoop() => dbEntryLinkNoop++;
 
   void addLastIgnored(String entry) {
     msh.ringBufferAdd(lastIgnored, entry, lastIgnoredMax);
@@ -145,6 +147,7 @@ class MetricsCounters {
       circuitOpen: circuitIsOpen,
     )
       ..putIfAbsent('dbMissingBase', () => dbMissingBase)
+      ..putIfAbsent('dbEntryLinkNoop', () => dbEntryLinkNoop)
       ..putIfAbsent('lookBehindMerges', () => lookBehindMerges)
       ..putIfAbsent('lastLookBehindTail', () => lastLookBehindTail);
     return base;

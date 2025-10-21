@@ -47,6 +47,14 @@ Recent changes (Oct 2025)
   - Skips the guard in test env for deterministic tests.
   - Code: `lib/features/sync/matrix/read_marker_service.dart`
 
+7) EntryLink idempotence (no‑op detection)
+- Behavior: EntryLink payloads are now compared against existing `linked_entries.serialized` before writing. If identical, we skip the UPSERT (no DB write) and treat as a no‑op.
+- Logging: `apply.entryLink` is emitted only when a DB change occurs (rows > 0). No‑ops do not produce an apply log line.
+- Metrics/Diagnostics:
+  - New counter `dbEntryLinkNoop` in V2 metrics (DB Apply section on the Matrix Stats page).
+  - Diagnostics text includes `entryLink.noops=<count>` and `lastIgnored.*` entries such as `eventId:entryLink.noop`.
+- Rationale: reduces write churn and log noise when streams replay identical links during look‑behind scans or rapid bursts.
+
 2) Startup catch‑up (works without new events)
 - Backfill/paginate until the last marker is present; then process strictly after it.
 - No rewind floor (N=0): we do not reprocess events before the marker.
@@ -212,6 +220,13 @@ Attachment prefetch storm (high CPU/network, noisy logs)
   - Gate rescans (tail + double) on “new file written”, not merely “attachment present”.
   - Attachment-only tail rescans are throttled by a 500 ms minimum gap.
   - Metrics still record prefetch attempts and lastPrefetched paths for diagnostics.
+
+Noisy EntryLink apply logs (equal rows)
+- Symptom: frequent `apply entryLink from=… to=… rows=<id>` for identical links replayed by live scans.
+- Status: addressed by idempotent precheck + gated logging.
+- Validation:
+  - Matrix Stats → DB Apply shows `EntryLink No-ops` non-zero while overall DB write volume decreases.
+  - Diagnostics text contains `entryLink.noops=<n>` and recent no‑ops in `lastIgnored.*`.
 
 Same-path updates (newer content with the same filename)
 - Symptom: updates can be skipped if dedupe uses existence only.
