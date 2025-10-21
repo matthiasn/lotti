@@ -1852,6 +1852,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixTitle => 'Matrix-Synchronisierungseinstellungen';
 
   @override
+  String get settingsMatrixMaintenanceTitle => 'Matrix Sync Maintenance';
+
+  @override
+  String get settingsMatrixMaintenanceSubtitle =>
+      'Run Matrix maintenance tasks and recovery tools';
+
+  @override
   String get settingsMatrixSubtitle =>
       'Ende-zu-Ende verschlüsselte Synchronisation konfigurieren';
 

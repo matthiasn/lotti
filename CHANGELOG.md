@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Clean up Advanced: remove Matrix/Outbox/Conflicts tiles; keep Logs, Health Import (mobile), Maintenance, About
   - Route matching for Sync pages now uses exact path matching for robustness
   - Localize new user-facing strings (tile subtitles and error text)
+- Relocate Matrix maintenance actions (Delete Sync Database, Sync definitions, Re-sync) to `/settings/sync/matrix/maintenance`, keep FTS5 rebuild under Advanced, add dedicated Matrix Sync Settings page plus direct navigation, and update documentation/tests accordingly.
 
 ## [0.9.691] - 2025-10-20
 ### Changed:

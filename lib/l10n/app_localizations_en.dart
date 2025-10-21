@@ -1842,6 +1842,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixTitle => 'Matrix Sync Settings';
 
   @override
+  String get settingsMatrixMaintenanceTitle => 'Matrix Sync Maintenance';
+
+  @override
+  String get settingsMatrixMaintenanceSubtitle =>
+      'Run Matrix maintenance tasks and recovery tools';
+
+  @override
   String get settingsMatrixSubtitle => 'Configure end-to-end encrypted sync';
 
   @override
@@ -3114,6 +3121,13 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get settingsMatrixTitle => 'Matrix Sync Settings';
+
+  @override
+  String get settingsMatrixMaintenanceTitle => 'Matrix Sync Maintenance';
+
+  @override
+  String get settingsMatrixMaintenanceSubtitle =>
+      'Run Matrix maintenance tasks and recovery tools';
 
   @override
   String get settingsMatrixUnverifiedDevicesPage => 'Unverified Devices';

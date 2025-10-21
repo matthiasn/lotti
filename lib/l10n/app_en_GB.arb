@@ -271,6 +271,8 @@
   "settingsMatrixLastUpdated": "Last updated:",
   "settingsMatrixRefresh": "Refresh",
   "settingsMatrixTitle": "Matrix Sync Settings",
+  "settingsMatrixMaintenanceTitle": "Matrix Sync Maintenance",
+  "settingsMatrixMaintenanceSubtitle": "Run Matrix maintenance tasks and recovery tools",
   "settingsMatrixUnverifiedDevicesPage": "Unverified Devices",
   "settingsMatrixUserLabel": "User",
   "settingsMatrixUserNameTooShort": "User name too short",

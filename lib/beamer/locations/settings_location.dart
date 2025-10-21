@@ -28,6 +28,8 @@ import 'package:lotti/features/settings/ui/pages/tags/create_tag_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tag_edit_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tags_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
+import 'package:lotti/features/sync/ui/matrix_sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 
@@ -39,6 +41,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings',
         '/settings/ai',
         '/settings/sync',
+        '/settings/sync/matrix',
+        '/settings/sync/matrix/maintenance',
         '/settings/sync/stats',
         '/settings/sync/outbox',
         '/settings/tags',
@@ -82,7 +86,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
       ),
 
       // AI Settings
-      if (pathContains('ai') && !pathContains('advanced'))
+      if (path.startsWith('/settings/ai') && !pathContains('advanced'))
         const BeamPage(
           key: ValueKey('settings-ai'),
           title: 'AI Settings',
@@ -95,6 +99,26 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey('settings-sync'),
           title: 'Sync Settings',
           child: SyncSettingsPage(),
+        ),
+      if (path != '/settings/sync' && path.startsWith('/settings/sync/'))
+        const BeamPage(
+          key: ValueKey('settings-sync-base'),
+          title: 'Sync Settings',
+          child: SyncSettingsPage(),
+        ),
+
+      if (pathContains('sync/matrix'))
+        const BeamPage(
+          key: ValueKey('settings-sync-matrix'),
+          title: 'Matrix Sync Settings',
+          child: MatrixSyncSettingsPage(),
+        ),
+
+      if (path == '/settings/sync/matrix/maintenance')
+        const BeamPage(
+          key: ValueKey('settings-sync-matrix-maintenance'),
+          title: 'Matrix Sync Maintenance',
+          child: MatrixSyncMaintenancePage(),
         ),
 
       if (path == '/settings/sync/stats')

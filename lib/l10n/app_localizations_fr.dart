@@ -1860,6 +1860,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMatrixTitle => 'Paramètres de synchronisation Matrix';
 
   @override
+  String get settingsMatrixMaintenanceTitle => 'Matrix Sync Maintenance';
+
+  @override
+  String get settingsMatrixMaintenanceSubtitle =>
+      'Run Matrix maintenance tasks and recovery tools';
+
+  @override
   String get settingsMatrixSubtitle => 'Configure end-to-end encrypted sync';
 
   @override

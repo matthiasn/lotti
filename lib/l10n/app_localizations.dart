@@ -3489,6 +3489,18 @@ abstract class AppLocalizations {
   /// **'Matrix Sync Settings'**
   String get settingsMatrixTitle;
 
+  /// No description provided for @settingsMatrixMaintenanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matrix Sync Maintenance'**
+  String get settingsMatrixMaintenanceTitle;
+
+  /// No description provided for @settingsMatrixMaintenanceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Matrix maintenance tasks and recovery tools'**
+  String get settingsMatrixMaintenanceSubtitle;
+
   /// No description provided for @settingsMatrixSubtitle.
   ///
   /// In en, this message translates to:
