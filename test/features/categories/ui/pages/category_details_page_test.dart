@@ -667,5 +667,217 @@ void main() {
         await streamController.close();
       });
     });
+
+    group('Navigation Behavior', () {
+      testWidgets('navigates back after successful category creation',
+          (tester) async {
+        var didNavigateBack = false;
+
+        when(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).thenAnswer(
+          (_) async => CategoryTestUtils.createTestCategory(),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: Navigator(
+              onDidRemovePage: (page) => didNavigateBack = true,
+              pages: const [
+                MaterialPage(child: CategoryDetailsPage()),
+              ],
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Enter category name
+        await tester.enterText(find.byType(TextField), 'New Category');
+        await tester.pumpAndSettle();
+
+        // Tap create button
+        final createButton = find.byType(LottiPrimaryButton);
+        await tester.tap(createButton);
+        await tester.pumpAndSettle();
+
+        // Verify navigation back occurred
+        expect(didNavigateBack, isTrue);
+        verify(
+          () => mockRepository.createCategory(
+            name: 'New Category',
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('navigates back after successful save', (tester) async {
+        final streamController =
+            StreamController<CategoryDefinition?>.broadcast();
+        final category = CategoryTestUtils.createTestCategory(name: 'Original');
+        var didNavigateBack = false;
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => streamController.stream,
+        );
+        when(() => mockRepository.updateCategory(any())).thenAnswer(
+          (_) async => category,
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: Navigator(
+              onDidRemovePage: (page) => didNavigateBack = true,
+              pages: [
+                MaterialPage(
+                  child: CategoryDetailsPage(categoryId: testCategoryId),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        streamController.add(category);
+        await tester.pumpAndSettle();
+
+        // Change name to enable save
+        await tester.enterText(find.byType(TextFormField), 'Updated');
+        await tester.pumpAndSettle();
+
+        // Tap save button
+        final saveButton = findEnabledPrimaryButton(tester);
+        await tester.tap(find.byWidget(saveButton!));
+        await tester.pumpAndSettle();
+
+        // Verify success snackbar AND navigation
+        expect(find.byType(SnackBar), findsOneWidget);
+        expect(didNavigateBack, isTrue);
+
+        await streamController.close();
+      });
+
+      testWidgets('does not navigate back when creation fails', (tester) async {
+        var didNavigateBack = false;
+
+        when(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).thenThrow(Exception('Creation failed'));
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: Navigator(
+              onDidRemovePage: (page) => didNavigateBack = true,
+              pages: const [
+                MaterialPage(child: CategoryDetailsPage()),
+              ],
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(TextField), 'New Category');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(LottiPrimaryButton));
+        await tester.pumpAndSettle();
+
+        // Verify error shown and NO navigation
+        expect(find.textContaining('Error creating category'), findsOneWidget);
+        expect(didNavigateBack, isFalse);
+      });
+    });
+
+    group('UI Behavior', () {
+      testWidgets('displays save button in app bar when changes exist',
+          (tester) async {
+        final streamController =
+            StreamController<CategoryDefinition?>.broadcast();
+        final category = CategoryTestUtils.createTestCategory();
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => streamController.stream,
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: CategoryDetailsPage(categoryId: testCategoryId),
+          ),
+        );
+
+        streamController.add(category);
+        await tester.pumpAndSettle();
+
+        // Initially no save button in app bar (no changes)
+        expect(
+          find.ancestor(
+            of: find.byType(LottiTertiaryButton),
+            matching: find.byType(SliverAppBar),
+          ),
+          findsNothing,
+        );
+
+        // Make a change
+        await tester.enterText(find.byType(TextFormField), 'Changed Name');
+        await tester.pumpAndSettle();
+
+        // Save button should appear in app bar
+        expect(
+          find.ancestor(
+            of: find.byType(LottiTertiaryButton),
+            matching: find.byType(SliverAppBar),
+          ),
+          findsOneWidget,
+        );
+
+        await streamController.close();
+      });
+
+      testWidgets('displays CustomScrollView even during loading state',
+          (tester) async {
+        final streamController =
+            StreamController<CategoryDefinition?>.broadcast();
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => streamController.stream,
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: CategoryDetailsPage(categoryId: testCategoryId),
+          ),
+        );
+
+        // Even in loading state, CustomScrollView should be present
+        expect(find.byType(CustomScrollView), findsOneWidget);
+        expect(find.byType(SliverAppBar), findsOneWidget);
+
+        await streamController.close();
+      });
+    });
   });
 }

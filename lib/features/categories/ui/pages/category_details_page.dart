@@ -18,7 +18,6 @@ import 'package:lotti/features/categories/ui/widgets/category_prompt_selection.d
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -90,22 +89,13 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         body: CustomScrollView(
           slivers: [
             SliverAppBar(
-              expandedHeight: 100,
-              pinned: true,
-              backgroundColor: context.colorScheme.surface,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.all(16),
-                title: Text(
-                  context.messages.createCategoryTitle,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: context.colorScheme.onSurface,
-                  ),
+              title: Text(
+                context.messages.createCategoryTitle,
+                style: appBarTextStyleNewLarge.copyWith(
+                  color: Theme.of(context).primaryColor,
                 ),
               ),
+              pinned: true,
             ),
             SliverPadding(
               padding: const EdgeInsets.all(16),
@@ -150,7 +140,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
     final repository = ref.read(categoryRepositoryProvider);
     try {
-      final newCategory = await repository.createCategory(
+      await repository.createCategory(
         name: name,
         color: _selectedColor != null
             ? colorToCssHex(_selectedColor!)
@@ -159,8 +149,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       );
 
       if (mounted) {
-        // Navigate to the edit page for the newly created category
-        beamToNamed('/settings/categories/${newCategory.id}');
+        // Navigate back to the categories list page
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
@@ -226,14 +216,24 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
     await controller.saveChanges();
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.saveSuccessful),
-          backgroundColor: Colors.green,
-        ),
-      );
+    if (!mounted) return;
+
+    // Check if there was an error during save
+    final state =
+        ref.read(categoryDetailsControllerProvider(widget.categoryId!));
+    if (state.errorMessage != null) {
+      // Error is already displayed in the UI via ErrorStateWidget
+      return;
     }
+
+    // Success - show snackbar and navigate back
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.messages.saveSuccessful),
+        backgroundColor: Colors.green,
+      ),
+    );
+    Navigator.of(context).pop();
   }
 
   @override
@@ -269,96 +269,98 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       },
       child: Scaffold(
         backgroundColor: context.colorScheme.surface,
-        body: state.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : CustomScrollView(
-                slivers: [
-                  SliverAppBar(
-                    expandedHeight: 100,
-                    pinned: true,
-                    backgroundColor: context.colorScheme.surface,
-                    surfaceTintColor: Colors.transparent,
-                    elevation: 0,
-                    flexibleSpace: FlexibleSpaceBar(
-                      titlePadding: const EdgeInsets.all(16),
-                      title: Text(
-                        context.messages.settingsCategoriesDetailsLabel,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: context.colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (state.errorMessage != null)
-                    SliverToBoxAdapter(
-                      child: ErrorStateWidget(
-                        error: state.errorMessage!,
-                        mode: ErrorDisplayMode.inline,
-                      ),
-                    ),
-                  SliverPadding(
-                    padding: const EdgeInsets.all(16),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        // Basic Settings Section
-                        LottiFormSection(
-                          title: context.messages.basicSettings,
-                          icon: Icons.settings_outlined,
-                          children: [
-                            _buildNameField(),
-                            const SizedBox(height: 16),
-                            _buildColorPicker(),
-                            const SizedBox(height: 16),
-                            if (category != null)
-                              _buildIconPicker(category: category),
-                            const SizedBox(height: 16),
-                            _buildSwitchTiles(category!),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Language Settings Section
-                        LottiFormSection(
-                          title: context.messages.taskLanguageLabel,
-                          icon: Icons.language_outlined,
-                          description: context
-                              .messages.categoryDefaultLanguageDescription,
-                          children: [
-                            _buildLanguageDropdown(category),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
-                        // AI Model Settings Section
-                        LottiFormSection(
-                          title: context.messages.aiModelSettings,
-                          icon: Icons.psychology_outlined,
-                          description:
-                              context.messages.categoryAiModelDescription,
-                          children: [
-                            _buildPromptSelection(category),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Automatic Prompts Section
-                        LottiFormSection(
-                          title: context.messages.automaticPrompts,
-                          icon: Icons.auto_awesome_outlined,
-                          description: context
-                              .messages.categoryAutomaticPromptsDescription,
-                          children: [
-                            _buildAutomaticPromptSettings(category),
-                          ],
-                        ),
-                        const SizedBox(height: 80), // Space for bottom bar
-                      ]),
-                    ),
-                  ),
-                ],
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              title: Text(
+                context.messages.settingsCategoriesDetailsLabel,
+                style: appBarTextStyleNewLarge.copyWith(
+                  color: Theme.of(context).primaryColor,
+                ),
               ),
+              pinned: true,
+              actions: [
+                if (state.hasChanges && !state.isSaving)
+                  LottiTertiaryButton(
+                    label: context.messages.saveButton,
+                    onPressed: _handleSave,
+                  ),
+              ],
+            ),
+            if (state.errorMessage != null)
+              SliverToBoxAdapter(
+                child: ErrorStateWidget(
+                  error: state.errorMessage!,
+                  mode: ErrorDisplayMode.inline,
+                ),
+              ),
+            if (state.isLoading && category == null)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (category != null)
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // Basic Settings Section
+                    LottiFormSection(
+                      title: context.messages.basicSettings,
+                      icon: Icons.settings_outlined,
+                      children: [
+                        _buildNameField(),
+                        const SizedBox(height: 16),
+                        _buildColorPicker(),
+                        const SizedBox(height: 16),
+                        _buildIconPicker(category: category),
+                        const SizedBox(height: 16),
+                        _buildSwitchTiles(category),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Language Settings Section
+                    LottiFormSection(
+                      title: context.messages.taskLanguageLabel,
+                      icon: Icons.language_outlined,
+                      description:
+                          context.messages.categoryDefaultLanguageDescription,
+                      children: [
+                        _buildLanguageDropdown(category),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // AI Model Settings Section
+                    LottiFormSection(
+                      title: context.messages.aiModelSettings,
+                      icon: Icons.psychology_outlined,
+                      description: context.messages.categoryAiModelDescription,
+                      children: [
+                        _buildPromptSelection(category),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Automatic Prompts Section
+                    LottiFormSection(
+                      title: context.messages.automaticPrompts,
+                      icon: Icons.auto_awesome_outlined,
+                      description:
+                          context.messages.categoryAutomaticPromptsDescription,
+                      children: [
+                        _buildAutomaticPromptSettings(category),
+                      ],
+                    ),
+                    const SizedBox(height: 80), // Space for bottom bar
+                  ]),
+                ),
+              ),
+          ],
+        ),
         bottomNavigationBar: _buildBottomBar(state),
       ),
     );

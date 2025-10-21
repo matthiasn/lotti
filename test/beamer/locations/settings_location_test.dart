@@ -176,9 +176,10 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
+      expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<CategoryDetailsPage>());
+      expect(pages[1].child, isA<CategoriesListPage>());
+      expect(pages[2].child, isA<CategoryDetailsPage>());
     });
 
     test('buildPages builds CategoryDetailsPage with categoryId', () {
@@ -193,10 +194,11 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
+      expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<CategoryDetailsPage>());
-      final categoryPage = pages[1].child as CategoryDetailsPage;
+      expect(pages[1].child, isA<CategoriesListPage>());
+      expect(pages[2].child, isA<CategoryDetailsPage>());
+      final categoryPage = pages[2].child as CategoryDetailsPage;
       expect(categoryPage.categoryId, 'test-id');
     });
 
@@ -599,6 +601,37 @@ void main() {
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<AdvancedSettingsPage>());
       expect(pages[2].child, isA<MaintenancePage>());
+    });
+
+    test('categories navigation stack matches tags/dashboards pattern', () {
+      // Test categories
+      final categoriesRoute =
+          RouteInformation(uri: Uri.parse('/settings/categories/cat-id'));
+      final categoriesLocation = SettingsLocation(categoriesRoute);
+      var categoriesState = BeamState.fromRouteInformation(categoriesRoute);
+      categoriesState = categoriesState.copyWith(
+        pathParameters: {'categoryId': 'cat-id'},
+      );
+      final categoriesPages = categoriesLocation.buildPages(
+        mockBuildContext,
+        categoriesState,
+      );
+
+      // Test tags
+      final tagsRoute =
+          RouteInformation(uri: Uri.parse('/settings/tags/tag-id'));
+      final tagsLocation = SettingsLocation(tagsRoute);
+      var tagsState = BeamState.fromRouteInformation(tagsRoute);
+      tagsState = tagsState.copyWith(
+        pathParameters: {'tagEntityId': 'tag-id'},
+      );
+      final tagsPages = tagsLocation.buildPages(mockBuildContext, tagsState);
+
+      // Both should have list page in stack (3 pages: Settings -> List -> Details)
+      expect(categoriesPages.length, 3);
+      expect(tagsPages.length, 3);
+      expect(categoriesPages[1].child, isA<CategoriesListPage>());
+      expect(tagsPages[1].child, isA<TagsPage>());
     });
   });
 }
