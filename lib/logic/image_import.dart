@@ -277,6 +277,24 @@ Future<void> handleDroppedMedia({
   }
 }
 
+/// Parses timestamp from audio filename if it matches Lotti's format
+///
+/// Expected format: yyyy-MM-dd_HH-mm-ss-S.extension (e.g., 2025-10-20_16-49-32-203.m4a)
+/// Returns the parsed DateTime if successful, null otherwise.
+DateTime? _parseAudioFileTimestamp(String filename) {
+  try {
+    // Remove file extension
+    final nameWithoutExtension = filename.split('.').first;
+
+    // Try to parse using Lotti's audio filename format
+    return DateFormat(AudioRecorderConstants.fileNameDateFormat)
+        .parse(nameWithoutExtension);
+  } catch (_) {
+    // Return null if parsing fails
+    return null;
+  }
+}
+
 /// Imports dropped audio files and creates audio journal entries
 ///
 /// Validates file extensions, size limits, and extracts audio duration before
@@ -294,6 +312,11 @@ Future<void> importDroppedAudio({
 
     try {
       final lastModified = await file.lastModified();
+
+      // Try to parse timestamp from filename, fall back to lastModified
+      final parsedTimestamp = _parseAudioFileTimestamp(file.name);
+      final timestamp = parsedTimestamp ?? lastModified;
+
       final srcPath = file.path;
 
       // Validate file name has extension
@@ -327,12 +350,12 @@ Future<void> importDroppedAudio({
       }
 
       final day = DateFormat(AudioRecorderConstants.directoryDateFormat)
-          .format(lastModified);
+          .format(timestamp);
       final relativePath =
           '${AudioRecorderConstants.audioDirectoryPrefix}$day/';
       final directory = await createAssetDirectory(relativePath);
       final targetFileName =
-          '${DateFormat(AudioRecorderConstants.fileNameDateFormat).format(lastModified)}.$fileExtension';
+          '${DateFormat(AudioRecorderConstants.fileNameDateFormat).format(timestamp)}.$fileExtension';
       final targetFilePath = '$directory$targetFileName';
 
       // Copy file first
@@ -371,7 +394,7 @@ Future<void> importDroppedAudio({
       }
 
       final audioNote = AudioNote(
-        createdAt: lastModified,
+        createdAt: timestamp,
         audioFile: targetFileName,
         audioDirectory: relativePath,
         duration: duration,
