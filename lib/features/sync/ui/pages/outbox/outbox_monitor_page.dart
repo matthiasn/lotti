@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 enum _OutboxListFilter {
@@ -87,16 +88,20 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         predicate: (OutboxItem item) =>
             _statusFromIndex(item.status) == OutboxStatus.pending,
         icon: Icons.schedule_rounded,
-        selectedColor: Colors.orange,
-        selectedForegroundColor: Colors.white,
+        selectedColor: syncPendingAccentColor,
+        selectedForegroundColor: syncPendingForegroundColor,
+        hideCountWhenZero: true,
+        countAccentColor: syncPendingCountAccentColor,
+        countAccentForegroundColor: syncPendingForegroundColor,
       ),
       _OutboxListFilter.success: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelSuccess,
         predicate: (OutboxItem item) =>
             _statusFromIndex(item.status) == OutboxStatus.sent,
         icon: Icons.check_circle_outline_rounded,
-        selectedColor: Colors.green,
-        selectedForegroundColor: Colors.white,
+        selectedColor: syncSuccessAccentColor,
+        selectedForegroundColor: syncSuccessForegroundColor,
+        showCount: false,
       ),
       _OutboxListFilter.error: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelError,
@@ -105,6 +110,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         icon: Icons.error_outline_rounded,
         selectedColor: colorScheme.error,
         selectedForegroundColor: colorScheme.onError,
+        hideCountWhenZero: true,
+        countAccentColor: syncErrorCountAccentColor(colorScheme),
+        countAccentForegroundColor: colorScheme.onError,
       ),
     };
 

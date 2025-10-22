@@ -15,6 +15,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -122,8 +123,11 @@ class _ConflictsPageState extends State<ConflictsPage> {
         predicate: (conflict) =>
             _statusFromIndex(conflict.status) == ConflictStatus.unresolved,
         icon: Icons.report_problem_outlined,
-        selectedColor: Colors.amber,
-        selectedForegroundColor: Colors.black,
+        selectedColor: syncAlertAccentColor,
+        selectedForegroundColor: syncAlertForegroundColor,
+        hideCountWhenZero: true,
+        countAccentColor: syncAlertAccentColor,
+        countAccentForegroundColor: syncAlertForegroundColor,
       ),
       _ConflictListFilter.resolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsResolved,
@@ -132,6 +136,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
         icon: Icons.verified_outlined,
         selectedColor: colorScheme.primary,
         selectedForegroundColor: colorScheme.onPrimary,
+        showCount: false,
       ),
     };
 
