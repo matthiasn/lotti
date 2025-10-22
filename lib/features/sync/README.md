@@ -12,6 +12,9 @@ that keeps the pipeline testable and observable.
 - Sync Settings (under `/settings/sync`) now pulls its Outbox and Conflicts list pages from
   `lib/features/sync/ui/...`, using a shared `SyncListScaffold` for filter chips, inline summaries,
   and animated empty/loading states.
+- Segmented filter chips hide zero-value badges, suppress redundant success/resolved totals, and
+  draw tinted, bordered badges for pending/error/unresolved counts so actionable numbers stand out
+  while the empty state card stays within the content width on phones.
 - `OutboxListItem` + `OutboxListItemViewModel` format payload metadata, retries, attachments, and
   retry affordances; retry actions are confirmed before requeueing.
 - `ConflictListItem` + `ConflictListItemViewModel` present entity context, vector clock details, and

@@ -124,6 +124,9 @@ class _ConflictsPageState extends State<ConflictsPage> {
         icon: Icons.report_problem_outlined,
         selectedColor: Colors.amber,
         selectedForegroundColor: Colors.black,
+        hideCountWhenZero: true,
+        countAccentColor: Colors.amber,
+        countAccentForegroundColor: Colors.black,
       ),
       _ConflictListFilter.resolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsResolved,
@@ -132,6 +135,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
         icon: Icons.verified_outlined,
         selectedColor: colorScheme.primary,
         selectedForegroundColor: colorScheme.onPrimary,
+        showCount: false,
       ),
     };
 

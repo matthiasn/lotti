@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Read markers no longer spam `M_UNKNOWN` errors—local-only IDs are skipped and expected misses are logged once.
 - Moved Matrix sync maintenance actions (delete sync database, re-sync definitions/messages) to the new Matrix Sync Maintenance page under Sync Settings.
 - Sync Outbox and Sync Conflicts list pages now use modern cards with segmented filters, inline counts, and polished empty states via the shared sync list scaffold.
+- Sync filter chips now hide non-informational zero badges, emphasise pending/error/unresolved totals with tinted badges, trim their height slightly, and keep empty-state cards constrained on the conflicts page.
 - Added dedicated widget tests for `ConflictListItem` and `SyncListScaffold` covering filters, semantics, and interaction paths.
 
 ### Fixed

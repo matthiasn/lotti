@@ -127,6 +127,105 @@ void main() {
         await tester.pumpAndSettle();
       },
     );
+
+    testWidgets(
+      'suppresses badge when configured and still shows positive counts',
+      (tester) async {
+        final controller = StreamController<List<_TestItem>>();
+        addTearDown(controller.close);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SyncListScaffold<_TestItem, _TestFilter>(
+              title: 'Sync UI',
+              stream: controller.stream,
+              filters: {
+                _TestFilter.pending: SyncFilterOption<_TestItem>(
+                  labelBuilder: (context) =>
+                      context.messages.outboxMonitorLabelPending,
+                  predicate: (_) => true,
+                  icon: Icons.schedule_rounded,
+                  hideCountWhenZero: true,
+                  countAccentColor: Colors.amber,
+                  countAccentForegroundColor: Colors.black,
+                ),
+                _TestFilter.error: SyncFilterOption<_TestItem>(
+                  labelBuilder: (context) =>
+                      context.messages.outboxMonitorLabelError,
+                  predicate: (item) => item.hasError,
+                  icon: Icons.error_outline_rounded,
+                  showCount: false,
+                ),
+              },
+              itemBuilder: (context, item) => ListTile(
+                title: Text(item.label),
+              ),
+              emptyIcon: Icons.hourglass_empty,
+              emptyTitleBuilder: (ctx) => 'Nothing here',
+              emptyDescriptionBuilder: (_) => null,
+              countSummaryBuilder: (ctx, label, count) =>
+                  ctx.messages.syncListCountSummary(label, count),
+              initialFilter: _TestFilter.pending,
+              backButton: false,
+            ),
+          ),
+        );
+
+        controller.add(const <_TestItem>[]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        final pendingFilter = find.byKey(const ValueKey('syncFilter-pending'));
+        expect(
+          find.descendant(of: pendingFilter, matching: find.text('0')),
+          findsNothing,
+        );
+
+        controller.add(const [
+          _TestItem(label: 'Pending item', hasError: false),
+          _TestItem(label: 'Errored item', hasError: true),
+        ]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(
+          find.descendant(of: pendingFilter, matching: find.text('2')),
+          findsOneWidget,
+        );
+
+        final badgeFinder = find.descendant(
+          of: pendingFilter,
+          matching: find.byWidgetPredicate((widget) {
+            if (widget is! Container) {
+              return false;
+            }
+            final decoration = widget.decoration;
+            return decoration is BoxDecoration &&
+                decoration.borderRadius == BorderRadius.circular(999);
+          }),
+        );
+        final badge = tester.widget<Container>(badgeFinder.first);
+        final decoration = badge.decoration! as BoxDecoration;
+        expect(
+          decoration.color,
+          equals(Colors.amber.withValues(alpha: 0.16)),
+        );
+        final border = decoration.border! as Border;
+        expect(
+          border.top.color,
+          equals(Colors.amber.withValues(alpha: 0.32)),
+        );
+        expect(border.top.width, equals(1.3));
+
+        final errorFilter = find.byKey(const ValueKey('syncFilter-error'));
+        expect(
+          find.descendant(of: errorFilter, matching: find.text('1')),
+          findsNothing,
+        );
+      },
+    );
   });
 }
 

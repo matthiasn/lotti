@@ -18,6 +18,10 @@ class SyncFilterOption<T> {
     this.icon,
     this.selectedColor,
     this.selectedForegroundColor,
+    this.showCount = true,
+    this.hideCountWhenZero = false,
+    this.countAccentColor,
+    this.countAccentForegroundColor,
   });
 
   /// Builds the localized label shown in the segmented control.
@@ -34,6 +38,18 @@ class SyncFilterOption<T> {
 
   /// Optional foreground color applied when the segment is selected.
   final Color? selectedForegroundColor;
+
+  /// Whether the numeric badge should be shown for this segment.
+  final bool showCount;
+
+  /// Whether to suppress the badge when the count resolves to zero.
+  final bool hideCountWhenZero;
+
+  /// Optional accent color applied to the count badge when a non-zero total is present.
+  final Color? countAccentColor;
+
+  /// Optional foreground color used with [countAccentColor].
+  final Color? countAccentForegroundColor;
 }
 
 /// Reusable scaffold for sync-oriented list pages with segmented filters,
@@ -49,7 +65,7 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
     required this.countSummaryBuilder,
     this.emptyDescriptionBuilder,
     this.initialFilter,
-    this.listPadding = const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    this.listPadding = const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
     this.listKey,
     this.backButton = true,
     super.key,
@@ -158,47 +174,50 @@ class _SyncListScaffoldState<T, F extends Enum>
                 pinned: true,
               ),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    left: widget.listPadding.left,
-                    right: widget.listPadding.right,
-                    top: widget.listPadding.top,
-                    bottom: AppTheme.spacingMedium,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _FilterCard<F>(
-                        filters: widget.filters,
-                        counts: counts,
-                        selected: _selectedFilter,
-                        onChanged: (value) => setState(
-                          () => _selectedFilter = value,
-                        ),
-                        locale: locale,
-                      ),
-                      const SizedBox(height: AppTheme.spacingLarge),
-                      Text(
-                        widget.countSummaryBuilder(
-                          context,
-                          _formatLabel(
-                            context,
-                            widget.filters[_selectedFilter]!,
-                            locale,
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.only(
+                      start: widget.listPadding.left,
+                      end: widget.listPadding.right,
+                      top: widget.listPadding.top,
+                      bottom: AppTheme.spacingMedium,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FilterCard<F>(
+                          filters: widget.filters,
+                          counts: counts,
+                          selected: _selectedFilter,
+                          onChanged: (value) => setState(
+                            () => _selectedFilter = value,
                           ),
-                          filteredItems.length,
+                          locale: locale,
                         ),
-                        style: context.textTheme.titleSmall?.copyWith(
-                          color: context.colorScheme.onSurfaceVariant,
+                        const SizedBox(height: AppTheme.spacingLarge),
+                        Text(
+                          widget.countSummaryBuilder(
+                            context,
+                            _formatLabel(
+                              context,
+                              widget.filters[_selectedFilter]!,
+                              locale,
+                            ),
+                            filteredItems.length,
+                          ),
+                          style: context.textTheme.titleSmall?.copyWith(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppTheme.spacingLarge),
-                    ],
-                  ).animate().fadeIn(
-                        duration: const Duration(
-                          milliseconds: AppTheme.animationDuration,
+                        const SizedBox(height: AppTheme.spacingLarge),
+                      ],
+                    ).animate().fadeIn(
+                          duration: const Duration(
+                            milliseconds: AppTheme.animationDuration,
+                          ),
                         ),
-                      ),
+                  ),
                 ),
               ),
               if (!hasData)
@@ -212,16 +231,26 @@ class _SyncListScaffoldState<T, F extends Enum>
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
-                    child: EmptyStateWidget(
-                      icon: widget.emptyIcon,
-                      title: widget.emptyTitleBuilder(context),
-                      description:
-                          widget.emptyDescriptionBuilder?.call(context),
-                    ).animate().fadeIn(
-                          duration: const Duration(
-                            milliseconds: AppTheme.animationDuration,
-                          ),
-                        ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: (widget.listPadding.left +
+                                widget.listPadding.right) /
+                            2,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: EmptyStateWidget(
+                          icon: widget.emptyIcon,
+                          title: widget.emptyTitleBuilder(context),
+                          description:
+                              widget.emptyDescriptionBuilder?.call(context),
+                        ).animate().fadeIn(
+                              duration: const Duration(
+                                milliseconds: AppTheme.animationDuration,
+                              ),
+                            ),
+                      ),
+                    ),
                   ),
                 )
               else
@@ -287,13 +316,10 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
   Widget build(BuildContext context) {
     final entries = filters.entries.toList(growable: false);
     return ModernBaseCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingMedium,
-        vertical: AppTheme.spacingMedium,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: AppTheme.spacingMedium,
+        spacing: AppTheme.spacingSmall,
         runSpacing: AppTheme.spacingSmall,
         children: entries.map((entry) {
           final rawLabel = entry.value.labelBuilder(context);
@@ -312,6 +338,10 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
             isSelected: selected == entry.key,
             selectedColor: selectedColor,
             selectedForegroundColor: selectedForeground,
+            showCount: entry.value.showCount,
+            hideCountWhenZero: entry.value.hideCountWhenZero,
+            countAccentColor: entry.value.countAccentColor,
+            countAccentForegroundColor: entry.value.countAccentForegroundColor,
             onTap: () => onChanged(entry.key),
           );
         }).toList(),
@@ -329,6 +359,10 @@ class _SegmentChip extends StatelessWidget {
     required this.isSelected,
     required this.selectedColor,
     required this.selectedForegroundColor,
+    required this.showCount,
+    required this.hideCountWhenZero,
+    required this.countAccentColor,
+    required this.countAccentForegroundColor,
     required this.onTap,
   });
 
@@ -339,6 +373,10 @@ class _SegmentChip extends StatelessWidget {
   final bool isSelected;
   final Color? selectedColor;
   final Color selectedForegroundColor;
+  final bool showCount;
+  final bool hideCountWhenZero;
+  final Color? countAccentColor;
+  final Color? countAccentForegroundColor;
   final VoidCallback onTap;
 
   @override
@@ -349,16 +387,30 @@ class _SegmentChip extends StatelessWidget {
         isSelected ? selectedForegroundColor : colorScheme.onSurface;
     final iconColor =
         isSelected ? selectedForegroundColor : colorScheme.onSurfaceVariant;
-    final countBackground = isSelected
-        ? selectedColor?.withValues(alpha: 0.22)
-        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.28);
-    final countForeground =
-        isSelected ? selectedForegroundColor : colorScheme.onSurfaceVariant;
+    final shouldShowCount = showCount && (!hideCountWhenZero || count > 0);
+    final hasAccent = shouldShowCount && count > 0 && countAccentColor != null;
+    final accentForeground = hasAccent
+        ? countAccentForegroundColor ??
+            (ThemeData.estimateBrightnessForColor(countAccentColor!) ==
+                    Brightness.dark
+                ? Colors.white
+                : Colors.black)
+        : null;
+    final hasAccentSelection = hasAccent && isSelected;
+    final countBackground = selectedColor;
+    final countForeground = hasAccent
+        ? accentForeground!
+        : isSelected
+            ? selectedForegroundColor
+            : colorScheme.onSurfaceVariant;
+    final countBorderColor = isSelected
+        ? countForeground.withValues(alpha: 0.68)
+        : Colors.transparent;
 
     return Semantics(
       button: true,
       toggled: isSelected,
-      label: '$label, $count',
+      label: shouldShowCount ? '$label, $count' : label,
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(
@@ -370,7 +422,7 @@ class _SegmentChip extends StatelessWidget {
           child: AnimatedContainer(
             key: ValueKey('syncFilter-$filter'),
             duration: const Duration(milliseconds: AppTheme.animationDuration),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
                   ? selectedColor
@@ -394,7 +446,7 @@ class _SegmentChip extends StatelessWidget {
                     size: AppTheme.iconSizeCompact,
                     color: iconColor,
                   ),
-                  const SizedBox(width: AppTheme.spacingSmall),
+                  const SizedBox(width: 4),
                 ],
                 Text(
                   label,
@@ -404,25 +456,33 @@ class _SegmentChip extends StatelessWidget {
                     color: foregroundColor,
                   ),
                 ),
-                const SizedBox(width: AppTheme.spacingSmall),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: countBackground,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    count.toString(),
-                    style: textTheme.bodySmall?.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      fontWeight: FontWeight.w600,
-                      color: countForeground,
+                if (shouldShowCount) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: countBackground,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: countBorderColor,
+                        width: hasAccentSelection
+                            ? 1.3
+                            : hasAccent
+                                ? 1.1
+                                : 1.2,
+                      ),
+                    ),
+                    child: Text(
+                      count.toString(),
+                      style: textTheme.bodySmall?.copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                        fontWeight: FontWeight.w600,
+                        color: countForeground,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

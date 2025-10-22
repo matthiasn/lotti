@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' as drift;
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -89,6 +90,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         icon: Icons.schedule_rounded,
         selectedColor: Colors.orange,
         selectedForegroundColor: Colors.white,
+        hideCountWhenZero: true,
+        countAccentColor: Colors.orange.lighten(),
+        countAccentForegroundColor: Colors.white,
       ),
       _OutboxListFilter.success: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelSuccess,
@@ -97,6 +101,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         icon: Icons.check_circle_outline_rounded,
         selectedColor: Colors.green,
         selectedForegroundColor: Colors.white,
+        showCount: false,
       ),
       _OutboxListFilter.error: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelError,
@@ -105,6 +110,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         icon: Icons.error_outline_rounded,
         selectedColor: colorScheme.error,
         selectedForegroundColor: colorScheme.onError,
+        hideCountWhenZero: true,
+        countAccentColor: colorScheme.error.lighten(),
+        countAccentForegroundColor: colorScheme.onError,
       ),
     };
 
