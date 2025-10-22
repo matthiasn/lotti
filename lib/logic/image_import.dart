@@ -289,8 +289,8 @@ DateTime? _parseAudioFileTimestamp(String filename) {
     // Try to parse using Lotti's audio filename format
     return DateFormat(AudioRecorderConstants.fileNameDateFormat)
         .parse(nameWithoutExtension);
-  } catch (_) {
-    // Return null if parsing fails
+  } on FormatException {
+    // Return null if parsing fails (expected for non-Lotti filenames)
     return null;
   }
 }
