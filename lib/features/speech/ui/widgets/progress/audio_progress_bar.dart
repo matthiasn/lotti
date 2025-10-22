@@ -17,6 +17,69 @@ String formatAudioDuration(Duration duration) {
   return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 }
 
+@visibleForTesting
+class AudioProgressColors {
+  const AudioProgressColors({
+    required this.track,
+    required this.buffered,
+    required this.progress,
+    required this.thumb,
+    required this.glow,
+  });
+
+  final Color track;
+  final Color buffered;
+  final Color progress;
+  final Color thumb;
+  final Color glow;
+}
+
+@visibleForTesting
+AudioProgressColors resolveAudioProgressColors(ThemeData theme) {
+  final scheme = theme.colorScheme;
+  final isDark = theme.brightness == Brightness.dark;
+
+  final progressBase = scheme.primary;
+
+  final track = scheme.onSurfaceVariant.withValues(
+    alpha: isDark ? 0.32 : 0.24,
+  );
+
+  final buffered = progressBase.withValues(
+    alpha: isDark ? 0.22 : 0.18,
+  );
+
+  final glow =
+      isDark ? Colors.transparent : progressBase.withValues(alpha: 0.3);
+  final thumb = _resolveThumbColor(scheme, isDark);
+
+  return AudioProgressColors(
+    track: track,
+    buffered: buffered,
+    progress: progressBase,
+    thumb: thumb,
+    glow: glow,
+  );
+}
+
+Color _resolveThumbColor(ColorScheme scheme, bool isDark) {
+  final base = scheme.primary;
+  if (base.a == 0) {
+    return base;
+  }
+
+  final luminance = base.computeLuminance();
+  if (isDark) {
+    return Color.lerp(base, Colors.white, 0.45)!;
+  }
+
+  if (luminance > 0.75) {
+    return Color.lerp(base, Colors.black, 0.2)!;
+  }
+
+  return Color.lerp(base, Colors.white, 0.1)!;
+}
+
 /// Custom painted progress bar with buffered overlay and gesture-driven scrubbing.
 class AudioProgressBar extends StatefulWidget {
   const AudioProgressBar({
@@ -73,19 +136,19 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
                 .clamp(0.0, 1.0)
             : 0.0;
 
+        final colors = resolveAudioProgressColors(theme);
+
         final Widget bar = SizedBox(
           width: double.infinity,
           height: widget.compact ? 32 : 36,
           child: RepaintBoundary(
             child: CustomPaint(
               painter: _ProgressBarPainter(
-                backgroundColor:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.24),
-                bufferedColor:
-                    theme.colorScheme.primary.withValues(alpha: 0.18),
-                progressColor: theme.colorScheme.primary,
-                glowColor: theme.colorScheme.primary.withValues(alpha: 0.35),
-                thumbColor: theme.colorScheme.onPrimary,
+                backgroundColor: colors.track,
+                bufferedColor: colors.buffered,
+                progressColor: colors.progress,
+                glowColor: colors.glow,
+                thumbColor: colors.thumb,
                 progressRatio: progressRatio,
                 bufferedRatio: bufferedRatio,
                 trackHeight: trackHeight,
@@ -269,19 +332,21 @@ class _ProgressBarPainter extends CustomPainter {
         trackRect.center.dy,
       );
 
-      final glowPaint = Paint()
-        ..color = glowColor
-        ..maskFilter = const ui.MaskFilter.blur(
-          ui.BlurStyle.normal,
-          6,
-        );
-      canvas
-        ..drawCircle(thumbCenter, thumbRadius + 3, glowPaint)
-        ..drawCircle(
-          thumbCenter,
-          thumbRadius,
-          Paint()..color = thumbColor,
-        );
+      if (glowColor.a > 0) {
+        final glowPaint = Paint()
+          ..color = glowColor
+          ..maskFilter = const ui.MaskFilter.blur(
+            ui.BlurStyle.normal,
+            6,
+          );
+        canvas.drawCircle(thumbCenter, thumbRadius + 3, glowPaint);
+      }
+
+      canvas.drawCircle(
+        thumbCenter,
+        thumbRadius,
+        Paint()..color = thumbColor,
+      );
     }
   }
 

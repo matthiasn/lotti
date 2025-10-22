@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Speech audio playback card now ships with glassmorphism styling, streamlined controls, custom
   progress bar, and dedicated widget coverage for play/pause and speed interactions.
+- Audio player progress bar now matches the play/pause ring by using `ColorScheme.primary` for both
+  the scrub fill and contrast-adjusted playhead, softens the playback card shadow, and removes the
+  glow to avoid black playheads in high-contrast themes. Light mode swaps the gradient background
+  for a flat surface tint to keep the card crisp.
 - Matrix Stats now keeps per-type "Sent" counts stable while the page stays flicker-free on mobile and desktop.
 - Read markers no longer spam `M_UNKNOWN` errors—local-only IDs are skipped and expected misses are logged once.
 - Moved Matrix sync maintenance actions (delete sync database, re-sync definitions/messages) to the new Matrix Sync Maintenance page under Sync Settings.

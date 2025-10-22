@@ -8,6 +8,7 @@ import 'package:lotti/themes/theme.dart';
 /// - Consistent border, shadow, and border radius
 /// - Material inkwell effects for interactivity
 /// - Flexible content area
+/// - Optional custom shadow overrides for bespoke styling
 class ModernBaseCard extends StatelessWidget {
   const ModernBaseCard({
     required this.child,
@@ -18,6 +19,7 @@ class ModernBaseCard extends StatelessWidget {
     this.margin,
     this.padding,
     this.isEnhanced = false,
+    this.customShadows,
     super.key,
   });
 
@@ -29,6 +31,7 @@ class ModernBaseCard extends StatelessWidget {
   final EdgeInsets? margin;
   final EdgeInsets? padding;
   final bool isEnhanced;
+  final List<BoxShadow>? customShadows;
 
   @override
   Widget build(BuildContext context) {
@@ -58,43 +61,46 @@ class ModernBaseCard extends StatelessWidget {
         gradient: effectiveGradient,
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         border: Border.all(color: effectiveBorderColor),
-        boxShadow: isEnhanced
-            ? [
-                BoxShadow(
-                  color: context.colorScheme.shadow.withValues(
-                    alpha: isDark ? 0.3 : 0.15,
-                  ),
-                  blurRadius: isDark ? 20 : 15,
-                  offset: const Offset(0, 8),
-                  spreadRadius: 2,
-                ),
-                BoxShadow(
-                  color: context.colorScheme.shadow.withValues(
-                    alpha: isDark
-                        ? GradientConstants.enhancedShadowSecondaryDarkAlpha
-                        : GradientConstants.enhancedShadowSecondaryLightAlpha,
-                  ),
-                  blurRadius: isDark
-                      ? GradientConstants.enhancedShadowSecondaryBlurDark
-                      : GradientConstants.enhancedShadowSecondaryBlurLight,
-                  offset: const Offset(
-                      0, GradientConstants.enhancedShadowSecondaryOffsetY),
-                  spreadRadius: GradientConstants.enhancedShadowSecondarySpread,
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: context.colorScheme.shadow.withValues(
-                    alpha: isDark
-                        ? AppTheme.alphaShadowDark
-                        : AppTheme.alphaShadowLight,
-                  ),
-                  blurRadius: isDark
-                      ? AppTheme.cardElevationDark
-                      : AppTheme.cardElevationLight,
-                  offset: AppTheme.shadowOffset,
-                ),
-              ],
+        boxShadow: customShadows ??
+            (isEnhanced
+                ? [
+                    BoxShadow(
+                      color: context.colorScheme.shadow.withValues(
+                        alpha: isDark ? 0.3 : 0.15,
+                      ),
+                      blurRadius: isDark ? 20 : 15,
+                      offset: const Offset(0, 8),
+                      spreadRadius: 2,
+                    ),
+                    BoxShadow(
+                      color: context.colorScheme.shadow.withValues(
+                        alpha: isDark
+                            ? GradientConstants.enhancedShadowSecondaryDarkAlpha
+                            : GradientConstants
+                                .enhancedShadowSecondaryLightAlpha,
+                      ),
+                      blurRadius: isDark
+                          ? GradientConstants.enhancedShadowSecondaryBlurDark
+                          : GradientConstants.enhancedShadowSecondaryBlurLight,
+                      offset: const Offset(
+                          0, GradientConstants.enhancedShadowSecondaryOffsetY),
+                      spreadRadius:
+                          GradientConstants.enhancedShadowSecondarySpread,
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: context.colorScheme.shadow.withValues(
+                        alpha: isDark
+                            ? AppTheme.alphaShadowDark
+                            : AppTheme.alphaShadowLight,
+                      ),
+                      blurRadius: isDark
+                          ? AppTheme.cardElevationDark
+                          : AppTheme.cardElevationLight,
+                      offset: AppTheme.shadowOffset,
+                    ),
+                  ]),
       ),
       child: Material(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),

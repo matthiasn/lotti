@@ -36,18 +36,34 @@ class AudioPlayerWidget extends ConsumerWidget {
       builder: (BuildContext context, AudioPlayerState state) {
         final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
         final cubit = context.read<AudioPlayerCubit>();
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        final subtleShadows = <BoxShadow>[
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(
+              alpha: isDark ? 0.22 : 0.12,
+            ),
+            blurRadius: isDark ? 14 : 10,
+            offset: const Offset(0, 6),
+          ),
+        ];
 
         return AnimatedContainer(
           duration: const Duration(milliseconds: AppTheme.animationDuration),
           curve: AppTheme.animationCurve,
           margin: const EdgeInsets.only(top: AppTheme.cardPadding),
           child: ModernBaseCard(
-            gradient: GradientThemes.cardGradient(context),
+            gradient: isDark ? GradientThemes.cardGradient(context) : null,
+            backgroundColor: isDark
+                ? null
+                : theme.colorScheme.surfaceContainerHigh
+                    .withValues(alpha: 0.92),
             borderColor: context.colorScheme.primary.withValues(alpha: 0.18),
             isEnhanced: true,
+            customShadows: subtleShadows,
             padding: const EdgeInsets.symmetric(
               horizontal: AppTheme.cardPadding,
-              vertical: AppTheme.cardPadding * 0.6,
+              vertical: AppTheme.cardPadding * 0.4,
             ),
             child: _AudioPlayerCardShell(
               journalAudio: journalAudio,
@@ -139,7 +155,7 @@ class _PlayerBody extends StatelessWidget {
     }
 
     final timeStyle = monoTabularStyle(
-      fontSize: isCompact ? fontSizeSmall : fontSizeMedium,
+      fontSize: fontSizeMedium,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
 
@@ -172,13 +188,15 @@ class _PlayerBody extends StatelessWidget {
               Row(
                 children: <Widget>[
                   Text(formatAudioDuration(progress), style: timeStyle),
-                  const Spacer(),
-                  _SpeedButton(
-                    cubit: cubit,
-                    currentSpeed: state.speed,
-                    isActive: isActive,
+                  Expanded(
+                    child: Align(
+                      child: _SpeedButton(
+                        cubit: cubit,
+                        currentSpeed: state.speed,
+                        isActive: isActive,
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 8),
                   Text(formatAudioDuration(totalDuration), style: timeStyle),
                 ],
               ),
@@ -210,7 +228,9 @@ class _PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final diameter = (isCompact ? 46 : 56).toDouble();
     final innerDiameter = diameter - (isCompact ? 12 : 14).toDouble();
     final isLoading = status == AudioPlayerStatus.initializing && isActive;
@@ -277,7 +297,9 @@ class _PlayButton extends StatelessWidget {
                 color: scheme.primary,
                 backgroundColor:
                     scheme.surfaceContainerHighest.withValues(alpha: 0.28),
-                glowColor: scheme.primary.withValues(alpha: 0.28),
+                glowColor: isDark
+                    ? Colors.transparent
+                    : scheme.primary.withValues(alpha: 0.28),
               ),
               child: child,
             );

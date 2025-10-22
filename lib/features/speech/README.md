@@ -122,6 +122,11 @@ The compact playback card focuses on a single row of controls:
 The layout keeps the same structure below 360 px with tightened spacing. Supporting painter logic
 remains in `ui/widgets/progress/audio_progress_bar.dart`.
 
+The progress bar resolves its palette through `resolveAudioProgressColors`, which aligns the scrub
+fill and thumb with contrast-adjusted variants of `ColorScheme.primary`, and removes the scrubbing
+glow for better contrast in high-contrast palettes. In light mode the player card renders on a flat
+surface color instead of the dark-mode gradient to keep the card feeling clean.
+
 ## Integration Points
 
 ### Dependencies

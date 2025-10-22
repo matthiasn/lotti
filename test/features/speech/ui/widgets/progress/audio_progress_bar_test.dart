@@ -78,6 +78,78 @@ void main() {
     });
   });
 
+  group('resolveAudioProgressColors', () {
+    test('light mode brightens medium primary for thumb', () {
+      final theme = ThemeData(
+        colorScheme: const ColorScheme.light(
+          primary: Colors.teal,
+          secondary: Colors.deepPurple,
+        ),
+      );
+
+      final colors = resolveAudioProgressColors(theme);
+
+      expect(colors.progress, Colors.teal);
+      expect(
+        colors.thumb.computeLuminance(),
+        greaterThan(colors.progress.computeLuminance()),
+      );
+      expect(colors.glow.a, greaterThan(0));
+    });
+
+    test('dark mode brightens primary for thumb', () {
+      final theme = ThemeData(
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.blueGrey,
+          secondary: Colors.amber,
+        ),
+      );
+
+      final colors = resolveAudioProgressColors(theme);
+
+      expect(colors.progress, Colors.blueGrey);
+      expect(
+        colors.thumb.computeLuminance(),
+        greaterThan(colors.progress.computeLuminance()),
+      );
+      expect(colors.glow, Colors.transparent);
+    });
+
+    test('light mode darkens overly bright primary for thumb contrast', () {
+      final theme = ThemeData(
+        colorScheme: const ColorScheme.light(
+          primary: Colors.yellow,
+          secondary: Colors.deepPurple,
+        ),
+      );
+
+      final colors = resolveAudioProgressColors(theme);
+
+      expect(colors.progress, Colors.yellow);
+      expect(
+        colors.thumb.computeLuminance(),
+        lessThan(colors.progress.computeLuminance()),
+      );
+    });
+
+    test('dark mode with near-black primary is lifted for thumb visibility',
+        () {
+      const darkPrimary = Color(0xFF050505);
+      final theme = ThemeData(
+        colorScheme: const ColorScheme.dark(
+          primary: darkPrimary,
+          secondary: Colors.amber,
+        ),
+      );
+
+      final colors = resolveAudioProgressColors(theme);
+
+      expect(colors.progress, darkPrimary);
+      expect(colors.thumb, isNot(equals(darkPrimary)));
+      expect(colors.thumb.computeLuminance(), greaterThan(0.15));
+    });
+  });
+
   group('AudioProgressBar widget', () {
     late List<Duration> seekCalls;
 
