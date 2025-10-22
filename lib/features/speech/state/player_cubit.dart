@@ -28,14 +28,42 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
             speed: 1,
           ),
         ) {
-    _audioPlayer.stream.position.listen(updateProgress);
+    _positionSubscription = _audioPlayer.stream.position.listen(updateProgress);
+    _bufferSubscription = _audioPlayer.stream.buffer.listen(_updateBuffered);
   }
 
   final Player _audioPlayer = Player();
   final LoggingService _loggingService = getIt<LoggingService>();
+  late final StreamSubscription<Duration> _positionSubscription;
+  late final StreamSubscription<Duration> _bufferSubscription;
 
   void updateProgress(Duration duration) {
-    emit(state.copyWith(progress: duration));
+    final clamped =
+        duration > state.totalDuration && state.totalDuration > Duration.zero
+            ? state.totalDuration
+            : duration;
+
+    if (clamped == state.progress) {
+      return;
+    }
+
+    emit(state.copyWith(progress: clamped));
+  }
+
+  void _updateBuffered(Duration buffered) {
+    final total = state.totalDuration;
+    final clamped =
+        total > Duration.zero && buffered > total ? total : buffered;
+
+    if (clamped == state.buffered) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        buffered: clamped,
+      ),
+    );
   }
 
   Future<void> setAudioNote(JournalAudio audioNote) async {
@@ -94,10 +122,19 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   Future<void> seek(Duration newPosition) async {
     try {
       await _audioPlayer.seek(newPosition);
+      final newBuffered =
+          newPosition > state.buffered ? newPosition : state.buffered;
+
+      if (newPosition == state.progress &&
+          newPosition == state.pausedAt &&
+          newBuffered == state.buffered) {
+        return;
+      }
       emit(
         state.copyWith(
           progress: newPosition,
           pausedAt: newPosition,
+          buffered: newBuffered,
         ),
       );
     } catch (exception, stackTrace) {
@@ -142,7 +179,9 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   @override
   Future<void> close() async {
-    await super.close();
+    await _positionSubscription.cancel();
+    await _bufferSubscription.cancel();
     await _audioPlayer.dispose();
+    await super.close();
   }
 }
