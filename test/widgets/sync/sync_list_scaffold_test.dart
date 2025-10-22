@@ -9,6 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 
 void main() {
@@ -147,9 +148,11 @@ void main() {
                       context.messages.outboxMonitorLabelPending,
                   predicate: (_) => true,
                   icon: Icons.schedule_rounded,
+                  selectedColor: syncPendingAccentColor,
+                  selectedForegroundColor: syncPendingForegroundColor,
                   hideCountWhenZero: true,
-                  countAccentColor: Colors.amber,
-                  countAccentForegroundColor: Colors.black,
+                  countAccentColor: syncPendingCountAccentColor,
+                  countAccentForegroundColor: syncPendingForegroundColor,
                 ),
                 _TestFilter.error: SyncFilterOption<_TestItem>(
                   labelBuilder: (context) =>
@@ -210,14 +213,28 @@ void main() {
         final decoration = badge.decoration! as BoxDecoration;
         expect(
           decoration.color,
-          equals(Colors.amber.withValues(alpha: 0.16)),
+          equals(syncPendingAccentColor),
         );
         final border = decoration.border! as Border;
         expect(
           border.top.color,
-          equals(Colors.amber.withValues(alpha: 0.32)),
+          equals(
+            syncPendingForegroundColor.withValues(alpha: 0.68),
+          ),
         );
         expect(border.top.width, equals(1.3));
+        final countText = tester.widget<Text>(
+          find
+              .descendant(
+                of: badgeFinder,
+                matching: find.text('2'),
+              )
+              .first,
+        );
+        expect(
+          countText.style?.color,
+          equals(syncPendingForegroundColor),
+        );
 
         final errorFilter = find.byKey(const ValueKey('syncFilter-error'));
         expect(

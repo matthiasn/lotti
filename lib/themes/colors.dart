@@ -36,6 +36,22 @@ const Color taskStatusBlue = Colors.blue;
 const Color taskStatusRed = Colors.red;
 const Color taskStatusGreen = Colors.green;
 
+// Sync filter colors
+const Color syncAlertAccentColor = Colors.amber;
+const Color syncAlertForegroundColor = Colors.black;
+
+const Color syncPendingAccentColor = Colors.orange;
+const Color syncPendingForegroundColor = Colors.white;
+
+const Color syncSuccessAccentColor = Colors.green;
+const Color syncSuccessForegroundColor = Colors.white;
+
+final Color syncPendingCountAccentColor =
+    TinyColor.fromColor(syncPendingAccentColor).lighten().color;
+
+Color syncErrorCountAccentColor(ColorScheme colorScheme) =>
+    TinyColor.fromColor(colorScheme.error).lighten().color;
+
 final Color secondaryTextColor = oldPrimaryColor.desaturate(70).darken(20);
 final Color chartTextColor = nickel;
 
