@@ -205,15 +205,18 @@
 
 ### Planned Remediation
 1. **SmartJournalEntityLoader Resilience**
-   - On `stale attachment json`, purge the cached attachment bytes (Matrix SDK file store) and retry download once with `fromLocalStoreOnly=false`.
-   - Only throw after a fresh download still fails the vector-clock freshness check.
-   - Emit structured logs for purge/retry (`smart.fetch.stale_vc.refresh`).
+   - On `stale attachment json`, purge the cached attachment bytes (Matrix SDK file store) and force a fresh download (skip the local store on that attempt).
+   - Record structured logs for purge + refresh (`smart.fetch.stale_vc.refresh`) so we can confirm the path in field logs.
 2. **Graceful Catch-Up Handling**
-   - Convert stale-download failures into retryable outcomes instead of fatal exceptions, allowing `_processSyncPayloadEvent` to keep scheduling retries while catch-up completes.
-   - Optionally feed a synthetic `JournalUpdateResult.skipped(reason: olderOrEqual)` to avoid misclassifying as missing base.
+   - If the first fresh download still decodes to the older vector clock, treat the path like a descriptor-missing case: mark the jsonPath pending, schedule `DescriptorCatchUpManager`, and keep the event in the retry loop (with backoff) until a newer descriptor lands.
+   - Return a retryable outcome (no fatal rethrow) so `_attachCatchUp` can finish and marker advancement proceeds once the new payload is available.
 3. **Attachment Index Spam Guard (optional)**
    - Throttle duplicate `attachmentIndex.record` logs when payload unchanged.
-4. **Verification**
+4. **Purged-Cache Metrics**
+   - Add a counter (e.g., `metrics.incStaleAttachmentPurges()`) emitted from the loader whenever we purge a cached descriptor so dashboards can track frequency over time.
+   - Surface the count in diagnostics snapshot and verification logs to confirm the remediation actually engages in field runs.
+   - Bubble the counter into the sync diagnostics/stats page UI so field testing can validate purge frequency without digging through logs.
+5. **Verification**
    - Re-run offline → online desktop scenario after fix; confirm marker advances steadily and EntryLinks appear exactly once.
 
 Until these fixes land, the contract change alone is insufficient to recover from stale-attachment caches during large offline bursts.
