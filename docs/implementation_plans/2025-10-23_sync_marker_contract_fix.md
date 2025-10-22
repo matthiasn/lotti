@@ -179,3 +179,41 @@
 - Manual desktop-offline verification to capture a clean log confirming steady marker advancement.
 - Future work: scoped integration harness that reproduces offline catch-up end-to-end using the new
   contract for automated assurance.
+
+## 2025-10-22 Regression Findings & Next Steps
+
+### What We Observed
+- Manual desktop test on 2025-10-22 (offline creation of hundreds of entries + edits) still failed:
+  - `docs/sync/lotti-2025-10-22_2330.log` >15 MB with 77k lines.
+  - Marker advanced only once (`marker.local id=$-rBg5AAd0x…`) and then stalled while the system kept reprocessing the same backlog.
+  - EntryLink upserts logged `rows=26729` repeatedly; many EntryLink entities never surfaced in UI.
+  - `SyncApplyDiagnostics` now reports `applied=false skip=older_or_equal`, so the contract fix is functioning (no false `missing_base` entries).
+  - Catastrophic failure triggered by `SmartJournalEntityLoader`: `SmartLoader.fetch.stale_vc … expected={...:425} got={...:402}` followed by `FileSystemException: stale attachment json`. The exception propagates, aborting `_attachCatchUp`, so `catchup.done` never logs and the read marker cannot advance.
+  - AttachmentIndex records the same descriptor path thousands of times (one per retry), indicating the loader replays stale bytes from cache on every attempt.
+
+### Impact
+- Catch-up never completes → marker stagnates → backlog reprocessed endlessly.
+- EntryLink/apply path replays but UI still misses entities because marker not advanced / subsequent batches never applied.
+- Log volume explodes and recovery requires manual intervention.
+
+### Root Cause (Current Hypothesis)
+- Smart loader fetches JSON via `AttachmentIndex` → download via Matrix SDK.
+- Matrix SDK persists attachment bytes and serves subsequent downloads from its local store.
+- When the stored bytes are older than the incoming vector clock, our loader throws `FileSystemException('stale attachment json')`.
+- We currently rethrow, leading the stream consumer to treat this as a hard failure; the catch-up attempt halts.
+- Re-running attempts reuses the cached stale JSON again, so the cycle repeats forever.
+
+### Planned Remediation
+1. **SmartJournalEntityLoader Resilience**
+   - On `stale attachment json`, purge the cached attachment bytes (Matrix SDK file store) and retry download once with `fromLocalStoreOnly=false`.
+   - Only throw after a fresh download still fails the vector-clock freshness check.
+   - Emit structured logs for purge/retry (`smart.fetch.stale_vc.refresh`).
+2. **Graceful Catch-Up Handling**
+   - Convert stale-download failures into retryable outcomes instead of fatal exceptions, allowing `_processSyncPayloadEvent` to keep scheduling retries while catch-up completes.
+   - Optionally feed a synthetic `JournalUpdateResult.skipped(reason: olderOrEqual)` to avoid misclassifying as missing base.
+3. **Attachment Index Spam Guard (optional)**
+   - Throttle duplicate `attachmentIndex.record` logs when payload unchanged.
+4. **Verification**
+   - Re-run offline → online desktop scenario after fix; confirm marker advances steadily and EntryLinks appear exactly once.
+
+Until these fixes land, the contract change alone is insufficient to recover from stale-attachment caches during large offline bursts.
