@@ -398,7 +398,6 @@ class SyncEventProcessor {
             payloadType: 'journalEntity',
             entityId: journalEntity.meta.id,
             vectorClock: vcB?.toJson(),
-            rowsAffected: rows,
             conflictStatus: predictedStatus.toString(),
             applied: updateResult.applied,
             skipReason: updateResult.skipReason,
@@ -443,12 +442,10 @@ class SyncEventProcessor {
               payloadType: 'entryLink',
               entityId: '${entryLink.fromId}->${entryLink.toId}',
               vectorClock: null,
-              rowsAffected: rows,
               conflictStatus: rows == 0 ? 'entryLink.noop' : 'applied',
               applied: rows > 0,
-              skipReason: rows > 0
-                  ? null
-                  : JournalUpdateSkipReason.olderOrEqual,
+              skipReason:
+                  rows > 0 ? null : JournalUpdateSkipReason.olderOrEqual,
             );
             applyObserver!.call(diag);
           } catch (_) {
@@ -488,7 +485,6 @@ class SyncApplyDiagnostics {
     required this.payloadType,
     required this.entityId,
     required this.vectorClock,
-    required this.rowsAffected,
     required this.conflictStatus,
     required this.applied,
     this.skipReason,
@@ -498,7 +494,6 @@ class SyncApplyDiagnostics {
   final String payloadType;
   final String entityId;
   final Object? vectorClock;
-  final int rowsAffected;
   final String conflictStatus;
   final bool applied;
   final JournalUpdateSkipReason? skipReason;

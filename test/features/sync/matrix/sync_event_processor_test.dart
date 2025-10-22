@@ -182,9 +182,8 @@ void main() {
     expect(capturedDiag, isNotNull);
     expect(capturedDiag!.eventId, 'event-id');
     expect(capturedDiag!.payloadType, 'journalEntity');
-   expect(capturedDiag!.entityId, fallbackJournalEntity.meta.id);
-   expect(capturedDiag!.rowsAffected, 1);
-   expect(capturedDiag!.conflictStatus, contains('VclockStatus'));
+    expect(capturedDiag!.entityId, fallbackJournalEntity.meta.id);
+    expect(capturedDiag!.conflictStatus, contains('VclockStatus'));
     expect(capturedDiag!.applied, isTrue);
     expect(capturedDiag!.skipReason, isNull);
 
@@ -878,8 +877,9 @@ void main() {
     // Diagnostics captured for pipeline
     expect(seen, isNotNull);
     expect(seen!.payloadType, 'entryLink');
-    expect(seen!.rowsAffected, 0);
     expect(seen!.conflictStatus, 'entryLink.noop');
+    expect(seen!.applied, isFalse);
+    expect(seen!.skipReason, JournalUpdateSkipReason.olderOrEqual);
   });
 
   test('EntryLink apply continues when logging throws', () async {
