@@ -808,6 +808,398 @@ void main() {
     });
   });
 
+  group('Audio timestamp parsing', () {
+    Future<File> createTestAudioFile(
+      String filename,
+      int sizeBytes,
+    ) async {
+      final file = File(path.join(tempDir.path, filename));
+      await file.writeAsBytes(List.generate(sizeBytes, (index) => index % 256));
+      return file;
+    }
+
+    DropDoneDetails createDropDetails(List<XFile> xfiles) {
+      final dropItems = xfiles.map(FakeDropItem.new).toList();
+      return DropDoneDetails(
+        files: dropItems,
+        localPosition: Offset.zero,
+        globalPosition: Offset.zero,
+      );
+    }
+
+    test('parses valid Lotti filename format correctly', () async {
+      // Arrange - filename represents Oct 20, 2025 at 4:49:32.203 PM
+      final testFile =
+          await createTestAudioFile('2025-10-20_16-49-32-203.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert - verify the parsed timestamp is used
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      // Verify timestamp was parsed correctly
+      final expectedTimestamp = DateTime(2025, 10, 20, 16, 49, 32, 203);
+      expect(captured.data.dateFrom, equals(expectedTimestamp));
+      expect(captured.data.audioDirectory, equals('/audio/2025-10-20/'));
+      expect(
+        captured.data.audioFile,
+        equals('2025-10-20_16-49-32-203.m4a'),
+      );
+    });
+
+    test('parses valid filename with single-digit milliseconds', () async {
+      // Arrange
+      final testFile =
+          await createTestAudioFile('2025-01-01_00-00-00-5.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      final expectedTimestamp = DateTime(2025, 1, 1, 0, 0, 0, 5);
+      expect(captured.data.dateFrom, equals(expectedTimestamp));
+      expect(captured.data.audioDirectory, equals('/audio/2025-01-01/'));
+    });
+
+    test('parses valid filename with three-digit milliseconds', () async {
+      // Arrange
+      final testFile =
+          await createTestAudioFile('2024-12-31_23-59-59-999.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      final expectedTimestamp = DateTime(2024, 12, 31, 23, 59, 59, 999);
+      expect(captured.data.dateFrom, equals(expectedTimestamp));
+      expect(captured.data.audioDirectory, equals('/audio/2024-12-31/'));
+    });
+
+    test('falls back to lastModified for generic filename', () async {
+      // Arrange - generic filename that doesn't match Lotti format
+      final testFile = await createTestAudioFile('recording.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final lastModified = testFile.lastModifiedSync();
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert - should use lastModified timestamp
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      // Should use lastModified timestamp instead
+      expect(captured.data.dateFrom, equals(lastModified));
+    });
+
+    test('falls back to lastModified for partial format match', () async {
+      // Arrange - partial date format without time
+      final testFile = await createTestAudioFile('2025-10-20.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final lastModified = testFile.lastModifiedSync();
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      expect(captured.data.dateFrom, equals(lastModified));
+    });
+
+    test('falls back to lastModified for invalid format', () async {
+      // Arrange - invalid format (missing time component)
+      final testFile = await createTestAudioFile('not-a-date-format.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final lastModified = testFile.lastModifiedSync();
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      expect(captured.data.dateFrom, equals(lastModified));
+    });
+
+    test('falls back to lastModified for multiple extensions', () async {
+      // Arrange
+      final testFile = await createTestAudioFile('test.m4a.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final lastModified = testFile.lastModifiedSync();
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      // The parsing should fail on "test.m4a" (not a valid date)
+      expect(captured.data.dateFrom, equals(lastModified));
+    });
+
+    test('uses parsed timestamp in directory path', () async {
+      // Arrange
+      final testFile =
+          await createTestAudioFile('2025-03-15_10-30-45-100.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert - directory should use parsed date
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      expect(captured.data.audioDirectory, equals('/audio/2025-03-15/'));
+    });
+
+    test('uses parsed timestamp in target filename', () async {
+      // Arrange
+      final testFile =
+          await createTestAudioFile('2025-06-20_14-25-30-500.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert - filename should preserve original timestamp
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      expect(
+        captured.data.audioFile,
+        equals('2025-06-20_14-25-30-500.m4a'),
+      );
+    });
+
+    test('uses parsed timestamp in AudioNote createdAt', () async {
+      // Arrange
+      final testFile =
+          await createTestAudioFile('2025-08-10_08-15-22-750.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      final expectedTimestamp = DateTime(2025, 8, 10, 8, 15, 22, 750);
+      expect(captured.data.dateFrom, equals(expectedTimestamp));
+    });
+
+    test('handles different timestamps for Lotti vs generic files', () async {
+      // Arrange - one Lotti format, one generic
+      final lottiFile =
+          await createTestAudioFile('2025-05-15_12-00-00-100.m4a', 1024);
+      final genericFile = await createTestAudioFile('recording.m4a', 2048);
+
+      final lottiXFile = XFile(lottiFile.path);
+      final genericXFile = XFile(genericFile.path);
+
+      // Process files separately to verify different timestamps
+      final lottiDetails = createDropDetails([lottiXFile]);
+      final genericDetails = createDropDetails([genericXFile]);
+
+      // Act
+      await importDroppedAudio(data: lottiDetails);
+      await importDroppedAudio(data: genericDetails);
+
+      // Assert
+      final capturedList = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured;
+
+      final lottiAudio = capturedList[0] as JournalAudio;
+      final genericAudio = capturedList[1] as JournalAudio;
+
+      // Lotti file should have parsed timestamp
+      expect(
+        lottiAudio.data.dateFrom,
+        equals(DateTime(2025, 5, 15, 12, 0, 0, 100)),
+      );
+
+      // Generic file should have lastModified timestamp (different from parsed)
+      final genericLastModified = genericFile.lastModifiedSync();
+      expect(genericAudio.data.dateFrom, equals(genericLastModified));
+
+      // Timestamps should be different
+      expect(
+        lottiAudio.data.dateFrom,
+        isNot(equals(genericAudio.data.dateFrom)),
+      );
+    });
+
+    test('preserves milliseconds precision in parsing', () async {
+      // Arrange - test various millisecond values
+      final files = [
+        await createTestAudioFile('2025-01-01_00-00-00-1.m4a', 1024),
+        await createTestAudioFile('2025-01-01_00-00-01-50.m4a', 1024),
+        await createTestAudioFile('2025-01-01_00-00-02-999.m4a', 1024),
+      ];
+
+      final expectedMilliseconds = [1, 50, 999];
+
+      // Act & Assert
+      for (var i = 0; i < files.length; i++) {
+        final xFile = XFile(files[i].path);
+        final dropDetails = createDropDetails([xFile]);
+
+        await importDroppedAudio(data: dropDetails);
+
+        final captured = verify(
+          () => mockPersistenceLogic.createDbEntity(
+            captureAny(that: isA<JournalAudio>()),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).captured.last as JournalAudio;
+
+        expect(
+          captured.data.dateFrom.millisecond,
+          equals(expectedMilliseconds[i]),
+        );
+      }
+    });
+
+    test('handles date boundary - end of month', () async {
+      // Arrange - last day of February (non-leap year)
+      final testFile =
+          await createTestAudioFile('2025-02-28_23-59-59-999.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      final expectedTimestamp = DateTime(2025, 2, 28, 23, 59, 59, 999);
+      expect(captured.data.dateFrom, equals(expectedTimestamp));
+      expect(captured.data.audioDirectory, equals('/audio/2025-02-28/'));
+    });
+
+    test('handles date boundary - year transition', () async {
+      // Arrange - last second of the year
+      final testFile =
+          await createTestAudioFile('2024-12-31_23-59-59-999.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      final expectedTimestamp = DateTime(2024, 12, 31, 23, 59, 59, 999);
+      expect(captured.data.dateFrom, equals(expectedTimestamp));
+      expect(captured.data.audioDirectory, equals('/audio/2024-12-31/'));
+    });
+
+    test('handles leap year date', () async {
+      // Arrange - Feb 29 in leap year 2024
+      final testFile =
+          await createTestAudioFile('2024-02-29_12-30-45-500.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).captured.single as JournalAudio;
+
+      final expectedTimestamp = DateTime(2024, 2, 29, 12, 30, 45, 500);
+      expect(captured.data.dateFrom, equals(expectedTimestamp));
+      expect(captured.data.audioDirectory, equals('/audio/2024-02-29/'));
+    });
+  });
+
   group('importDroppedAudio', () {
     Future<File> createTestAudioFile(
       String filename,
