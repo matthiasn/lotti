@@ -143,18 +143,13 @@
 - *Risk:* Behavior expectations around `overwrite=false` or `overrideComparison` may change.
   *Mitigation:* expand database tests to cover those branches with the new result type.
 
-## Open Questions
+## Decisions
 
-1. **Result Shape:** Should `JournalUpdateResult` live alongside existing persistence models, or do
-   we prefer a simpler `enum { applied, skippedOlder, skippedConflict }`? → JournalUpdateResult 
-   class sounds reasonable.
-2. **Skip Reasons:** Do we need to differentiate between "older/equal" vs "conflict" vs "missing
-   base" explicitly for analytics? → yes make this distinguishable in both logs and the sync 
-   stats page.
-3. **Logging Format:** OK to change the `apply journalEntity` log line to include
-   `applied=true/false`, or should we emit a separate structured log? → yes change the log line.
-4. **Manual Verification:** Is rerunning the problematic desktop scenario sufficient, or do we want
-   an automated integration test harnessed via existing sync fixtures? → if we could create 
-   integration tests, or adapt existing ones, that would be splendid, but might make sense to 
-   treat this as a follow up task that we can outline in details when all else is ready, and run 
-   manual tests in parallel.
+- **Result Shape:** Implement a `JournalUpdateResult` class (alongside existing persistence models)
+  rather than a simple enum to preserve extensibility and attach telemetry fields.
+- **Skip Reasons:** Distinguish between `older/equal`, `conflict`, and `missing_base` in both logs
+  and the sync stats page so analytics stay actionable.
+- **Logging Format:** Update the `apply journalEntity` log line to include `applied=true/false` (no
+  separate log entry required).
+- **Verification:** Manual desktop catch-up verification remains required now; follow-up task will
+  scope automated/integration coverage once the contract change ships.
