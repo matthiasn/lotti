@@ -146,6 +146,48 @@ class _SyncListScaffoldState<T, F extends Enum>
     super.dispose();
   }
 
+  EdgeInsetsDirectional _effectivePaddingForWidth(double width) {
+    final base = widget.listPadding;
+
+    double targetHorizontal;
+    if (width >= 1800) {
+      targetHorizontal = 196;
+    } else if (width >= 1600) {
+      targetHorizontal = 168;
+    } else if (width >= 1400) {
+      targetHorizontal = 136;
+    } else if (width >= 1200) {
+      targetHorizontal = 112;
+    } else if (width >= 992) {
+      targetHorizontal = 80;
+    } else if (width >= 840) {
+      targetHorizontal = 56;
+    } else if (width >= 720) {
+      targetHorizontal = 40;
+    } else if (width >= 600) {
+      targetHorizontal = 28;
+    } else if (width >= 400) {
+      targetHorizontal = 20;
+    } else {
+      targetHorizontal = (base.left + base.right) / 2;
+    }
+
+    final safeMax = width > 0 ? width / 2 - 32 : targetHorizontal;
+    if (safeMax > 0 && targetHorizontal > safeMax) {
+      targetHorizontal = safeMax;
+    }
+
+    final start = base.left >= targetHorizontal ? base.left : targetHorizontal;
+    final end = base.right >= targetHorizontal ? base.right : targetHorizontal;
+
+    return EdgeInsetsDirectional.only(
+      start: start,
+      end: end,
+      top: base.top,
+      bottom: base.bottom,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<T>>(
@@ -164,86 +206,66 @@ class _SyncListScaffoldState<T, F extends Enum>
 
         final hasData = snapshot.hasData;
 
-        return Scaffold(
-          body: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverTitleBar(
-                widget.title,
-                showBackButton: widget.backButton,
-                pinned: true,
-              ),
-              SliverToBoxAdapter(
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Padding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: widget.listPadding.left,
-                      end: widget.listPadding.right,
-                      top: widget.listPadding.top,
-                      bottom: AppTheme.spacingMedium,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FilterCard<F>(
-                          filters: widget.filters,
-                          counts: counts,
-                          selected: _selectedFilter,
-                          onChanged: (value) => setState(
-                            () => _selectedFilter = value,
-                          ),
-                          locale: locale,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final effectivePadding =
+                _effectivePaddingForWidth(constraints.maxWidth);
+            final horizontalPaddingForEmpty =
+                (effectivePadding.start + effectivePadding.end) / 2;
+            final listPadding = EdgeInsets.only(
+              left: effectivePadding.start,
+              right: effectivePadding.end,
+              bottom: effectivePadding.bottom,
+            );
+
+            return Scaffold(
+              body: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  SliverTitleBar(
+                    widget.title,
+                    showBackButton: widget.backButton,
+                    pinned: true,
+                  ),
+                  SliverToBoxAdapter(
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.only(
+                          start: effectivePadding.start,
+                          end: effectivePadding.end,
+                          top: effectivePadding.top,
+                          bottom: AppTheme.spacingMedium,
                         ),
-                        const SizedBox(height: AppTheme.spacingLarge),
-                        Text(
-                          widget.countSummaryBuilder(
-                            context,
-                            _formatLabel(
-                              context,
-                              widget.filters[_selectedFilter]!,
-                              locale,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _FilterCard<F>(
+                              filters: widget.filters,
+                              counts: counts,
+                              selected: _selectedFilter,
+                              onChanged: (value) => setState(
+                                () => _selectedFilter = value,
+                              ),
+                              locale: locale,
                             ),
-                            filteredItems.length,
-                          ),
-                          style: context.textTheme.titleSmall?.copyWith(
-                            color: context.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: AppTheme.spacingLarge),
-                      ],
-                    ).animate().fadeIn(
-                          duration: const Duration(
-                            milliseconds: AppTheme.animationDuration,
-                          ),
-                        ),
-                  ),
-                ),
-              ),
-              if (!hasData)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: CircularProgressIndicator.adaptive(),
-                  ),
-                )
-              else if (filteredItems.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: (widget.listPadding.left +
-                                widget.listPadding.right) /
-                            2,
-                      ),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 420),
-                        child: EmptyStateWidget(
-                          icon: widget.emptyIcon,
-                          title: widget.emptyTitleBuilder(context),
-                          description:
-                              widget.emptyDescriptionBuilder?.call(context),
+                            const SizedBox(height: AppTheme.spacingLarge),
+                            Text(
+                              widget.countSummaryBuilder(
+                                context,
+                                _formatLabel(
+                                  context,
+                                  widget.filters[_selectedFilter]!,
+                                  locale,
+                                ),
+                                filteredItems.length,
+                              ),
+                              style: context.textTheme.titleSmall?.copyWith(
+                                color: context.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: AppTheme.spacingLarge),
+                          ],
                         ).animate().fadeIn(
                               duration: const Duration(
                                 milliseconds: AppTheme.animationDuration,
@@ -252,36 +274,74 @@ class _SyncListScaffoldState<T, F extends Enum>
                       ),
                     ),
                   ),
-                )
-              else
-                SliverPadding(
-                  padding: EdgeInsets.only(
-                    left: widget.listPadding.left,
-                    right: widget.listPadding.right,
-                    bottom: widget.listPadding.bottom,
-                  ),
-                  sliver: SliverList(
-                    key: widget.listKey,
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (index.isEven) {
-                          final itemIndex = index ~/ 2;
-                          return widget.itemBuilder(
-                            context,
-                            filteredItems[itemIndex],
-                          );
-                        }
-                        return const SizedBox(height: AppTheme.cardSpacing);
-                      },
-                      childCount: filteredItems.isEmpty
-                          ? 0
-                          : filteredItems.length * 2 - 1,
-                      addAutomaticKeepAlives: false,
+                  if (!hasData)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: CircularProgressIndicator.adaptive(),
+                      ),
+                    )
+                  else if (filteredItems.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsetsDirectional.symmetric(
+                            horizontal: horizontalPaddingForEmpty,
+                          ),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: EmptyStateWidget(
+                              icon: widget.emptyIcon,
+                              title: widget.emptyTitleBuilder(context),
+                              description:
+                                  widget.emptyDescriptionBuilder?.call(context),
+                            ).animate().fadeIn(
+                                  duration: const Duration(
+                                    milliseconds: AppTheme.animationDuration,
+                                  ),
+                                ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: listPadding,
+                      sliver: SliverList(
+                        key: widget.listKey,
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            if (index.isEven) {
+                              final itemIndex = index ~/ 2;
+                              return widget.itemBuilder(
+                                context,
+                                filteredItems[itemIndex],
+                              );
+                            }
+                            return const SizedBox(height: AppTheme.cardSpacing);
+                          },
+                          childCount: filteredItems.isEmpty
+                              ? 0
+                              : filteredItems.length * 2 - 1,
+                          addAutomaticKeepAlives: false,
+                        ),
+                      ),
+                    ),
+                  SliverPadding(
+                    padding: EdgeInsetsDirectional.only(
+                      start: effectivePadding.start,
+                      end: effectivePadding.end,
+                      bottom: effectivePadding.bottom,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: SizedBox(height: widget.listPadding.bottom),
                     ),
                   ),
-                ),
-            ],
-          ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
