@@ -208,10 +208,10 @@
 - [x] Refactor Conflicts list to new scaffold with modern cards and chips.
 - [x] Update localization usages (title case labels) and adjust widget smoke tests.
 - [ ] Relocate sync list pages/widgets/view models into `lib/features/sync/...` and update imports.
-- [ ] Replace hard-coded filter colors with theme tokens.
-- [ ] Add empty-state/loading widget coverage plus unit tests for the new view models.
-- [ ] Refresh Settings and Sync READMEs plus `CHANGELOG.md` entry.
-- [ ] Run `dart-mcp.analyze_files`, `dart-mcp.dart_format`, and targeted `dart-mcp.run_tests`.
+- [x] Replace hard-coded filter colors with theme tokens.
+- [x] Add empty-state/loading widget coverage plus unit tests for the new view models.
+- [x] Refresh Settings and Sync READMEs plus `CHANGELOG.md` entry.
+- [x] Run `dart-mcp.analyze_files`, `dart-mcp.dart_format`, and targeted `dart-mcp.run_tests`.
 
 ## Next
 
