@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
+import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -175,12 +176,13 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-  Future<int> updateJournalEntity(
+  Future<JournalUpdateResult> updateJournalEntity(
     JournalEntity updated, {
     bool overrideComparison = false,
     bool overwrite = true,
   }) async {
-    var rowsAffected = 0;
+    var applied = false;
+    JournalUpdateSkipReason? skipReason;
     final dbEntity = toDbEntity(updated).copyWith(
       updatedAt: DateTime.now(),
     );
@@ -188,16 +190,14 @@ class JournalDb extends _$JournalDb {
     final existingDbEntity = await entityById(dbEntity.id);
 
     if (existingDbEntity != null && !overwrite) {
-      return rowsAffected;
-    }
-
-    if (existingDbEntity != null) {
+      skipReason = JournalUpdateSkipReason.overwritePrevented;
+    } else if (existingDbEntity != null) {
       final existing = fromDbEntity(existingDbEntity);
       final status = await detectConflict(existing, updated);
 
       if (status == VclockStatus.b_gt_a || overrideComparison) {
-        rowsAffected = await upsertJournalDbEntity(dbEntity);
-
+        await upsertJournalDbEntity(dbEntity);
+        applied = true;
         final existingConflict = await conflictById(dbEntity.id);
 
         if (existingConflict != null) {
@@ -209,14 +209,24 @@ class JournalDb extends _$JournalDb {
           domain: 'JOURNAL_DB',
           subDomain: 'Conflict status',
         );
+        skipReason = status == VclockStatus.concurrent
+            ? JournalUpdateSkipReason.conflict
+            : JournalUpdateSkipReason.olderOrEqual;
       }
     } else {
-      rowsAffected = await upsertJournalDbEntity(dbEntity);
+      await upsertJournalDbEntity(dbEntity);
+      applied = true;
     }
     await saveJournalEntityJson(updated);
     await addTagged(updated);
 
-    return rowsAffected;
+    if (applied) {
+      return JournalUpdateResult.applied();
+    }
+
+    return JournalUpdateResult.skipped(
+      reason: skipReason ?? JournalUpdateSkipReason.olderOrEqual,
+    );
   }
 
   Future<JournalDbEntity?> entityById(String id) async {

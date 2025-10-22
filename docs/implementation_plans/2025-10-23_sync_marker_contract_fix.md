@@ -116,6 +116,9 @@
   persistence, AI repos).
 - Capture a new desktop log after offline catch-up to confirm continuous `marker.local` advancement
   (manual verification step if automation is heavy).
+- Adhere to the repository implementation discipline (per `AGENTS.md`): analyzer must stay clean,
+  formatter runs before checks, CHANGELOG and touched feature READMEs updated, meaningful tests for
+  every modified path, and avoid progressing to new files until existing changes are green.
 
 ## Testing Strategy
 

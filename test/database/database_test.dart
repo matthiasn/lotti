@@ -8,6 +8,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -302,9 +303,10 @@ void main() {
     group('Journal Entity Operations -', () {
       test('updateJournalEntity creates new entity', () async {
         final entry = createJournalEntry('Test entry');
-        final result = await db?.updateJournalEntity(entry);
+        final result = await db!.updateJournalEntity(entry);
 
-        expect(result, 1); // 1 row affected
+        expect(result.applied, isTrue); // entity persisted
+        expect(result.rowsWritten, 1);
 
         final retrieved = await db?.journalEntityById(entry.meta.id);
         expect(retrieved, isNotNull);
@@ -314,7 +316,7 @@ void main() {
 
       test('updateJournalEntity updates existing entity', () async {
         final entry = createJournalEntry('Original text');
-        await db?.updateJournalEntity(entry);
+        await db!.updateJournalEntity(entry);
 
         // Create modified entry with same ID
         final now = DateTime.now();
@@ -331,8 +333,9 @@ void main() {
           entryText: const EntryText(plainText: 'Updated text'),
         );
 
-        final result = await db?.updateJournalEntity(updatedEntry);
-        expect(result, 1);
+        final result = await db!.updateJournalEntity(updatedEntry);
+        expect(result.applied, isTrue);
+        expect(result.rowsWritten, 1);
 
         final retrieved = await db?.journalEntityById(entry.meta.id);
         expect(retrieved, isNotNull);
@@ -342,7 +345,7 @@ void main() {
       test('updateJournalEntity with overwrite=false does not update',
           () async {
         final entry = createJournalEntry('Original text');
-        await db?.updateJournalEntity(entry);
+        await db!.updateJournalEntity(entry);
 
         // Create modified entry with same ID
         final now = DateTime.now();
@@ -359,12 +362,13 @@ void main() {
           entryText: const EntryText(plainText: 'Updated text'),
         );
 
-        final result = await db?.updateJournalEntity(
+        final result = await db!.updateJournalEntity(
           updatedEntry,
           overwrite: false,
         );
 
-        expect(result, 0); // No rows affected
+        expect(result.applied, isFalse); // No change
+        expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
 
         final retrieved = await db?.journalEntityById(entry.meta.id);
         expect(retrieved?.meta.starred, false);
@@ -382,7 +386,7 @@ void main() {
             createJournalEntryWithVclock(vclockB, id: entryA.meta.id);
 
         // First insert A
-        await db?.updateJournalEntity(entryA);
+        await db!.updateJournalEntity(entryA);
 
         // Try to update with B, should detect conflict
         final status = await db?.detectConflict(entryA, entryB);
@@ -409,30 +413,32 @@ void main() {
             createJournalEntryWithVclock(vclockB, id: entryA.meta.id);
 
         // First insert A
-        await db?.updateJournalEntity(entryA);
+        await db!.updateJournalEntity(entryA);
 
         // Update with B, should succeed
-        final result = await db?.updateJournalEntity(entryB);
-        expect(result, 1);
+        final result = await db!.updateJournalEntity(entryB);
+        expect(result.applied, isTrue);
+        expect(result.rowsWritten, 1);
 
         // Retrieve - should be B
         final retrieved = await db?.journalEntityById(entryA.meta.id);
         expect(retrieved?.meta.id, entryA.meta.id);
 
         // Now try to update with A again (lower vclock), should fail
-        final result2 = await db?.updateJournalEntity(entryA);
-        expect(result2, 0);
+        final result2 = await db!.updateJournalEntity(entryA);
+        expect(result2.applied, isFalse);
+        expect(result2.skipReason, JournalUpdateSkipReason.olderOrEqual);
 
         // Retrieve - should still be B
         final stillB = await db?.journalEntityById(entryA.meta.id);
         expect(stillB?.meta.id, entryA.meta.id);
 
         // We can override with overrideComparison
-        final result3 = await db?.updateJournalEntity(
+        final result3 = await db!.updateJournalEntity(
           entryA,
           overrideComparison: true,
         );
-        expect(result3, 1);
+        expect(result3.applied, isTrue);
 
         // Now it should be A
         final nowA = await db?.journalEntityById(entryA.meta.id);

@@ -9,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
@@ -80,7 +81,7 @@ void main() {
     journalEntityLoader = MockJournalEntityLoader();
 
     when(() => journalDb.updateJournalEntity(any<JournalEntity>()))
-        .thenAnswer((_) async => 1);
+        .thenAnswer((_) async => JournalUpdateResult.applied());
     when(() => journalDb.upsertEntryLink(any<EntryLink>()))
         .thenAnswer((_) async => 1);
     when(() => journalDb.upsertEntityDefinition(any<EntityDefinition>()))
@@ -181,9 +182,11 @@ void main() {
     expect(capturedDiag, isNotNull);
     expect(capturedDiag!.eventId, 'event-id');
     expect(capturedDiag!.payloadType, 'journalEntity');
-    expect(capturedDiag!.entityId, fallbackJournalEntity.meta.id);
-    expect(capturedDiag!.rowsAffected, 1);
-    expect(capturedDiag!.conflictStatus, contains('VclockStatus'));
+   expect(capturedDiag!.entityId, fallbackJournalEntity.meta.id);
+   expect(capturedDiag!.rowsAffected, 1);
+   expect(capturedDiag!.conflictStatus, contains('VclockStatus'));
+    expect(capturedDiag!.applied, isTrue);
+    expect(capturedDiag!.skipReason, isNull);
 
     // Prediction failure is logged with specific subDomain
     verify(() => loggingService.captureException(

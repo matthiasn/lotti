@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
@@ -389,7 +390,9 @@ class SyncEventProcessor {
             }
           }
           final vcB = journalEntity.meta.vectorClock;
-          final rows = await journalDb.updateJournalEntity(journalEntity);
+          final updateResult =
+              await journalDb.updateJournalEntity(journalEntity);
+          final rows = updateResult.rowsWritten ?? 0;
           final diag = SyncApplyDiagnostics(
             eventId: event.eventId,
             payloadType: 'journalEntity',
@@ -397,9 +400,11 @@ class SyncEventProcessor {
             vectorClock: vcB?.toJson(),
             rowsAffected: rows,
             conflictStatus: predictedStatus.toString(),
+            applied: updateResult.applied,
+            skipReason: updateResult.skipReason,
           );
           _loggingService.captureEvent(
-            'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} rows=$rows status=${diag.conflictStatus}',
+            'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} rowsWritten=$rows applied=${updateResult.applied} skip=${updateResult.skipReason?.label ?? 'none'} status=${diag.conflictStatus}',
             domain: 'MATRIX_SERVICE',
             subDomain: 'apply',
           );
@@ -440,6 +445,10 @@ class SyncEventProcessor {
               vectorClock: null,
               rowsAffected: rows,
               conflictStatus: rows == 0 ? 'entryLink.noop' : 'applied',
+              applied: rows > 0,
+              skipReason: rows > 0
+                  ? null
+                  : JournalUpdateSkipReason.olderOrEqual,
             );
             applyObserver!.call(diag);
           } catch (_) {
@@ -481,6 +490,8 @@ class SyncApplyDiagnostics {
     required this.vectorClock,
     required this.rowsAffected,
     required this.conflictStatus,
+    required this.applied,
+    this.skipReason,
   });
 
   final String eventId;
@@ -489,4 +500,6 @@ class SyncApplyDiagnostics {
   final Object? vectorClock;
   final int rowsAffected;
   final String conflictStatus;
+  final bool applied;
+  final JournalUpdateSkipReason? skipReason;
 }

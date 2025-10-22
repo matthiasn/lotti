@@ -5,9 +5,10 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
-// ignore_for_file: unnecessary_lambdas, cascade_invocations, unawaited_futures
+// ignore_for_file: unnecessary_lambdas, cascade_invocations, unawaited_futures, avoid_redundant_argument_values
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
@@ -376,6 +377,8 @@ void main() {
         vectorClock: null,
         rowsAffected: 0,
         conflictStatus: 'entryLink.noop',
+        applied: false,
+        skipReason: JournalUpdateSkipReason.olderOrEqual,
       ));
 
       final snap = consumer.metricsSnapshot();
@@ -1513,6 +1516,8 @@ void main() {
           vectorClock: null,
           rowsAffected: 0,
           conflictStatus: 'VclockStatus.b_gt_a',
+          applied: false,
+          skipReason: JournalUpdateSkipReason.missingBase,
         ),
       );
 
@@ -2640,6 +2645,8 @@ void main() {
           vectorClock: null,
           rowsAffected: 1,
           conflictStatus: 'b_gt_a',
+          applied: true,
+          skipReason: null,
         ),
       );
       // Simulate ignored by vector clock
@@ -2651,6 +2658,8 @@ void main() {
           vectorClock: null,
           rowsAffected: 0,
           conflictStatus: 'a_gt_b',
+          applied: false,
+          skipReason: JournalUpdateSkipReason.olderOrEqual,
         ),
       );
       // Simulate conflict
@@ -2662,6 +2671,8 @@ void main() {
           vectorClock: null,
           rowsAffected: 0,
           conflictStatus: 'concurrent',
+          applied: false,
+          skipReason: JournalUpdateSkipReason.conflict,
         ),
       );
 
@@ -2871,6 +2882,8 @@ void main() {
           vectorClock: null,
           rowsAffected: 0,
           conflictStatus: 'a_gt_b',
+          applied: false,
+          skipReason: JournalUpdateSkipReason.olderOrEqual,
         ),
       );
 
