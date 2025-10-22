@@ -51,11 +51,22 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
     required AttachmentIndex attachmentIndex,
     required LoggingService loggingService,
+    void Function()? onCachePurge,
   })  : _attachmentIndex = attachmentIndex,
-        _logging = loggingService;
+        _logging = loggingService {
+    if (onCachePurge != null) {
+      _cachePurgeListeners.add(onCachePurge);
+    }
+  }
 
   final AttachmentIndex _attachmentIndex;
   final LoggingService _logging;
+  final List<void Function()> _cachePurgeListeners = <void Function()>[];
+
+  void addCachePurgeListener(void Function()? listener) {
+    if (listener == null) return;
+    _cachePurgeListeners.add(listener);
+  }
 
   @override
   Future<JournalEntity> load({
@@ -112,43 +123,11 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         );
       }
       try {
-        final matrixFile = await eventForPath.downloadAndDecryptAttachment();
-        final bytes = matrixFile.bytes;
-        if (bytes.isEmpty) {
-          throw const FileSystemException('empty attachment bytes');
-        }
-        final jsonString = utf8.decode(bytes);
-        // Parse first to validate vector clock freshness before writing.
-        final decoded = json.decode(jsonString) as Map<String, dynamic>;
-        final downloaded = JournalEntity.fromJson(decoded);
-        final downloadedVc = downloaded.meta.vectorClock;
-        if (downloadedVc != null) {
-          final status = VectorClock.compare(downloadedVc, incomingVectorClock);
-          // If the downloaded JSON is older than the incoming vector clock,
-          // do not write it; let the caller retry when the new descriptor lands.
-          if (status == VclockStatus.b_gt_a) {
-            _logging.captureEvent(
-              'smart.fetch.stale_vc path=$jsonPath expected=$incomingVectorClock got=$downloadedVc',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'SmartLoader.fetch',
-            );
-            throw const FileSystemException('stale attachment json');
-          }
-        } else {
-          // An incoming VC is expected, but the downloaded JSON lacks one –
-          // treat as invalid to avoid writing potentially stale content.
-          _logging.captureEvent(
-            'smart.fetch.missing_vc path=$jsonPath expected=$incomingVectorClock',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetch',
-          );
-          throw const FileSystemException('missing attachment vector clock');
-        }
-        await saveJson(targetFile.path, jsonString);
-        _logging.captureEvent(
-          'smart.json.written path=$jsonPath bytes=${bytes.length}',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SmartLoader.fetch',
+        await _downloadAndPersistDescriptor(
+          descriptorEvent: eventForPath,
+          incomingVectorClock: incomingVectorClock,
+          jsonPath: jsonPath,
+          targetFile: targetFile,
         );
       } catch (e, st) {
         _logging.captureException(
@@ -217,6 +196,115 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     // Ensure referenced media exists only when mentioned by JSON, and only if missing.
     await _ensureMediaOnMissing(entity);
     return entity;
+  }
+
+  Future<void> _downloadAndPersistDescriptor({
+    required Event descriptorEvent,
+    required VectorClock incomingVectorClock,
+    required String jsonPath,
+    required File targetFile,
+  }) async {
+    String? jsonToWrite;
+    var bytesLength = 0;
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
+      final bytes = matrixFile.bytes;
+      if (bytes.isEmpty) {
+        throw const FileSystemException('empty attachment bytes');
+      }
+      final candidateJson = utf8.decode(bytes);
+      final decoded = json.decode(candidateJson) as Map<String, dynamic>;
+      final candidate = JournalEntity.fromJson(decoded);
+      final candidateVc = candidate.meta.vectorClock;
+      if (candidateVc != null) {
+        final status = VectorClock.compare(candidateVc, incomingVectorClock);
+        if (status == VclockStatus.b_gt_a) {
+          if (attempt == 0) {
+            _logging.captureEvent(
+              'smart.fetch.stale_vc path=$jsonPath expected=$incomingVectorClock got=$candidateVc',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'SmartLoader.fetch',
+            );
+            final purged =
+                await _maybePurgeCachedDescriptor(descriptorEvent, jsonPath);
+            if (purged) {
+              for (final listener in List<void Function()>.from(
+                _cachePurgeListeners,
+              )) {
+                listener();
+              }
+            }
+            _logging.captureEvent(
+              'smart.fetch.stale_vc.refresh path=$jsonPath',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'SmartLoader.fetch',
+            );
+            continue;
+          }
+          _logging.captureEvent(
+            'smart.fetch.stale_vc.pending path=$jsonPath expected=$incomingVectorClock got=$candidateVc',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
+          throw const FileSystemException(
+              'stale attachment json after refresh');
+        }
+      } else {
+        _logging.captureEvent(
+          'smart.fetch.missing_vc path=$jsonPath expected=$incomingVectorClock',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+        throw const FileSystemException('missing attachment vector clock');
+      }
+      jsonToWrite = candidateJson;
+      bytesLength = bytes.length;
+      break;
+    }
+
+    if (jsonToWrite == null) {
+      throw const FileSystemException('stale attachment json');
+    }
+
+    await saveJson(targetFile.path, jsonToWrite);
+    _logging.captureEvent(
+      'smart.json.written path=$jsonPath bytes=$bytesLength',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'SmartLoader.fetch',
+    );
+  }
+
+  Future<bool> _maybePurgeCachedDescriptor(
+    Event event,
+    String jsonPath,
+  ) async {
+    try {
+      final uri = event.attachmentOrThumbnailMxcUrl();
+      if (uri == null) {
+        _logging.captureEvent(
+          'smart.fetch.stale_vc.purge.skipped path=$jsonPath reason=no_mxc',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+        return false;
+      }
+      await event.room.client.database.deleteFile(uri);
+      _logging.captureEvent(
+        'smart.fetch.stale_vc.purge path=$jsonPath mxc=$uri',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetch',
+      );
+      return true;
+    } catch (e, st) {
+      _logging.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.purge',
+        stackTrace: st,
+      );
+      return false;
+    }
   }
 
   // Construct a canonical index key for AttachmentIndex lookups.
@@ -319,6 +407,17 @@ class SyncEventProcessor {
   final AiConfigRepository _aiConfigRepository;
   final SyncJournalEntityLoader _journalEntityLoader;
   void Function(SyncApplyDiagnostics diag)? applyObserver;
+  void Function()? _cachePurgeListener;
+
+  void Function()? get cachePurgeListener => _cachePurgeListener;
+
+  set cachePurgeListener(void Function()? listener) {
+    _cachePurgeListener = listener;
+    final loader = _journalEntityLoader;
+    if (loader is SmartJournalEntityLoader) {
+      loader.addCachePurgeListener(listener);
+    }
+  }
 
   Future<void> process({
     required Event event,
@@ -419,7 +518,7 @@ class SyncEventProcessor {
             subDomain: 'SyncEventProcessor.missingAttachment',
             stackTrace: stackTrace,
           );
-          rethrow;
+          return null;
         }
       case SyncEntryLink(entryLink: final entryLink):
         final rows = await journalDb.upsertEntryLink(entryLink);

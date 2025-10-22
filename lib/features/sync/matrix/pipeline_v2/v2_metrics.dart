@@ -14,6 +14,7 @@ class V2Metrics {
     this.dbApplied = 0,
     this.dbIgnoredByVectorClock = 0,
     this.conflictsCreated = 0,
+    this.staleAttachmentPurges = 0,
   });
 
   factory V2Metrics.fromMap(Map<String, dynamic> map) {
@@ -41,6 +42,7 @@ class V2Metrics {
       dbApplied: (map['dbApplied'] ?? 0) as int,
       dbIgnoredByVectorClock: (map['dbIgnoredByVectorClock'] ?? 0) as int,
       conflictsCreated: (map['conflictsCreated'] ?? 0) as int,
+      staleAttachmentPurges: (map['staleAttachmentPurges'] ?? 0) as int,
       processedByType: typed,
       droppedByType: dropped,
     );
@@ -60,6 +62,7 @@ class V2Metrics {
   final int dbApplied;
   final int dbIgnoredByVectorClock;
   final int conflictsCreated;
+  final int staleAttachmentPurges;
 
   Map<String, int> toMap() => <String, int>{
         'processed': processed,
@@ -82,5 +85,6 @@ class V2Metrics {
           MapEntry('dbApplied', dbApplied),
           MapEntry('dbIgnoredByVectorClock', dbIgnoredByVectorClock),
           MapEntry('conflictsCreated', conflictsCreated),
+          MapEntry('staleAttachmentPurges', staleAttachmentPurges),
         ]);
 }

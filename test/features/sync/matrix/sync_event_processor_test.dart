@@ -40,6 +40,12 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
 
+class MockMatrixRoom extends Mock implements Room {}
+
+class MockMatrixClient extends Mock implements Client {}
+
+class MockMatrixDatabase extends Mock implements DatabaseApi {}
+
 //
 
 void main() {
@@ -732,15 +738,25 @@ void main() {
       ).called(1);
     });
 
-    test('rejects stale downloaded JSON vs incoming VC', () async {
-      // Incoming VC is newer than downloaded JSON -> throw
+    test('purges cached descriptor and refreshes stale download', () async {
       const relJson = '/text_entries/2024-01-01/stale.text.json';
       final index = AttachmentIndex(logging: loggingService);
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('evt-stale');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
       when(() => ev.content).thenReturn({'relativePath': relJson});
-      final downloaded = JournalEntry(
+      final room = MockMatrixRoom();
+      final client = MockMatrixClient();
+      final database = MockMatrixDatabase();
+      when(() => ev.room).thenReturn(room);
+      when(() => room.client).thenReturn(client);
+      when(() => client.database).thenReturn(database);
+      final descriptorUri = Uri.parse('mxc://server/file');
+      when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
+      when(() => database.deleteFile(descriptorUri))
+          .thenAnswer((_) async => true);
+
+      final stale = JournalEntry(
         meta: Metadata(
           id: 'stale-1',
           createdAt: DateTime.now(),
@@ -751,27 +767,131 @@ void main() {
         ),
         entryText: const EntryText(plainText: 'old'),
       );
-      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async => MatrixFile(
-            bytes:
-                Uint8List.fromList(jsonEncode(downloaded.toJson()).codeUnits),
-            name: 'stale.text.json',
-          ));
+      final fresh = JournalEntry(
+        meta: Metadata(
+          id: stale.meta.id,
+          createdAt: stale.meta.createdAt,
+          updatedAt: DateTime.now(),
+          dateFrom: stale.meta.dateFrom,
+          dateTo: stale.meta.dateTo,
+          vectorClock: const VectorClock({'n': 2}),
+        ),
+        entryText: const EntryText(plainText: 'fresh'),
+      );
+      final staleBytes =
+          Uint8List.fromList(jsonEncode(stale.toJson()).codeUnits);
+      final freshBytes =
+          Uint8List.fromList(jsonEncode(fresh.toJson()).codeUnits);
+      var calls = 0;
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+        calls++;
+        return MatrixFile(
+          bytes: calls == 1 ? staleBytes : freshBytes,
+          name: 'entry.json',
+        );
+      });
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
         attachmentIndex: index,
         loggingService: loggingService,
       );
-      await expectLater(
-        () => loader.load(
-          jsonPath: relJson,
-          incomingVectorClock: const VectorClock({'n': 2}),
-        ),
-        throwsA(isA<FileSystemException>()),
+      var purges = 0;
+      loader.addCachePurgeListener(() => purges++);
+
+      final loaded = await loader.load(
+        jsonPath: relJson,
+        incomingVectorClock: const VectorClock({'n': 2}),
       );
+
+      expect(loaded.meta.id, fresh.meta.id);
+      expect(calls, 2);
+      verify(() => database.deleteFile(descriptorUri)).called(1);
+      expect(purges, 1);
       verify(
         () => loggingService.captureEvent(
           contains('smart.fetch.stale_vc path=$relJson'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('smart.fetch.stale_vc.refresh path=$relJson'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+      final saved = File(path.join(
+        getIt<Directory>().path,
+        stripLeadingSlashes(relJson),
+      ));
+      expect(saved.existsSync(), isTrue);
+    });
+
+    test('throws when descriptor remains stale after refresh', () async {
+      const relJson = '/text_entries/2024-01-01/staler.text.json';
+      final index = AttachmentIndex(logging: loggingService);
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('evt-staler');
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.content).thenReturn({'relativePath': relJson});
+      final room = MockMatrixRoom();
+      final client = MockMatrixClient();
+      final database = MockMatrixDatabase();
+      when(() => ev.room).thenReturn(room);
+      when(() => room.client).thenReturn(client);
+      when(() => client.database).thenReturn(database);
+      final descriptorUri = Uri.parse('mxc://server/old');
+      when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
+      when(() => database.deleteFile(descriptorUri))
+          .thenAnswer((_) async => true);
+
+      final stale = JournalEntry(
+        meta: Metadata(
+          id: 'stale-2',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          vectorClock: const VectorClock({'n': 1}),
+        ),
+        entryText: const EntryText(plainText: 'older'),
+      );
+      final staleBytes =
+          Uint8List.fromList(jsonEncode(stale.toJson()).codeUnits);
+      var calls = 0;
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+        calls++;
+        return MatrixFile(bytes: staleBytes, name: 'entry.json');
+      });
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      var purges = 0;
+      loader.addCachePurgeListener(() => purges++);
+
+      await expectLater(
+        () => loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'n': 3}),
+        ),
+        throwsA(
+          isA<FileSystemException>().having(
+            (e) => e.message,
+            'message',
+            contains('after refresh'),
+          ),
+        ),
+      );
+      expect(calls, 2);
+      expect(purges, 1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('smart.fetch.stale_vc.pending path=$relJson'),
           domain: 'MATRIX_SERVICE',
           subDomain: 'SmartLoader.fetch',
         ),
@@ -922,10 +1042,7 @@ void main() {
     when(() => journalEntityLoader.load(jsonPath: '/entity.json'))
         .thenThrow(const FileSystemException('missing'));
 
-    await expectLater(
-      () => processor.process(event: event, journalDb: journalDb),
-      throwsA(isA<FileSystemException>()),
-    );
+    await processor.process(event: event, journalDb: journalDb);
     verify(
       () => loggingService.captureException(
         any<Object>(),
@@ -934,5 +1051,6 @@ void main() {
         stackTrace: any<StackTrace>(named: 'stackTrace'),
       ),
     ).called(1);
+    verifyNever(() => journalDb.updateJournalEntity(any()));
   });
 }

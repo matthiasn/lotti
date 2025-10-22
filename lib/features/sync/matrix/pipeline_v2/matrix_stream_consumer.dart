@@ -130,6 +130,9 @@ class MatrixStreamConsumer implements SyncPipeline {
     _metrics = MetricsCounters(
       collect: _collectMetrics,
     );
+    _eventProcessor.cachePurgeListener = () {
+      _metrics.incStaleAttachmentPurges();
+    };
     _readMarkerManager = ReadMarkerManager(
       debounce: _markerDebounce,
       onFlush: (Room room, String id) => _readMarkerService.updateReadMarker(

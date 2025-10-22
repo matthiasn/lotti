@@ -61,6 +61,7 @@ class V2MetricsSection extends StatelessWidget {
       'conflictsCreated': 'Conflicts',
       'dbMissingBase': 'DB Missing Base',
       'dbEntryLinkNoop': 'EntryLink No-ops',
+      'staleAttachmentPurges': 'Stale Attachment Purges',
       'lookBehindMerges': 'Look-behind Merges',
       'lastLookBehindTail': 'Last Look-behind Tail',
     };
@@ -92,6 +93,7 @@ class V2MetricsSection extends StatelessWidget {
             k == 'conflictsCreated' ||
             k == 'dbMissingBase' ||
             k == 'dbEntryLinkNoop' ||
+            k == 'staleAttachmentPurges' ||
             k.startsWith('droppedByType.'));
     final lookBehind = _select(
         v2, (k) => k == 'lookBehindMerges' || k == 'lastLookBehindTail');

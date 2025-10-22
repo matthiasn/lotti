@@ -31,6 +31,7 @@ class MetricsCounters {
   int conflictsCreated = 0;
   int dbMissingBase = 0;
   int dbEntryLinkNoop = 0;
+  int staleAttachmentPurges = 0;
 
   final Map<String, int> processedByType = <String, int>{};
   final Map<String, int> droppedByType = <String, int>{};
@@ -113,6 +114,7 @@ class MetricsCounters {
   void incConflictsCreated() => conflictsCreated++;
   void incDbMissingBase() => dbMissingBase++;
   void incDbEntryLinkNoop() => dbEntryLinkNoop++;
+  void incStaleAttachmentPurges() => staleAttachmentPurges++;
 
   void addLastIgnored(String entry) {
     msh.ringBufferAdd(lastIgnored, entry, lastIgnoredMax);
@@ -148,6 +150,7 @@ class MetricsCounters {
     )
       ..putIfAbsent('dbMissingBase', () => dbMissingBase)
       ..putIfAbsent('dbEntryLinkNoop', () => dbEntryLinkNoop)
+      ..putIfAbsent('staleAttachmentPurges', () => staleAttachmentPurges)
       ..putIfAbsent('lookBehindMerges', () => lookBehindMerges)
       ..putIfAbsent('lastLookBehindTail', () => lastLookBehindTail);
     return base;
