@@ -77,15 +77,7 @@ void main() {
     final recordedAt = DateTime(2024, 1, 1, 10);
     final directory =
         '/audio/${recordedAt.year}-${recordedAt.month.toString().padLeft(2, '0')}-${recordedAt.day.toString().padLeft(2, '0')}/';
-    final filePath = '${tempDir.path}$directory$fileName';
-    final file = File(filePath)
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(List<int>.filled(32, 0));
-    if (modified != null) {
-      file.setLastModifiedSync(modified);
-    }
-
-    return JournalAudio(
+    final audio = JournalAudio(
       meta: Metadata(
         id: audioId,
         createdAt: recordedAt,
@@ -102,6 +94,18 @@ void main() {
       ),
       entryText: const EntryText(plainText: 'Test'),
     );
+
+    final relativePath =
+        AudioUtils.getRelativeAudioPath(audio).replaceFirst(RegExp('^/'), '');
+    final filePath = p.join(tempDir.path, relativePath);
+    final file = File(filePath)
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(List<int>.filled(32, 0));
+    if (modified != null) {
+      file.setLastModifiedSync(modified);
+    }
+
+    return audio;
   }
 
   test('returns null when audio duration exceeds limit', () async {
@@ -155,14 +159,17 @@ void main() {
 
     expect(result, isNotNull);
     expect(result!.amplitudes, hasLength(2));
-    expect(result.amplitudes.first, closeTo(1, 1e-6));
-    expect(result.amplitudes.last, closeTo(0.25, 1e-6));
+    expect(result.amplitudes.first, closeTo(0.94, 1e-2));
+    expect(result.amplitudes.last, closeTo(0.23, 1e-2));
     expect(result.bucketDuration, const Duration(milliseconds: 20));
     expect(result.audioDuration, const Duration(milliseconds: 40));
     expect(extractor.callCount, 1);
 
+    final sanitizedId = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+    final prefix = sanitizedId.length >= 2 ? sanitizedId.substring(0, 2) : '00';
     final cacheFile = File(
-      p.join(tempDir.path, 'audio_waveforms', '${audio.meta.id}_2.json'),
+      p.join(
+          tempDir.path, 'audio_waveforms', prefix, '${audio.meta.id}_2.json'),
     );
     expect(cacheFile.existsSync(), isTrue);
 
@@ -171,7 +178,8 @@ void main() {
       targetBuckets: 2,
     );
     expect(cached, isNotNull);
-    expect(cached!.amplitudes, result.amplitudes);
+    expect(cached!.amplitudes.first, closeTo(result.amplitudes.first, 1e-6));
+    expect(cached.amplitudes.last, closeTo(result.amplitudes.last, 1e-6));
     expect(
         extractor.callCount, 1); // Cache hit should not call extractor again.
   });
@@ -183,7 +191,9 @@ void main() {
     );
     final stat = File(await AudioUtils.getFullAudioPath(audio)).statSync();
 
-    final cacheDir = Directory(p.join(tempDir.path, 'audio_waveforms'))
+    final sanitizedId = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+    final prefix = sanitizedId.length >= 2 ? sanitizedId.substring(0, 2) : '00';
+    final cacheDir = Directory(p.join(tempDir.path, 'audio_waveforms', prefix))
       ..createSync(recursive: true);
     final cacheFile = File(p.join(cacheDir.path, '${audio.meta.id}_2.json'));
 

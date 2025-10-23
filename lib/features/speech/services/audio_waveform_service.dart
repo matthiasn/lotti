@@ -18,6 +18,13 @@ const int audioWaveformCacheVersion = _waveformCacheVersion;
 /// Maximum supported audio duration for waveform extraction.
 const Duration _defaultMaxDuration = Duration(minutes: 3);
 
+/// Maximum number of cached waveform files retained on disk.
+const int _maxCacheEntries = 1000;
+
+/// Weightings used when blending peak and RMS amplitudes.
+const double _peakWeight = 0.7;
+const double _rmsWeight = 0.3;
+
 /// Zoom level tuned for ~200 buckets across typical journal clips.
 const WaveformZoom _defaultZoom = WaveformZoom.pixelsPerSecond(120);
 
@@ -261,8 +268,11 @@ class AudioWaveformService {
 
   File _cacheFile(String audioId, int bucketCount) {
     final sanitizedId = audioId.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+    final prefix = sanitizedId.length >= 2 ? sanitizedId.substring(0, 2) : '00';
+    final subDirectory = Directory(p.join(_cacheDirectory.path, prefix))
+      ..createSync(recursive: true);
     final safeFileName = '${sanitizedId}_$bucketCount.json';
-    return File(p.join(_cacheDirectory.path, safeFileName));
+    return File(p.join(subDirectory.path, safeFileName));
   }
 
   Future<_AudioWaveformCachePayload?> _readCache(File cacheFile) async {
@@ -296,6 +306,7 @@ class AudioWaveformService {
     try {
       cacheFile.parent.createSync(recursive: true);
       cacheFile.writeAsStringSync(jsonEncode(payload.toJson()));
+      await _pruneCacheIfNeeded();
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
@@ -338,16 +349,20 @@ class AudioWaveformService {
       final start = (bucketIndex * bucketSize).floor();
       final end = math.min(pixelCount, ((bucketIndex + 1) * bucketSize).ceil());
       var peak = 0.0;
+      var sumSquares = 0.0;
+      final span = math.max(1, end - start);
       for (var i = start; i < end; i++) {
         final value = pixelAmplitudes[i];
         if (value > peak) {
           peak = value;
-          if (peak >= 1.0) {
-            break;
-          }
         }
+        sumSquares += value * value;
       }
-      return peak;
+      final rms = math.sqrt(sumSquares / span).clamp(0.0, 1.0);
+      final weightSum =
+          (_peakWeight + _rmsWeight).clamp(0.0001, double.infinity);
+      final blended = ((peak * _peakWeight) + (rms * _rmsWeight)) / weightSum;
+      return blended.clamp(0.0, 1.0);
     });
 
     return reduced;
@@ -368,5 +383,46 @@ class AudioWaveformService {
     return Duration(
       microseconds: (bucketSeconds * 1000000).round(),
     );
+  }
+
+  Future<void> _pruneCacheIfNeeded() async {
+    try {
+      if (!_cacheDirectory.existsSync()) {
+        return;
+      }
+      final files = _cacheDirectory
+          .listSync(recursive: true, followLinks: false)
+          .whereType<File>()
+          .toList()
+        ..sort(
+            (a, b) => a.statSync().modified.compareTo(b.statSync().modified));
+
+      if (files.length <= _maxCacheEntries) {
+        return;
+      }
+
+      final toRemove = files.length - _maxCacheEntries;
+      for (var i = 0; i < toRemove; i++) {
+        try {
+          files[i].deleteSync();
+        } catch (_) {
+          // Ignore cleanup failures.
+        }
+      }
+      if (toRemove > 0) {
+        _loggingService.captureEvent(
+          'Pruned $toRemove waveform cache files (now ${files.length - toRemove} entries)',
+          domain: 'audio_waveform_service',
+          subDomain: 'cache_prune',
+        );
+      }
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'audio_waveform_service',
+        subDomain: 'cache_prune',
+        stackTrace: stackTrace,
+      );
+    }
   }
 }

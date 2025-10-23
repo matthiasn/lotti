@@ -30,12 +30,15 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         ) {
     _positionSubscription = _audioPlayer.stream.position.listen(updateProgress);
     _bufferSubscription = _audioPlayer.stream.buffer.listen(_updateBuffered);
+    _completedSubscription =
+        _audioPlayer.stream.completed.listen(_handleCompleted);
   }
 
   final Player _audioPlayer = Player();
   final LoggingService _loggingService = getIt<LoggingService>();
   late final StreamSubscription<Duration> _positionSubscription;
   late final StreamSubscription<Duration> _bufferSubscription;
+  StreamSubscription<bool>? _completedSubscription;
 
   void updateProgress(Duration duration) {
     final clamped =
@@ -100,16 +103,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       await _audioPlayer.setRate(state.speed);
       await _audioPlayer.play();
       emit(state.copyWith(status: AudioPlayerStatus.playing));
-
-      _audioPlayer.stream.completed.listen((completed) {
-        final duration = state.audioNote?.data.duration;
-        if (completed && duration != null) {
-          Timer(const Duration(milliseconds: PlayerConstants.completionDelayMs),
-              () {
-            emit(state.copyWith(progress: duration));
-          });
-        }
-      });
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -181,7 +174,25 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   Future<void> close() async {
     await _positionSubscription.cancel();
     await _bufferSubscription.cancel();
+    await _completedSubscription?.cancel();
     await _audioPlayer.dispose();
     await super.close();
+  }
+
+  void _handleCompleted(bool completed) {
+    if (!completed) {
+      return;
+    }
+    final duration = state.audioNote?.data.duration;
+    if (duration == null) {
+      return;
+    }
+
+    Timer(
+      const Duration(milliseconds: PlayerConstants.completionDelayMs),
+      () {
+        emit(state.copyWith(progress: duration));
+      },
+    );
   }
 }

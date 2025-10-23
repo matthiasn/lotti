@@ -27,12 +27,17 @@ class AudioWaveformRequest {
     return other is AudioWaveformRequest &&
         other.bucketCount == bucketCount &&
         other.audio.meta.id == audio.meta.id &&
-        other.audio.data.audioFile == audio.data.audioFile;
+        other.audio.data.audioFile == audio.data.audioFile &&
+        other.audio.data.audioDirectory == audio.data.audioDirectory;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(audio.meta.id, audio.data.audioFile, bucketCount);
+  int get hashCode => Object.hash(
+        audio.meta.id,
+        audio.data.audioFile,
+        audio.data.audioDirectory,
+        bucketCount,
+      );
 }
 
 @riverpod

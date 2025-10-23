@@ -32,8 +32,8 @@ class AudioWaveformScrubber extends StatefulWidget {
 
 class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
   static const Duration _seekThrottleDelay = Duration(milliseconds: 60);
-  static const double _targetBarWidth = 3.6;
-  static const double _targetBarSpacing = 2.2;
+  static const double _targetBarWidth = 1.5;
+  static const double _targetBarSpacing = 1.5;
 
   Timer? _throttleTimer;
   DateTime? _lastSeekInvocation;
@@ -116,6 +116,11 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
       _throttleTimer = null;
     }
 
+    final valueLabel =
+        '${formatAudioDuration(widget.progress)} of ${formatAudioDuration(widget.total)}';
+    final hintLabel =
+        widget.enabled ? 'Tap to seek, drag to scrub' : 'Playback disabled';
+
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final width = constraints.hasBoundedWidth
@@ -123,9 +128,9 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
             : MediaQuery.sizeOf(context).width;
 
         return Semantics(
-          label: widget.compact
-              ? 'Audio waveform scrubber'
-              : 'Audio waveform scrubber, double tap and hold then drag to seek',
+          label: 'Audio waveform',
+          value: valueLabel,
+          hint: hintLabel,
           child: GestureDetector(
             onTapDown: (TapDownDetails details) =>
                 handleImmediate(details.localPosition, width),
@@ -208,9 +213,21 @@ class _WaveformPainter extends CustomPainter {
     final barCount = amplitudes.length;
     final barFullWidth = size.width / barCount;
     final desiredWidth = targetBarWidth;
-    final width = math.min(desiredWidth, barFullWidth * (compact ? 0.85 : 0.9));
-    final spacing = math.max(0, barFullWidth - width);
-    final barWidth = width;
+    final spacingTarget = compact ? targetSpacing * 0.9 : targetSpacing;
+
+    double barWidth = math.min(desiredWidth, barFullWidth);
+    double spacing = math.max(0, barFullWidth - barWidth);
+
+    if (spacing > spacingTarget && barFullWidth > spacingTarget) {
+      barWidth = math.max(1, barFullWidth - spacingTarget);
+      spacing = barFullWidth - barWidth;
+    }
+
+    if (barWidth > barFullWidth) {
+      barWidth = barFullWidth;
+      spacing = 0;
+    }
+    final maxHeight = size.height * 0.8;
     final minBarHeight = math.max(2, size.height * 0.08).toDouble();
     final baseline = size.height / 2;
 
@@ -228,7 +245,7 @@ class _WaveformPainter extends CustomPainter {
     for (var index = 0; index < barCount; index++) {
       final amplitude = amplitudes[index].clamp(0.0, 1.0);
       final eased = Curves.easeOutCubic.transform(amplitude);
-      final barHeight = math.max(minBarHeight, eased * size.height);
+      final barHeight = math.max(minBarHeight, eased * maxHeight);
       final progressThreshold = (index + 0.5) / barCount;
 
       final paint = progressThreshold <= progressRatio
@@ -236,6 +253,10 @@ class _WaveformPainter extends CustomPainter {
           : progressThreshold <= bufferedRatio
               ? bufferedPaint
               : trackPaint;
+
+      if (x + barWidth > size.width) {
+        break;
+      }
 
       final rect = RRect.fromLTRBR(
         x,
@@ -250,9 +271,6 @@ class _WaveformPainter extends CustomPainter {
       }
       canvas.drawRRect(rect, paint);
       x += barWidth + spacing;
-      if (x > size.width) {
-        break;
-      }
     }
   }
 
