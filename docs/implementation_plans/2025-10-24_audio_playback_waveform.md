@@ -56,7 +56,7 @@
   - Replace `AudioProgressBar` with `AudioWaveformScrubber` when status is `ready`.
   - Determine the number of visible bars directly from the available layout width (compact vs.
     standard breakpoints) so narrow cards render fewer, wider bars while wide layouts show more
-    detail. Aim for a fixed bar width and gap, and calculate the exact number of buckets 
+    detail. Aim for a fixed bar width and gap, and calculate the exact number of buckets
     required to meet that goal.
   - Overlay progress/buffer shading atop bars, maintain existing seek semantics (drag/tap →
     `cubit.seek`).

@@ -279,8 +279,7 @@ class AudioWaveformService {
   }
 
   String _sanitizeTempId(String rawId) {
-    final sanitized =
-        rawId.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_').trim();
+    final sanitized = rawId.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_').trim();
     final safe = sanitized.isEmpty ? 'audio' : sanitized;
     if (safe.length <= _maxTempFileIdLength) {
       return safe;
@@ -381,9 +380,7 @@ class AudioWaveformService {
         sumSquares += value * value;
       }
       final rms = math.sqrt(sumSquares / span).clamp(0.0, 1.0);
-      final weightSum =
-          (_peakWeight + _rmsWeight).clamp(0.0001, double.infinity);
-      final blended = ((peak * _peakWeight) + (rms * _rmsWeight)) / weightSum;
+      final blended = (peak * _peakWeight) + (rms * _rmsWeight);
       return blended.clamp(0.0, 1.0);
     });
 
