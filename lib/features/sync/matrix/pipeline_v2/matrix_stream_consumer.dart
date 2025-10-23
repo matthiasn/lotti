@@ -76,6 +76,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required SyncReadMarkerService readMarkerService,
     required Directory documentsDirectory,
     AttachmentIndex? attachmentIndex,
+    MetricsCounters? metricsCounters,
     bool collectMetrics = false,
     Duration flushInterval = const Duration(milliseconds: 150),
     int maxBatch = 200,
@@ -105,6 +106,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _documentsDirectory = documentsDirectory,
         _attachmentIndex = attachmentIndex,
         _collectMetrics = collectMetrics,
+        _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics),
         _flushInterval = flushInterval,
         _maxBatch = maxBatch,
         _markerDebounce = markerDebounce,
@@ -127,12 +129,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       failureThreshold: _circuitFailureThreshold,
       cooldown: _circuitCooldown,
     );
-    _metrics = MetricsCounters(
-      collect: _collectMetrics,
-    );
-    _eventProcessor.cachePurgeListener = () {
-      _metrics.incStaleAttachmentPurges();
-    };
+    _eventProcessor.cachePurgeListener = _metrics.incStaleAttachmentPurges;
     _readMarkerManager = ReadMarkerManager(
       debounce: _markerDebounce,
       onFlush: (Room room, String id) => _readMarkerService.updateReadMarker(
@@ -197,7 +194,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final Duration _markerDebounce;
   // Catch-up window is handled by strategy with sensible defaults.
 
-  late final MetricsCounters _metrics;
+  final MetricsCounters _metrics;
   // Descriptor-focused catch-up helper (manages pending jsonPaths)
   DescriptorCatchUpManager? _descriptorCatchUp;
   DateTime? _lastAttachmentOnlyRescanAt;

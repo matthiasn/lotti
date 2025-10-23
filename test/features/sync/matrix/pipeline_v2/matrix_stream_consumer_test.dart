@@ -12,6 +12,7 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
+import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_counters.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -51,6 +52,15 @@ class _FakeTimeline extends Fake implements Timeline {}
 
 class _FakeEvent extends Fake implements Event {}
 
+class ThrowingMetricsCounters extends MetricsCounters {
+  ThrowingMetricsCounters() : super(collect: true);
+
+  @override
+  void incDbIgnoredByVectorClock() {
+    throw StateError('metrics failure');
+  }
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -60,6 +70,50 @@ void main() {
     registerFallbackValue(_FakeTimeline());
     registerFallbackValue(_FakeEvent());
   });
+
+  ({MatrixStreamConsumer consumer, MockLoggingService logger}) buildConsumer({
+    MetricsCounters? metrics,
+  }) {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+
+    when(() => processor.cachePurgeListener = any()).thenAnswer((_) => null);
+    when(
+      () => logger.captureEvent(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
+    when(
+      () => logger.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) {});
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+      collectMetrics: true,
+      metricsCounters: metrics,
+    );
+
+    return (consumer: consumer, logger: logger);
+  }
 
   test('attachment observe increments prefetch counter', () async {
     final session = MockMatrixSessionManager();
@@ -5892,6 +5946,145 @@ void main() {
       final m = consumer.metricsSnapshot();
       // Should use 200 for audit tail when offline < 12h
       expect(m['lastLookBehindTail'], 200);
+    });
+  });
+
+  group('reportDbApplyDiagnostics skip reasons -', () {
+    test('handles overwritePrevented skip reason', () {
+      final consumer = buildConsumer().consumer;
+
+      consumer.reportDbApplyDiagnostics(
+        SyncApplyDiagnostics(
+          eventId: 'skip-overwrite',
+          payloadType: 'journalEntity',
+          entityId: '1',
+          vectorClock: null,
+          conflictStatus: 'vectorClock.equal',
+          applied: false,
+          skipReason: JournalUpdateSkipReason.overwritePrevented,
+        ),
+      );
+
+      final snapshot = consumer.metricsSnapshot();
+      expect(snapshot['dbIgnoredByVectorClock'], 1);
+      expect(snapshot['dbMissingBase'], 0);
+      expect(snapshot['droppedByType.journalEntity'], 1);
+      final diag = consumer.diagnosticsStrings();
+      expect(
+        diag['lastIgnored.1'],
+        'skip-overwrite:overwrite_prevented',
+      );
+    });
+
+    test('handles null skip reason fallback', () {
+      final consumer = buildConsumer().consumer;
+
+      consumer.reportDbApplyDiagnostics(
+        SyncApplyDiagnostics(
+          eventId: 'skip-null',
+          payloadType: 'journalEntity',
+          entityId: '1',
+          vectorClock: null,
+          conflictStatus: 'vectorClock.equal',
+          applied: false,
+          skipReason: null,
+        ),
+      );
+
+      final diag = consumer.diagnosticsStrings();
+      expect(diag['lastIgnored.1'], 'skip-null:equal');
+      final snapshot = consumer.metricsSnapshot();
+      expect(snapshot['dbIgnoredByVectorClock'], 1);
+    });
+
+    test('does not add missingBase for olderOrEqual', () {
+      final consumer = buildConsumer().consumer;
+
+      consumer.reportDbApplyDiagnostics(
+        SyncApplyDiagnostics(
+          eventId: 'skip-older',
+          payloadType: 'journalEntity',
+          entityId: '1',
+          vectorClock: null,
+          conflictStatus: 'vectorClock.a_gt_b',
+          applied: false,
+          skipReason: JournalUpdateSkipReason.olderOrEqual,
+        ),
+      );
+
+      final snapshot = consumer.metricsSnapshot();
+      expect(snapshot['dbMissingBase'], 0);
+      expect(snapshot['dbIgnoredByVectorClock'], 1);
+      final diag = consumer.diagnosticsStrings();
+      expect(diag['lastIgnored.1'], 'skip-older:older');
+    });
+  });
+
+  group('Metrics exception resilience -', () {
+    test('continues when metrics throw during reportDbApplyDiagnostics', () {
+      final consumer =
+          buildConsumer(metrics: ThrowingMetricsCounters()).consumer;
+
+      expect(
+        () => consumer.reportDbApplyDiagnostics(
+          SyncApplyDiagnostics(
+            eventId: 'metrics-throw',
+            payloadType: 'journalEntity',
+            entityId: '1',
+            vectorClock: null,
+            conflictStatus: 'vectorClock.equal',
+            applied: false,
+            skipReason: JournalUpdateSkipReason.olderOrEqual,
+          ),
+        ),
+        returnsNormally,
+      );
+    });
+  });
+
+  group('Label generation -', () {
+    test('labelForSkip returns correct label for each skip reason', () {
+      final consumer = buildConsumer().consumer;
+
+      final cases = <(JournalUpdateSkipReason, String, String)>[
+        (JournalUpdateSkipReason.olderOrEqual, 'vectorClock.a_gt_b', 'older'),
+        (
+          JournalUpdateSkipReason.conflict,
+          'vectorClock.concurrent',
+          'conflict'
+        ),
+        (
+          JournalUpdateSkipReason.overwritePrevented,
+          'vectorClock.equal',
+          'overwrite_prevented'
+        ),
+        (
+          JournalUpdateSkipReason.missingBase,
+          'vectorClock.equal',
+          'missing_base'
+        ),
+      ];
+
+      for (final entry in cases) {
+        consumer.reportDbApplyDiagnostics(
+          SyncApplyDiagnostics(
+            eventId: 'event-${entry.$1.name}',
+            payloadType: 'journalEntity',
+            entityId: '1',
+            vectorClock: null,
+            conflictStatus: entry.$2,
+            applied: false,
+            skipReason: entry.$1,
+          ),
+        );
+      }
+
+      final diag = consumer.diagnosticsStrings();
+      expect(diag['lastIgnored.1'], 'event-olderOrEqual:older');
+      expect(diag['lastIgnored.2'], 'event-conflict:conflict');
+      expect(diag['lastIgnored.3'],
+          'event-overwritePrevented:overwrite_prevented');
+      expect(diag['lastIgnored.4'], 'event-missingBase:missing_base');
     });
   });
 }

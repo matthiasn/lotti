@@ -64,6 +64,7 @@ class TestableOutboxService extends OutboxService {
     super.processor,
     super.activityGate,
     super.ownsActivityGate,
+    super.saveJsonHandler,
   });
 
   int enqueueCalls = 0;
@@ -289,6 +290,118 @@ void main() {
       stored['meta']['vectorClock'],
       equals({'hostA': 425}),
     );
+  });
+
+  test('enqueueMessage logs missing entity when DB lookup returns null',
+      () async {
+    const id = 'missing-entity';
+    final entity = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        vectorClock: const VectorClock({'host': 1}),
+      ),
+      entryText: const EntryText(plainText: 'draft'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+    when(() => journalDb.journalEntityById(id)).thenAnswer((_) async => null);
+
+    final message = SyncMessage.journalEntity(
+      id: id,
+      jsonPath: jsonPath,
+      vectorClock: entity.meta.vectorClock,
+      status: SyncEntryStatus.initial,
+    );
+
+    await service.enqueueMessage(message);
+
+    verify(
+      () => loggingService.captureEvent(
+        contains('enqueueMessage.missingEntity id=$id'),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'enqueueMessage',
+      ),
+    ).called(1);
+    verify(() => syncDatabase.addOutboxItem(any())).called(1);
+  });
+
+  test('continues when saveJson throws during refresh', () async {
+    const id = 'save-fails';
+    final entity = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        vectorClock: const VectorClock({'host': 1}),
+      ),
+      entryText: const EntryText(plainText: 'draft'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+    when(() => journalDb.journalEntityById(id)).thenAnswer((_) async => entity);
+
+    final failingGate = MockUserActivityGate();
+    when(failingGate.waitUntilIdle).thenAnswer((_) async {});
+    when(failingGate.dispose).thenAnswer((_) async {});
+
+    final failingService = TestableOutboxService(
+      syncDatabase: syncDatabase,
+      loggingService: loggingService,
+      vectorClockService: vectorClockService,
+      journalDb: journalDb,
+      documentsDirectory: documentsDirectory,
+      userActivityService: userActivityService,
+      repository: repository,
+      messageSender: messageSender,
+      processor: processor,
+      activityGate: failingGate,
+      ownsActivityGate: false,
+      saveJsonHandler: (_, __) => Future.error(Exception('disk full')),
+    );
+
+    final message = SyncMessage.journalEntity(
+      id: id,
+      jsonPath: jsonPath,
+      vectorClock: entity.meta.vectorClock,
+      status: SyncEntryStatus.initial,
+    );
+
+    await failingService.enqueueMessage(message);
+
+    verify(
+      () => loggingService.captureException(
+        any<Object>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'enqueueMessage.refreshJson',
+        stackTrace: any<StackTrace?>(
+          named: 'stackTrace',
+        ),
+      ),
+    ).called(1);
+    verify(() => syncDatabase.addOutboxItem(any())).called(1);
+    await failingService.dispose();
+  });
+
+  test('non-journal messages skip JSON refresh lookup', () async {
+    clearInteractions(journalDb);
+
+    await service.enqueueMessage(
+      const SyncMessage.aiConfigDelete(id: 'cfg'),
+    );
+
+    verifyNever(() => journalDb.journalEntityById(any()));
   });
 
   test('enqueueMessage logs SyncAiConfig', () async {

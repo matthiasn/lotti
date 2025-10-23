@@ -564,6 +564,55 @@ void main() {
         .called(1);
   });
 
+  test('EntryLink diag reports applied when rows > 0', () async {
+    final link = EntryLink.basic(
+      id: 'diag-link',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      vectorClock: null,
+    );
+    final message = SyncMessage.entryLink(
+      entryLink: link,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    SyncApplyDiagnostics? diag;
+    processor.applyObserver = (value) => diag = value;
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    expect(diag, isNotNull);
+    expect(diag!.payloadType, 'entryLink');
+    expect(diag!.applied, isTrue);
+    expect(diag!.entityId, '${link.fromId}->${link.toId}');
+  });
+
+  test('EntryLink observer exceptions are swallowed', () async {
+    final link = EntryLink.basic(
+      id: 'diag-link-throw',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      vectorClock: null,
+    );
+    final message = SyncMessage.entryLink(
+      entryLink: link,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    processor.applyObserver = (_) {
+      throw StateError('observer failure');
+    };
+
+    await processor.process(event: event, journalDb: journalDb);
+    verify(() => journalDb.upsertEntryLink(link)).called(1);
+  });
+
   test('processes entity definitions', () async {
     final message = SyncMessage.entityDefinition(
       entityDefinition: measurableWater,
@@ -588,6 +637,22 @@ void main() {
     verify(() => journalDb.upsertTagEntity(testTag1)).called(1);
   });
 
+  test('SyncTagEntity does not emit diagnostics', () async {
+    final message = SyncMessage.tagEntity(
+      tagEntity: testTag1,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    var observerCalled = false;
+    processor.applyObserver = (_) => observerCalled = true;
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    expect(observerCalled, isFalse);
+    verify(() => journalDb.upsertTagEntity(testTag1)).called(1);
+  });
+
   test('processes ai config messages', () async {
     final message = SyncMessage.aiConfig(
       aiConfig: fallbackAiConfig,
@@ -597,6 +662,27 @@ void main() {
 
     await processor.process(event: event, journalDb: journalDb);
 
+    verify(
+      () => aiConfigRepository.saveConfig(
+        fallbackAiConfig,
+        fromSync: true,
+      ),
+    ).called(1);
+  });
+
+  test('SyncAiConfig payload does not emit diagnostics', () async {
+    final message = SyncMessage.aiConfig(
+      aiConfig: fallbackAiConfig,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    var observerCalled = false;
+    processor.applyObserver = (_) => observerCalled = true;
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    expect(observerCalled, isFalse);
     verify(
       () => aiConfigRepository.saveConfig(
         fallbackAiConfig,
@@ -1320,6 +1406,597 @@ void main() {
       ).called(1);
     });
 
+    group('SmartLoader circuit breaker cleanup -', () {
+      test('clears failure count on success after prior stale retries',
+          () async {
+        const relJson = '/text_entries/2024-01-01/reset.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-reset');
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.content).thenReturn({'relativePath': relJson});
+        final room = MockMatrixRoom();
+        final client = MockMatrixClient();
+        final database = MockMatrixDatabase();
+        when(() => ev.room).thenReturn(room);
+        when(() => room.client).thenReturn(client);
+        when(() => client.database).thenReturn(database);
+        final descriptorUri = Uri.parse('mxc://server/reset');
+        when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
+        when(() => database.deleteFile(descriptorUri))
+            .thenAnswer((_) async => true);
+        when(() => loggingService.captureEvent(
+              any<Object>(),
+              domain: any(named: 'domain'),
+              subDomain: any(named: 'subDomain'),
+            )).thenAnswer((_) {});
+
+        final staleOne = JournalEntry(
+          meta: Metadata(
+            id: 'reset',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            vectorClock: const VectorClock({'n': 1}),
+          ),
+          entryText: const EntryText(plainText: 'stale-1'),
+        );
+        final freshOne = staleOne.copyWith(
+          entryText: const EntryText(plainText: 'fresh-1'),
+          meta: staleOne.meta.copyWith(
+            vectorClock: const VectorClock({'n': 2}),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final staleTwo = staleOne.copyWith(
+          entryText: const EntryText(plainText: 'stale-2'),
+          meta: staleOne.meta.copyWith(
+            vectorClock: const VectorClock({'n': 2}),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final freshTwo = staleOne.copyWith(
+          entryText: const EntryText(plainText: 'fresh-2'),
+          meta: staleOne.meta.copyWith(
+            vectorClock: const VectorClock({'n': 3}),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        var downloads = 0;
+        when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+          downloads++;
+          final entry = switch (downloads) {
+            1 => staleOne,
+            2 => freshOne,
+            3 => staleTwo,
+            _ => freshTwo,
+          };
+          return MatrixFile(
+            bytes: Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits),
+            name: 'entry.json',
+          );
+        });
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+        var purges = 0;
+        loader.onCachePurge = () => purges++;
+
+        final first = await loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'n': 2}),
+        );
+        expect(first.entryText?.plainText, 'fresh-1');
+
+        final second = await loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'n': 3}),
+        );
+        expect(second.entryText?.plainText, 'fresh-2');
+
+        expect(downloads, 4);
+        expect(purges, 2);
+        verify(() => database.deleteFile(descriptorUri)).called(2);
+      });
+
+      test('maintains separate failure counts by jsonPath', () async {
+        const relJsonA = '/text_entries/2024-01-01/a.text.json';
+        const relJsonB = '/text_entries/2024-01-01/b.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        final evA = MockEvent();
+        final evB = MockEvent();
+        when(() => evA.eventId).thenReturn('evt-a');
+        when(() => evB.eventId).thenReturn('evt-b');
+        when(() => evA.attachmentMimetype).thenReturn('application/json');
+        when(() => evB.attachmentMimetype).thenReturn('application/json');
+        when(() => evA.content).thenReturn({'relativePath': relJsonA});
+        when(() => evB.content).thenReturn({'relativePath': relJsonB});
+        final roomA = MockMatrixRoom();
+        final roomB = MockMatrixRoom();
+        final clientA = MockMatrixClient();
+        final clientB = MockMatrixClient();
+        final database = MockMatrixDatabase();
+        when(() => evA.room).thenReturn(roomA);
+        when(() => roomA.client).thenReturn(clientA);
+        when(() => clientA.database).thenReturn(database);
+        when(() => evB.room).thenReturn(roomB);
+        when(() => roomB.client).thenReturn(clientB);
+        when(() => clientB.database).thenReturn(database);
+        final uriA = Uri.parse('mxc://server/a');
+        final uriB = Uri.parse('mxc://server/b');
+        when(evA.attachmentOrThumbnailMxcUrl).thenReturn(uriA);
+        when(evB.attachmentOrThumbnailMxcUrl).thenReturn(uriB);
+        when(() => database.deleteFile(uriA)).thenAnswer((_) async => true);
+        when(() => database.deleteFile(uriB)).thenAnswer((_) async => true);
+        when(() => loggingService.captureEvent(
+              any<Object>(),
+              domain: any(named: 'domain'),
+              subDomain: any(named: 'subDomain'),
+            )).thenAnswer((_) {});
+
+        JournalEntry buildEntry(String id, int clock, String text) {
+          return JournalEntry(
+            meta: Metadata(
+              id: id,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              vectorClock: VectorClock({'n': clock}),
+            ),
+            entryText: EntryText(plainText: text),
+          );
+        }
+
+        var downloadsA = 0;
+        when(evA.downloadAndDecryptAttachment).thenAnswer((_) async {
+          downloadsA++;
+          final entry = downloadsA == 1
+              ? buildEntry('a', 1, 'stale-a')
+              : buildEntry('a', 2, 'fresh-a');
+          return MatrixFile(
+            bytes: Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits),
+            name: 'a.json',
+          );
+        });
+
+        var downloadsB = 0;
+        when(evB.downloadAndDecryptAttachment).thenAnswer((_) async {
+          downloadsB++;
+          final entry = downloadsB == 1
+              ? buildEntry('b', 1, 'stale-b')
+              : buildEntry('b', 2, 'fresh-b');
+          return MatrixFile(
+            bytes: Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits),
+            name: 'b.json',
+          );
+        });
+
+        index
+          ..record(evA)
+          ..record(evB);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+        var purges = 0;
+        loader.onCachePurge = () => purges++;
+
+        final loadedA = await loader.load(
+          jsonPath: relJsonA,
+          incomingVectorClock: const VectorClock({'n': 2}),
+        );
+        final loadedB = await loader.load(
+          jsonPath: relJsonB,
+          incomingVectorClock: const VectorClock({'n': 2}),
+        );
+
+        expect(loadedA.entryText?.plainText, 'fresh-a');
+        expect(loadedB.entryText?.plainText, 'fresh-b');
+        expect(purges, 2);
+        verify(() => database.deleteFile(uriA)).called(1);
+        verify(() => database.deleteFile(uriB)).called(1);
+      });
+    });
+
+    group('SmartLoader cache purge edge cases -', () {
+      test('onCachePurge not invoked when descriptor lacks MXC', () async {
+        const relJson = '/text_entries/2024-01-01/no_mxc.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-no-mxc');
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.content).thenReturn({'relativePath': relJson});
+        final room = MockMatrixRoom();
+        final client = MockMatrixClient();
+        final database = MockMatrixDatabase();
+        when(() => ev.room).thenReturn(room);
+        when(() => room.client).thenReturn(client);
+        when(() => client.database).thenReturn(database);
+        when(ev.attachmentOrThumbnailMxcUrl).thenReturn(null);
+        when(() => loggingService.captureEvent(
+              any<Object>(),
+              domain: any(named: 'domain'),
+              subDomain: any(named: 'subDomain'),
+            )).thenAnswer((_) {});
+
+        final stale = JournalEntry(
+          meta: Metadata(
+            id: 'no-mxc',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            vectorClock: const VectorClock({'n': 1}),
+          ),
+          entryText: const EntryText(plainText: 'stale'),
+        );
+        final fresh = stale.copyWith(
+          entryText: const EntryText(plainText: 'fresh'),
+          meta: stale.meta.copyWith(
+            vectorClock: const VectorClock({'n': 2}),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        var downloads = 0;
+        when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+          downloads++;
+          final entry = downloads == 1 ? stale : fresh;
+          return MatrixFile(
+            bytes: Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits),
+            name: 'entry.json',
+          );
+        });
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+        var purges = 0;
+        loader.onCachePurge = () => purges++;
+
+        final loaded = await loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'n': 2}),
+        );
+
+        expect(loaded.entryText?.plainText, 'fresh');
+        expect(purges, 0);
+        verifyNever(() => database.deleteFile(any<Uri>()));
+      });
+
+      test('onCachePurge not invoked when deleteFile throws', () async {
+        const relJson = '/text_entries/2024-01-01/delete_error.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-delete-error');
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.content).thenReturn({'relativePath': relJson});
+        final room = MockMatrixRoom();
+        final client = MockMatrixClient();
+        final database = MockMatrixDatabase();
+        when(() => ev.room).thenReturn(room);
+        when(() => room.client).thenReturn(client);
+        when(() => client.database).thenReturn(database);
+        final descriptorUri = Uri.parse('mxc://server/delete-error');
+        when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
+        when(() => database.deleteFile(descriptorUri))
+            .thenThrow(Exception('db failure'));
+        when(() => loggingService.captureEvent(
+              any<Object>(),
+              domain: any(named: 'domain'),
+              subDomain: any(named: 'subDomain'),
+            )).thenAnswer((_) {});
+        when(() => loggingService.captureException(
+              any<Object>(),
+              domain: any(named: 'domain'),
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            )).thenAnswer((_) {});
+
+        final stale = JournalEntry(
+          meta: Metadata(
+            id: 'delete-error',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            vectorClock: const VectorClock({'n': 1}),
+          ),
+          entryText: const EntryText(plainText: 'stale'),
+        );
+        final fresh = stale.copyWith(
+          entryText: const EntryText(plainText: 'fresh'),
+          meta: stale.meta.copyWith(
+            vectorClock: const VectorClock({'n': 2}),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        var downloads = 0;
+        when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+          downloads++;
+          final entry = downloads == 1 ? stale : fresh;
+          return MatrixFile(
+            bytes: Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits),
+            name: 'entry.json',
+          );
+        });
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+        var purges = 0;
+        loader.onCachePurge = () => purges++;
+
+        final loaded = await loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'n': 2}),
+        );
+
+        expect(loaded.entryText?.plainText, 'fresh');
+        expect(purges, 0);
+        verify(() => database.deleteFile(descriptorUri)).called(1);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.purge',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('SmartLoader vector clock edge cases -', () {
+      test('succeeds when incoming VC is null but descriptor VC is present',
+          () async {
+        const relJson = '/text_entries/2024-01-02/vc_present.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-vc-present');
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.content).thenReturn({'relativePath': relJson});
+        final entry = JournalEntry(
+          meta: Metadata(
+            id: 'vc-present',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            vectorClock: const VectorClock({'n': 5}),
+          ),
+          entryText: const EntryText(plainText: 'descriptor with vc'),
+        );
+        when(ev.downloadAndDecryptAttachment)
+            .thenAnswer((_) async => MatrixFile(
+                  bytes:
+                      Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits),
+                  name: 'entry.json',
+                ));
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+
+        final loaded = await loader.load(jsonPath: relJson);
+        expect(loaded.meta.vectorClock, const VectorClock({'n': 5}));
+        expect(loaded.entryText?.plainText, 'descriptor with vc');
+      });
+
+      test('throws when descriptor lacks VC but incoming VC provided',
+          () async {
+        const relJson = '/text_entries/2024-01-03/missing_vc.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-missing-vc');
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.content).thenReturn({'relativePath': relJson});
+        final entry = JournalEntry(
+          meta: Metadata(
+            id: 'missing-vc',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          entryText: const EntryText(plainText: 'descriptor missing vc'),
+        );
+        when(ev.downloadAndDecryptAttachment)
+            .thenAnswer((_) async => MatrixFile(
+                  bytes:
+                      Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits),
+                  name: 'entry.json',
+                ));
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+
+        await expectLater(
+          () => loader.load(
+            jsonPath: relJson,
+            incomingVectorClock: const VectorClock({'n': 1}),
+          ),
+          throwsA(
+            isA<FileSystemException>().having(
+              (error) => error.message,
+              'message',
+              contains('missing attachment vector clock'),
+            ),
+          ),
+        );
+      });
+
+      test('succeeds when both incoming and descriptor VCs are null', () async {
+        const relJson = '/text_entries/2024-01-04/both_null.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-both-null');
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.content).thenReturn({'relativePath': relJson});
+        final entry = JournalEntry(
+          meta: Metadata(
+            id: 'both-null',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          entryText: const EntryText(plainText: 'both null'),
+        );
+        when(ev.downloadAndDecryptAttachment)
+            .thenAnswer((_) async => MatrixFile(
+                  bytes:
+                      Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits),
+                  name: 'entry.json',
+                ));
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+
+        final loaded = await loader.load(jsonPath: relJson);
+        expect(loaded.meta.vectorClock, isNull);
+        expect(loaded.entryText?.plainText, 'both null');
+      });
+    });
+
+    group('SmartLoader error handling -', () {
+      test('throws when refreshed descriptor returns empty bytes', () async {
+        const relJson = '/text_entries/2024-01-05/empty_second.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-empty-second');
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.content).thenReturn({'relativePath': relJson});
+        final room = MockMatrixRoom();
+        final client = MockMatrixClient();
+        final database = MockMatrixDatabase();
+        when(() => ev.room).thenReturn(room);
+        when(() => room.client).thenReturn(client);
+        when(() => client.database).thenReturn(database);
+        final descriptorUri = Uri.parse('mxc://server/empty-second');
+        when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
+        when(() => database.deleteFile(descriptorUri))
+            .thenAnswer((_) async => true);
+
+        final stale = JournalEntry(
+          meta: Metadata(
+            id: 'empty-second',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            vectorClock: const VectorClock({'n': 1}),
+          ),
+          entryText: const EntryText(plainText: 'stale'),
+        );
+
+        var calls = 0;
+        when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+          calls++;
+          if (calls == 1) {
+            return MatrixFile(
+              bytes: Uint8List.fromList(jsonEncode(stale.toJson()).codeUnits),
+              name: 'entry.json',
+            );
+          }
+          return MatrixFile(bytes: Uint8List(0), name: 'entry.json');
+        });
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+
+        await expectLater(
+          () => loader.load(
+            jsonPath: relJson,
+            incomingVectorClock: const VectorClock({'n': 2}),
+          ),
+          throwsA(
+            isA<FileSystemException>().having(
+              (error) => error.message,
+              'message',
+              contains('empty attachment bytes'),
+            ),
+          ),
+        );
+        verify(() => database.deleteFile(descriptorUri)).called(1);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetchJson',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test('logs and rethrows when descriptor JSON is invalid', () async {
+        const relJson = '/text_entries/2024-01-06/invalid_json.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-invalid-json');
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.content).thenReturn({'relativePath': relJson});
+        final room = MockMatrixRoom();
+        final client = MockMatrixClient();
+        final database = MockMatrixDatabase();
+        when(() => ev.room).thenReturn(room);
+        when(() => room.client).thenReturn(client);
+        when(() => client.database).thenReturn(database);
+        when(ev.attachmentOrThumbnailMxcUrl)
+            .thenReturn(Uri.parse('mxc://server/invalid-json'));
+        when(() => database.deleteFile(any())).thenAnswer((_) async => true);
+
+        when(ev.downloadAndDecryptAttachment).thenAnswer(
+          (_) async => MatrixFile(
+            bytes: Uint8List.fromList('{not-json'.codeUnits),
+            name: 'entry.json',
+          ),
+        );
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+
+        await expectLater(
+          () => loader.load(
+            jsonPath: relJson,
+            incomingVectorClock: const VectorClock({'n': 1}),
+          ),
+          throwsA(isA<FormatException>()),
+        );
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetchJson',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
     test('no-VC path: does not fetch when file exists and non-empty', () async {
       const relJson = '/text_entries/2024-01-01/present.text.json';
       final entity = JournalEntry(
@@ -1359,6 +2036,21 @@ void main() {
               journalEntry: (j) => j.entryText?.plainText, orElse: () => null),
           'present');
       expect(downloads, 0);
+    });
+  });
+
+  group('SyncEventProcessor listener -', () {
+    test('cachePurgeListener with non-smart loader does not crash', () {
+      final processorWithFileLoader = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        journalEntityLoader: const FileSyncJournalEntityLoader(),
+      );
+
+      expect(() {
+        processorWithFileLoader.cachePurgeListener = () {};
+      }, returnsNormally);
     });
   });
 

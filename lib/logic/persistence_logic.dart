@@ -454,7 +454,7 @@ class PersistenceLogic {
 
       final saved = res.applied;
 
-      if (addTags) {
+      if (addTags && saved) {
         await _journalDb.addTagged(withTags);
       }
 
@@ -743,7 +743,7 @@ class PersistenceLogic {
         removePrevious: true,
       );
 
-      if (enqueueSync) {
+      if (enqueueSync && applied) {
         await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
             id: journalEntity.id,

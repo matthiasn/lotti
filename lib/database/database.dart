@@ -193,9 +193,23 @@ class JournalDb extends _$JournalDb {
       skipReason = JournalUpdateSkipReason.overwritePrevented;
     } else if (existingDbEntity != null) {
       final existing = fromDbEntity(existingDbEntity);
-      final status = await detectConflict(existing, updated);
+      VclockStatus? status;
+      try {
+        status = await detectConflict(existing, updated);
+      } catch (error, stackTrace) {
+        getIt<LoggingService>().captureException(
+          error,
+          domain: 'JOURNAL_DB',
+          subDomain: 'detectConflict',
+          stackTrace: stackTrace,
+        );
+        skipReason = JournalUpdateSkipReason.conflict;
+      }
 
-      if (status == VclockStatus.b_gt_a || overrideComparison) {
+      final canApply = status == VclockStatus.b_gt_a ||
+          (overrideComparison && status != null);
+
+      if (canApply) {
         await upsertJournalDbEntity(dbEntity);
         applied = true;
         final existingConflict = await conflictById(dbEntity.id);
@@ -203,7 +217,7 @@ class JournalDb extends _$JournalDb {
         if (existingConflict != null) {
           await resolveConflict(existingConflict);
         }
-      } else {
+      } else if (status != null) {
         getIt<LoggingService>().captureEvent(
           EnumToString.convertToString(status),
           domain: 'JOURNAL_DB',
@@ -212,6 +226,8 @@ class JournalDb extends _$JournalDb {
         skipReason = status == VclockStatus.concurrent
             ? JournalUpdateSkipReason.conflict
             : JournalUpdateSkipReason.olderOrEqual;
+      } else {
+        skipReason ??= JournalUpdateSkipReason.conflict;
       }
     } else {
       await upsertJournalDbEntity(dbEntity);

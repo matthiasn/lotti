@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart' show UniqueKey;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -14,9 +15,12 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
+import '../test_data/test_data.dart';
 
 // Add missing mock classes
 class MockLoggingService extends Mock implements LoggingService {}
@@ -98,6 +102,25 @@ final expectedFlags = <ConfigFlag>{
 };
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(const Stream<Set<String>>.empty());
+    registerFallbackValue(fallbackJournalEntity);
+    registerFallbackValue(fallbackTagEntity);
+    registerFallbackValue(EntryLink.basic(
+      id: 'link-id',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      vectorClock: null,
+    ));
+    registerFallbackValue(testTag1);
+    registerFallbackValue(measurableWater);
+    registerFallbackValue(fallbackAiConfig);
+    registerFallbackValue(Uri.parse('mxc://placeholder'));
+  });
+
   JournalDb? db;
   final mockUpdateNotifications = MockUpdateNotifications();
   final mockLoggingService = MockLoggingService();
@@ -128,6 +151,122 @@ void main() {
 
       db = JournalDb(inMemoryDatabase: true);
       await initConfigFlags(db!, inMemoryDatabase: true);
+    });
+
+    group('JSON persistence -', () {
+      test('writes JSON even when update skipped by vector clock', () async {
+        const freshClock = VectorClock(<String, int>{'device1': 2});
+        const staleClock = VectorClock(<String, int>{'device1': 1});
+        final freshEntry = createJournalEntryWithVclock(freshClock).copyWith(
+          entryText: const EntryText(plainText: 'fresh text'),
+        );
+        await db!.updateJournalEntity(freshEntry);
+
+        final staleEntry = createJournalEntryWithVclock(
+          staleClock,
+          id: freshEntry.meta.id,
+        ).copyWith(
+          entryText: const EntryText(plainText: 'stale text'),
+        );
+
+        final docDir = getIt<Directory>();
+        final savedPath = entityPath(staleEntry, docDir);
+        final file = File(savedPath);
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+
+        final result = await db!.updateJournalEntity(staleEntry);
+        expect(result.applied, isFalse);
+        expect(result.skipReason, JournalUpdateSkipReason.olderOrEqual);
+
+        expect(file.existsSync(), isTrue);
+        final savedEntity = JournalEntity.fromJson(
+          jsonDecode(await file.readAsString()) as Map<String, dynamic>,
+        );
+        expect(savedEntity.entryText?.plainText, 'stale text');
+        expect(savedEntity.meta.vectorClock, staleClock);
+      });
+
+      test('writes JSON when update prevented by overwrite=false', () async {
+        final entry = createJournalEntry('original text');
+        await db!.updateJournalEntity(entry);
+
+        final updated = entry.copyWith(
+          entryText: const EntryText(plainText: 'overwrite prevented'),
+        );
+        final docDir = getIt<Directory>();
+        final savedPath = entityPath(updated, docDir);
+        final file = File(savedPath);
+
+        final result = await db!.updateJournalEntity(
+          updated,
+          overwrite: false,
+        );
+
+        expect(result.applied, isFalse);
+        expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
+        expect(file.existsSync(), isTrue);
+        final savedEntity = JournalEntity.fromJson(
+          jsonDecode(await file.readAsString()) as Map<String, dynamic>,
+        );
+        expect(savedEntity.entryText?.plainText, 'overwrite prevented');
+      });
+    });
+
+    group('Edge cases -', () {
+      test('handles null vector clock on incoming entity', () async {
+        const existingClock = VectorClock(<String, int>{'device1': 1});
+        final existing = createJournalEntryWithVclock(existingClock);
+        await db!.updateJournalEntity(existing);
+
+        final update = existing.copyWith(
+          entryText: const EntryText(plainText: 'null vector clock update'),
+          meta: existing.meta.copyWith(vectorClock: null),
+        );
+
+        final result = await db!.updateJournalEntity(update);
+
+        expect(result.applied, isTrue);
+        final stored = await db!.journalEntityById(existing.meta.id);
+        expect(stored, isNotNull);
+        expect(stored?.entryText?.plainText, 'null vector clock update');
+        expect(stored?.meta.vectorClock, isNull);
+      });
+
+      test('returns skipReason when detectConflict throws', () async {
+        final throwingDb = _DetectConflictThrowsJournalDb();
+        await initConfigFlags(throwingDb, inMemoryDatabase: true);
+
+        try {
+          const existingClock = VectorClock(<String, int>{'device1': 1});
+          const incomingClock = VectorClock(<String, int>{'device1': 2});
+          final existing = createJournalEntryWithVclock(existingClock);
+          await throwingDb.updateJournalEntity(existing);
+
+          throwingDb.shouldThrowOnDetectConflict = true;
+          final incoming = createJournalEntryWithVclock(
+            incomingClock,
+            id: existing.meta.id,
+          );
+
+          clearInteractions(mockLoggingService);
+          final result = await throwingDb.updateJournalEntity(incoming);
+
+          expect(result.applied, isFalse);
+          expect(result.skipReason, JournalUpdateSkipReason.conflict);
+          verify(
+            () => mockLoggingService.captureException(
+              any<Object>(),
+              domain: 'JOURNAL_DB',
+              subDomain: 'detectConflict',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        } finally {
+          await throwingDb.close();
+        }
+      });
     });
 
     tearDownAll(() async {
@@ -444,6 +583,67 @@ void main() {
         final nowA = await db?.journalEntityById(entryA.meta.id);
         expect(nowA?.meta.id, entryA.meta.id);
       });
+
+      test('resolves existing conflict when applying newer update', () async {
+        const staleClock = VectorClock(<String, int>{'device1': 1});
+        const freshClock = VectorClock(<String, int>{'device1': 2});
+
+        final existingEntry = createJournalEntryWithVclock(staleClock);
+        await db!.updateJournalEntity(existingEntry);
+
+        final conflict = Conflict(
+          id: existingEntry.meta.id,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          serialized: jsonEncode(existingEntry),
+          schemaVersion: db!.schemaVersion,
+          status: ConflictStatus.unresolved.index,
+        );
+        await db!.addConflict(conflict);
+
+        final updatedEntry = createJournalEntryWithVclock(
+          freshClock,
+          id: existingEntry.meta.id,
+        );
+        final result = await db!.updateJournalEntity(updatedEntry);
+
+        expect(result.applied, isTrue);
+        final resolved = await db!.conflictById(existingEntry.meta.id);
+        expect(resolved, isNotNull);
+        expect(resolved?.status, ConflictStatus.resolved.index);
+      });
+
+      test('does not resolve conflict when update is skipped', () async {
+        const freshClock = VectorClock(<String, int>{'device1': 2});
+        const staleClock = VectorClock(<String, int>{'device1': 1});
+
+        final appliedEntry = createJournalEntryWithVclock(freshClock);
+        await db!.updateJournalEntity(appliedEntry);
+
+        final conflict = Conflict(
+          id: appliedEntry.meta.id,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          serialized: jsonEncode(appliedEntry),
+          schemaVersion: db!.schemaVersion,
+          status: ConflictStatus.unresolved.index,
+        );
+        await db!.addConflict(conflict);
+
+        final skippedEntry = createJournalEntryWithVclock(
+          staleClock,
+          id: appliedEntry.meta.id,
+        );
+
+        final result = await db!.updateJournalEntity(skippedEntry);
+
+        expect(result.applied, isFalse);
+        expect(result.skipReason, JournalUpdateSkipReason.olderOrEqual);
+
+        final unresolved = await db!.conflictById(appliedEntry.meta.id);
+        expect(unresolved, isNotNull);
+        expect(unresolved?.status, ConflictStatus.unresolved.index);
+      });
     });
 
     test(
@@ -498,4 +698,23 @@ JournalEntity createJournalEntryWithVclock(
     ),
     entryText: const EntryText(plainText: 'Entry with vector clock'),
   );
+}
+
+class _DetectConflictThrowsJournalDb extends JournalDb {
+  _DetectConflictThrowsJournalDb()
+      : shouldThrowOnDetectConflict = false,
+        super(inMemoryDatabase: true);
+
+  bool shouldThrowOnDetectConflict;
+
+  @override
+  Future<VclockStatus> detectConflict(
+    JournalEntity existing,
+    JournalEntity updated,
+  ) {
+    if (shouldThrowOnDetectConflict) {
+      throw StateError('detectConflict failed');
+    }
+    return super.detectConflict(existing, updated);
+  }
 }
