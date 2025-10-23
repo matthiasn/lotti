@@ -97,19 +97,28 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final focusProvider = taskFocusControllerProvider(id: widget.taskId);
+
     // Listen for focus intent
     ref.listen<TaskFocusIntent?>(
-      taskFocusControllerProvider(id: widget.taskId),
+      focusProvider,
       (previous, next) {
         if (next != null) {
           _scrollToEntry(next.entryId, next.alignment);
           // Clear intent after consumption
-          ref
-              .read(taskFocusControllerProvider(id: widget.taskId).notifier)
-              .clearIntent();
+          ref.read(focusProvider.notifier).clearIntent();
         }
       },
     );
+
+    // Check for pre-existing intent on first build
+    final currentIntent = ref.read(focusProvider);
+    if (currentIntent != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToEntry(currentIntent.entryId, currentIntent.alignment);
+        ref.read(focusProvider.notifier).clearIntent();
+      });
+    }
 
     final provider = entryControllerProvider(id: widget.taskId);
     final task = ref.watch(provider).value?.entry;
