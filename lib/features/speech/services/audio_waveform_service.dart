@@ -327,7 +327,7 @@ class AudioWaveformService {
     try {
       cacheFile.parent.createSync(recursive: true);
       cacheFile.writeAsStringSync(jsonEncode(payload.toJson()));
-      await _pruneCacheIfNeeded();
+      _pruneCacheIfNeeded();
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
@@ -404,33 +404,37 @@ class AudioWaveformService {
     );
   }
 
-  Future<void> _pruneCacheIfNeeded() async {
+  void _pruneCacheIfNeeded() {
     try {
       if (!_cacheDirectory.existsSync()) {
         return;
       }
+
       final files = _cacheDirectory
           .listSync(recursive: true, followLinks: false)
           .whereType<File>()
-          .toList()
-        ..sort(
-            (a, b) => a.statSync().modified.compareTo(b.statSync().modified));
+          .toList();
 
       if (files.length <= _maxCacheEntries) {
         return;
       }
 
-      final toRemove = files.length - _maxCacheEntries;
+      final datedFiles = files
+          .map((file) => MapEntry(file, file.lastModifiedSync()))
+          .toList()
+        ..sort((a, b) => a.value.compareTo(b.value));
+
+      final toRemove = datedFiles.length - _maxCacheEntries;
       for (var i = 0; i < toRemove; i++) {
         try {
-          files[i].deleteSync();
+          datedFiles[i].key.deleteSync();
         } catch (_) {
           // Ignore cleanup failures.
         }
       }
       if (toRemove > 0) {
         _loggingService.captureEvent(
-          'Pruned $toRemove waveform cache files (now ${files.length - toRemove} entries)',
+          'Pruned $toRemove waveform cache files (now ${datedFiles.length - toRemove} entries)',
           domain: 'audio_waveform_service',
           subDomain: 'cache_prune',
         );
