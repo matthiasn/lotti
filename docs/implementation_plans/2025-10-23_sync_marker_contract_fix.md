@@ -220,3 +220,17 @@
    - Re-run offline → online desktop scenario after fix; confirm marker advances steadily and EntryLinks appear exactly once.
 
 Until these fixes land, the contract change alone is insufficient to recover from stale-attachment caches during large offline bursts.
+
+## 2025-10-23 Desktop Verification Findings
+
+- Desktop retry loop is working: `SmartLoader.fetch` now purges the Matrix SDK cache and retries, and `_processSyncPayloadEvent` keeps the event in the retry queue.
+- A specific checklist (`15381430-af95-11f0-a52d-1961eef7d8a9`) still never applied. Root cause: the JSON descriptor on **mobile** remained at vector clock 402, so the outbox uploaded stale content. Desktop correctly rejected every download (`stale_vc` messages) and kept retrying.
+- `AttachmentIndex` logs show the device kept recording the same descriptor event (`$j66Ifno…`) multiple times—no newer descriptor ever arrived from the homeserver.
+- Manual inspection of `/checklist/2025-10-22/15381430-…checklist.json` on mobile confirmed the on-disk file is stale (`vectorClock … 402`).
+
+## Next Actions
+
+1. **Flush JSON before enqueueing**
+   - In `OutboxService.enqueueMessage`, fetch the latest entity from `JournalDb` and call `saveJournalEntityJson` before reading/uploading the file. This guarantees the descriptor we upload reflects the most recent metadata/vector clock.
+2. **Sanity check uploads**
+   - In `MatrixMessageSender._sendJournalEntityPayload`, compare the decoded JSON’s vector clock with the `SyncJournalEntity.vectorClock`. Log (and consider failing fast) if they diverge so stale uploads are caught immediately.

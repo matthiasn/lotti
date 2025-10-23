@@ -518,7 +518,7 @@ class SyncEventProcessor {
             subDomain: 'SyncEventProcessor.missingAttachment',
             stackTrace: stackTrace,
           );
-          return null;
+          rethrow;
         }
       case SyncEntryLink(entryLink: final entryLink):
         final rows = await journalDb.upsertEntryLink(entryLink);
