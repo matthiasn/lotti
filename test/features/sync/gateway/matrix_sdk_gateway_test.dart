@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -37,6 +38,7 @@ void main() {
   late StreamController<LoginState> loginStateController;
   late StreamController<KeyVerification> keyVerificationController;
   late bool disposed;
+  late SentEventRegistry sentEventRegistry;
 
   setUp(() {
     client = MockClient();
@@ -54,8 +56,10 @@ void main() {
     when(() => client.dispose()).thenAnswer((_) async {});
 
     disposed = false;
+    sentEventRegistry = SentEventRegistry();
     gateway = MatrixSdkGateway(
       client: client,
+      sentEventRegistry: sentEventRegistry,
       roomStateStream: roomStateController.stream,
       loginStateStream: loginStateController.stream,
       keyVerificationRequestStream: keyVerificationController.stream,
@@ -252,6 +256,20 @@ void main() {
     expect(eventId, 'event');
   });
 
+  test('sendText registers event ID in sent registry', () async {
+    final room = MockRoom();
+    when(() => client.getRoomById('!room:server')).thenReturn(room);
+    when(() => room.sendEvent(any())).thenAnswer((_) async => r'$text-evt');
+
+    await gateway.sendText(roomId: '!room:server', message: 'hi');
+
+    expect(sentEventRegistry.consume(r'$text-evt'), isTrue);
+    expect(
+      sentEventRegistry.debugSource(r'$text-evt'),
+      equals(SentEventSource.text),
+    );
+  });
+
   test('sendFile throws when matrix SDK returns null id', () async {
     final room = MockRoom();
     when(() => client.getRoomById('!room:server')).thenReturn(room);
@@ -280,6 +298,26 @@ void main() {
     );
 
     expect(eventId, 'file');
+  });
+
+  test('sendFile registers event ID in sent registry', () async {
+    final room = MockRoom();
+    when(() => client.getRoomById('!room:server')).thenReturn(room);
+    when(() =>
+            room.sendFileEvent(any(), extraContent: any(named: 'extraContent')))
+        .thenAnswer((_) async => r'$file-evt');
+
+    await gateway.sendFile(
+      roomId: '!room:server',
+      file: MockMatrixFile(),
+      extraContent: {'foo': 'bar'},
+    );
+
+    expect(sentEventRegistry.consume(r'$file-evt'), isTrue);
+    expect(
+      sentEventRegistry.debugSource(r'$file-evt'),
+      equals(SentEventSource.file),
+    );
   });
 
   test('keyVerificationRequests proxies the underlying stream', () async {

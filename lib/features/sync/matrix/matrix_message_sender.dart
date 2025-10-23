@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -14,26 +15,38 @@ import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
+typedef MatrixMessageSentCallback = void Function(
+  String eventId,
+  SyncMessage message,
+);
+
 /// Handles Matrix message sending including attachments and logging.
 class MatrixMessageSender {
   MatrixMessageSender({
     required LoggingService loggingService,
     required JournalDb journalDb,
     required Directory documentsDirectory,
+    required SentEventRegistry sentEventRegistry,
   })  : _loggingService = loggingService,
         _journalDb = journalDb,
-        _documentsDirectory = documentsDirectory;
+        _documentsDirectory = documentsDirectory,
+        _sentEventRegistry = sentEventRegistry;
 
   final LoggingService _loggingService;
   final JournalDb _journalDb;
   final Directory _documentsDirectory;
+  final SentEventRegistry _sentEventRegistry;
 
   Directory get documentsDirectory => _documentsDirectory;
+  SentEventRegistry get sentEventRegistry => _sentEventRegistry;
 
+  /// Sends [message] to Matrix, ensuring that any event IDs emitted by the SDK
+  /// are registered with [SentEventRegistry] so downstream timelines can
+  /// suppress the echoed payload.
   Future<bool> sendMatrixMessage({
     required SyncMessage message,
     required MatrixMessageContext context,
-    required void Function() onSent,
+    required MatrixMessageSentCallback onSent,
   }) async {
     if (context.unverifiedDevices.isNotEmpty) {
       _loggingService.captureException(
@@ -112,7 +125,28 @@ class MatrixMessageSender {
         subDomain: 'sendMatrixMsg',
       );
 
-      onSent();
+      _sentEventRegistry.register(
+        eventId,
+        source: SentEventSource.text,
+      );
+
+      try {
+        onSent(eventId, outboundMessage);
+      } catch (error, stackTrace) {
+        _loggingService
+          ..captureEvent(
+            'onSent callback threw for eventId=$eventId '
+            'messageType=${outboundMessage.runtimeType}',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'matrix.message_sender.onSent',
+          )
+          ..captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'matrix.message_sender.onSent',
+            stackTrace: stackTrace,
+          );
+      }
       return true;
     } catch (error, stackTrace) {
       _loggingService.captureException(
@@ -159,6 +193,11 @@ class MatrixMessageSender {
         'sent $relativePath file message to $room, event ID $eventId',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
+      );
+
+      _sentEventRegistry.register(
+        eventId,
+        source: SentEventSource.file,
       );
       return true;
     } catch (error, stackTrace) {

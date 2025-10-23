@@ -23,6 +23,7 @@ import 'package:lotti/features/sync/matrix/pipeline_v2/retry_and_circuit.dart'
     as rc;
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sdk_pagination_compat.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -75,6 +76,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required SyncEventProcessor eventProcessor,
     required SyncReadMarkerService readMarkerService,
     required Directory documentsDirectory,
+    required SentEventRegistry sentEventRegistry,
     AttachmentIndex? attachmentIndex,
     MetricsCounters? metricsCounters,
     bool collectMetrics = false,
@@ -120,7 +122,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         _liveScanSteadyTail = liveScanSteadyTail,
         _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
         _overrideAuditTail = liveScanInitialAuditTail,
-        _liveScanAuditScansRemaining = liveScanInitialAuditScans {
+        _liveScanAuditScansRemaining = liveScanInitialAuditScans,
+        _sentEventRegistry = sentEventRegistry {
     _retryTracker = rc.RetryTracker(
       ttl: _retryTtl,
       maxEntries: _retryMaxEntries,
@@ -164,6 +167,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final Directory _documentsDirectory;
   final AttachmentIndex? _attachmentIndex;
   final bool _collectMetrics;
+  final SentEventRegistry _sentEventRegistry;
   final Future<bool> Function({
     required Timeline timeline,
     required String? lastEventId,
@@ -831,6 +835,9 @@ class MatrixStreamConsumer implements SyncPipeline {
     final room = _roomManager.currentRoom;
     if (room == null || ordered.isEmpty) return;
 
+    _sentEventRegistry.prune();
+    final suppressedIds = <String>{};
+
     // Circuit breaker: if open, skip processing and schedule a follow-up scan.
     final nowStart = clock.now();
     final remaining = _circuit.remainingCooldown(nowStart);
@@ -846,16 +853,28 @@ class MatrixStreamConsumer implements SyncPipeline {
     var sawAttachmentPrefetch = false; // true only if a new file was written
     const ingestor = AttachmentIngestor();
     for (final e in ordered) {
+      final eventId = e.eventId;
       // Skip duplicate attachment work if we've already seen this eventId.
       // Keep processing for sync payload events to ensure apply/retry semantics.
-      final dup = _isDuplicateAndRecordSeen(e.eventId);
+      final dup = _isDuplicateAndRecordSeen(eventId);
+      final suppressed = _sentEventRegistry.consume(eventId);
+      if (suppressed) {
+        suppressedIds.add(eventId);
+        _metrics.incSelfEventsSuppressed();
+        _loggingService.captureEvent(
+          'selfEventSuppressed.prefetch id=$eventId sender=${e.senderId}',
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'selfEvent',
+        );
+        continue;
+      }
       if (dup && ec.MatrixEventClassifier.isAttachment(e)) {
         continue; // skip record/observe/prefetch for duplicate attachments
       }
       // Also skip re-applying the same sync payload event if it already
       // completed on another ingestion path.
       if (dup && ec.MatrixEventClassifier.isSyncPayloadEvent(e)) {
-        if (_wasCompletedSync(e.eventId)) {
+        if (_wasCompletedSync(eventId)) {
           continue;
         }
       }
@@ -899,12 +918,17 @@ class MatrixStreamConsumer implements SyncPipeline {
       // If this looks like a sync payload and another ingestion path is already
       // processing it, skip to avoid duplicate applies.
       final isPotentialSync = ec.MatrixEventClassifier.isSyncPayloadEvent(e);
-      if (isPotentialSync && _inFlightSyncIds.contains(id)) {
+      final wasSuppressed = suppressedIds.contains(id);
+      if (!wasSuppressed && isPotentialSync && _inFlightSyncIds.contains(id)) {
         // Defer; the completing path will record completion and advancement.
         continue;
       }
 
-      if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+      if (wasSuppressed) {
+        isSyncPayloadEvent = isPotentialSync;
+        processedOk = true;
+        treatAsHandled = true;
+      } else if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
           content['msgtype'] == syncMessageType) {
         isSyncPayloadEvent = true;
         syncPayloadEventsSeen++;

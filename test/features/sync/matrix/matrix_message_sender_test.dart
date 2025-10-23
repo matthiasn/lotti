@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -41,6 +42,7 @@ void main() {
   late MockJournalDb journalDb;
   late MatrixMessageSender sender;
   late MockRoom room;
+  late SentEventRegistry sentEventRegistry;
 
   setUp(() {
     documentsDirectory = Directory.systemTemp.createTempSync(
@@ -48,10 +50,12 @@ void main() {
     );
     loggingService = MockLoggingService();
     journalDb = MockJournalDb();
+    sentEventRegistry = SentEventRegistry();
     sender = MatrixMessageSender(
       loggingService: loggingService,
       journalDb: journalDb,
       documentsDirectory: documentsDirectory,
+      sentEventRegistry: sentEventRegistry,
     );
     room = MockRoom();
 
@@ -105,7 +109,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: context,
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isFalse);
@@ -129,7 +133,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: context,
-      onSent: () => calls++,
+      onSent: (_, __) => calls++,
     );
 
     expect(result, isFalse);
@@ -151,7 +155,7 @@ void main() {
         syncRoom: null,
         unverifiedDevices: <DeviceKeys>[],
       ),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isFalse);
@@ -177,7 +181,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isFalse);
@@ -195,6 +199,95 @@ void main() {
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     );
+    expect(sentEventRegistry.length, 0);
+  });
+
+  test('registers text event ID in sent registry on success', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => r'$text-event-id');
+
+    final result = await sender.sendMatrixMessage(
+      message: const SyncMessage.aiConfigDelete(id: 'abc'),
+      context: buildContext(),
+      onSent: (_, __) {},
+    );
+
+    expect(result, isTrue);
+    expect(sentEventRegistry.consume(r'$text-event-id'), isTrue);
+  });
+
+  test('does not register event ID when text send throws', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenThrow(Exception('fail'));
+
+    final result = await sender.sendMatrixMessage(
+      message: const SyncMessage.aiConfigDelete(id: 'abc'),
+      context: buildContext(),
+      onSent: (_, __) {},
+    );
+
+    expect(result, isFalse);
+    expect(sentEventRegistry.length, 0);
+  });
+
+  test('registers file event ID when sending journal payload', () async {
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => r'$file-event-id');
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => r'$text-event-id');
+
+    final meta = Metadata(
+      id: 'register-file',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now(),
+    );
+    final entity = JournalEntity.journalEntry(
+      meta: meta,
+      entryText: const EntryText(plainText: 'payload'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity));
+
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.journalEntity(
+        id: meta.id,
+        jsonPath: jsonPath,
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+      ),
+      context: buildContext(),
+      onSent: (_, __) {},
+    );
+
+    expect(result, isTrue);
+    expect(sentEventRegistry.consume(r'$file-event-id'), isTrue);
+    expect(sentEventRegistry.consume(r'$text-event-id'), isTrue);
   });
 
   test('adopts descriptor vector clock when message is stale', () async {
@@ -249,7 +342,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: message,
       context: context,
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isTrue);
@@ -318,7 +411,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: message,
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isTrue);
@@ -383,7 +476,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: message,
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isTrue);
@@ -448,7 +541,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: message,
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isTrue);
@@ -515,7 +608,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: message,
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isTrue);
@@ -580,7 +673,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: message,
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isTrue);
@@ -610,7 +703,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isFalse);
@@ -644,7 +737,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: buildContext(),
-      onSent: () => calls++,
+      onSent: (_, __) => calls++,
     );
 
     expect(result, isTrue);
@@ -718,7 +811,7 @@ void main() {
         status: SyncEntryStatus.update,
       ),
       context: buildContext(),
-      onSent: () => callbackCount++,
+      onSent: (_, __) => callbackCount++,
     );
 
     expect(result, isTrue);
@@ -803,7 +896,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: () => callbackCount++,
+      onSent: (_, __) => callbackCount++,
     );
 
     expect(result, isTrue);
@@ -873,7 +966,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isFalse);
@@ -932,7 +1025,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isTrue);
@@ -969,7 +1062,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isFalse);
@@ -1051,7 +1144,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: audioEntity,
       context: buildContext(),
-      onSent: () => callbackCount++,
+      onSent: (_, __) => callbackCount++,
     );
 
     expect(result, isTrue);
@@ -1114,7 +1207,7 @@ void main() {
           status: SyncEntryStatus.initial,
         ),
         context: buildContext(),
-        onSent: () => callbackCount++,
+        onSent: (_, __) => callbackCount++,
       ),
       completion(isFalse),
     );
@@ -1175,7 +1268,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: () {},
+      onSent: (_, __) {},
     );
 
     expect(result, isFalse);

@@ -4,6 +4,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/services/logging_service.dart';
 
@@ -61,4 +62,13 @@ final aiConfigRepositoryProvider = Provider<AiConfigRepository>(
     'aiConfigRepositoryProvider must be overridden before use.',
   ),
   name: 'aiConfigRepositoryProvider',
+);
+
+/// Tracks Matrix events emitted by this device so echo responses can be
+/// suppressed.
+final sentEventRegistryProvider = Provider<SentEventRegistry>(
+  (ref) => throw UnimplementedError(
+    'sentEventRegistryProvider must be overridden before use.',
+  ),
+  name: 'sentEventRegistryProvider',
 );

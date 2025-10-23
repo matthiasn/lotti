@@ -21,6 +21,7 @@ import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -51,6 +52,7 @@ MatrixService _createMatrixService({
   required Directory documentsDirectory,
   required UpdateNotifications updateNotifications,
   required AiConfigRepository aiConfigRepository,
+  required SentEventRegistry sentEventRegistry,
   bool enableSyncV2 = true,
 }) {
   final activityGate = UserActivityGate(
@@ -60,6 +62,7 @@ MatrixService _createMatrixService({
     loggingService: loggingService,
     journalDb: journalDb,
     documentsDirectory: documentsDirectory,
+    sentEventRegistry: sentEventRegistry,
   );
   final readMarkerService = SyncReadMarkerService(
     settingsDb: settingsDb,
@@ -87,6 +90,7 @@ MatrixService _createMatrixService({
     ownsActivityGate: true,
     enableSyncV2: enableSyncV2,
     attachmentIndex: AttachmentIndex(logging: loggingService),
+    sentEventRegistry: sentEventRegistry,
   );
 }
 
@@ -198,7 +202,11 @@ void main() {
         documentsDirectory: sharedDocumentsDirectory,
         dbName: 'AliceV2',
       );
-      final aliceGateway = MatrixSdkGateway(client: aliceClient);
+      final aliceRegistry = SentEventRegistry();
+      final aliceGateway = MatrixSdkGateway(
+        client: aliceClient,
+        sentEventRegistry: aliceRegistry,
+      );
       final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
       final alice = _createMatrixService(
         config: config1,
@@ -212,6 +220,7 @@ void main() {
         documentsDirectory: sharedDocumentsDirectory,
         updateNotifications: mockUpdateNotifications,
         aiConfigRepository: sharedAiConfigRepository,
+        sentEventRegistry: aliceRegistry,
       );
       await Future<void>.delayed(const Duration(seconds: 1));
       await alice.login();
@@ -224,7 +233,11 @@ void main() {
         documentsDirectory: sharedDocumentsDirectory,
         dbName: 'BobV2',
       );
-      final bobGateway = MatrixSdkGateway(client: bobClient);
+      final bobRegistry = SentEventRegistry();
+      final bobGateway = MatrixSdkGateway(
+        client: bobClient,
+        sentEventRegistry: bobRegistry,
+      );
       final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
       final bob = _createMatrixService(
         config: config2,
@@ -238,6 +251,7 @@ void main() {
         documentsDirectory: sharedDocumentsDirectory,
         updateNotifications: mockUpdateNotifications,
         aiConfigRepository: sharedAiConfigRepository,
+        sentEventRegistry: bobRegistry,
       );
       await Future<void>.delayed(const Duration(seconds: 1));
       await bob.login();
@@ -336,7 +350,11 @@ void main() {
         documentsDirectory: sharedDocumentsDirectory,
         dbName: 'AliceV2R',
       );
-      final aliceGateway = MatrixSdkGateway(client: aliceClient);
+      final aliceRegistry = SentEventRegistry();
+      final aliceGateway = MatrixSdkGateway(
+        client: aliceClient,
+        sentEventRegistry: aliceRegistry,
+      );
       final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
       final alice = _createMatrixService(
         config: config1,
@@ -350,6 +368,7 @@ void main() {
         documentsDirectory: sharedDocumentsDirectory,
         updateNotifications: mockUpdateNotifications,
         aiConfigRepository: sharedAiConfigRepository,
+        sentEventRegistry: aliceRegistry,
       );
       await Future<void>.delayed(const Duration(seconds: 1));
       await alice.login();
@@ -360,7 +379,11 @@ void main() {
         documentsDirectory: sharedDocumentsDirectory,
         dbName: 'BobV2R',
       );
-      final bobGateway = MatrixSdkGateway(client: bobClient);
+      final bobRegistry = SentEventRegistry();
+      final bobGateway = MatrixSdkGateway(
+        client: bobClient,
+        sentEventRegistry: bobRegistry,
+      );
       final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
       var bob = _createMatrixService(
         config: config2,
@@ -374,6 +397,7 @@ void main() {
         documentsDirectory: sharedDocumentsDirectory,
         updateNotifications: mockUpdateNotifications,
         aiConfigRepository: sharedAiConfigRepository,
+        sentEventRegistry: bobRegistry,
       );
       await Future<void>.delayed(const Duration(seconds: 1));
       await bob.login();
@@ -459,14 +483,17 @@ void main() {
           () async => await bobDb.getJournalCount() == firstBatch);
 
       await bob.disposeClient();
+      final newBobClient = await createMatrixClient(
+        documentsDirectory: sharedDocumentsDirectory,
+        dbName: 'BobV2R',
+      );
+      final newBobGateway = MatrixSdkGateway(
+        client: newBobClient,
+        sentEventRegistry: bobRegistry,
+      );
       bob = _createMatrixService(
         config: config2,
-        gateway: MatrixSdkGateway(
-          client: await createMatrixClient(
-            documentsDirectory: sharedDocumentsDirectory,
-            dbName: 'BobV2R',
-          ),
-        ),
+        gateway: newBobGateway,
         loggingService: sharedLoggingService,
         journalDb: bobDb,
         settingsDb: bobSettingsDb,
@@ -476,6 +503,7 @@ void main() {
         documentsDirectory: sharedDocumentsDirectory,
         updateNotifications: mockUpdateNotifications,
         aiConfigRepository: sharedAiConfigRepository,
+        sentEventRegistry: bobRegistry,
       );
       await Future<void>.delayed(const Duration(seconds: 1));
       await bob.login();

@@ -6,6 +6,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -40,6 +41,7 @@ class MatrixTimelineListener implements TimelineContext {
     required SyncReadMarkerService readMarkerService,
     required SyncEventProcessor eventProcessor,
     required Directory documentsDirectory,
+    SentEventRegistry? sentEventRegistry,
   })  : _sessionManager = sessionManager,
         _roomManager = roomManager,
         _loggingService = loggingService,
@@ -48,7 +50,8 @@ class MatrixTimelineListener implements TimelineContext {
         _settingsDb = settingsDb,
         _readMarkerService = readMarkerService,
         _eventProcessor = eventProcessor,
-        _documentsDirectory = documentsDirectory {
+        _documentsDirectory = documentsDirectory,
+        _sentEventRegistry = sentEventRegistry ?? SentEventRegistry() {
     _clientRunner = ClientRunner<void>(
       callback: (_) async {
         await _activityGate.waitUntilIdle();
@@ -92,6 +95,7 @@ class MatrixTimelineListener implements TimelineContext {
   final SyncReadMarkerService _readMarkerService;
   final SyncEventProcessor _eventProcessor;
   final Directory _documentsDirectory;
+  final SentEventRegistry _sentEventRegistry;
   final Map<String, int> _eventFailureCounts = <String, int>{};
 
   late final ClientRunner<void> _clientRunner;
@@ -129,6 +133,9 @@ class MatrixTimelineListener implements TimelineContext {
 
   @override
   set timeline(Timeline? value) => _timeline = value;
+
+  @override
+  SentEventRegistry get sentEventRegistry => _sentEventRegistry;
 
   ClientRunner<void> get clientRunner => _clientRunner;
 

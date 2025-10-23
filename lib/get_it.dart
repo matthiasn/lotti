@@ -22,6 +22,7 @@ import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -144,11 +145,16 @@ Future<void> registerSingletons() async {
   final syncDatabase = getIt<SyncDatabase>();
   final vectorClockService = getIt<VectorClockService>();
   final secureStorage = getIt<SecureStorage>();
-  final matrixGateway = MatrixSdkGateway(client: client);
+  final sentEventRegistry = SentEventRegistry();
+  final matrixGateway = MatrixSdkGateway(
+    client: client,
+    sentEventRegistry: sentEventRegistry,
+  );
   final matrixMessageSender = MatrixMessageSender(
     loggingService: loggingService,
     journalDb: journalDb,
     documentsDirectory: documentsDirectory,
+    sentEventRegistry: sentEventRegistry,
   );
   // Shared in-memory index of latest attachment events keyed by relativePath.
   final attachmentIndex = AttachmentIndex(logging: loggingService);
@@ -190,6 +196,7 @@ Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<MatrixSyncGateway>(matrixGateway)
     ..registerSingleton<MatrixMessageSender>(matrixMessageSender)
+    ..registerSingleton<SentEventRegistry>(sentEventRegistry)
     ..registerSingleton<AttachmentIndex>(attachmentIndex)
     ..registerSingleton<SyncReadMarkerService>(readMarkerService)
     ..registerSingleton<SyncEventProcessor>(syncEventProcessor)

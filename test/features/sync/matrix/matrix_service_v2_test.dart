@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
@@ -54,6 +55,12 @@ class MockSyncLifecycleCoordinator extends Mock
 
 class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
 
+MockMatrixMessageSender createMockMessageSender() {
+  final sender = MockMatrixMessageSender();
+  when(() => sender.sentEventRegistry).thenReturn(SentEventRegistry());
+  return sender;
+}
+
 class _TestV2Pipeline2 extends MatrixStreamConsumer {
   _TestV2Pipeline2({
     required super.sessionManager,
@@ -64,7 +71,11 @@ class _TestV2Pipeline2 extends MatrixStreamConsumer {
     required super.eventProcessor,
     required super.readMarkerService,
     required super.documentsDirectory,
-  }) : super(collectMetrics: true);
+    SentEventRegistry? sentEventRegistry,
+  }) : super(
+          collectMetrics: true,
+          sentEventRegistry: sentEventRegistry ?? SentEventRegistry(),
+        );
 
   Map<String, int>? testMetrics;
   Future<void> Function({required bool includeCatchUp})? onForceRescan;
@@ -142,7 +153,7 @@ void main() {
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
-      messageSender: MockMatrixMessageSender(),
+      messageSender: createMockMessageSender(),
       journalDb: journalDb,
       settingsDb: settingsDb,
       readMarkerService: readMarker,
@@ -195,7 +206,7 @@ void main() {
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
-      messageSender: MockMatrixMessageSender(),
+      messageSender: createMockMessageSender(),
       journalDb: journalDb,
       settingsDb: settingsDb,
       readMarkerService: readMarker,
@@ -243,7 +254,7 @@ void main() {
     final roomManager = MockSyncRoomManager();
     final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
-    final messageSender = MockMatrixMessageSender();
+    final messageSender = createMockMessageSender();
     final client = MockClient();
     when(() => sessionManager.client).thenReturn(client);
     when(() => lifecycleCoordinator.updateHooks(
@@ -319,7 +330,7 @@ void main() {
     final roomManager = MockSyncRoomManager();
     final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
-    final messageSender = MockMatrixMessageSender();
+    final messageSender = createMockMessageSender();
     final client = MockClient();
     when(() => sessionManager.client).thenReturn(client);
     when(() => lifecycleCoordinator.updateHooks(
@@ -379,7 +390,7 @@ void main() {
     final roomManager = MockSyncRoomManager();
     final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
-    final messageSender = MockMatrixMessageSender();
+    final messageSender = createMockMessageSender();
     final client = MockClient();
     when(() => sessionManager.client).thenReturn(client);
     when(() => lifecycleCoordinator.updateHooks(
@@ -447,7 +458,7 @@ void main() {
     final roomManager = MockSyncRoomManager();
     final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
-    final messageSender = MockMatrixMessageSender();
+    final messageSender = createMockMessageSender();
     final client = MockClient();
     when(() => sessionManager.client).thenReturn(client);
     when(() => lifecycleCoordinator.updateHooks(
@@ -508,7 +519,7 @@ void main() {
     final roomManager = MockSyncRoomManager();
     final timelineListener = MockMatrixTimelineListener();
     final lifecycleCoordinator = MockSyncLifecycleCoordinator();
-    final messageSender = MockMatrixMessageSender();
+    final messageSender = createMockMessageSender();
     final client = MockClient();
     when(() => sessionManager.client).thenReturn(client);
     when(() => lifecycleCoordinator.updateHooks(
@@ -622,7 +633,7 @@ void main() {
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
-      messageSender: MockMatrixMessageSender(),
+      messageSender: createMockMessageSender(),
       journalDb: journalDb,
       settingsDb: settingsDb,
       readMarkerService: readMarker,
@@ -693,7 +704,7 @@ void main() {
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
-      messageSender: MockMatrixMessageSender(),
+      messageSender: createMockMessageSender(),
       journalDb: journalDb,
       settingsDb: settingsDb,
       readMarkerService: readMarker,
@@ -766,7 +777,7 @@ void main() {
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
-      messageSender: MockMatrixMessageSender(),
+      messageSender: createMockMessageSender(),
       journalDb: journalDb,
       settingsDb: settingsDb,
       readMarkerService: readMarker,
@@ -844,7 +855,7 @@ void main() {
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
-      messageSender: MockMatrixMessageSender(),
+      messageSender: createMockMessageSender(),
       journalDb: journalDb,
       settingsDb: settingsDb,
       readMarkerService: readMarker,
@@ -927,7 +938,7 @@ void main() {
       gateway: gateway,
       loggingService: logging,
       activityGate: TestUserActivityGate(TestUserActivityService()),
-      messageSender: MockMatrixMessageSender(),
+      messageSender: createMockMessageSender(),
       journalDb: journalDb,
       settingsDb: settingsDb,
       readMarkerService: readMarker,
@@ -974,7 +985,8 @@ class _TestV2Pipeline extends MatrixStreamConsumer {
     required super.eventProcessor,
     required super.readMarkerService,
     required super.documentsDirectory,
-  });
+    SentEventRegistry? sentEventRegistry,
+  }) : super(sentEventRegistry: sentEventRegistry ?? SentEventRegistry());
 
   Map<String, int> testMetrics = const {};
 

@@ -11,6 +11,7 @@ void main() {
     'loggingServiceProvider': loggingServiceProvider,
     'outboxServiceProvider': outboxServiceProvider,
     'aiConfigRepositoryProvider': aiConfigRepositoryProvider,
+    'sentEventRegistryProvider': sentEventRegistryProvider,
   };
 
   for (final entry in providers.entries) {

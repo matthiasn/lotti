@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_counters.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -73,6 +74,7 @@ void main() {
 
   ({MatrixStreamConsumer consumer, MockLoggingService logger}) buildConsumer({
     MetricsCounters? metrics,
+    SentEventRegistry? sentEventRegistry,
   }) {
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
@@ -81,6 +83,7 @@ void main() {
     final settingsDb = MockSettingsDb();
     final processor = MockSyncEventProcessor();
     final readMarker = MockSyncReadMarkerService();
+    final registry = sentEventRegistry ?? SentEventRegistry();
 
     when(() => processor.cachePurgeListener = any()).thenAnswer((_) => null);
     when(
@@ -110,6 +113,7 @@ void main() {
       documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       metricsCounters: metrics,
+      sentEventRegistry: registry,
     );
 
     return (consumer: consumer, logger: logger);
@@ -187,6 +191,7 @@ void main() {
       documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       circuitCooldown: const Duration(milliseconds: 200),
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -282,6 +287,7 @@ void main() {
       readMarkerService: readMarker,
       documentsDirectory: docs,
       collectMetrics: true,
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -372,6 +378,7 @@ void main() {
       documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       markerDebounce: const Duration(seconds: 5), // ensure pending at dispose
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -421,6 +428,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       // Simulate an EntryLink no-op diagnostic
@@ -541,6 +549,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         backfill: backfill,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -616,6 +625,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -763,6 +773,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -869,6 +880,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -1002,6 +1014,7 @@ void main() {
           eventProcessor: processor,
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -1094,6 +1107,7 @@ void main() {
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
         liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -1167,6 +1181,7 @@ void main() {
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
         liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -1246,6 +1261,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -1307,6 +1323,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           markerDebounce: const Duration(milliseconds: 50),
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -1395,6 +1412,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -1492,6 +1510,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -1557,6 +1576,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -1633,6 +1653,7 @@ void main() {
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           markerDebounce: const Duration(milliseconds: 50),
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -1766,6 +1787,7 @@ void main() {
           liveScanSteadyTail: 0,
           flushInterval: const Duration(seconds: 5), // avoid timer path
           maxBatch: 2, // immediate flush at cap
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -1846,6 +1868,7 @@ void main() {
           collectMetrics: true,
           flushInterval: const Duration(milliseconds: 50),
           maxBatch: 10, // avoid cap path
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -1937,6 +1960,7 @@ void main() {
           documentsDirectory: Directory.systemTemp,
           flushInterval: const Duration(seconds: 5),
           maxBatch: 2,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -2025,6 +2049,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           markerDebounce: const Duration(milliseconds: 100),
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -2136,6 +2161,7 @@ void main() {
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           maxRetriesPerEvent: 1,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -2227,6 +2253,7 @@ void main() {
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           maxRetriesPerEvent: 1,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -2311,6 +2338,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -2388,6 +2416,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -2486,6 +2515,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -2562,6 +2592,7 @@ void main() {
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         markerDebounce: const Duration(milliseconds: 50),
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -2647,6 +2678,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -2686,6 +2718,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       // Simulate DB applied
@@ -2805,6 +2838,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -2874,6 +2908,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -2922,6 +2957,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
       consumer.reportDbApplyDiagnostics(
         SyncApplyDiagnostics(
@@ -3027,6 +3063,7 @@ void main() {
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
         liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -3099,6 +3136,7 @@ void main() {
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           markerDebounce: const Duration(milliseconds: 50),
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -3158,6 +3196,7 @@ void main() {
         eventProcessor: processor,
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -3220,6 +3259,7 @@ void main() {
         eventProcessor: processor,
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -3307,6 +3347,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -3399,6 +3440,7 @@ void main() {
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         maxRetriesPerEvent: 1,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -3494,6 +3536,7 @@ void main() {
         }) async {
           return false;
         },
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -3556,6 +3599,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           // use shorter flush for test speed if desired (default fine here)
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -3670,6 +3714,7 @@ void main() {
         eventProcessor: processor,
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -3775,6 +3820,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -3844,6 +3890,7 @@ void main() {
         eventProcessor: processor,
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -3990,6 +4037,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -4086,6 +4134,7 @@ void main() {
           eventProcessor: processor,
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -4162,6 +4211,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -4270,6 +4320,7 @@ void main() {
         eventProcessor: processor,
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -4358,6 +4409,7 @@ void main() {
       eventProcessor: processor,
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -4459,6 +4511,7 @@ void main() {
           eventProcessor: processor,
           readMarkerService: readMarker,
           documentsDirectory: tempDir,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -4551,6 +4604,7 @@ void main() {
         eventProcessor: processor,
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -4641,6 +4695,7 @@ void main() {
           eventProcessor: processor,
           readMarkerService: readMarker,
           documentsDirectory: tempDir,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -4746,6 +4801,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -4850,6 +4906,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -4946,6 +5003,7 @@ void main() {
           readMarkerService: readMarker,
           documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
         );
 
         await consumer.initialize();
@@ -5043,6 +5101,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -5109,6 +5168,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -5203,6 +5263,7 @@ void main() {
       eventProcessor: processor,
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -5310,6 +5371,7 @@ void main() {
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -5391,6 +5453,7 @@ void main() {
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -5471,6 +5534,7 @@ void main() {
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -5546,6 +5610,7 @@ void main() {
       readMarkerService: readMarker,
       documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -5650,6 +5715,7 @@ void main() {
       liveScanInitialAuditScans: 1,
       liveScanInitialAuditTail: 7,
       flushInterval: const Duration(seconds: 5),
+      sentEventRegistry: SentEventRegistry(),
     );
 
     await consumer.initialize();
@@ -5717,6 +5783,7 @@ void main() {
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         flushInterval: const Duration(seconds: 5),
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -5794,6 +5861,7 @@ void main() {
         collectMetrics: true,
         liveScanInitialAuditScans: 1,
         flushInterval: const Duration(seconds: 5),
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -5866,6 +5934,7 @@ void main() {
         collectMetrics: true,
         liveScanInitialAuditScans: 1,
         flushInterval: const Duration(seconds: 5),
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -5937,6 +6006,7 @@ void main() {
         collectMetrics: true,
         liveScanInitialAuditScans: 1,
         flushInterval: const Duration(seconds: 5),
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();
@@ -6085,6 +6155,120 @@ void main() {
       expect(diag['lastIgnored.3'],
           'event-overwritePrevented:overwrite_prevented');
       expect(diag['lastIgnored.4'], 'event-missingBase:missing_base');
+    });
+
+    test('suppressed self events increment metrics and skip processing',
+        () async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      final event = MockEvent();
+      final sentRegistry = SentEventRegistry();
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => client.sync())
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => room.id).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+          .thenAnswer((_) async => null);
+      when(() => settingsDb.saveSettingsItem(any(), any()))
+          .thenAnswer((_) async => 1);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+      when(() => timeline.events).thenReturn(<Event>[event]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+
+      when(() => event.eventId).thenReturn(r'$self-event');
+      when(() => event.roomId).thenReturn('!room:server');
+      when(() => event.senderId).thenReturn('@remote:server');
+      when(() => event.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(5));
+      when(() => event.type).thenReturn('m.room.message');
+      when(() => event.messageType).thenReturn(syncMessageType);
+      when(() => event.attachmentMimetype).thenReturn('application/json');
+      when(() => event.content).thenReturn(const {'msgtype': syncMessageType});
+
+      sentRegistry.register(r'$self-event');
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+        sentEventRegistry: sentRegistry,
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final snapshot = consumer.metricsSnapshot();
+      expect(snapshot['selfEventsSuppressed'], greaterThanOrEqualTo(1));
+      expect(snapshot['prefetch'], equals(0));
+      verify(
+        () => logger.captureEvent(
+          contains(r'marker.local id=$self-event'),
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'marker.local',
+        ),
+      ).called(greaterThanOrEqualTo(1));
+      verifyNever(
+        () => processor.process(
+          event: event,
+          journalDb: journalDb,
+        ),
+      );
+      verify(
+        () => logger.captureEvent(
+          contains('selfEventSuppressed'),
+          domain: 'MATRIX_SYNC_V2',
+          subDomain: 'selfEvent',
+        ),
+      ).called(greaterThanOrEqualTo(1));
+
+      await consumer.forceRescan(includeCatchUp: false);
+      final snapshotAfterRescan = consumer.metricsSnapshot();
+      expect(
+          snapshotAfterRescan['selfEventsSuppressed'], greaterThanOrEqualTo(2));
+      expect(snapshotAfterRescan['prefetch'], equals(0));
+
+      await consumer.dispose();
     });
   });
 }

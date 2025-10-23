@@ -21,6 +21,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
@@ -248,6 +249,8 @@ void main() {
     when(() => mockActivityGate.dispose()).thenAnswer((_) async {});
     when(() => mockRoomManager.inviteRequests)
         .thenAnswer((_) => const Stream<SyncRoomInvite>.empty());
+    when(() => mockMessageSender.sentEventRegistry)
+        .thenReturn(SentEventRegistry());
     when(
       () => mockMessageSender.sendMatrixMessage(
         message: any(named: 'message'),
@@ -759,8 +762,9 @@ void main() {
           onSent: any(named: 'onSent'),
         ),
       ).thenAnswer((invocation) async {
-        final onSent = invocation.namedArguments[#onSent] as void Function();
-        onSent();
+        final onSent =
+            invocation.namedArguments[#onSent] as MatrixMessageSentCallback;
+        onSent('event-id', syncMessage);
         return true;
       });
 
@@ -853,8 +857,9 @@ void main() {
           onSent: any(named: 'onSent'),
         ),
       ).thenAnswer((invocation) async {
-        final onSent = invocation.namedArguments[#onSent] as void Function();
-        onSent();
+        final onSent =
+            invocation.namedArguments[#onSent] as MatrixMessageSentCallback;
+        onSent('event-id', message);
         return true;
       });
       final statsFuture = expectLater(
@@ -1098,6 +1103,8 @@ void main() {
     when(() => extraRoomManager.dispose()).thenAnswer((_) async {});
     when(() => extraSessionManager.dispose()).thenAnswer((_) async {});
     final extraMessageSender = MockMatrixMessageSender();
+    when(() => extraMessageSender.sentEventRegistry)
+        .thenReturn(SentEventRegistry());
     when(
       () => extraMessageSender.sendMatrixMessage(
         message: any(named: 'message'),
