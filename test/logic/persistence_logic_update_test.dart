@@ -35,9 +35,57 @@ class MockVectorClockService extends Mock implements VectorClockService {}
 class MockTagsService extends Mock implements TagsService {}
 
 class TestPersistenceLogic extends PersistenceLogic {
+  TestPersistenceLogic({this.updateDbEntityHandler});
+
+  final Future<bool?> Function(JournalEntity entity,
+      {String? linkedId, bool enqueueSync})? updateDbEntityHandler;
+  int updateMetadataCalls = 0;
+  JournalEntity? lastUpdateDbEntity;
+
   @override
   Future<void> init() async {
     // Skip location initialization for unit tests.
+  }
+
+  @override
+  Future<Metadata> updateMetadata(
+    Metadata metadata, {
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    String? categoryId,
+    bool clearCategoryId = false,
+    DateTime? deletedAt,
+  }) async {
+    updateMetadataCalls++;
+    return super.updateMetadata(
+      metadata,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      categoryId: categoryId,
+      clearCategoryId: clearCategoryId,
+      deletedAt: deletedAt,
+    );
+  }
+
+  @override
+  Future<bool?> updateDbEntity(
+    JournalEntity journalEntity, {
+    String? linkedId,
+    bool enqueueSync = true,
+  }) async {
+    lastUpdateDbEntity = journalEntity;
+    if (updateDbEntityHandler != null) {
+      return updateDbEntityHandler!(
+        journalEntity,
+        linkedId: linkedId,
+        enqueueSync: enqueueSync,
+      );
+    }
+    return super.updateDbEntity(
+      journalEntity,
+      linkedId: linkedId,
+      enqueueSync: enqueueSync,
+    );
   }
 }
 
@@ -62,7 +110,7 @@ void main() {
   late MockNotificationService notificationService;
   late MockVectorClockService vectorClockService;
   late MockTagsService tagsService;
-  late PersistenceLogic logic;
+  late TestPersistenceLogic logic;
   void stubUpdateResult(JournalUpdateResult result) {
     when(
       () => journalDb.updateJournalEntity(
@@ -211,5 +259,53 @@ void main() {
     expect(saved, isFalse);
     verifyNever(() => journalDb.addTagged(any<JournalEntity>()));
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+  });
+
+  group('updateJournalEntity', () {
+    test('adds tags only when update applies and reuses metadata', () async {
+      final taggedCaptures = <JournalEntity>[];
+      when(() => journalDb.addTagged(captureAny()))
+          .thenAnswer((invocation) async {
+        taggedCaptures
+            .add(invocation.positionalArguments.first as JournalEntity);
+      });
+
+      logic = TestPersistenceLogic(
+        updateDbEntityHandler: (
+          entity, {
+          linkedId,
+          enqueueSync = true,
+        }) async =>
+            true,
+      );
+
+      final baseEntry = buildEntry();
+      final result = await logic.updateJournalEntity(baseEntry, baseEntry.meta);
+
+      expect(result, isTrue);
+      expect(taggedCaptures, hasLength(1));
+      final updatedEntity = taggedCaptures.first;
+      expect(identical(updatedEntity.meta, logic.lastUpdateDbEntity?.meta),
+          isTrue);
+      expect(logic.updateMetadataCalls, 1);
+
+      clearInteractions(journalDb);
+      taggedCaptures.clear();
+
+      logic = TestPersistenceLogic(
+        updateDbEntityHandler: (
+          entity, {
+          linkedId,
+          enqueueSync = true,
+        }) async =>
+            false,
+      );
+
+      final skipped =
+          await logic.updateJournalEntity(baseEntry, baseEntry.meta);
+
+      expect(skipped, isFalse);
+      verifyNever(() => journalDb.addTagged(any<JournalEntity>()));
+    });
   });
 }

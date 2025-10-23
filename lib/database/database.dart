@@ -183,6 +183,7 @@ class JournalDb extends _$JournalDb {
   }) async {
     var applied = false;
     JournalUpdateSkipReason? skipReason;
+    var rowsWritten = 0;
     final dbEntity = toDbEntity(updated).copyWith(
       updatedAt: DateTime.now(),
     );
@@ -210,7 +211,7 @@ class JournalDb extends _$JournalDb {
           (overrideComparison && status != null);
 
       if (canApply) {
-        await upsertJournalDbEntity(dbEntity);
+        rowsWritten = await upsertJournalDbEntity(dbEntity);
         applied = true;
         final existingConflict = await conflictById(dbEntity.id);
 
@@ -230,14 +231,14 @@ class JournalDb extends _$JournalDb {
         skipReason ??= JournalUpdateSkipReason.conflict;
       }
     } else {
-      await upsertJournalDbEntity(dbEntity);
+      rowsWritten = await upsertJournalDbEntity(dbEntity);
       applied = true;
     }
-    await saveJournalEntityJson(updated);
-    await addTagged(updated);
 
     if (applied) {
-      return JournalUpdateResult.applied();
+      await saveJournalEntityJson(updated);
+      await addTagged(updated);
+      return JournalUpdateResult.applied(rowsWritten: rowsWritten);
     }
 
     return JournalUpdateResult.skipped(

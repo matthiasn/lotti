@@ -401,7 +401,7 @@ void main() {
     test('throws when descriptor remains stale after refresh', () async {
       final stale = buildEntry(const VectorClock({'n': 1}));
       await expectLater(
-        () => download(
+        download(
           incoming: const VectorClock({'n': 3}),
           responses: [stale, stale],
         ),
@@ -418,10 +418,10 @@ void main() {
 
     test('throws circuit breaker after repeated stale downloads', () async {
       final stale = buildEntry(const VectorClock({'n': 1}));
-      Future<void> attempt() => download(
+      Future<DescriptorDownloadResult> attempt() => download(
             incoming: const VectorClock({'n': 5}),
             responses: [stale, stale],
-          ).then((_) {});
+          );
 
       await expectLater(
         attempt(),
@@ -453,7 +453,7 @@ void main() {
     test('throws when descriptor lacks vector clock metadata', () async {
       final missing = buildEntry(null);
       await expectLater(
-        () => download(
+        download(
           incoming: const VectorClock({'n': 2}),
           responses: [missing],
         ),
@@ -705,7 +705,7 @@ void main() {
     when(() => event.text).thenReturn('not-base64');
 
     await expectLater(
-      () => processor.process(event: event, journalDb: journalDb),
+      processor.process(event: event, journalDb: journalDb),
       throwsA(isA<FormatException>()),
     );
 
@@ -730,7 +730,7 @@ void main() {
         )).thenThrow(Exception('load failed'));
 
     await expectLater(
-      () => processor.process(event: event, journalDb: journalDb),
+      processor.process(event: event, journalDb: journalDb),
       throwsA(isA<Exception>()),
     );
 
@@ -959,7 +959,7 @@ void main() {
         loggingService: loggingService,
       );
       await expectLater(
-        () => loader.load(jsonPath: relJson),
+        loader.load(jsonPath: relJson),
         throwsA(isA<FileSystemException>()),
       );
       verify(
@@ -988,7 +988,7 @@ void main() {
         loggingService: loggingService,
       );
       await expectLater(
-        () => loader.load(jsonPath: relJson),
+        loader.load(jsonPath: relJson),
         throwsA(isA<FileSystemException>()),
       );
       verify(
@@ -1032,7 +1032,7 @@ void main() {
         loggingService: loggingService,
       );
       await expectLater(
-        () => loader.load(jsonPath: relJson),
+        loader.load(jsonPath: relJson),
         throwsA(isA<FileSystemException>()),
       );
       verify(
@@ -1148,7 +1148,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
           )).thenAnswer((_) {});
       await expectLater(
-        () => loader.load(
+        loader.load(
           jsonPath: relJson,
           incomingVectorClock: const VectorClock({'n': 1}),
         ),
@@ -1381,10 +1381,10 @@ void main() {
             incomingVectorClock: const VectorClock({'n': 3}),
           );
 
-      await expectLater(attemptLoad, throwsA(isA<FileSystemException>()));
-      await expectLater(attemptLoad, throwsA(isA<FileSystemException>()));
+      await expectLater(attemptLoad(), throwsA(isA<FileSystemException>()));
+      await expectLater(attemptLoad(), throwsA(isA<FileSystemException>()));
       await expectLater(
-        attemptLoad,
+        attemptLoad(),
         throwsA(
           isA<FileSystemException>().having(
             (error) => error.message,
@@ -1826,7 +1826,7 @@ void main() {
         );
 
         await expectLater(
-          () => loader.load(
+          loader.load(
             jsonPath: relJson,
             incomingVectorClock: const VectorClock({'n': 1}),
           ),
@@ -1926,7 +1926,7 @@ void main() {
         );
 
         await expectLater(
-          () => loader.load(
+          loader.load(
             jsonPath: relJson,
             incomingVectorClock: const VectorClock({'n': 2}),
           ),
@@ -1980,7 +1980,7 @@ void main() {
         );
 
         await expectLater(
-          () => loader.load(
+          loader.load(
             jsonPath: relJson,
             incomingVectorClock: const VectorClock({'n': 1}),
           ),
