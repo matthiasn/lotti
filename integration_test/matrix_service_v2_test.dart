@@ -148,15 +148,13 @@ void main() {
       debugPrint('Testing with degraded network.');
     }
 
-    if (!const bool.hasEnvironment(testUserEnv1)) {
-      debugPrint('TEST_USER1 not defined!!! Run via run_matrix_tests.sh');
-      exit(1);
-    }
-
-    if (!const bool.hasEnvironment(testUserEnv2)) {
-      debugPrint('TEST_USER2 not defined!!! Run via run_matrix_tests.sh');
-      exit(1);
-    }
+    final missingEnv = <String>[
+      if (!const bool.hasEnvironment(testUserEnv1)) testUserEnv1,
+      if (!const bool.hasEnvironment(testUserEnv2)) testUserEnv2,
+    ];
+    final skipReason = missingEnv.isEmpty
+        ? null
+        : 'Missing: ${missingEnv.join(', ')}. Run via run_matrix_tests.sh';
 
     const aliceUserName = String.fromEnvironment(testUserEnv1);
     const bobUserName = String.fromEnvironment(testUserEnv2);
@@ -351,8 +349,9 @@ void main() {
         var emojisFromBob = '';
         var emojisFromAlice = '';
 
-        unawaited(
-          incomingKeyVerificationRunnerStream.forEach((runner) async {
+        final incomingSubscription =
+            incomingKeyVerificationRunnerStream.listen(
+          (runner) async {
             debugPrint(
               'Bob - incoming verification runner step: ${runner.lastStep}',
             );
@@ -371,11 +370,17 @@ void main() {
 
               await runner.acceptEmojiVerification();
             }
-          }),
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            fail(
+              'incomingKeyVerificationRunnerStream error: $error\n$stackTrace',
+            );
+          },
         );
+        addTearDown(incomingSubscription.cancel);
 
-        unawaited(
-          outgoingKeyVerificationStream.forEach((runner) async {
+        final outgoingSubscription = outgoingKeyVerificationStream.listen(
+          (runner) async {
             debugPrint(
               'Alice - outgoing verification step: ${runner.lastStep}',
             );
@@ -391,8 +396,14 @@ void main() {
 
               await runner.acceptEmojiVerification();
             }
-          }),
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            fail(
+              'keyVerificationStream error: $error\n$stackTrace',
+            );
+          },
         );
+        addTearDown(outgoingSubscription.cancel);
 
         await waitSeconds(defaultDelay);
 
@@ -523,6 +534,7 @@ void main() {
         await waitSeconds(defaultDelay);
       },
       timeout: const Timeout(Duration(minutes: 15)),
+      skip: skipReason ?? false,
     );
   });
 }

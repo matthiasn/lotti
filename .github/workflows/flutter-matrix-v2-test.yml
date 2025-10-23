@@ -42,8 +42,6 @@ jobs:
             ./run_matrix_v2_tests.sh
 
   test_v2_degraded_network:
-    if: ${{ false }} # TODO: re-enable after fix
-
     name: Matrix V2 Test on Linux with degraded network
     permissions:
       contents: read
