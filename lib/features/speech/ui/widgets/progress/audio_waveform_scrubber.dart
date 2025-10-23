@@ -282,6 +282,9 @@ class _WaveformPainter extends CustomPainter {
         oldDelegate.progressColor != progressColor ||
         oldDelegate.bufferedColor != bufferedColor ||
         oldDelegate.trackColor != trackColor ||
+        oldDelegate.glowColor != glowColor ||
+        oldDelegate.targetBarWidth != targetBarWidth ||
+        oldDelegate.targetSpacing != targetSpacing ||
         oldDelegate.compact != compact;
   }
 }

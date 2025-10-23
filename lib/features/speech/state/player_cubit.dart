@@ -49,6 +49,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   late final StreamSubscription<Duration> _positionSubscription;
   late final StreamSubscription<Duration> _bufferSubscription;
   StreamSubscription<bool>? _completedSubscription;
+  Timer? _completionTimer;
 
   @visibleForTesting
   StreamSubscription<bool>? get completedSubscription => _completedSubscription;
@@ -185,6 +186,8 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   @override
   Future<void> close() async {
+    _completionTimer?.cancel();
+    _completionTimer = null;
     await _positionSubscription.cancel();
     await _bufferSubscription.cancel();
     await _completedSubscription?.cancel();
@@ -196,14 +199,21 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     if (!isCompleted) {
       return;
     }
+    if (_completionTimer?.isActive ?? false) {
+      return;
+    }
     final duration = state.audioNote?.data.duration;
     if (duration == null) {
       return;
     }
 
-    Timer(
+    _completionTimer = Timer(
       _completionDelay,
       () {
+        _completionTimer = null;
+        if (isClosed) {
+          return;
+        }
         emit(state.copyWith(progress: duration));
       },
     );

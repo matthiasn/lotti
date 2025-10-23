@@ -21,6 +21,9 @@ const Duration _defaultMaxDuration = Duration(minutes: 3);
 /// Maximum number of cached waveform files retained on disk.
 const int _maxCacheEntries = 1000;
 
+/// Maximum length for sanitized IDs used in temporary filenames.
+const int _maxTempFileIdLength = 60;
+
 /// Weightings used when blending peak and RMS amplitudes.
 const double _peakWeight = 0.7;
 const double _rmsWeight = 0.3;
@@ -216,10 +219,11 @@ class AudioWaveformService {
 
     await _cacheDirectory.create(recursive: true);
 
+    final sanitizedId = _sanitizeTempId(audio.meta.id);
     final tempWaveOutFile = File(
       p.join(
         Directory.systemTemp.path,
-        'waveform_${audio.meta.id}_${DateTime.now().microsecondsSinceEpoch}.wave',
+        'waveform_${sanitizedId}_${DateTime.now().microsecondsSinceEpoch}.wave',
       ),
     );
 
@@ -272,6 +276,16 @@ class AudioWaveformService {
         // Ignore cleanup failures.
       }
     }
+  }
+
+  String _sanitizeTempId(String rawId) {
+    final sanitized =
+        rawId.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_').trim();
+    final safe = sanitized.isEmpty ? 'audio' : sanitized;
+    if (safe.length <= _maxTempFileIdLength) {
+      return safe;
+    }
+    return safe.substring(0, _maxTempFileIdLength);
   }
 
   File _cacheFile(String audioId, int bucketCount) {

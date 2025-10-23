@@ -1019,6 +1019,38 @@ void main() {
     });
   });
 
+  group('temporary waveform files', () {
+    test('sanitizes temp waveform filename', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 12),
+        audioId: r'note:/\?*<>"|',
+        fileName: 'temp.m4a',
+      );
+
+      extractor.createTempOutput = true;
+
+      final result = await service.loadWaveform(audio, targetBuckets: 3);
+      expect(result, isNotNull);
+
+      final tempFile = extractor.lastWaveOutFile;
+      expect(tempFile, isNotNull);
+      final baseName = p.basename(tempFile!.path);
+      expect(baseName.startsWith('waveform_'), isTrue);
+      expect(baseName.endsWith('.wave'), isTrue);
+
+      final sanitizedSegment = baseName.substring(
+        'waveform_'.length,
+        baseName.lastIndexOf('_'),
+      );
+
+      expect(sanitizedSegment.length, inInclusiveRange(1, 60));
+      expect(
+        RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(sanitizedSegment),
+        isTrue,
+      );
+    });
+  });
+
   group('cache write failures', () {
     test('logs exception when cache directory is read only', () async {
       if (Platform.isWindows) {
