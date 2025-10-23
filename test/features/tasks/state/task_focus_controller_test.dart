@@ -66,7 +66,6 @@ void main() {
       final provider = taskFocusControllerProvider(id: testTaskId);
 
       container.read(provider.notifier).publishTaskFocus(
-            taskId: testTaskId,
             entryId: testEntryId,
           );
 
@@ -81,7 +80,6 @@ void main() {
       final provider = taskFocusControllerProvider(id: testTaskId);
 
       container.read(provider.notifier).publishTaskFocus(
-            taskId: testTaskId,
             entryId: testEntryId,
             alignment: 0.5,
           );
@@ -94,7 +92,6 @@ void main() {
       final provider = taskFocusControllerProvider(id: testTaskId);
       final notifier = container.read(provider.notifier)
         ..publishTaskFocus(
-          taskId: testTaskId,
           entryId: testEntryId,
         );
 
@@ -113,7 +110,6 @@ void main() {
       final provider = taskFocusControllerProvider(id: testTaskId);
       final notifier = container.read(provider.notifier)
         ..publishTaskFocus(
-          taskId: testTaskId,
           entryId: 'entry1',
         );
 
@@ -121,7 +117,6 @@ void main() {
 
       // Second publish
       notifier.publishTaskFocus(
-        taskId: testTaskId,
         entryId: 'entry2',
       );
 
@@ -132,7 +127,6 @@ void main() {
       final provider = taskFocusControllerProvider(id: testTaskId);
       final notifier = container.read(provider.notifier)
         ..publishTaskFocus(
-          taskId: testTaskId,
           entryId: testEntryId,
         );
 
@@ -144,7 +138,6 @@ void main() {
 
       // Re-trigger with same values should work
       notifier.publishTaskFocus(
-        taskId: testTaskId,
         entryId: testEntryId,
       );
 
@@ -161,12 +154,10 @@ void main() {
       final provider2 = taskFocusControllerProvider(id: taskId2);
 
       container.read(provider1.notifier).publishTaskFocus(
-            taskId: taskId1,
             entryId: 'entry1',
           );
 
       container.read(provider2.notifier).publishTaskFocus(
-            taskId: taskId2,
             entryId: 'entry2',
           );
 

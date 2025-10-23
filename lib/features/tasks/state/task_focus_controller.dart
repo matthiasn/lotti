@@ -38,13 +38,12 @@ class TaskFocusController extends _$TaskFocusController {
 
   /// Publish a focus intent for a specific entry
   void publishTaskFocus({
-    required String taskId,
     required String entryId,
     double alignment = 0.0,
   }) {
     state = AsyncData(
       TaskFocusIntent(
-        taskId: taskId,
+        taskId: id,
         entryId: entryId,
         alignment: alignment,
       ),
@@ -65,7 +64,6 @@ void publishTaskFocus({
   double alignment = 0.0,
 }) {
   ref.read(taskFocusControllerProvider(id: taskId).notifier).publishTaskFocus(
-        taskId: taskId,
         entryId: entryId,
         alignment: alignment,
       );
