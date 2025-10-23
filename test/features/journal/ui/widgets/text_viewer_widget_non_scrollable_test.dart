@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -40,6 +41,31 @@ void main() {
 
       expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
       expect(find.byType(QuillEditor), findsOneWidget);
+    });
+
+    testWidgets('configures embed builders with unknown fallback',
+        (tester) async {
+      const entryText = EntryText(
+        plainText: 'Supports embeds',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const TextViewerWidgetNonScrollable(
+            entryText: entryText,
+            maxHeight: 200,
+          ),
+        ),
+      );
+
+      final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      final builders = quillEditor.config.embedBuilders;
+
+      expect(builders, isNotNull);
+      expect(
+          builders!.any((builder) => builder is DividerEmbedBuilder), isTrue);
+      expect(
+          quillEditor.config.unknownEmbedBuilder, isA<UnknownEmbedBuilder>());
     });
 
     testWidgets('renders with markdown content', (tester) async {

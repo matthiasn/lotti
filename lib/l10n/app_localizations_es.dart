@@ -2340,4 +2340,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get copyAsMarkdown => 'Copy as Markdown';
+
+  @override
+  String get editorInsertDivider => 'Insert divider';
 }

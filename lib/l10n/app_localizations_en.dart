@@ -2321,6 +2321,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copyAsMarkdown => 'Copy as Markdown';
+
+  @override
+  String get editorInsertDivider => 'Insert divider';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
