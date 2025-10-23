@@ -797,7 +797,7 @@ void main() {
         loggingService: loggingService,
       );
       var purges = 0;
-      loader.addCachePurgeListener(() => purges++);
+      loader.onCachePurge = () => purges++;
 
       final loaded = await loader.load(
         jsonPath: relJson,
@@ -872,7 +872,7 @@ void main() {
         loggingService: loggingService,
       );
       var purges = 0;
-      loader.addCachePurgeListener(() => purges++);
+      loader.onCachePurge = () => purges++;
 
       await expectLater(
         () => loader.load(
@@ -892,6 +892,89 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('smart.fetch.stale_vc.pending path=$relJson'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+    });
+
+    test('trips circuit breaker after repeated stale descriptors', () async {
+      const relJson = '/text_entries/2024-01-01/always_stale.text.json';
+      final index = AttachmentIndex(logging: loggingService);
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('evt-stale-loop');
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.content).thenReturn({'relativePath': relJson});
+      final room = MockMatrixRoom();
+      final client = MockMatrixClient();
+      final database = MockMatrixDatabase();
+      when(() => ev.room).thenReturn(room);
+      when(() => room.client).thenReturn(client);
+      when(() => client.database).thenReturn(database);
+      final descriptorUri = Uri.parse('mxc://server/always-stale');
+      when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
+      when(() => database.deleteFile(descriptorUri))
+          .thenAnswer((_) async => true);
+      when(() => loggingService.captureEvent(
+            any<Object>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          )).thenAnswer((_) {});
+
+      final stale = JournalEntry(
+        meta: Metadata(
+          id: 'stale-loop',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          vectorClock: const VectorClock({'n': 1}),
+        ),
+        entryText: const EntryText(plainText: 'stale'),
+      );
+      final staleBytes =
+          Uint8List.fromList(jsonEncode(stale.toJson()).codeUnits);
+      var downloads = 0;
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+        downloads++;
+        return MatrixFile(
+          bytes: staleBytes,
+          name: 'entry.json',
+        );
+      });
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      var purges = 0;
+      loader.onCachePurge = () => purges++;
+
+      Future<void> attemptLoad() => loader.load(
+            jsonPath: relJson,
+            incomingVectorClock: const VectorClock({'n': 3}),
+          );
+
+      await expectLater(attemptLoad, throwsA(isA<FileSystemException>()));
+      await expectLater(attemptLoad, throwsA(isA<FileSystemException>()));
+      await expectLater(
+        attemptLoad,
+        throwsA(
+          isA<FileSystemException>().having(
+            (error) => error.message,
+            'message',
+            contains('circuit breaker'),
+          ),
+        ),
+      );
+
+      expect(downloads, 5);
+      expect(purges, 2);
+      verify(() => database.deleteFile(descriptorUri)).called(2);
+      verify(
+        () => loggingService.captureEvent(
+          contains('smart.fetch.stale_vc.breaker path=$relJson'),
           domain: 'MATRIX_SERVICE',
           subDomain: 'SmartLoader.fetch',
         ),

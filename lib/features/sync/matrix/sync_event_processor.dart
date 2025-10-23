@@ -51,22 +51,17 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
     required AttachmentIndex attachmentIndex,
     required LoggingService loggingService,
-    void Function()? onCachePurge,
+    this.onCachePurge,
   })  : _attachmentIndex = attachmentIndex,
-        _logging = loggingService {
-    if (onCachePurge != null) {
-      _cachePurgeListeners.add(onCachePurge);
-    }
-  }
+        _logging = loggingService;
+
+  static const int _maxDescriptorDownloadAttempts = 2;
+  static const int _maxStaleDescriptorFailures = 5;
 
   final AttachmentIndex _attachmentIndex;
   final LoggingService _logging;
-  final List<void Function()> _cachePurgeListeners = <void Function()>[];
-
-  void addCachePurgeListener(void Function()? listener) {
-    if (listener == null) return;
-    _cachePurgeListeners.add(listener);
-  }
+  final Map<String, int> _staleDescriptorFailures = <String, int>{};
+  void Function()? onCachePurge;
 
   @override
   Future<JournalEntity> load({
@@ -207,7 +202,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     String? jsonToWrite;
     var bytesLength = 0;
 
-    for (var attempt = 0; attempt < 2; attempt++) {
+    for (var attempt = 0; attempt < _maxDescriptorDownloadAttempts; attempt++) {
       final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
       final bytes = matrixFile.bytes;
       if (bytes.isEmpty) {
@@ -220,6 +215,18 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       if (candidateVc != null) {
         final status = VectorClock.compare(candidateVc, incomingVectorClock);
         if (status == VclockStatus.b_gt_a) {
+          final failures = (_staleDescriptorFailures[jsonPath] ?? 0) + 1;
+          _staleDescriptorFailures[jsonPath] = failures;
+          if (failures >= _maxStaleDescriptorFailures) {
+            _logging.captureEvent(
+              'smart.fetch.stale_vc.breaker path=$jsonPath retries=$failures limit=$_maxStaleDescriptorFailures',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'SmartLoader.fetch',
+            );
+            throw const FileSystemException(
+              'stale attachment json (circuit breaker)',
+            );
+          }
           if (attempt == 0) {
             _logging.captureEvent(
               'smart.fetch.stale_vc path=$jsonPath expected=$incomingVectorClock got=$candidateVc',
@@ -229,11 +236,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
             final purged =
                 await _maybePurgeCachedDescriptor(descriptorEvent, jsonPath);
             if (purged) {
-              for (final listener in List<void Function()>.from(
-                _cachePurgeListeners,
-              )) {
-                listener();
-              }
+              onCachePurge?.call();
             }
             _logging.captureEvent(
               'smart.fetch.stale_vc.refresh path=$jsonPath',
@@ -250,12 +253,14 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           throw const FileSystemException(
               'stale attachment json after refresh');
         }
+        _staleDescriptorFailures.remove(jsonPath);
       } else {
         _logging.captureEvent(
           'smart.fetch.missing_vc path=$jsonPath expected=$incomingVectorClock',
           domain: 'MATRIX_SERVICE',
           subDomain: 'SmartLoader.fetch',
         );
+        _staleDescriptorFailures.remove(jsonPath);
         throw const FileSystemException('missing attachment vector clock');
       }
       jsonToWrite = candidateJson;
@@ -268,6 +273,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     }
 
     await saveJson(targetFile.path, jsonToWrite);
+    _staleDescriptorFailures.remove(jsonPath);
     _logging.captureEvent(
       'smart.json.written path=$jsonPath bytes=$bytesLength',
       domain: 'MATRIX_SERVICE',
@@ -415,7 +421,7 @@ class SyncEventProcessor {
     _cachePurgeListener = listener;
     final loader = _journalEntityLoader;
     if (loader is SmartJournalEntityLoader) {
-      loader.addCachePurgeListener(listener);
+      loader.onCachePurge = listener;
     }
   }
 
@@ -518,6 +524,7 @@ class SyncEventProcessor {
             subDomain: 'SyncEventProcessor.missingAttachment',
             stackTrace: stackTrace,
           );
+          // Returning null keeps the event in the retry queue until a fresh descriptor arrives.
           return null;
         }
       case SyncEntryLink(entryLink: final entryLink):

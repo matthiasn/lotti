@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Guarded sync list filters against invalid persisted enum indexes on conflicts/outbox pages to prevent `RangeError`.
 - Matrix V2 catch-up now advances markers after offline sessions by correcting journal update result semantics, eliminating false "missing base" retries, and trimming duplicate backlog processing.
 - Matrix outbox refreshes journal JSON before enqueueing and Matrix sender re-syncs vector clocks with descriptor payloads, preventing stale checklist descriptors from being uploaded.
+- Added a circuit breaker so stale descriptor downloads bail out after repeated refresh attempts instead of looping forever.
+- Bumped patch version to 0.9.700+3390 to ship the sync catch-up contract fix without breaking APIs.
 
 ## [0.9.692] - 2025-10-20
 ### Changed:
