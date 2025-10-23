@@ -897,6 +897,359 @@ void main() {
     });
   });
 
+  group('cache read failures', () {
+    test('recovers when cache JSON is truncated', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 18),
+        audioId: 'corrupted-json',
+        fileName: 'corrupted.m4a',
+      );
+
+      final cacheFile = cacheFileFor(audio, 4)
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"version":1');
+
+      clearInteractions(loggingService);
+
+      final result = await service.loadWaveform(audio, targetBuckets: 4);
+      expect(result, isNotNull);
+
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'audio_waveform_service',
+          subDomain: 'cache_read',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      expect(cacheFile.readAsStringSync(), isNotEmpty);
+    });
+
+    test('recovers when cache file contains non-json data', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 20),
+        audioId: 'plain-text',
+        fileName: 'plain.m4a',
+      );
+
+      final cacheFile = cacheFileFor(audio, 3)
+        ..createSync(recursive: true)
+        ..writeAsStringSync('not-json');
+
+      clearInteractions(loggingService);
+
+      final result = await service.loadWaveform(audio, targetBuckets: 3);
+      expect(result, isNotNull);
+
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'audio_waveform_service',
+          subDomain: 'cache_read',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      expect(cacheFile.readAsStringSync(), isNotEmpty);
+    });
+
+    test('recovers when cache file is empty', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 16),
+        audioId: 'empty-cache',
+        fileName: 'empty.m4a',
+      );
+
+      final cacheFile = cacheFileFor(audio, 2)
+        ..createSync(recursive: true)
+        ..writeAsStringSync('');
+
+      clearInteractions(loggingService);
+
+      final result = await service.loadWaveform(audio, targetBuckets: 2);
+      expect(result, isNotNull);
+
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'audio_waveform_service',
+          subDomain: 'cache_read',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      expect(cacheFile.readAsStringSync(), isNotEmpty);
+    });
+
+    test('logs unexpected payload shape for array caches', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 24),
+        audioId: 'array-cache',
+        fileName: 'array.m4a',
+      );
+
+      final cacheFile = cacheFileFor(audio, 5)
+        ..createSync(recursive: true)
+        ..writeAsStringSync('[]');
+
+      clearInteractions(loggingService);
+
+      final result = await service.loadWaveform(audio, targetBuckets: 5);
+      expect(result, isNotNull);
+
+      verify(
+        () => loggingService.captureEvent(
+          'Unexpected cache payload shape: []',
+          domain: 'audio_waveform_service',
+          subDomain: 'cache_read',
+        ),
+      ).called(1);
+
+      verifyNever(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'audio_waveform_service',
+          subDomain: 'cache_read',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      );
+
+      expect(cacheFile.readAsStringSync(), isNotEmpty);
+    });
+  });
+
+  group('cache write failures', () {
+    test('logs exception when cache directory is read only', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final audio = createAudio(
+        duration: const Duration(seconds: 22),
+        audioId: 'write-failure',
+        fileName: 'write.m4a',
+      );
+
+      final sanitized = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+      final prefix = sanitized.length >= 2 ? sanitized.substring(0, 2) : '00';
+      final targetDir =
+          Directory(p.join(tempDir.path, 'audio_waveforms', prefix))
+            ..createSync(recursive: true);
+      final cacheFile = File(p.join(targetDir.path, '${sanitized}_3.json'));
+      final removeWrite =
+          await Process.run('chmod', <String>['-w', targetDir.path]);
+      expect(removeWrite.exitCode, 0);
+
+      clearInteractions(loggingService);
+
+      try {
+        final result = await service.loadWaveform(audio, targetBuckets: 3);
+        expect(result, isNotNull);
+      } finally {
+        final restore =
+            await Process.run('chmod', <String>['+w', targetDir.path]);
+        expect(restore.exitCode, 0);
+      }
+
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'audio_waveform_service',
+          subDomain: 'cache_write',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      expect(cacheFile.existsSync(), isFalse);
+    });
+
+    test('logs parent directory creation failure', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 26),
+        audioId: 'pf_parent_failure',
+        fileName: 'parent.m4a',
+      );
+
+      final sanitizedId =
+          audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+      final prefix =
+          sanitizedId.length >= 2 ? sanitizedId.substring(0, 2) : '00';
+      final prefixPath = p.join(tempDir.path, 'audio_waveforms', prefix);
+      Directory(prefixPath).createSync(recursive: true);
+
+      service = AudioWaveformService(
+        extractor: ({
+          required File audioFile,
+          required File waveOutFile,
+          required WaveformZoom zoom,
+        }) async {
+          final waveform = await extractor.extract(
+            audioFile: audioFile,
+            waveOutFile: waveOutFile,
+            zoom: zoom,
+          );
+          final directory = Directory(prefixPath);
+          if (directory.existsSync()) {
+            directory.deleteSync(recursive: true);
+          }
+          File(prefixPath).createSync(recursive: true);
+          return waveform;
+        },
+      );
+
+      clearInteractions(loggingService);
+
+      final result = await service.loadWaveform(audio, targetBuckets: 3);
+      expect(result, isNotNull);
+
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'audio_waveform_service',
+          subDomain: 'cache_write',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('path sanitization', () {
+    test('sanitizes special characters in audio id', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 30),
+        audioId: r'note:/\?*<>"|',
+        fileName: 'special.m4a',
+      );
+
+      final result = await service.loadWaveform(audio, targetBuckets: 4);
+      expect(result, isNotNull);
+
+      final sanitized = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+      final prefix = sanitized.length >= 2 ? sanitized.substring(0, 2) : '00';
+      final cacheFile = File(
+        p.join(
+          tempDir.path,
+          'audio_waveforms',
+          prefix,
+          '${sanitized}_4.json',
+        ),
+      );
+      expect(cacheFile.existsSync(), isTrue);
+    });
+
+    test('creates prefix directory for single character ids', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 28),
+        audioId: 'z',
+        fileName: 'single.m4a',
+      );
+
+      final result = await service.loadWaveform(audio, targetBuckets: 2);
+      expect(result, isNotNull);
+
+      final sanitized = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+      final prefix = sanitized.length >= 2 ? sanitized.substring(0, 2) : '00';
+      final cacheFile = File(
+        p.join(
+          tempDir.path,
+          'audio_waveforms',
+          prefix,
+          '${sanitized}_2.json',
+        ),
+      );
+      expect(cacheFile.existsSync(), isTrue);
+    });
+
+    test('handles very long audio ids', () async {
+      final longId = List<String>.filled(260, 'a').join();
+      final audio = createAudio(
+        duration: const Duration(seconds: 32),
+        audioId: longId,
+        fileName: 'long.m4a',
+      );
+
+      clearInteractions(loggingService);
+      final result = await service.loadWaveform(audio, targetBuckets: 3);
+      expect(result, isNotNull);
+
+      final sanitized = longId.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+      final prefix = sanitized.substring(0, 2);
+      final cacheFile = File(
+        p.join(
+          tempDir.path,
+          'audio_waveforms',
+          prefix,
+          '${sanitized}_3.json',
+        ),
+      );
+      expect(
+          Directory(p.join(tempDir.path, 'audio_waveforms', prefix))
+              .existsSync(),
+          isTrue);
+
+      if (cacheFile.existsSync()) {
+        expect(p.basename(cacheFile.path), '${sanitized}_3.json');
+        verifyNever(
+          () => loggingService.captureException(
+            any<dynamic>(),
+            domain: 'audio_waveform_service',
+            subDomain: 'cache_write',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        );
+      } else {
+        verify(
+          () => loggingService.captureException(
+            any<dynamic>(),
+            domain: 'audio_waveform_service',
+            subDomain: 'cache_write',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      }
+    });
+
+    test('sanitizes unicode audio ids', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 34),
+        audioId: '音频-äudio',
+        fileName: 'unicode.m4a',
+      );
+
+      final result = await service.loadWaveform(audio, targetBuckets: 3);
+      expect(result, isNotNull);
+
+      final sanitized = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+      final prefix = sanitized.substring(0, 2);
+      final cacheFile = File(
+        p.join(
+          tempDir.path,
+          'audio_waveforms',
+          prefix,
+          '${sanitized}_3.json',
+        ),
+      );
+      expect(cacheFile.existsSync(), isTrue);
+    });
+
+    test('creates nested directories for sanitized prefix', () async {
+      final audio = createAudio(
+        duration: const Duration(seconds: 36),
+        audioId: 'abc123',
+        fileName: 'subdir.m4a',
+      );
+
+      final result = await service.loadWaveform(audio, targetBuckets: 2);
+      expect(result, isNotNull);
+
+      final cacheDir = Directory(p.join(tempDir.path, 'audio_waveforms', 'ab'));
+      expect(cacheDir.existsSync(), isTrue);
+      final cacheFile = File(p.join(cacheDir.path, 'abc123_2.json'));
+      expect(cacheFile.existsSync(), isTrue);
+    });
+  });
+
   group('cache pruning', () {
     test('prunes oldest files when exceeding 1000 entries', () async {
       populateCacheEntries(1009);

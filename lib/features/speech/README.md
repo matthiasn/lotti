@@ -165,12 +165,14 @@ The feature has comprehensive test coverage:
 - `recorder_controller_test.dart`: State management and recording logic
 - `audio_recorder_repository_test.dart`: Repository functionality
 - `speech_repository_test.dart`: Data persistence and transcription
+- `audio_waveform_service_test.dart`: Waveform extraction, caching lifecycle, cache pruning, and filesystem resilience
 
 ### Widget Tests
 - `audio_recording_modal_test.dart`: Modal UI and interactions
 - `audio_recording_indicator_test.dart`: Indicator behavior
 - `analog_vu_meter_test.dart`: VU meter rendering and animations
 - `audio_player_widget_test.dart`: Compact/wide layout, semantics, speed cycling, and scrub-to-seek
+- `audio_waveform_scrubber_test.dart`: Scrubbing gestures, throttled seeking, semantics, and painter edge cases
 
 ### Test Execution
 ```bash
