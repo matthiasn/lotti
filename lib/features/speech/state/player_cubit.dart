@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -17,8 +18,9 @@ class PlayerConstants {
 }
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
-  AudioPlayerCubit()
-      : super(
+  AudioPlayerCubit({AudioWaveformService? waveformService})
+      : _waveformService = waveformService ?? getIt<AudioWaveformService>(),
+        super(
           AudioPlayerState(
             status: AudioPlayerStatus.initializing,
             totalDuration: Duration.zero,
@@ -34,8 +36,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   final Player _audioPlayer = Player();
   final LoggingService _loggingService = getIt<LoggingService>();
+  final AudioWaveformService _waveformService;
   late final StreamSubscription<Duration> _positionSubscription;
   late final StreamSubscription<Duration> _bufferSubscription;
+  int _waveformLoadToken = 0;
 
   void updateProgress(Duration duration) {
     final clamped =
@@ -80,12 +84,14 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         totalDuration: audioNote.data.duration,
         showTranscriptsList: false,
         speed: 1,
+        waveformStatus: AudioWaveformStatus.loading,
         audioNote: audioNote,
       );
       emit(newState);
       await _audioPlayer.open(Media(localPath), play: false);
       final totalDuration = _audioPlayer.state.duration;
       emit(newState.copyWith(totalDuration: totalDuration));
+      _loadWaveform(audioNote);
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -183,5 +189,54 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     await _bufferSubscription.cancel();
     await _audioPlayer.dispose();
     await super.close();
+  }
+
+  void _loadWaveform(JournalAudio audioNote) {
+    final loadToken = ++_waveformLoadToken;
+    unawaited(() async {
+      try {
+        final waveform = await _waveformService.loadWaveform(audioNote);
+        if (_waveformLoadToken != loadToken) {
+          return;
+        }
+        if (waveform == null) {
+          emit(
+            state.copyWith(
+              waveformStatus: AudioWaveformStatus.unavailable,
+              waveform: const <double>[],
+              waveformBucketDuration: Duration.zero,
+            ),
+          );
+          return;
+        }
+        if (state.audioNote?.meta.id != audioNote.meta.id) {
+          return;
+        }
+        emit(
+          state.copyWith(
+            waveformStatus: AudioWaveformStatus.ready,
+            waveform: waveform.amplitudes,
+            waveformBucketDuration: waveform.bucketDuration,
+          ),
+        );
+      } catch (error, stackTrace) {
+        if (_waveformLoadToken != loadToken) {
+          return;
+        }
+        _loggingService.captureException(
+          error,
+          domain: 'player_cubit',
+          subDomain: 'waveform_load',
+          stackTrace: stackTrace,
+        );
+        emit(
+          state.copyWith(
+            waveformStatus: AudioWaveformStatus.unavailable,
+            waveform: const <double>[],
+            waveformBucketDuration: Duration.zero,
+          ),
+        );
+      }
+    }());
   }
 }

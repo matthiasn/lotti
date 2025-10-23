@@ -5,6 +5,8 @@ part 'player_state.freezed.dart';
 
 enum AudioPlayerStatus { initializing, initialized, playing, paused, stopped }
 
+enum AudioWaveformStatus { initial, loading, ready, unavailable }
+
 @freezed
 abstract class AudioPlayerState with _$AudioPlayerState {
   factory AudioPlayerState({
@@ -15,6 +17,9 @@ abstract class AudioPlayerState with _$AudioPlayerState {
     required double speed,
     required bool showTranscriptsList,
     @Default(Duration.zero) Duration buffered,
+    @Default(AudioWaveformStatus.initial) AudioWaveformStatus waveformStatus,
+    @Default(<double>[]) List<double> waveform,
+    @Default(Duration.zero) Duration waveformBucketDuration,
     JournalAudio? audioNote,
   }) = _AudioPlayerState;
 }

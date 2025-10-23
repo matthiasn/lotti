@@ -14,6 +14,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
@@ -237,6 +238,11 @@ Future<void> registerSingletons() async {
   _registerLazyServiceSafely<AudioPlayerCubit>(
     AudioPlayerCubit.new,
     'AudioPlayerCubit',
+  );
+
+  _registerLazyServiceSafely<AudioWaveformService>(
+    AudioWaveformService.new,
+    'AudioWaveformService',
   );
 
   unawaited(getIt<MatrixService>().init());

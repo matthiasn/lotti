@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
+import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
@@ -177,13 +178,14 @@ class _PlayerBody extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              AudioProgressBar(
+              _buildProgressOrWaveform(
+                state: state,
                 progress: progress,
                 buffered: buffered,
-                total: totalDuration,
-                onSeek: cubit.seek,
-                enabled: isActive,
-                compact: isCompact,
+                totalDuration: totalDuration,
+                cubit: cubit,
+                isActive: isActive,
+                isCompact: isCompact,
               ),
               Row(
                 children: <Widget>[
@@ -206,6 +208,41 @@ class _PlayerBody extends StatelessWidget {
       ],
     );
   }
+}
+
+Widget _buildProgressOrWaveform({
+  required AudioPlayerState state,
+  required Duration progress,
+  required Duration buffered,
+  required Duration totalDuration,
+  required AudioPlayerCubit cubit,
+  required bool isActive,
+  required bool isCompact,
+}) {
+  final waveformReady = isActive &&
+      state.waveformStatus == AudioWaveformStatus.ready &&
+      state.waveform.isNotEmpty;
+
+  if (waveformReady) {
+    return AudioWaveformScrubber(
+      amplitudes: state.waveform,
+      progress: progress,
+      buffered: buffered,
+      total: totalDuration,
+      onSeek: cubit.seek,
+      enabled: isActive,
+      compact: isCompact,
+    );
+  }
+
+  return AudioProgressBar(
+    progress: progress,
+    buffered: buffered,
+    total: totalDuration,
+    onSeek: cubit.seek,
+    enabled: isActive,
+    compact: isCompact,
+  );
 }
 
 /// Circular primary play/pause button with progress ring animation.

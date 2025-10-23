@@ -9,6 +9,7 @@ import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
+import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAudioPlayerCubit extends MockCubit<AudioPlayerState>
@@ -195,6 +196,30 @@ void main() {
     await tester.pump();
 
     verify(() => cubit.setSpeed(1.25)).called(1);
+  });
+
+  testWidgets('renders waveform scrubber when waveform ready',
+      (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.playing,
+      totalDuration: journalAudio.data.duration,
+      progress: const Duration(seconds: 5),
+      pausedAt: Duration.zero,
+      speed: 1,
+      showTranscriptsList: false,
+      buffered: const Duration(seconds: 6),
+      audioNote: journalAudio,
+    ).copyWith(
+      waveformStatus: AudioWaveformStatus.ready,
+      waveform: const <double>[0.3, 0.6, 0.9],
+      waveformBucketDuration: const Duration(milliseconds: 20),
+    );
+
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+    expect(find.byType(AudioWaveformScrubber), findsOneWidget);
+    expect(find.byType(AudioProgressBar), findsNothing);
   });
 
   testWidgets('scrubbing progress calls seek with target duration',
