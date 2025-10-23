@@ -7,8 +7,6 @@ on:
 
 jobs:
   test_v2:
-    if: ${{ false }} # TODO: re-enable after fix
-
     name: Matrix V2 Test on Linux
     permissions:
       contents: read

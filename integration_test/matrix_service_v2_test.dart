@@ -87,6 +87,7 @@ MatrixService _createMatrixService({
     documentsDirectory: documentsDirectory,
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
+    enableSyncV2: true,
     attachmentIndex: AttachmentIndex(logging: loggingService),
     sentEventRegistry: sentEventRegistry,
   );
@@ -96,7 +97,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // description and how to run in https://github.com/matthiasn/lotti/pull/1695
-  group('MatrixService Tests', () {
+  group('MatrixService V2 Tests', () {
     final secureStorageMock = MockSecureStorage();
     const testUserEnv1 = 'TEST_USER1';
     const testUserEnv2 = 'TEST_USER2';
@@ -232,7 +233,7 @@ void main() {
     });
 
     test(
-      'Create room & join',
+      'Create room & join (sync v2)',
       () async {
         debugPrint('\n--- Alice goes live');
 
@@ -241,7 +242,7 @@ void main() {
 
         final aliceClient = await createMatrixClient(
           documentsDirectory: sharedDocumentsDirectory,
-          dbName: 'Alice',
+          dbName: 'AliceV2',
         );
         final aliceRegistry = SentEventRegistry();
         final aliceGateway = MatrixSdkGateway(
@@ -257,7 +258,7 @@ void main() {
           journalDb: aliceDb,
           settingsDb: aliceSettingsDb,
           secureStorage: secureStorageMock,
-          deviceName: 'Alice',
+          deviceName: 'AliceV2',
           activityService: sharedUserActivityService,
           documentsDirectory: sharedDocumentsDirectory,
           updateNotifications: mockUpdateNotifications,
@@ -265,11 +266,13 @@ void main() {
           sentEventRegistry: aliceRegistry,
         );
 
+        await alice.init();
+        expect(alice.debugV2Pipeline, isNotNull);
+
         // Allow time for constructor initialization to complete
         await Future<void>.delayed(const Duration(seconds: 1));
 
         await alice.login();
-        await alice.startKeyVerificationListener();
         debugPrint('Alice - deviceId: ${alice.client.deviceID}');
 
         final roomId = await alice.createRoom();
@@ -283,12 +286,11 @@ void main() {
         debugPrint(
           'Alice - room encrypted: ${alice.syncRoom?.encrypted}',
         );
-        await alice.listenToTimeline();
 
         debugPrint('\n--- Bob goes live');
         final bobClient = await createMatrixClient(
           documentsDirectory: sharedDocumentsDirectory,
-          dbName: 'Bob',
+          dbName: 'BobV2',
         );
         final bobRegistry = SentEventRegistry();
         final bobGateway = MatrixSdkGateway(
@@ -303,7 +305,7 @@ void main() {
           journalDb: bobDb,
           settingsDb: bobSettingsDb,
           secureStorage: secureStorageMock,
-          deviceName: 'Bob',
+          deviceName: 'BobV2',
           activityService: sharedUserActivityService,
           documentsDirectory: sharedDocumentsDirectory,
           updateNotifications: mockUpdateNotifications,
@@ -311,11 +313,13 @@ void main() {
           sentEventRegistry: bobRegistry,
         );
 
+        await bob.init();
+        expect(bob.debugV2Pipeline, isNotNull);
+
         // Allow time for constructor initialization to complete
         await Future<void>.delayed(const Duration(seconds: 1));
 
         await bob.login();
-        await bob.startKeyVerificationListener();
         debugPrint('Bob - deviceId: ${bob.client.deviceID}');
 
         debugPrint('\n--- Alice invites Bob into room $roomId');
@@ -324,7 +328,6 @@ void main() {
 
         final joinRes2 = await bob.joinRoom(roomId);
         debugPrint('Bob - room joined: $joinRes2');
-        await bob.listenToTimeline();
         await waitSeconds(defaultDelay);
 
         await waitUntil(() => alice.getUnverifiedDevices().isNotEmpty);
@@ -454,13 +457,14 @@ void main() {
         }
 
         const n = testSlowNetwork ? 10 : 100;
+        const expectedEntriesPerDb = n * 2;
 
         debugPrint('\n--- Alice sends $n message');
         for (var i = 0; i < n; i++) {
           await sendTestMessage(
             i,
             device: alice,
-            deviceName: 'aliceDevice',
+            deviceName: 'aliceDeviceV2',
           );
         }
 
@@ -469,27 +473,51 @@ void main() {
           await sendTestMessage(
             i,
             device: bob,
-            deviceName: 'bobDevice',
+            deviceName: 'bobDeviceV2',
           );
         }
 
+        await alice.forceV2Rescan();
+        debugPrint(
+          'Alice V2 metrics after rescan: '
+          '${alice.debugV2Pipeline?.metricsSnapshot()}',
+        );
+        await bob.forceV2Rescan();
+        debugPrint(
+          'Bob V2 metrics after rescan: '
+          '${bob.debugV2Pipeline?.metricsSnapshot()}',
+        );
+
+        var lastAliceCount = -1;
         await waitUntilAsync(
           () async {
             final currentCount = await aliceDb.getJournalCount();
-            return currentCount == n;
+            if (currentCount != lastAliceCount) {
+              debugPrint('Alice journal count: $currentCount');
+              lastAliceCount = currentCount;
+            }
+            return currentCount == expectedEntriesPerDb;
           },
         );
         debugPrint('\n--- Alice finished receiving messages');
         final aliceEntriesCount = await aliceDb.getJournalCount();
-        expect(aliceEntriesCount, n);
+        expect(aliceEntriesCount, expectedEntriesPerDb);
         debugPrint('Alice persisted $aliceEntriesCount entries');
 
+        var lastBobCount = -1;
         await waitUntilAsync(
-          () async => await bobDb.getJournalCount() == n,
+          () async {
+            final currentCount = await bobDb.getJournalCount();
+            if (currentCount != lastBobCount) {
+              debugPrint('Bob journal count: $currentCount');
+              lastBobCount = currentCount;
+            }
+            return currentCount == expectedEntriesPerDb;
+          },
         );
         debugPrint('\n--- Bob finished receiving messages');
         final bobEntriesCount = await bobDb.getJournalCount();
-        expect(bobEntriesCount, n);
+        expect(bobEntriesCount, expectedEntriesPerDb);
         debugPrint('Bob persisted $bobEntriesCount entries');
 
         await waitSeconds(defaultDelay);
