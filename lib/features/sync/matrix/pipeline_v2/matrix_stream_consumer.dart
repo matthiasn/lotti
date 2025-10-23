@@ -76,6 +76,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required SyncEventProcessor eventProcessor,
     required SyncReadMarkerService readMarkerService,
     required Directory documentsDirectory,
+    required SentEventRegistry sentEventRegistry,
     AttachmentIndex? attachmentIndex,
     MetricsCounters? metricsCounters,
     bool collectMetrics = false,
@@ -90,7 +91,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     int? liveScanInitialAuditTail,
     int liveScanSteadyTail = 100,
     bool dropOldPayloadsInLiveScan = false,
-    SentEventRegistry? sentEventRegistry,
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,
@@ -123,7 +123,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
         _overrideAuditTail = liveScanInitialAuditTail,
         _liveScanAuditScansRemaining = liveScanInitialAuditScans,
-        _sentEventRegistry = sentEventRegistry ?? SentEventRegistry() {
+        _sentEventRegistry = sentEventRegistry {
     _retryTracker = rc.RetryTracker(
       ttl: _retryTtl,
       maxEntries: _retryMaxEntries,

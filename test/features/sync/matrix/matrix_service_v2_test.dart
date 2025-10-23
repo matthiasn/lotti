@@ -71,7 +71,11 @@ class _TestV2Pipeline2 extends MatrixStreamConsumer {
     required super.eventProcessor,
     required super.readMarkerService,
     required super.documentsDirectory,
-  }) : super(collectMetrics: true);
+    SentEventRegistry? sentEventRegistry,
+  }) : super(
+          collectMetrics: true,
+          sentEventRegistry: sentEventRegistry ?? SentEventRegistry(),
+        );
 
   Map<String, int>? testMetrics;
   Future<void> Function({required bool includeCatchUp})? onForceRescan;
@@ -981,7 +985,8 @@ class _TestV2Pipeline extends MatrixStreamConsumer {
     required super.eventProcessor,
     required super.readMarkerService,
     required super.documentsDirectory,
-  });
+    SentEventRegistry? sentEventRegistry,
+  }) : super(sentEventRegistry: sentEventRegistry ?? SentEventRegistry());
 
   Map<String, int> testMetrics = const {};
 

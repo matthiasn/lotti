@@ -8,6 +8,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -109,6 +110,7 @@ void main() {
         readMarkerService: readMarker,
         documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
       );
 
       await consumer.initialize();

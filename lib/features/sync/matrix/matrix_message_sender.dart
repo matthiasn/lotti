@@ -130,7 +130,23 @@ class MatrixMessageSender {
         source: SentEventSource.text,
       );
 
-      onSent(eventId, outboundMessage);
+      try {
+        onSent(eventId, outboundMessage);
+      } catch (error, stackTrace) {
+        _loggingService
+          ..captureEvent(
+            'onSent callback threw for eventId=$eventId '
+            'messageType=${outboundMessage.runtimeType}',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'matrix.message_sender.onSent',
+          )
+          ..captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'matrix.message_sender.onSent',
+            stackTrace: stackTrace,
+          );
+      }
       return true;
     } catch (error, stackTrace) {
       _loggingService.captureException(

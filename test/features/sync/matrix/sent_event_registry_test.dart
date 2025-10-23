@@ -125,7 +125,7 @@ void main() {
     final firstNextPrune = registry.debugNextPruneAt;
 
     clock.advance(const Duration(seconds: 5));
-    final now = clock.now();
+    // Observe that consume does not force pruning when there is no entry.
     registry.consume(r'$missing');
     expect(registry.debugNextPruneAt, firstNextPrune);
   });
