@@ -19,12 +19,15 @@ void main() {
   test('consume returns true only after registering id', () {
     final registry = SentEventRegistry(ttl: const Duration(seconds: 10));
 
-    expect(registry.consume('evt-1'), isFalse);
+    expect(registry.consume(r'$evt-1'), isFalse);
 
-    registry.register('evt-1', source: SentEventSource.text);
-    expect(registry.consume('evt-1'), isTrue);
-    expect(registry.consume('evt-1'), isFalse,
-        reason: 'entry removed after consume');
+    registry.register(r'$evt-1', source: SentEventSource.text);
+    expect(registry.consume(r'$evt-1'), isTrue);
+    expect(
+      registry.consume(r'$evt-1'),
+      isTrue,
+      reason: 'entry remains valid until TTL expires',
+    );
   });
 
   test('entries expire after ttl', () {
@@ -32,10 +35,10 @@ void main() {
     final registry = SentEventRegistry(
       ttl: const Duration(seconds: 5),
       clockSource: clock,
-    )..register('evt-2');
+    )..register(r'$evt-2');
     clock.advance(const Duration(seconds: 6));
 
-    expect(registry.consume('evt-2'), isFalse);
+    expect(registry.consume(r'$evt-2'), isFalse);
   });
 
   test('prune evicts expired entries and enforces size cap', () {
@@ -45,14 +48,46 @@ void main() {
       maxEntries: 2,
       clockSource: clock,
     )
-      ..register('evt-a')
-      ..register('evt-b')
-      ..register('evt-c'); // exceeds cap, oldest should drop
+      ..register(r'$evt-a')
+      ..register(r'$evt-b')
+      ..register(r'$evt-c'); // exceeds cap, oldest should drop
     expect(registry.length, 2);
-    expect(registry.consume('evt-a'), isFalse);
+    expect(
+      registry.consume(r'$evt-a'),
+      isFalse,
+      reason: 'oldest entry evicted when cap exceeded',
+    );
 
     clock.advance(const Duration(seconds: 6));
     registry.prune();
     expect(registry.length, 0);
+  });
+
+  test('re-registering id refreshes expiry and order', () {
+    final clock = _MutableClock(DateTime.utc(2024));
+    final registry = SentEventRegistry(
+      ttl: const Duration(seconds: 5),
+      maxEntries: 3,
+      clockSource: clock,
+    )
+      ..register(r'$evt-a')
+      ..register(r'$evt-b');
+
+    clock.advance(const Duration(seconds: 3));
+    registry
+      ..register(r'$evt-a') // refresh expiry & order
+      ..register(r'$evt-c'); // triggers eviction of evt-b (oldest)
+
+    expect(registry.consume(r'$evt-a'), isTrue);
+    expect(
+      registry.consume(r'$evt-b'),
+      isTrue,
+      reason: 're-registering another id should not evict existing entries',
+    );
+    registry.register(r'$evt-d'); // exceed cap; oldest (evt-b) should drop now
+    expect(registry.consume(r'$evt-b'), isFalse);
+
+    clock.advance(const Duration(seconds: 6));
+    expect(registry.consume(r'$evt-a'), isFalse);
   });
 }

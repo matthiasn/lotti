@@ -209,7 +209,7 @@ void main() {
         parseCommands: any<bool>(named: 'parseCommands'),
         parseMarkdown: any<bool>(named: 'parseMarkdown'),
       ),
-    ).thenAnswer((_) async => 'text-event-id');
+    ).thenAnswer((_) async => r'$text-event-id');
 
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
@@ -218,7 +218,7 @@ void main() {
     );
 
     expect(result, isTrue);
-    expect(sentEventRegistry.consume('text-event-id'), isTrue);
+    expect(sentEventRegistry.consume(r'$text-event-id'), isTrue);
   });
 
   test('adopts descriptor vector clock when message is stale', () async {

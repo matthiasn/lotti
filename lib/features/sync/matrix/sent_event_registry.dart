@@ -17,74 +17,96 @@ extension SentEventSourceLabel on SentEventSource {
 
 /// In-memory registry of Matrix event IDs emitted by this device.
 ///
-/// The registry keeps a bounded set of IDs and evicts entries after a short TTL
-/// (minutes). When timeline playback echoes an event with a matching ID, we can
-/// skip the expensive ingest path and advance the read marker immediately.
+/// Not thread-safe; relies on Dart's single-threaded event loop.
+/// The registry keeps a bounded, FIFO-evicted set of IDs and evicts entries
+/// after a configurable TTL. Timeline playback can use this to short-circuit
+/// echoed events without re-applying database work.
 class SentEventRegistry {
   SentEventRegistry({
-    this.ttl = const Duration(minutes: 2),
+    this.ttl = const Duration(minutes: 5),
     this.maxEntries = 5000,
+    this.pruneInterval = const Duration(seconds: 30),
     Clock? clockSource,
   })  : assert(!ttl.isNegative, 'ttl must not be negative'),
         assert(maxEntries > 0, 'maxEntries must be positive'),
-        _clock = clockSource ?? clock;
+        assert(!pruneInterval.isNegative, 'pruneInterval must not be negative'),
+        _clock = clockSource ?? clock,
+        _nextPruneAt = (clockSource ?? clock).now();
 
   final Duration ttl;
   final int maxEntries;
+  final Duration pruneInterval;
   final Clock _clock;
 
   final LinkedHashMap<String, _RegistryEntry> _entries =
       LinkedHashMap<String, _RegistryEntry>();
+  DateTime _nextPruneAt;
 
-  /// Registers [eventId] with a new expiry.
+  /// Registers [eventId] with a fresh expiry.
   void register(
     String eventId, {
     SentEventSource? source,
   }) {
+    assert(eventId.isNotEmpty, 'Matrix event IDs must not be empty');
     if (eventId.isEmpty) return;
     final now = _clock.now();
-    _prune(now);
-    if (!_entries.containsKey(eventId)) {
-      while (_entries.length >= maxEntries) {
-        _entries.remove(_entries.keys.first);
-      }
-    }
+    _maybePrune(now, force: _entries.length >= maxEntries);
+
+    // Refresh order when re-registering an existing id.
+    final existing = _entries.remove(eventId);
+    final expiry = now.add(ttl);
     _entries[eventId] = _RegistryEntry(
-      expiry: now.add(ttl),
-      source: source,
+      expiry: expiry,
+      source: source ?? existing?.source,
     );
+
+    // Enforce maxEntries (FIFO) after refresh.
+    while (_entries.length > maxEntries) {
+      _entries.remove(_entries.keys.first);
+    }
   }
 
-  /// Consumes [eventId] if present and not expired.
-  ///
-  /// Returns `true` when the event ID originated from this registry and still
-  /// falls within the TTL window.
+  /// Returns `true` when [eventId] was previously registered and has not
+  /// expired. The entry remains in the registry until it naturally expires.
   bool consume(String eventId) {
+    assert(eventId.isNotEmpty, 'Matrix event IDs must not be empty');
     if (eventId.isEmpty) return false;
     final now = _clock.now();
-    final entry = _entries.remove(eventId);
+    _maybePrune(now);
+
+    final entry = _entries[eventId];
     if (entry == null) {
-      _prune(now);
+      // Opportunistically prune if we missed due to interval checks.
+      _maybePrune(now, force: true);
       return false;
     }
     if (entry.expiry.isBefore(now)) {
+      _entries.remove(eventId);
+      _maybePrune(now, force: true);
       return false;
     }
     return true;
   }
 
-  /// Removes expired entries relative to the provided [now] (or current time).
+  /// Removes expired entries relative to [now] (or current time).
   void prune([DateTime? now]) {
     _prune(now ?? _clock.now());
   }
 
-  /// Removes all entries (test/helper).
+  /// Removes all entries (primarily for tests).
   void clear() {
     _entries.clear();
+    _nextPruneAt = _clock.now().add(pruneInterval);
   }
 
   /// Number of tracked event IDs (including pending expirations).
   int get length => _entries.length;
+
+  void _maybePrune(DateTime now, {bool force = false}) {
+    if (!force && now.isBefore(_nextPruneAt)) return;
+    _prune(now);
+    _nextPruneAt = now.add(pruneInterval);
+  }
 
   void _prune(DateTime now) {
     _entries.removeWhere((_, entry) => entry.expiry.isBefore(now));
@@ -97,7 +119,7 @@ class SentEventRegistry {
 class _RegistryEntry {
   _RegistryEntry({
     required this.expiry,
-    required this.source,
+    this.source,
   });
 
   final DateTime expiry;
