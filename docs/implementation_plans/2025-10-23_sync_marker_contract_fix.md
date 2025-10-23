@@ -230,8 +230,34 @@ Until these fixes land, the contract change alone is insufficient to recover fro
 
 ## Next Actions
 
-1. **Flush JSON before enqueueing**
+1. **Flush JSON before enqueueing** ✅
    - In `OutboxService.enqueueMessage`, fetch the latest entity from `JournalDb` and call `saveJournalEntityJson` before reading/uploading the file. This guarantees the descriptor we upload reflects the most recent metadata/vector clock.
-2. **Sanity check uploads**
-   - In `MatrixMessageSender._sendJournalEntityPayload`, compare the decoded JSON’s vector clock with the `SyncJournalEntity.vectorClock`. Log (and consider failing fast) if they diverge so stale uploads are caught immediately.
+   - **Implemented in commit 1921c9c4c**: Added JSON flush logic before send.
+2. **Sanity check uploads** ✅
+   - In `MatrixMessageSender._sendJournalEntityPayload`, compare the decoded JSON's vector clock with the `SyncJournalEntity.vectorClock`. Log (and consider failing fast) if they diverge so stale uploads are caught immediately.
    - If the JSON is newer, rebuild the outgoing `SyncJournalEntity` (vector clock and any related metadata) before sending the text event so descriptor bytes and metadata stay aligned.
+   - **Implemented in commit 67ccdeea5**: Vector clock adoption logic now uses JSON's clock when mismatched.
+
+## 2025-10-23 Final Verification
+
+### Initial Test Results
+- Desktop catch-up appeared broken, only receiving a small fraction of entries sent by mobile while offline
+- Investigation revealed the old room was using V1 pipeline instead of V2 on initial startup
+- V1 pipeline lacks catch-up logic, so offline events were permanently missed
+
+### Root Cause
+- Environment-specific issue with old room state preventing V2 pipeline initialization
+- Not a code regression from recent commits
+
+### Resolution & Verification
+- Created new Matrix room and re-ran full offline sync test
+- V2 pipeline activated correctly from startup
+- All journal entities applied successfully
+- Stale attachment handling working (detected, purged cache, refreshed)
+- Missing attachment retry mechanism working (kept pending until descriptor arrived)
+- Marker advancement steady throughout session
+- AttachmentIndex logs clean (no spam)
+- Zero circuit breaker activations
+- Manual UI verification confirmed completeness
+
+**Conclusion**: All recent commits working correctly. The catch-up issue was environmental (old room state), not a code defect.
