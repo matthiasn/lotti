@@ -5,7 +5,7 @@
 - Sending a sync payload echoes the same Matrix event back to the originating device; we currently
   re-fetch attachments, re-apply database writes, and trigger UI updates for our own outbound work.
 - We'll capture event IDs returned by the Matrix SDK, stash them in an in-memory registry with a
-  short TTL, and skip the heavy ingest path whenever those IDs appear back on the timeline.
+  short TTL (5 minutes by default), and skip the heavy ingest path whenever those IDs appear back on the timeline.
 - The registry remains device-local, automatically expiring entries to bound memory while still
   covering the immediate echo window.
 
@@ -15,7 +15,7 @@
   a lightweight provider.
 - Short-circuit timeline ingestion when a matching event ID arrives, while still advancing read
   markers so history stays in sync.
-- Add tracing/metrics so we can confirm suppression kicks in and quantify the saved work.
+- Add tracing/metrics so we can confirm suppression kicks in and quantify the saved work, including V1 logs and V2 metrics/statistics for suppressed events.
 - Keep analyzer/tests clean (`dart-mcp.analyze_files`, focused `dart-mcp.run_tests`).
 
 ## Non-Goals
@@ -42,8 +42,7 @@
   - New class (e.g. `SentEventRegistry`) keeping `{eventId: expiry}` in memory with a default TTL (
     configurable, initial value ~5 minutes).
   - Provide `register(String eventId, {Source source})`, `bool consume(String eventId)`, and
-    `void prune(DateTime now)` helpers; consuming removes the entry to avoid matching historical
-    replays.
+    `void prune(DateTime now)` helpers; entries remain until TTL expiry so repeated echoes or retries continue to short-circuit.
   - Expose via Riverpod (`sentEventRegistryProvider`) so both send and ingest layers can access the
     same instance.
 2. **Register on Send Paths**
@@ -60,14 +59,13 @@
   - Inject the registry into the timeline layer (either extend `TimelineContext` or plumb via
     constructor so `_ingestAndComputeLatest` can access it).
   - At the top of the per-event loop, call `registry.consume(event.eventId)`; if true, skip
-    attachment prefetch + `eventProcessor.process`.
+    attachment prefetch + `eventProcessor.process`, while keeping the marker advancement and retry state in sync.
   - Still update `latestAdvancingEventId` so read markers advance, and increment a dedicated
     metric (`incDbSuppressedSelfEvent`) for observability.
   - Emit a debug log (`selfEventSuppressed`) with the event ID and original sender for field
     verification.
 4. **TTL & Maintenance**
-  - Run `prune()` opportunistically when registering new IDs and after each timeline batch to evict
-    stale entries.
+  - Run `prune()` opportunistically when registering new IDs and after each timeline batch (honouring a prune interval) to evict stale entries without scanning the map on every call.
   - Guard the registry with `Clock`/`DateTime.now()` injection for deterministic tests.
   - Size footprint: worst-case a few thousand entries; add an upper bound (e.g. drop oldest once >
     5k) as a safety net.
@@ -76,11 +74,12 @@
 
 - `MatrixMessageSender.sendMatrixMessage` signature updates `onSent` to accept the generated event
   ID (and possibly sent type). `MatrixService.sendMatrixMsg` and tests must adapt.
-- Introduce `SentEventRegistry` (likely in
-  `lib/features/sync/matrix/state/sent_event_registry.dart`) plus a provider file.
+- Introduce `SentEventRegistry` (implemented in
+  `lib/features/sync/matrix/sent_event_registry.dart`) plus a provider file
+  wired through `lib/providers/service_providers.dart`.
 - Extend `MatrixTimelineListener` / `TimelineContext` so `_ingestAndComputeLatest` can pull the
   registry (e.g. via constructor parameter or `listener.sentEventRegistry`).
-- Add new metric counters and logging hooks within `MatrixStreamConsumer` for suppressed events.
+- Add new metric counters and logging hooks within both timeline pipelines so suppression counts are visible alongside existing metrics (V1 logging, V2 metrics snapshot), and ensure suppressed events keep read markers and retry state consistent.
 - No database schema or sync protocol changes; all adjustments remain client-local.
 
 ## Implementation Phases
@@ -90,34 +89,26 @@
 - Confirmed send/ingest call-sites and event ID availability via quick code reads (
   `MatrixMessageSender`, `MatrixSdkGateway`, `timeline.dart`).
 
-### Phase 1 — Registry Foundation
+### Phase 1 — Registry Foundation ✅
 
-- Implement `SentEventRegistry` with TTL logic, prune helpers, and optional size cap.
-- Provide Riverpod wiring and expose a simple interface for tests (mockable via `ProviderContainer`
-  override).
+- Implemented `SentEventRegistry` with TTL logic, prune helpers, interval-based pruning, and a size cap.
+- Added shared Riverpod provider wiring and debug accessors for tests.
 
-### Phase 2 — Capture Event IDs on Send
+### Phase 2 — Capture Event IDs on Send ✅
 
-- Update `MatrixMessageSender`, `_sendFile`, and `MatrixSdkGateway` to register IDs and adapt
-  callbacks/metrics.
-- Adjust `MatrixService` + unit tests to handle the new callback signature while preserving existing
-  sent counters.
+- Updated sender/gateway paths to register event IDs and propagate them through the callback.
+- Adjusted `MatrixService` and unit tests; also added coverage for failure/null paths.
 
-### Phase 3 — Suppress During Timeline Ingest
+### Phase 3 — Suppress During Timeline Ingest ✅
 
-- Inject the registry into timeline processing, skip `eventProcessor.process` when consuming an ID,
-  and ensure read marker advancement still occurs.
-- Add suppression logging + metrics, and make sure `_retryTracker`/diagnostics ignore suppressed
-  events.
+- Wired the registry into both timeline pipelines, skipping processing while keeping marker and retry state in sync.
+- Added suppression logging/metrics counters for V1 logging and V2 metrics snapshots.
 
-### Phase 4 — Validation & Docs
+### Phase 4 — Validation & Docs ✅
 
-- Unit-test the registry (TTL eviction, consume semantics, size cap) and add targeted tests around
-  `MatrixMessageSender` + timeline suppression.
-- Run analyzer/tests (`dart-mcp.analyze_files`, focused `dart-mcp.run_tests`).
-- Update `lib/features/sync/README.md` (and any feature-specific docs) to describe self-event
-  suppression behaviour.
-- Note the change in the next CHANGELOG entry.
+- Added comprehensive unit/integration coverage across registry, sender, gateway, and both timelines.
+- Analyzer/tests run via `dart-mcp`.
+- Updated README/plan documentation to describe suppression behaviour and monitoring.
 
 ## Testing Strategy
 

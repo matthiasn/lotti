@@ -40,6 +40,9 @@ class MatrixMessageSender {
   Directory get documentsDirectory => _documentsDirectory;
   SentEventRegistry get sentEventRegistry => _sentEventRegistry;
 
+  /// Sends [message] to Matrix, ensuring that any event IDs emitted by the SDK
+  /// are registered with [SentEventRegistry] so downstream timelines can
+  /// suppress the echoed payload.
   Future<bool> sendMatrixMessage({
     required SyncMessage message,
     required MatrixMessageContext context,

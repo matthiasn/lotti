@@ -162,7 +162,7 @@ V2 replaces the multi-pass drain with a stream-first consumer:
 - Attach-time catch-up: backfills/paginates until the last processed event is
   present, then processes strictly after it (no rewind before the marker).
 - Micro-batches: orders oldest→newest with in-batch de-duplication by event ID.
-- Self-event suppression: consumes locally produced event IDs from `SentEventRegistry` so echoed payloads advance the marker without redundant database or attachment work.
+- Self-event suppression: consumes locally produced event IDs from `SentEventRegistry` so echoed payloads advance the marker without redundant database or attachment work; suppression counters/logs surface in both pipelines so Matrix Stats reflects the saved work.
 - Attachment prefetch: downloads remote attachments referenced by text payloads
   before processing to ensure files exist when applying JSON.
 - Marker advancement: monotonic by server timestamp with eventId tie-breaker;

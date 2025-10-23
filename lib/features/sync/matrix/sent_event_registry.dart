@@ -43,7 +43,9 @@ class SentEventRegistry {
       LinkedHashMap<String, _RegistryEntry>();
   DateTime _nextPruneAt;
 
-  /// Registers [eventId] with a fresh expiry.
+  /// Registers [eventId] with a fresh expiry and retains the most recent
+  /// source label so diagnostics can attribute suppressed traffic. The entry
+  /// is (re)queued at the tail so FIFO eviction behaves deterministically.
   void register(
     String eventId, {
     SentEventSource? source,
@@ -67,8 +69,9 @@ class SentEventRegistry {
     }
   }
 
-  /// Returns `true` when [eventId] was previously registered and has not
-  /// expired. The entry remains in the registry until it naturally expires.
+  /// Returns `true` when [eventId] was previously registered and still falls
+  /// within the TTL window. Suppressed IDs are left in place so a second pass
+  /// (e.g. retry, live scan) can short-circuit without re-registering.
   bool consume(String eventId) {
     assert(eventId.isNotEmpty, 'Matrix event IDs must not be empty');
     if (eventId.isEmpty) return false;
@@ -89,12 +92,15 @@ class SentEventRegistry {
     return true;
   }
 
-  /// Removes expired entries relative to [now] (or current time).
+  /// Removes expired entries relative to [now] (or the current time) and
+  /// enforces the FIFO size cap. This is mainly exposed for tests; runtime
+  /// callers should rely on the scheduled pruning interval instead.
   void prune([DateTime? now]) {
     _prune(now ?? _clock.now());
   }
 
-  /// Removes all entries (primarily for tests).
+  /// Removes all entries and resets the next scheduled prune instant. This is
+  /// mainly intended for tests that want to start from a clean slate.
   void clear() {
     _entries.clear();
     _nextPruneAt = _clock.now().add(pruneInterval);
