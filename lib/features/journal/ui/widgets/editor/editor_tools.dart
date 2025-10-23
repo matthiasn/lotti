@@ -43,6 +43,11 @@ QuillController makeController({
   return controller;
 }
 
+/// Inserts a Quill `divider` embed at the current selection.
+///
+/// The function preserves editor focus by toggling [QuillController.skipRequestKeyboard]
+/// during the mutation, replaces any currently selected text with the divider,
+/// and moves the caret directly after the inserted embed so users can continue typing.
 void insertDividerEmbed(QuillController controller) {
   final selection = controller.selection;
   final index = math.min(selection.baseOffset, selection.extentOffset);

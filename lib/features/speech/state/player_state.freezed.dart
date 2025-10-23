@@ -18,9 +18,9 @@ mixin _$AudioPlayerState {
   Duration get totalDuration;
   Duration get progress;
   Duration get pausedAt;
-  Duration get buffered;
   double get speed;
   bool get showTranscriptsList;
+  Duration get buffered;
   JournalAudio? get audioNote;
 
   /// Create a copy of AudioPlayerState
@@ -43,11 +43,11 @@ mixin _$AudioPlayerState {
                 other.progress == progress) &&
             (identical(other.pausedAt, pausedAt) ||
                 other.pausedAt == pausedAt) &&
-            (identical(other.buffered, buffered) ||
-                other.buffered == buffered) &&
             (identical(other.speed, speed) || other.speed == speed) &&
             (identical(other.showTranscriptsList, showTranscriptsList) ||
                 other.showTranscriptsList == showTranscriptsList) &&
+            (identical(other.buffered, buffered) ||
+                other.buffered == buffered) &&
             const DeepCollectionEquality().equals(other.audioNote, audioNote));
   }
 
@@ -58,14 +58,14 @@ mixin _$AudioPlayerState {
       totalDuration,
       progress,
       pausedAt,
-      buffered,
       speed,
       showTranscriptsList,
+      buffered,
       const DeepCollectionEquality().hash(audioNote));
 
   @override
   String toString() {
-    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, buffered: $buffered, speed: $speed, showTranscriptsList: $showTranscriptsList, audioNote: $audioNote)';
+    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, speed: $speed, showTranscriptsList: $showTranscriptsList, buffered: $buffered, audioNote: $audioNote)';
   }
 }
 
@@ -80,9 +80,9 @@ abstract mixin class $AudioPlayerStateCopyWith<$Res> {
       Duration totalDuration,
       Duration progress,
       Duration pausedAt,
-      Duration buffered,
       double speed,
       bool showTranscriptsList,
+      Duration buffered,
       JournalAudio? audioNote});
 }
 
@@ -103,9 +103,9 @@ class _$AudioPlayerStateCopyWithImpl<$Res>
     Object? totalDuration = null,
     Object? progress = null,
     Object? pausedAt = null,
-    Object? buffered = null,
     Object? speed = null,
     Object? showTranscriptsList = null,
+    Object? buffered = null,
     Object? audioNote = freezed,
   }) {
     return _then(_self.copyWith(
@@ -125,10 +125,6 @@ class _$AudioPlayerStateCopyWithImpl<$Res>
           ? _self.pausedAt
           : pausedAt // ignore: cast_nullable_to_non_nullable
               as Duration,
-      buffered: null == buffered
-          ? _self.buffered
-          : buffered // ignore: cast_nullable_to_non_nullable
-              as Duration,
       speed: null == speed
           ? _self.speed
           : speed // ignore: cast_nullable_to_non_nullable
@@ -137,6 +133,10 @@ class _$AudioPlayerStateCopyWithImpl<$Res>
           ? _self.showTranscriptsList
           : showTranscriptsList // ignore: cast_nullable_to_non_nullable
               as bool,
+      buffered: null == buffered
+          ? _self.buffered
+          : buffered // ignore: cast_nullable_to_non_nullable
+              as Duration,
       audioNote: freezed == audioNote
           ? _self.audioNote
           : audioNote // ignore: cast_nullable_to_non_nullable
@@ -243,9 +243,9 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             Duration totalDuration,
             Duration progress,
             Duration pausedAt,
-            Duration buffered,
             double speed,
             bool showTranscriptsList,
+            Duration buffered,
             JournalAudio? audioNote)?
         $default, {
     required TResult orElse(),
@@ -258,9 +258,9 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             _that.totalDuration,
             _that.progress,
             _that.pausedAt,
-            _that.buffered,
             _that.speed,
             _that.showTranscriptsList,
+            _that.buffered,
             _that.audioNote);
       case _:
         return orElse();
@@ -287,9 +287,9 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             Duration totalDuration,
             Duration progress,
             Duration pausedAt,
-            Duration buffered,
             double speed,
             bool showTranscriptsList,
+            Duration buffered,
             JournalAudio? audioNote)
         $default,
   ) {
@@ -301,9 +301,9 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             _that.totalDuration,
             _that.progress,
             _that.pausedAt,
-            _that.buffered,
             _that.speed,
             _that.showTranscriptsList,
+            _that.buffered,
             _that.audioNote);
       case _:
         throw StateError('Unexpected subclass');
@@ -329,9 +329,9 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             Duration totalDuration,
             Duration progress,
             Duration pausedAt,
-            Duration buffered,
             double speed,
             bool showTranscriptsList,
+            Duration buffered,
             JournalAudio? audioNote)?
         $default,
   ) {
@@ -343,9 +343,9 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             _that.totalDuration,
             _that.progress,
             _that.pausedAt,
-            _that.buffered,
             _that.speed,
             _that.showTranscriptsList,
+            _that.buffered,
             _that.audioNote);
       case _:
         return null;
@@ -361,9 +361,9 @@ class _AudioPlayerState implements AudioPlayerState {
       required this.totalDuration,
       required this.progress,
       required this.pausedAt,
-      this.buffered = Duration.zero,
       required this.speed,
       required this.showTranscriptsList,
+      this.buffered = Duration.zero,
       this.audioNote});
 
   @override
@@ -375,12 +375,12 @@ class _AudioPlayerState implements AudioPlayerState {
   @override
   final Duration pausedAt;
   @override
-  @JsonKey()
-  final Duration buffered;
-  @override
   final double speed;
   @override
   final bool showTranscriptsList;
+  @override
+  @JsonKey()
+  final Duration buffered;
   @override
   final JournalAudio? audioNote;
 
@@ -404,11 +404,11 @@ class _AudioPlayerState implements AudioPlayerState {
                 other.progress == progress) &&
             (identical(other.pausedAt, pausedAt) ||
                 other.pausedAt == pausedAt) &&
-            (identical(other.buffered, buffered) ||
-                other.buffered == buffered) &&
             (identical(other.speed, speed) || other.speed == speed) &&
             (identical(other.showTranscriptsList, showTranscriptsList) ||
                 other.showTranscriptsList == showTranscriptsList) &&
+            (identical(other.buffered, buffered) ||
+                other.buffered == buffered) &&
             const DeepCollectionEquality().equals(other.audioNote, audioNote));
   }
 
@@ -419,14 +419,14 @@ class _AudioPlayerState implements AudioPlayerState {
       totalDuration,
       progress,
       pausedAt,
-      buffered,
       speed,
       showTranscriptsList,
+      buffered,
       const DeepCollectionEquality().hash(audioNote));
 
   @override
   String toString() {
-    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, buffered: $buffered, speed: $speed, showTranscriptsList: $showTranscriptsList, audioNote: $audioNote)';
+    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, speed: $speed, showTranscriptsList: $showTranscriptsList, buffered: $buffered, audioNote: $audioNote)';
   }
 }
 
@@ -443,9 +443,9 @@ abstract mixin class _$AudioPlayerStateCopyWith<$Res>
       Duration totalDuration,
       Duration progress,
       Duration pausedAt,
-      Duration buffered,
       double speed,
       bool showTranscriptsList,
+      Duration buffered,
       JournalAudio? audioNote});
 }
 
@@ -466,9 +466,9 @@ class __$AudioPlayerStateCopyWithImpl<$Res>
     Object? totalDuration = null,
     Object? progress = null,
     Object? pausedAt = null,
-    Object? buffered = null,
     Object? speed = null,
     Object? showTranscriptsList = null,
+    Object? buffered = null,
     Object? audioNote = freezed,
   }) {
     return _then(_AudioPlayerState(
@@ -488,10 +488,6 @@ class __$AudioPlayerStateCopyWithImpl<$Res>
           ? _self.pausedAt
           : pausedAt // ignore: cast_nullable_to_non_nullable
               as Duration,
-      buffered: null == buffered
-          ? _self.buffered
-          : buffered // ignore: cast_nullable_to_non_nullable
-              as Duration,
       speed: null == speed
           ? _self.speed
           : speed // ignore: cast_nullable_to_non_nullable
@@ -500,6 +496,10 @@ class __$AudioPlayerStateCopyWithImpl<$Res>
           ? _self.showTranscriptsList
           : showTranscriptsList // ignore: cast_nullable_to_non_nullable
               as bool,
+      buffered: null == buffered
+          ? _self.buffered
+          : buffered // ignore: cast_nullable_to_non_nullable
+              as Duration,
       audioNote: freezed == audioNote
           ? _self.audioNote
           : audioNote // ignore: cast_nullable_to_non_nullable

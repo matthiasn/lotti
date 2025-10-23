@@ -5,6 +5,9 @@ import 'package:flutter_quill/flutter_quill.dart';
 class DividerEmbedBuilder extends EmbedBuilder {
   const DividerEmbedBuilder();
 
+  static const double _dividerOpacity = 0.6;
+  static const double _verticalPadding = 12;
+
   /// Quill serializes horizontal rules with the `divider` embed type.
   @override
   String get key => 'divider';
@@ -15,9 +18,9 @@ class DividerEmbedBuilder extends EmbedBuilder {
   @override
   Widget build(BuildContext context, EmbedContext embedContext) {
     final theme = Theme.of(context);
-    final dividerColor = theme.dividerColor.withAlpha((0.6 * 0xFF).round());
+    final dividerColor = theme.dividerColor.withValues(alpha: _dividerOpacity);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: _verticalPadding),
       child: Divider(
         color: dividerColor,
         thickness: 1,
@@ -31,6 +34,11 @@ class DividerEmbedBuilder extends EmbedBuilder {
 class UnknownEmbedBuilder extends EmbedBuilder {
   const UnknownEmbedBuilder();
 
+  static const double _containerOpacity = 0.12;
+  static const double _outlineOpacity = 0.31;
+  static const double _verticalMargin = 8;
+  static const double _padding = 12;
+
   @override
   String get key => 'unknown';
 
@@ -43,13 +51,15 @@ class UnknownEmbedBuilder extends EmbedBuilder {
     final label = embedContext.node.value.type;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(vertical: _verticalMargin),
+      padding: const EdgeInsets.all(_padding),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withAlpha(30),
+        color: theme.colorScheme.surfaceContainerHighest
+            .withValues(alpha: _containerOpacity),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withAlpha(80),
+          color: theme.colorScheme.outlineVariant
+              .withValues(alpha: _outlineOpacity),
         ),
       ),
       child: Row(

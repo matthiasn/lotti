@@ -4407,6 +4407,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy as Markdown'**
   String get copyAsMarkdown;
+
+  /// No description provided for @editorInsertDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert divider'**
+  String get editorInsertDivider;
 }
 
 class _AppLocalizationsDelegate

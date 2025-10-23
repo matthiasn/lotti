@@ -662,8 +662,12 @@
   "settingsMatrixRoomInviteMessage": "Invite to room {roomId} from {senderId}. Accept?",
   "@settingsMatrixRoomInviteMessage": {
     "placeholders": {
-      "roomId": { "type": "String" },
-      "senderId": { "type": "String" }
+      "roomId": {
+        "type": "String"
+      },
+      "senderId": {
+        "type": "String"
+      }
     }
   },
   "settingsMatrixAccept": "Accept",
@@ -821,5 +825,6 @@
   "commonUnknown": "Unknown",
   "aiTranscribingAudio": "Transcribing audio...",
   "copyAsText": "Copy as text",
-  "copyAsMarkdown": "Copy as Markdown"
+  "copyAsMarkdown": "Copy as Markdown",
+  "editorInsertDivider": "Insert divider"
 }
