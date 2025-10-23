@@ -126,10 +126,8 @@ void main() {
 
     clock.advance(const Duration(seconds: 5));
     final now = clock.now();
-    expect(registry.consume(r'$missing'), isFalse); // triggers forced prune
-    expect(registry.debugNextPruneAt.isAfter(firstNextPrune), isTrue);
-    expect(registry.debugNextPruneAt.difference(now),
-        equals(registry.pruneInterval));
+    registry.consume(r'$missing');
+    expect(registry.debugNextPruneAt, firstNextPrune);
   });
 
   test('empty eventIds are ignored (asserts in debug)', () {

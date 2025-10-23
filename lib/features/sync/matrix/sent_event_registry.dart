@@ -80,13 +80,10 @@ class SentEventRegistry {
 
     final entry = _entries[eventId];
     if (entry == null) {
-      // Opportunistically prune if we missed due to interval checks.
-      _maybePrune(now, force: true);
       return false;
     }
     if (entry.expiry.isBefore(now)) {
       _entries.remove(eventId);
-      _maybePrune(now, force: true);
       return false;
     }
     return true;
