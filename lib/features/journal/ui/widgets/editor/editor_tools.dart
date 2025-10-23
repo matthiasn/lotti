@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/services.dart';
@@ -40,4 +41,21 @@ QuillController makeController({
     );
   }
   return controller;
+}
+
+void insertDividerEmbed(QuillController controller) {
+  final selection = controller.selection;
+  final index = math.min(selection.baseOffset, selection.extentOffset);
+  final length = (selection.baseOffset - selection.extentOffset).abs();
+
+  controller
+    ..skipRequestKeyboard = true
+    ..replaceText(
+      index,
+      length,
+      const BlockEmbed('divider', 'hr'),
+      null,
+    )
+    ..moveCursorToPosition(index + 1)
+    ..skipRequestKeyboard = false;
 }

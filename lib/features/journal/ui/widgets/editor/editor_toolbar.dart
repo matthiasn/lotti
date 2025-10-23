@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 
 class ToolbarWidget extends ConsumerWidget {
   const ToolbarWidget({
@@ -22,27 +23,43 @@ class ToolbarWidget extends ConsumerWidget {
     const curve = Curves.easeInOutQuint;
     const height = 45.0;
 
+    final baseButtonOptions = QuillToolbarBaseButtonOptions<dynamic,
+        QuillToolbarBaseButtonExtraOptions>(
+      afterButtonPressed: notifier.focusNode.requestFocus,
+    );
+
+    final toolbarConfig = QuillSimpleToolbarConfig(
+      toolbarSize: height,
+      toolbarSectionSpacing: 0,
+      toolbarIconAlignment: WrapAlignment.start,
+      showUndo: false,
+      showRedo: false,
+      multiRowsDisplay: false,
+      showColorButton: false,
+      showFontFamily: false,
+      showUnderLineButton: false,
+      showBackgroundColorButton: false,
+      showSubscript: false,
+      showSuperscript: false,
+      showIndent: false,
+      showFontSize: false,
+      showDividers: false,
+      customButtons: [
+        QuillToolbarCustomButtonOptions(
+          icon: const Icon(Icons.horizontal_rule),
+          onPressed: () => insertDividerEmbed(controller),
+        ),
+      ],
+      buttonOptions: QuillSimpleToolbarButtonOptions(
+        base: baseButtonOptions,
+      ),
+    );
+
     final toolbar = Material(
       elevation: 1,
       child: QuillSimpleToolbar(
         controller: controller,
-        config: const QuillSimpleToolbarConfig(
-          toolbarSize: height,
-          toolbarSectionSpacing: 0,
-          toolbarIconAlignment: WrapAlignment.start,
-          showUndo: false,
-          showRedo: false,
-          multiRowsDisplay: false,
-          showColorButton: false,
-          showFontFamily: false,
-          showUnderLineButton: false,
-          showBackgroundColorButton: false,
-          showSubscript: false,
-          showSuperscript: false,
-          showIndent: false,
-          showFontSize: false,
-          showDividers: false,
-        ),
+        config: toolbarConfig,
       ),
     );
 

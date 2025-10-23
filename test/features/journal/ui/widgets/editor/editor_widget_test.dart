@@ -110,6 +110,31 @@ void main() {
       );
     });
 
+    testWidgets('divider toolbar button inserts divider embed',
+        (WidgetTester tester) async {
+      const entryId = 'toolbar-divider';
+
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: entryId,
+          showToolbar: true,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final dividerButton = find.byIcon(Icons.horizontal_rule);
+      expect(dividerButton, findsOneWidget);
+
+      await tester.tap(dividerButton);
+      await tester.pumpAndSettle();
+
+      final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      final operations = quillEditor.controller.document.toDelta().toList();
+      expect(operations.first.data, equals({'divider': 'hr'}));
+      expect(operations[1].value, equals('\n'));
+    });
+
     testWidgets('configures embed builders and unknown fallback',
         (WidgetTester tester) async {
       const entryId = 'embed-config';
