@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -208,6 +209,20 @@ class MatrixMessageSender {
         await _journalDb.getConfigFlag(resendAttachments);
 
     var attachmentsOk = true;
+
+    final messageVectorClock = message.vectorClock;
+    final jsonVectorClock = journalEntity.meta.vectorClock;
+    if (messageVectorClock != null && jsonVectorClock != null) {
+      final status = VectorClock.compare(jsonVectorClock, messageVectorClock);
+      if (status != VclockStatus.equal) {
+        _loggingService.captureEvent(
+          'vectorClock mismatch for ${message.jsonPath} json=${jsonVectorClock.vclock} message=${messageVectorClock.vclock} status=$status',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg.vclockMismatch',
+        );
+        return false;
+      }
+    }
 
     await journalEntity.maybeMap(
       journalAudio: (JournalAudio journalAudio) async {

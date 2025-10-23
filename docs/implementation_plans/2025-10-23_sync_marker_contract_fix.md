@@ -234,3 +234,4 @@ Until these fixes land, the contract change alone is insufficient to recover fro
    - In `OutboxService.enqueueMessage`, fetch the latest entity from `JournalDb` and call `saveJournalEntityJson` before reading/uploading the file. This guarantees the descriptor we upload reflects the most recent metadata/vector clock.
 2. **Sanity check uploads**
    - In `MatrixMessageSender._sendJournalEntityPayload`, compare the decoded JSON’s vector clock with the `SyncJournalEntity.vectorClock`. Log (and consider failing fast) if they diverge so stale uploads are caught immediately.
+   - If the JSON is newer, rebuild the outgoing `SyncJournalEntity` (vector clock and any related metadata) before sending the text event so descriptor bytes and metadata stay aligned.

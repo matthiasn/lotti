@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -193,6 +195,68 @@ void main() {
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     );
+  });
+
+  test('returns false when descriptor vector clock is stale', () async {
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
+
+    final staleMeta = Metadata(
+      id: 'checklist-1',
+      createdAt: DateTime(2025, 10, 22, 23, 18, 48),
+      updatedAt: DateTime(2025, 10, 22, 23, 18, 49),
+      dateFrom: DateTime(2025, 10, 22, 23, 18, 48),
+      dateTo: DateTime(2025, 10, 22, 23, 18, 48),
+      vectorClock: const VectorClock({'hostA': 402}),
+    );
+    final staleChecklist = JournalEntity.checklist(
+      meta: staleMeta,
+      data: const ChecklistData(
+        title: 'TODOs',
+        linkedChecklistItems: <String>[],
+        linkedTasks: <String>['task-1'],
+      ),
+    );
+    final path = relativeEntityPath(staleChecklist);
+    final file = File('${documentsDirectory.path}$path')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(staleChecklist));
+
+    final context = buildContext();
+    final message = SyncMessage.journalEntity(
+      id: staleChecklist.meta.id,
+      jsonPath: path,
+      vectorClock: const VectorClock({'hostA': 425}),
+      status: SyncEntryStatus.update,
+    );
+
+    final result = await sender.sendMatrixMessage(
+      message: message,
+      context: context,
+      onSent: () {},
+    );
+
+    expect(result, isFalse);
+    verify(
+      () => loggingService.captureEvent(
+        contains('vectorClock mismatch'),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.vclockMismatch',
+      ),
+    ).called(1);
+    verifyNever(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    );
+    expect(file.existsSync(), isTrue);
   });
 
   test('logs and returns false when sending text message throws', () async {

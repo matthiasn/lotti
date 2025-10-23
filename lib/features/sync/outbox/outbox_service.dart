@@ -125,6 +125,27 @@ class OutboxService {
       );
 
       if (syncMessage is SyncJournalEntity) {
+        try {
+          final latest = await _journalDb.journalEntityById(syncMessage.id);
+          if (latest != null) {
+            final canonicalPath = entityPath(latest, _documentsDirectory);
+            await saveJson(canonicalPath, jsonEncode(latest));
+          } else {
+            _loggingService.captureEvent(
+              'enqueueMessage.missingEntity id=${syncMessage.id}',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'enqueueMessage',
+            );
+          }
+        } catch (error, stackTrace) {
+          _loggingService.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'enqueueMessage.refreshJson',
+            stackTrace: stackTrace,
+          );
+        }
+
         final fullPath = '${docDir.path}${syncMessage.jsonPath}';
         final journalEntity = await readEntityFromJson(fullPath);
 

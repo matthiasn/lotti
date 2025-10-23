@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -235,6 +237,58 @@ void main() {
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         )).called(1);
+  });
+
+  test('enqueueMessage refreshes JSON before reading descriptor', () async {
+    const id = 'checklist-refresh';
+    final staleMeta = Metadata(
+      id: id,
+      createdAt: DateTime(2025, 10, 22, 23, 18, 48, 935417),
+      updatedAt: DateTime(2025, 10, 22, 23, 18, 49, 201352),
+      dateFrom: DateTime(2025, 10, 22, 23, 18, 48, 935417),
+      dateTo: DateTime(2025, 10, 22, 23, 18, 48, 935417),
+      categoryId: 'category-1',
+      utcOffset: 60,
+      timezone: 'WEST',
+      vectorClock: const VectorClock({'hostA': 402}),
+    );
+    final staleChecklist = JournalEntity.checklist(
+      meta: staleMeta,
+      data: const ChecklistData(
+        title: 'TODOs',
+        linkedChecklistItems: <String>[],
+        linkedTasks: <String>['task-1'],
+      ),
+    );
+    final freshChecklist = staleChecklist.copyWith(
+      meta: staleChecklist.meta.copyWith(
+        vectorClock: const VectorClock({'hostA': 425}),
+      ),
+    );
+    final jsonPath = relativeEntityPath(staleChecklist);
+    final file = File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(staleChecklist));
+
+    when(() => journalDb.journalEntityById(id))
+        .thenAnswer((_) async => freshChecklist);
+
+    final message = SyncMessage.journalEntity(
+      id: id,
+      vectorClock: freshChecklist.meta.vectorClock,
+      jsonPath: jsonPath,
+      status: SyncEntryStatus.update,
+    );
+
+    await service.enqueueMessage(message);
+
+    final stored =
+        jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+    expect(
+      // ignore: avoid_dynamic_calls
+      stored['meta']['vectorClock'],
+      equals({'hostA': 425}),
+    );
   });
 
   test('enqueueMessage logs SyncAiConfig', () async {
