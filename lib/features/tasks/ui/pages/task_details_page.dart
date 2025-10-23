@@ -64,7 +64,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
   GlobalKey _getEntryKey(String entryId) {
     return _entryKeys.putIfAbsent(
       entryId,
-      () => GlobalObjectKey<State>('entry_$entryId'),
+      () => GlobalKey<State>(debugLabel: 'entry_$entryId'),
     );
   }
 
