@@ -5,8 +5,6 @@
 - Desktop catch-up stalls because the legacy `rowsAffected` signal from
   `JournalDb.updateJournalEntity` reported `0` on legitimate updates, causing the
   V2 pipeline to classify events as "missing base" and block marker advancement.
-  legitimate updates, causing the V2 pipeline to classify events as "missing base" and block marker
-  advancement.
 - We will realign the contract so database writes return an explicit "applied" outcome, propagating
   that signal through `SyncApplyDiagnostics` into the stream consumer.
 - The pipeline will stop retrying already-applied events, advance the read marker, and eliminate the

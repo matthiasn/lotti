@@ -154,13 +154,19 @@ void main() {
     });
 
     group('JSON persistence -', () {
-      test('writes JSON even when update skipped by vector clock', () async {
+      test('does not rewrite JSON when update skipped by vector clock',
+          () async {
         const freshClock = VectorClock(<String, int>{'device1': 2});
         const staleClock = VectorClock(<String, int>{'device1': 1});
         final freshEntry = createJournalEntryWithVclock(freshClock).copyWith(
           entryText: const EntryText(plainText: 'fresh text'),
         );
         await db!.updateJournalEntity(freshEntry);
+
+        final docDir = getIt<Directory>();
+        final savedPath = entityPath(freshEntry, docDir);
+        final file = File(savedPath);
+        final beforeJson = await file.readAsString();
 
         final staleEntry = createJournalEntryWithVclock(
           staleClock,
@@ -169,35 +175,31 @@ void main() {
           entryText: const EntryText(plainText: 'stale text'),
         );
 
-        final docDir = getIt<Directory>();
-        final savedPath = entityPath(staleEntry, docDir);
-        final file = File(savedPath);
-        if (file.existsSync()) {
-          file.deleteSync();
-        }
-
         final result = await db!.updateJournalEntity(staleEntry);
         expect(result.applied, isFalse);
         expect(result.skipReason, JournalUpdateSkipReason.olderOrEqual);
 
-        expect(file.existsSync(), isTrue);
         final savedEntity = JournalEntity.fromJson(
           jsonDecode(await file.readAsString()) as Map<String, dynamic>,
         );
-        expect(savedEntity.entryText?.plainText, 'stale text');
-        expect(savedEntity.meta.vectorClock, staleClock);
+        expect(savedEntity.entryText?.plainText, 'fresh text');
+        expect(savedEntity.meta.vectorClock, freshClock);
+        expect(await file.readAsString(), beforeJson);
       });
 
-      test('writes JSON when update prevented by overwrite=false', () async {
+      test('does not rewrite JSON when update prevented by overwrite=false',
+          () async {
         final entry = createJournalEntry('original text');
         await db!.updateJournalEntity(entry);
+
+        final docDir = getIt<Directory>();
+        final savedPath = entityPath(entry, docDir);
+        final file = File(savedPath);
+        final beforeJson = await file.readAsString();
 
         final updated = entry.copyWith(
           entryText: const EntryText(plainText: 'overwrite prevented'),
         );
-        final docDir = getIt<Directory>();
-        final savedPath = entityPath(updated, docDir);
-        final file = File(savedPath);
 
         final result = await db!.updateJournalEntity(
           updated,
@@ -206,11 +208,11 @@ void main() {
 
         expect(result.applied, isFalse);
         expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
-        expect(file.existsSync(), isTrue);
         final savedEntity = JournalEntity.fromJson(
           jsonDecode(await file.readAsString()) as Map<String, dynamic>,
         );
-        expect(savedEntity.entryText?.plainText, 'overwrite prevented');
+        expect(savedEntity.entryText?.plainText, 'original text');
+        expect(await file.readAsString(), beforeJson);
       });
     });
 

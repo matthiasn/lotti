@@ -707,13 +707,13 @@ class PersistenceLogic {
     Metadata metadata,
   ) async {
     try {
-      final applied = await updateDbEntity(
-        journalEntity.copyWith(meta: await updateMetadata(metadata)),
-      );
-      await _journalDb.addTagged(
-        journalEntity.copyWith(meta: await updateMetadata(metadata)),
-      );
-      return applied ?? false;
+      final updatedMeta = await updateMetadata(metadata);
+      final entityWithUpdatedMeta = journalEntity.copyWith(meta: updatedMeta);
+      final applied = (await updateDbEntity(entityWithUpdatedMeta)) ?? false;
+      if (applied) {
+        await _journalDb.addTagged(entityWithUpdatedMeta);
+      }
+      return applied;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
