@@ -10,10 +10,12 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 class LinkedEntriesWidget extends ConsumerWidget {
   const LinkedEntriesWidget(
     this.item, {
+    this.entryKeyBuilder,
     super.key,
   });
 
   final JournalEntity item;
+  final GlobalKey Function(String entryId)? entryKeyBuilder;
 
   @override
   Widget build(
@@ -60,7 +62,9 @@ class LinkedEntriesWidget extends ConsumerWidget {
             final toId = link.toId;
 
             return EntryDetailsWidget(
-              key: Key('${item.id}-$toId'),
+              key: entryKeyBuilder != null
+                  ? entryKeyBuilder!(toId)
+                  : Key('${item.id}-$toId'),
               itemId: toId,
               parentTags: item.meta.tagIds?.toSet(),
               linkedFrom: item,

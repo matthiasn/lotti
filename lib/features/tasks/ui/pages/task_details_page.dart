@@ -1,5 +1,6 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_but
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
+import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_title_header.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
@@ -34,6 +36,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
   final _scrollController = ScrollController();
   final void Function() _listener = getIt<UserActivityService>().updateActivity;
   late final void Function() _updateOffsetListener;
+  final Map<String, GlobalKey> _entryKeys = {};
 
   @override
   void initState() {
@@ -58,8 +61,57 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
     super.dispose();
   }
 
+  GlobalKey _getEntryKey(String entryId) {
+    return _entryKeys.putIfAbsent(
+      entryId,
+      () => GlobalObjectKey<State>('entry_$entryId'),
+    );
+  }
+
+  void _scrollToEntry(String entryId, double alignment) {
+    // Schedule scroll after frame is built
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      final key = _getEntryKey(entryId);
+      final context = key.currentContext;
+
+      if (context != null) {
+        try {
+          Scrollable.ensureVisible(
+            context,
+            alignment: alignment,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        } catch (e) {
+          // Log error if scrolling fails
+          debugPrint('Failed to scroll to entry $entryId: $e');
+        }
+      } else {
+        // Entry not found or not yet rendered
+        debugPrint(
+          'Entry $entryId not found in widget tree, skipping scroll',
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Listen for focus intent
+    ref.listen<AsyncValue<TaskFocusIntent?>>(
+      taskFocusControllerProvider(id: widget.taskId),
+      (previous, next) {
+        final intent = next.valueOrNull;
+        if (intent != null) {
+          _scrollToEntry(intent.entryId, intent.alignment);
+          // Clear intent after consumption
+          ref
+              .read(taskFocusControllerProvider(id: widget.taskId).notifier)
+              .clearIntent();
+        }
+      },
+    );
+
     final provider = entryControllerProvider(id: widget.taskId);
     final task = ref.watch(provider).value?.entry;
 
@@ -110,7 +162,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
-                        LinkedEntriesWidget(task),
+                        LinkedEntriesWidget(
+                          task,
+                          entryKeyBuilder: _getEntryKey,
+                        ),
                         LinkedFromEntriesWidget(task),
                       ],
                     ).animate().fadeIn(

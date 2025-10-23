@@ -29,6 +29,7 @@ The main interface for viewing and editing tasks, featuring:
 - Checklists section with drag-and-drop reordering
 - Linked entries timeline
 - AI-powered features menu
+- Auto-scroll to running timer entry when tapping the timer indicator
 
 #### Checklist Components
 
@@ -82,7 +83,7 @@ Tasks support multilingual AI-generated summaries in 38 different languages. Thi
    - Language of audio transcripts (highest priority)
    - Text content in log entries
    - Overall task context
-   
+
 2. **Manual Language Selection**: Users can manually set their preferred language:
    - Click the language indicator in the task header
    - Search and select from 41 supported languages
@@ -166,7 +167,7 @@ The system uses AI function calling to intelligently suggest when checklist item
    - Verbal statements: "I finished...", "That's done", "I've completed..."
    - Visual confirmation: Screenshots showing completed features, test results
    - Context clues: Past tense descriptions, results that imply completion
-3. **Visual Feedback**: 
+3. **Visual Feedback**:
    - Pulsing indicator appears on suggested items
    - Color coding: Blue (high confidence), Purple (medium), Orange (low)
    - Non-intrusive: Doesn't auto-complete, just suggests
@@ -174,7 +175,7 @@ The system uses AI function calling to intelligently suggest when checklist item
    - Tap indicator to see why AI thinks it's complete
    - Accept to mark as done
    - Dismiss to remove suggestion
-5. **High Confidence Auto-Check**: 
+5. **High Confidence Auto-Check**:
    - Items with high confidence are automatically marked as complete
    - Visual indicator remains to show AI made the change
    - Users can still undo if needed
@@ -222,6 +223,29 @@ To use AI-powered checklist features:
 - For completion suggestions: Task must have existing checklist items
 - For creating items: Works with or without existing checklists
 
+## Timer Indicator Auto-Scroll
+
+When a timer is running for a task, tapping the floating timer indicator will:
+1. Navigate to the task details page
+2. Automatically scroll to position the running timer entry at the top of the screen
+3. Works even when already viewing the task (triggers scroll again)
+
+### Implementation
+
+The feature uses a focus intent system:
+- `TaskFocusController`: Manages scroll-to-entry intent per task
+- `TaskFocusIntent`: Encapsulates the target entry ID and scroll alignment
+- Intent is published when timer indicator is tapped for a task-linked timer
+- Task details page listens for focus intents and triggers scroll via `Scrollable.ensureVisible`
+
+### Technical Details
+
+- Journal-linked timers continue to work as before (no auto-scroll)
+- Uses GlobalObjectKey for each linked entry to enable scrolling
+- Scroll animation duration: 300ms with easeInOut curve
+- Default alignment: 0.0 (entry positioned at top of viewport)
+- Intent is cleared after consumption to enable re-triggering
+
 ## State Management
 
 The feature uses Riverpod for state management:
@@ -230,6 +254,7 @@ The feature uses Riverpod for state management:
 - `ChecklistItemController`: Manages individual item state
 - `ChecklistCompletionService`: Manages AI suggestions
 - `TaskProgressController`: Tracks time spent on tasks
+- `TaskFocusController`: Manages scroll-to-entry focus intents
 
 ## Drag and Drop
 
@@ -273,7 +298,7 @@ Checklists support sophisticated drag-and-drop operations:
 Create a task "Proyecto de migración de base de datos" and record audio in Spanish:
 "He completado el análisis de la estructura actual y el diseño del nuevo esquema. Todavía necesito migrar los datos."
 
-Result: 
+Result:
 - AI detects Spanish language with high confidence
 - Sets task language to Spanish (es)
 - All future summaries are generated in Spanish
@@ -364,7 +389,7 @@ When AI processes audio or images, it can perform multiple operations:
 - **Completion Suggestions**: Multiple items can be suggested simultaneously
 - **Item Creation**: Multiple new items can be added in one operation
 - **Mixed Operations**: AI can both suggest completions AND create new items
-- **Smart Handling**: 
+- **Smart Handling**:
   - High confidence completions are auto-checked
   - Already checked items are skipped
   - New items go to appropriate checklists
