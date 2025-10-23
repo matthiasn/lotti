@@ -18,10 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync Outbox and Sync Conflicts list pages now use modern cards with segmented filters, inline counts, and polished empty states via the shared sync list scaffold.
 - Sync filter chips now hide non-informational zero badges, emphasise pending/error/unresolved totals with tinted badges, trim their height slightly, and keep empty-state cards constrained on the conflicts page.
 - Added dedicated widget tests for `ConflictListItem` and `SyncListScaffold` covering filters, semantics, and interaction paths.
+- Split the smart journal loader into dedicated `DescriptorDownloader` and `VectorClockValidator` components so caching, purging, and vector-clock logic are independently testable.
 
 ### Fixed
 - Matrix Stats `Last updated` label now stays stable when metrics payloads are unchanged, eliminating refresh jitter.
 - Guarded sync list filters against invalid persisted enum indexes on conflicts/outbox pages to prevent `RangeError`.
+- Matrix V2 catch-up now advances markers after offline sessions by correcting journal update result semantics, eliminating false "missing base" retries, and trimming duplicate backlog processing.
+- Matrix outbox refreshes journal JSON before enqueueing and Matrix sender re-syncs vector clocks with descriptor payloads, preventing stale checklist descriptors from being uploaded.
+- Added a circuit breaker so stale descriptor downloads bail out after repeated refresh attempts instead of looping forever.
+- Bumped patch version to 0.9.700+3390 to ship the sync catch-up contract fix without breaking APIs.
 
 ## [0.9.692] - 2025-10-20
 ### Changed:

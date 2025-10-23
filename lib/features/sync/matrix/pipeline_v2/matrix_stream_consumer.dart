@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
@@ -75,6 +76,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required SyncReadMarkerService readMarkerService,
     required Directory documentsDirectory,
     AttachmentIndex? attachmentIndex,
+    MetricsCounters? metricsCounters,
     bool collectMetrics = false,
     Duration flushInterval = const Duration(milliseconds: 150),
     int maxBatch = 200,
@@ -104,6 +106,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _documentsDirectory = documentsDirectory,
         _attachmentIndex = attachmentIndex,
         _collectMetrics = collectMetrics,
+        _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics),
         _flushInterval = flushInterval,
         _maxBatch = maxBatch,
         _markerDebounce = markerDebounce,
@@ -126,9 +129,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       failureThreshold: _circuitFailureThreshold,
       cooldown: _circuitCooldown,
     );
-    _metrics = MetricsCounters(
-      collect: _collectMetrics,
-    );
+    _eventProcessor.cachePurgeListener = _metrics.incStaleAttachmentPurges;
     _readMarkerManager = ReadMarkerManager(
       debounce: _markerDebounce,
       onFlush: (Room room, String id) => _readMarkerService.updateReadMarker(
@@ -193,7 +194,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final Duration _markerDebounce;
   // Catch-up window is handled by strategy with sensible defaults.
 
-  late final MetricsCounters _metrics;
+  final MetricsCounters _metrics;
   // Descriptor-focused catch-up helper (manages pending jsonPaths)
   DescriptorCatchUpManager? _descriptorCatchUp;
   DateTime? _lastAttachmentOnlyRescanAt;
@@ -1117,11 +1118,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Called by SyncEventProcessor via observer to record DB apply results
   void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {
     try {
-      final rows = diag.rowsAffected;
+      final applied = diag.applied;
       final status = diag.conflictStatus;
       final rt = diag.payloadType;
       if (rt == 'entryLink') {
-        if (rows > 0) {
+        if (applied) {
           _metrics.incDbApplied();
         } else {
           _metrics
@@ -1130,31 +1131,52 @@ class MatrixStreamConsumer implements SyncPipeline {
             // Record in diagnostics ring buffer
             ..addLastIgnored('${diag.eventId}:entryLink.noop');
         }
-      } else {
-        if (rows > 0) {
-          _metrics.incDbApplied();
-        } else if (status.contains('concurrent')) {
-          _metrics.incConflictsCreated();
-        } else {
-          _metrics.incDbIgnoredByVectorClock();
+        return;
+      }
+
+      if (applied) {
+        _metrics.incDbApplied();
+        return;
+      }
+
+      String labelForSkip(JournalUpdateSkipReason reason) {
+        switch (reason) {
+          case JournalUpdateSkipReason.olderOrEqual:
+            return msh.ignoredReasonFromStatus(status);
+          case JournalUpdateSkipReason.conflict:
+            return 'conflict';
+          case JournalUpdateSkipReason.overwritePrevented:
+            return reason.label;
+          case JournalUpdateSkipReason.missingBase:
+            return reason.label;
         }
       }
-      // Also attribute to type-specific drops if ignored
-      if (rt != 'entryLink' && rows == 0 && !status.contains('concurrent')) {
-        final isMissingBase = status.contains('b_gt_a');
-        if (isMissingBase) {
+
+      void addIgnored(String label) {
+        final entry = '${diag.eventId}:$label';
+        _metrics.addLastIgnored(entry);
+      }
+
+      switch (diag.skipReason) {
+        case JournalUpdateSkipReason.conflict:
+          _metrics.incConflictsCreated();
+          addIgnored(labelForSkip(JournalUpdateSkipReason.conflict));
+        case JournalUpdateSkipReason.missingBase:
           _metrics.incDbMissingBase();
           _missingBaseEventIds.add(diag.eventId);
-          // Record in diagnostics ring buffer
-          final entry = '${diag.eventId}:missingBase';
-          _metrics.addLastIgnored(entry);
-        } else {
-          // older/equal – count as dropped by type
+          addIgnored(labelForSkip(JournalUpdateSkipReason.missingBase));
+        case JournalUpdateSkipReason.overwritePrevented:
+          _metrics.incDbIgnoredByVectorClock();
           _bumpDroppedType(rt);
-          final reason = msh.ignoredReasonFromStatus(status);
-          final entry = '${diag.eventId}:$reason';
-          _metrics.addLastIgnored(entry);
-        }
+          addIgnored(labelForSkip(JournalUpdateSkipReason.overwritePrevented));
+        case JournalUpdateSkipReason.olderOrEqual:
+          _metrics.incDbIgnoredByVectorClock();
+          _bumpDroppedType(rt);
+          addIgnored(labelForSkip(JournalUpdateSkipReason.olderOrEqual));
+        case null:
+          _metrics.incDbIgnoredByVectorClock();
+          _bumpDroppedType(rt);
+          addIgnored(msh.ignoredReasonFromStatus(status));
       }
     } catch (_) {
       // best-effort only

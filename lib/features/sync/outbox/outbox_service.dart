@@ -37,11 +37,13 @@ class OutboxService {
     int maxRetries = 10,
     MatrixService? matrixService,
     bool? ownsActivityGate,
+    Future<void> Function(String path, String json)? saveJsonHandler,
   })  : _syncDatabase = syncDatabase,
         _loggingService = loggingService,
         _vectorClockService = vectorClockService,
         _journalDb = journalDb,
         _documentsDirectory = documentsDirectory,
+        _saveJson = saveJsonHandler ?? saveJson,
         _activityGate = activityGate ??
             UserActivityGate(
               activityService: userActivityService,
@@ -87,6 +89,7 @@ class OutboxService {
   final VectorClockService _vectorClockService;
   final JournalDb _journalDb;
   final Directory _documentsDirectory;
+  final Future<void> Function(String path, String json) _saveJson;
   final UserActivityGate _activityGate;
   final bool _ownsActivityGate;
   late final OutboxRepository _repository;
@@ -125,6 +128,27 @@ class OutboxService {
       );
 
       if (syncMessage is SyncJournalEntity) {
+        try {
+          final latest = await _journalDb.journalEntityById(syncMessage.id);
+          if (latest != null) {
+            final canonicalPath = entityPath(latest, _documentsDirectory);
+            await _saveJson(canonicalPath, jsonEncode(latest));
+          } else {
+            _loggingService.captureEvent(
+              'enqueueMessage.missingEntity id=${syncMessage.id}',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'enqueueMessage',
+            );
+          }
+        } catch (error, stackTrace) {
+          _loggingService.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'enqueueMessage.refreshJson',
+            stackTrace: stackTrace,
+          );
+        }
+
         final fullPath = '${docDir.path}${syncMessage.jsonPath}';
         final journalEntity = await readEntityFromJson(fullPath);
 

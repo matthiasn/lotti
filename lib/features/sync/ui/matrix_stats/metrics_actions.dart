@@ -22,7 +22,7 @@ class MetricsActions extends StatelessWidget {
       children: [
         Tooltip(
           message:
-              'Legend:\n• processed.<type> = processed sync messages by payload type\n• droppedByType.<type> = per‑type drops after retries/older ignores\n• dbApplied = DB rows written\n• dbIgnoredByVectorClock = incoming older/same ignored by DB\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting missing dependency/base row',
+              'Legend:\n• processed.<type> = processed sync messages by payload type\n• droppedByType.<type> = per‑type drops after retries/older ignores\n• dbApplied = DB rows written\n• dbIgnoredByVectorClock = incoming older/same ignored by DB\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting missing dependency/base row\n• staleAttachmentPurges = cached stale descriptors purged before refresh',
           child: OutlinedButton.icon(
             icon: const Icon(Icons.info_outline_rounded, size: 18),
             label: const Text('Legend'),

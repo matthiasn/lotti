@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
@@ -17,6 +18,188 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path/path.dart' as path;
+
+enum VectorClockDecision {
+  accept,
+  retryAfterPurge,
+  staleAfterRefresh,
+  circuitBreaker,
+  missingVectorClock,
+}
+
+class VectorClockValidator {
+  VectorClockValidator({required LoggingService loggingService})
+      : _logging = loggingService;
+
+  static const int maxStaleDescriptorFailures = 5;
+
+  final LoggingService _logging;
+  final Map<String, int> _staleDescriptorFailures = <String, int>{};
+
+  VectorClockDecision evaluate({
+    required String jsonPath,
+    required VectorClock incomingVectorClock,
+    required JournalEntity candidate,
+    required int attempt,
+  }) {
+    final candidateVc = candidate.meta.vectorClock;
+    if (candidateVc == null) {
+      _logging.captureEvent(
+        'smart.fetch.missing_vc path=$jsonPath expected=$incomingVectorClock',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetch',
+      );
+      reset(jsonPath);
+      return VectorClockDecision.missingVectorClock;
+    }
+
+    final status = VectorClock.compare(candidateVc, incomingVectorClock);
+    if (status == VclockStatus.b_gt_a) {
+      final failures = (_staleDescriptorFailures[jsonPath] ?? 0) + 1;
+      _staleDescriptorFailures[jsonPath] = failures;
+      if (failures >= maxStaleDescriptorFailures) {
+        _logging.captureEvent(
+          'smart.fetch.stale_vc.breaker path=$jsonPath retries=$failures limit=$maxStaleDescriptorFailures',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+        return VectorClockDecision.circuitBreaker;
+      }
+      if (attempt == 0) {
+        _logging.captureEvent(
+          'smart.fetch.stale_vc path=$jsonPath expected=$incomingVectorClock got=$candidateVc',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+        return VectorClockDecision.retryAfterPurge;
+      }
+      _logging.captureEvent(
+        'smart.fetch.stale_vc.pending path=$jsonPath expected=$incomingVectorClock got=$candidateVc',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetch',
+      );
+      return VectorClockDecision.staleAfterRefresh;
+    }
+
+    reset(jsonPath);
+    return VectorClockDecision.accept;
+  }
+
+  void reset(String jsonPath) {
+    _staleDescriptorFailures.remove(jsonPath);
+  }
+}
+
+class DescriptorDownloadResult {
+  const DescriptorDownloadResult({
+    required this.json,
+    required this.bytesLength,
+  });
+
+  final String json;
+  final int bytesLength;
+}
+
+class DescriptorDownloader {
+  DescriptorDownloader({
+    required LoggingService loggingService,
+    required VectorClockValidator validator,
+    this.onCachePurge,
+  })  : _logging = loggingService,
+        _validator = validator;
+
+  static const int maxDescriptorDownloadAttempts = 2;
+
+  final LoggingService _logging;
+  final VectorClockValidator _validator;
+  void Function()? onCachePurge;
+
+  Future<DescriptorDownloadResult> download({
+    required Event descriptorEvent,
+    required VectorClock incomingVectorClock,
+    required String jsonPath,
+  }) async {
+    for (var attempt = 0; attempt < maxDescriptorDownloadAttempts; attempt++) {
+      final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
+      final bytes = matrixFile.bytes;
+      if (bytes.isEmpty) {
+        throw const FileSystemException('empty attachment bytes');
+      }
+      final candidateJson = utf8.decode(bytes);
+      final decoded = json.decode(candidateJson) as Map<String, dynamic>;
+      final candidate = JournalEntity.fromJson(decoded);
+      final decision = _validator.evaluate(
+        jsonPath: jsonPath,
+        incomingVectorClock: incomingVectorClock,
+        candidate: candidate,
+        attempt: attempt,
+      );
+      switch (decision) {
+        case VectorClockDecision.accept:
+          _validator.reset(jsonPath);
+          return DescriptorDownloadResult(
+            json: candidateJson,
+            bytesLength: bytes.length,
+          );
+        case VectorClockDecision.retryAfterPurge:
+          final purged =
+              await _maybePurgeCachedDescriptor(descriptorEvent, jsonPath);
+          if (purged) {
+            onCachePurge?.call();
+          }
+          _logging.captureEvent(
+            'smart.fetch.stale_vc.refresh path=$jsonPath',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
+          continue;
+        case VectorClockDecision.staleAfterRefresh:
+          throw const FileSystemException(
+              'stale attachment json after refresh');
+        case VectorClockDecision.circuitBreaker:
+          throw const FileSystemException(
+            'stale attachment json (circuit breaker)',
+          );
+        case VectorClockDecision.missingVectorClock:
+          throw const FileSystemException('missing attachment vector clock');
+      }
+    }
+
+    throw const FileSystemException('stale attachment json');
+  }
+
+  Future<bool> _maybePurgeCachedDescriptor(
+    Event event,
+    String jsonPath,
+  ) async {
+    try {
+      final uri = event.attachmentOrThumbnailMxcUrl();
+      if (uri == null) {
+        _logging.captureEvent(
+          'smart.fetch.stale_vc.purge.skipped path=$jsonPath reason=no_mxc',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+        return false;
+      }
+      await event.room.client.database.deleteFile(uri);
+      _logging.captureEvent(
+        'smart.fetch.stale_vc.purge path=$jsonPath mxc=$uri',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetch',
+      );
+      return true;
+    } catch (e, st) {
+      _logging.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.purge',
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
+}
 
 /// Abstraction for loading journal entities and related attachments when
 /// processing sync messages.
@@ -50,11 +233,31 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
     required AttachmentIndex attachmentIndex,
     required LoggingService loggingService,
+    void Function()? onCachePurge,
   })  : _attachmentIndex = attachmentIndex,
-        _logging = loggingService;
+        _logging = loggingService {
+    _vectorClockValidator =
+        VectorClockValidator(loggingService: loggingService);
+    _descriptorDownloader = DescriptorDownloader(
+      loggingService: loggingService,
+      validator: _vectorClockValidator,
+      onCachePurge: onCachePurge,
+    );
+    _onCachePurge = onCachePurge;
+  }
 
   final AttachmentIndex _attachmentIndex;
   final LoggingService _logging;
+  late final VectorClockValidator _vectorClockValidator;
+  late final DescriptorDownloader _descriptorDownloader;
+  void Function()? _onCachePurge;
+
+  void Function()? get onCachePurge => _onCachePurge;
+
+  set onCachePurge(void Function()? listener) {
+    _onCachePurge = listener;
+    _descriptorDownloader.onCachePurge = listener;
+  }
 
   @override
   Future<JournalEntity> load({
@@ -111,41 +314,14 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         );
       }
       try {
-        final matrixFile = await eventForPath.downloadAndDecryptAttachment();
-        final bytes = matrixFile.bytes;
-        if (bytes.isEmpty) {
-          throw const FileSystemException('empty attachment bytes');
-        }
-        final jsonString = utf8.decode(bytes);
-        // Parse first to validate vector clock freshness before writing.
-        final decoded = json.decode(jsonString) as Map<String, dynamic>;
-        final downloaded = JournalEntity.fromJson(decoded);
-        final downloadedVc = downloaded.meta.vectorClock;
-        if (downloadedVc != null) {
-          final status = VectorClock.compare(downloadedVc, incomingVectorClock);
-          // If the downloaded JSON is older than the incoming vector clock,
-          // do not write it; let the caller retry when the new descriptor lands.
-          if (status == VclockStatus.b_gt_a) {
-            _logging.captureEvent(
-              'smart.fetch.stale_vc path=$jsonPath expected=$incomingVectorClock got=$downloadedVc',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'SmartLoader.fetch',
-            );
-            throw const FileSystemException('stale attachment json');
-          }
-        } else {
-          // An incoming VC is expected, but the downloaded JSON lacks one –
-          // treat as invalid to avoid writing potentially stale content.
-          _logging.captureEvent(
-            'smart.fetch.missing_vc path=$jsonPath expected=$incomingVectorClock',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetch',
-          );
-          throw const FileSystemException('missing attachment vector clock');
-        }
-        await saveJson(targetFile.path, jsonString);
+        final descriptor = await _descriptorDownloader.download(
+          descriptorEvent: eventForPath,
+          incomingVectorClock: incomingVectorClock,
+          jsonPath: jsonPath,
+        );
+        await saveJson(targetFile.path, descriptor.json);
         _logging.captureEvent(
-          'smart.json.written path=$jsonPath bytes=${bytes.length}',
+          'smart.json.written path=$jsonPath bytes=${descriptor.bytesLength}',
           domain: 'MATRIX_SERVICE',
           subDomain: 'SmartLoader.fetch',
         );
@@ -318,6 +494,17 @@ class SyncEventProcessor {
   final AiConfigRepository _aiConfigRepository;
   final SyncJournalEntityLoader _journalEntityLoader;
   void Function(SyncApplyDiagnostics diag)? applyObserver;
+  void Function()? _cachePurgeListener;
+
+  void Function()? get cachePurgeListener => _cachePurgeListener;
+
+  set cachePurgeListener(void Function()? listener) {
+    _cachePurgeListener = listener;
+    final loader = _journalEntityLoader;
+    if (loader is SmartJournalEntityLoader) {
+      loader.onCachePurge = listener;
+    }
+  }
 
   Future<void> process({
     required Event event,
@@ -389,17 +576,20 @@ class SyncEventProcessor {
             }
           }
           final vcB = journalEntity.meta.vectorClock;
-          final rows = await journalDb.updateJournalEntity(journalEntity);
+          final updateResult =
+              await journalDb.updateJournalEntity(journalEntity);
+          final rows = updateResult.rowsWritten ?? 0;
           final diag = SyncApplyDiagnostics(
             eventId: event.eventId,
             payloadType: 'journalEntity',
             entityId: journalEntity.meta.id,
             vectorClock: vcB?.toJson(),
-            rowsAffected: rows,
             conflictStatus: predictedStatus.toString(),
+            applied: updateResult.applied,
+            skipReason: updateResult.skipReason,
           );
           _loggingService.captureEvent(
-            'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} rows=$rows status=${diag.conflictStatus}',
+            'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} rowsWritten=$rows applied=${updateResult.applied} skip=${updateResult.skipReason?.label ?? 'none'} status=${diag.conflictStatus}',
             domain: 'MATRIX_SERVICE',
             subDomain: 'apply',
           );
@@ -415,7 +605,8 @@ class SyncEventProcessor {
             subDomain: 'SyncEventProcessor.missingAttachment',
             stackTrace: stackTrace,
           );
-          rethrow;
+          // Returning null keeps the event in the retry queue until a fresh descriptor arrives.
+          return null;
         }
       case SyncEntryLink(entryLink: final entryLink):
         final rows = await journalDb.upsertEntryLink(entryLink);
@@ -438,8 +629,10 @@ class SyncEventProcessor {
               payloadType: 'entryLink',
               entityId: '${entryLink.fromId}->${entryLink.toId}',
               vectorClock: null,
-              rowsAffected: rows,
               conflictStatus: rows == 0 ? 'entryLink.noop' : 'applied',
+              applied: rows > 0,
+              skipReason:
+                  rows > 0 ? null : JournalUpdateSkipReason.olderOrEqual,
             );
             applyObserver!.call(diag);
           } catch (_) {
@@ -479,14 +672,16 @@ class SyncApplyDiagnostics {
     required this.payloadType,
     required this.entityId,
     required this.vectorClock,
-    required this.rowsAffected,
     required this.conflictStatus,
+    required this.applied,
+    this.skipReason,
   });
 
   final String eventId;
   final String payloadType;
   final String entityId;
   final Object? vectorClock;
-  final int rowsAffected;
   final String conflictStatus;
+  final bool applied;
+  final JournalUpdateSkipReason? skipReason;
 }

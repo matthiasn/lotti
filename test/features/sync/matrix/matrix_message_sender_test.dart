@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -193,6 +195,406 @@ void main() {
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     );
+  });
+
+  test('adopts descriptor vector clock when message is stale', () async {
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
+    var capturedPayload = '';
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedPayload = invocation.positionalArguments.first as String;
+      return 'text-id';
+    });
+
+    final staleMeta = Metadata(
+      id: 'checklist-1',
+      createdAt: DateTime(2025, 10, 22, 23, 18, 48),
+      updatedAt: DateTime(2025, 10, 22, 23, 18, 49),
+      dateFrom: DateTime(2025, 10, 22, 23, 18, 48),
+      dateTo: DateTime(2025, 10, 22, 23, 18, 48),
+      vectorClock: const VectorClock({'hostA': 402}),
+    );
+    final staleChecklist = JournalEntity.checklist(
+      meta: staleMeta,
+      data: const ChecklistData(
+        title: 'TODOs',
+        linkedChecklistItems: <String>[],
+        linkedTasks: <String>['task-1'],
+      ),
+    );
+    final path = relativeEntityPath(staleChecklist);
+    File('${documentsDirectory.path}$path')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(staleChecklist));
+
+    final context = buildContext();
+    final message = SyncMessage.journalEntity(
+      id: staleChecklist.meta.id,
+      jsonPath: path,
+      vectorClock: const VectorClock({'hostA': 425}),
+      status: SyncEntryStatus.update,
+    );
+
+    final result = await sender.sendMatrixMessage(
+      message: message,
+      context: context,
+      onSent: () {},
+    );
+
+    expect(result, isTrue);
+    verify(
+      () => loggingService.captureEvent(
+        contains('vectorClock mismatch; adopting json clock'),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.vclockAdjusted',
+      ),
+    ).called(1);
+    final decoded = json.decode(
+      utf8.decode(base64.decode(capturedPayload)),
+    ) as Map<String, dynamic>;
+    expect(
+      decoded['vectorClock'],
+      equals({'hostA': 402}),
+    );
+  });
+
+  test('keeps message vector clock when descriptor lacks vector clock',
+      () async {
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
+    var capturedPayload = '';
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedPayload = invocation.positionalArguments.first as String;
+      return 'text-id';
+    });
+
+    final meta = Metadata(
+      id: 'no-json-vc',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now(),
+      vectorClock: null,
+    );
+    final entity = JournalEntity.journalEntry(
+      meta: meta,
+      entryText: const EntryText(plainText: 'draft'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+    const messageClock = VectorClock({'hostA': 5});
+    final message = SyncMessage.journalEntity(
+      id: entity.meta.id,
+      jsonPath: jsonPath,
+      vectorClock: messageClock,
+      status: SyncEntryStatus.update,
+    );
+
+    final result = await sender.sendMatrixMessage(
+      message: message,
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isTrue);
+    verifyNever(
+      () => loggingService.captureEvent(
+        any<String>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.vclockAdjusted',
+      ),
+    );
+    final decoded = json.decode(
+      utf8.decode(base64.decode(capturedPayload)),
+    ) as Map<String, dynamic>;
+    expect(decoded['vectorClock'], messageClock.vclock);
+  });
+
+  test('adopts descriptor vector clock when message lacks vector clock',
+      () async {
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
+    var capturedPayload = '';
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedPayload = invocation.positionalArguments.first as String;
+      return 'text-id';
+    });
+
+    final meta = Metadata(
+      id: 'json-vc',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now(),
+      vectorClock: const VectorClock({'hostA': 7}),
+    );
+    final entity = JournalEntity.journalEntry(
+      meta: meta,
+      entryText: const EntryText(plainText: 'descriptor'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+    final message = SyncMessage.journalEntity(
+      id: entity.meta.id,
+      jsonPath: jsonPath,
+      vectorClock: null,
+      status: SyncEntryStatus.update,
+    );
+
+    final result = await sender.sendMatrixMessage(
+      message: message,
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isTrue);
+    verify(
+      () => loggingService.captureEvent(
+        contains('vectorClock absent on message but present in json'),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.vclockAdjusted',
+      ),
+    ).called(1);
+    final decoded = json.decode(
+      utf8.decode(base64.decode(capturedPayload)),
+    ) as Map<String, dynamic>;
+    expect(decoded['vectorClock'], meta.vectorClock?.vclock);
+  });
+
+  test('does not adjust when vector clocks are equal', () async {
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
+    var capturedPayload = '';
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedPayload = invocation.positionalArguments.first as String;
+      return 'text-id';
+    });
+
+    const clock = VectorClock({'hostA': 3});
+    final meta = Metadata(
+      id: 'equal-vc',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now(),
+      vectorClock: clock,
+    );
+    final entity = JournalEntity.journalEntry(
+      meta: meta,
+      entryText: const EntryText(plainText: 'equal'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+    final message = SyncMessage.journalEntity(
+      id: entity.meta.id,
+      jsonPath: jsonPath,
+      vectorClock: clock,
+      status: SyncEntryStatus.update,
+    );
+
+    final result = await sender.sendMatrixMessage(
+      message: message,
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isTrue);
+    verifyNever(
+      () => loggingService.captureEvent(
+        any<String>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.vclockAdjusted',
+      ),
+    );
+    final decoded = json.decode(
+      utf8.decode(base64.decode(capturedPayload)),
+    ) as Map<String, dynamic>;
+    expect(decoded['vectorClock'], clock.vclock);
+  });
+
+  test('adopts descriptor vector clock when json is newer than message',
+      () async {
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
+    var capturedPayload = '';
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedPayload = invocation.positionalArguments.first as String;
+      return 'text-id';
+    });
+
+    const jsonClock = VectorClock({'hostA': 10});
+    const messageClock = VectorClock({'hostA': 8});
+    final meta = Metadata(
+      id: 'json-newer',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now(),
+      vectorClock: jsonClock,
+    );
+    final entity = JournalEntity.journalEntry(
+      meta: meta,
+      entryText: const EntryText(plainText: 'json-newer'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+    final message = SyncMessage.journalEntity(
+      id: entity.meta.id,
+      jsonPath: jsonPath,
+      vectorClock: messageClock,
+      status: SyncEntryStatus.update,
+    );
+
+    final result = await sender.sendMatrixMessage(
+      message: message,
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isTrue);
+    verify(
+      () => loggingService.captureEvent(
+        contains('vectorClock mismatch; adopting json clock'),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.vclockAdjusted',
+      ),
+    ).called(1);
+    final decoded = json.decode(
+      utf8.decode(base64.decode(capturedPayload)),
+    ) as Map<String, dynamic>;
+    expect(decoded['vectorClock'], jsonClock.vclock);
+  });
+
+  test('keeps vector clock null when both descriptor and message lack clocks',
+      () async {
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => 'file-id');
+    var capturedPayload = '';
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedPayload = invocation.positionalArguments.first as String;
+      return 'text-id';
+    });
+
+    final meta = Metadata(
+      id: 'null-both',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now(),
+      vectorClock: null,
+    );
+    final entity = JournalEntity.journalEntry(
+      meta: meta,
+      entryText: const EntryText(plainText: 'null'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+    final message = SyncMessage.journalEntity(
+      id: entity.meta.id,
+      jsonPath: jsonPath,
+      vectorClock: null,
+      status: SyncEntryStatus.initial,
+    );
+
+    final result = await sender.sendMatrixMessage(
+      message: message,
+      context: buildContext(),
+      onSent: () {},
+    );
+
+    expect(result, isTrue);
+    verifyNever(
+      () => loggingService.captureEvent(
+        any<String>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.vclockAdjusted',
+      ),
+    );
+    final decoded = json.decode(
+      utf8.decode(base64.decode(capturedPayload)),
+    ) as Map<String, dynamic>;
+    expect(decoded['vectorClock'], isNull);
   });
 
   test('logs and returns false when sending text message throws', () async {
@@ -842,7 +1244,8 @@ void main() {
         message: message,
       );
 
-      expect(result, isTrue);
+      expect(result, isNotNull);
+      expect(result!.vectorClock, equals(VectorClock({'device': 1})));
       verify(
         () => room.sendFileEvent(
           any<MatrixFile>(),
@@ -906,7 +1309,7 @@ void main() {
         message: message,
       );
 
-      expect(result, isFalse);
+      expect(result, isNull);
     });
   });
 }

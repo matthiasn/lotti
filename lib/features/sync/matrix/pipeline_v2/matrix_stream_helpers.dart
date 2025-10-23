@@ -113,7 +113,7 @@ Duration computeNextScanDelay(
 }
 
 /// Converts a vector clock status string into a concise ignored reason used
-/// by diagnostics when rowsAffected == 0 and not a concurrent conflict.
+/// by diagnostics when a journal update is skipped for older/equal payloads.
 String ignoredReasonFromStatus(String status) {
   if (status.contains('a_gt_a') || status.contains('a_gt_b')) {
     return 'older';

@@ -452,9 +452,9 @@ class PersistenceLogic {
         overwrite: false,
       );
 
-      final saved = res != 0;
+      final saved = res.applied;
 
-      if (addTags) {
+      if (addTags && saved) {
         await _journalDb.addTagged(withTags);
       }
 
@@ -707,12 +707,13 @@ class PersistenceLogic {
     Metadata metadata,
   ) async {
     try {
-      await updateDbEntity(
+      final applied = await updateDbEntity(
         journalEntity.copyWith(meta: await updateMetadata(metadata)),
       );
       await _journalDb.addTagged(
         journalEntity.copyWith(meta: await updateMetadata(metadata)),
       );
+      return applied ?? false;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -720,9 +721,8 @@ class PersistenceLogic {
         subDomain: 'updateJournalEntity',
         stackTrace: stackTrace,
       );
+      return false;
     }
-
-    return true;
   }
 
   Future<bool?> updateDbEntity(
@@ -731,7 +731,8 @@ class PersistenceLogic {
     bool enqueueSync = true,
   }) async {
     try {
-      await _journalDb.updateJournalEntity(journalEntity);
+      final updateResult = await _journalDb.updateJournalEntity(journalEntity);
+      final applied = updateResult.applied;
       _updateNotifications.notify({
         ...journalEntity.affectedIds,
         if (linkedId != null) linkedId,
@@ -742,7 +743,7 @@ class PersistenceLogic {
         removePrevious: true,
       );
 
-      if (enqueueSync) {
+      if (enqueueSync && applied) {
         await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
             id: journalEntity.id,
@@ -755,7 +756,7 @@ class PersistenceLogic {
 
       await getIt<NotificationService>().updateBadge();
 
-      return true;
+      return applied;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,

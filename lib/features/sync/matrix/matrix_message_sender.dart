@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -76,17 +77,19 @@ class MatrixMessageSender {
     try {
       // For journal entity messages, upload JSON (and attachments) first so
       // descriptors are available before the text event is processed.
-      if (message is SyncJournalEntity) {
-        final payloadSent = await _sendJournalEntityPayload(
+      var outboundMessage = message;
+      if (outboundMessage is SyncJournalEntity) {
+        final normalized = await _sendJournalEntityPayload(
           room: room,
-          message: message,
+          message: outboundMessage,
         );
-        if (!payloadSent) {
+        if (normalized == null) {
           return false;
         }
+        outboundMessage = normalized;
       }
 
-      final encodedMessage = json.encode(message);
+      final encodedMessage = json.encode(outboundMessage);
       final eventId = await room.sendTextEvent(
         base64.encode(utf8.encode(encodedMessage)),
         msgtype: syncMessageType,
@@ -169,7 +172,7 @@ class MatrixMessageSender {
     }
   }
 
-  Future<bool> _sendJournalEntityPayload({
+  Future<SyncJournalEntity?> _sendJournalEntityPayload({
     required Room room,
     required SyncJournalEntity message,
   }) async {
@@ -185,7 +188,7 @@ class MatrixMessageSender {
     );
 
     if (!jsonSent) {
-      return false;
+      return null;
     }
 
     late final JournalEntity journalEntity;
@@ -201,13 +204,35 @@ class MatrixMessageSender {
         subDomain: 'sendMatrixMsg.decode',
         stackTrace: stackTrace,
       );
-      return false;
+      return null;
     }
 
     final shouldResendAttachments =
         await _journalDb.getConfigFlag(resendAttachments);
 
     var attachmentsOk = true;
+
+    final messageVectorClock = message.vectorClock;
+    final jsonVectorClock = journalEntity.meta.vectorClock;
+    var outbound = message;
+    if (messageVectorClock != null && jsonVectorClock != null) {
+      final status = VectorClock.compare(jsonVectorClock, messageVectorClock);
+      if (status != VclockStatus.equal) {
+        outbound = message.copyWith(vectorClock: jsonVectorClock);
+        _loggingService.captureEvent(
+          'vectorClock mismatch; adopting json clock for ${message.jsonPath} json=${jsonVectorClock.vclock} message=${messageVectorClock.vclock} status=$status',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg.vclockAdjusted',
+        );
+      }
+    } else if (jsonVectorClock != null && messageVectorClock == null) {
+      outbound = message.copyWith(vectorClock: jsonVectorClock);
+      _loggingService.captureEvent(
+        'vectorClock absent on message but present in json for ${message.jsonPath}; adopting json clock ${jsonVectorClock.vclock}',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.vclockAdjusted',
+      );
+    }
 
     await journalEntity.maybeMap(
       journalAudio: (JournalAudio journalAudio) async {
@@ -243,11 +268,15 @@ class MatrixMessageSender {
       orElse: () async {},
     );
 
-    return attachmentsOk;
+    if (!attachmentsOk) {
+      return null;
+    }
+
+    return outbound;
   }
 
   @visibleForTesting
-  Future<bool> sendJournalEntityPayloadForTesting({
+  Future<SyncJournalEntity?> sendJournalEntityPayloadForTesting({
     required Room room,
     required SyncJournalEntity message,
   }) =>
