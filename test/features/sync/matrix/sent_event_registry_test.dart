@@ -63,6 +63,18 @@ void main() {
     expect(registry.length, 0);
   });
 
+  test('consume removes expired entry and returns false', () {
+    final clock = _MutableClock(DateTime.utc(2024));
+    final registry = SentEventRegistry(
+      ttl: const Duration(seconds: 2),
+      clockSource: clock,
+    )..register(r'$evt-expire');
+    clock.advance(const Duration(seconds: 3));
+
+    expect(registry.consume(r'$evt-expire'), isFalse);
+    expect(registry.length, 0);
+  });
+
   test('re-registering id refreshes expiry and order', () {
     final clock = _MutableClock(DateTime.utc(2024));
     final registry = SentEventRegistry(
@@ -89,5 +101,61 @@ void main() {
 
     clock.advance(const Duration(seconds: 6));
     expect(registry.consume(r'$evt-a'), isFalse);
+  });
+
+  test('register observes prune interval before running', () {
+    final clock = _MutableClock(DateTime.utc(2024));
+    final registry = SentEventRegistry(
+      pruneInterval: const Duration(seconds: 45),
+      clockSource: clock,
+    )..register(r'$evt-a');
+    final firstNextPrune = registry.debugNextPruneAt;
+
+    clock.advance(const Duration(seconds: 10));
+    registry.consume(r'$evt-a'); // should not trigger prune yet
+    expect(registry.debugNextPruneAt, firstNextPrune);
+  });
+
+  test('force prune executes even within interval', () {
+    final clock = _MutableClock(DateTime.utc(2024));
+    final registry = SentEventRegistry(
+      pruneInterval: const Duration(seconds: 45),
+      clockSource: clock,
+    )..register(r'$evt-a');
+    final firstNextPrune = registry.debugNextPruneAt;
+
+    clock.advance(const Duration(seconds: 5));
+    final now = clock.now();
+    expect(registry.consume(r'$missing'), isFalse); // triggers forced prune
+    expect(registry.debugNextPruneAt.isAfter(firstNextPrune), isTrue);
+    expect(registry.debugNextPruneAt.difference(now),
+        equals(registry.pruneInterval));
+  });
+
+  test('empty eventIds are ignored (asserts in debug)', () {
+    final registry = SentEventRegistry();
+    expect(() => registry.register(''), throwsA(isA<AssertionError>()));
+    expect(() => registry.consume(''), throwsA(isA<AssertionError>()));
+  });
+
+  test('re-registering without source preserves original source', () {
+    final registry = SentEventRegistry()
+      ..register(r'$evt-a', source: SentEventSource.file)
+      ..register(r'$evt-a');
+    expect(registry.debugSource(r'$evt-a'), equals(SentEventSource.file));
+  });
+
+  test('clear resets next prune time', () {
+    final clock = _MutableClock(DateTime.utc(2024));
+    final registry = SentEventRegistry(
+      pruneInterval: const Duration(seconds: 45),
+      clockSource: clock,
+    )..register(r'$evt-a');
+    final firstNextPrune = registry.debugNextPruneAt;
+    clock.advance(const Duration(seconds: 10));
+
+    registry.clear();
+    expect(registry.length, 0);
+    expect(registry.debugNextPruneAt.isAfter(firstNextPrune), isTrue);
   });
 }

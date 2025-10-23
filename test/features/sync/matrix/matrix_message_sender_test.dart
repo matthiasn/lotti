@@ -199,6 +199,7 @@ void main() {
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     );
+    expect(sentEventRegistry.length, 0);
   });
 
   test('registers text event ID in sent registry on success', () async {
@@ -218,6 +219,74 @@ void main() {
     );
 
     expect(result, isTrue);
+    expect(sentEventRegistry.consume(r'$text-event-id'), isTrue);
+  });
+
+  test('does not register event ID when text send throws', () async {
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenThrow(Exception('fail'));
+
+    final result = await sender.sendMatrixMessage(
+      message: const SyncMessage.aiConfigDelete(id: 'abc'),
+      context: buildContext(),
+      onSent: (_, __) {},
+    );
+
+    expect(result, isFalse);
+    expect(sentEventRegistry.length, 0);
+  });
+
+  test('registers file event ID when sending journal payload', () async {
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((_) async => r'$file-event-id');
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((_) async => r'$text-event-id');
+
+    final meta = Metadata(
+      id: 'register-file',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now(),
+    );
+    final entity = JournalEntity.journalEntry(
+      meta: meta,
+      entryText: const EntryText(plainText: 'payload'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity));
+
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.journalEntity(
+        id: meta.id,
+        jsonPath: jsonPath,
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+      ),
+      context: buildContext(),
+      onSent: (_, __) {},
+    );
+
+    expect(result, isTrue);
+    expect(sentEventRegistry.consume(r'$file-event-id'), isTrue);
     expect(sentEventRegistry.consume(r'$text-event-id'), isTrue);
   });
 

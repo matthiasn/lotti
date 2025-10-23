@@ -668,6 +668,170 @@ void main() {
       expect(context.lastReadEventContextId, r'$selfEvent');
     });
 
+    test('suppressed file events skip attachment download', () async {
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      final event = MockEvent();
+
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => room.id).thenReturn('!room:server');
+      when(() => client.sync())
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => room.getTimeline(
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
+      when(() => timeline.events).thenReturn([event]);
+      when(() => event.eventId).thenReturn(r'$selfFile');
+      when(() => event.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(3));
+      when(() => event.senderId).thenReturn('@remote:server');
+      when(() => event.type).thenReturn('m.room.message');
+      when(() => event.messageType).thenReturn(syncMessageType);
+      when(() => event.attachmentMimetype).thenReturn('application/json');
+      when(() => event.content).thenReturn(const <String, dynamic>{});
+      when(event.downloadAndDecryptAttachment)
+          .thenAnswer((_) async => throw StateError('should not download'));
+
+      context.sentEventRegistry.register(r'$selfFile');
+
+      await processNewTimelineEvents(
+        listener: context,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        readMarkerService: readMarkerService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
+        failureCounts: failureCounts,
+      );
+
+      verifyNever(
+        () => eventProcessor.process(
+          event: event,
+          journalDb: journalDb,
+        ),
+      );
+      expect(failureCounts[r'$selfFile'], isNull);
+    });
+
+    test('suppressed events clear accumulated failure counts', () async {
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      final event = MockEvent();
+
+      failureCounts[r'$selfRetry'] = 2;
+      context.sentEventRegistry.register(r'$selfRetry');
+
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => room.id).thenReturn('!room:server');
+      when(() => client.sync())
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => room.getTimeline(
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
+      when(() => timeline.events).thenReturn([event]);
+      when(() => event.eventId).thenReturn(r'$selfRetry');
+      when(() => event.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(4));
+      when(() => event.senderId).thenReturn('@remote:server');
+      when(() => event.type).thenReturn('m.room.message');
+      when(() => event.messageType).thenReturn(syncMessageType);
+      when(() => event.attachmentMimetype).thenReturn('');
+      when(() => event.content).thenReturn(const <String, dynamic>{});
+
+      await processNewTimelineEvents(
+        listener: context,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        readMarkerService: readMarkerService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
+        failureCounts: failureCounts,
+      );
+
+      expect(failureCounts[r'$selfRetry'], isNull);
+      verifyNever(
+        () => eventProcessor.process(
+          event: event,
+          journalDb: journalDb,
+        ),
+      );
+    });
+
+    test('mixed batch processes only remote events', () async {
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      final self1 = MockEvent();
+      final remote2 = MockEvent();
+      final self3 = MockEvent();
+      final remote4 = MockEvent();
+
+      context.sentEventRegistry.register(r'$self1');
+      context.sentEventRegistry.register(r'$self3');
+
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => room.id).thenReturn('!room:server');
+      when(() => client.sync())
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => room.getTimeline(
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
+      when(() => timeline.events).thenReturn([self1, remote2, self3, remote4]);
+
+      void configure(MockEvent event, String id, String sender) {
+        when(() => event.eventId).thenReturn(id);
+        when(() => event.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(id.hashCode));
+        when(() => event.senderId).thenReturn(sender);
+        when(() => event.type).thenReturn('m.room.message');
+        when(() => event.messageType).thenReturn(syncMessageType);
+        when(() => event.attachmentMimetype).thenReturn('');
+        when(() => event.content).thenReturn(const <String, dynamic>{});
+      }
+
+      configure(self1, r'$self1', '@remote:server');
+      configure(remote2, r'$remote2', '@another:server');
+      configure(self3, r'$self3', '@remote:server');
+      configure(remote4, r'$remote4', '@another:server');
+
+      await processNewTimelineEvents(
+        listener: context,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        readMarkerService: readMarkerService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
+        failureCounts: failureCounts,
+      );
+
+      verify(
+        () => eventProcessor.process(
+          event: remote2,
+          journalDb: journalDb,
+        ),
+      ).called(1);
+      verify(
+        () => eventProcessor.process(
+          event: remote4,
+          journalDb: journalDb,
+        ),
+      ).called(1);
+      verifyNever(
+        () => eventProcessor.process(
+          event: self1,
+          journalDb: journalDb,
+        ),
+      );
+      verifyNever(
+        () => eventProcessor.process(
+          event: self3,
+          journalDb: journalDb,
+        ),
+      );
+    });
+
     test('advances read marker after exceeding retry limit', () async {
       final room = MockRoom();
       final timeline = MockTimeline();

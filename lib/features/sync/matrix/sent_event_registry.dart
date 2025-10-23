@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:clock/clock.dart';
+import 'package:meta/meta.dart';
 
 /// Identifies the origin of a sent event for diagnostics.
 enum SentEventSource {
@@ -101,6 +102,12 @@ class SentEventRegistry {
 
   /// Number of tracked event IDs (including pending expirations).
   int get length => _entries.length;
+
+  @visibleForTesting
+  DateTime get debugNextPruneAt => _nextPruneAt;
+
+  @visibleForTesting
+  SentEventSource? debugSource(String eventId) => _entries[eventId]?.source;
 
   void _maybePrune(DateTime now, {bool force = false}) {
     if (!force && now.isBefore(_nextPruneAt)) return;
