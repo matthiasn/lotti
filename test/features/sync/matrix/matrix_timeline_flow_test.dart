@@ -1,12 +1,14 @@
 // ignore_for_file: unnecessary_lambdas
 
 import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -134,6 +136,7 @@ void main() {
           timeline: any<Timeline>(named: 'timeline'),
         )).thenAnswer((_) async {});
 
+    final sentEventRegistry = SentEventRegistry();
     final listener = MatrixTimelineListener(
       sessionManager: sessionManager,
       roomManager: roomManager,
@@ -144,6 +147,7 @@ void main() {
       readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       documentsDirectory: tempDir,
+      sentEventRegistry: sentEventRegistry,
     );
 
     expect(listener.lastReadEventContextId, isNull);

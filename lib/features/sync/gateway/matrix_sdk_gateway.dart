@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
@@ -13,10 +14,12 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   /// client separately once it is passed here.
   MatrixSdkGateway({
     required Client client,
+    required SentEventRegistry sentEventRegistry,
     Stream<({String roomId, StrippedStateEvent state})>? roomStateStream,
     Stream<LoginState>? loginStateStream,
     Stream<KeyVerification>? keyVerificationRequestStream,
   })  : _client = client,
+        _sentEventRegistry = sentEventRegistry,
         _roomStateStream = roomStateStream,
         _loginStateStream = loginStateStream,
         _keyVerificationRequests = keyVerificationRequestStream {
@@ -27,6 +30,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   }
 
   final Client _client;
+  final SentEventRegistry _sentEventRegistry;
 
   late final StreamSubscription<({String roomId, StrippedStateEvent state})>
       _inviteSubscription;
@@ -153,6 +157,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     if (eventId == null) {
       throw Exception('Failed to send text message to room $roomId');
     }
+    _sentEventRegistry.register(eventId, source: SentEventSource.text);
     return eventId;
   }
 
@@ -172,6 +177,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     if (eventId == null) {
       throw Exception('Failed to send file message to room $roomId');
     }
+    _sentEventRegistry.register(eventId, source: SentEventSource.file);
     return eventId;
   }
 

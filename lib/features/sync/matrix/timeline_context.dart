@@ -1,3 +1,4 @@
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -18,6 +19,8 @@ abstract class TimelineContext {
   String? get lastReadEventContextId;
 
   set lastReadEventContextId(String? value);
+
+  SentEventRegistry get sentEventRegistry;
 
   void enqueueTimelineRefresh();
 }

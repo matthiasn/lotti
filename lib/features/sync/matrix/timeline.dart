@@ -393,6 +393,7 @@ Future<_IngestOutcome> _ingestAndComputeLatest({
   }
 
   // Phase 2: process events and compute latest advancing marker.
+  listener.sentEventRegistry.prune();
   String? latestAdvancingEventId;
   num? latestAdvancingTimestamp;
   var hadRetriableFailure = false;
@@ -400,9 +401,19 @@ Future<_IngestOutcome> _ingestAndComputeLatest({
   for (final event in events) {
     final eventId = event.eventId;
     var shouldAdvanceReadMarker = true;
+    final suppressed = listener.sentEventRegistry.consume(eventId);
     final isRemoteEvent = event.senderId != listener.client.userID;
 
-    if (isRemoteEvent) {
+    if (suppressed) {
+      loggingService.captureEvent(
+        'selfEventSuppressed eventId=$eventId sender=${event.senderId}',
+        domain: 'MATRIX_SERVICE',
+        subDomain: '$subDomainPrefix.selfEvent',
+      );
+      failureCounts?.remove(eventId);
+    }
+
+    if (isRemoteEvent && !suppressed) {
       try {
         loggingService.captureEvent(
           'Processing event ${event.eventId} from ${event.senderId} '

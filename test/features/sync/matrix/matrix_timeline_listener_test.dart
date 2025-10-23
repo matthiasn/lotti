@@ -9,6 +9,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -74,6 +75,7 @@ void main() {
   late MockSyncEventProcessor mockEventProcessor;
   late Directory tempDir;
   late StreamController<Event> timelineEventController;
+  late SentEventRegistry sentEventRegistry;
 
   setUp(() {
     mockSessionManager = MockMatrixSessionManager();
@@ -86,6 +88,7 @@ void main() {
     mockEventProcessor = MockSyncEventProcessor();
     tempDir = Directory.systemTemp.createTempSync('matrix_timeline_listener');
     timelineEventController = StreamController<Event>.broadcast();
+    sentEventRegistry = SentEventRegistry();
     listener = MatrixTimelineListener(
       sessionManager: mockSessionManager,
       roomManager: mockRoomManager,
@@ -96,6 +99,7 @@ void main() {
       readMarkerService: mockReadMarkerService,
       eventProcessor: mockEventProcessor,
       documentsDirectory: tempDir,
+      sentEventRegistry: sentEventRegistry,
     );
     mockClient = MockClient();
     when(() => mockSessionManager.client).thenReturn(mockClient);

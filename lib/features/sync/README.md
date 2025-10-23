@@ -33,7 +33,8 @@ that keeps the pipeline testable and observable.
 | **SyncEngine** (`matrix/sync_engine.dart`) | Owns the high-level lifecycle via `SyncLifecycleCoordinator`, runs login/logout hooks, and surfaces diagnostic snapshots. |
 | **MatrixService** (`matrix/matrix_service.dart`) | Wraps the `MatrixSyncGateway`, coordinates verification flows, exposes stats/read markers, and delegates lifecycle work to the engine. |
 | **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, timelines, and logout. |
-| **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, increments send counters, and notifies `MatrixService`. |
+| **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, registers the Matrix event IDs it emits, increments send counters, and notifies `MatrixService`. |
+| **SentEventRegistry** (`matrix/sent_event_registry.dart`) | In-memory TTL cache of event IDs produced by this device so timeline ingestion can drop echo events without re-applying them. |
 | **MatrixTimelineListener** (`matrix/matrix_timeline_listener.dart`) | V1 pipeline. Queues timeline refreshes with `ClientRunner`, waits for `UserActivityGate` to report idleness, and invokes `processNewTimelineEvents`. |
 | **TimelineDrainer** (`matrix/timeline.dart`) | V1 helper that performs the multi-pass drain: sorts oldest→newest, filters already-processed events, retries at tail, escalates snapshot limits, disposes snapshots, ingests events, and advances the read marker. |
 | **MatrixStreamConsumer (V2)** (`matrix/pipeline_v2/matrix_stream_consumer.dart`) | V2 stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and typed metrics. |
@@ -161,6 +162,7 @@ V2 replaces the multi-pass drain with a stream-first consumer:
 - Attach-time catch-up: backfills/paginates until the last processed event is
   present, then processes strictly after it (no rewind before the marker).
 - Micro-batches: orders oldest→newest with in-batch de-duplication by event ID.
+- Self-event suppression: consumes locally produced event IDs from `SentEventRegistry` so echoed payloads advance the marker without redundant database or attachment work.
 - Attachment prefetch: downloads remote attachments referenced by text payloads
   before processing to ensure files exist when applying JSON.
 - Marker advancement: monotonic by server timestamp with eventId tie-breaker;

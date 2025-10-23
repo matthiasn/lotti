@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart';
@@ -52,6 +53,9 @@ class TestContext implements TimelineContext {
 
   @override
   String? lastReadEventContextId;
+
+  @override
+  final SentEventRegistry sentEventRegistry = SentEventRegistry();
 
   @override
   void enqueueTimelineRefresh() {}

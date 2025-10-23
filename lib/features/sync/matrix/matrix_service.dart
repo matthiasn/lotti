@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/stats_signature.dart';
@@ -64,6 +65,7 @@ class MatrixService {
     required SecureStorage secureStorage,
     required Directory documentsDirectory,
     required AttachmentIndex attachmentIndex,
+    SentEventRegistry? sentEventRegistry,
     bool enableSyncV2 = false,
     bool collectV2Metrics = false,
     bool ownsActivityGate = false,
@@ -82,6 +84,8 @@ class MatrixService {
         _loggingService = loggingService,
         _activityGate = activityGate,
         _messageSender = messageSender,
+        _sentEventRegistry =
+            sentEventRegistry ?? messageSender.sentEventRegistry,
         _journalDb = journalDb,
         _settingsDb = settingsDb,
         _readMarkerService = readMarkerService,
@@ -126,6 +130,7 @@ class MatrixService {
           readMarkerService: _readMarkerService,
           eventProcessor: _eventProcessor,
           documentsDirectory: documentsDirectory,
+          sentEventRegistry: _sentEventRegistry,
         );
 
     if (syncEngine != null) {
@@ -155,6 +160,7 @@ class MatrixService {
                   attachmentIndex: attachmentIndex,
                   collectMetrics: collectV2Metrics,
                   dropOldPayloadsInLiveScan: true,
+                  sentEventRegistry: _sentEventRegistry,
                 )
               : null);
       _v2Pipeline = pipeline;
@@ -261,6 +267,7 @@ class MatrixService {
   final LoggingService _loggingService;
   final UserActivityGate _activityGate;
   final MatrixMessageSender _messageSender;
+  final SentEventRegistry _sentEventRegistry;
   final JournalDb _journalDb;
   final SettingsDb _settingsDb;
   final SyncReadMarkerService _readMarkerService;
@@ -438,7 +445,7 @@ class MatrixService {
         syncRoom: targetRoom,
         unverifiedDevices: getUnverifiedDevices(),
       ),
-      onSent: () => incrementSentCountOf(sentType),
+      onSent: (String _, SyncMessage __) => incrementSentCountOf(sentType),
     );
   }
 

@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline.dart';
@@ -67,6 +68,9 @@ class TestTimelineContext implements TimelineContext {
 
   @override
   String? lastReadEventContextId;
+
+  @override
+  final SentEventRegistry sentEventRegistry = SentEventRegistry();
 
   @override
   void enqueueTimelineRefresh() {}
@@ -601,6 +605,67 @@ void main() {
         ),
       );
       expect(failureCounts[eventId], 1);
+    });
+
+    test('skips processing for events registered as self-sent', () async {
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      final event = MockEvent();
+
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => room.id).thenReturn('!room:server');
+      when(() => client.sync())
+          .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(() => room.getTimeline(
+          eventContextId: any(named: 'eventContextId'),
+          limit: any(named: 'limit'))).thenAnswer((_) async => timeline);
+      when(() => timeline.events).thenReturn([event]);
+      when(() => event.eventId).thenReturn(r'$selfEvent');
+      when(() => event.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+      when(() => event.senderId).thenReturn('@remote:server');
+      when(() => event.type).thenReturn('m.room.message');
+      when(() => event.messageType).thenReturn(syncMessageType);
+      when(() => event.attachmentMimetype).thenReturn('');
+      when(() => event.content).thenReturn(const <String, dynamic>{});
+
+      context.sentEventRegistry.register(r'$selfEvent');
+
+      when(
+        () => readMarkerService.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+          timeline: any<Timeline>(named: 'timeline'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await processNewTimelineEvents(
+        listener: context,
+        journalDb: journalDb,
+        loggingService: loggingService,
+        readMarkerService: readMarkerService,
+        eventProcessor: eventProcessor,
+        documentsDirectory: tempDir,
+        failureCounts: failureCounts,
+      );
+
+      verifyNever(
+        () => eventProcessor.process(
+          event: event,
+          journalDb: journalDb,
+        ),
+      );
+      verify(
+        () => readMarkerService.updateReadMarker(
+          client: client,
+          room: room,
+          eventId: r'$selfEvent',
+          timeline: timeline,
+        ),
+      ).called(1);
+      expect(context.lastReadEventContextId, r'$selfEvent');
     });
 
     test('advances read marker after exceeding retry limit', () async {
