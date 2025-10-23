@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:meta/meta.dart';
 
 /// Constants for audio player configuration
 class PlayerConstants {
@@ -17,8 +18,15 @@ class PlayerConstants {
 }
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
-  AudioPlayerCubit()
-      : super(
+  AudioPlayerCubit({
+    Player? player,
+    LoggingService? loggingService,
+    Duration completionDelay =
+        const Duration(milliseconds: PlayerConstants.completionDelayMs),
+  })  : _audioPlayer = player ?? Player(),
+        _loggingService = loggingService ?? getIt<LoggingService>(),
+        _completionDelay = completionDelay,
+        super(
           AudioPlayerState(
             status: AudioPlayerStatus.initializing,
             totalDuration: Duration.zero,
@@ -30,15 +38,20 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         ) {
     _positionSubscription = _audioPlayer.stream.position.listen(updateProgress);
     _bufferSubscription = _audioPlayer.stream.buffer.listen(_updateBuffered);
-    _completedSubscription =
-        _audioPlayer.stream.completed.listen(_handleCompleted);
+    _completedSubscription = _audioPlayer.stream.completed.listen(
+      (isCompleted) => _handleCompleted(isCompleted: isCompleted),
+    );
   }
 
-  final Player _audioPlayer = Player();
-  final LoggingService _loggingService = getIt<LoggingService>();
+  final Player _audioPlayer;
+  final LoggingService _loggingService;
+  final Duration _completionDelay;
   late final StreamSubscription<Duration> _positionSubscription;
   late final StreamSubscription<Duration> _bufferSubscription;
   StreamSubscription<bool>? _completedSubscription;
+
+  @visibleForTesting
+  StreamSubscription<bool>? get completedSubscription => _completedSubscription;
 
   void updateProgress(Duration duration) {
     final clamped =
@@ -179,8 +192,8 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     await super.close();
   }
 
-  void _handleCompleted(bool completed) {
-    if (!completed) {
+  void _handleCompleted({required bool isCompleted}) {
+    if (!isCompleted) {
       return;
     }
     final duration = state.audioNote?.data.duration;
@@ -189,10 +202,14 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
 
     Timer(
-      const Duration(milliseconds: PlayerConstants.completionDelayMs),
+      _completionDelay,
       () {
         emit(state.copyWith(progress: duration));
       },
     );
   }
+
+  @visibleForTesting
+  void handleCompletedForTest({required bool isCompleted}) =>
+      _handleCompleted(isCompleted: isCompleted);
 }

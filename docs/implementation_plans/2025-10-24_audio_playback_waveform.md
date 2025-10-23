@@ -91,6 +91,30 @@
 - Unit tests using small fixture audio under `test/test_resources/audio/`.
 - Hook into GetIt registration.
 
+#### Tests
+
+- **AudioPlayerCubit completion handler**
+  - Completion event pushes progress to the full duration after the 50 ms delay guard.
+  - Completion with a null `audioNote` leaves progress untouched.
+  - Constructor wires the completion subscription exactly once.
+  - `close()` cancels the completion subscription to avoid leaks.
+  - Multiple `play()` calls do not create duplicate completion subscriptions (regression guard).
+  - Completion delay is respected before emitting the terminal state.
+- **AudioWaveformService cache invalidation**
+  - Cache invalidates when file size changes.
+  - Cache invalidates when modified timestamp changes.
+  - Cache invalidates on version mismatch.
+  - Cache invalidates when bucket count differs.
+  - Cache invalidates when the relative path changes.
+  - Stale cache entries trigger a fresh extraction and reseed metadata.
+- **AudioWaveformService cache pruning**
+  - Pruning activates when the cache exceeds 1000 entries and only the newest 1000 remain.
+  - LRU behavior deletes the oldest files first.
+  - Pruning removes the correct number of files and logs the event with counts.
+  - Pruning handles I/O errors gracefully without crashing.
+  - Pruning is skipped when the cache is under the limit.
+  - Pruning handles a missing cache directory without exceptions.
+
 ### Phase 2 — State & Cubit Wiring
 
 - Extend `AudioPlayerState` + Freezed factory/tests.
@@ -100,6 +124,32 @@
   - Seed the keep-alive Riverpod cache with freshly fetched amplitudes (with 15-minute TTL) so
     on-screen rebuilds stay fast.
 - Add logging + error handling; write cubit tests with a mocked service.
+
+#### Tests
+
+- **AudioWaveformProvider**
+  - Returns waveform data for valid requests.
+  - Creates a keep-alive link and sets the 15-minute timer.
+  - Cancels the keep-alive timer after the TTL expires.
+  - Cancels the timer on provider disposal.
+  - Returns cached results for identical requests.
+  - Produces new results when the bucket count changes.
+- **AudioWaveformService normalization edge cases**
+  - Handles empty waveforms by returning an empty list.
+  - Handles single-pixel waveforms.
+  - Honors 8-bit (`flags != 0`) waveforms (max amplitude of 128).
+  - Avoids downsampling when target buckets exceed pixel count.
+  - Supports a single target bucket.
+  - Produces accurate RMS/peak blended amplitudes.
+  - Produces all-zero output when the waveform is all zeros.
+  - Clamps normalized values to the `[0.0, 1.0]` range.
+- **AudioWaveformService extraction failures**
+  - Returns null and logs when the extractor throws.
+  - Throws `StateError` for null waveform responses.
+  - Returns null when the audio file is missing.
+  - Returns null for unreadable audio files (permission errors).
+  - Cleans up temporary files on success.
+  - Cleans up temporary files on failure.
 
 ### Phase 3 — UI Integration
 
@@ -111,6 +161,40 @@
 - Swap into `AudioPlayerWidget` with fallback logic.
 - Add accessibility semantics and animations mirroring the current progress bar.
 - Widget tests for waveform rendering, adaptive bar count, progress tint, and seek invocation.
+
+#### Tests
+
+- **AudioWaveformScrubber interactions**
+  - Tap triggers an immediate seek based on tap position.
+  - Drag gestures throttle seeks to 60 ms intervals.
+  - Drag end emits the pending seek position.
+  - Rapid drags remain throttled without flooding `onSeek`.
+  - Disabled state prevents seeking.
+  - Zero total duration disables interaction.
+  - Semantics labels update with progress changes.
+  - Empty amplitudes render without errors.
+- **AudioWaveformScrubber painter edge cases**
+  - Handles empty amplitude lists gracefully.
+  - Handles a single amplitude.
+  - Clamps progress ratios > 1.0.
+  - Clamps buffered ratios > 1.0.
+  - Ignores negative progress/buffered inputs.
+  - Handles zero-width constraints without painting.
+  - Renders under very wide constraints (≥2000 px).
+  - `shouldRepaint` respects identity and data changes.
+- **AudioWaveformService cache I/O failures**
+  - Handles corrupted JSON cache entries by logging and regenerating data.
+  - Handles non-JSON cache content.
+  - Handles empty cache files.
+  - Handles cache files with the wrong structure (e.g., arrays).
+  - Handles write failures (disk full or permission issues) by logging.
+  - Handles parent directory creation failures gracefully.
+- **AudioWaveformService path sanitization**
+  - Sanitizes audio IDs with special characters.
+  - Handles very long audio IDs (>255 chars) with safe truncation.
+  - Handles Unicode audio IDs.
+  - Pads single-character IDs with the `00` directory prefix.
+  - Creates subdirectories safely for nested cache paths.
 
 ### Phase 4 — Polish & Verification
 
@@ -160,3 +244,5 @@
 - Monitor bundle size impact of `just_waveform` in CI.
 - Scope Phase 5 sync metadata work: decide whether metadata rides along journal payloads or via a
   dedicated attachment channel, and document storage limits per platform.
+- Schedule nice-to-have coverage: bucket duration calculations, `AudioWaveformRequest` equality,
+  and waveform integration states in `AudioPlayerWidget`.

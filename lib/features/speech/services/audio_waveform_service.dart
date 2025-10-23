@@ -263,6 +263,14 @@ class AudioWaveformService {
         stackTrace: stackTrace,
       );
       return null;
+    } finally {
+      try {
+        if (tempWaveOutFile.existsSync()) {
+          tempWaveOutFile.deleteSync();
+        }
+      } catch (_) {
+        // Ignore cleanup failures.
+      }
     }
   }
 
