@@ -1042,10 +1042,7 @@ void main() {
     when(() => journalEntityLoader.load(jsonPath: '/entity.json'))
         .thenThrow(const FileSystemException('missing'));
 
-    await expectLater(
-      () async => processor.process(event: event, journalDb: journalDb),
-      throwsA(isA<FileSystemException>()),
-    );
+    await processor.process(event: event, journalDb: journalDb);
     verify(
       () => loggingService.captureException(
         any<Object>(),

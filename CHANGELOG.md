@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Matrix Stats `Last updated` label now stays stable when metrics payloads are unchanged, eliminating refresh jitter.
 - Guarded sync list filters against invalid persisted enum indexes on conflicts/outbox pages to prevent `RangeError`.
 - Matrix V2 catch-up now advances markers after offline sessions by correcting journal update result semantics, eliminating false "missing base" retries, and trimming duplicate backlog processing.
+- Matrix outbox refreshes journal JSON before enqueueing and Matrix sender re-syncs vector clocks with descriptor payloads, preventing stale checklist descriptors from being uploaded.
 
 ## [0.9.692] - 2025-10-20
 ### Changed:

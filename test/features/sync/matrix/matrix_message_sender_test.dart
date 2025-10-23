@@ -197,13 +197,25 @@ void main() {
     );
   });
 
-  test('returns false when descriptor vector clock is stale', () async {
+  test('adopts descriptor vector clock when message is stale', () async {
     when(
       () => room.sendFileEvent(
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     ).thenAnswer((_) async => 'file-id');
+    var capturedPayload = '';
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedPayload = invocation.positionalArguments.first as String;
+      return 'text-id';
+    });
 
     final staleMeta = Metadata(
       id: 'checklist-1',
@@ -222,7 +234,7 @@ void main() {
       ),
     );
     final path = relativeEntityPath(staleChecklist);
-    final file = File('${documentsDirectory.path}$path')
+    File('${documentsDirectory.path}$path')
       ..parent.createSync(recursive: true)
       ..writeAsStringSync(jsonEncode(staleChecklist));
 
@@ -240,23 +252,21 @@ void main() {
       onSent: () {},
     );
 
-    expect(result, isFalse);
+    expect(result, isTrue);
     verify(
       () => loggingService.captureEvent(
-        contains('vectorClock mismatch'),
+        contains('vectorClock mismatch; adopting json clock'),
         domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.vclockMismatch',
+        subDomain: 'sendMatrixMsg.vclockAdjusted',
       ),
     ).called(1);
-    verifyNever(
-      () => room.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
+    final decoded = json.decode(
+      utf8.decode(base64.decode(capturedPayload)),
+    ) as Map<String, dynamic>;
+    expect(
+      decoded['vectorClock'],
+      equals({'hostA': 402}),
     );
-    expect(file.existsSync(), isTrue);
   });
 
   test('logs and returns false when sending text message throws', () async {
@@ -906,7 +916,8 @@ void main() {
         message: message,
       );
 
-      expect(result, isTrue);
+      expect(result, isNotNull);
+      expect(result!.vectorClock, equals(VectorClock({'device': 1})));
       verify(
         () => room.sendFileEvent(
           any<MatrixFile>(),
@@ -970,7 +981,7 @@ void main() {
         message: message,
       );
 
-      expect(result, isFalse);
+      expect(result, isNull);
     });
   });
 }

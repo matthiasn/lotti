@@ -21,6 +21,10 @@ class AttachmentIndex {
       final rp = e.content['relativePath'];
       if (rp is String && rp.isNotEmpty) {
         final key = rp.startsWith('/') ? rp : '/$rp';
+        final existing = _byPath[key];
+        if (existing != null && existing.eventId == e.eventId) {
+          return;
+        }
         _byPath[key] = e;
         // For robustness, also record a variant without the leading slash in
         // case callers use that form.
