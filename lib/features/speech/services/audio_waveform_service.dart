@@ -279,7 +279,7 @@ class AudioWaveformService {
   }
 
   String _sanitizeTempId(String rawId) {
-    final sanitized = rawId.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_').trim();
+    final sanitized = rawId.trim().replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_');
     final safe = sanitized.isEmpty ? 'audio' : sanitized;
     if (safe.length <= _maxTempFileIdLength) {
       return safe;
