@@ -7,7 +7,7 @@ part of 'task_focus_controller.dart';
 // **************************************************************************
 
 String _$taskFocusControllerHash() =>
-    r'a29a8be4ed291c2794716612c161eb675855a50a';
+    r'd4cbbcc43d113e00ba4c15624055e02a56c71d9a';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,10 +31,10 @@ class _SystemHash {
 }
 
 abstract class _$TaskFocusController
-    extends BuildlessAutoDisposeAsyncNotifier<TaskFocusIntent?> {
+    extends BuildlessAutoDisposeNotifier<TaskFocusIntent?> {
   late final String id;
 
-  FutureOr<TaskFocusIntent?> build({
+  TaskFocusIntent? build({
     required String id,
   });
 }
@@ -44,7 +44,7 @@ abstract class _$TaskFocusController
 const taskFocusControllerProvider = TaskFocusControllerFamily();
 
 /// See also [TaskFocusController].
-class TaskFocusControllerFamily extends Family<AsyncValue<TaskFocusIntent?>> {
+class TaskFocusControllerFamily extends Family<TaskFocusIntent?> {
   /// See also [TaskFocusController].
   const TaskFocusControllerFamily();
 
@@ -82,7 +82,7 @@ class TaskFocusControllerFamily extends Family<AsyncValue<TaskFocusIntent?>> {
 }
 
 /// See also [TaskFocusController].
-class TaskFocusControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
+class TaskFocusControllerProvider extends AutoDisposeNotifierProviderImpl<
     TaskFocusController, TaskFocusIntent?> {
   /// See also [TaskFocusController].
   TaskFocusControllerProvider({
@@ -114,7 +114,7 @@ class TaskFocusControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   final String id;
 
   @override
-  FutureOr<TaskFocusIntent?> runNotifierBuild(
+  TaskFocusIntent? runNotifierBuild(
     covariant TaskFocusController notifier,
   ) {
     return notifier.build(
@@ -139,7 +139,7 @@ class TaskFocusControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<TaskFocusController, TaskFocusIntent?>
+  AutoDisposeNotifierProviderElement<TaskFocusController, TaskFocusIntent?>
       createElement() {
     return _TaskFocusControllerProviderElement(this);
   }
@@ -161,13 +161,13 @@ class TaskFocusControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin TaskFocusControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<TaskFocusIntent?> {
+    on AutoDisposeNotifierProviderRef<TaskFocusIntent?> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
 class _TaskFocusControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<TaskFocusController,
+    extends AutoDisposeNotifierProviderElement<TaskFocusController,
         TaskFocusIntent?> with TaskFocusControllerRef {
   _TaskFocusControllerProviderElement(super.provider);
 

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -32,7 +30,8 @@ class TaskFocusController extends _$TaskFocusController {
   TaskFocusController();
 
   @override
-  Future<TaskFocusIntent?> build({required String id}) async {
+  TaskFocusIntent? build({required String id}) {
+    ref.keepAlive();
     return null;
   }
 
@@ -41,18 +40,16 @@ class TaskFocusController extends _$TaskFocusController {
     required String entryId,
     double alignment = 0.0,
   }) {
-    state = AsyncData(
-      TaskFocusIntent(
-        taskId: id,
-        entryId: entryId,
-        alignment: alignment,
-      ),
+    state = TaskFocusIntent(
+      taskId: id,
+      entryId: entryId,
+      alignment: alignment,
     );
   }
 
   /// Clear the current intent (called after consumption to enable re-triggering)
   void clearIntent() {
-    state = const AsyncData(null);
+    state = null;
   }
 }
 

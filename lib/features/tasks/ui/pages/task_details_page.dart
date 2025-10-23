@@ -98,12 +98,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
   @override
   Widget build(BuildContext context) {
     // Listen for focus intent
-    ref.listen<AsyncValue<TaskFocusIntent?>>(
+    ref.listen<TaskFocusIntent?>(
       taskFocusControllerProvider(id: widget.taskId),
       (previous, next) {
-        final intent = next.valueOrNull;
-        if (intent != null) {
-          _scrollToEntry(intent.entryId, intent.alignment);
+        if (next != null) {
+          _scrollToEntry(next.entryId, next.alignment);
           // Clear intent after consumption
           ref
               .read(taskFocusControllerProvider(id: widget.taskId).notifier)

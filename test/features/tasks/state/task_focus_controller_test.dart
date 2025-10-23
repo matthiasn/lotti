@@ -55,14 +55,14 @@ void main() {
   });
 
   group('TaskFocusController', () {
-    test('initial state is null', () async {
+    test('initial state is null', () {
       final provider = taskFocusControllerProvider(id: testTaskId);
-      final state = await container.read(provider.future);
+      final state = container.read(provider);
 
       expect(state, isNull);
     });
 
-    test('publishTaskFocus sets intent', () async {
+    test('publishTaskFocus sets intent', () {
       final provider = taskFocusControllerProvider(id: testTaskId);
 
       container.read(provider.notifier).publishTaskFocus(
@@ -70,13 +70,13 @@ void main() {
           );
 
       final state = container.read(provider);
-      expect(state.value, isNotNull);
-      expect(state.value!.taskId, equals(testTaskId));
-      expect(state.value!.entryId, equals(testEntryId));
-      expect(state.value!.alignment, equals(0.0));
+      expect(state, isNotNull);
+      expect(state!.taskId, equals(testTaskId));
+      expect(state.entryId, equals(testEntryId));
+      expect(state.alignment, equals(0.0));
     });
 
-    test('publishTaskFocus with custom alignment', () async {
+    test('publishTaskFocus with custom alignment', () {
       final provider = taskFocusControllerProvider(id: testTaskId);
 
       container.read(provider.notifier).publishTaskFocus(
@@ -85,10 +85,10 @@ void main() {
           );
 
       final state = container.read(provider);
-      expect(state.value!.alignment, equals(0.5));
+      expect(state!.alignment, equals(0.5));
     });
 
-    test('clearIntent resets state to null', () async {
+    test('clearIntent resets state to null', () {
       final provider = taskFocusControllerProvider(id: testTaskId);
       final notifier = container.read(provider.notifier)
         ..publishTaskFocus(
@@ -96,45 +96,45 @@ void main() {
         );
 
       // Verify intent was set
-      expect(container.read(provider).value, isNotNull);
+      expect(container.read(provider), isNotNull);
 
       // Clear intent
       notifier.clearIntent();
 
       // Verify intent is cleared
       final state = container.read(provider);
-      expect(state.value, isNull);
+      expect(state, isNull);
     });
 
-    test('multiple publish calls update the intent', () async {
+    test('multiple publish calls update the intent', () {
       final provider = taskFocusControllerProvider(id: testTaskId);
       final notifier = container.read(provider.notifier)
         ..publishTaskFocus(
           entryId: 'entry1',
         );
 
-      expect(container.read(provider).value!.entryId, equals('entry1'));
+      expect(container.read(provider)!.entryId, equals('entry1'));
 
       // Second publish
       notifier.publishTaskFocus(
         entryId: 'entry2',
       );
 
-      expect(container.read(provider).value!.entryId, equals('entry2'));
+      expect(container.read(provider)!.entryId, equals('entry2'));
     });
 
-    test('re-trigger after clearIntent works', () async {
+    test('re-trigger after clearIntent works', () {
       final provider = taskFocusControllerProvider(id: testTaskId);
       final notifier = container.read(provider.notifier)
         ..publishTaskFocus(
           entryId: testEntryId,
         );
 
-      expect(container.read(provider).value, isNotNull);
+      expect(container.read(provider), isNotNull);
 
       // Clear intent
       notifier.clearIntent();
-      expect(container.read(provider).value, isNull);
+      expect(container.read(provider), isNull);
 
       // Re-trigger with same values should work
       notifier.publishTaskFocus(
@@ -142,11 +142,11 @@ void main() {
       );
 
       final state = container.read(provider);
-      expect(state.value, isNotNull);
-      expect(state.value!.entryId, equals(testEntryId));
+      expect(state, isNotNull);
+      expect(state!.entryId, equals(testEntryId));
     });
 
-    test('different task IDs have independent state', () async {
+    test('different task IDs have independent state', () {
       const taskId1 = 'task-1';
       const taskId2 = 'task-2';
 
@@ -162,15 +162,15 @@ void main() {
           );
 
       // Verify each has its own state
-      expect(container.read(provider1).value!.entryId, equals('entry1'));
-      expect(container.read(provider2).value!.entryId, equals('entry2'));
+      expect(container.read(provider1)!.entryId, equals('entry1'));
+      expect(container.read(provider2)!.entryId, equals('entry2'));
 
       // Clear task1
       container.read(provider1.notifier).clearIntent();
 
       // Verify only task1 is cleared
-      expect(container.read(provider1).value, isNull);
-      expect(container.read(provider2).value!.entryId, equals('entry2'));
+      expect(container.read(provider1), isNull);
+      expect(container.read(provider2)!.entryId, equals('entry2'));
     });
   });
 }
