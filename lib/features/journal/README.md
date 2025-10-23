@@ -129,6 +129,8 @@ Features:
 - **Markdown support**: Import/export markdown text
 - **Delta format**: Quill's JSON-based document format
 - **Undo/redo**: Built-in history management
+- **Embeds**: Default image/video embeds plus horizontal rules (`divider`)
+- **Error resilience**: Unknown embed types render a warning block instead of crashing the editor
 
 ### 4. Task Management
 

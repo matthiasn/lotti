@@ -13,6 +13,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -107,6 +108,29 @@ void main() {
         quillEditor.config.padding,
         const EdgeInsets.only(top: 5, bottom: 15, left: 10, right: 10),
       );
+    });
+
+    testWidgets('configures embed builders and unknown fallback',
+        (WidgetTester tester) async {
+      const entryId = 'embed-config';
+
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: entryId,
+          showToolbar: false,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      final builders = quillEditor.config.embedBuilders;
+
+      expect(builders, isNotNull);
+      expect(
+          builders!.any((builder) => builder is DividerEmbedBuilder), isTrue);
+      expect(
+          quillEditor.config.unknownEmbedBuilder, isA<UnknownEmbedBuilder>());
     });
   });
 }

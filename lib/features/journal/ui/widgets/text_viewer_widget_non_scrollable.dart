@@ -1,9 +1,11 @@
 import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
 
 /// A non-scrollable text viewer widget that shows a gradient fade when content is clipped
 class TextViewerWidgetNonScrollable extends StatefulWidget {
@@ -98,6 +100,11 @@ class _TextViewerWidgetNonScrollableState
                   scrollController: ScrollController(),
                   focusNode: FocusNode(),
                   config: QuillEditorConfig(
+                    embedBuilders: [
+                      const DividerEmbedBuilder(),
+                      ...FlutterQuillEmbeds.defaultEditorBuilders(),
+                    ],
+                    unknownEmbedBuilder: const UnknownEmbedBuilder(),
                     customStyles:
                         customEditorStyles(themeData: Theme.of(context)),
                   ),

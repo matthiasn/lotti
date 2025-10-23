@@ -56,6 +56,7 @@ dependencies:
   flutter_map: ^8.0.0
   flutter_openssl_crypto: ^0.5.0
   flutter_quill: ^11.4.2
+  flutter_quill_extensions: ^11.0.0
   flutter_rating: ^2.0.2
   flutter_riverpod: ^2.4.9
   flutter_secure_storage: ^9.0.0

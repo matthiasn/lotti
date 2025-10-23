@@ -1,10 +1,12 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_toolbar.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -72,6 +74,11 @@ class EditorWidget extends ConsumerWidget {
                 scrollController: ScrollController(),
                 focusNode: focusNode,
                 config: QuillEditorConfig(
+                  embedBuilders: [
+                    const DividerEmbedBuilder(),
+                    ...FlutterQuillEmbeds.defaultEditorBuilders(),
+                  ],
+                  unknownEmbedBuilder: const UnknownEmbedBuilder(),
                   textSelectionThemeData: TextSelectionThemeData(
                     cursorColor: context.colorScheme.onSurface,
                     selectionColor: context.colorScheme.primary.withAlpha(127),
