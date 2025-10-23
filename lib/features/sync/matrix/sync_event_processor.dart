@@ -19,6 +19,188 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path/path.dart' as path;
 
+enum VectorClockDecision {
+  accept,
+  retryAfterPurge,
+  staleAfterRefresh,
+  circuitBreaker,
+  missingVectorClock,
+}
+
+class VectorClockValidator {
+  VectorClockValidator({required LoggingService loggingService})
+      : _logging = loggingService;
+
+  static const int maxStaleDescriptorFailures = 5;
+
+  final LoggingService _logging;
+  final Map<String, int> _staleDescriptorFailures = <String, int>{};
+
+  VectorClockDecision evaluate({
+    required String jsonPath,
+    required VectorClock incomingVectorClock,
+    required JournalEntity candidate,
+    required int attempt,
+  }) {
+    final candidateVc = candidate.meta.vectorClock;
+    if (candidateVc == null) {
+      _logging.captureEvent(
+        'smart.fetch.missing_vc path=$jsonPath expected=$incomingVectorClock',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetch',
+      );
+      reset(jsonPath);
+      return VectorClockDecision.missingVectorClock;
+    }
+
+    final status = VectorClock.compare(candidateVc, incomingVectorClock);
+    if (status == VclockStatus.b_gt_a) {
+      final failures = (_staleDescriptorFailures[jsonPath] ?? 0) + 1;
+      _staleDescriptorFailures[jsonPath] = failures;
+      if (failures >= maxStaleDescriptorFailures) {
+        _logging.captureEvent(
+          'smart.fetch.stale_vc.breaker path=$jsonPath retries=$failures limit=$maxStaleDescriptorFailures',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+        return VectorClockDecision.circuitBreaker;
+      }
+      if (attempt == 0) {
+        _logging.captureEvent(
+          'smart.fetch.stale_vc path=$jsonPath expected=$incomingVectorClock got=$candidateVc',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+        return VectorClockDecision.retryAfterPurge;
+      }
+      _logging.captureEvent(
+        'smart.fetch.stale_vc.pending path=$jsonPath expected=$incomingVectorClock got=$candidateVc',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetch',
+      );
+      return VectorClockDecision.staleAfterRefresh;
+    }
+
+    reset(jsonPath);
+    return VectorClockDecision.accept;
+  }
+
+  void reset(String jsonPath) {
+    _staleDescriptorFailures.remove(jsonPath);
+  }
+}
+
+class DescriptorDownloadResult {
+  const DescriptorDownloadResult({
+    required this.json,
+    required this.bytesLength,
+  });
+
+  final String json;
+  final int bytesLength;
+}
+
+class DescriptorDownloader {
+  DescriptorDownloader({
+    required LoggingService loggingService,
+    required VectorClockValidator validator,
+    this.onCachePurge,
+  })  : _logging = loggingService,
+        _validator = validator;
+
+  static const int maxDescriptorDownloadAttempts = 2;
+
+  final LoggingService _logging;
+  final VectorClockValidator _validator;
+  void Function()? onCachePurge;
+
+  Future<DescriptorDownloadResult> download({
+    required Event descriptorEvent,
+    required VectorClock incomingVectorClock,
+    required String jsonPath,
+  }) async {
+    for (var attempt = 0; attempt < maxDescriptorDownloadAttempts; attempt++) {
+      final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
+      final bytes = matrixFile.bytes;
+      if (bytes.isEmpty) {
+        throw const FileSystemException('empty attachment bytes');
+      }
+      final candidateJson = utf8.decode(bytes);
+      final decoded = json.decode(candidateJson) as Map<String, dynamic>;
+      final candidate = JournalEntity.fromJson(decoded);
+      final decision = _validator.evaluate(
+        jsonPath: jsonPath,
+        incomingVectorClock: incomingVectorClock,
+        candidate: candidate,
+        attempt: attempt,
+      );
+      switch (decision) {
+        case VectorClockDecision.accept:
+          _validator.reset(jsonPath);
+          return DescriptorDownloadResult(
+            json: candidateJson,
+            bytesLength: bytes.length,
+          );
+        case VectorClockDecision.retryAfterPurge:
+          final purged =
+              await _maybePurgeCachedDescriptor(descriptorEvent, jsonPath);
+          if (purged) {
+            onCachePurge?.call();
+          }
+          _logging.captureEvent(
+            'smart.fetch.stale_vc.refresh path=$jsonPath',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
+          continue;
+        case VectorClockDecision.staleAfterRefresh:
+          throw const FileSystemException(
+              'stale attachment json after refresh');
+        case VectorClockDecision.circuitBreaker:
+          throw const FileSystemException(
+            'stale attachment json (circuit breaker)',
+          );
+        case VectorClockDecision.missingVectorClock:
+          throw const FileSystemException('missing attachment vector clock');
+      }
+    }
+
+    throw const FileSystemException('stale attachment json');
+  }
+
+  Future<bool> _maybePurgeCachedDescriptor(
+    Event event,
+    String jsonPath,
+  ) async {
+    try {
+      final uri = event.attachmentOrThumbnailMxcUrl();
+      if (uri == null) {
+        _logging.captureEvent(
+          'smart.fetch.stale_vc.purge.skipped path=$jsonPath reason=no_mxc',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        );
+        return false;
+      }
+      await event.room.client.database.deleteFile(uri);
+      _logging.captureEvent(
+        'smart.fetch.stale_vc.purge path=$jsonPath mxc=$uri',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetch',
+      );
+      return true;
+    } catch (e, st) {
+      _logging.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.purge',
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
+}
+
 /// Abstraction for loading journal entities and related attachments when
 /// processing sync messages.
 abstract class SyncJournalEntityLoader {
@@ -51,17 +233,31 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
     required AttachmentIndex attachmentIndex,
     required LoggingService loggingService,
-    this.onCachePurge,
+    void Function()? onCachePurge,
   })  : _attachmentIndex = attachmentIndex,
-        _logging = loggingService;
-
-  static const int _maxDescriptorDownloadAttempts = 2;
-  static const int _maxStaleDescriptorFailures = 5;
+        _logging = loggingService {
+    _vectorClockValidator =
+        VectorClockValidator(loggingService: loggingService);
+    _descriptorDownloader = DescriptorDownloader(
+      loggingService: loggingService,
+      validator: _vectorClockValidator,
+      onCachePurge: onCachePurge,
+    );
+    _onCachePurge = onCachePurge;
+  }
 
   final AttachmentIndex _attachmentIndex;
   final LoggingService _logging;
-  final Map<String, int> _staleDescriptorFailures = <String, int>{};
-  void Function()? onCachePurge;
+  late final VectorClockValidator _vectorClockValidator;
+  late final DescriptorDownloader _descriptorDownloader;
+  void Function()? _onCachePurge;
+
+  void Function()? get onCachePurge => _onCachePurge;
+
+  set onCachePurge(void Function()? listener) {
+    _onCachePurge = listener;
+    _descriptorDownloader.onCachePurge = listener;
+  }
 
   @override
   Future<JournalEntity> load({
@@ -118,11 +314,16 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         );
       }
       try {
-        await _downloadAndPersistDescriptor(
+        final descriptor = await _descriptorDownloader.download(
           descriptorEvent: eventForPath,
           incomingVectorClock: incomingVectorClock,
           jsonPath: jsonPath,
-          targetFile: targetFile,
+        );
+        await saveJson(targetFile.path, descriptor.json);
+        _logging.captureEvent(
+          'smart.json.written path=$jsonPath bytes=${descriptor.bytesLength}',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
         );
       } catch (e, st) {
         _logging.captureException(
@@ -191,126 +392,6 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     // Ensure referenced media exists only when mentioned by JSON, and only if missing.
     await _ensureMediaOnMissing(entity);
     return entity;
-  }
-
-  Future<void> _downloadAndPersistDescriptor({
-    required Event descriptorEvent,
-    required VectorClock incomingVectorClock,
-    required String jsonPath,
-    required File targetFile,
-  }) async {
-    String? jsonToWrite;
-    var bytesLength = 0;
-
-    for (var attempt = 0; attempt < _maxDescriptorDownloadAttempts; attempt++) {
-      final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
-      final bytes = matrixFile.bytes;
-      if (bytes.isEmpty) {
-        throw const FileSystemException('empty attachment bytes');
-      }
-      final candidateJson = utf8.decode(bytes);
-      final decoded = json.decode(candidateJson) as Map<String, dynamic>;
-      final candidate = JournalEntity.fromJson(decoded);
-      final candidateVc = candidate.meta.vectorClock;
-      if (candidateVc != null) {
-        final status = VectorClock.compare(candidateVc, incomingVectorClock);
-        if (status == VclockStatus.b_gt_a) {
-          final failures = (_staleDescriptorFailures[jsonPath] ?? 0) + 1;
-          _staleDescriptorFailures[jsonPath] = failures;
-          if (failures >= _maxStaleDescriptorFailures) {
-            _logging.captureEvent(
-              'smart.fetch.stale_vc.breaker path=$jsonPath retries=$failures limit=$_maxStaleDescriptorFailures',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'SmartLoader.fetch',
-            );
-            throw const FileSystemException(
-              'stale attachment json (circuit breaker)',
-            );
-          }
-          if (attempt == 0) {
-            _logging.captureEvent(
-              'smart.fetch.stale_vc path=$jsonPath expected=$incomingVectorClock got=$candidateVc',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'SmartLoader.fetch',
-            );
-            final purged =
-                await _maybePurgeCachedDescriptor(descriptorEvent, jsonPath);
-            if (purged) {
-              onCachePurge?.call();
-            }
-            _logging.captureEvent(
-              'smart.fetch.stale_vc.refresh path=$jsonPath',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'SmartLoader.fetch',
-            );
-            continue;
-          }
-          _logging.captureEvent(
-            'smart.fetch.stale_vc.pending path=$jsonPath expected=$incomingVectorClock got=$candidateVc',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetch',
-          );
-          throw const FileSystemException(
-              'stale attachment json after refresh');
-        }
-        _staleDescriptorFailures.remove(jsonPath);
-      } else {
-        _logging.captureEvent(
-          'smart.fetch.missing_vc path=$jsonPath expected=$incomingVectorClock',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SmartLoader.fetch',
-        );
-        _staleDescriptorFailures.remove(jsonPath);
-        throw const FileSystemException('missing attachment vector clock');
-      }
-      jsonToWrite = candidateJson;
-      bytesLength = bytes.length;
-      break;
-    }
-
-    if (jsonToWrite == null) {
-      throw const FileSystemException('stale attachment json');
-    }
-
-    await saveJson(targetFile.path, jsonToWrite);
-    _staleDescriptorFailures.remove(jsonPath);
-    _logging.captureEvent(
-      'smart.json.written path=$jsonPath bytes=$bytesLength',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'SmartLoader.fetch',
-    );
-  }
-
-  Future<bool> _maybePurgeCachedDescriptor(
-    Event event,
-    String jsonPath,
-  ) async {
-    try {
-      final uri = event.attachmentOrThumbnailMxcUrl();
-      if (uri == null) {
-        _logging.captureEvent(
-          'smart.fetch.stale_vc.purge.skipped path=$jsonPath reason=no_mxc',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SmartLoader.fetch',
-        );
-        return false;
-      }
-      await event.room.client.database.deleteFile(uri);
-      _logging.captureEvent(
-        'smart.fetch.stale_vc.purge path=$jsonPath mxc=$uri',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SmartLoader.fetch',
-      );
-      return true;
-    } catch (e, st) {
-      _logging.captureException(
-        e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SmartLoader.purge',
-        stackTrace: st,
-      );
-      return false;
-    }
   }
 
   // Construct a canonical index key for AttachmentIndex lookups.

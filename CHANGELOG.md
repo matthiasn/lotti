@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync Outbox and Sync Conflicts list pages now use modern cards with segmented filters, inline counts, and polished empty states via the shared sync list scaffold.
 - Sync filter chips now hide non-informational zero badges, emphasise pending/error/unresolved totals with tinted badges, trim their height slightly, and keep empty-state cards constrained on the conflicts page.
 - Added dedicated widget tests for `ConflictListItem` and `SyncListScaffold` covering filters, semantics, and interaction paths.
+- Split the smart journal loader into dedicated `DescriptorDownloader` and `VectorClockValidator` components so caching, purging, and vector-clock logic are independently testable.
 
 ### Fixed
 - Matrix Stats `Last updated` label now stays stable when metrics payloads are unchanged, eliminating refresh jitter.

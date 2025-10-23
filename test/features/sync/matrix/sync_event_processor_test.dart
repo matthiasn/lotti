@@ -64,6 +64,7 @@ void main() {
     registerFallbackValue(testTag1);
     registerFallbackValue(measurableWater);
     registerFallbackValue(fallbackAiConfig);
+    registerFallbackValue(Uri.parse('mxc://placeholder'));
   });
   // Helper to normalize leading separators across platforms so that
   // path.join(docDir, rel) never treats rel as absolute.
@@ -129,6 +130,344 @@ void main() {
 
   String encodeMessage(SyncMessage message) =>
       base64.encode(utf8.encode(json.encode(message.toJson())));
+
+  group('VectorClockValidator', () {
+    late MockLoggingService logging;
+    late VectorClockValidator validator;
+
+    setUp(() {
+      logging = MockLoggingService();
+      when(() => logging.captureEvent(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          )).thenAnswer((_) {});
+      when(() => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          )).thenAnswer((_) {});
+      validator = VectorClockValidator(loggingService: logging);
+    });
+
+    JournalEntry buildEntry(VectorClock? vc) => JournalEntry(
+          meta: Metadata(
+            id: 'entry',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            vectorClock: vc,
+          ),
+          entryText: const EntryText(plainText: 'text'),
+        );
+
+    test('returns retryAfterPurge for stale first attempt', () {
+      final decision = validator.evaluate(
+        jsonPath: '/path.json',
+        incomingVectorClock: const VectorClock({'n': 2}),
+        candidate: buildEntry(const VectorClock({'n': 1})),
+        attempt: 0,
+      );
+      expect(decision, VectorClockDecision.retryAfterPurge);
+      verify(
+        () => logging.captureEvent(
+          contains('smart.fetch.stale_vc path=/path.json'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+    });
+
+    test('returns staleAfterRefresh on subsequent attempt', () {
+      validator.evaluate(
+        jsonPath: '/path.json',
+        incomingVectorClock: const VectorClock({'n': 3}),
+        candidate: buildEntry(const VectorClock({'n': 1})),
+        attempt: 0,
+      );
+      final decision = validator.evaluate(
+        jsonPath: '/path.json',
+        incomingVectorClock: const VectorClock({'n': 3}),
+        candidate: buildEntry(const VectorClock({'n': 1})),
+        attempt: 1,
+      );
+      expect(decision, VectorClockDecision.staleAfterRefresh);
+      verify(
+        () => logging.captureEvent(
+          contains('smart.fetch.stale_vc.pending path=/path.json'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+    });
+
+    test('trips circuit breaker after repeated stale descriptors', () {
+      for (var i = 0;
+          i < VectorClockValidator.maxStaleDescriptorFailures - 1;
+          i++) {
+        expect(
+          validator.evaluate(
+            jsonPath: '/path.json',
+            incomingVectorClock: const VectorClock({'n': 5}),
+            candidate: buildEntry(const VectorClock({'n': 1})),
+            attempt: 0,
+          ),
+          VectorClockDecision.retryAfterPurge,
+        );
+      }
+      final decision = validator.evaluate(
+        jsonPath: '/path.json',
+        incomingVectorClock: const VectorClock({'n': 5}),
+        candidate: buildEntry(const VectorClock({'n': 1})),
+        attempt: 0,
+      );
+      expect(decision, VectorClockDecision.circuitBreaker);
+      verify(
+        () => logging.captureEvent(
+          contains('smart.fetch.stale_vc.breaker path=/path.json'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+    });
+
+    test('returns missingVectorClock when descriptor lacks vector clock', () {
+      final decision = validator.evaluate(
+        jsonPath: '/missing.json',
+        incomingVectorClock: const VectorClock({'n': 1}),
+        candidate: buildEntry(null),
+        attempt: 0,
+      );
+      expect(decision, VectorClockDecision.missingVectorClock);
+      verify(
+        () => logging.captureEvent(
+          contains('smart.fetch.missing_vc path=/missing.json'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+    });
+
+    test('resets failure count when descriptor becomes fresh', () {
+      validator.evaluate(
+        jsonPath: '/path.json',
+        incomingVectorClock: const VectorClock({'n': 3}),
+        candidate: buildEntry(const VectorClock({'n': 1})),
+        attempt: 0,
+      );
+      final acceptDecision = validator.evaluate(
+        jsonPath: '/path.json',
+        incomingVectorClock: const VectorClock({'n': 3}),
+        candidate: buildEntry(const VectorClock({'n': 4})),
+        attempt: 0,
+      );
+      expect(acceptDecision, VectorClockDecision.accept);
+
+      final retryDecision = validator.evaluate(
+        jsonPath: '/path.json',
+        incomingVectorClock: const VectorClock({'n': 3}),
+        candidate: buildEntry(const VectorClock({'n': 2})),
+        attempt: 0,
+      );
+      expect(retryDecision, VectorClockDecision.retryAfterPurge);
+    });
+  });
+
+  group('DescriptorDownloader', () {
+    late MockLoggingService logging;
+    late VectorClockValidator validator;
+    late DescriptorDownloader downloader;
+    late MockEvent descriptorEvent;
+    late MockMatrixRoom room;
+    late MockMatrixClient client;
+    late MockMatrixDatabase database;
+
+    setUp(() {
+      logging = MockLoggingService();
+      when(() => logging.captureEvent(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          )).thenAnswer((_) {});
+      when(() => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          )).thenAnswer((_) {});
+      validator = VectorClockValidator(loggingService: logging);
+      downloader = DescriptorDownloader(
+        loggingService: logging,
+        validator: validator,
+      );
+
+      descriptorEvent = MockEvent();
+      room = MockMatrixRoom();
+      client = MockMatrixClient();
+      database = MockMatrixDatabase();
+
+      when(() => descriptorEvent.room).thenReturn(room);
+      when(() => room.client).thenReturn(client);
+      when(() => client.database).thenReturn(database);
+      when(() => descriptorEvent.attachmentMimetype)
+          .thenReturn('application/json');
+      when(() => descriptorEvent.content).thenReturn({'relativePath': '/path'});
+      when(() => descriptorEvent.attachmentOrThumbnailMxcUrl())
+          .thenReturn(Uri.parse('mxc://server/file'));
+    });
+
+    JournalEntry buildEntry(VectorClock? vc) => JournalEntry(
+          meta: Metadata(
+            id: 'entry',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            vectorClock: vc,
+          ),
+          entryText: const EntryText(plainText: 'text'),
+        );
+
+    Future<DescriptorDownloadResult> download({
+      required VectorClock incoming,
+      required List<JournalEntry> responses,
+      void Function()? onCachePurge,
+    }) async {
+      if (onCachePurge != null) {
+        downloader.onCachePurge = onCachePurge;
+      }
+      var index = 0;
+      when(descriptorEvent.downloadAndDecryptAttachment).thenAnswer((_) async {
+        final entry = responses[index.clamp(0, responses.length - 1)];
+        index++;
+        final bytes = Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits);
+        return MatrixFile(bytes: bytes, name: 'entry.json');
+      });
+      when(() => database.deleteFile(any<Uri>())).thenAnswer((_) async => true);
+      return downloader.download(
+        descriptorEvent: descriptorEvent,
+        incomingVectorClock: incoming,
+        jsonPath: '/path.json',
+      );
+    }
+
+    test('returns fresh descriptor payload when vector clock is current',
+        () async {
+      final entry = buildEntry(const VectorClock({'n': 2}));
+      final result = await download(
+        incoming: const VectorClock({'n': 1}),
+        responses: [entry],
+      );
+      final decoded = JournalEntity.fromJson(
+        json.decode(result.json) as Map<String, dynamic>,
+      );
+      expect(decoded, isA<JournalEntry>());
+      final journal = decoded as JournalEntry;
+      expect(journal.entryText?.plainText, 'text');
+      expect(journal.meta.vectorClock, const VectorClock({'n': 2}));
+      expect(result.bytesLength, isPositive);
+      verifyNever(() => database.deleteFile(any<Uri>()));
+    });
+
+    test('purges cache and retries stale descriptor once', () async {
+      var purges = 0;
+      final stale = buildEntry(const VectorClock({'n': 1}));
+      final fresh = buildEntry(const VectorClock({'n': 3}));
+      final result = await download(
+        incoming: const VectorClock({'n': 3}),
+        responses: [stale, fresh],
+        onCachePurge: () => purges++,
+      );
+      final decoded = JournalEntity.fromJson(
+        json.decode(result.json) as Map<String, dynamic>,
+      );
+      expect(decoded, isA<JournalEntry>());
+      final journal = decoded as JournalEntry;
+      expect(journal.entryText?.plainText, 'text');
+      expect(journal.meta.vectorClock, const VectorClock({'n': 3}));
+      expect(purges, 1);
+      verify(() => database.deleteFile(any<Uri>())).called(1);
+      verify(
+        () => logging.captureEvent(
+          contains('smart.fetch.stale_vc.refresh path=/path.json'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+    });
+
+    test('throws when descriptor remains stale after refresh', () async {
+      final stale = buildEntry(const VectorClock({'n': 1}));
+      await expectLater(
+        () => download(
+          incoming: const VectorClock({'n': 3}),
+          responses: [stale, stale],
+        ),
+        throwsA(
+          isA<FileSystemException>().having(
+            (error) => error.message,
+            'message',
+            contains('after refresh'),
+          ),
+        ),
+      );
+      verify(() => database.deleteFile(any<Uri>())).called(1);
+    });
+
+    test('throws circuit breaker after repeated stale downloads', () async {
+      final stale = buildEntry(const VectorClock({'n': 1}));
+      Future<void> attempt() => download(
+            incoming: const VectorClock({'n': 5}),
+            responses: [stale, stale],
+          ).then((_) {});
+
+      await expectLater(
+        attempt(),
+        throwsA(isA<FileSystemException>()),
+      );
+      await expectLater(
+        attempt(),
+        throwsA(isA<FileSystemException>()),
+      );
+      await expectLater(
+        attempt(),
+        throwsA(
+          isA<FileSystemException>().having(
+            (error) => error.message,
+            'message',
+            contains('circuit breaker'),
+          ),
+        ),
+      );
+      verify(
+        () => logging.captureEvent(
+          contains('smart.fetch.stale_vc.breaker path=/path.json'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
+    });
+
+    test('throws when descriptor lacks vector clock metadata', () async {
+      final missing = buildEntry(null);
+      await expectLater(
+        () => download(
+          incoming: const VectorClock({'n': 2}),
+          responses: [missing],
+        ),
+        throwsA(
+          isA<FileSystemException>().having(
+            (error) => error.message,
+            'message',
+            contains('missing attachment vector clock'),
+          ),
+        ),
+      );
+      verifyNever(() => database.deleteFile(any<Uri>()));
+    });
+  });
 
   test('processes journal entities via loader and updates notifications',
       () async {
@@ -719,8 +1058,8 @@ void main() {
       );
       when(() => loggingService.captureEvent(
             any<Object>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
           )).thenAnswer((_) {});
       await expectLater(
         () => loader.load(
@@ -917,8 +1256,8 @@ void main() {
           .thenAnswer((_) async => true);
       when(() => loggingService.captureEvent(
             any<Object>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
           )).thenAnswer((_) {});
 
       final stale = JournalEntry(
