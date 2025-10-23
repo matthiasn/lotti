@@ -18,9 +18,6 @@ const int audioWaveformCacheVersion = _waveformCacheVersion;
 /// Maximum supported audio duration for waveform extraction.
 const Duration _defaultMaxDuration = Duration(minutes: 3);
 
-/// Default number of buckets the UI expects. Can be overridden per request.
-const int _defaultTargetBuckets = 200;
-
 /// Zoom level tuned for ~200 buckets across typical journal clips.
 const WaveformZoom _defaultZoom = WaveformZoom.pixelsPerSecond(120);
 
@@ -143,16 +140,13 @@ class AudioWaveformService {
     AudioWaveformExtractor? extractor,
     Duration maxSupportedDuration = _defaultMaxDuration,
     WaveformZoom zoom = _defaultZoom,
-    int targetBuckets = _defaultTargetBuckets,
   })  : _extractor = extractor ?? _defaultWaveformExtractor,
         _maxSupportedDuration = maxSupportedDuration,
-        _zoom = zoom,
-        _targetBuckets = targetBuckets;
+        _zoom = zoom;
 
   final AudioWaveformExtractor _extractor;
   final Duration _maxSupportedDuration;
   final WaveformZoom _zoom;
-  final int _targetBuckets;
 
   LoggingService get _loggingService => getIt<LoggingService>();
 
@@ -166,9 +160,9 @@ class AudioWaveformService {
   /// missing.
   Future<AudioWaveformData?> loadWaveform(
     JournalAudio audio, {
-    int? targetBuckets,
+    required int targetBuckets,
   }) async {
-    final bucketTarget = targetBuckets ?? _targetBuckets;
+    final bucketTarget = math.max(1, targetBuckets);
     if (audio.data.duration > _maxSupportedDuration) {
       _loggingService.captureEvent(
         'Skipping waveform generation for long clip '
@@ -191,7 +185,7 @@ class AudioWaveformService {
     }
 
     final stat = audioFile.statSync();
-    final cacheKey = _cacheFile(audio.meta.id);
+    final cacheKey = _cacheFile(audio.meta.id, bucketTarget);
     if (cacheKey.existsSync()) {
       final cached = await _readCache(cacheKey);
       if (cached != null &&
@@ -265,9 +259,9 @@ class AudioWaveformService {
     }
   }
 
-  File _cacheFile(String audioId) {
-    final safeFileName =
-        '${audioId.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_')}.json';
+  File _cacheFile(String audioId, int bucketCount) {
+    final sanitizedId = audioId.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
+    final safeFileName = '${sanitizedId}_$bucketCount.json';
     return File(p.join(_cacheDirectory.path, safeFileName));
   }
 

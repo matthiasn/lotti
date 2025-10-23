@@ -21,9 +21,6 @@ mixin _$AudioPlayerState {
   double get speed;
   bool get showTranscriptsList;
   Duration get buffered;
-  AudioWaveformStatus get waveformStatus;
-  List<double> get waveform;
-  Duration get waveformBucketDuration;
   JournalAudio? get audioNote;
 
   /// Create a copy of AudioPlayerState
@@ -51,11 +48,6 @@ mixin _$AudioPlayerState {
                 other.showTranscriptsList == showTranscriptsList) &&
             (identical(other.buffered, buffered) ||
                 other.buffered == buffered) &&
-            (identical(other.waveformStatus, waveformStatus) ||
-                other.waveformStatus == waveformStatus) &&
-            const DeepCollectionEquality().equals(other.waveform, waveform) &&
-            (identical(other.waveformBucketDuration, waveformBucketDuration) ||
-                other.waveformBucketDuration == waveformBucketDuration) &&
             const DeepCollectionEquality().equals(other.audioNote, audioNote));
   }
 
@@ -69,14 +61,11 @@ mixin _$AudioPlayerState {
       speed,
       showTranscriptsList,
       buffered,
-      waveformStatus,
-      const DeepCollectionEquality().hash(waveform),
-      waveformBucketDuration,
       const DeepCollectionEquality().hash(audioNote));
 
   @override
   String toString() {
-    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, speed: $speed, showTranscriptsList: $showTranscriptsList, buffered: $buffered, waveformStatus: $waveformStatus, waveform: $waveform, waveformBucketDuration: $waveformBucketDuration, audioNote: $audioNote)';
+    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, speed: $speed, showTranscriptsList: $showTranscriptsList, buffered: $buffered, audioNote: $audioNote)';
   }
 }
 
@@ -94,9 +83,6 @@ abstract mixin class $AudioPlayerStateCopyWith<$Res> {
       double speed,
       bool showTranscriptsList,
       Duration buffered,
-      AudioWaveformStatus waveformStatus,
-      List<double> waveform,
-      Duration waveformBucketDuration,
       JournalAudio? audioNote});
 }
 
@@ -120,9 +106,6 @@ class _$AudioPlayerStateCopyWithImpl<$Res>
     Object? speed = null,
     Object? showTranscriptsList = null,
     Object? buffered = null,
-    Object? waveformStatus = null,
-    Object? waveform = null,
-    Object? waveformBucketDuration = null,
     Object? audioNote = freezed,
   }) {
     return _then(_self.copyWith(
@@ -153,18 +136,6 @@ class _$AudioPlayerStateCopyWithImpl<$Res>
       buffered: null == buffered
           ? _self.buffered
           : buffered // ignore: cast_nullable_to_non_nullable
-              as Duration,
-      waveformStatus: null == waveformStatus
-          ? _self.waveformStatus
-          : waveformStatus // ignore: cast_nullable_to_non_nullable
-              as AudioWaveformStatus,
-      waveform: null == waveform
-          ? _self.waveform
-          : waveform // ignore: cast_nullable_to_non_nullable
-              as List<double>,
-      waveformBucketDuration: null == waveformBucketDuration
-          ? _self.waveformBucketDuration
-          : waveformBucketDuration // ignore: cast_nullable_to_non_nullable
               as Duration,
       audioNote: freezed == audioNote
           ? _self.audioNote
@@ -275,9 +246,6 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             double speed,
             bool showTranscriptsList,
             Duration buffered,
-            AudioWaveformStatus waveformStatus,
-            List<double> waveform,
-            Duration waveformBucketDuration,
             JournalAudio? audioNote)?
         $default, {
     required TResult orElse(),
@@ -293,9 +261,6 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             _that.speed,
             _that.showTranscriptsList,
             _that.buffered,
-            _that.waveformStatus,
-            _that.waveform,
-            _that.waveformBucketDuration,
             _that.audioNote);
       case _:
         return orElse();
@@ -325,9 +290,6 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             double speed,
             bool showTranscriptsList,
             Duration buffered,
-            AudioWaveformStatus waveformStatus,
-            List<double> waveform,
-            Duration waveformBucketDuration,
             JournalAudio? audioNote)
         $default,
   ) {
@@ -342,9 +304,6 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             _that.speed,
             _that.showTranscriptsList,
             _that.buffered,
-            _that.waveformStatus,
-            _that.waveform,
-            _that.waveformBucketDuration,
             _that.audioNote);
       case _:
         throw StateError('Unexpected subclass');
@@ -373,9 +332,6 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             double speed,
             bool showTranscriptsList,
             Duration buffered,
-            AudioWaveformStatus waveformStatus,
-            List<double> waveform,
-            Duration waveformBucketDuration,
             JournalAudio? audioNote)?
         $default,
   ) {
@@ -390,9 +346,6 @@ extension AudioPlayerStatePatterns on AudioPlayerState {
             _that.speed,
             _that.showTranscriptsList,
             _that.buffered,
-            _that.waveformStatus,
-            _that.waveform,
-            _that.waveformBucketDuration,
             _that.audioNote);
       case _:
         return null;
@@ -411,11 +364,7 @@ class _AudioPlayerState implements AudioPlayerState {
       required this.speed,
       required this.showTranscriptsList,
       this.buffered = Duration.zero,
-      this.waveformStatus = AudioWaveformStatus.initial,
-      final List<double> waveform = const <double>[],
-      this.waveformBucketDuration = Duration.zero,
-      this.audioNote})
-      : _waveform = waveform;
+      this.audioNote});
 
   @override
   final AudioPlayerStatus status;
@@ -432,21 +381,6 @@ class _AudioPlayerState implements AudioPlayerState {
   @override
   @JsonKey()
   final Duration buffered;
-  @override
-  @JsonKey()
-  final AudioWaveformStatus waveformStatus;
-  final List<double> _waveform;
-  @override
-  @JsonKey()
-  List<double> get waveform {
-    if (_waveform is EqualUnmodifiableListView) return _waveform;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_waveform);
-  }
-
-  @override
-  @JsonKey()
-  final Duration waveformBucketDuration;
   @override
   final JournalAudio? audioNote;
 
@@ -475,11 +409,6 @@ class _AudioPlayerState implements AudioPlayerState {
                 other.showTranscriptsList == showTranscriptsList) &&
             (identical(other.buffered, buffered) ||
                 other.buffered == buffered) &&
-            (identical(other.waveformStatus, waveformStatus) ||
-                other.waveformStatus == waveformStatus) &&
-            const DeepCollectionEquality().equals(other._waveform, _waveform) &&
-            (identical(other.waveformBucketDuration, waveformBucketDuration) ||
-                other.waveformBucketDuration == waveformBucketDuration) &&
             const DeepCollectionEquality().equals(other.audioNote, audioNote));
   }
 
@@ -493,14 +422,11 @@ class _AudioPlayerState implements AudioPlayerState {
       speed,
       showTranscriptsList,
       buffered,
-      waveformStatus,
-      const DeepCollectionEquality().hash(_waveform),
-      waveformBucketDuration,
       const DeepCollectionEquality().hash(audioNote));
 
   @override
   String toString() {
-    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, speed: $speed, showTranscriptsList: $showTranscriptsList, buffered: $buffered, waveformStatus: $waveformStatus, waveform: $waveform, waveformBucketDuration: $waveformBucketDuration, audioNote: $audioNote)';
+    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, speed: $speed, showTranscriptsList: $showTranscriptsList, buffered: $buffered, audioNote: $audioNote)';
   }
 }
 
@@ -520,9 +446,6 @@ abstract mixin class _$AudioPlayerStateCopyWith<$Res>
       double speed,
       bool showTranscriptsList,
       Duration buffered,
-      AudioWaveformStatus waveformStatus,
-      List<double> waveform,
-      Duration waveformBucketDuration,
       JournalAudio? audioNote});
 }
 
@@ -546,9 +469,6 @@ class __$AudioPlayerStateCopyWithImpl<$Res>
     Object? speed = null,
     Object? showTranscriptsList = null,
     Object? buffered = null,
-    Object? waveformStatus = null,
-    Object? waveform = null,
-    Object? waveformBucketDuration = null,
     Object? audioNote = freezed,
   }) {
     return _then(_AudioPlayerState(
@@ -579,18 +499,6 @@ class __$AudioPlayerStateCopyWithImpl<$Res>
       buffered: null == buffered
           ? _self.buffered
           : buffered // ignore: cast_nullable_to_non_nullable
-              as Duration,
-      waveformStatus: null == waveformStatus
-          ? _self.waveformStatus
-          : waveformStatus // ignore: cast_nullable_to_non_nullable
-              as AudioWaveformStatus,
-      waveform: null == waveform
-          ? _self._waveform
-          : waveform // ignore: cast_nullable_to_non_nullable
-              as List<double>,
-      waveformBucketDuration: null == waveformBucketDuration
-          ? _self.waveformBucketDuration
-          : waveformBucketDuration // ignore: cast_nullable_to_non_nullable
               as Duration,
       audioNote: freezed == audioNote
           ? _self.audioNote

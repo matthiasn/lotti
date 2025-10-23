@@ -59,7 +59,6 @@ void main() {
 
     service = AudioWaveformService(
       extractor: extractor.extract,
-      targetBuckets: 2,
     );
   });
 
@@ -110,7 +109,10 @@ void main() {
       duration: const Duration(minutes: 5),
     );
 
-    final result = await service.loadWaveform(audio);
+    final result = await service.loadWaveform(
+      audio,
+      targetBuckets: 200,
+    );
 
     expect(result, isNull);
     verify(
@@ -146,7 +148,10 @@ void main() {
       ],
     );
 
-    final result = await service.loadWaveform(audio);
+    final result = await service.loadWaveform(
+      audio,
+      targetBuckets: 2,
+    );
 
     expect(result, isNotNull);
     expect(result!.amplitudes, hasLength(2));
@@ -157,11 +162,14 @@ void main() {
     expect(extractor.callCount, 1);
 
     final cacheFile = File(
-      p.join(tempDir.path, 'audio_waveforms', '${audio.meta.id}.json'),
+      p.join(tempDir.path, 'audio_waveforms', '${audio.meta.id}_2.json'),
     );
     expect(cacheFile.existsSync(), isTrue);
 
-    final cached = await service.loadWaveform(audio);
+    final cached = await service.loadWaveform(
+      audio,
+      targetBuckets: 2,
+    );
     expect(cached, isNotNull);
     expect(cached!.amplitudes, result.amplitudes);
     expect(
@@ -177,7 +185,7 @@ void main() {
 
     final cacheDir = Directory(p.join(tempDir.path, 'audio_waveforms'))
       ..createSync(recursive: true);
-    final cacheFile = File(p.join(cacheDir.path, '${audio.meta.id}.json'));
+    final cacheFile = File(p.join(cacheDir.path, '${audio.meta.id}_2.json'));
 
     final payload = {
       'version': audioWaveformCacheVersion,
@@ -203,7 +211,10 @@ void main() {
       data: <int>[-1, 1, -1, 1],
     );
 
-    final result = await service.loadWaveform(audio);
+    final result = await service.loadWaveform(
+      audio,
+      targetBuckets: 2,
+    );
 
     expect(result, isNotNull);
     expect(result!.amplitudes, <double>[0.2, 0.4]);

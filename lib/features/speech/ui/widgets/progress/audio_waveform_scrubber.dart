@@ -32,6 +32,8 @@ class AudioWaveformScrubber extends StatefulWidget {
 
 class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
   static const Duration _seekThrottleDelay = Duration(milliseconds: 60);
+  static const double _targetBarWidth = 3.6;
+  static const double _targetBarSpacing = 2.2;
 
   Timer? _throttleTimer;
   DateTime? _lastSeekInvocation;
@@ -73,6 +75,8 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
             bufferedColor: colors.buffered,
             trackColor: colors.track,
             glowColor: colors.glow,
+            targetBarWidth: _targetBarWidth,
+            targetSpacing: _targetBarSpacing,
             compact: widget.compact,
           ),
         ),
@@ -179,6 +183,8 @@ class _WaveformPainter extends CustomPainter {
     required this.bufferedColor,
     required this.trackColor,
     required this.glowColor,
+    required this.targetBarWidth,
+    required this.targetSpacing,
     required this.compact,
   });
 
@@ -189,6 +195,8 @@ class _WaveformPainter extends CustomPainter {
   final Color bufferedColor;
   final Color trackColor;
   final Color glowColor;
+  final double targetBarWidth;
+  final double targetSpacing;
   final bool compact;
 
   @override
@@ -199,9 +207,10 @@ class _WaveformPainter extends CustomPainter {
 
     final barCount = amplitudes.length;
     final barFullWidth = size.width / barCount;
-    final barWidth =
-        math.max(1, barFullWidth * (compact ? 0.8 : 0.7)).toDouble();
-    final spacing = math.max(0, barFullWidth - barWidth).toDouble();
+    final desiredWidth = targetBarWidth;
+    final width = math.min(desiredWidth, barFullWidth * (compact ? 0.85 : 0.9));
+    final spacing = math.max(0, barFullWidth - width);
+    final barWidth = width;
     final minBarHeight = math.max(2, size.height * 0.08).toDouble();
     final baseline = size.height / 2;
 

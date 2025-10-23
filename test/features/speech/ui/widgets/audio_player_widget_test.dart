@@ -5,15 +5,46 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAudioPlayerCubit extends MockCubit<AudioPlayerState>
     implements AudioPlayerCubit {}
+
+class _MockLoggingService extends Mock implements LoggingService {}
+
+class _StubAudioWaveformService extends AudioWaveformService {
+  _StubAudioWaveformService()
+      : super(
+          extractor: ({
+            required audioFile,
+            required waveOutFile,
+            required zoom,
+          }) async {
+            throw UnimplementedError();
+          },
+        );
+
+  AudioWaveformData? data;
+
+  @override
+  Future<AudioWaveformData?> loadWaveform(
+    JournalAudio audio, {
+    required int targetBuckets,
+  }) async {
+    if (data != null) {
+      return data;
+    }
+    return null;
+  }
+}
 
 void main() {
   setUpAll(() {
@@ -21,8 +52,13 @@ void main() {
   });
 
   late MockAudioPlayerCubit cubit;
+  late _StubAudioWaveformService waveformService;
 
-  setUp(() {
+  setUp(() async {
+    await getIt.reset();
+    getIt.registerSingleton<LoggingService>(_MockLoggingService());
+    waveformService = _StubAudioWaveformService();
+    getIt.registerSingleton<AudioWaveformService>(waveformService);
     cubit = MockAudioPlayerCubit();
 
     when(() => cubit.play()).thenAnswer((_) async {});
@@ -30,6 +66,8 @@ void main() {
     when(() => cubit.seek(any<Duration>())).thenAnswer((_) async {});
     when(() => cubit.setSpeed(any<double>())).thenAnswer((_) async {});
   });
+
+  tearDown(getIt.reset);
 
   JournalAudio buildJournalAudio() {
     final recordedAt = DateTime(2024, 1, 1, 10);
@@ -210,10 +248,12 @@ void main() {
       showTranscriptsList: false,
       buffered: const Duration(seconds: 6),
       audioNote: journalAudio,
-    ).copyWith(
-      waveformStatus: AudioWaveformStatus.ready,
-      waveform: const <double>[0.3, 0.6, 0.9],
-      waveformBucketDuration: const Duration(milliseconds: 20),
+    );
+
+    waveformService.data = AudioWaveformData(
+      amplitudes: const <double>[0.3, 0.6, 0.9],
+      bucketDuration: const Duration(milliseconds: 20),
+      audioDuration: journalAudio.data.duration,
     );
 
     await pumpPlayer(tester, journalAudio: journalAudio, state: state);
