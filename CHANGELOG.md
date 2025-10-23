@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased]
+### Added
+- Timer indicator now auto-scrolls to the running entry when tapped from task details page
+- Task focus controller for managing scroll-to-entry intent across navigation events
+
 ### Changed
 - Speech audio playback card now ships with glassmorphism styling, streamlined controls, custom
   progress bar, and dedicated widget coverage for play/pause and speed interactions.
@@ -979,7 +983,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactoring: extracted theme
 
 ## [0.8.280] - 2023-03-16
-### Changed: 
+### Changed:
 - Use Material Design icons
 
 ## [0.8.279] - 2023-03-15
@@ -1498,7 +1502,7 @@ Added:
 - Audio playback speed toggle instead of individual icon button
 
 ## [0.8.193] - 2022-11-07
-### Changed: 
+### Changed:
 - Upgraded dependencies
 - Error handling in editor
 
@@ -1573,7 +1577,7 @@ Added:
 ### Changed:
 - Upgraded dependencies
 - Count habits total and finished today
-- Count habit streaks of three days (up until yesterday) 
+- Count habit streaks of three days (up until yesterday)
 - Count habit streaks of one week (up until yesterday)
 - Sections for longer and shorter streaks
 
@@ -2431,7 +2435,7 @@ Added:
 - Dashboard title moved to app bar
 
 ## [0.8.1] - 2022-05-15
-### Changed: 
+### Changed:
 - Upgrade to Flutter 3.0.0
 
 ## [0.7.38] - 2022-05-12
@@ -2471,7 +2475,7 @@ Added:
 ## [0.7.28] - 2022-05-05
 
 ### Fixed:
-- Audio playback for multiple recordings in list of linked entries was not 
+- Audio playback for multiple recordings in list of linked entries was not
   working previously
 
 ## [0.7.22] - 2022-04-28
@@ -2520,7 +2524,7 @@ Added:
 - Styling: shadow on navigation bar
 - Sync assistant
 
-### Changed:  
+### Changed:
 - Task form styling
 - Unfocus on save only on mobile
 - Sync IMAP messages marked seen

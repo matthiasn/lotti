@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
+import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 
-class TimeRecordingIndicator extends StatelessWidget {
+class TimeRecordingIndicator extends ConsumerWidget {
   const TimeRecordingIndicator({
     super.key,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final timeService = getIt<TimeService>();
 
     return StreamBuilder(
@@ -44,11 +46,23 @@ class TimeRecordingIndicator extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             final linkedFrom = timeService.linkedFrom;
-            linkedFrom != null
-                ? linkedFrom is Task
-                    ? beamToNamed('/tasks/${linkedFrom.meta.id}')
-                    : beamToNamed('/journal/${linkedFrom.meta.id}')
-                : beamToNamed('/journal/${current.meta.id}');
+            if (linkedFrom != null) {
+              if (linkedFrom is Task) {
+                // Publish focus intent for task-linked timers
+                publishTaskFocus(
+                  taskId: linkedFrom.meta.id,
+                  entryId: current.meta.id,
+                  ref: ref,
+                );
+                beamToNamed('/tasks/${linkedFrom.meta.id}');
+              } else {
+                // Journal-linked timer - no focus intent needed
+                beamToNamed('/journal/${linkedFrom.meta.id}');
+              }
+            } else {
+              // Timer not linked to task - navigate to journal entry
+              beamToNamed('/journal/${current.meta.id}');
+            }
           },
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
