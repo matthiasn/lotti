@@ -50,7 +50,7 @@ The Journal feature is the heart of Lotti, providing:
   - `editor_toolbar.dart`: Formatting toolbar
   - `editor_tools.dart`: Utility functions for editor operations
   - `checklist_item_modal.dart`: Checklist management
-  
+
 - **`list_cards/`**: Entry card components for timeline
   - `journal_card.dart`: Main card wrapper
   - `entry_details.dart`: Entry metadata display
@@ -190,6 +190,15 @@ Entries can be organized by categories:
 - **Color coding**: Visual distinction in timeline
 - **Inheritance**: Linked entries can inherit categories
 - **Batch operations**: Update categories for multiple entries
+
+#### Category Filter Persistence
+
+The journal tab maintains its own independent category filter state:
+- **Tab-Specific Storage**: Category selections are saved separately for the journal tab
+- **Independent Restoration**: When you restart the app, the journal tab restores its own category filters
+- **No Task Status Data**: The journal tab never reads or writes task status filters (Open, In Progress, Done, etc.)
+- **Storage Key**: Uses `JOURNAL_CATEGORY_FILTERS` for persistence
+- **Migration Support**: Automatically migrates from legacy shared filters on first use
 
 ## Testing
 

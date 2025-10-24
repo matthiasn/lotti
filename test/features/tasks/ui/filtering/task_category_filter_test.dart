@@ -179,7 +179,7 @@ void main() {
 
       // Set up the mock for toggleSelectedCategoryIds call
       when(() => mockCubit.toggleSelectedCategoryIds('cat1'))
-          .thenAnswer((_) {});
+          .thenAnswer((_) async {});
 
       await tester.tap(workChip);
       await tester.pump();
@@ -195,7 +195,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the unassigned chip by looking for an empty string ID
-      when(() => mockCubit.toggleSelectedCategoryIds('')).thenAnswer((_) {});
+      when(() => mockCubit.toggleSelectedCategoryIds(''))
+          .thenAnswer((_) async {});
 
       // Find the unassigned chip - it will be labeled "Unassigned" or similar
       // Since we don't know the exact translation, we'll find it by checking all chips
@@ -229,7 +230,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Set up the mock for selectedAllCategories call
-      when(() => mockCubit.selectedAllCategories()).thenAnswer((_) {});
+      when(() => mockCubit.selectedAllCategories()).thenAnswer((_) async {});
 
       // Find the "All" chip
       final allChip = find.byWidgetPredicate(

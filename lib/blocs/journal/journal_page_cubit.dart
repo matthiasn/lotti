@@ -125,17 +125,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       emitState();
     });
 
-    getIt<SettingsDb>().itemByKey(taskFiltersKey).then((value) {
-      if (value == null) {
-        return;
-      }
-      final json = jsonDecode(value) as Map<String, dynamic>;
-      final tasksFilter = TasksFilter.fromJson(json);
-      _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
-      _selectedCategoryIds = tasksFilter.selectedCategoryIds;
-      emitState();
-      refreshQuery();
-    });
+    // Load persisted filters with migration from legacy key
+    _loadPersistedFilters();
 
     getIt<SettingsDb>().itemByKey(selectedEntryTypesKey).then((value) {
       if (value == null) {
@@ -198,7 +189,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     });
   }
 
-  static const taskFiltersKey = 'TASK_FILTERS';
+  static const taskFiltersKey = 'TASK_FILTERS'; // Legacy key for migration
+  static const tasksCategoryFiltersKey = 'TASKS_CATEGORY_FILTERS';
+  static const journalCategoryFiltersKey = 'JOURNAL_CATEGORY_FILTERS';
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
 
   final JournalDb _db;
@@ -229,6 +222,11 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     'IN PROGRESS',
   };
 
+  /// Returns the appropriate storage key for category filters based on current tab
+  String _getCategoryFiltersKey() {
+    return showTasks ? tasksCategoryFiltersKey : journalCategoryFiltersKey;
+  }
+
   void emitState() {
     emit(
       JournalPageState(
@@ -252,7 +250,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     refreshQuery();
   }
 
-  void toggleSelectedTaskStatus(String status) {
+  Future<void> toggleSelectedTaskStatus(String status) async {
     if (_selectedTaskStatuses.contains(status)) {
       _selectedTaskStatuses =
           _selectedTaskStatuses.difference(<String>{status});
@@ -260,25 +258,23 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       _selectedTaskStatuses = _selectedTaskStatuses.union({status});
     }
 
-    persistTasksFilter();
+    await persistTasksFilter();
   }
 
-  void toggleSelectedCategoryIds(String categoryId) {
+  Future<void> toggleSelectedCategoryIds(String categoryId) async {
     if (_selectedCategoryIds.contains(categoryId)) {
       _selectedCategoryIds = _selectedCategoryIds.difference({categoryId});
     } else {
       _selectedCategoryIds = _selectedCategoryIds.union({categoryId});
     }
-    persistTasksFilter();
-    refreshQuery();
     emitState();
+    await persistTasksFilter();
   }
 
-  void selectedAllCategories() {
+  Future<void> selectedAllCategories() async {
     _selectedCategoryIds = {};
-    persistTasksFilter();
-    refreshQuery();
     emitState();
+    await persistTasksFilter();
   }
 
   void toggleSelectedEntryTypes(String entryType) {
@@ -306,33 +302,84 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     persistEntryTypes();
   }
 
-  void selectSingleTaskStatus(String taskStatus) {
+  Future<void> selectSingleTaskStatus(String taskStatus) async {
     _selectedTaskStatuses = {taskStatus};
-    persistTasksFilter();
+    await persistTasksFilter();
   }
 
-  void selectAllTaskStatuses() {
+  Future<void> selectAllTaskStatuses() async {
     _selectedTaskStatuses = state.taskStatuses.toSet();
-    persistTasksFilter();
+    await persistTasksFilter();
   }
 
-  void clearSelectedTaskStatuses() {
+  Future<void> clearSelectedTaskStatuses() async {
     _selectedTaskStatuses = {};
-    persistTasksFilter();
+    await persistTasksFilter();
+  }
+
+  /// Loads persisted filters with migration from legacy key
+  Future<void> _loadPersistedFilters() async {
+    final settingsDb = getIt<SettingsDb>();
+
+    // Try to read from the per-tab key first
+    final perTabKey = _getCategoryFiltersKey();
+    var value = await settingsDb.itemByKey(perTabKey);
+
+    // If the new key doesn't exist, fall back to legacy key for migration
+    value ??= await settingsDb.itemByKey(taskFiltersKey);
+
+    if (value == null) {
+      return;
+    }
+
+    try {
+      final json = jsonDecode(value) as Map<String, dynamic>;
+      final tasksFilter = TasksFilter.fromJson(json);
+
+      // Only load task statuses if we're in the tasks tab
+      if (showTasks) {
+        _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
+      }
+
+      // Load category filters for both tabs
+      _selectedCategoryIds = tasksFilter.selectedCategoryIds;
+
+      emitState();
+      await refreshQuery();
+    } catch (e) {
+      debugPrint('Error loading persisted filters: $e');
+    }
   }
 
   Future<void> persistTasksFilter() async {
     await refreshQuery();
 
-    await getIt<SettingsDb>().saveSettingsItem(
-      taskFiltersKey,
-      jsonEncode(
-        TasksFilter(
-          selectedCategoryIds: _selectedCategoryIds,
-          selectedTaskStatuses: _selectedTaskStatuses,
-        ),
+    final settingsDb = getIt<SettingsDb>();
+
+    // SAFEGUARD: Only include task statuses when in tasks tab
+    // The journal tab should never write or modify task status data
+    final filterData = jsonEncode(
+      TasksFilter(
+        selectedCategoryIds: _selectedCategoryIds,
+        selectedTaskStatuses: showTasks ? _selectedTaskStatuses : {},
       ),
     );
+
+    // Write to the new per-tab key
+    await settingsDb.saveSettingsItem(
+      _getCategoryFiltersKey(),
+      filterData,
+    );
+
+    // Temporarily mirror writes to legacy key for migration period
+    // This prevents data loss during the transition
+    // Only write to legacy key if we're in tasks tab to avoid overwriting task statuses
+    if (showTasks) {
+      await settingsDb.saveSettingsItem(
+        taskFiltersKey,
+        filterData,
+      );
+    }
   }
 
   Future<void> persistEntryTypes() async {

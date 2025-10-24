@@ -21,6 +21,16 @@ Tasks in Lotti are structured journal entries that can contain:
 - `TaskProgressState`: Tracks time spent vs. estimated
 - `SupportedLanguage`: Enum of 38 supported languages for multilingual summaries
 
+### Task Filter Persistence
+
+The tasks tab maintains its own independent filter state:
+- **Tab-Specific Storage**: Both category selections and task status filters are saved separately for the tasks tab
+- **Independent Restoration**: When you restart the app, the tasks tab restores its own category and status filters
+- **Task Status Scoping**: Task status filters (Open, In Progress, Done, etc.) are exclusive to the tasks tab
+- **Storage Key**: Uses `TASKS_CATEGORY_FILTERS` for persistence
+- **Migration Support**: Automatically migrates from legacy shared filters on first use
+- **Separation of Concerns**: Category filters are per-tab, but task statuses are tasks-only
+
 ### UI Components
 
 #### Task Details Page (`task_details_page.dart`)

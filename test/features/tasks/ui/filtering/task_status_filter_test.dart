@@ -183,7 +183,8 @@ void main() {
       const status = 'GROOMED';
 
       // Set up the mock to allow the toggleSelectedTaskStatus call
-      when(() => mockCubit.toggleSelectedTaskStatus(status)).thenAnswer((_) {});
+      when(() => mockCubit.toggleSelectedTaskStatus(status))
+          .thenAnswer((_) async {});
 
       await tester.pumpWidget(
         WidgetTestBench(
@@ -212,7 +213,8 @@ void main() {
       const status = 'GROOMED';
 
       // Set up the mock to allow the selectSingleTaskStatus call
-      when(() => mockCubit.selectSingleTaskStatus(status)).thenAnswer((_) {});
+      when(() => mockCubit.selectSingleTaskStatus(status))
+          .thenAnswer((_) async {});
 
       await tester.pumpWidget(
         WidgetTestBench(
@@ -317,7 +319,8 @@ void main() {
       when(() => mockCubit.state).thenReturn(mockState);
 
       // Set up the mock to allow the clearSelectedTaskStatuses call
-      when(() => mockCubit.clearSelectedTaskStatuses()).thenAnswer((_) {});
+      when(() => mockCubit.clearSelectedTaskStatuses())
+          .thenAnswer((_) async {});
 
       await tester.pumpWidget(
         WidgetTestBench(
@@ -343,7 +346,7 @@ void main() {
       // Only some statuses are selected (default in setUp)
 
       // Set up the mock to allow the selectAllTaskStatuses call
-      when(() => mockCubit.selectAllTaskStatuses()).thenAnswer((_) {});
+      when(() => mockCubit.selectAllTaskStatuses()).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         WidgetTestBench(
