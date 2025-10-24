@@ -21,10 +21,23 @@ class EntryTypeFilter extends ConsumerWidget {
     final enableHabitsAsync = ref.watch(configFlagProvider(enableHabitsPageFlag));
     final enableDashboardsAsync = ref.watch(configFlagProvider(enableDashboardsPageFlag));
 
-    // Use unwrapPrevious to keep previous value during loading
-    final enableEvents = enableEventsAsync.unwrapPrevious().whenData((value) => value).valueOrNull ?? false;
-    final enableHabits = enableHabitsAsync.unwrapPrevious().whenData((value) => value).valueOrNull ?? false;
-    final enableDashboards = enableDashboardsAsync.unwrapPrevious().whenData((value) => value).valueOrNull ?? false;
+    // Use unwrapPrevious to keep previous value during loading/error states
+    // Default to false (hide features) on initial load with no previous value
+    final enableEvents = enableEventsAsync
+            .unwrapPrevious()
+            .whenData((value) => value)
+            .valueOrNull ??
+        false;
+    final enableHabits = enableHabitsAsync
+            .unwrapPrevious()
+            .whenData((value) => value)
+            .valueOrNull ??
+        false;
+    final enableDashboards = enableDashboardsAsync
+            .unwrapPrevious()
+            .whenData((value) => value)
+            .valueOrNull ??
+        false;
 
     final filteredEntryTypes = computeAllowedEntryTypes(
       events: enableEvents,
