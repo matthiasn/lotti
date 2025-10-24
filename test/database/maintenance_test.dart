@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show InsertMode;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -101,22 +102,18 @@ QuantitativeEntry _buildQuantitativeEntry({
       dateFrom: timestamp,
       dateTo: timestamp,
     ),
-    data: () {
-      final data = testWeightEntry.data;
-      if (data is CumulativeQuantityData) {
-        return data.copyWith(
-          value: value,
-          dateFrom: timestamp,
-          dateTo: timestamp,
-        );
-      }
-      final discrete = data as DiscreteQuantityData;
-      return discrete.copyWith(
+    data: testWeightEntry.data.map(
+      cumulativeQuantityData: (data) => data.copyWith(
         value: value,
         dateFrom: timestamp,
         dateTo: timestamp,
-      );
-    }(),
+      ),
+      discreteQuantityData: (data) => data.copyWith(
+        value: value,
+        dateFrom: timestamp,
+        dateTo: timestamp,
+      ),
+    ),
   );
 }
 
@@ -162,9 +159,17 @@ EntryLink _buildEntryLink({
 }
 
 Future<void> _insertEntries(JournalDb db, List<JournalEntity> entries) async {
-  for (final entry in entries) {
-    await db.upsertJournalDbEntity(toDbEntity(entry));
+  if (entries.isEmpty) {
+    return;
   }
+
+  await db.batch((batch) {
+    batch.insertAll(
+      db.journal,
+      entries.map(toDbEntity).toList(),
+      mode: InsertMode.insertOrReplace,
+    );
+  });
 }
 
 Future<File> _ensureJournalDbFile() async {
@@ -174,6 +179,13 @@ Future<File> _ensureJournalDbFile() async {
     await file.writeAsString('journal-db');
   }
   return file;
+}
+
+class _ThrowingMaintenance extends Maintenance {
+  @override
+  Future<void> deleteFts5Db() {
+    throw const FileSystemException('Simulated delete failure');
+  }
 }
 
 void main() {
@@ -483,16 +495,16 @@ void main() {
         ).called(1);
       });
 
-      test('database deletion throws when file does not exist', () async {
+      test('database deletion is idempotent when file does not exist',
+          () async {
         final dbFile = await getDatabaseFile(editorDbFileName);
         if (dbFile.existsSync()) {
           await dbFile.delete();
         }
 
-        await expectLater(
-          maintenance.deleteEditorDb(),
-          throwsA(isA<FileSystemException>()),
-        );
+        await maintenance.deleteEditorDb();
+
+        expect(dbFile.existsSync(), isFalse);
       });
     });
 
@@ -580,21 +592,14 @@ void main() {
         ];
         await _insertEntries(journalDb, entries);
 
-        final staleFtsFile = await getDatabaseFile(fts5DbFileName);
-        if (staleFtsFile.existsSync()) {
-          await staleFtsFile.delete();
-        }
+        loggedEvents.clear();
+        loggedExceptions.clear();
 
-        await maintenance.recreateFts5();
+        final throwingMaintenance = _ThrowingMaintenance();
+        await throwingMaintenance.recreateFts5();
 
-        verify(
-          () => loggingService.captureException(
-            any<dynamic>(),
-            domain: 'MAINTENANCE',
-            subDomain: 'deleteFts5Db',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
-          ),
-        ).called(1);
+        expect(loggedExceptions, isNotEmpty);
+        expect(loggedExceptions.last, isA<FileSystemException>());
 
         final newFtsDb = getIt<Fts5Db>();
         final matches =
