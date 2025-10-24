@@ -63,22 +63,30 @@ class Maintenance {
 
   Future<void> deleteEditorDb() async {
     final file = await getDatabaseFile(editorDbFileName);
-    file.deleteSync();
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
   }
 
   Future<void> deleteLoggingDb() async {
     final file = await getDatabaseFile(loggingDbFileName);
-    file.deleteSync();
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
   }
 
   Future<void> deleteSyncDb() async {
     final file = await getDatabaseFile(syncDbFileName);
-    file.deleteSync();
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
   }
 
   Future<void> deleteFts5Db() async {
     final file = await getDatabaseFile(fts5DbFileName);
-    file.deleteSync();
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
 
     getIt<LoggingService>().captureEvent(
       'FTS5 database DELETED',
