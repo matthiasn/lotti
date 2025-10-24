@@ -18,8 +18,8 @@
 - Render label chips within task headers and task list cards; enable filtering by one or more labels
   inside the Tasks tab filter drawer.
 - Ensure label metadata survives renames (ID stable), remains authoritative in entry metadata, and
-  is reflected in entry links for performant search.
-- Cover the feature with migration/logic/unit/widget tests and document the new UX for QA and
+  is mirrored into the `labeled` denormalized table for performant filtering/search.
+- Cover the feature with logic/unit/widget tests and document the new UX for QA and
   release notes.
 
 ## Non-Goals
@@ -37,7 +37,7 @@
 - ✅ **Metadata structure identified**: `Metadata` class (`lib/classes/journal_entities.dart:24`) already supports `tagIds`; adding `labelIds` follows identical pattern.
 - ✅ **Denormalized table pattern**: The `tagged` table (`lib/database/database.drift:134`) demonstrates performant join-free lookups; `labeled` table will mirror this.
 - ✅ **Linear research complete**: Label groups provide one level of nesting with single-selection enforcement within groups; descriptions appear on hover; workspace vs team scoping (not needed for v1).
-- Review `tasks_filter` implementation and UI to confirm integration points for label filters and ensure filter state persists (respecting the zero-warning policy described in `AGENTS.md`).
+- ✅ **Filter integration confirmed**: `JournalPageState.selectedCategoryIds` pattern (lib/blocs/journal/journal_page_state.dart:27) and `TasksFilter` model verified; `selectedLabelIds` will follow identical pattern for filter persistence.
 
 ## Data Model Decision: Tags Pattern
 
@@ -84,37 +84,48 @@
    CREATE INDEX idx_labeled_label_id ON labeled (label_id);
    ```
 
-   **Why required**: Task filtering by labels needs indexed queries. Without this table, you'd have to load all tasks into memory and deserialize metadata—completely impractical.
+   **Why required**: Task filtering by labels needs indexed queries. Without this table, you'd have to load all tasks into memory and deserialize metadata—completely impractical. `LabelDefinition` lives in `EntityDefinition`, so no dedicated Drift table is needed for definitions themselves—sync already persists entity definitions uniformly.
 
 ### Reconciliation Strategy
 
-**On every entity save** (including sync ingestion), the persistence layer reconciles the `labeled` table with `metadata.labelIds`:
+**On every entity save** (including sync ingestion), the database layer reconciles the `labeled` table with `metadata.labelIds`:
 
 ```dart
-// Pseudo-code for lib/logic/persistence_logic.dart
-Future<void> _reconcileLabels(JournalEntity entity) async {
-  final authoritativeLabelIds = entity.meta.labelIds ?? [];
-  final currentLabelIds = await db.labeledForEntry(entity.meta.id);
+// Implementation in lib/database/database.dart (added alongside addTagged at line 240)
+// More efficient than tags: calculates diff instead of delete-all-then-reinsert
+Future<void> addLabeled(JournalEntity journalEntity) async {
+  final id = journalEntity.meta.id;
+  final authoritativeLabelIds = (journalEntity.meta.labelIds ?? []).toSet();
+  final currentLabelIds = (await labeledForEntry(id)).toSet();
 
   // Calculate diff
-  final toAdd = authoritativeLabelIds - currentLabelIds;
-  final toRemove = currentLabelIds - authoritativeLabelIds;
+  final toRemove = currentLabelIds.difference(authoritativeLabelIds);
+  final toAdd = authoritativeLabelIds.difference(currentLabelIds);
 
-  // Apply changes (idempotent, self-healing)
+  // Remove labels no longer in metadata
   for (final labelId in toRemove) {
-    await db.deleteLabeledRow(entity.meta.id, labelId);
+    await deleteLabeledRow(id, labelId);
   }
+
+  // Add new labels from metadata
   for (final labelId in toAdd) {
-    await db.insertLabeledRow(uuid.v1(), entity.meta.id, labelId);
+    await insertLabeled(uuid.v1(), id, labelId);
   }
 }
 ```
+
+**How this achieves self-healing:**
+- Queries current state of `labeled` table for the entry
+- Calculates diff: what needs to be removed vs added
+- **Only deletes** labels removed from metadata (leaves existing ones untouched)
+- **Only inserts** labels newly added to metadata (skips existing ones)
+- Idempotent: running multiple times produces same result as running once
+- More efficient than delete-all-then-reinsert pattern used by tags
 
 **Benefits over entry links approach**:
 - Single source of truth (metadata only)
 - Simpler sync (no dual reconciliation needed)
 - Self-healing (reconciliation corrects drift automatically)
-- Proven pattern (identical to tags implementation)
 - No risk of metadata/link inconsistency
 
 ## Design Overview
@@ -123,12 +134,12 @@ Future<void> _reconcileLabels(JournalEntity entity) async {
   - Model: `LabelDefinition` as `EntityDefinition` variant (syncs via existing `SyncMessage.entityDefinition`)
   - Fields: `id`, `name`, `color`, `description?`, `groupId?` (for future label groups), `sortOrder`, standard sync fields
   - Storage: synced via `SyncMessage.entityDefinition`; Riverpod provider for CRUD
-  - UI: new Settings page reusing category management scaffolding, modern card list, curated 4×4 color picker, create/edit dialogs
+  - UI: new Settings page reusing category management scaffolding, modern card list, color picker using `flex_color_picker` package (new dependency) with both preset colors (16 curated colors) and custom color wheel for full flexibility, create/edit dialogs
   - Description tooltips: Display on hover (Linear pattern) to explain when label applies
 
 2. **Assignment Workflow**
   - Task header: add label selector (pill chips or dropdown) allowing quick add/remove; keyboard accessible
-  - Persist `labelIds` in `metadata`; persistence layer auto-reconciles `labeled` table on save
+  - Persist `labelIds` in `metadata`; database layer auto-reconciles `labeled` table on save
   - Task cards: render chips with color + text; handle overflow via wrap or ellipsis with tooltip
   - Repository: `LabelsRepository` follows `TagsRepository` pattern for add/remove operations
 
@@ -139,9 +150,9 @@ Future<void> _reconcileLabels(JournalEntity entity) async {
   - Future enhancement: "All of" and "Without" modes if needed
 
 4. **Sync & Integrity**
-  - **Reconciliation runs on every save** (including sync ingestion) via `PersistenceLogic._reconcileLabels`
+  - **Reconciliation runs on every save** (including sync ingestion) via `JournalDb.addLabeled()` (called from `updateJournalEntity` at line 240, mirroring `addTagged()` pattern)
   - `metadata.labelIds` is authoritative; `labeled` table mirrors it deterministically
-  - On label deletion: option to remove label ID from all entries' metadata (cascade cleanup) or leave orphaned IDs
+  - Label deletion cascades: remove label ID from impacted entries' metadata and rely on reconciliation to drop `labeled` rows
   - Label rename: no action needed (metadata stores IDs, display updates automatically)
   - Self-healing: reconciliation corrects any drift between metadata and `labeled` table
 
@@ -149,7 +160,7 @@ Future<void> _reconcileLabels(JournalEntity entity) async {
   - Provide color contrast fallback (text color switching white/black based on luminance)
   - Add `Semantics` labels for screen readers (`Label: bug`)
   - Ensure chips shrink gracefully on mobile; support dark/light themes
-  - Curated color grid (4×4) reusing category palette tokens for consistent branding
+  - Use `flex_color_picker` with `ColorPickerType.custom` (16 WCAG AA compliant preset colors) + `ColorPickerType.wheel` (full HSV color wheel) for flexible color selection
 
 6. **Label Groups** (Future Enhancement)
   - Structure: `LabelGroup` entity + `LabelDefinition.groupId` reference
@@ -166,21 +177,31 @@ Future<void> _reconcileLabels(JournalEntity entity) async {
 - Add `labelIds` field to `Metadata` class (`lib/classes/journal_entities.dart`)
 - Create `labeled` denormalized table in `lib/database/database.drift`:
   - Schema definition with foreign keys and indexes
-  - Queries: `labeledForEntry`, `deleteLabeledRow`, insert via Drift
-- Implement reconciliation logic in `lib/logic/persistence_logic.dart`:
-  - `_reconcileLabels(JournalEntity)` runs on every `updateDbEntity` call
-  - Syncs `labeled` table with `metadata.labelIds` (add missing, remove stale)
-  - Unit tests: reconciliation correctness, idempotency, edge cases
+  - Queries: `labeledForEntry` (returns Set<String> of label IDs), `deleteLabeledRow` (single row), `insertLabeled` via Drift
+- Implement reconciliation in `lib/database/database.dart`:
+  - `addLabeled(JournalEntity)` method called from `updateJournalEntity` (add at line 240 alongside `addTagged()`)
+  - Diff-based reconciliation: query current state, calculate toAdd/toRemove sets, apply changes
+  - More efficient than tags: only touches rows that need changes (not delete-all-then-reinsert)
+  - Unit tests: reconciliation correctness, idempotency, edge cases (add only, remove only, mixed, no-op)
 - Draft `LabelsRepository` following `TagsRepository` pattern (add/remove/list operations)
 - Add Riverpod provider scaffolding for labels CRUD
 
 ### Phase 2 – Settings & CRUD UI
 
+- Add `flex_color_picker` dependency to `pubspec.yaml`
 - Create `lib/features/labels/` module structure (repository, state, ui)
 - Implement Settings page for labels:
   - List existing labels with edit/delete actions
   - Modal/dialog for create/edit (name, color, optional description)
-  - Curated 4×4 color grid reusing category palette tokens
+  - Color picker using `ColorPicker` widget from `flex_color_picker` package
+  - Configure with `pickersEnabled: {ColorPickerType.custom: true, ColorPickerType.wheel: true}`
+  - Define 16 WCAG AA compliant colors in `customColorSwatchesAndNames` for preset section:
+    - Diverse color families: blues, greens, reds, oranges, yellows, purples, pinks, browns, grays
+    - Minimum 4.5:1 contrast ratio against both light and dark theme backgrounds
+    - Colors should be visually distinct for users with color vision deficiencies
+    - Document specific hex values and contrast ratios in `lib/features/labels/README.md`
+  - Enable HSV color wheel for full custom color picking
+  - Reuse category picker dialog pattern but with hybrid color picker
   - Description field with hint text ("Explain when this label applies")
 - Repository implementation (`LabelsRepository`):
   - CRUD operations following category pattern
@@ -220,22 +241,21 @@ Future<void> _reconcileLabels(JournalEntity entity) async {
   - Example: `SELECT * FROM journal WHERE id IN (SELECT journal_id FROM labeled WHERE label_id IN :label_ids)`
   - Add tests to verify N+1 regression prevention
 - UI: Label filter section in Tasks filter drawer
-  - Multi-select chips (similar to category filter)
+  - Multi-select chips (similar to category filter at `lib/features/tasks/ui/filtering/task_category_filter.dart`)
   - "All" / "Unassigned" / individual labels
   - Show active filters count
+  - Implicit OR logic: selecting multiple labels shows tasks with ANY of the selected labels (no explicit mode selector in v1)
 - Optional quick filter in list header (chips representing active filters)
 - No new analytics events (per decisions section)
 
 ### Phase 5 – Polish, Testing & Documentation
 
-- Migration/backfill for existing entries:
-  - One-time script to populate `labeled` table for entries with `labelIds`
-  - Runs on first app launch after upgrade
-  - No-op if table already populated
 - Label deletion flow:
-  - Confirmation dialog warning about affected tasks
-  - Option to remove label from all tasks or leave orphaned IDs
-  - Soft delete pattern (set `deletedAt`) with cleanup job
+  - Soft delete label definition (set `deletedAt`) for undo/restore window
+  - Confirmation dialog warning about affected tasks (query `labeled` table for count)
+  - On confirmation: cascade removal by fetching affected entries, stripping label ID from each entry's metadata, and persisting changes
+  - Reconciliation (`addLabeled`) automatically drops denormalized rows from `labeled` table on next save
+  - Optional cleanup job to hard-delete soft-deleted labels after retention period (e.g., 30 days)
 - Comprehensive testing:
   - Integration tests: full workflow (create label → assign → filter → delete)
   - Performance tests: filtering with large label sets
@@ -250,9 +270,9 @@ Future<void> _reconcileLabels(JournalEntity entity) async {
 
 - **Unit tests**:
   - `LabelsRepository`: CRUD operations, validation
-  - `PersistenceLogic._reconcileLabels`: add/remove/idempotency cases
+  - `JournalDb.addLabeled()`: reconciliation add/remove/idempotency cases
   - Label filter serialization (`TasksFilter.fromJson/toJson`)
-  - Edge cases: empty labels, missing label definitions, orphaned IDs
+  - Edge cases: empty labels, missing label definitions
 - **Widget tests**:
   - `LabelSelectionModalContent`: multi-select, search, accessibility
   - `LabelChip`: rendering, tooltips, semantics, theme switching
@@ -270,13 +290,13 @@ Future<void> _reconcileLabels(JournalEntity entity) async {
 
 ## Risks & Mitigations
 
-- **Sync Conflicts on `metadata.labelIds`** — Mitigate with metadata-as-source-of-truth, reconciliation auto-corrects drift, vector clock conflict resolution via existing sync logic.
-- **Performance with Large Label Sets** — `labeled` table with indexes ensures O(1) lookups; profiling logs during QA; monitor query performance in production.
+- **Sync Conflicts on `metadata.labelIds`** — Standard vector clock conflict resolution applies (labelIds is just another metadata attribute); winning metadata state (per vclock comparison) becomes authoritative, reconciliation ensures `labeled` table matches; no special label-specific merge logic needed.
+- **Performance with Large Label Sets** — `labeled` table with B-tree indexes provides O(log n) lookups; real benefit is avoiding loading all tasks into memory and deserializing metadata for filtering; profiling logs during QA; monitor query performance in production.
 - **UX Complexity** — Keep assignment UI lightweight (start with simple multi-select); gather feedback before adding advanced filter modes ("All of", "Without").
-- **Color Accessibility** — Curated 4×4 palette enforces WCAG AA contrast; text color auto-switches (white/black) based on luminance; document guidelines in README.
+- **Color Accessibility** — 16 preset colors (via `flex_color_picker` custom swatches) will be designed with WCAG AA contrast compliance; HSV wheel allows any color but presets encourage accessible choices; text color auto-switches (white/black) based on luminance; document color choices and contrast ratios in README.
 - **Legacy Tags Confusion** — Clear naming (labels vs tags) in UI and docs; consider migration tool or deprecation notice in future release; for v1, coexist gracefully.
-- **Reconciliation Performance on Bulk Sync** — Reconciliation runs per-entry, not in batches; monitor sync performance during QA; optimize with batch inserts/deletes if needed.
-- **Orphaned Label IDs** — Handle gracefully: filter out deleted labels in UI, show warning in settings if orphaned IDs detected, cleanup job to remove from metadata (opt-in).
+- **Reconciliation Performance on Bulk Sync** — Reconciliation runs per-entry, not in batches; diff-based approach helps by only touching changed labels (not all labels on every save); monitor sync performance during QA; optimize with batch inserts/deletes if needed.
+- **Soft-Deleted Label References** — When label definitions are soft-deleted but still referenced in entry metadata: filter out deleted labels in UI, show warning in settings if detected, optional cleanup job to strip from metadata (opt-in).
 
 ## Rollout & Monitoring
 
@@ -289,12 +309,13 @@ Future<void> _reconcileLabels(JournalEntity entity) async {
 
 ## Decisions
 
-- **Data Model**: Follow the tags pattern — `metadata.labelIds` is authoritative, `labeled` denormalized table required for efficient filtering, no entry links approach.
+- **Data Model**: Follow the tags pattern — `LabelDefinition` stored via `EntityDefinition` (no extra Drift table), `metadata.labelIds` is authoritative, and the `labeled` denormalized table supports efficient filtering.
 - **Reconciliation**: Runs on every entity save (including sync ingestion) to keep `labeled` table in sync with metadata; self-healing, idempotent.
 - **Scope**: Labels remain task-focused for initial release; system designed to be extensible for journal/audio integration without migrations.
 - **Sync**: Definitions stay per-workspace (single-user scope) and sync across devices via existing `SyncMessage.entityDefinition`; no multi-team sharing needed.
 - **Analytics**: No new analytics events for label lifecycle or filter usage in v1, keeping telemetry footprint unchanged.
-- **Color Picker**: Curated 4×4 color grid reusing category palette tokens for consistent branding and accessibility.
+- **Color Picker**: Use `flex_color_picker` package (new dependency) with hybrid mode: `ColorPickerType.custom` for 16 curated WCAG AA compliant preset colors + `ColorPickerType.wheel` for full HSV custom color picking; provides both quick selection and unlimited flexibility; colors will be defined in Phase 2 as part of UI implementation.
 - **Label Groups**: Deferred to post-v1; data model includes `groupId` field for future extension but no UI or validation in initial release.
 - **Filter Modes**: Start with "Any of" mode (OR logic); defer "All of" (AND) and "Without" (NOT) to post-v1 based on user feedback.
 - **Tags Coexistence**: Labels and tags coexist in v1; evaluate deprecation or migration strategy in post-launch retro.
+- **Label Deletion**: Deleting a label cascades removal across tasks by stripping the ID from each entry’s metadata and re-saving—reconciliation then clears `labeled` rows; no orphaned IDs.
