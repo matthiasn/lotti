@@ -15,14 +15,14 @@ void main() {
 
   group('ConfigFlagProvider Tests', () {
     late MockJournalDb mockDb;
-    late ProviderContainer container;
+    ProviderContainer? container;
 
     setUp(() {
       mockDb = MockJournalDb();
     });
 
     tearDown(() {
-      container.dispose();
+      container?.dispose();
     });
 
     test('emits flag status from database stream', () async {
@@ -46,7 +46,7 @@ void main() {
       );
 
       // Listen to the provider
-      final subscription = container.listen(
+      final subscription = container!.listen(
         configFlagProvider(enableEventsFlag),
         (previous, next) {},
       );
@@ -71,7 +71,7 @@ void main() {
         ],
       );
 
-      final subscription = container.listen(
+      final subscription = container!.listen(
         configFlagProvider(enableEventsFlag),
         (previous, next) {},
       );
@@ -103,7 +103,7 @@ void main() {
         ],
       );
 
-      final subscription = container.listen(
+      final subscription = container!.listen(
         configFlagProvider(enableEventsFlag),
         (previous, next) {},
       );
@@ -129,12 +129,12 @@ void main() {
       );
 
       // Create multiple listeners for the same flag
-      final subscription1 = container.listen(
+      final subscription1 = container!.listen(
         configFlagProvider(enableEventsFlag),
         (previous, next) {},
       );
 
-      final subscription2 = container.listen(
+      final subscription2 = container!.listen(
         configFlagProvider(enableEventsFlag),
         (previous, next) {},
       );
@@ -184,7 +184,7 @@ void main() {
         ],
       );
 
-      final subscription = container.listen(
+      final subscription = container!.listen(
         configFlagProvider(enableEventsFlag),
         (previous, next) {},
       );
@@ -223,8 +223,9 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(listenerCalled, isTrue);
 
-      // Dispose container
-      container.dispose();
+      // Dispose container to test cleanup (tearDown will skip since container becomes null)
+      container?.dispose();
+      container = null;
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Reset flag and emit again - listener should NOT be called after disposal
@@ -251,7 +252,7 @@ void main() {
       );
 
       final values = <bool>[];
-      container.listen<AsyncValue<bool>>(
+      container!.listen<AsyncValue<bool>>(
         configFlagProvider(enableEventsFlag),
         (previous, next) {
           next.whenData(values.add);
@@ -316,12 +317,12 @@ void main() {
         ],
       );
 
-      final eventsSubscription = container.listen(
+      final eventsSubscription = container!.listen(
         configFlagProvider(enableEventsFlag),
         (previous, next) {},
       );
 
-      final habitsSubscription = container.listen(
+      final habitsSubscription = container!.listen(
         configFlagProvider(enableHabitsPageFlag),
         (previous, next) {},
       );
