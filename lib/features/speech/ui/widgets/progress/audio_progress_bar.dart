@@ -17,7 +17,6 @@ String formatAudioDuration(Duration duration) {
   return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 }
 
-@visibleForTesting
 class AudioProgressColors {
   const AudioProgressColors({
     required this.track,
@@ -34,7 +33,6 @@ class AudioProgressColors {
   final Color glow;
 }
 
-@visibleForTesting
 AudioProgressColors resolveAudioProgressColors(ThemeData theme) {
   final scheme = theme.colorScheme;
   final isDark = theme.brightness == Brightness.dark;

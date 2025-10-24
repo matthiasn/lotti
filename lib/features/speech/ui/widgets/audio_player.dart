@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
+import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
@@ -177,13 +179,14 @@ class _PlayerBody extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              AudioProgressBar(
+              _WaveformArea(
+                journalAudio: journalAudio,
                 progress: progress,
                 buffered: buffered,
-                total: totalDuration,
+                totalDuration: totalDuration,
+                isActive: isActive,
+                isCompact: isCompact,
                 onSeek: cubit.seek,
-                enabled: isActive,
-                compact: isCompact,
               ),
               Row(
                 children: <Widget>[
@@ -204,6 +207,87 @@ class _PlayerBody extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _WaveformArea extends ConsumerWidget {
+  const _WaveformArea({
+    required this.journalAudio,
+    required this.progress,
+    required this.buffered,
+    required this.totalDuration,
+    required this.isActive,
+    required this.isCompact,
+    required this.onSeek,
+  });
+
+  final JournalAudio journalAudio;
+  final Duration progress;
+  final Duration buffered;
+  final Duration totalDuration;
+  final bool isActive;
+  final bool isCompact;
+  final ValueChanged<Duration> onSeek;
+
+  static const double _targetBarWidth = 3.6;
+  static const double _targetBarSpacing = 2.2;
+  static const int _minBars = 24;
+  static const int _maxBars = 320;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final width = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final estimated = width / (_targetBarWidth + _targetBarSpacing);
+        int bucketCount;
+        if (estimated.isFinite && estimated > 0) {
+          bucketCount = estimated.floor();
+        } else {
+          bucketCount = _minBars;
+        }
+        bucketCount = bucketCount.clamp(_minBars, _maxBars);
+
+        final asyncWaveform = ref.watch(
+          audioWaveformProvider(
+            AudioWaveformRequest(
+              audio: journalAudio,
+              bucketCount: bucketCount,
+            ),
+          ),
+        );
+
+        final progressBar = AudioProgressBar(
+          progress: progress,
+          buffered: buffered,
+          total: totalDuration,
+          onSeek: onSeek,
+          enabled: isActive,
+          compact: isCompact,
+        );
+
+        return asyncWaveform.when(
+          data: (data) {
+            if (data == null || data.amplitudes.isEmpty) {
+              return progressBar;
+            }
+            return AudioWaveformScrubber(
+              amplitudes: data.amplitudes,
+              progress: progress,
+              buffered: buffered,
+              total: totalDuration,
+              onSeek: onSeek,
+              enabled: isActive,
+              compact: isCompact,
+            );
+          },
+          loading: () => progressBar,
+          error: (_, __) => progressBar,
+        );
+      },
     );
   }
 }

@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the scrub fill and contrast-adjusted playhead, softens the playback card shadow, and removes the
   glow to avoid black playheads in high-contrast themes. Light mode swaps the gradient background
   for a flat surface tint to keep the card crisp.
+- Expanded speech waveform coverage with scrubber interaction tests, painter edge cases, cache I/O
+  failure guards, and path sanitisation scenarios.
 - Matrix Stats now keeps per-type "Sent" counts stable while the page stays flicker-free on mobile and desktop.
 - Read markers no longer spam `M_UNKNOWN` errors—local-only IDs are skipped and expected misses are logged once.
 - Moved Matrix sync maintenance actions (delete sync database, re-sync definitions/messages) to the new Matrix Sync Maintenance page under Sync Settings.
@@ -32,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Matrix outbox refreshes journal JSON before enqueueing and Matrix sender re-syncs vector clocks with descriptor payloads, preventing stale checklist descriptors from being uploaded.
 - Added a circuit breaker so stale descriptor downloads bail out after repeated refresh attempts instead of looping forever.
 - Bumped patch version to 0.9.700+3390 to ship the sync catch-up contract fix without breaking APIs.
+- Stabilised waveform cache pruning tests by clearing mock interactions between scenarios.
 
 ## [0.9.692] - 2025-10-20
 ### Changed:
