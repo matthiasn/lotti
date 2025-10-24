@@ -197,8 +197,9 @@ void main() {
       expect(asyncValue.error, isA<Exception>());
     });
 
-    test('disposes stream on provider disposal', () async {
+    test('disposes stream subscription on provider disposal', () async {
       final flagController = StreamController<Set<ConfigFlag>>();
+      var listenerCalled = false;
 
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => flagController.stream,
@@ -212,18 +213,25 @@ void main() {
         // Create subscription
         ..listen(
           configFlagProvider(enableEventsFlag),
-          (previous, next) {},
+          (previous, next) {
+            listenerCalled = true;
+          },
         );
 
-      // Emit value
+      // Emit value - listener should be called
       flagController.add(<ConfigFlag>{});
       await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(listenerCalled, isTrue);
 
       // Dispose container
       container.dispose();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      // Note: Stream may or may not be closed depending on implementation
-      // This test mainly verifies no errors occur during disposal
+      // Reset flag and emit again - listener should NOT be called after disposal
+      listenerCalled = false;
+      flagController.add(<ConfigFlag>{});
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(listenerCalled, isFalse, reason: 'Listener should not be called after disposal');
 
       await flagController.close();
     });
