@@ -6,40 +6,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 ### Added
-- Timer indicator now auto-scrolls to the running entry when tapped from task details page
-- Task focus controller for managing scroll-to-entry intent across navigation events
+
+### Changed
+
+### Fixed
+
+## [0.9.704] - 2025-10-24
+### Added
 - Comprehensive Fts5Db coverage with insert and search stream tests to guarantee new database behaviour.
 
 ### Changed
-- Speech audio playback card now ships with glassmorphism styling, streamlined controls, custom
-  progress bar, and dedicated widget coverage for play/pause and speed interactions.
-- Audio player progress bar now matches the play/pause ring by using `ColorScheme.primary` for both
-  the scrub fill and contrast-adjusted playhead, softens the playback card shadow, and removes the
-  glow to avoid black playheads in high-contrast themes. Light mode swaps the gradient background
-  for a flat surface tint to keep the card crisp.
-- Expanded speech waveform coverage with scrubber interaction tests, painter edge cases, cache I/O
-  failure guards, and path sanitisation scenarios.
-- Matrix Stats now keeps per-type "Sent" counts stable while the page stays flicker-free on mobile and desktop.
-- Read markers no longer spam `M_UNKNOWN` errors—local-only IDs are skipped and expected misses are logged once.
-- Moved Matrix sync maintenance actions (delete sync database, re-sync definitions/messages) to the new Matrix Sync Maintenance page under Sync Settings.
-- Sync Outbox and Sync Conflicts list pages now use modern cards with segmented filters, inline counts, and polished empty states via the shared sync list scaffold.
-- Sync filter chips now hide non-informational zero badges, emphasise pending/error/unresolved totals with tinted badges, trim their height slightly, and keep empty-state cards constrained on the conflicts page.
-- Added dedicated widget tests for `ConflictListItem` and `SyncListScaffold` covering filters, semantics, and interaction paths.
-- Split the smart journal loader into dedicated `DescriptorDownloader` and `VectorClockValidator` components so caching, purging, and vector-clock logic are independently testable.
-- Matrix sync now tracks locally emitted Matrix event IDs in a shared sent-event registry, short-circuiting echo events during ingestion and recording suppression metrics to cut redundant network and database work.
+- Retired the legacy Matrix sync V1 pipeline in favour of the stream-first implementation.
+
+## [0.9.703] - 2025-10-24
+### Added
+- Timer indicator now auto-scrolls to the running entry when tapped from task details page.
+- Task focus controller for managing scroll-to-entry intent across navigation events.
+
+### Changed
+- Expanded speech waveform coverage with scrubber interaction tests, painter edge cases, cache I/O failure guards, and path sanitisation scenarios.
 
 ### Fixed
-- Matrix Stats `Last updated` label now stays stable when metrics payloads are unchanged, eliminating refresh jitter.
-- Guarded sync list filters against invalid persisted enum indexes on conflicts/outbox pages to prevent `RangeError`.
+- Stabilised waveform cache pruning tests by clearing mock interactions between scenarios.
+
+## [0.9.702] - 2025-10-23
+### Changed
+- Matrix sync now tracks locally emitted Matrix event IDs in a shared sent-event registry, short-circuiting echo events during ingestion and recording suppression metrics to cut redundant network and database work.
+
+## [0.9.701] - 2025-10-23
+### Added
+- Support Markdown divider insertion from the journal editor toolbar.
+
+## [0.9.700] - 2025-10-23
+### Changed
+- Split the smart journal loader into dedicated `DescriptorDownloader` and `VectorClockValidator` components so caching, purging, and vector-clock logic are independently testable.
+
+### Fixed
 - Matrix V2 catch-up now advances markers after offline sessions by correcting journal update result semantics, eliminating false "missing base" retries, and trimming duplicate backlog processing.
 - Matrix outbox refreshes journal JSON before enqueueing and Matrix sender re-syncs vector clocks with descriptor payloads, preventing stale checklist descriptors from being uploaded.
 - Added a circuit breaker so stale descriptor downloads bail out after repeated refresh attempts instead of looping forever.
 - Bumped patch version to 0.9.700+3390 to ship the sync catch-up contract fix without breaking APIs.
-- Stabilised waveform cache pruning tests by clearing mock interactions between scenarios.
 
-## [0.9.692] - 2025-10-20
-### Changed:
-- Enforce tabular monospace style for tasks timers (monoTabularStyle) to eliminate width jitter.
+## [0.9.699] - 2025-10-22
+### Changed
+- Sync filter chips now hide non-informational zero badges, emphasise pending/error/unresolved totals with tinted badges, trim their height slightly, and keep empty-state cards constrained on the conflicts page.
+
+## [0.9.698] - 2025-10-22
+### Changed
+- Audio player progress bar now matches the play/pause ring by using `ColorScheme.primary` for both the scrub fill and contrast-adjusted playhead, softens the playback card shadow, and removes the glow to avoid black playheads in high-contrast themes. Light mode swaps the gradient background for a flat surface tint to keep the card crisp.
+
+## [0.9.697] - 2025-10-22
+### Changed
+- Speech audio playback card now ships with glassmorphism styling, streamlined controls, custom progress bar, and dedicated widget coverage for play/pause and speed interactions.
+
+## [0.9.696] - 2025-10-21
+### Changed
+- Moved Matrix sync maintenance actions (delete sync database, re-sync definitions/messages) to the new Matrix Sync Maintenance page under Sync Settings.
+- Sync Outbox and Sync Conflicts list pages now use modern cards with segmented filters, inline counts, and polished empty states via the shared sync list scaffold.
+- Added dedicated widget tests for `ConflictListItem` and `SyncListScaffold` covering filters, semantics, and interaction paths.
+
+### Fixed
+- Matrix Stats `Last updated` label now stays stable when metrics payloads are unchanged, eliminating refresh jitter.
+- Guarded sync list filters against invalid persisted enum indexes on conflicts/outbox pages to prevent `RangeError`.
+
+## [0.9.695] - 2025-10-21
+### Changed
+- Matrix Stats now keeps per-type "Sent" counts stable while the page stays flicker-free on mobile and desktop.
+- Read markers no longer spam `M_UNKNOWN` errors—local-only IDs are skipped and expected misses are logged once.
+
+## [0.9.694] - 2025-10-21
+### Changed
 - Sync UX overhaul:
   - Promote Sync to a top-level Settings entry (hidden when Matrix sync flag is off)
   - Move Outbox Monitor under `/settings/sync/outbox` and remove redundant toggle
@@ -47,6 +83,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Clean up Advanced: remove Matrix/Outbox/Conflicts tiles; keep Logs, Health Import (mobile), Maintenance, About
   - Route matching for Sync pages now uses exact path matching for robustness
   - Localize new user-facing strings (tile subtitles and error text)
+
+## [0.9.693] - 2025-10-21
+### Changed
+- Hid pre-release features when their corresponding tabs are disabled, tightening entry-type gating and extending localisation coverage.
+
+## [0.9.692] - 2025-10-20
+### Changed:
+- Enforce tabular monospace style for tasks timers (monoTabularStyle) to eliminate width jitter.
 
 ## [0.9.691] - 2025-10-20
 ### Changed:
