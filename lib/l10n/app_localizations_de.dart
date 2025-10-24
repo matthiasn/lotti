@@ -1583,7 +1583,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCategoriesTitle => 'Kategorien';
 
   @override
+  String get settingsLabelsTitle => 'Labels';
+
+  @override
+  String get settingsLabelsSubtitle => 'Organize tasks with colored labels';
+
+  @override
   String get settingsCategoriesAddTooltip => 'Add Category';
+
+  @override
+  String get settingsLabelsSearchHint => 'Search labels…';
+
+  @override
+  String get settingsLabelsEmptyState => 'No labels yet';
+
+  @override
+  String get settingsLabelsEmptyStateHint =>
+      'Tap the + button to create your first label.';
+
+  @override
+  String get settingsLabelsErrorLoading => 'Failed to load labels';
 
   @override
   String get settingsCategoriesEmptyState => 'No categories found';
@@ -1636,6 +1655,66 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get categoryNameRequired => 'Category name is required';
+
+  @override
+  String get settingsLabelsCreateTitle => 'Create label';
+
+  @override
+  String get settingsLabelsEditTitle => 'Edit label';
+
+  @override
+  String get settingsLabelsNameLabel => 'Label name';
+
+  @override
+  String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
+
+  @override
+  String get settingsLabelsNameRequired => 'Label name must not be empty.';
+
+  @override
+  String get settingsLabelsDescriptionLabel => 'Description (optional)';
+
+  @override
+  String get settingsLabelsDescriptionHint =>
+      'Explain when to apply this label';
+
+  @override
+  String get settingsLabelsColorHeading => 'Select a color';
+
+  @override
+  String get settingsLabelsColorSubheading => 'Quick presets';
+
+  @override
+  String get settingsLabelsPrivateTitle => 'Private label';
+
+  @override
+  String get settingsLabelsPrivateDescription =>
+      'Private labels are only visible to you and will not sync to shared devices.';
+
+  @override
+  String get settingsLabelsCreateSuccess => 'Label created successfully';
+
+  @override
+  String get settingsLabelsUpdateSuccess => 'Label updated';
+
+  @override
+  String get settingsLabelsDeleteConfirmTitle => 'Delete label';
+
+  @override
+  String settingsLabelsDeleteConfirmMessage(Object labelName) {
+    return 'Are you sure you want to delete \"$labelName\"? Tasks with this label will lose the assignment.';
+  }
+
+  @override
+  String settingsLabelsDeleteSuccess(Object labelName) {
+    return 'Label \"$labelName\" deleted';
+  }
+
+  @override
+  String get settingsLabelsDeleteCancel => 'Cancel';
+
+  @override
+  String get settingsLabelsDeleteConfirmAction => 'Delete';
 
   @override
   String get selectColor => 'Select Color';
