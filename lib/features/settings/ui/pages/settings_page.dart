@@ -42,6 +42,12 @@ class SettingsPage extends ConsumerWidget {
             icon: Icons.category_rounded,
             onTap: () => context.beamToNamed('/settings/categories'),
           ),
+          AnimatedModernSettingsCardWithIcon(
+            title: 'Labels',
+            subtitle: 'Organize tasks with colored labels',
+            icon: Icons.label_rounded,
+            onTap: () => context.beamToNamed('/settings/labels'),
+          ),
           // Sync (feature-gated by Matrix flag) — positioned below Categories
           StreamBuilder<bool>(
             stream: getIt<JournalDb>().watchConfigFlag(enableMatrixFlag),
