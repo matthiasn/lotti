@@ -466,8 +466,7 @@ void main() {
       expect(find.text(l10n.addActionAddEvent), findsNothing);
     });
 
-    testWidgets('shows SizedBox.shrink during loading state', (tester) async {
-      // Mock stream that never emits (stays in loading)
+    testWidgets('hides Event item while loading enableEventsFlag on initial load', (tester) async {
       final flagController = StreamController<Set<ConfigFlag>>();
 
       when(() => mockDb.watchConfigFlags()).thenAnswer(
@@ -488,17 +487,16 @@ void main() {
         ),
       );
 
-      // Don't emit any values - stays in loading state
+      // Stays in loading state (no flag emitted yet)
       await tester.pump();
 
-      // Assert: Widget is hidden during loading
+      // Assert: Defaults to hidden during initial load with no previous value
       expect(find.byType(ModernModalEntryTypeItem), findsNothing);
 
       await flagController.close();
     });
 
-    testWidgets('shows SizedBox.shrink on error state', (tester) async {
-      // Mock stream that emits an error
+    testWidgets('hides Event item when enableEventsFlag stream errors', (tester) async {
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.error(Exception('Test error')),
       );
@@ -519,7 +517,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Assert: Widget is hidden on error
+      // Assert: Defaults to hidden on error with no previous value
       expect(find.byType(ModernModalEntryTypeItem), findsNothing);
     });
 
