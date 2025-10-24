@@ -401,7 +401,7 @@ void main() {
 
         expect(emojisFromAlice, isNotEmpty);
         expect(emojisFromBob, isNotEmpty);
-        expect(emojisFromAlice, emojisFromAlice);
+        expect(emojisFromAlice, emojisFromBob);
 
         debugPrint(
           '\n--- Alice and Bob both have no unverified devices',
