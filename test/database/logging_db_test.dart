@@ -1,5 +1,26 @@
+import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_db.dart';
+
+LogEntry _logEntry({
+  required String id,
+  required String message,
+  DateTime? createdAt,
+  String domain = 'app',
+  String? subDomain,
+  String level = 'INFO',
+}) {
+  final timestamp = createdAt ?? DateTime(2024, 1, 1, 12);
+  return LogEntry(
+    id: id,
+    createdAt: timestamp.toIso8601String(),
+    domain: domain,
+    subDomain: subDomain,
+    type: 'log',
+    level: level,
+    message: message,
+  );
+}
 
 void main() {
   late LoggingDb db;
@@ -300,7 +321,7 @@ void main() {
 
     test('watchSearchLogEntries input validation and sanitization', () async {
       // Test various edge cases for input validation
-      final edgeCases = [
+      const edgeCases = [
         '  \t  \n  ', // Whitespace variations
         '', // Empty string
         '   ', // Spaces only
@@ -312,6 +333,22 @@ void main() {
         final result = await stream.first;
         expect(result, isEmpty, reason: 'Query "$query" should return empty');
       }
+    });
+
+    test('watchSearchLogEntries handles extremely long queries', () async {
+      await db.log(_logEntry(id: 'very-long', message: 'long query test'));
+      final result = await db.watchSearchLogEntries('x' * 6000).first;
+      expect(result, isEmpty);
+    });
+
+    test('watchSearchLogEntries ignores SQL injection attempts', () async {
+      await db.log(_logEntry(id: 'sql-safe', message: 'defensive logging'));
+      const injection = "'); DROP TABLE log_entries --";
+      final result = await db.watchSearchLogEntries(injection).first;
+      expect(result, isEmpty);
+
+      final remaining = await db.watchLogEntries().first;
+      expect(remaining, isNotEmpty);
     });
   });
 
@@ -371,6 +408,40 @@ void main() {
       final result = await stream.first;
       expect(result, hasLength(1));
       expect(result.first.id, equals('specific_test'));
+    });
+
+    test('watchLogEntries returns empty list when limit is zero', () async {
+      await db.log(_logEntry(id: 'limit-zero', message: 'Zero limit'));
+      final result = await db.watchLogEntries(limit: 0).first;
+      expect(result, isEmpty);
+    });
+
+    test('watchLogEntryById emits updated value when entry replaced', () async {
+      final entry = _logEntry(id: 'replace', message: 'initial');
+      await db.log(entry);
+
+      final expectation = expectLater(
+        db.watchLogEntryById('replace'),
+        emitsInOrder([
+          isA<List<LogEntry>>().having(
+              (entries) => entries.single.message, 'message', 'initial'),
+          isA<List<LogEntry>>().having(
+              (entries) => entries.single.message, 'message', 'updated'),
+        ]),
+      );
+      await db.into(db.logEntries).insert(
+            entry.copyWith(
+              message: 'updated',
+              createdAt: DateTime(2024, 1, 2).toIso8601String(),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+      await expectation;
+    });
+
+    test('log returns generated row id', () async {
+      final insertId = await db.log(_logEntry(id: 'rowid', message: 'row id'));
+      expect(insertId, greaterThan(0));
     });
   });
 
@@ -729,6 +800,28 @@ void main() {
       );
       final largeLimitResult = await largeLimitStream.first;
       expect(largeLimitResult, isEmpty); // No data to return
+    });
+
+    test(
+        'watchSearchLogEntriesPaginated returns empty when offset exceeds total',
+        () async {
+      await db.log(
+        _logEntry(
+          id: 'paginated-offset',
+          message: 'Offset test message',
+          createdAt: DateTime(2024, 2),
+        ),
+      );
+
+      final result = await db
+          .watchSearchLogEntriesPaginated(
+            'Offset test',
+            limit: 10,
+            offset: 100,
+          )
+          .first;
+
+      expect(result, isEmpty);
     });
   });
 }

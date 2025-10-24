@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.704] - 2025-10-24
 ### Added
 - Comprehensive Fts5Db coverage with insert and search stream tests to guarantee new database behaviour.
+- Added extensive database test coverage for purge flows, conversion utilities, sync outbox edge cases, logging safeguards, and settings persistence.
 
 ### Changed
 - Retired the legacy Matrix sync V1 pipeline in favour of the stream-first implementation.
