@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Timer indicator now auto-scrolls to the running entry when tapped from task details page
 - Task focus controller for managing scroll-to-entry intent across navigation events
+- Comprehensive Fts5Db coverage with insert and search stream tests to guarantee new database behaviour.
 
 ### Changed
 - Speech audio playback card now ships with glassmorphism styling, streamlined controls, custom
