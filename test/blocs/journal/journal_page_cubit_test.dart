@@ -338,7 +338,7 @@ void main() {
     );
 
     blocTest<JournalPageCubit, JournalPageState>(
-      'selectSingleEntryType sets only one entry type',
+      'selectSingleEntryType sets one type then sanitization resets to all allowed types',
       build: () {
         when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
         return JournalPageCubit(showTasks: false);
@@ -346,25 +346,24 @@ void main() {
       act: (cubit) => cubit.selectSingleEntryType('Task'),
       wait: defaultWait,
       expect: () => [
-        // Emission 1: selectSingleEntryType action sets to ['Task']
+        // First emission: User action sets to ['Task']
         isA<JournalPageState>().having(
           (s) => s.selectedEntryTypes,
           'selectedEntryTypes',
           equals(['Task']),
         ),
-        // Emission 2: sanitization runs after persistEntryTypes saves to DB
-        // The sanitization sees a single type selected and thinks "had all selected"
-        // because setEquals({'Task'}, {'Task'}) is true, so it resets to all allowed (7 types)
+        // Second emission: Sanitization logic resets to all 7 allowed types
+        // (sanitization interprets single selection as "had all selected")
         isA<JournalPageState>().having(
           (s) => s.selectedEntryTypes.length,
           'selectedEntryTypes length',
-          equals(7), // 7 non-feature-gated types when all flags are false
+          equals(7),
         ),
       ],
     );
 
     blocTest<JournalPageCubit, JournalPageState>(
-      'selectAllEntryTypes selects all entry types',
+      'selectAllEntryTypes selects all allowed types based on feature flags',
       build: () {
         when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
         return JournalPageCubit(showTasks: false);
@@ -373,7 +372,7 @@ void main() {
       wait: defaultWait,
       skip: 1, // Skip initial sanitization emission
       verify: (cubit) {
-        // Should have 7 non-feature-gated types since no flags are enabled
+        // With no feature flags enabled, expects 7 non-feature-gated types
         expect(cubit.state.selectedEntryTypes.length, equals(7));
         expect(cubit.state.selectedEntryTypes.contains('Task'), isTrue);
         expect(cubit.state.selectedEntryTypes.contains('JournalEntry'), isTrue);
@@ -381,7 +380,7 @@ void main() {
     );
 
     blocTest<JournalPageCubit, JournalPageState>(
-      'clearSelectedEntryTypes removes all selections',
+      'clearSelectedEntryTypes clears then sanitization restores all allowed types',
       build: () {
         when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
         return JournalPageCubit(showTasks: false);
@@ -389,17 +388,16 @@ void main() {
       act: (cubit) => cubit.clearSelectedEntryTypes(),
       wait: defaultWait,
       expect: () => [
-        // Emission 1: clearSelectedEntryTypes sets to empty
+        // First emission: User action clears to empty
         isA<JournalPageState>().having(
           (s) => s.selectedEntryTypes,
           'selectedEntryTypes',
           isEmpty,
         ),
-        // Emission 2: sanitization sees empty and resets to all allowed (7 types)
-        // This is expected behavior per line 168: if (_selectedEntryTypes.isEmpty)
+        // Second emission: Sanitization sees empty and restores all 7 allowed types
         isA<JournalPageState>().having(
           (s) => s.selectedEntryTypes.length,
-          'selectedEntryTypes length after sanitization',
+          'selectedEntryTypes length',
           equals(7),
         ),
       ],
