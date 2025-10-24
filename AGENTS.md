@@ -76,7 +76,6 @@
 - When old and new feature versions coexist, create no dependencies from the new code to the old.
 - Uphold high standards: DRY where sensible, proper modularity, and strong testability.
 - Use `fvm` for all `flutter` commands.
-- Read `test/README.md` at session start and update it with relevant new information.
 
 ## Implementation discipline
 
