@@ -6,7 +6,7 @@ part of 'audio_waveform_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$audioWaveformHash() => r'727e58940b15612eef6ccdecdc2cf5bdc3740035';
+String _$audioWaveformHash() => r'6b355266d3590bbdf948e9f0b0b89efda13b61fa';
 
 /// Copied from Dart SDK
 class _SystemHash {

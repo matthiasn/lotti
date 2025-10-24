@@ -24,12 +24,21 @@ class CreateEventItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enableEvents =
-        ref.watch(configFlagProvider(enableEventsFlag)).value ?? false;
+    final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
 
-    if (!enableEvents) {
-      return const SizedBox.shrink();
-    }
+    return enableEventsAsync.when(
+      data: (enableEvents) {
+        if (!enableEvents) {
+          return const SizedBox.shrink();
+        }
+        return _buildEventItem(context);
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildEventItem(BuildContext context) {
 
     return ModernModalEntryTypeItem(
       icon: Icons.event_rounded,

@@ -17,12 +17,14 @@ class EntryTypeFilter extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enableEvents =
-        ref.watch(configFlagProvider(enableEventsFlag)).value ?? false;
-    final enableHabits =
-        ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false;
-    final enableDashboards =
-        ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ?? false;
+    final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
+    final enableHabitsAsync = ref.watch(configFlagProvider(enableHabitsPageFlag));
+    final enableDashboardsAsync = ref.watch(configFlagProvider(enableDashboardsPageFlag));
+
+    // Use unwrapPrevious to keep previous value during loading
+    final enableEvents = enableEventsAsync.unwrapPrevious().whenData((value) => value).valueOrNull ?? false;
+    final enableHabits = enableHabitsAsync.unwrapPrevious().whenData((value) => value).valueOrNull ?? false;
+    final enableDashboards = enableDashboardsAsync.unwrapPrevious().whenData((value) => value).valueOrNull ?? false;
 
     final filteredEntryTypes = computeAllowedEntryTypes(
       events: enableEvents,

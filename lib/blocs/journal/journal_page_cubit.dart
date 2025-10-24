@@ -153,7 +153,28 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       _enableEvents = configFlags.contains(enableEventsFlag);
       _enableHabits = configFlags.contains(enableHabitsPageFlag);
       _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
-      refreshQuery();
+
+      // Get allowed types based on current feature flags
+      final newAllowed = computeAllowedEntryTypes(
+        events: _enableEvents,
+        habits: _enableHabits,
+        dashboards: _enableDashboards,
+      ).toSet();
+
+      // Check if user had all types selected (based on what was previously allowed)
+      final previouslyAllowed = _selectedEntryTypes.intersection(newAllowed);
+      final hadAllSelected = setEquals(_selectedEntryTypes, previouslyAllowed) && _selectedEntryTypes.isNotEmpty;
+
+      if (hadAllSelected || _selectedEntryTypes.isEmpty) {
+        // User had everything selected - keep everything selected
+        _selectedEntryTypes = newAllowed;
+      } else {
+        // User had partial selection - just remove disallowed types
+        _selectedEntryTypes = _selectedEntryTypes.intersection(newAllowed);
+      }
+
+      emitState();
+      persistEntryTypes();
     });
 
     if (isDesktop) {

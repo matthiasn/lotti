@@ -15,9 +15,9 @@ final configFlagsStreamProvider = Provider<Stream<Set<ConfigFlag>>>((ref) {
 /// Returns false by default if the flag doesn't exist or has no status.
 @riverpod
 Stream<bool> configFlag(Ref ref, String flagName) {
-  // Derive from the shared broadcast stream to avoid multiple subscriptions
-  final flagsStream = ref.watch(configFlagsStreamProvider);
-  return flagsStream.map((Set<ConfigFlag> flags) {
+  final db = ref.watch(journalDbProvider);
+
+  return db.watchConfigFlags().map((Set<ConfigFlag> flags) {
     final flag = flags.cast<ConfigFlag?>().firstWhere(
           (ConfigFlag? f) => f?.name == flagName,
           orElse: () => null,

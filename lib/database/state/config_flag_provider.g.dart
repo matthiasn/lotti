@@ -6,7 +6,7 @@ part of 'config_flag_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$configFlagHash() => r'e05e9ce16a1bcd9de78e6e17d6673147dba70dfa';
+String _$configFlagHash() => r'e5b746907c52cfd27327e97c82a5ee23f1ffa118';
 
 /// Copied from Dart SDK
 class _SystemHash {
