@@ -58,6 +58,7 @@ class PersistenceLogic {
     String? uuidV5Input,
     bool? private,
     List<String>? tagIds,
+    List<String>? labelIds,
     String? categoryId,
     bool? starred,
     EntryFlag? flag,
@@ -79,6 +80,7 @@ class PersistenceLogic {
       vectorClock: vc,
       private: private,
       tagIds: tagIds,
+      labelIds: labelIds,
       categoryId: categoryId,
       starred: starred,
       timezone: await getLocalTimezone(),
@@ -712,6 +714,7 @@ class PersistenceLogic {
       final applied = (await updateDbEntity(entityWithUpdatedMeta)) ?? false;
       if (applied) {
         await _journalDb.addTagged(entityWithUpdatedMeta);
+        await _journalDb.addLabeled(entityWithUpdatedMeta);
       }
       return applied;
     } catch (exception, stackTrace) {

@@ -46,7 +46,7 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration {
@@ -107,6 +107,15 @@ class JournalDb extends _$JournalDb {
             await m.createIndex(idxJournalTab);
             await m.createIndex(idxJournalTasks);
             await m.createIndex(idxJournalTypeSubtype);
+          }();
+        }
+
+        if (from < 26) {
+          await () async {
+            debugPrint('Creating labeled table and indices');
+            await m.createTable(labeled);
+            await m.createIndex(idxLabeledJournalId);
+            await m.createIndex(idxLabeledLabelId);
           }();
         }
       },
@@ -176,6 +185,42 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Future<void> insertLabel(String journalId, String labelId) async {
+    try {
+      await into(labeled).insert(
+        LabeledWith(
+          id: uuid.v1(),
+          journalId: journalId,
+          labelId: labelId,
+        ),
+      );
+    } catch (ex) {
+      debugPrint(ex.toString());
+    }
+  }
+
+  Future<Set<String>> _labelIdsForJournalId(String journalId) async {
+    final existing = await labeledForJournal(journalId).get();
+    return existing.toSet();
+  }
+
+  Future<void> addLabeled(JournalEntity journalEntity) async {
+    final journalId = journalEntity.meta.id;
+    final targetLabelIds = journalEntity.meta.labelIds?.toSet() ?? {};
+    final currentLabelIds = await _labelIdsForJournalId(journalId);
+
+    final labelsToAdd = targetLabelIds.difference(currentLabelIds);
+    final labelsToRemove = currentLabelIds.difference(targetLabelIds);
+
+    for (final labelId in labelsToAdd) {
+      await insertLabel(journalId, labelId);
+    }
+
+    for (final labelId in labelsToRemove) {
+      await deleteLabeledRow(journalId, labelId);
+    }
+  }
+
   Future<JournalUpdateResult> updateJournalEntity(
     JournalEntity updated, {
     bool overrideComparison = false,
@@ -238,6 +283,7 @@ class JournalDb extends _$JournalDb {
     if (applied) {
       await saveJournalEntityJson(updated);
       await addTagged(updated);
+      await addLabeled(updated);
       return JournalUpdateResult.applied(rowsWritten: rowsWritten);
     }
 
@@ -472,6 +518,10 @@ class JournalDb extends _$JournalDb {
 
   Future<int> getTaggedCount() async {
     return (await countTagged().get()).first;
+  }
+
+  Future<int> getLabeledCount() async {
+    return (await countLabeled().get()).first;
   }
 
   Future<int> getJournalCount() async {
@@ -791,6 +841,27 @@ class JournalDb extends _$JournalDb {
         .map(categoryDefinitionsStreamMapper);
   }
 
+  Stream<List<LabelDefinition>> watchLabelDefinitions() {
+    return allLabelDefinitions().watch().map(labelDefinitionsStreamMapper);
+  }
+
+  Stream<LabelDefinition?> watchLabelDefinitionById(String id) {
+    return labelDefinitionById(id)
+        .watch()
+        .map(labelDefinitionsStreamMapper)
+        .map((List<LabelDefinition> res) => res.firstOrNull);
+  }
+
+  Future<List<LabelDefinition>> getAllLabelDefinitions() async {
+    final labels = await allLabelDefinitions().get();
+    return labelDefinitionsStreamMapper(labels);
+  }
+
+  Future<LabelDefinition?> getLabelDefinitionById(String id) async {
+    final result = await labelDefinitionById(id).get();
+    return labelDefinitionsStreamMapper(result).firstOrNull;
+  }
+
   Stream<CategoryDefinition?> watchCategoryById(String id) {
     return categoryById(id)
         .watch()
@@ -894,7 +965,15 @@ class JournalDb extends _$JournalDb {
       habit: upsertHabitDefinition,
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
+      labelDefinition: upsertLabelDefinition,
     );
     return linesAffected;
+  }
+
+  Future<int> upsertLabelDefinition(
+    LabelDefinition labelDefinition,
+  ) async {
+    return into(labelDefinitions)
+        .insertOnConflictUpdate(labelDefinitionDbEntity(labelDefinition));
   }
 }

@@ -192,6 +192,35 @@ CategoryDefinitionDbEntity categoryDefinitionDbEntity(
   );
 }
 
+LabelDefinition fromLabelDefinitionDbEntity(
+  LabelDefinitionDbEntity dbEntity,
+) {
+  return LabelDefinition.fromJson(
+    json.decode(dbEntity.serialized) as Map<String, dynamic>,
+  );
+}
+
+List<LabelDefinition> labelDefinitionsStreamMapper(
+  List<LabelDefinitionDbEntity> dbEntities,
+) {
+  return dbEntities.map(fromLabelDefinitionDbEntity).toList();
+}
+
+LabelDefinitionDbEntity labelDefinitionDbEntity(LabelDefinition label) {
+  final deleted = label.deletedAt != null;
+
+  return LabelDefinitionDbEntity(
+    id: label.id,
+    createdAt: label.createdAt,
+    updatedAt: label.updatedAt,
+    serialized: jsonEncode(label),
+    private: label.private ?? false,
+    name: deleted ? label.id : label.name,
+    deleted: deleted,
+    color: label.color,
+  );
+}
+
 LinkedDbEntry linkedDbEntity(EntryLink link) {
   return LinkedDbEntry(
     id: link.id,
