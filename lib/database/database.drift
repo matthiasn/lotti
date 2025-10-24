@@ -87,6 +87,22 @@ CREATE INDEX idx_category_definitions_id ON category_definitions (id);
 CREATE INDEX idx_category_definitions_name ON category_definitions (name);
 CREATE INDEX idx_category_definitions_private ON category_definitions (private);
 
+CREATE TABLE label_definitions (
+  id TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE,
+  color TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  private BOOLEAN NOT NULL DEFAULT FALSE,
+  serialized TEXT NOT NULL,
+  PRIMARY KEY (id)
+) as LabelDefinitionDbEntity;
+
+CREATE INDEX idx_label_definitions_id ON label_definitions (id);
+CREATE INDEX idx_label_definitions_name ON label_definitions (name);
+CREATE INDEX idx_label_definitions_private ON label_definitions (private);
+
 CREATE TABLE dashboard_definitions (
   id TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -143,6 +159,18 @@ CREATE TABLE tagged (
 
 CREATE INDEX idx_tagged_journal_id ON tagged (journal_id);
 CREATE INDEX idx_tagged_tag_entity_id ON tagged (tag_entity_id);
+
+CREATE TABLE labeled (
+  id TEXT NOT NULL UNIQUE,
+  journal_id TEXT NOT NULL,
+  label_id TEXT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY(journal_id) REFERENCES journal(id) ON DELETE CASCADE,
+  UNIQUE(journal_id, label_id)
+) as LabeledWith;
+
+CREATE INDEX idx_labeled_journal_id ON labeled (journal_id);
+CREATE INDEX idx_labeled_label_id ON labeled (label_id);
 
 CREATE TABLE linked_entries (
   id TEXT NOT NULL UNIQUE,
@@ -507,6 +535,18 @@ SELECT * FROM category_definitions
   AND id = :id
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
+allLabelDefinitions:
+SELECT * FROM label_definitions
+  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND deleted = false
+  ORDER BY name COLLATE NOCASE;
+
+labelDefinitionById:
+SELECT * FROM label_definitions
+  WHERE deleted = false
+  AND id = :id
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+
 matchingTagEntities:
 SELECT * FROM tag_entities
   WHERE tag LIKE :match
@@ -519,12 +559,29 @@ deleteTaggedForId:
 DELETE FROM tagged
   WHERE journal_id = :id;
 
+labeledForJournal:
+SELECT label_id FROM labeled
+  WHERE journal_id = :journal_id;
+
+deleteLabeledRow:
+DELETE FROM labeled
+  WHERE journal_id = :journal_id
+  AND label_id = :label_id;
+
+deleteLabeledForId:
+DELETE FROM labeled
+  WHERE journal_id = :journal_id;
+
 purgeDeletedDashboards:
 DELETE FROM dashboard_definitions
   WHERE deleted = TRUE;
 
 purgeDeletedMeasurables:
 DELETE FROM measurable_types
+  WHERE deleted = TRUE;
+
+purgeDeletedLabelDefinitions:
+DELETE FROM label_definitions
   WHERE deleted = TRUE;
 
 purgeDeletedTagEntities:
@@ -544,6 +601,9 @@ SELECT journal_id FROM tagged
 
 countTagged:
 SELECT COUNT(*) FROM tagged;
+
+countLabeled:
+SELECT COUNT(*) FROM labeled;
 
 linkedJournalEntities:
 SELECT * FROM journal

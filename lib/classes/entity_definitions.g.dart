@@ -290,6 +290,42 @@ const _$AiResponseTypeEnumMap = {
   AiResponseType.checklistUpdates: 'ChecklistUpdates',
 };
 
+LabelDefinition _$LabelDefinitionFromJson(Map<String, dynamic> json) =>
+    LabelDefinition(
+      id: json['id'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      name: json['name'] as String,
+      color: json['color'] as String,
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      description: json['description'] as String?,
+      groupId: json['groupId'] as String?,
+      sortOrder: (json['sortOrder'] as num?)?.toInt(),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      private: json['private'] as bool?,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$LabelDefinitionToJson(LabelDefinition instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'name': instance.name,
+      'color': instance.color,
+      'vectorClock': instance.vectorClock,
+      'description': instance.description,
+      'groupId': instance.groupId,
+      'sortOrder': instance.sortOrder,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'private': instance.private,
+      'runtimeType': instance.$type,
+    };
+
 HabitDefinition _$HabitDefinitionFromJson(Map<String, dynamic> json) =>
     HabitDefinition(
       id: json['id'] as String,

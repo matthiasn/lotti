@@ -40,12 +40,22 @@ class EntitiesCacheService {
         dashboardsById[dashboard.id] = dashboard;
       }
     });
+
+    getIt<JournalDb>().watchLabelDefinitions().listen((
+      List<LabelDefinition> labels,
+    ) {
+      labelsById.clear();
+      for (final label in labels) {
+        labelsById[label.id] = label;
+      }
+    });
   }
 
   Map<String, MeasurableDataType> dataTypesById = {};
   Map<String, CategoryDefinition> categoriesById = {};
   Map<String, HabitDefinition> habitsById = {};
   Map<String, DashboardDefinition> dashboardsById = {};
+  Map<String, LabelDefinition> labelsById = {};
 
   List<CategoryDefinition> get sortedCategories {
     final res = categoriesById.values.where((e) => e.active).toList()
@@ -67,5 +77,20 @@ class EntitiesCacheService {
 
   DashboardDefinition? getDashboardById(String? id) {
     return dashboardsById[id];
+  }
+
+  LabelDefinition? getLabelById(String? id) {
+    if (id == null) {
+      return null;
+    }
+    return labelsById[id];
+  }
+
+  List<LabelDefinition> get sortedLabels {
+    final res = labelsById.values
+        .where((label) => label.deletedAt == null)
+        .toList()
+      ..sortBy((label) => label.name.toLowerCase());
+    return res;
   }
 }
