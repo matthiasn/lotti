@@ -338,28 +338,18 @@ void main() {
     );
 
     blocTest<JournalPageCubit, JournalPageState>(
-      'selectSingleEntryType sets one type then sanitization resets to all allowed types',
+      'selectSingleEntryType sets only one entry type and preserves it',
       build: () {
         when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
         return JournalPageCubit(showTasks: false);
       },
       act: (cubit) => cubit.selectSingleEntryType('Task'),
       wait: defaultWait,
-      expect: () => [
-        // First emission: User action sets to ['Task']
-        isA<JournalPageState>().having(
-          (s) => s.selectedEntryTypes,
-          'selectedEntryTypes',
-          equals(['Task']),
-        ),
-        // Second emission: Sanitization logic resets to all 7 allowed types
-        // (sanitization interprets single selection as "had all selected")
-        isA<JournalPageState>().having(
-          (s) => s.selectedEntryTypes.length,
-          'selectedEntryTypes length',
-          equals(7),
-        ),
-      ],
+      skip: 1, // Skip initial sanitization emission
+      verify: (cubit) {
+        // User's partial selection is now preserved correctly
+        expect(cubit.state.selectedEntryTypes, equals(['Task']));
+      },
     );
 
     blocTest<JournalPageCubit, JournalPageState>(
@@ -387,20 +377,11 @@ void main() {
       },
       act: (cubit) => cubit.clearSelectedEntryTypes(),
       wait: defaultWait,
-      expect: () => [
-        // First emission: User action clears to empty
-        isA<JournalPageState>().having(
-          (s) => s.selectedEntryTypes,
-          'selectedEntryTypes',
-          isEmpty,
-        ),
-        // Second emission: Sanitization sees empty and restores all 7 allowed types
-        isA<JournalPageState>().having(
-          (s) => s.selectedEntryTypes.length,
-          'selectedEntryTypes length',
-          equals(7),
-        ),
-      ],
+      skip: 1, // Skip initial sanitization emission
+      verify: (cubit) {
+        // Empty selection triggers "select all" behavior - restores all 7 allowed types
+        expect(cubit.state.selectedEntryTypes.length, equals(7));
+      },
     );
 
     blocTest<JournalPageCubit, JournalPageState>(

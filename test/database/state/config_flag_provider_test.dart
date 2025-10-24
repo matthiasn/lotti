@@ -231,7 +231,8 @@ void main() {
       listenerCalled = false;
       flagController.add(<ConfigFlag>{});
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      expect(listenerCalled, isFalse, reason: 'Listener should not be called after disposal');
+      expect(listenerCalled, isFalse,
+          reason: 'Listener should not be called after disposal');
 
       await flagController.close();
     });

@@ -18,8 +18,10 @@ class EntryTypeFilter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
-    final enableHabitsAsync = ref.watch(configFlagProvider(enableHabitsPageFlag));
-    final enableDashboardsAsync = ref.watch(configFlagProvider(enableDashboardsPageFlag));
+    final enableHabitsAsync =
+        ref.watch(configFlagProvider(enableHabitsPageFlag));
+    final enableDashboardsAsync =
+        ref.watch(configFlagProvider(enableDashboardsPageFlag));
 
     // Use unwrapPrevious to keep previous value during loading/error states
     // Default to false (hide features) on initial load with no previous value

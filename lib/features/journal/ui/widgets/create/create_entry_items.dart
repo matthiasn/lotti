@@ -41,7 +41,6 @@ class CreateEventItem extends ConsumerWidget {
   }
 
   Widget _buildEventItem(BuildContext context) {
-
     return ModernModalEntryTypeItem(
       icon: Icons.event_rounded,
       title: context.messages.addActionAddEvent,

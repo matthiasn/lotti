@@ -466,7 +466,9 @@ void main() {
       expect(find.text(l10n.addActionAddEvent), findsNothing);
     });
 
-    testWidgets('hides Event item while loading enableEventsFlag on initial load', (tester) async {
+    testWidgets(
+        'hides Event item while loading enableEventsFlag on initial load',
+        (tester) async {
       final flagController = StreamController<Set<ConfigFlag>>();
 
       when(() => mockDb.watchConfigFlags()).thenAnswer(
@@ -496,7 +498,8 @@ void main() {
       await flagController.close();
     });
 
-    testWidgets('hides Event item when enableEventsFlag stream errors', (tester) async {
+    testWidgets('hides Event item when enableEventsFlag stream errors',
+        (tester) async {
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.error(Exception('Test error')),
       );
