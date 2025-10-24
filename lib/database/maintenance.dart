@@ -65,6 +65,12 @@ class Maintenance {
     final file = await getDatabaseFile(editorDbFileName);
     if (file.existsSync()) {
       file.deleteSync();
+    } else {
+      getIt<LoggingService>().captureEvent(
+        'Database file $editorDbFileName does not exist',
+        domain: 'MAINTENANCE',
+        subDomain: 'deleteEditorDb',
+      );
     }
   }
 
@@ -72,6 +78,12 @@ class Maintenance {
     final file = await getDatabaseFile(loggingDbFileName);
     if (file.existsSync()) {
       file.deleteSync();
+    } else {
+      getIt<LoggingService>().captureEvent(
+        'Database file $loggingDbFileName does not exist',
+        domain: 'MAINTENANCE',
+        subDomain: 'deleteLoggingDb',
+      );
     }
   }
 
@@ -79,20 +91,36 @@ class Maintenance {
     final file = await getDatabaseFile(syncDbFileName);
     if (file.existsSync()) {
       file.deleteSync();
+    } else {
+      getIt<LoggingService>().captureEvent(
+        'Database file $syncDbFileName does not exist',
+        domain: 'MAINTENANCE',
+        subDomain: 'deleteSyncDb',
+      );
     }
   }
 
   Future<void> deleteFts5Db() async {
     final file = await getDatabaseFile(fts5DbFileName);
+    var deleted = false;
     if (file.existsSync()) {
       file.deleteSync();
+      deleted = true;
+    } else {
+      getIt<LoggingService>().captureEvent(
+        'Database file $fts5DbFileName does not exist',
+        domain: 'MAINTENANCE',
+        subDomain: 'deleteFts5Db',
+      );
     }
 
-    getIt<LoggingService>().captureEvent(
-      'FTS5 database DELETED',
-      domain: 'MAINTENANCE',
-      subDomain: 'recreateFts5',
-    );
+    if (deleted) {
+      getIt<LoggingService>().captureEvent(
+        'FTS5 database DELETED',
+        domain: 'MAINTENANCE',
+        subDomain: 'recreateFts5',
+      );
+    }
   }
 
   Future<void> recreateFts5({void Function(double)? onProgress}) async {
