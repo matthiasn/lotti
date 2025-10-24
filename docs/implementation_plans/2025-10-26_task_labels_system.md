@@ -175,12 +175,9 @@ requires it.
 - Schedule retro after release to decide on deprecating old tags or extending labels to other entry
   types (audio, checklists).
 
-## Open Questions
+## Decisions
 
-- Should labels eventually apply to journal entries/audio? If yes, confirm priority and include in
-  backlog.
-- Do we need multi-team sharing of label definitions or per-workspace scopes?
-- What analytics events are required for label creation/filter usage?
-- Is there a need for default color palette or auto-generated label suggestions?
-
-Address these during discovery before kicking off Phase 2.
+- Labels remain task-focused for the initial release; we will design the system to be extensible so journal/audio integration can be layered on later without migrations.
+- Definitions stay per-workspace (single-user scope) and sync across the user’s devices; no multi-team sharing is needed today.
+- We will not add new analytics events for label lifecycle or filter usage in v1, keeping telemetry footprint unchanged.
+- Provide a curated 4×4 color grid (reusing category palette tokens where possible) so users can quickly pick accessible colors without auto-generated suggestions.
