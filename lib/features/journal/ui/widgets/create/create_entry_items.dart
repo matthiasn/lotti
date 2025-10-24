@@ -26,16 +26,18 @@ class CreateEventItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
 
-    return enableEventsAsync.when(
-      data: (enableEvents) {
-        if (!enableEvents) {
-          return const SizedBox.shrink();
-        }
-        return _buildEventItem(context);
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
+    // Use unwrapPrevious to keep previous value during loading/error states
+    final enableEvents = enableEventsAsync
+            .unwrapPrevious()
+            .whenData((value) => value)
+            .valueOrNull ??
+        false;
+
+    if (!enableEvents) {
+      return const SizedBox.shrink();
+    }
+
+    return _buildEventItem(context);
   }
 
   Widget _buildEventItem(BuildContext context) {
