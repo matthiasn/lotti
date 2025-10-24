@@ -3555,18 +3555,6 @@ abstract class AppLocalizations {
   /// **'Matrix Stats'**
   String get settingsMatrixStatsTitle;
 
-  /// No description provided for @configFlagEnableSyncV2.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable Matrix Sync V2'**
-  String get configFlagEnableSyncV2;
-
-  /// No description provided for @configFlagEnableSyncV2Description.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable Matrix sync pipeline V2 (requires app restart)'**
-  String get configFlagEnableSyncV2Description;
-
   /// No description provided for @settingsMatrixSentMessagesLabel.
   ///
   /// In en, this message translates to:

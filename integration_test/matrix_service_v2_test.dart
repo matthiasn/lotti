@@ -87,7 +87,6 @@ MatrixService _createMatrixService({
     documentsDirectory: documentsDirectory,
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
-    enableSyncV2: true,
     attachmentIndex: AttachmentIndex(logging: loggingService),
     sentEventRegistry: sentEventRegistry,
   );
@@ -349,8 +348,7 @@ void main() {
         var emojisFromBob = '';
         var emojisFromAlice = '';
 
-        final incomingSubscription =
-            incomingKeyVerificationRunnerStream.listen(
+        final incomingSubscription = incomingKeyVerificationRunnerStream.listen(
           (runner) async {
             debugPrint(
               'Bob - incoming verification runner step: ${runner.lastStep}',

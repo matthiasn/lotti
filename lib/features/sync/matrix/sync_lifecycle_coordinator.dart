@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
-import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -13,7 +12,7 @@ typedef LifecycleCallback = Future<void> Function();
 /// Coordinates lifecycle transitions for the sync subsystem.
 ///
 /// The coordinator observes login state changes from the injected
-/// [MatrixSyncGateway] and ensures that timeline listeners and auxiliary
+/// [MatrixSyncGateway] and ensures that the sync pipeline and auxiliary
 /// lifecycle hooks are activated exactly once per login session. When the user
 /// logs out, the coordinator performs the corresponding teardown so the engine
 /// can cleanly restart on the next login.
@@ -21,15 +20,13 @@ class SyncLifecycleCoordinator {
   SyncLifecycleCoordinator({
     required MatrixSyncGateway gateway,
     required MatrixSessionManager sessionManager,
-    required MatrixTimelineListener timelineListener,
     required SyncRoomManager roomManager,
     required LoggingService loggingService,
-    SyncPipeline? pipeline,
+    required SyncPipeline pipeline,
     LifecycleCallback? onLogin,
     LifecycleCallback? onLogout,
   })  : _gateway = gateway,
         _sessionManager = sessionManager,
-        _timelineListener = timelineListener,
         _roomManager = roomManager,
         _loggingService = loggingService,
         _pipeline = pipeline,
@@ -38,10 +35,9 @@ class SyncLifecycleCoordinator {
 
   final MatrixSyncGateway _gateway;
   final MatrixSessionManager _sessionManager;
-  final MatrixTimelineListener _timelineListener;
   final SyncRoomManager _roomManager;
   final LoggingService _loggingService;
-  final SyncPipeline? _pipeline;
+  final SyncPipeline _pipeline;
 
   LifecycleCallback? _onLogin;
   LifecycleCallback? _onLogout;
@@ -71,7 +67,7 @@ class SyncLifecycleCoordinator {
     }
   }
 
-  /// Initializes the coordinator by priming the timeline listener and
+  /// Initializes the coordinator by priming the sync pipeline and
   /// establishing the login-state subscription.
   Future<void> initialize() async {
     if (_isInitialized) {
@@ -93,12 +89,7 @@ class SyncLifecycleCoordinator {
     }
 
     try {
-      // Initialize either the provided pipeline or the legacy timeline listener.
-      if (_pipeline != null) {
-        await _pipeline!.initialize();
-      } else {
-        await _timelineListener.initialize();
-      }
+      await _pipeline.initialize();
       await _roomManager.initialize();
       _loginSubscription ??=
           _gateway.loginStateChanges.listen(_handleLoginState);
@@ -163,11 +154,7 @@ class SyncLifecycleCoordinator {
 
     try {
       await _roomManager.hydrateRoomSnapshot(client: _sessionManager.client);
-      if (_pipeline != null) {
-        await _pipeline!.start();
-      } else {
-        await _timelineListener.start();
-      }
+      await _pipeline.start();
       if (_onLogin != null) {
         await _onLogin!();
       }
@@ -212,12 +199,7 @@ class SyncLifecycleCoordinator {
     );
 
     try {
-      if (_pipeline != null) {
-        await _pipeline!.dispose();
-      } else {
-        final timeline = _timelineListener.timeline;
-        timeline?.cancelSubscriptions();
-      }
+      await _pipeline.dispose();
       if (_onLogout != null) {
         await _onLogout!();
       }

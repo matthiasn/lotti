@@ -1894,13 +1894,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixStatsTitle => 'Statistici Matrix';
 
   @override
-  String get configFlagEnableSyncV2 => 'Enable Matrix Sync V2';
-
-  @override
-  String get configFlagEnableSyncV2Description =>
-      'Enable Matrix sync pipeline V2 (requires app restart)';
-
-  @override
   String get settingsMatrixSentMessagesLabel => 'Sent messages:';
 
   @override

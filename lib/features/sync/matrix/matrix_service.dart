@@ -10,7 +10,6 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
-import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
@@ -35,11 +34,10 @@ import 'package:meta/meta.dart';
 /// MatrixService
 ///
 /// High-level façade for Matrix-based encrypted sync. Composes the SDK gateway,
-/// session/room managers, message sender, timeline listener (V1), and, when
-/// enabled via the `enable_sync_v2` flag, the stream-first V2 pipeline
-/// (`MatrixStreamConsumer`).
+/// session/room managers, message sender, and the stream-first pipeline
+/// (`MatrixStreamConsumer`) that performs catch-up and live ingestion.
 ///
-/// V2 integration highlights
+/// Pipeline highlights
 /// - Wires `SyncEventProcessor.applyObserver` to surface DB-apply diagnostics
 ///   into the pipeline’s typed metrics.
 /// - Proactively triggers a `forceRescan(includeCatchUp=true)` shortly after
@@ -49,9 +47,6 @@ import 'package:meta/meta.dart';
 ///   recover from offline-created bursts.
 /// - Exposes `getV2Metrics()`, `forceV2Rescan()`, `retryV2Now()`, and
 ///   `getSyncDiagnosticsText()` for UI (Matrix Stats) and tooling.
-///
-/// V1 remains available when V2 is disabled; lifecycle orchestration is unified
-/// via `SyncEngine` and `SyncLifecycleCoordinator`.
 class MatrixService {
   MatrixService({
     required MatrixSyncGateway gateway,
@@ -66,14 +61,12 @@ class MatrixService {
     required Directory documentsDirectory,
     required AttachmentIndex attachmentIndex,
     SentEventRegistry? sentEventRegistry,
-    bool enableSyncV2 = false,
     bool collectV2Metrics = false,
     bool ownsActivityGate = false,
     MatrixConfig? matrixConfig,
     String? deviceDisplayName,
     SyncRoomManager? roomManager,
     MatrixSessionManager? sessionManager,
-    MatrixTimelineListener? timelineListener,
     SyncLifecycleCoordinator? lifecycleCoordinator,
     SyncEngine? syncEngine,
     // Test-only seam to inject a V2 pipeline
@@ -118,21 +111,6 @@ class MatrixService {
     if (sessionManager == null && deviceDisplayName != null) {
       _sessionManager.deviceDisplayName = deviceDisplayName;
     }
-
-    _timelineListener = timelineListener ??
-        MatrixTimelineListener(
-          sessionManager: _sessionManager,
-          roomManager: _roomManager,
-          loggingService: _loggingService,
-          activityGate: _activityGate,
-          journalDb: _journalDb,
-          settingsDb: _settingsDb,
-          readMarkerService: _readMarkerService,
-          eventProcessor: _eventProcessor,
-          documentsDirectory: documentsDirectory,
-          sentEventRegistry: _sentEventRegistry,
-        );
-
     if (syncEngine != null) {
       if (lifecycleCoordinator != null &&
           !identical(
@@ -147,69 +125,81 @@ class MatrixService {
       _syncEngine = syncEngine;
     } else {
       final pipeline = v2PipelineOverride ??
-          (enableSyncV2
-              ? MatrixStreamConsumer(
-                  sessionManager: _sessionManager,
-                  roomManager: _roomManager,
-                  loggingService: _loggingService,
-                  journalDb: _journalDb,
-                  settingsDb: _settingsDb,
-                  eventProcessor: _eventProcessor,
-                  readMarkerService: _readMarkerService,
-                  documentsDirectory: documentsDirectory,
-                  attachmentIndex: attachmentIndex,
-                  collectMetrics: collectV2Metrics,
-                  dropOldPayloadsInLiveScan: true,
-                  sentEventRegistry: _sentEventRegistry,
-                )
-              : null);
-      _v2Pipeline = pipeline;
-
-      // Wire DB-apply diagnostics from the processor into the V2 pipeline
-      if (_v2Pipeline != null) {
-        _eventProcessor.applyObserver = _v2Pipeline!.reportDbApplyDiagnostics;
-        // Proactively kick a forceRescan(includeCatchUp=true) shortly after startup
-        // to avoid gaps if the consumer started before room readiness or network flakiness.
-        unawaited(() async {
-          await Future<void>.delayed(const Duration(milliseconds: 300));
-          try {
-            _loggingService.captureEvent(
-              'service.forceRescan.startup includeCatchUp=true',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'v2.forceRescan',
-            );
-            await _v2Pipeline!.forceRescan();
-            _loggingService.captureEvent(
-              'service.forceRescan.startup.done',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'v2.forceRescan',
-            );
-          } catch (e, st) {
-            _loggingService.captureException(
-              e,
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'v2.forceRescan.startup',
-              stackTrace: st,
-            );
-          }
-        }());
-      }
-      final coordinator = lifecycleCoordinator ??
-          SyncLifecycleCoordinator(
-            gateway: _gateway,
+          MatrixStreamConsumer(
             sessionManager: _sessionManager,
-            timelineListener: _timelineListener,
             roomManager: _roomManager,
             loggingService: _loggingService,
-            pipeline: pipeline,
+            journalDb: _journalDb,
+            settingsDb: _settingsDb,
+            eventProcessor: _eventProcessor,
+            readMarkerService: _readMarkerService,
+            documentsDirectory: documentsDirectory,
+            attachmentIndex: attachmentIndex,
+            collectMetrics: collectV2Metrics,
+            dropOldPayloadsInLiveScan: true,
+            sentEventRegistry: _sentEventRegistry,
           );
-      _syncEngine = SyncEngine(
-        sessionManager: _sessionManager,
-        roomManager: _roomManager,
-        timelineListener: _timelineListener,
-        lifecycleCoordinator: coordinator,
-        loggingService: _loggingService,
-      );
+      _v2Pipeline = pipeline;
+
+      _eventProcessor.applyObserver = pipeline.reportDbApplyDiagnostics;
+      // Proactively kick a forceRescan(includeCatchUp=true) shortly after startup
+      // to avoid gaps if the consumer started before room readiness or network flakiness.
+      unawaited(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        try {
+          _loggingService.captureEvent(
+            'service.forceRescan.startup includeCatchUp=true',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'v2.forceRescan',
+          );
+          await pipeline.forceRescan();
+          _loggingService.captureEvent(
+            'service.forceRescan.startup.done',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'v2.forceRescan',
+          );
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'v2.forceRescan.startup',
+            stackTrace: st,
+          );
+        }
+      }());
+
+      if (syncEngine != null) {
+        if (v2PipelineOverride == null) {
+          throw ArgumentError(
+            'Providing a SyncEngine requires supplying v2PipelineOverride so '
+            'MatrixService and the engine share the same pipeline instance.',
+          );
+        }
+        final coordinatorFromEngine = syncEngine.lifecycleCoordinator;
+        if (lifecycleCoordinator != null &&
+            !identical(coordinatorFromEngine, lifecycleCoordinator)) {
+          throw ArgumentError(
+            'Provided SyncEngine and SyncLifecycleCoordinator must reference '
+            'the same instance.',
+          );
+        }
+        _syncEngine = syncEngine;
+      } else {
+        final coordinator = lifecycleCoordinator ??
+            SyncLifecycleCoordinator(
+              gateway: _gateway,
+              sessionManager: _sessionManager,
+              roomManager: _roomManager,
+              loggingService: _loggingService,
+              pipeline: pipeline,
+            );
+        _syncEngine = SyncEngine(
+          sessionManager: _sessionManager,
+          roomManager: _roomManager,
+          lifecycleCoordinator: coordinator,
+          loggingService: _loggingService,
+        );
+      }
     }
 
     incomingKeyVerificationRunnerController =
@@ -229,9 +219,8 @@ class MatrixService {
         ConnectivityResult.mobile,
         ConnectivityResult.ethernet,
       }.intersection(result.toSet()).isNotEmpty) {
-        _timelineListener.enqueueTimelineRefresh();
-        // Also nudge the V2 pipeline to run a catch-up + live scan when
-        // connectivity resumes, improving recovery for offline-created bursts.
+        // Nudge the pipeline to run a catch-up + live scan when connectivity
+        // resumes, improving recovery for offline-created bursts.
         // Kick a catch-up + scan; handle async errors inside the task.
         unawaited(() async {
           try {
@@ -278,7 +267,6 @@ class MatrixService {
 
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;
-  late final MatrixTimelineListener _timelineListener;
   late final SyncEngine _syncEngine;
   MatrixStreamConsumer? _v2Pipeline;
 
@@ -301,13 +289,6 @@ class MatrixService {
 
   String? get syncRoomId => _roomManager.currentRoomId;
   Room? get syncRoom => _roomManager.currentRoom;
-  Timeline? get timeline => _timelineListener.timeline;
-
-  String? get lastReadEventContextId =>
-      _timelineListener.lastReadEventContextId;
-  set lastReadEventContextId(String? value) =>
-      _timelineListener.lastReadEventContextId = value;
-
   Stream<SyncRoomInvite> get inviteRequests => _roomManager.inviteRequests;
 
   final Map<String, int> messageCounts = {};
@@ -462,10 +443,6 @@ class MatrixService {
 
   bool isLoggedIn() => _sessionManager.isLoggedIn();
 
-  Future<void> listenToTimeline() async {
-    await _timelineListener.start();
-  }
-
   Future<String> createRoom({List<String>? invite}) =>
       _roomManager.createRoom(inviteUserIds: invite);
 
@@ -580,9 +557,7 @@ class MatrixService {
     await _connectivitySubscription?.cancel();
     await _syncEngine.dispose();
 
-    // Dispose in reverse construction order: timeline listeners
-    // depend on the session, which in turn composes the room manager.
-    await _timelineListener.dispose();
+    // Dispose in reverse construction order: pipeline/session depend on the room manager.
     await _sessionManager.dispose();
     await _roomManager.dispose();
     if (_ownsActivityGate) {

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
-import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
@@ -16,8 +15,6 @@ class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
-
-class MockTimelineListener extends Mock implements MatrixTimelineListener {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -37,7 +34,6 @@ void main() {
     late MockMatrixSyncGateway gateway;
     late MockMatrixSessionManager sessionManager;
     late MockSyncRoomManager roomManager;
-    late MockTimelineListener timelineListener;
     late MockLoggingService logging;
     late MockPipeline pipeline;
     late StreamController<LoginState> loginStates;
@@ -46,7 +42,6 @@ void main() {
       return SyncLifecycleCoordinator(
         gateway: gateway,
         sessionManager: sessionManager,
-        timelineListener: timelineListener,
         roomManager: roomManager,
         loggingService: logging,
         pipeline: pipeline,
@@ -57,7 +52,6 @@ void main() {
       gateway = MockMatrixSyncGateway();
       sessionManager = MockMatrixSessionManager();
       roomManager = MockSyncRoomManager();
-      timelineListener = MockTimelineListener();
       logging = MockLoggingService();
       pipeline = MockPipeline();
       loginStates = StreamController<LoginState>.broadcast(sync: true);

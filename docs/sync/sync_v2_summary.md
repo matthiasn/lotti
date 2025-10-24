@@ -131,8 +131,7 @@ Live recovery
 - `MATRIX_SYNC_V2 doubleScan.attachment immediate` and `doubleScan.attachment delayed` (attachments)
 
 ## Flags / Config
-- `enable_sync_v2` (on for V2; off falls back to legacy listener for stability)
-- `enable_logging` (turns on typed V2 metrics and detailed logs)
+- `enable_logging` (turns on typed pipeline metrics and detailed logs)
 - Flags UI: Settings → Flags. Read at startup (restart after toggles).
 
 ## Validation Checklist
@@ -200,7 +199,6 @@ Remote read marker (prod only)
   - `liveScan processed=…`, `noAdvance.rescan`, `doubleScan.*`
   - `marker.local` / `marker.flush` and `setReadMarker`
   - Apply logs: `rows=… status=…`
-- If needed, temporarily disable `enable_sync_v2` to run the legacy listener while diagnosing.
 
 ## Known Issues (field logs)
 

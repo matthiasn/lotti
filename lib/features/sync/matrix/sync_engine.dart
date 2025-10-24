@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -10,26 +9,24 @@ typedef SyncEngineHook = Future<void> Function();
 
 /// High-level orchestrator for the sync subsystem.
 ///
-/// The engine composes the session manager, room manager, and timeline
-/// listener, delegating lifecycle transitions to [SyncLifecycleCoordinator].
+/// The engine composes the session manager, room manager, and pipeline
+/// lifecycle coordinator, delegating lifecycle transitions to
+/// [SyncLifecycleCoordinator].
 /// Callers can supply hooks that run whenever the sync pipeline transitions
 /// between logged-in and logged-out states.
 class SyncEngine {
   SyncEngine({
     required MatrixSessionManager sessionManager,
     required SyncRoomManager roomManager,
-    required MatrixTimelineListener timelineListener,
     required SyncLifecycleCoordinator lifecycleCoordinator,
     required LoggingService loggingService,
   })  : _sessionManager = sessionManager,
         _roomManager = roomManager,
-        _timelineListener = timelineListener,
         _lifecycleCoordinator = lifecycleCoordinator,
         _loggingService = loggingService;
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
-  final MatrixTimelineListener _timelineListener;
   final SyncLifecycleCoordinator _lifecycleCoordinator;
   final LoggingService _loggingService;
 
@@ -38,7 +35,6 @@ class SyncEngine {
 
   MatrixSessionManager get sessionManager => _sessionManager;
   SyncRoomManager get roomManager => _roomManager;
-  MatrixTimelineListener get timelineListener => _timelineListener;
   SyncLifecycleCoordinator get lifecycleCoordinator => _lifecycleCoordinator;
 
   /// Initializes the engine and primes the lifecycle coordinator.
@@ -139,7 +135,7 @@ class SyncEngine {
         'syncRoom.id': _roomManager.currentRoom?.id,
         'joinedRooms': joinedRooms,
         'isLoggedIn': _sessionManager.isLoggedIn(),
-        'timelineActive': _lifecycleCoordinator.isActive,
+        'pipelineActive': _lifecycleCoordinator.isActive,
         'loginState': loginState,
       };
     } catch (error, stackTrace) {
@@ -152,7 +148,7 @@ class SyncEngine {
       info = <String, dynamic>{
         'error': error.toString(),
         'isLoggedIn': _sessionManager.isLoggedIn(),
-        'timelineActive': _lifecycleCoordinator.isActive,
+        'pipelineActive': _lifecycleCoordinator.isActive,
       };
     }
 
