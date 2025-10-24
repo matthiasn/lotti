@@ -54,13 +54,15 @@ class _AudioWaveformCachePayload {
     required this.audioDurationMs,
     required this.bucketDurationMicros,
     required this.amplitudes,
-    required this.sampleCount,
+    required this.actualSampleCount,
+    required this.requestedBucketCount,
   });
 
   factory _AudioWaveformCachePayload.fromJson(Map<String, dynamic> json) {
     final amplitudes = (json['amplitudes'] as List<dynamic>)
         .map((dynamic value) => (value as num).toDouble())
         .toList(growable: false);
+    final sampleCount = json['sampleCount'] as int;
     return _AudioWaveformCachePayload(
       version: json['version'] as int,
       audioFileRelativePath: json['audioFileRelativePath'] as String,
@@ -72,7 +74,9 @@ class _AudioWaveformCachePayload {
       audioDurationMs: json['audioDurationMs'] as int,
       bucketDurationMicros: json['bucketDurationMicros'] as int,
       amplitudes: amplitudes,
-      sampleCount: json['sampleCount'] as int,
+      actualSampleCount: sampleCount,
+      requestedBucketCount:
+          (json['requestedBucketCount'] as int?) ?? sampleCount,
     );
   }
 
@@ -83,7 +87,8 @@ class _AudioWaveformCachePayload {
   final int audioDurationMs;
   final int bucketDurationMicros;
   final List<double> amplitudes;
-  final int sampleCount;
+  final int actualSampleCount;
+  final int requestedBucketCount;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'version': version,
@@ -93,8 +98,19 @@ class _AudioWaveformCachePayload {
         'audioDurationMs': audioDurationMs,
         'bucketDurationMicros': bucketDurationMicros,
         'amplitudes': amplitudes,
-        'sampleCount': sampleCount,
+        'sampleCount': actualSampleCount,
+        'requestedBucketCount': requestedBucketCount,
       };
+}
+
+class _DatedCacheFile {
+  const _DatedCacheFile({
+    required this.file,
+    required this.modified,
+  });
+
+  final File file;
+  final DateTime modified;
 }
 
 typedef AudioWaveformExtractor = Future<Waveform> Function({
@@ -200,7 +216,7 @@ class AudioWaveformService {
       final cached = await _readCache(cacheKey);
       if (cached != null &&
           cached.version == _waveformCacheVersion &&
-          cached.sampleCount == bucketTarget &&
+          cached.requestedBucketCount == bucketTarget &&
           cached.audioFileRelativePath ==
               AudioUtils.getRelativeAudioPath(audio) &&
           cached.audioFileSizeBytes == stat.size &&
@@ -256,7 +272,8 @@ class AudioWaveformService {
         audioDurationMs: waveform.duration.inMilliseconds,
         bucketDurationMicros: bucketDuration.inMicroseconds,
         amplitudes: normalized,
-        sampleCount: normalized.length,
+        actualSampleCount: normalized.length,
+        requestedBucketCount: bucketTarget,
       );
       await _writeCache(cacheKey, payload);
       return data;
@@ -327,7 +344,7 @@ class AudioWaveformService {
     try {
       cacheFile.parent.createSync(recursive: true);
       cacheFile.writeAsStringSync(jsonEncode(payload.toJson()));
-      _pruneCacheIfNeeded();
+      await _pruneCacheIfNeeded();
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
@@ -404,30 +421,44 @@ class AudioWaveformService {
     );
   }
 
-  void _pruneCacheIfNeeded() {
+  Future<void> _pruneCacheIfNeeded() async {
     try {
       if (!_cacheDirectory.existsSync()) {
         return;
       }
 
-      final files = _cacheDirectory
-          .listSync(recursive: true, followLinks: false)
-          .whereType<File>()
-          .toList();
+      final stream = _cacheDirectory.list(recursive: true, followLinks: false);
+      final files = <File>[];
+      await for (final entity in stream) {
+        if (entity is File) {
+          files.add(entity);
+        }
+      }
 
       if (files.length <= _maxCacheEntries) {
         return;
       }
 
-      final datedFiles = files
-          .map((file) => MapEntry(file, file.lastModifiedSync()))
-          .toList()
-        ..sort((a, b) => a.value.compareTo(b.value));
+      final datedFiles = <_DatedCacheFile>[];
+      for (final file in files) {
+        // Keeping this async avoids blocking the UI isolate during large prunes.
+        // ignore: avoid_slow_async_io
+        final modified = await file.lastModified();
+        datedFiles.add(
+          _DatedCacheFile(
+            file: file,
+            modified: modified,
+          ),
+        );
+      }
+      datedFiles.sort(
+        (a, b) => a.modified.compareTo(b.modified),
+      );
 
       final toRemove = datedFiles.length - _maxCacheEntries;
       for (var i = 0; i < toRemove; i++) {
         try {
-          datedFiles[i].key.deleteSync();
+          await datedFiles[i].file.delete();
         } catch (_) {
           // Ignore cleanup failures.
         }
