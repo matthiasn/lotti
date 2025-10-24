@@ -2,7 +2,6 @@ const privateFlag = 'private';
 const enableNotificationsFlag = 'enable_notifications';
 const recordLocationFlag = 'record_location';
 const enableMatrixFlag = 'enable_matrix';
-const enableSyncV2Flag = 'enable_sync_v2';
 const enableTooltipFlag = 'enable_tooltip';
 const resendAttachments = 'resend_attachments';
 const enableLoggingFlag = 'enable_logging';

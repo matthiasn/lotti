@@ -1,10 +1,8 @@
-// ignore_for_file: unnecessary_lambdas
-
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
-import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -16,16 +14,13 @@ class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
-class MockMatrixTimelineListener extends Mock
-    implements MatrixTimelineListener {}
+class MockSyncPipeline extends Mock implements SyncPipeline {}
 
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
 class MockClient extends Mock implements Client {}
-
-class MockTimeline extends Mock implements Timeline {}
 
 class _FakeClient extends Fake implements Client {}
 
@@ -36,7 +31,7 @@ void main() {
 
   late MockMatrixSyncGateway gateway;
   late MockMatrixSessionManager sessionManager;
-  late MockMatrixTimelineListener timelineListener;
+  late MockSyncPipeline pipeline;
   late MockSyncRoomManager roomManager;
   late MockLoggingService loggingService;
   late MockClient client;
@@ -45,7 +40,7 @@ void main() {
   setUp(() {
     gateway = MockMatrixSyncGateway();
     sessionManager = MockMatrixSessionManager();
-    timelineListener = MockMatrixTimelineListener();
+    pipeline = MockSyncPipeline();
     roomManager = MockSyncRoomManager();
     loggingService = MockLoggingService();
     client = MockClient();
@@ -55,8 +50,9 @@ void main() {
         .thenAnswer((_) => loginStateController.stream);
     when(() => sessionManager.client).thenReturn(client);
     when(() => sessionManager.isLoggedIn()).thenReturn(false);
-    when(() => timelineListener.initialize()).thenAnswer((_) async {});
-    when(() => timelineListener.start()).thenAnswer((_) async {});
+    when(() => pipeline.initialize()).thenAnswer((_) async {});
+    when(() => pipeline.start()).thenAnswer((_) async {});
+    when(() => pipeline.dispose()).thenAnswer((_) async {});
     when(() => roomManager.initialize()).thenAnswer((_) async {});
     when(
       () => roomManager.hydrateRoomSnapshot(
@@ -84,10 +80,8 @@ void main() {
     await loginStateController.close();
   });
 
-  test('initialize primes timeline and handles already logged-in devices',
+  test('initialize primes pipeline and handles already logged-in devices',
       () async {
-    final timeline = MockTimeline();
-    when(() => timelineListener.timeline).thenReturn(timeline);
     when(() => client.isLogged()).thenReturn(true);
     when(() => sessionManager.isLoggedIn()).thenReturn(true);
 
@@ -95,9 +89,9 @@ void main() {
     final coordinator = SyncLifecycleCoordinator(
       gateway: gateway,
       sessionManager: sessionManager,
-      timelineListener: timelineListener,
       roomManager: roomManager,
       loggingService: loggingService,
+      pipeline: pipeline,
       onLogin: () async {
         onLoginInvoked += 1;
       },
@@ -105,19 +99,17 @@ void main() {
 
     await coordinator.initialize();
 
-    verify(() => timelineListener.initialize()).called(1);
+    verify(() => pipeline.initialize()).called(1);
     verify(() => roomManager.initialize()).called(1);
     verify(
       () => roomManager.hydrateRoomSnapshot(client: client),
     ).called(1);
-    verify(() => timelineListener.start()).called(1);
+    verify(() => pipeline.start()).called(1);
     expect(onLoginInvoked, 1);
     expect(coordinator.isActive, isTrue);
   });
 
   test('login state transitions trigger lifecycle hooks once', () async {
-    final timeline = MockTimeline();
-    when(() => timelineListener.timeline).thenReturn(timeline);
     when(() => client.isLogged()).thenReturn(false);
 
     var onLoginInvoked = 0;
@@ -126,9 +118,9 @@ void main() {
     final coordinator = SyncLifecycleCoordinator(
       gateway: gateway,
       sessionManager: sessionManager,
-      timelineListener: timelineListener,
       roomManager: roomManager,
       loggingService: loggingService,
+      pipeline: pipeline,
       onLogin: () async {
         onLoginInvoked += 1;
       },
@@ -151,32 +143,29 @@ void main() {
     expect(onLoginInvoked, 1);
     expect(coordinator.isActive, isTrue);
 
-    final timelineInstance = MockTimeline();
-    when(() => timelineListener.timeline).thenReturn(timelineInstance);
     when(() => sessionManager.isLoggedIn()).thenReturn(false);
     when(() => client.isLogged()).thenReturn(false);
+    when(() => pipeline.dispose()).thenAnswer((_) async {});
 
     loginStateController.add(LoginState.loggedOut);
     await Future<void>.delayed(Duration.zero);
 
     expect(onLogoutInvoked, 1);
-    verify(() => timelineInstance.cancelSubscriptions()).called(1);
+    verify(() => pipeline.dispose()).called(1);
     expect(coordinator.isActive, isFalse);
   });
 
   test(
       'reconcileLifecycleState honours imperative session changes when no events fire',
       () async {
-    final timeline = MockTimeline();
-    when(() => timelineListener.timeline).thenReturn(timeline);
     when(() => client.isLogged()).thenReturn(false);
 
     final coordinator = SyncLifecycleCoordinator(
       gateway: gateway,
       sessionManager: sessionManager,
-      timelineListener: timelineListener,
       roomManager: roomManager,
       loggingService: loggingService,
+      pipeline: pipeline,
     );
 
     await coordinator.initialize();
@@ -186,7 +175,7 @@ void main() {
 
     await coordinator.reconcileLifecycleState();
 
-    verify(() => timelineListener.start()).called(1);
+    verify(() => pipeline.start()).called(1);
     expect(coordinator.isActive, isTrue);
 
     when(() => client.isLogged()).thenReturn(false);
@@ -194,7 +183,7 @@ void main() {
 
     await coordinator.reconcileLifecycleState();
 
-    verify(() => timeline.cancelSubscriptions()).called(1);
+    verify(() => pipeline.dispose()).called(1);
     expect(coordinator.isActive, isFalse);
   });
 
@@ -207,23 +196,20 @@ void main() {
     final coordinator = SyncLifecycleCoordinator(
       gateway: gateway,
       sessionManager: sessionManager,
-      timelineListener: timelineListener,
       roomManager: roomManager,
       loggingService: loggingService,
+      pipeline: pipeline,
     );
 
     await coordinator.initialize();
 
-    when(() => timelineListener.start()).thenAnswer((_) async {});
+    when(() => pipeline.start()).thenAnswer((_) async {});
     await coordinator.reconcileLifecycleState();
 
     expect(coordinator.isActive, isTrue);
 
-    final timeline = MockTimeline();
-    when(() => timelineListener.timeline).thenReturn(timeline);
-
     final firstDeactivationCompleter = Completer<void>();
-    when(() => timeline.cancelSubscriptions()).thenAnswer((_) async {
+    when(() => pipeline.dispose()).thenAnswer((_) async {
       firstDeactivationCompleter.complete();
     });
 
@@ -235,6 +221,6 @@ void main() {
     await pendingLogout;
     await firstDeactivationCompleter.future;
 
-    verify(() => timeline.cancelSubscriptions()).called(1);
+    verify(() => pipeline.dispose()).called(1);
   });
 }

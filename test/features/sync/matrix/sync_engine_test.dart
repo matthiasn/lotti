@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/matrix_timeline_listener.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
@@ -12,8 +11,6 @@ import 'package:mocktail/mocktail.dart';
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
-
-class MockTimelineListener extends Mock implements MatrixTimelineListener {}
 
 class MockSyncLifecycleCoordinator extends Mock
     implements SyncLifecycleCoordinator {}
@@ -33,7 +30,6 @@ void main() {
 
   late MockMatrixSessionManager sessionManager;
   late MockSyncRoomManager roomManager;
-  late MockTimelineListener timelineListener;
   late MockSyncLifecycleCoordinator lifecycleCoordinator;
   late MockLoggingService loggingService;
   late SyncEngine engine;
@@ -41,14 +37,12 @@ void main() {
   setUp(() {
     sessionManager = MockMatrixSessionManager();
     roomManager = MockSyncRoomManager();
-    timelineListener = MockTimelineListener();
     lifecycleCoordinator = MockSyncLifecycleCoordinator();
     loggingService = MockLoggingService();
 
     engine = SyncEngine(
       sessionManager: sessionManager,
       roomManager: roomManager,
-      timelineListener: timelineListener,
       lifecycleCoordinator: lifecycleCoordinator,
       loggingService: loggingService,
     );
@@ -161,7 +155,7 @@ void main() {
 
     expect(diagnostics['deviceId'], 'device');
     expect(diagnostics['savedRoomId'], '!saved:server');
-    expect(diagnostics['timelineActive'], isTrue);
+    expect(diagnostics['pipelineActive'], isTrue);
     verify(
       () => loggingService.captureEvent(
         any<String>(),

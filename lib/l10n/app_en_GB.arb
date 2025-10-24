@@ -259,8 +259,6 @@
   "settingsMatrixRoomConfigTitle": "Matrix Sync Room Setup",
   "settingsMatrixStartVerificationLabel": "Start Verification",
   "settingsMatrixStatsTitle": "Matrix Stats",
-  "configFlagEnableSyncV2": "Enable Matrix Sync V2",
-  "configFlagEnableSyncV2Description": "Enable Matrix sync pipeline V2 (requires app restart)",
   "settingsMatrixSentMessagesLabel": "Sent messages:",
   "settingsMatrixMessageType": "Message Type",
   "settingsMatrixCount": "Count",

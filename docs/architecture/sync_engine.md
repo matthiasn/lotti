@@ -13,7 +13,6 @@ current architecture after the milestone 8 dependency-injection refactor.
 - `SyncEngine`
   - `MatrixSessionManager`
   - `SyncRoomManager`
-  - `MatrixTimelineListener`
   - `SyncLifecycleCoordinator`
   - `LoggingService`
 - `MatrixService`
@@ -23,15 +22,7 @@ current architecture after the milestone 8 dependency-injection refactor.
   - `SyncEventProcessor`
   - `SyncReadMarkerService`
   - `SyncEngine` (owns lifecycle)
-- `MatrixTimelineListener`
-  - `MatrixSessionManager`
-  - `SyncRoomManager`
-  - `UserActivityGate`
-  - `JournalDb`
-  - `SettingsDb`
-  - `SyncReadMarkerService`
-  - `SyncEventProcessor`
-  - `Directory documentsDirectory`
+  - `MatrixStreamConsumer` (stream-first pipeline)
 
 All sync-facing widgets, controllers, and repositories obtain their
 collaborators via the following Riverpod providers:
@@ -53,31 +44,30 @@ direct `getIt` usage within the sync module.
    hooks and reconciles the initial lifecycle state.
 2. `SyncLifecycleCoordinator` transitions between logged-in/out states by:
    - instructing `MatrixSessionManager` to connect/disconnect
-   - starting/stopping `MatrixTimelineListener`
    - hydrating/persisting the active sync room through `SyncRoomManager`
+   - initializing/starting/disposing the streaming pipeline (`SyncPipeline`)
 3. `MatrixService.startKeyVerificationListener()` delegates to
    `listenForKeyVerificationRequests`, surfacing verification runners on the new
    provider-backed UI.
 4. `MatrixService.dispose()` tears down message controllers before delegating to
    `SyncEngine.dispose()` and the injected collaborators.
 
-## Timeline Flow
+## Pipeline Flow
 
 ```
-Matrix client -> MatrixTimelineListener.enqueueTimelineRefresh()
-  -> ClientRunner queue (FIFO, one task at a time)
-     -> UserActivityGate.waitUntilIdle()
-        -> processNewTimelineEvents()
+MatrixStreamConsumer.forceRescan() / live stream
+  -> catch-up (SDK pagination/backfill) until marker present
+     -> micro-batch events (oldest→newest, dedupe)
+        -> attachment prefetch (when required)
            -> SyncEventProcessor.process()
            -> SyncReadMarkerService.updateReadMarker()
-           -> saveAttachment()
 ```
 
-The new `ClientRunner` queue plus `UserActivityGate` ensures that timeline work
-never runs concurrently and pauses when the user is actively interacting with
-the app. The FIFO queue is covered by `client_runner_test.dart`, and the
-activity gate behaviour is validated in
-`matrix_timeline_listener_test.enqueueTimelineRefresh waits for activity gate...`.
+The pipeline is cooperative: catch-up runs once at attach time, live streaming
+processes new events as they arrive, and retries/circuit breakers ensure
+transient failures do not starve fresh work. Metrics and diagnostics are
+exposed via `MatrixStreamConsumer.metricsSnapshot()` and surfaced in the Matrix
+Stats UI.
 
 ## Provider Injection
 

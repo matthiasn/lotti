@@ -175,7 +175,6 @@ Future<void> registerSingletons() async {
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
 
-  final enableSyncV2 = await journalDb.getConfigFlag(enableSyncV2Flag);
   final collectV2Metrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
   final matrixService = MatrixService(
@@ -189,7 +188,6 @@ Future<void> registerSingletons() async {
     eventProcessor: syncEventProcessor,
     secureStorage: secureStorage,
     documentsDirectory: documentsDirectory,
-    enableSyncV2: enableSyncV2,
     collectV2Metrics: collectV2Metrics,
     attachmentIndex: attachmentIndex,
   );
