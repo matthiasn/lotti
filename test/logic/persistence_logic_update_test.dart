@@ -54,6 +54,8 @@ class TestPersistenceLogic extends PersistenceLogic {
     DateTime? dateTo,
     String? categoryId,
     bool clearCategoryId = false,
+    List<String>? labelIds,
+    bool clearLabelIds = false,
     DateTime? deletedAt,
   }) async {
     updateMetadataCalls++;
@@ -63,6 +65,8 @@ class TestPersistenceLogic extends PersistenceLogic {
       dateTo: dateTo,
       categoryId: categoryId,
       clearCategoryId: clearCategoryId,
+      labelIds: labelIds,
+      clearLabelIds: clearLabelIds,
       deletedAt: deletedAt,
     );
   }

@@ -96,6 +96,8 @@ class PersistenceLogic {
     String? categoryId,
     bool clearCategoryId = false,
     DateTime? deletedAt,
+    List<String>? labelIds,
+    bool clearLabelIds = false,
   }) async =>
       metadata.copyWith(
         updatedAt: DateTime.now(),
@@ -106,6 +108,7 @@ class PersistenceLogic {
         dateTo: dateTo ?? metadata.dateTo,
         categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,
         deletedAt: deletedAt ?? metadata.deletedAt,
+        labelIds: clearLabelIds ? null : labelIds ?? metadata.labelIds,
       );
 
   Future<QuantitativeEntry?> createQuantitativeEntry(

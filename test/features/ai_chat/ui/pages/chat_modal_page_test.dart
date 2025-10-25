@@ -66,6 +66,7 @@ void main() {
         taskStatuses: <String>[],
         selectedTaskStatuses: <String>{},
         selectedCategoryIds: <String?>{}, // No categories selected
+        selectedLabelIds: <String>{},
       );
 
       when(() => mockJournalPageCubit.stream)
@@ -118,6 +119,7 @@ void main() {
           'cat1',
           'cat2'
         }, // Multiple categories selected
+        selectedLabelIds: <String>{},
       );
 
       when(() => mockJournalPageCubit.stream)
@@ -165,6 +167,7 @@ void main() {
         selectedCategoryIds: <String?>{
           'single-category-id'
         }, // Single category selected
+        selectedLabelIds: <String>{},
       );
 
       when(() => mockJournalPageCubit.stream)
@@ -223,6 +226,7 @@ void main() {
         taskStatuses: <String>[],
         selectedTaskStatuses: <String>{},
         selectedCategoryIds: <String?>{categoryId},
+        selectedLabelIds: <String>{},
       );
 
       when(() => mockJournalPageCubit.stream)
@@ -280,6 +284,7 @@ void main() {
         taskStatuses: <String>[],
         selectedTaskStatuses: <String>{},
         selectedCategoryIds: <String?>{'single-category-id'},
+        selectedLabelIds: <String>{},
       );
 
       when(() => mockJournalPageCubit.stream)
@@ -342,6 +347,7 @@ void main() {
         taskStatuses: <String>[],
         selectedTaskStatuses: <String>{},
         selectedCategoryIds: <String?>{}, // No categories
+        selectedLabelIds: <String>{},
       );
 
       when(() => mockJournalPageCubit.stream)
@@ -387,6 +393,7 @@ void main() {
         taskStatuses: <String>[],
         selectedTaskStatuses: <String>{},
         selectedCategoryIds: <String?>{'test-category'}, // Single category
+        selectedLabelIds: <String>{},
       );
 
       when(() => mockJournalPageCubit.stream)
@@ -447,6 +454,7 @@ void main() {
         taskStatuses: <String>[],
         selectedTaskStatuses: <String>{},
         selectedCategoryIds: <String?>{'cat'},
+        selectedLabelIds: <String>{},
       );
 
       when(() => mockJournalPageCubit.stream)

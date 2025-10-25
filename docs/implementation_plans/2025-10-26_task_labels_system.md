@@ -84,7 +84,7 @@
    CREATE INDEX idx_labeled_label_id ON labeled (label_id);
    ```
 
-   **Why required**: Task filtering by labels needs indexed queries. Without this table, you'd have to load all tasks into memory and deserialize metadata—completely impractical. `LabelDefinition` lives in `EntityDefinition`, so no dedicated Drift table is needed for definitions themselves—sync already persists entity definitions uniformly.
+  **Why required**: Task filtering by labels needs indexed queries. Without this table, you'd have to load all tasks into memory and deserialize metadata—completely impractical. `LabelDefinition` still lives in `EntityDefinition`, but we now mirror definitions into a dedicated `label_definitions` Drift table for parity with categories/habits and faster lookup/indexing; sync continues to persist entity definitions uniformly.
 
 ### Reconciliation Strategy
 
@@ -212,40 +212,40 @@ Future<void> addLabeled(JournalEntity journalEntity) async {
 - Unit tests: CRUD flows, validation, sync serialization
 - Update `lib/features/labels/README.md` describing settings workflow
 
-### Phase 3 – Task Assignment UX
-
-- Update task detail/header widget to display current labels and allow quick assignment
-- Implement label selection modal (`LabelSelectionModalContent`):
+-### Phase 3 – Task Assignment UX
+-
+- ✅ Update task detail/header widget to display current labels and allow quick assignment (`TaskLabelsWrapper` in `lib/features/tasks/ui/labels`)
+- ✅ Implement label selection modal (`TaskLabelsSheet`) with:
   - Multi-select support (checkboxes or chips)
   - Search/filter functionality
   - Adaptive layout (desktop/mobile)
   - Show label descriptions on hover/long-press
-- Label chips widget (`LabelChip`):
+- ✅ Label chips widget (`LabelChip`) reused for tasks
   - Display color + name
   - Semantics support for screen readers
   - Responsive sizing (shrink on mobile)
   - Tooltip showing description
-- Update `metadata.labelIds` via `LabelsRepository.addLabels/removeLabels`
-- Persistence layer auto-triggers reconciliation on save
-- Widget tests: assignment interactions, chip rendering, overflow handling, accessibility
-- Display label chips on task list cards (responsive layout, max 2-3 visible with "+N" overflow)
+- ✅ Update `metadata.labelIds` via `LabelsRepository.setLabels` (add/remove helpers covered)
+- ✅ Persistence layer auto-triggers reconciliation on save through `JournalDb.addLabeled`
+- ⬜️ Widget tests: assignment interactions, chip rendering, overflow handling, accessibility (tracked for upcoming Phase 5 polish)
+- ✅ Display label chips on task list cards (responsive layout, wrap with accessibility-friendly text color)
 
 ### Phase 4 – Filtering & Search
 
-- Extend `JournalPageState` to include label filter:
+- ✅ Extend `JournalPageState` to include label filter:
   - Add `Set<String> selectedLabelIds` (mirrors `selectedCategoryIds` pattern)
   - Persist filter state per tab (coordinate with existing persistence)
-- Update `TasksFilter` model to include `selectedLabelIds` for serialization
-- Update database queries to honor label filters:
+- ✅ Update `TasksFilter` model to include `selectedLabelIds` for serialization
+- ✅ Update database queries to honor label filters:
   - Query via `labeled` table joins (efficient, indexed lookups)
   - Example: `SELECT * FROM journal WHERE id IN (SELECT journal_id FROM labeled WHERE label_id IN :label_ids)`
   - Add tests to verify N+1 regression prevention
-- UI: Label filter section in Tasks filter drawer
+- ✅ UI: Label filter section in Tasks filter drawer
   - Multi-select chips (similar to category filter at `lib/features/tasks/ui/filtering/task_category_filter.dart`)
   - "All" / "Unassigned" / individual labels
   - Show active filters count
   - Implicit OR logic: selecting multiple labels shows tasks with ANY of the selected labels (no explicit mode selector in v1)
-- Optional quick filter in list header (chips representing active filters)
+- ⬜️ Optional quick filter in list header (chips representing active filters)
 - No new analytics events (per decisions section)
 
 ### Phase 5 – Polish, Testing & Documentation

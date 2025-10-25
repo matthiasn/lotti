@@ -46,7 +46,7 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration {
@@ -112,10 +112,22 @@ class JournalDb extends _$JournalDb {
 
         if (from < 26) {
           await () async {
-            debugPrint('Creating labeled table and indices');
+            debugPrint('Creating label_definitions and labeled tables');
+            await m.createTable(labelDefinitions);
+            await m.createIndex(idxLabelDefinitionsId);
+            await m.createIndex(idxLabelDefinitionsName);
+            await m.createIndex(idxLabelDefinitionsPrivate);
+
             await m.createTable(labeled);
             await m.createIndex(idxLabeledJournalId);
             await m.createIndex(idxLabeledLabelId);
+          }();
+        }
+
+        if (from < 27) {
+          await () async {
+            debugPrint('Ensuring label tables exist for legacy v26 installs');
+            await _ensureLabelTables(m);
           }();
         }
       },
@@ -393,6 +405,7 @@ class JournalDb extends _$JournalDb {
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
     required List<String> categoryIds,
+    List<String>? labelIds,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
@@ -401,6 +414,7 @@ class JournalDb extends _$JournalDb {
       starredStatuses: starredStatuses,
       taskStatuses: taskStatuses,
       categoryIds: categoryIds,
+      labelIds: labelIds,
       ids: ids,
       limit: limit,
       offset: offset,
@@ -413,18 +427,33 @@ class JournalDb extends _$JournalDb {
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
     required List<String> categoryIds,
+    List<String>? labelIds,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
   }) {
     final types = <String>['Task'];
+    final selectedLabelIds = labelIds ?? <String>[];
+    final includeUnlabeled = selectedLabelIds.contains('');
+    final filteredLabelIds =
+        selectedLabelIds.where((id) => id.isNotEmpty).toList();
+    final labelFilterCount = filteredLabelIds.length;
+    final effectiveLabelIds =
+        labelFilterCount == 0 ? <String>['__no_label__'] : filteredLabelIds;
+    final filterByLabels = includeUnlabeled || labelFilterCount > 0;
+    final dbTaskStatuses = taskStatuses.cast<String?>();
+
     if (ids != null) {
       return filteredTasks2(
         types,
         ids,
         starredStatuses,
-        taskStatuses,
+        dbTaskStatuses,
         categoryIds,
+        filterByLabels,
+        labelFilterCount,
+        effectiveLabelIds,
+        includeUnlabeled,
         limit,
         offset,
       );
@@ -432,8 +461,12 @@ class JournalDb extends _$JournalDb {
       return filteredTasks(
         types,
         starredStatuses,
-        taskStatuses,
+        dbTaskStatuses,
         categoryIds,
+        filterByLabels,
+        labelFilterCount,
+        effectiveLabelIds,
+        includeUnlabeled,
         limit,
         offset,
       );
@@ -975,5 +1008,33 @@ class JournalDb extends _$JournalDb {
   ) async {
     return into(labelDefinitions)
         .insertOnConflictUpdate(labelDefinitionDbEntity(labelDefinition));
+  }
+
+  Future<void> _ensureLabelTables(Migrator migrator) async {
+    final hasLabelDefinitions = await _tableExists('label_definitions');
+    if (!hasLabelDefinitions) {
+      await migrator.createTable(labelDefinitions);
+      await migrator.createIndex(idxLabelDefinitionsId);
+      await migrator.createIndex(idxLabelDefinitionsName);
+      await migrator.createIndex(idxLabelDefinitionsPrivate);
+    }
+
+    final hasLabeledTable = await _tableExists('labeled');
+    if (!hasLabeledTable) {
+      await migrator.createTable(labeled);
+      await migrator.createIndex(idxLabeledJournalId);
+      await migrator.createIndex(idxLabeledLabelId);
+    }
+  }
+
+  Future<bool> _tableExists(String tableName) async {
+    final result = await customSelect(
+      'SELECT name FROM sqlite_master WHERE type = ? AND name = ?',
+      variables: [
+        Variable.withString('table'),
+        Variable.withString(tableName),
+      ],
+    ).get();
+    return result.isNotEmpty;
   }
 }

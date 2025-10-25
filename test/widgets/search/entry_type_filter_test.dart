@@ -40,6 +40,7 @@ void main() {
         taskStatuses: const [],
         selectedTaskStatuses: const {},
         selectedCategoryIds: const {},
+        selectedLabelIds: const {},
       ),
     );
 
@@ -57,6 +58,7 @@ void main() {
           taskStatuses: const [],
           selectedTaskStatuses: const {},
           selectedCategoryIds: const {},
+          selectedLabelIds: const {},
         ),
       ]),
     );

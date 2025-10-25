@@ -49,6 +49,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
               'IN PROGRESS',
             },
             selectedCategoryIds: {},
+            selectedLabelIds: {},
           ),
         ) {
     // Check if we need to set default category selection for tasks
@@ -113,6 +114,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         taskStatuses: state.taskStatuses,
         selectedTaskStatuses: state.selectedTaskStatuses,
         selectedCategoryIds: _selectedCategoryIds,
+        selectedLabelIds: _selectedLabelIds,
       ),
     );
 
@@ -127,6 +129,18 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
     // Load persisted filters with migration from legacy key
     _loadPersistedFilters();
+    getIt<SettingsDb>().itemByKey(taskFiltersKey).then((value) {
+      if (value == null) {
+        return;
+      }
+      final json = jsonDecode(value) as Map<String, dynamic>;
+      final tasksFilter = TasksFilter.fromJson(json);
+      _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
+      _selectedCategoryIds = tasksFilter.selectedCategoryIds;
+      _selectedLabelIds = tasksFilter.selectedLabelIds;
+      emitState();
+      refreshQuery();
+    });
 
     getIt<SettingsDb>().itemByKey(selectedEntryTypesKey).then((value) {
       if (value == null) {
@@ -251,6 +265,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool _showPrivateEntries = false;
   bool showTasks = false;
   Set<String> _selectedCategoryIds = {};
+  Set<String> _selectedLabelIds = {};
 
   Set<String> _fullTextMatches = {};
   Set<String> _lastIds = {};
@@ -279,6 +294,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         taskStatuses: state.taskStatuses,
         selectedTaskStatuses: _selectedTaskStatuses,
         selectedCategoryIds: _selectedCategoryIds,
+        selectedLabelIds: _selectedLabelIds,
       ),
     );
   }
@@ -313,6 +329,24 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     _selectedCategoryIds = {};
     emitState();
     await persistTasksFilter();
+  }
+
+  void toggleSelectedLabelId(String labelId) {
+    if (_selectedLabelIds.contains(labelId)) {
+      _selectedLabelIds = _selectedLabelIds.difference({labelId});
+    } else {
+      _selectedLabelIds = _selectedLabelIds.union({labelId});
+    }
+    persistTasksFilter();
+    refreshQuery();
+    emitState();
+  }
+
+  void clearSelectedLabelIds() {
+    _selectedLabelIds = {};
+    persistTasksFilter();
+    refreshQuery();
+    emitState();
   }
 
   void toggleSelectedEntryTypes(String entryType) {
@@ -400,6 +434,17 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       TasksFilter(
         selectedCategoryIds: _selectedCategoryIds,
         selectedTaskStatuses: showTasks ? _selectedTaskStatuses : {},
+      ),
+    );
+
+    await getIt<SettingsDb>().saveSettingsItem(
+      taskFiltersKey,
+      jsonEncode(
+        TasksFilter(
+          selectedCategoryIds: _selectedCategoryIds,
+          selectedTaskStatuses: _selectedTaskStatuses,
+          selectedLabelIds: _selectedLabelIds,
+        ),
       ),
     );
 
@@ -519,11 +564,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         categoryIds = _selectedCategoryIds;
       }
 
+      final labelIds = _selectedLabelIds;
+
       final res = await _db.getTasks(
         ids: ids,
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         taskStatuses: _selectedTaskStatuses.toList(),
         categoryIds: categoryIds.toList(),
+        labelIds: labelIds.toList(),
         limit: _pageSize,
         offset: pageKey,
       );
