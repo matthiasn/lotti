@@ -9,6 +9,10 @@ import 'package:lotti/get_it.dart';
 final showPrivateEntriesProvider = StreamProvider<bool>(
     (ref) => getIt<JournalDb>().watchConfigFlag('private'));
 
+final labelUsageStatsProvider = StreamProvider<Map<String, int>>(
+  (ref) => getIt<JournalDb>().watchLabelUsageCounts(),
+);
+
 List<LabelDefinition> _visibleLabels(
   List<LabelDefinition> labels,
   bool showPrivate,

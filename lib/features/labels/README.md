@@ -36,7 +36,12 @@ denormalized lookup table for efficient filtering.
   - Name + optional description fields (with trimming/validation).
   - `flex_color_picker` hybrid color picker (WCAG-friendly presets + HSV wheel).
   - Private toggle description to clarify scope.
-- `LabelChip`: Reusable chip with dynamic text color based on label color brightness.
+- `LabelChip`: Reusable chip with dynamic text color based on label color brightness plus tooltip
+  support so descriptions surface on hover/long-press contexts.
+- `TaskLabelsSheet` + `TaskLabelsWrapper`: Provide multi-select assignment with search, inline
+  “create label” CTA, and a long-press description dialog for mobile discoverability.
+- `TaskLabelQuickFilter`: Mirrors the filter drawer selections in the task list header so users can
+  quickly audit/clear active label filters.
 
 ## Color Picker Configuration
 
@@ -50,14 +55,16 @@ This balances accessibility (encouraged presets) with flexibility.
 
 ## Testing
 
-Unit tests cover controller state transitions, validation paths, duplicate detection, and stream
-updates. Widget-level coverage currently focuses on the chip component (`label_chip_test.dart`); the
-editor/list widgets will receive fuller widget/integration coverage alongside Phase 3 task
-assignment flows.
+Unit tests cover controller state transitions, validation paths, duplicate detection, stream updates
+and repository edge cases. Widget-level coverage now exercises the editor sheet, settings list,
+assignment sheet/wrapper, filter chips, and accessibility semantics. Integration + performance
+tests validate the reconciliation workflow and filtering performance across 1k+ tasks.
 
 Run the label-related tests with:
 
 ```
 dart test test/features/labels/state
 dart test test/features/labels/ui
+dart test test/features/labels/integration
+dart test test/database/labels_performance_test.dart
 ```

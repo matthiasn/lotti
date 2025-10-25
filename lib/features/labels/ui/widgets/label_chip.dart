@@ -22,38 +22,52 @@ class LabelChip extends StatelessWidget {
     );
     final borderColor = color.withValues(alpha: 0.35);
     final textColor = isDarkTheme ? Colors.white : Colors.black;
+    final description = label.description?.trim();
+    final tooltipMessage = (description != null && description.isNotEmpty)
+        ? description
+        : label.name;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.statusIndicatorPaddingHorizontal,
-        vertical: AppTheme.statusIndicatorPaddingVertical,
-      ),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(
-          AppTheme.statusIndicatorBorderRadiusSmall,
+    final chip = Semantics(
+      label: 'Label ${label.name}',
+      tooltip: description,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.statusIndicatorPaddingHorizontal,
+          vertical: AppTheme.statusIndicatorPaddingVertical,
         ),
-        border: Border.all(
-          color: borderColor,
-          width: AppTheme.statusIndicatorBorderWidth,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _LabelDot(color: color),
-          const SizedBox(width: 6),
-          Text(
-            label.name,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontSize: AppTheme.statusIndicatorFontSize,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
-              color: textColor,
-            ),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(
+            AppTheme.statusIndicatorBorderRadiusSmall,
           ),
-        ],
+          border: Border.all(
+            color: borderColor,
+            width: AppTheme.statusIndicatorBorderWidth,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _LabelDot(color: color),
+            const SizedBox(width: 6),
+            Text(
+              label.name,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: AppTheme.statusIndicatorFontSize,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+
+    return Tooltip(
+      message: tooltipMessage,
+      waitDuration: const Duration(milliseconds: 400),
+      child: chip,
     );
   }
 }

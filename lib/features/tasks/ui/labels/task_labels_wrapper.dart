@@ -44,47 +44,57 @@ class TaskLabelsWrapper extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Labels',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const Spacer(),
-              IconButton(
-                tooltip: 'Edit labels',
-                onPressed: () => _openSelector(context, ref, assignedIds),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          if (assignedLabels.isEmpty)
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final headerStyle = theme.textTheme.titleSmall?.copyWith(
+      color: colorScheme.outline,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Text(
-              'No labels',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.color
-                        ?.withValues(alpha: 0.6),
-                  ),
-            )
-          else
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: assignedLabels
-                  .map((label) => LabelChip(label: label))
-                  .toList(),
+              'Labels',
+              style: headerStyle,
             ),
-        ],
-      ),
+            IconButton(
+              tooltip: 'Edit labels',
+              onPressed: () => _openSelector(context, ref, assignedIds),
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 18,
+                color: colorScheme.outline,
+              ),
+            ),
+          ],
+        ),
+        if (assignedLabels.isEmpty)
+          Text(
+            'No labels',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+            ),
+          )
+        else
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: assignedLabels
+                .map(
+                  (label) => GestureDetector(
+                    onLongPress: _hasDescription(label)
+                        ? () => _showLabelDescription(context, label)
+                        : null,
+                    behavior: HitTestBehavior.opaque,
+                    child: LabelChip(label: label),
+                  ),
+                )
+                .toList(),
+          ),
+      ],
     );
   }
 
@@ -103,5 +113,32 @@ class TaskLabelsWrapper extends ConsumerWidget {
     );
     // Result handled inside sheet; we only show a snackbar if labels updated
     // No-op: sheet handles messaging when persistence fails.
+  }
+
+  bool _hasDescription(LabelDefinition label) =>
+      label.description?.trim().isNotEmpty ?? false;
+
+  Future<void> _showLabelDescription(
+    BuildContext context,
+    LabelDefinition label,
+  ) async {
+    final description = label.description?.trim();
+    if (description == null || description.isEmpty) {
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(label.name),
+        content: Text(description),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }

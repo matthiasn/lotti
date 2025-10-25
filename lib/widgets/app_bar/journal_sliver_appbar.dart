@@ -5,6 +5,7 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/ai_chat_icon.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -48,6 +49,7 @@ class JournalSliverAppBar extends StatelessWidget {
                     const JournalFilterIcon(),
                 ],
               ),
+              if (showTasks) const TaskLabelQuickFilter(),
             ],
           ),
         );
