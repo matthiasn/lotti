@@ -40,23 +40,25 @@ Solution: Make a simpler, more compact header and use it in the Matrix sync page
 
 ## Phase 1 — Build New Header
 
-Create `CompactSliverHeader` widget with:
-- Smaller font size: 18px base (was 25px)
-- Responsive height: 80px on phones, 100px on tablets/desktop (was fixed 120px)
+Create `SettingsPageHeader` widget with:
+- Reasonable font size: responsive 28-34px on phones, up to 46px on desktop (was fixed 25px)
+- Dynamic height that adapts to content and text scaling
 - Support for existing back button without collision
 - Handle text overflow with ellipsis for long titles
-- Keep the existing `bottom` property for PreferredSizeWidget support (needed for Sync Outbox segmented controls)
+- Support for optional subtitle text
+- Use the `bottom` property to pin segmented controls in the header (for Sync Outbox, Conflicts pages)
+- Keep some visual polish: subtle gradient, rounded bottom corners, soft shadow
 
-## Phase 2 — Replace Headers in Matrix Pages
+## Phase 2 — Update Pages & Pin Segmented Controls
 
 Update these specific pages from the screenshots:
-- Matrix Sync Settings page
-- Matrix Sync Maintenance page (with the wrapping title issue)
-- Sync Outbox page (with segmented controls)
-- Sync Conflicts page
-- Matrix Stats page
+- Matrix Sync Settings page - use new header with subtitle
+- Matrix Sync Maintenance page - fix the wrapping title issue
+- Sync Outbox page - move segmented controls to header `bottom` property so they stay pinned
+- Sync Conflicts page - move segmented controls to header `bottom` property
+- Matrix Stats page - basic header update
 
-Just swap `SliverTitleBar` with `CompactSliverHeader` in each.
+For pages with segmented controls, extract them from the page body and pass as `bottom` widget to keep filters visible while scrolling.
 
 ## Phase 3 — Test & Ship
 
