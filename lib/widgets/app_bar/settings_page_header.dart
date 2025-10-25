@@ -38,32 +38,41 @@ class SettingsPageHeader extends StatelessWidget {
     final collapsedTitleSize = math.max(20, baseTitleSize - (wide ? 4 : 3));
     final subtitleFontSize = settingsHeaderSubtitleTextStyle.fontSize ?? 16.0;
     final titleLineHeight = settingsHeaderTitleTextStyle.height ?? 1.05;
-    final subtitleLineHeight = settingsHeaderSubtitleTextStyle.height ?? 1.4;
+    final subtitleLineHeight = settingsHeaderSubtitleTextStyle.height ?? 1.3;
     final topSpacing = wide
-        ? 24.0
+        ? 18.0
         : compact
-            ? 16.0
-            : 20.0;
-    final bottomSpacing = showSubtitle ? 24.0 : 18.0;
-    final gapBetween = showSubtitle ? 6.0 : 0.0;
+            ? 12.0
+            : 16.0;
+    final bottomSpacing = showSubtitle ? 16.0 : 12.0;
+    final gapBetween = showSubtitle ? 4.0 : 0.0;
+    final footerSpacing = showSubtitle ? 10.0 : 8.0;
 
     final titleBlockHeight = baseTitleSize * titleLineHeight * textScale;
     final subtitleBlockHeight =
         showSubtitle ? subtitleFontSize * subtitleLineHeight * textScale : 0;
+    final accessibilityAllowance = textScale <= 1
+        ? 0.0
+        : (textScale - 1).clamp(0.0, 1.5) * (showSubtitle ? 64.0 : 48.0);
 
     final expandedBodyHeight = topSpacing +
         titleBlockHeight +
         gapBetween +
         subtitleBlockHeight +
-        bottomSpacing;
+        bottomSpacing +
+        footerSpacing +
+        accessibilityAllowance;
 
-    final collapsedBodyHeight = math.max(
-      expandedBodyHeight * 1.02,
-      titleBlockHeight + subtitleBlockHeight + topSpacing + bottomSpacing,
-    );
+    final collapsedBodyHeight = titleBlockHeight * 0.85 +
+        subtitleBlockHeight * 0.6 +
+        topSpacing * 0.5 +
+        bottomSpacing +
+        footerSpacing +
+        accessibilityAllowance * 0.8;
 
     final expandedHeight = topInset + expandedBodyHeight;
-    final collapsedHeight = topInset + collapsedBodyHeight;
+    final collapsedHeight =
+        topInset + math.max(showSubtitle ? 68.0 : 56.0, collapsedBodyHeight);
 
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -85,31 +94,33 @@ class SettingsPageHeader extends StatelessWidget {
             collapsedHeight,
             currentHeight,
           );
+          final easedProgress = Curves.easeOutCubic.transform(progress);
 
-          final horizontalPadding = _horizontalPadding(width);
+          final horizontalPadding =
+              (_horizontalPadding(width) - 8).clamp(16.0, double.infinity);
           final titleSize = lerpDouble(
                 baseTitleSize,
                 collapsedTitleSize,
-                progress,
+                easedProgress,
               ) ??
               baseTitleSize;
           final topPadding = lerpDouble(
                 topSpacing,
                 topSpacing * 0.6,
-                progress,
+                easedProgress,
               ) ??
               topSpacing;
           final bottomPadding = lerpDouble(
                 bottomSpacing,
                 math.max(10.0, bottomSpacing - 4),
-                progress,
+                easedProgress,
               ) ??
               bottomSpacing;
 
           final borderColor = Color.lerp(
                 colorScheme.primary.withValues(alpha: 0.18),
                 colorScheme.outlineVariant.withValues(alpha: 0.24),
-                progress,
+                easedProgress,
               ) ??
               colorScheme.outlineVariant;
 
@@ -129,7 +140,7 @@ class SettingsPageHeader extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: colorScheme.shadow
-                      .withValues(alpha: 0.16 * (1 - progress)),
+                      .withValues(alpha: 0.16 * (1 - easedProgress)),
                   blurRadius: 28,
                   offset: const Offset(0, 16),
                 ),
@@ -152,17 +163,11 @@ class SettingsPageHeader extends StatelessWidget {
                       alignment: AlignmentDirectional.bottomStart,
                       child: Row(
                         children: [
-                          if (showBackButton) ...[
-                            const SizedBox(
-                              width: 56,
-                              height: 48,
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: BackWidget(),
-                              ),
+                          if (showBackButton)
+                            const Padding(
+                              padding: EdgeInsetsDirectional.only(end: 4),
+                              child: BackWidget(),
                             ),
-                            const SizedBox(width: 12),
-                          ],
                           Expanded(
                             child: _HeaderText(
                               title: title,
@@ -183,7 +188,7 @@ class SettingsPageHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(height: showSubtitle ? 18 : 14),
+                SizedBox(height: footerSpacing),
               ],
             ),
           );

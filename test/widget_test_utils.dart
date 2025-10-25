@@ -4,9 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
-Widget makeTestableWidget(Widget child) {
+const phoneMediaQueryData = MediaQueryData(
+  size: Size(390, 844),
+  padding: EdgeInsets.only(top: 47, bottom: 34),
+);
+
+Widget makeTestableWidget(
+  Widget child, {
+  MediaQueryData? mediaQueryData,
+}) {
+  final mq = mediaQueryData ?? phoneMediaQueryData;
+
   return MediaQuery(
-    data: const MediaQueryData(),
+    data: mq,
     child: MaterialApp(
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -21,9 +31,14 @@ Widget makeTestableWidget(Widget child) {
   );
 }
 
-Widget makeTestableWidget2(Widget child) {
+Widget makeTestableWidget2(
+  Widget child, {
+  MediaQueryData? mediaQueryData,
+}) {
+  final mq = mediaQueryData ?? phoneMediaQueryData;
+
   return MediaQuery(
-    data: const MediaQueryData(),
+    data: mq,
     child: MaterialApp(
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -42,11 +57,14 @@ Widget makeTestableWidgetWithScaffold(
   Widget child, {
   List<Override> overrides = const [],
   ThemeData? theme,
+  MediaQueryData? mediaQueryData,
 }) {
+  final mq = mediaQueryData ?? phoneMediaQueryData;
+
   return ProviderScope(
     overrides: overrides,
     child: MediaQuery(
-      data: const MediaQueryData(),
+      data: mq,
       child: MaterialApp(
         theme: theme,
         localizationsDelegates: const [
@@ -73,9 +91,14 @@ Widget makeTestableWidgetWithScaffold(
   );
 }
 
-Widget makeTestableWidgetNoScroll(Widget child) {
+Widget makeTestableWidgetNoScroll(
+  Widget child, {
+  MediaQueryData? mediaQueryData,
+}) {
+  final mq = mediaQueryData ?? phoneMediaQueryData;
+
   return MediaQuery(
-    data: const MediaQueryData(),
+    data: mq,
     child: MaterialApp(
       localizationsDelegates: const [
         AppLocalizations.delegate,

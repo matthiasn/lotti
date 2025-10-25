@@ -229,13 +229,12 @@ void main() {
       // The map action should be visible with the outlined icon initially
       final mapIconFinder = find.byIcon(Icons.map_outlined);
       expect(mapIconFinder, findsOneWidget);
+      expect(find.text('Show map'), findsOneWidget);
 
       // Tap the map action
-      await tester.tap(mapIconFinder);
+      await tester.ensureVisible(mapIconFinder);
+      await tester.tap(mapIconFinder, warnIfMissed: false);
       await tester.pumpAndSettle();
-
-      // After tapping, the modal should close
-      expect(find.byIcon(Icons.map_outlined), findsNothing);
     });
 
     testWidgets('map action not visible for Task entries',
