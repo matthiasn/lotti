@@ -105,6 +105,7 @@ void main() {
           starredStatuses: any(named: 'starredStatuses'),
           taskStatuses: any(named: 'taskStatuses'),
           categoryIds: any(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
           limit: any(named: 'limit'),
           offset: any(named: 'offset'),
         ),
@@ -264,6 +265,7 @@ void main() {
         () => mockJournalDb.getTasks(
           starredStatuses: [true, false],
           categoryIds: [''], // When no categories exist, default to unassigned
+          labelIds: const <String>[],
           limit: 50,
           taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         ),
@@ -663,6 +665,7 @@ void main() {
         () => mockJournalDb.getTasks(
           starredStatuses: [true, false],
           categoryIds: ['cat1'],
+          labelIds: const <String>[],
           limit: 50,
           taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         ),
@@ -718,6 +721,7 @@ void main() {
         () => mockJournalDb.getTasks(
           starredStatuses: [true, false],
           categoryIds: testCategories.map((c) => c.id).toList(),
+          labelIds: const <String>[],
           limit: 50,
           taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         ),

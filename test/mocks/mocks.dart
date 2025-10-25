@@ -103,6 +103,7 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
       starredStatuses: any(named: 'starredStatuses'),
       taskStatuses: any(named: 'taskStatuses'),
       categoryIds: any(named: 'categoryIds'),
+      labelIds: any(named: 'labelIds'),
       limit: any(named: 'limit'),
       offset: any(named: 'offset'),
     ),

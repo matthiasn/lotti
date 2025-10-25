@@ -98,6 +98,7 @@ void main() {
             starredStatuses: any(named: 'starredStatuses'),
             taskStatuses: any(named: 'taskStatuses'),
             categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           )).thenAnswer((_) async => []);
@@ -308,6 +309,7 @@ void main() {
         taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN'},
         selectedCategoryIds: {'cat1', 'cat2'},
+        selectedLabelIds: const {},
       ),
       act: (cubit) => cubit.selectedAllCategories(),
       wait: defaultWait,
@@ -358,6 +360,21 @@ void main() {
         when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
         return JournalPageCubit(showTasks: false);
       },
+
+      seed: () => JournalPageState(
+        match: '',
+        tagIds: <String>{},
+        filters: {},
+        showPrivateEntries: false,
+        selectedEntryTypes: ['Task'],
+        fullTextMatches: {},
+        showTasks: false,
+        pagingController: null,
+        taskStatuses: const [],
+        selectedTaskStatuses: {},
+        selectedCategoryIds: {},
+        selectedLabelIds: const {},
+      ),
       act: (cubit) => cubit.selectAllEntryTypes(),
       wait: defaultWait,
       skip: 1, // Skip initial sanitization emission

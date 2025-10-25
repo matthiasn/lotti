@@ -47,5 +47,4 @@ class LabelsListController extends Notifier<AsyncValue<List<LabelDefinition>>> {
       state = AsyncValue.error(error, stackTrace);
     }
   }
-
 }

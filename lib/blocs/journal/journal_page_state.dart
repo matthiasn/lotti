@@ -25,14 +25,16 @@ abstract class JournalPageState with _$JournalPageState {
     required List<String> taskStatuses,
     required Set<String> selectedTaskStatuses,
     required Set<String?> selectedCategoryIds,
+    required Set<String> selectedLabelIds,
   }) = _JournalPageState;
 }
 
 @freezed
 abstract class TasksFilter with _$TasksFilter {
   factory TasksFilter({
-    required Set<String> selectedCategoryIds,
-    required Set<String> selectedTaskStatuses,
+    @Default(<String>{}) Set<String> selectedCategoryIds,
+    @Default(<String>{}) Set<String> selectedTaskStatuses,
+    @Default(<String>{}) Set<String> selectedLabelIds,
   }) = _TasksFilter;
 
   factory TasksFilter.fromJson(Map<String, dynamic> json) =>

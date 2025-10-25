@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
@@ -38,7 +42,7 @@ class ModernTaskCard extends StatelessWidget {
             size: CategoryIconConstants.iconSizeLarge,
           ),
         ),
-        subtitleWidget: _buildSubtitleRow(context),
+        subtitleWidget: _buildSubtitleWidget(context),
         trailing: TimeRecordingIcon(
           taskId: task.meta.id,
           padding: const EdgeInsets.only(left: 8),
@@ -47,10 +51,9 @@ class ModernTaskCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitleRow(BuildContext context) {
+  Widget _buildSubtitleWidget(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-
-    return Row(
+    final statusRow = Row(
       children: [
         ModernStatusChip(
           label: _getStatusLabel(context, task.data.status),
@@ -78,6 +81,46 @@ class ModernTaskCard extends StatelessWidget {
         const Spacer(),
         CompactTaskProgress(taskId: task.id),
       ],
+    );
+
+    final labels = _buildLabelsWrap(context);
+
+    if (labels == null) {
+      return statusRow;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        statusRow,
+        const SizedBox(height: 6),
+        labels,
+      ],
+    );
+  }
+
+  Widget? _buildLabelsWrap(BuildContext context) {
+    final labelIds = task.meta.labelIds;
+    if (labelIds == null || labelIds.isEmpty) {
+      return null;
+    }
+
+    final cache = getIt<EntitiesCacheService>();
+    final labels =
+        labelIds.map(cache.getLabelById).whereType<LabelDefinition>().toList();
+
+    if (labels.isEmpty) {
+      return null;
+    }
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: labels
+          .map(
+            (label) => LabelChip(label: label),
+          )
+          .toList(),
     );
   }
 

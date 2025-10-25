@@ -180,6 +180,49 @@ class LabelsRepository {
       return false;
     }
   }
+
+  Future<bool?> setLabels({
+    required String journalEntityId,
+    required List<String> labelIds,
+  }) async {
+    try {
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+      if (journalEntity == null) {
+        return false;
+      }
+
+      final sorted = [...labelIds]..sort(
+          (a, b) => (_entitiesCacheService.getLabelById(a)?.name ?? '')
+              .toLowerCase()
+              .compareTo(
+                (_entitiesCacheService.getLabelById(b)?.name ?? '')
+                    .toLowerCase(),
+              ),
+        );
+
+      final updatedMetadata = await _persistenceLogic.updateMetadata(
+        journalEntity.meta,
+        labelIds: sorted,
+        clearLabelIds: sorted.isEmpty,
+      );
+
+      return _persistenceLogic.updateDbEntity(
+        journalEntity.copyWith(
+          meta: updatedMetadata.copyWith(
+            labelIds: sorted.isEmpty ? null : sorted,
+          ),
+        ),
+      );
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'labels_repository',
+        subDomain: 'setLabels',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
 }
 
 Metadata addLabelsToMeta(

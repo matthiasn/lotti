@@ -57,6 +57,7 @@ void main() {
         taskStatuses: <String>[],
         selectedTaskStatuses: <String>{},
         selectedCategoryIds: <String?>{},
+        selectedLabelIds: <String>{},
       );
 
       when(() => mockJournalPageCubit.stream)

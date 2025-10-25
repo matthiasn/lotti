@@ -252,6 +252,7 @@ void main() {
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
           categoryIds: [''],
+          labelIds: const [],
         ))
             .length,
         1,
@@ -262,6 +263,7 @@ void main() {
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
           categoryIds: [''],
+          labelIds: const [],
           ids: [task.meta.id],
         ))
             .length,
@@ -273,6 +275,7 @@ void main() {
           starredStatuses: [true, false],
           taskStatuses: ['DONE'],
           categoryIds: [],
+          labelIds: const [],
         ))
             .length,
         0,
@@ -283,6 +286,7 @@ void main() {
           starredStatuses: [true, false],
           taskStatuses: ['DONE'],
           categoryIds: [],
+          labelIds: const [],
         ))
             .length,
         0,
