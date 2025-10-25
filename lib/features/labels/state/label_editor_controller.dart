@@ -18,9 +18,12 @@ class LabelEditorState {
     this.errorMessage,
   });
 
-  factory LabelEditorState.initial({LabelDefinition? label}) {
+  factory LabelEditorState.initial({
+    LabelDefinition? label,
+    String? initialName,
+  }) {
     return LabelEditorState(
-      name: label?.name ?? '',
+      name: label?.name ?? initialName ?? '',
       colorHex: (label?.color ?? labelColorPresets.first.hex).toUpperCase(),
       isPrivate: label?.private ?? false,
       description: label?.description,
@@ -58,23 +61,37 @@ class LabelEditorState {
   }
 }
 
+class LabelEditorArgs {
+  const LabelEditorArgs({this.label, this.initialName});
+
+  final LabelDefinition? label;
+  final String? initialName;
+}
+
 final labelEditorControllerProvider = AutoDisposeNotifierProviderFamily<
-    LabelEditorController, LabelEditorState, LabelDefinition?>(
+    LabelEditorController, LabelEditorState, LabelEditorArgs>(
   LabelEditorController.new,
 );
 
 class LabelEditorController
-    extends AutoDisposeFamilyNotifier<LabelEditorState, LabelDefinition?> {
+    extends AutoDisposeFamilyNotifier<LabelEditorState, LabelEditorArgs> {
   static const int _nameMinLength = 1;
 
   late final LabelsRepository _repository;
   LabelDefinition? _initialLabel;
+  String? _initialName;
 
   @override
-  LabelEditorState build(LabelDefinition? label) {
+  LabelEditorState build(LabelEditorArgs args) {
     _repository = ref.watch(labelsRepositoryProvider);
-    _initialLabel = label;
-    return LabelEditorState.initial(label: _initialLabel);
+    _initialLabel = args.label;
+    _initialName = args.initialName?.trim().isEmpty ?? true
+        ? null
+        : args.initialName!.trim();
+    return LabelEditorState.initial(
+      label: _initialLabel,
+      initialName: _initialName,
+    );
   }
 
   Color get selectedColor =>
@@ -136,8 +153,9 @@ class LabelEditorController
     final effectivePrivate = isPrivate ?? state.isPrivate;
 
     if (_initialLabel == null) {
-      return effectiveName.isNotEmpty ||
-          (effectiveDescription != null && effectiveDescription.isNotEmpty) ||
+      final baselineName = _initialName ?? '';
+      return effectiveName != baselineName ||
+          (effectiveDescription ?? '').isNotEmpty ||
           effectiveColor != labelColorPresets.first.hex.toUpperCase() ||
           effectivePrivate;
     }
@@ -184,6 +202,7 @@ class LabelEditorController
           private: state.isPrivate,
         );
         _initialLabel = result;
+        _initialName = result.name;
         state = state.copyWith(isSaving: false, hasChanges: false);
         return result;
       } else {

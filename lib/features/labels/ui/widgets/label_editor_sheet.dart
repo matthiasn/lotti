@@ -4,17 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 
 class LabelEditorSheet extends ConsumerStatefulWidget {
   const LabelEditorSheet({
     this.label,
     this.onSaved,
+    this.initialName,
     super.key,
   });
 
   final LabelDefinition? label;
   final void Function(LabelDefinition label)? onSaved;
+  final String? initialName;
 
   @override
   ConsumerState<LabelEditorSheet> createState() => _LabelEditorSheetState();
@@ -27,7 +31,8 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.label?.name ?? '');
+    _nameController = TextEditingController(
+        text: widget.label?.name ?? widget.initialName ?? '');
     _descriptionController =
         TextEditingController(text: widget.label?.description ?? '');
   }
@@ -41,9 +46,16 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(labelEditorControllerProvider(widget.label));
+    final theme = Theme.of(context);
+    final isDarkTheme = theme.brightness == Brightness.dark;
+    final args = LabelEditorArgs(
+      label: widget.label,
+      initialName: widget.initialName,
+    );
+    final controllerProvider = labelEditorControllerProvider(args);
+    final state = ref.watch(controllerProvider);
     ref.listen(
-      labelEditorControllerProvider(widget.label),
+      controllerProvider,
       (previous, next) {
         if (previous?.name != next.name && next.name != _nameController.text) {
           _nameController.text = next.name;
@@ -55,8 +67,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
       },
     );
 
-    final controller =
-        ref.read(labelEditorControllerProvider(widget.label).notifier);
+    final controller = ref.read(controllerProvider.notifier);
 
     final saveEnabled = !state.isSaving && state.name.trim().isNotEmpty;
 
@@ -111,26 +122,27 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
             const SizedBox(height: 24),
             Text(
               'Color',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                color: theme.colorScheme.surfaceContainerHighest,
               ),
               padding: const EdgeInsets.all(12),
               child: ColorPicker(
                 color: colorFromCssHex(
                   state.colorHex,
-                  substitute: Theme.of(context).colorScheme.primary,
+                  substitute: theme.colorScheme.primary,
                 ),
                 onColorChanged: controller.setColor,
+                selectedPickerTypeColor: context.colorScheme.primary,
                 pickersEnabled: const <ColorPickerType, bool>{
                   ColorPickerType.custom: true,
                   ColorPickerType.wheel: true,
                   ColorPickerType.accent: false,
-                  ColorPickerType.primary: false,
+                  ColorPickerType.primary: true,
                   ColorPickerType.bw: false,
                   ColorPickerType.both: false,
                 },
@@ -147,7 +159,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                   ColorPickerType.custom: 'Quick presets',
                   ColorPickerType.wheel: 'Custom color',
                 },
-                colorNameTextStyle: Theme.of(context).textTheme.bodySmall,
+                colorNameTextStyle: theme.textTheme.bodySmall,
               ),
             ),
             const SizedBox(height: 24),
@@ -156,8 +168,8 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
               onChanged: (value) =>
                   controller.setPrivate(isPrivateValue: value),
               title: const Text('Private label'),
-              subtitle: const Text(
-                'Private labels are only visible to you and will not sync to shared devices.',
+              subtitle: Text(
+                context.messages.settingsLabelsPrivateDescription,
               ),
             ),
             if (state.errorMessage != null) ...[

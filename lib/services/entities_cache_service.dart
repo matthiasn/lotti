@@ -49,6 +49,10 @@ class EntitiesCacheService {
         labelsById[label.id] = label;
       }
     });
+
+    getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
+      _showPrivateEntries = showPrivate;
+    });
   }
 
   Map<String, MeasurableDataType> dataTypesById = {};
@@ -56,6 +60,9 @@ class EntitiesCacheService {
   Map<String, HabitDefinition> habitsById = {};
   Map<String, DashboardDefinition> dashboardsById = {};
   Map<String, LabelDefinition> labelsById = {};
+  bool _showPrivateEntries = false;
+
+  bool get showPrivateEntries => _showPrivateEntries;
 
   List<CategoryDefinition> get sortedCategories {
     final res = categoriesById.values.where((e) => e.active).toList()
@@ -89,6 +96,7 @@ class EntitiesCacheService {
   List<LabelDefinition> get sortedLabels {
     final res = labelsById.values
         .where((label) => label.deletedAt == null)
+        .where((label) => _showPrivateEntries || !(label.private ?? false))
         .toList()
       ..sortBy((label) => label.name.toLowerCase());
     return res;

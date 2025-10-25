@@ -563,15 +563,13 @@ SELECT * FROM category_definitions
 
 allLabelDefinitions:
 SELECT * FROM label_definitions
-  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  AND deleted = false
+  WHERE deleted = false
   ORDER BY name COLLATE NOCASE;
 
 labelDefinitionById:
 SELECT * FROM label_definitions
   WHERE deleted = false
-  AND id = :id
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+  AND id = :id;
 
 matchingTagEntities:
 SELECT * FROM tag_entities

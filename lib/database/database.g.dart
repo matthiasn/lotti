@@ -6104,23 +6104,21 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<LabelDefinitionDbEntity> allLabelDefinitions() {
     return customSelect(
-        'SELECT * FROM label_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
+        'SELECT * FROM label_definitions WHERE deleted = FALSE ORDER BY name COLLATE NOCASE',
         variables: [],
         readsFrom: {
           labelDefinitions,
-          configFlags,
         }).asyncMap(labelDefinitions.mapFromRow);
   }
 
   Selectable<LabelDefinitionDbEntity> labelDefinitionById(String id) {
     return customSelect(
-        'SELECT * FROM label_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
+        'SELECT * FROM label_definitions WHERE deleted = FALSE AND id = ?1',
         variables: [
           Variable<String>(id)
         ],
         readsFrom: {
           labelDefinitions,
-          configFlags,
         }).asyncMap(labelDefinitions.mapFromRow);
   }
 
