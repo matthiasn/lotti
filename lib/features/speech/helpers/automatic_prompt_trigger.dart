@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -75,7 +76,24 @@ class AutomaticPromptTrigger {
         if (shouldTriggerTranscription && hasAutomaticTranscription) {
           final transcriptionPromptIds =
               category.automaticPrompts![AiResponseType.audioTranscription]!;
-          final promptId = transcriptionPromptIds.first;
+
+          // Get the first available prompt for the current platform
+          final capabilityFilter = ref.read(promptCapabilityFilterProvider);
+          final availablePrompt =
+              await capabilityFilter.getFirstAvailablePrompt(
+            transcriptionPromptIds,
+          );
+
+          if (availablePrompt == null) {
+            loggingService.captureEvent(
+              'No available audio transcription prompts for current platform',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            );
+            return;
+          }
+
+          final promptId = availablePrompt.id;
 
           loggingService.captureEvent(
             'Triggering audio transcription (user preference: ${state.enableSpeechRecognition})',
@@ -107,40 +125,57 @@ class AutomaticPromptTrigger {
             hasAutomaticChecklistUpdates) {
           final checklistUpdatesPromptIds =
               category.automaticPrompts![AiResponseType.checklistUpdates]!;
-          final promptId = checklistUpdatesPromptIds.first;
 
-          loggingService.captureEvent(
-            'Triggering checklist updates for task $linkedTaskId (transcription pending: ${transcriptionFuture != null})',
-            domain: 'automatic_prompt_trigger',
-            subDomain: 'triggerAutomaticPrompts',
+          // Get the first available prompt for the current platform
+          final capabilityFilter = ref.read(promptCapabilityFilterProvider);
+          final availablePrompt =
+              await capabilityFilter.getFirstAvailablePrompt(
+            checklistUpdatesPromptIds,
           );
 
-          // If transcription was triggered, wait for it to complete
-          if (transcriptionFuture != null) {
+          if (availablePrompt == null) {
             loggingService.captureEvent(
-              'Waiting for transcription to complete before checklist updates',
+              'No available checklist update prompts for current platform',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             );
-            await transcriptionFuture;
+            // Continue with other prompts
+          } else {
+            final promptId = availablePrompt.id;
+
             loggingService.captureEvent(
-              'Transcription completed, now triggering checklist updates',
+              'Triggering checklist updates for task $linkedTaskId (transcription pending: ${transcriptionFuture != null})',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             );
-          }
 
-          // Trigger checklist updates on the task entity
-          checklistUpdatesFuture = ref.read(
-            triggerNewInferenceProvider(
-              entityId: linkedTaskId,
-              promptId: promptId,
-            ).future,
-          );
+            // If transcription was triggered, wait for it to complete
+            if (transcriptionFuture != null) {
+              loggingService.captureEvent(
+                'Waiting for transcription to complete before checklist updates',
+                domain: 'automatic_prompt_trigger',
+                subDomain: 'triggerAutomaticPrompts',
+              );
+              await transcriptionFuture;
+              loggingService.captureEvent(
+                'Transcription completed, now triggering checklist updates',
+                domain: 'automatic_prompt_trigger',
+                subDomain: 'triggerAutomaticPrompts',
+              );
+            }
 
-          // If task summary is not needed, await checklist updates
-          if (!shouldTriggerTaskSummary) {
-            await checklistUpdatesFuture;
+            // Trigger checklist updates on the task entity
+            checklistUpdatesFuture = ref.read(
+              triggerNewInferenceProvider(
+                entityId: linkedTaskId,
+                promptId: promptId,
+              ).future,
+            );
+
+            // If task summary is not needed, await checklist updates
+            if (!shouldTriggerTaskSummary) {
+              await checklistUpdatesFuture;
+            }
           }
         }
 
@@ -150,7 +185,24 @@ class AutomaticPromptTrigger {
             hasAutomaticTaskSummary) {
           final taskSummaryPromptIds =
               category.automaticPrompts![AiResponseType.taskSummary]!;
-          final promptId = taskSummaryPromptIds.first;
+
+          // Get the first available prompt for the current platform
+          final capabilityFilter = ref.read(promptCapabilityFilterProvider);
+          final availablePrompt =
+              await capabilityFilter.getFirstAvailablePrompt(
+            taskSummaryPromptIds,
+          );
+
+          if (availablePrompt == null) {
+            loggingService.captureEvent(
+              'No available task summary prompts for current platform',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            );
+            return;
+          }
+
+          final promptId = availablePrompt.id;
 
           loggingService.captureEvent(
             'Triggering task summary for task $linkedTaskId (user preference: ${state.enableTaskSummary}, transcription pending: ${transcriptionFuture != null}, checklist updates pending: ${checklistUpdatesFuture != null})',

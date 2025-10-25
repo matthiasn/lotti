@@ -14,6 +14,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -54,6 +55,9 @@ class MockJournalDb extends Mock implements JournalDb {}
 class MockRef extends Mock implements Ref {}
 
 class MockCategoryRepository extends Mock implements CategoryRepository {}
+
+class MockPromptCapabilityFilter extends Mock
+    implements PromptCapabilityFilter {}
 
 class MockDirectory extends Mock implements Directory {}
 
@@ -105,6 +109,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockDirectory mockDirectory;
   late MockCategoryRepository mockCategoryRepo;
+  late MockPromptCapabilityFilter mockPromptCapabilityFilter;
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigPrompt());
@@ -134,6 +139,7 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockDirectory = MockDirectory();
     mockCategoryRepo = MockCategoryRepository();
+    mockPromptCapabilityFilter = MockPromptCapabilityFilter();
 
     // Set up GetIt
     if (getIt.isRegistered<JournalDb>()) {
@@ -166,6 +172,15 @@ void main() {
         .thenReturn(mockChecklistRepo);
     when(() => mockRef.read(categoryRepositoryProvider))
         .thenReturn(mockCategoryRepo);
+    when(() => mockRef.read(promptCapabilityFilterProvider))
+        .thenReturn(mockPromptCapabilityFilter);
+
+    // Set up default behavior for prompt capability filter to pass through all prompts
+    when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
+        .thenAnswer((invocation) async {
+      final prompts = invocation.positionalArguments[0] as List<AiConfigPrompt>;
+      return prompts;
+    });
 
     // Create repository - tests can recreate if needed after setting up specific mocks
     repository = UnifiedAiInferenceRepository(mockRef)
@@ -3244,9 +3259,9 @@ Extract ONLY information from the image that is relevant to this task. Be concis
           aiResponseType: AiResponseType.audioTranscription,
         ).copyWith(
           userMessage: '''
-Please transcribe the provided audio. 
-Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
-If there are multiple speakers, try to indicate speaker changes. 
+Please transcribe the provided audio.
+Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
+If there are multiple speakers, try to indicate speaker changes.
 Note any significant non-speech audio events [in brackets]. Remove filler words.
 
 Take into account the following task context:
@@ -3256,8 +3271,8 @@ Take into account the following task context:
 {{task}}
 ```
 
-The task context will provide additional information about the task, such as the project, 
-goal, and any relevant details such as names of people or places. If in doubt 
+The task context will provide additional information about the task, such as the project,
+goal, and any relevant details such as names of people or places. If in doubt
 about names or concepts mentioned in the audio, then the task context should
 be consulted to ensure accuracy.''',
         );

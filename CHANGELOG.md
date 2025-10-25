@@ -6,11 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 ### Added
+- AI prompt selection modal now visually highlights default automatic prompts with gold accent (border and icon background).
+- Platform-aware AI prompt filtering automatically hides local-only models (Whisper, Ollama, Gemini 3N) on mobile platforms.
+- Fallback logic ensures default automatic prompts gracefully switch to available alternatives when local-only models are filtered on mobile.
 
 ### Changed
 - Tasks and journal tabs now persist category filter selections independently, restoring their own state after app restart.
 - Category filter storage migrated from shared `TASK_FILTERS` key to per-tab keys (`TASKS_CATEGORY_FILTERS` and `JOURNAL_CATEGORY_FILTERS`).
 - Task status filters (Open, In Progress, Done, etc.) remain scoped exclusively to the tasks tab.
+- AI prompt availability now respects platform capabilities, preventing confusion from unusable model options on mobile.
 
 ### Fixed
 

@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -16,9 +19,16 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class MockPromptCapabilityFilter extends Mock
+    implements PromptCapabilityFilter {}
+
 void main() {
   late MockLoggingService mockLoggingService;
   late MockCategoryRepository mockCategoryRepository;
+  late MockAiConfigRepository mockAiConfigRepository;
+  late MockPromptCapabilityFilter mockPromptCapabilityFilter;
   late ProviderContainer container;
 
   // Helper to create a test category with all required fields
@@ -44,6 +54,8 @@ void main() {
   setUp(() {
     mockLoggingService = MockLoggingService();
     mockCategoryRepository = MockCategoryRepository();
+    mockAiConfigRepository = MockAiConfigRepository();
+    mockPromptCapabilityFilter = MockPromptCapabilityFilter();
 
     // Register mocks with GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -65,10 +77,36 @@ void main() {
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         )).thenReturn(null);
 
+    // Setup default mock behavior for prompt capability filter
+    // By default, return the first prompt from any list (simulating all prompts are available)
+    when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()))
+        .thenAnswer((invocation) async {
+      final promptIds = invocation.positionalArguments[0] as List<String>;
+      if (promptIds.isEmpty) return null;
+      final firstPromptId = promptIds.first;
+
+      // Return a mock AiConfigPrompt for the first prompt
+      return AiConfigPrompt(
+        id: firstPromptId,
+        name: 'Test Prompt',
+        defaultModelId: 'test-model',
+        modelIds: [],
+        systemMessage: 'Test system message',
+        userMessage: 'Test user message',
+        requiredInputData: [],
+        useReasoning: false,
+        createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.audioTranscription,
+      );
+    });
+
     // Create container with overridden providers
     container = ProviderContainer(
       overrides: [
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+        promptCapabilityFilterProvider
+            .overrideWithValue(mockPromptCapabilityFilter),
       ],
     );
   });
@@ -425,6 +463,8 @@ void main() {
           overrides: [
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
+            promptCapabilityFilterProvider
+                .overrideWithValue(mockPromptCapabilityFilter),
             triggerNewInferenceProvider(
               entityId: entryId,
               promptId: promptId,
@@ -492,6 +532,8 @@ void main() {
           overrides: [
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
+            promptCapabilityFilterProvider
+                .overrideWithValue(mockPromptCapabilityFilter),
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
@@ -565,6 +607,8 @@ void main() {
           overrides: [
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
+            promptCapabilityFilterProvider
+                .overrideWithValue(mockPromptCapabilityFilter),
             triggerNewInferenceProvider(
               entityId: entryId,
               promptId: transcriptionPromptId,
@@ -656,6 +700,8 @@ void main() {
           overrides: [
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
+            promptCapabilityFilterProvider
+                .overrideWithValue(mockPromptCapabilityFilter),
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
@@ -749,6 +795,8 @@ void main() {
           overrides: [
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
+            promptCapabilityFilterProvider
+                .overrideWithValue(mockPromptCapabilityFilter),
             triggerNewInferenceProvider(
               entityId: entryId,
               promptId: transcriptionPromptId,
@@ -858,6 +906,8 @@ void main() {
           overrides: [
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
+            promptCapabilityFilterProvider
+                .overrideWithValue(mockPromptCapabilityFilter),
             triggerNewInferenceProvider(
               entityId: entryId,
               promptId: promptId,
@@ -933,6 +983,8 @@ void main() {
           overrides: [
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
+            promptCapabilityFilterProvider
+                .overrideWithValue(mockPromptCapabilityFilter),
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: taskSummaryPromptId,
@@ -1058,6 +1110,8 @@ void main() {
           overrides: [
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
+            promptCapabilityFilterProvider
+                .overrideWithValue(mockPromptCapabilityFilter),
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,

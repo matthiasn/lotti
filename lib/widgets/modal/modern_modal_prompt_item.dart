@@ -20,6 +20,7 @@ class ModernModalPromptItem extends StatefulWidget {
     this.iconColor,
     this.isSelected = false,
     this.isDisabled = false,
+    this.isDefault = false,
     super.key,
   });
 
@@ -32,6 +33,7 @@ class ModernModalPromptItem extends StatefulWidget {
   final Color? iconColor;
   final bool isSelected;
   final bool isDisabled;
+  final bool isDefault;
 
   @override
   State<ModernModalPromptItem> createState() => _ModernModalPromptItemState();
@@ -41,26 +43,24 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
   @override
   Widget build(BuildContext context) {
     final effectiveIconColor = widget.iconColor ?? context.colorScheme.primary;
+    const goldColor = Color(0xFFD4AF37);
 
-    return AnimatedModalCardItem(
-      onTap: widget.onTap,
-      isDisabled: widget.isDisabled,
-      cardBuilder: (context, controller) => ModalCard(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.cardPadding,
-          vertical: AppTheme.cardPadding / 2,
-        ),
-        backgroundColor: context.colorScheme.surfaceContainerHighest,
-        onTap: widget.onTap,
-        isDisabled: widget.isDisabled,
-        animationController: controller,
-        child: Row(
-          children: [
-            // Icon with gradient container
-            ModernIconContainer(
-              icon: widget.icon,
-              iconColor: effectiveIconColor,
-              gradient: widget.isSelected
+    final cardContent = Row(
+      children: [
+        // Icon with gradient container
+        ModernIconContainer(
+          icon: widget.icon,
+          iconColor: effectiveIconColor,
+          gradient: widget.isDefault
+              ? LinearGradient(
+                  colors: [
+                    goldColor.withValues(alpha: 0.3),
+                    goldColor.withValues(alpha: 0.2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : widget.isSelected
                   ? LinearGradient(
                       colors: [
                         context.colorScheme.primary.withValues(alpha: 0.3),
@@ -70,61 +70,86 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
                       end: Alignment.bottomRight,
                     )
                   : null,
-            ),
-            const SizedBox(width: AppTheme.spacingLarge),
+        ),
+        const SizedBox(width: AppTheme.spacingLarge),
 
-            // Title and description column
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        // Title and description column
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title row with badge
+              Row(
                 children: [
-                  // Title row with badge
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.title,
-                          style: context.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            fontSize: AppTheme.titleFontSize,
-                            color: context.colorScheme.onSurface,
-                            letterSpacing: AppTheme.letterSpacingTitle,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: context.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: AppTheme.titleFontSize,
+                        color: context.colorScheme.onSurface,
+                        letterSpacing: AppTheme.letterSpacingTitle,
                       ),
-                      if (widget.badge != null) ...[
-                        const SizedBox(width: AppTheme.spacingSmall),
-                        widget.badge!,
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: AppTheme.spacingXSmall),
-                  // Description
-                  Text(
-                    widget.description,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.85),
-                      fontSize: AppTheme.subtitleFontSize,
-                      height: AppTheme.lineHeightSubtitle,
-                      letterSpacing: AppTheme.letterSpacingSubtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
                   ),
+                  if (widget.badge != null) ...[
+                    const SizedBox(width: AppTheme.spacingSmall),
+                    widget.badge!,
+                  ],
                 ],
               ),
-            ),
-
-            // Trailing widget
-            if (widget.trailing != null) ...[
-              const SizedBox(width: AppTheme.spacingMedium),
-              widget.trailing!,
+              const SizedBox(height: AppTheme.spacingXSmall),
+              // Description
+              Text(
+                widget.description,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant
+                      .withValues(alpha: 0.85),
+                  fontSize: AppTheme.subtitleFontSize,
+                  height: AppTheme.lineHeightSubtitle,
+                  letterSpacing: AppTheme.letterSpacingSubtitle,
+                ),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
-          ],
+          ),
         ),
+
+        // Trailing widget
+        if (widget.trailing != null) ...[
+          const SizedBox(width: AppTheme.spacingMedium),
+          widget.trailing!,
+        ],
+      ],
+    );
+
+    return AnimatedModalCardItem(
+      onTap: widget.onTap,
+      isDisabled: widget.isDisabled,
+      cardBuilder: (context, controller) => ModalCard(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.cardPadding,
+          vertical: AppTheme.cardPadding / 2,
+        ),
+        backgroundColor: widget.isDefault
+            ? goldColor.withValues(alpha: 0.12)
+            : context.colorScheme.surfaceContainerHighest,
+        border: widget.isDefault
+            ? Border.all(
+                color: goldColor.withValues(alpha: 0.6),
+                width: 2,
+              )
+            : null,
+        borderRadius: widget.isDefault
+            ? BorderRadius.circular(AppTheme.cardBorderRadius)
+            : null,
+        onTap: widget.onTap,
+        isDisabled: widget.isDisabled,
+        animationController: controller,
+        child: cardContent,
       ),
     );
   }
