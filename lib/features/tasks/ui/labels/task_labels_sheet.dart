@@ -127,9 +127,10 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
       );
 
     if (filtered.isEmpty) {
+      final hasQuery = _searchQuery.isNotEmpty;
       return _EmptyState(
-        isSearching: _searchQuery.isNotEmpty,
-        suggestedName: _searchQuery.isNotEmpty ? _searchQuery : null,
+        isSearching: hasQuery,
+        searchQuery: hasQuery ? _searchQuery : null,
         onCreateLabel: () => _openLabelCreator(defaultName: _searchQuery),
       );
     }
@@ -190,18 +191,25 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState({
     required this.isSearching,
     required this.onCreateLabel,
-    this.suggestedName,
+    this.searchQuery,
   });
 
   final bool isSearching;
   final VoidCallback onCreateLabel;
-  final String? suggestedName;
+  final String? searchQuery;
 
   @override
   Widget build(BuildContext context) {
-    final message = isSearching
-        ? 'No labels match your search.'
-        : 'No labels available yet.';
+    final querySnippet =
+        searchQuery != null && searchQuery!.isNotEmpty ? '"$searchQuery"' : '';
+    final message = isSearching && querySnippet.isNotEmpty
+        ? 'No labels match $querySnippet.'
+        : isSearching
+            ? 'No labels match your search.'
+            : 'No labels available yet.';
+    final buttonLabel = searchQuery != null && searchQuery!.isNotEmpty
+        ? 'Create $querySnippet label'
+        : 'Create label';
 
     return Center(
       child: Padding(
@@ -224,12 +232,12 @@ class _EmptyState extends StatelessWidget {
             FilledButton.icon(
               onPressed: onCreateLabel,
               icon: const Icon(Icons.add),
-              label: const Text('Create label'),
+              label: Text(buttonLabel),
             ),
-            if (suggestedName != null) ...[
+            if (searchQuery != null && searchQuery!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                'New label will be prefilled with "$suggestedName"',
+                'A new label will be prefilled with $querySnippet',
                 textAlign: TextAlign.center,
                 style: Theme.of(context)
                     .textTheme

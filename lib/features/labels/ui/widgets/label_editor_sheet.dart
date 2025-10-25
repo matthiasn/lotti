@@ -47,7 +47,6 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDarkTheme = theme.brightness == Brightness.dark;
     final args = LabelEditorArgs(
       label: widget.label,
       initialName: widget.initialName,

@@ -30,6 +30,42 @@
 - Building server-side analytics for label usage; collect only what existing telemetry supports.
 - Implementing custom ordering or auto-suggestion heuristics for labels (can follow up later).
 
+## Phase 5 Review Follow-up (2025-10-26)
+
+The comprehensive review delivered an A+ while still flagging a handful of UX gaps and missing
+tests that must land before we consider the labels system truly complete. We are rolling these into
+Phase 5 so the implementation plan stays aligned with reality.
+
+**UI / UX polish**
+
+- [ ] Add tooltips to `LabelChip` so descriptions surface on hover.
+- [ ] Provide a “Create label” CTA inside `TaskLabelsSheet` when a search yields zero matches,
+      pre-filling the typed query.
+- [ ] Support long-press descriptions in `TaskLabelsWrapper` so mobile users get the same context as
+      hover interactions.
+- [ ] Surface a lightweight quick-filter row in the task list header that mirrors the label filter
+      drawer selections.
+- [ ] Track label usage statistics to inform roadmap work.
+- [ ] Add a bulk-assignment affordance so power users can tag multiple tasks at once.
+
+**Testing / quality**
+
+- [ ] Widget tests covering `LabelEditorSheet`, `LabelsListPage`, `TaskLabelsWrapper`,
+      and `TaskLabelsSheet`.
+- [ ] Widget/integration coverage for `TaskLabelFilter`.
+- [ ] Integration test for the full workflow: create → assign → filter → delete.
+- [ ] Performance regression tests that exercise reconciliation and filtering with 1k+ tasks / 50+
+      labels.
+- [ ] Accessibility tests for chips (semantics + contrast) and selection sheets (keyboard + screen
+      reader).
+- [ ] Repository edge-case tests (concurrent creation, malformed colors, network failures, long
+      descriptions).
+- [ ] Golden tests intentionally left out per review note; visual coverage remains optional.
+
+These todos now drive the rest of the implementation plan and keep reviewers, QA, and downstream
+doc updates in sync. Subsequent sections already describe the architectural context for each item;
+Phase 5 will flip the above checkboxes to ✅ as we land the work.
+
 ## Current Findings & Research Tasks
 
 - ✅ **Tags pattern confirmed**: Labels will follow the proven tags pattern (`lib/features/tags/repository/tags_repository.dart`) — metadata holds `List<String> labelIds` as source of truth with denormalized `labeled` table for efficient filtering queries.
@@ -205,6 +241,7 @@ Future<void> addLabeled(JournalEntity journalEntity) async {
   - Enable HSV color wheel for full custom color picking
   - Reuse category picker dialog pattern but with hybrid color picker
   - Description field with hint text ("Explain when this label applies")
+  - ✅ Private label helper copy clearly states that labels sync everywhere but hide unless “Show private entries” is enabled
 - Repository implementation (`LabelsRepository`):
   - CRUD operations following category pattern
   - Validation: ensure unique names, valid colors

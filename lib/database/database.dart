@@ -878,6 +878,26 @@ class JournalDb extends _$JournalDb {
     return allLabelDefinitions().watch().map(labelDefinitionsStreamMapper);
   }
 
+  Stream<Map<String, int>> watchLabelUsageCounts() {
+    final query = customSelect(
+      '''
+      SELECT label_id, COUNT(*) AS usage_count
+      FROM labeled
+      GROUP BY label_id
+      ''',
+      readsFrom: {labeled},
+    );
+
+    return query.watch().map((rows) {
+      final usage = <String, int>{};
+      for (final row in rows) {
+        final labelId = row.read<String>('label_id');
+        usage[labelId] = row.read<int>('usage_count');
+      }
+      return usage;
+    });
+  }
+
   Stream<LabelDefinition?> watchLabelDefinitionById(String id) {
     return labelDefinitionById(id)
         .watch()

@@ -74,6 +74,10 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
     BuildContext context,
     List<LabelDefinition> labels,
   ) {
+    final usageCounts = ref.watch(labelUsageStatsProvider).maybeWhen(
+          data: (value) => value,
+          orElse: () => const <String, int>{},
+        );
     final filtered = labels.where((label) {
       if (_searchQuery.isEmpty) return true;
       return label.name.toLowerCase().contains(_searchQuery) ||
@@ -125,6 +129,7 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: _LabelListCard(
             label: label,
+            usageCount: usageCounts[label.id] ?? 0,
             onEdit: () => _openEditor(label: label),
             onDelete: () => _confirmDelete(label),
           ),
@@ -229,11 +234,13 @@ class _LabelListCard extends StatelessWidget {
     required this.label,
     required this.onEdit,
     required this.onDelete,
+    required this.usageCount,
   });
 
   final LabelDefinition label;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final int usageCount;
 
   @override
   Widget build(BuildContext context) {
@@ -331,6 +338,25 @@ class _LabelListCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.insights_outlined,
+                size: 18,
+                color: theme.colorScheme.primary.withValues(alpha: 0.8),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                usageCount == 1
+                    ? 'Used on 1 task'
+                    : 'Used on $usageCount tasks',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
