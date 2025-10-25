@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- Tasks and journal tabs now persist category filter selections independently, restoring their own state after app restart.
+- Category filter storage migrated from shared `TASK_FILTERS` key to per-tab keys (`TASKS_CATEGORY_FILTERS` and `JOURNAL_CATEGORY_FILTERS`).
+- Task status filters (Open, In Progress, Done, etc.) remain scoped exclusively to the tasks tab.
 
 ### Fixed
 
