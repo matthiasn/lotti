@@ -20,12 +20,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User feedback: SnackBar in Task Details listing assigned labels with Undo to remove them.
   - Event stream for UI notifications and comprehensive unit/feature tests.
 - Settings header widget tests now cover multiple text scale factors (1.0, 1.2, 1.5, 2.0) and common screen widths to guard layout across devices.
-- Label chips now surface tooltips/long-press descriptions, Task label sheets show inline “Create
-  label” CTAs, and the journal header includes a quick label filter row for active selections.
+- Label chips now surface tooltips/long-press descriptions, Task label sheets show inline "Create
+  label" CTAs, and the journal header includes a quick label filter row for active selections.
 - Labels settings list displays usage counts sourced from a new `watchLabelUsageCounts` stream plus
   widget coverage for the editor sheet, list page, assignment sheet/wrapper, and filter chips.
 - Added integration (`label_workflow_test.dart`), accessibility, repository edge-case, and
   performance tests (1k+ tasks + reconciliation benchmarks) for the labels system.
+- AI prompt selection modal now visually highlights default automatic prompts with gold accent (border and icon background).
+- Platform-aware AI prompt filtering automatically hides local-only models (Whisper, Ollama, Gemini 3N) on mobile platforms.
+- Fallback logic ensures default automatic prompts gracefully switch to available alternatives when local-only models are filtered on mobile.
+- Comprehensive test coverage added for platform filtering, isDefault prompt highlighting, and ModalCard border/animation behavior.
 
 ### Changed
 - feat(ai/labels): Append a summary note after the labels JSON in prompts when the
@@ -36,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tasks and journal tabs now persist category filter selections independently, restoring their own state after app restart.
 - Category filter storage migrated from shared `TASK_FILTERS` key to per-tab keys (`TASKS_CATEGORY_FILTERS` and `JOURNAL_CATEGORY_FILTERS`).
 - Task status filters (Open, In Progress, Done, etc.) remain scoped exclusively to the tasks tab.
+- AI prompt availability now respects platform capabilities, preventing confusion from unusable model options on mobile.
 
 ### Fixed
 - Stabilized labels/task widget tests by awaiting `getIt.reset()`, providing scoped service mocks,

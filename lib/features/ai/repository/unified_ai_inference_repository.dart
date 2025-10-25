@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
+import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -140,7 +141,12 @@ class UnifiedAiInferenceRepository {
       }
     }
 
-    return activePrompts;
+    // Filter prompts by platform capability (remove local-only models on mobile)
+    final capabilityFilter = ref.read(promptCapabilityFilterProvider);
+    final platformFilteredPrompts =
+        await capabilityFilter.filterPromptsByPlatform(activePrompts);
+
+    return platformFilteredPrompts;
   }
 
   /// Check if a prompt is active for a given entity type

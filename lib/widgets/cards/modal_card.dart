@@ -12,6 +12,8 @@ class ModalCard extends StatelessWidget {
     this.onTap,
     this.isDisabled = false,
     this.animationController,
+    this.border,
+    this.borderRadius,
     super.key,
   });
 
@@ -21,6 +23,8 @@ class ModalCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isDisabled;
   final AnimatedModalItemController? animationController;
+  final BoxBorder? border;
+  final BorderRadius? borderRadius;
 
   void _handleTapDown(TapDownDetails details) {
     if (!isDisabled && onTap != null) {
@@ -42,11 +46,14 @@ class ModalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final card = Card(
       elevation: 2,
       surfaceTintColor: context.colorScheme.surfaceTint,
       color: backgroundColor,
       clipBehavior: Clip.hardEdge,
+      shape: borderRadius != null
+          ? RoundedRectangleBorder(borderRadius: borderRadius!)
+          : null,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -61,5 +68,18 @@ class ModalCard extends StatelessWidget {
         ),
       ),
     );
+
+    // Wrap with border decoration if provided
+    if (border != null) {
+      return Container(
+        decoration: BoxDecoration(
+          border: border,
+          borderRadius: borderRadius,
+        ),
+        child: card,
+      );
+    }
+
+    return card;
   }
 }
