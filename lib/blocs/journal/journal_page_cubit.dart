@@ -150,10 +150,48 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     // Listen to active feature flags and update local cache
     _configFlagsSub =
         getIt<JournalDb>().watchActiveConfigFlagNames().listen((configFlags) {
+      // Compute previously allowed types before updating flags
+      final oldAllowed = computeAllowedEntryTypes(
+        events: _enableEvents,
+        habits: _enableHabits,
+        dashboards: _enableDashboards,
+      ).toSet();
+
+      // Update flags
       _enableEvents = configFlags.contains(enableEventsFlag);
       _enableHabits = configFlags.contains(enableHabitsPageFlag);
       _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
-      refreshQuery();
+
+      // Compute newly allowed types based on updated flags
+      final newAllowed = computeAllowedEntryTypes(
+        events: _enableEvents,
+        habits: _enableHabits,
+        dashboards: _enableDashboards,
+      ).toSet();
+
+      // Determine if user had ALL previously-allowed types selected
+      final hadAllPreviouslySelected =
+          oldAllowed.isNotEmpty && setEquals(_selectedEntryTypes, oldAllowed);
+
+      // Store previous selection for comparison
+      final prevSelection = _selectedEntryTypes;
+
+      // Update selection based on user intent:
+      // - If empty or had all previously: adopt newAllowed (maintain "select all" behavior)
+      // - Otherwise: preserve user's partial selection by intersecting with newAllowed
+      if (_selectedEntryTypes.isEmpty || hadAllPreviouslySelected) {
+        _selectedEntryTypes = newAllowed;
+      } else {
+        _selectedEntryTypes = _selectedEntryTypes.intersection(newAllowed);
+      }
+
+      // Always emit state to update UI
+      emitState();
+
+      // Only persist if selection actually changed
+      if (!setEquals(prevSelection, _selectedEntryTypes)) {
+        persistEntryTypes();
+      }
     });
 
     if (isDesktop) {

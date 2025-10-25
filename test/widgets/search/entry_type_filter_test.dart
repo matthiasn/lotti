@@ -356,5 +356,222 @@ void main() {
       expect(find.text('Measured'), findsOneWidget);
       expect(find.text('Health'), findsOneWidget);
     });
+
+    testWidgets('keeps previous value during loading state', (tester) async {
+      final flagController = StreamController<Set<ConfigFlag>>.broadcast();
+
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => flagController.stream,
+      );
+
+      GetIt.I.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<JournalPageCubit>.value(
+            value: mockCubit,
+            child: const EntryTypeFilter(),
+          ),
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+        ),
+      );
+
+      // Emit initial value: Events enabled
+      flagController.add({
+        const ConfigFlag(
+          name: enableEventsFlag,
+          description: 'Enable Events?',
+          status: true,
+        ),
+      });
+
+      // Use pump() with duration instead of pumpAndSettle() to avoid timeout
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Assert: Event chip is visible
+      expect(find.text('Event'), findsOneWidget);
+
+      // Don't emit new value - unwrapPrevious should keep the previous value
+      // Just pump to allow any potential rebuilds
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Assert: Event chip still visible (previous value retained)
+      expect(find.text('Event'), findsOneWidget);
+
+      await flagController.close();
+    });
+
+    testWidgets('defaults to false on error', (tester) async {
+      // Mock stream that emits a value first, then an error
+      // unwrapPrevious should keep the previous value even on error
+      final flagController = StreamController<Set<ConfigFlag>>.broadcast();
+
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => flagController.stream,
+      );
+
+      GetIt.I.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<JournalPageCubit>.value(
+            value: mockCubit,
+            child: const EntryTypeFilter(),
+          ),
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+        ),
+      );
+
+      // Emit initial value (empty = flags disabled)
+      flagController.add(<ConfigFlag>{});
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Assert: Event chip is hidden (flag not in set, defaults to false)
+      expect(find.text('Event'), findsNothing);
+      // Assert: Other non-gated chips are still visible
+      expect(find.text('Task'), findsOneWidget);
+
+      // Now emit an error - unwrapPrevious should keep previous value
+      flagController.addError(Exception('Test error'));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Assert: Event still hidden (previous value retained despite error)
+      expect(find.text('Event'), findsNothing);
+      expect(find.text('Task'), findsOneWidget);
+
+      await flagController.close();
+    });
+
+    testWidgets('handles all flags loading simultaneously', (tester) async {
+      // Mock all flags with empty set (no flags active)
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
+      );
+
+      GetIt.I.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<JournalPageCubit>.value(
+            value: mockCubit,
+            child: const EntryTypeFilter(),
+          ),
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+        ),
+      );
+
+      // Initial state: all flags loading (empty set means no flags active)
+      await tester.pumpAndSettle();
+
+      // Assert: All feature-gated chips are hidden
+      expect(find.text('Event'), findsNothing);
+      expect(find.text('Habit'), findsNothing);
+      expect(find.text('Measured'), findsNothing);
+      expect(find.text('Health'), findsNothing);
+
+      // Assert: Non-gated chips are visible
+      expect(find.text('Task'), findsOneWidget);
+      expect(find.text('Text'), findsOneWidget);
+    });
+
+    testWidgets('handles partial flag loading', (tester) async {
+      // Mock Events loaded (true), Habits and Dashboards not yet emitted
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableEventsFlag,
+              description: 'Enable Events?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      GetIt.I.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<JournalPageCubit>.value(
+            value: mockCubit,
+            child: const EntryTypeFilter(),
+          ),
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: Event chip visible (flag loaded and true)
+      expect(find.text('Event'), findsOneWidget);
+      // Assert: Habit chip hidden (flag not in set, defaults to false)
+      expect(find.text('Habit'), findsNothing);
+      // Assert: Measured chip hidden (flag not in set, defaults to false)
+      expect(find.text('Measured'), findsNothing);
+    });
+
+    testWidgets('unwrapPrevious retains value during rapid state changes',
+        (tester) async {
+      final flagController = StreamController<Set<ConfigFlag>>.broadcast();
+
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => flagController.stream,
+      );
+
+      GetIt.I.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<JournalPageCubit>.value(
+            value: mockCubit,
+            child: const EntryTypeFilter(),
+          ),
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+        ),
+      );
+
+      // Initial: Events enabled
+      flagController.add({
+        const ConfigFlag(
+          name: enableEventsFlag,
+          description: 'Enable Events?',
+          status: true,
+        ),
+      });
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Event'), findsOneWidget);
+
+      // Rapid changes: Events OFF → ON
+      flagController.add({
+        const ConfigFlag(
+          name: enableEventsFlag,
+          description: 'Enable Events?',
+          status: false,
+        ),
+      });
+      await tester.pump(const Duration(milliseconds: 10));
+
+      flagController.add({
+        const ConfigFlag(
+          name: enableEventsFlag,
+          description: 'Enable Events?',
+          status: true,
+        ),
+      });
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Assert: Final state correct, no errors
+      expect(find.text('Event'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await flagController.close();
+    });
   });
 }

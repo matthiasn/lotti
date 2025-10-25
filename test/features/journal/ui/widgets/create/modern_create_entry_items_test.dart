@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -462,6 +464,164 @@ void main() {
       )!;
       expect(find.byType(ModernModalEntryTypeItem), findsNothing);
       expect(find.text(l10n.addActionAddEvent), findsNothing);
+    });
+
+    testWidgets(
+        'hides Event item while loading enableEventsFlag on initial load',
+        (tester) async {
+      final flagController = StreamController<Set<ConfigFlag>>();
+
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => flagController.stream,
+      );
+
+      getIt.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const CreateEventItem(
+            'linked-id',
+            categoryId: 'category-id',
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        ),
+      );
+
+      // Stays in loading state (no flag emitted yet)
+      await tester.pump();
+
+      // Assert: Defaults to hidden during initial load with no previous value
+      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+
+      await flagController.close();
+    });
+
+    testWidgets('hides Event item when enableEventsFlag stream errors',
+        (tester) async {
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.error(Exception('Test error')),
+      );
+
+      getIt.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const CreateEventItem(
+            'linked-id',
+            categoryId: 'category-id',
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: Defaults to hidden on error with no previous value
+      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+    });
+
+    testWidgets('transitions from loading to enabled', (tester) async {
+      final flagController = StreamController<Set<ConfigFlag>>();
+
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => flagController.stream,
+      );
+
+      getIt.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const CreateEventItem(
+            'linked-id',
+            categoryId: 'category-id',
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        ),
+      );
+
+      // Initial state: loading (no item visible)
+      await tester.pump();
+      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+
+      // Emit flag enabled
+      flagController.add({
+        const ConfigFlag(
+          name: enableEventsFlag,
+          description: 'Enable Events?',
+          status: true,
+        ),
+      });
+
+      await tester.pumpAndSettle();
+
+      // Assert: Item now visible
+      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+
+      await flagController.close();
+    });
+
+    testWidgets('handles rapid flag toggles without errors', (tester) async {
+      final flagController = StreamController<Set<ConfigFlag>>();
+
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => flagController.stream,
+      );
+
+      getIt.registerSingleton<JournalDb>(mockDb);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const CreateEventItem(
+            'linked-id',
+            categoryId: 'category-id',
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        ),
+      );
+
+      // Rapid toggles: ON → OFF → ON
+      flagController.add({
+        const ConfigFlag(
+          name: enableEventsFlag,
+          description: 'Enable Events?',
+          status: true,
+        ),
+      });
+      await tester.pump(const Duration(milliseconds: 10));
+
+      flagController.add({
+        const ConfigFlag(
+          name: enableEventsFlag,
+          description: 'Enable Events?',
+          status: false,
+        ),
+      });
+      await tester.pump(const Duration(milliseconds: 10));
+
+      flagController.add({
+        const ConfigFlag(
+          name: enableEventsFlag,
+          description: 'Enable Events?',
+          status: true,
+        ),
+      });
+
+      await tester.pumpAndSettle();
+
+      // Assert: Final state is enabled, no errors thrown
+      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await flagController.close();
     });
 
     testWidgets('shows Event item when enableEventsFlag is ON', (tester) async {

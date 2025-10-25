@@ -74,9 +74,14 @@ void main() {
       when(() => mockJournalDb.watchConfigFlag(privateFlag)).thenAnswer(
         (_) => Stream<bool>.fromIterable([true]),
       );
+      when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([<String>{}]),
+      );
 
       when(() => mockSettingsDb.itemByKey(any()))
           .thenAnswer((_) => Future(() => null));
+      when(() => mockSettingsDb.saveSettingsItem(any(), any()))
+          .thenAnswer((_) async => 1);
 
       when(mockJournalDb.getTasksCount).thenAnswer((_) async => 42);
 
