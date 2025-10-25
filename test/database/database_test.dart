@@ -1,12 +1,15 @@
+// ignore_for_file: avoid_redundant_argument_values
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart' show UniqueKey;
+import 'package:drift/drift.dart' as drift;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
@@ -17,8 +20,10 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
@@ -128,6 +133,8 @@ void main() {
       // Create a real temporary directory for testing
       testDirectory = setupTestDirectory();
 
+      reset(mockLoggingService);
+
       // Register services
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -141,10 +148,19 @@ void main() {
       when(
         () => mockLoggingService.captureEvent(
           any<Object>(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) => Future<void>.value());
+
+      when(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String?>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async {});
 
       db = JournalDb(inMemoryDatabase: true);
       await initConfigFlags(db!, inMemoryDatabase: true);
@@ -1236,6 +1252,519 @@ void main() {
       });
     });
 
+    group('purgeDeletedFiles -', () {
+      test('removes image files and JSON', () async {
+        final deletionTime = DateTime(2024, 1, 1, 8);
+        final imageEntry = buildImageEntry(
+          id: 'image-to-delete',
+          timestamp: deletionTime,
+          imageDirectory: '/images/2024/01/01/',
+          imageFile: 'image.jpg',
+          deletedAt: deletionTime,
+        );
+        await db!.updateJournalEntity(imageEntry);
+
+        final image = imageEntry as JournalImage;
+        final docDir = getIt<Directory>();
+        final imagePath =
+            getFullImagePath(image, documentsDirectory: docDir.path);
+        await File(imagePath).create(recursive: true);
+        await File(imagePath).writeAsBytes(const [1, 2, 3]);
+
+        final jsonPath = '$imagePath.json';
+        expect(File(jsonPath).existsSync(), isTrue);
+
+        await db!.purgeDeletedFiles();
+
+        expect(File(imagePath).existsSync(), isFalse);
+        expect(File(jsonPath).existsSync(), isFalse);
+      });
+
+      test('removes audio files and JSON', () async {
+        final deletionTime = DateTime(2024, 1, 2, 9);
+        final audioEntry = buildAudioEntry(
+          id: 'audio-to-delete',
+          timestamp: deletionTime,
+          audioDirectory: '/audio/2024/01/02/',
+          audioFile: 'clip.m4a',
+          deletedAt: deletionTime,
+        );
+        await db!.updateJournalEntity(audioEntry);
+
+        final audio = audioEntry as JournalAudio;
+        final audioPath = await AudioUtils.getFullAudioPath(audio);
+        await File(audioPath).create(recursive: true);
+        await File(audioPath).writeAsBytes(const [4, 5, 6]);
+
+        final jsonPath = '$audioPath.json';
+        expect(File(jsonPath).existsSync(), isTrue);
+
+        await db!.purgeDeletedFiles();
+
+        expect(File(audioPath).existsSync(), isFalse);
+        expect(File(jsonPath).existsSync(), isFalse);
+      });
+
+      test('removes JSON for deleted text entries', () async {
+        final deletionTime = DateTime(2024, 1, 3, 10);
+        final textEntry = buildTextEntry(
+          id: 'text-to-delete',
+          timestamp: deletionTime,
+          text: 'Deleted journal',
+          deletedAt: deletionTime,
+        );
+        await db!.updateJournalEntity(textEntry);
+
+        final docDir = getIt<Directory>();
+        final jsonPath = entityPath(textEntry, docDir);
+        expect(File(jsonPath).existsSync(), isTrue);
+
+        await db!.purgeDeletedFiles();
+
+        expect(File(jsonPath).existsSync(), isFalse);
+      });
+
+      test('handles file deletion errors gracefully', () async {
+        final deletionTime = DateTime(2024, 1, 4, 11);
+        final imageEntry = buildImageEntry(
+          id: 'image-missing-file',
+          timestamp: deletionTime,
+          imageDirectory: '/images/2024/01/04/',
+          imageFile: 'missing.jpg',
+          deletedAt: deletionTime,
+        );
+        final textEntry = buildTextEntry(
+          id: 'text-still-deleted',
+          timestamp: deletionTime,
+          text: 'Should still be deleted',
+          deletedAt: deletionTime,
+        );
+        await db!.updateJournalEntity(imageEntry);
+        await db!.updateJournalEntity(textEntry);
+
+        final docDir = getIt<Directory>();
+        final textJsonPath = entityPath(textEntry, docDir);
+        expect(File(textJsonPath).existsSync(), isTrue);
+
+        await db!.purgeDeletedFiles();
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<Object>(),
+            domain: 'Database',
+            subDomain: 'purgeDeletedFiles',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        expect(File(textJsonPath).existsSync(), isFalse);
+      });
+    });
+
+    group('purgeDeleted -', () {
+      test('creates backup when backup=true', () async {
+        final docDir = getIt<Directory>();
+        await createPlaceholderDbFile(docDir);
+
+        final progress = await db!.purgeDeleted().toList();
+        expect(progress, equals([1.0]));
+
+        final backupDir = Directory('${docDir.path}/backup');
+        final backups = backupDir.existsSync()
+            ? backupDir.listSync()
+            : <FileSystemEntity>[];
+        expect(backups.whereType<File>(), isNotEmpty);
+        expect(
+          backups
+              .whereType<File>()
+              .first
+              .path
+              .split('/')
+              .last
+              .startsWith('db.'),
+          isTrue,
+        );
+      });
+
+      test('skips backup when backup=false', () async {
+        final docDir = getIt<Directory>();
+        final backupDir = Directory('${docDir.path}/backup');
+        if (backupDir.existsSync()) {
+          backupDir.deleteSync(recursive: true);
+        }
+
+        final progress = await db!.purgeDeleted(backup: false).toList();
+        expect(progress, equals([1.0]));
+        expect(backupDir.existsSync(), isFalse);
+      });
+
+      test('purges all deleted entity types', () async {
+        final deletionTime = DateTime(2024, 2, 1, 8);
+        final docDir = getIt<Directory>();
+        await createPlaceholderDbFile(docDir);
+        await seedDeletedDatabaseContent(db!, deletionTime);
+
+        await db!.purgeDeleted(backup: false).toList();
+
+        expect(await db!.select(db!.dashboardDefinitions).get(), isEmpty);
+        expect(await db!.select(db!.measurableTypes).get(), isEmpty);
+        expect(await db!.select(db!.tagEntities).get(), isEmpty);
+        expect(await db!.select(db!.journal).get(), isEmpty);
+      });
+
+      test('reports progress accurately', () async {
+        final deletionTime = DateTime(2024, 2, 2, 9);
+        await seedDeletedDatabaseContent(db!, deletionTime);
+
+        final progress = await db!.purgeDeleted(backup: false).toList();
+        expect(progress, equals([0.25, 0.5, 0.75, 1.0]));
+      });
+
+      test('returns 1.0 immediately when nothing to purge', () async {
+        final progress = await db!.purgeDeleted(backup: false).toList();
+        expect(progress, equals([1.0]));
+      });
+    });
+
+    group('Time-range queries -', () {
+      test('sortedCalendarEntries filters and sorts correctly', () async {
+        final janEarly = buildTextEntry(
+          id: 'jan-05',
+          timestamp: DateTime(2024, 1, 5, 8),
+          text: 'Entry Jan 05',
+        );
+        final janLate = buildWorkoutEntry(
+          id: 'jan-20-workout',
+          start: DateTime(2024, 1, 20, 7),
+          end: DateTime(2024, 1, 20, 8),
+        );
+        final febOutside = buildTextEntry(
+          id: 'feb-01',
+          timestamp: DateTime(2024, 2, 1, 9),
+          text: 'Outside range',
+        );
+
+        await db!.updateJournalEntity(janEarly);
+        await db!.updateJournalEntity(janLate);
+        await db!.updateJournalEntity(febOutside);
+
+        final rangeStart = DateTime(2024, 1, 1);
+        final rangeEnd = DateTime(2024, 1, 31, 23, 59);
+        final results = await db!.sortedCalendarEntries(
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        expect(results.map((e) => e.meta.id),
+            equals(['jan-20-workout', 'jan-05']));
+      });
+
+      test('getMeasurementsByType filters by type and range', () async {
+        final measurementDate = DateTime(2024, 3, 5);
+        final inRangeWater = testMeasurementChocolateEntry.copyWith(
+          meta: testMeasurementChocolateEntry.meta.copyWith(
+            id: 'measurement-water',
+            createdAt: measurementDate,
+            updatedAt: measurementDate,
+            dateFrom: measurementDate,
+            dateTo: measurementDate,
+          ),
+          data: testMeasurementChocolateEntry.data.copyWith(
+            dataTypeId: measurableWater.id,
+            dateFrom: measurementDate,
+            dateTo: measurementDate,
+          ),
+        );
+        final oldMeasurementDate = DateTime(2023, 12, 1);
+        final outOfRangeWater = inRangeWater.copyWith(
+          meta: inRangeWater.meta.copyWith(
+            id: 'measurement-water-old',
+            createdAt: oldMeasurementDate,
+            updatedAt: oldMeasurementDate,
+            dateFrom: oldMeasurementDate,
+            dateTo: oldMeasurementDate,
+          ),
+        );
+        final otherType = inRangeWater.copyWith(
+          meta: inRangeWater.meta.copyWith(
+            id: 'measurement-chocolate',
+          ),
+          data: inRangeWater.data.copyWith(dataTypeId: measurableChocolate.id),
+        );
+
+        await db!.updateJournalEntity(inRangeWater);
+        await db!.updateJournalEntity(outOfRangeWater);
+        await db!.updateJournalEntity(otherType);
+
+        final rangeStart = DateTime(2024, 3, 1);
+        final rangeEnd = DateTime(2024, 3, 31);
+        final results = await db!.getMeasurementsByType(
+          type: measurableWater.id,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.meta.id, 'measurement-water');
+      });
+
+      test('getHabitCompletionsByHabitId filters correctly', () async {
+        final habitId = habitFlossing.id;
+        final inRange = buildHabitCompletionEntry(
+          id: 'habit-complete-1',
+          habitId: habitId,
+          timestamp: DateTime(2024, 4, 15),
+        );
+        final outsideRange = buildHabitCompletionEntry(
+          id: 'habit-complete-old',
+          habitId: habitId,
+          timestamp: DateTime(2024, 1, 1),
+        );
+        final otherHabit = buildHabitCompletionEntry(
+          id: 'habit-other',
+          habitId: 'other-habit',
+          timestamp: DateTime(2024, 4, 16),
+        );
+
+        await db!.updateJournalEntity(inRange);
+        await db!.updateJournalEntity(outsideRange);
+        await db!.updateJournalEntity(otherHabit);
+
+        final rangeStart = DateTime(2024, 4, 1);
+        final rangeEnd = DateTime(2024, 4, 30);
+        final results = await db!.getHabitCompletionsByHabitId(
+          habitId: habitId,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        expect(results.map((e) => e.meta.id), equals(['habit-complete-1']));
+      });
+
+      test('getQuantitativeByType filters correctly', () async {
+        final weightEntry = buildQuantitativeEntry(
+          id: 'weight-1',
+          dataType: 'weight',
+          timestamp: DateTime(2024, 5, 10),
+        );
+        final weightOutsideRange = buildQuantitativeEntry(
+          id: 'weight-old',
+          dataType: 'weight',
+          timestamp: DateTime(2023, 5, 10),
+        );
+        final otherType = buildQuantitativeEntry(
+          id: 'blood-pressure',
+          dataType: 'bp',
+          timestamp: DateTime(2024, 5, 10),
+        );
+
+        await db!.updateJournalEntity(weightEntry);
+        await db!.updateJournalEntity(weightOutsideRange);
+        await db!.updateJournalEntity(otherType);
+
+        final quantStart = DateTime(2024, 5, 1);
+        final quantEnd = DateTime(2024, 5, 31);
+        final results = await db!.getQuantitativeByType(
+          type: 'weight',
+          rangeStart: quantStart,
+          rangeEnd: quantEnd,
+        );
+
+        expect(results.map((e) => e.meta.id), equals(['weight-1']));
+      });
+
+      test('latestQuantitativeByType returns most recent entry', () async {
+        final older = buildQuantitativeEntry(
+          id: 'quant-old',
+          dataType: 'coverage',
+          timestamp: DateTime(2024, 6, 1),
+        );
+        final newer = buildQuantitativeEntry(
+          id: 'quant-new',
+          dataType: 'coverage',
+          timestamp: DateTime(2024, 6, 2),
+        );
+        await db!.updateJournalEntity(older);
+        await db!.updateJournalEntity(newer);
+
+        final result = await db!.latestQuantitativeByType('coverage');
+        expect(result, isNotNull);
+        expect(result!.meta.id, 'quant-new');
+      });
+
+      test('latestQuantitativeByType returns null when none exist', () async {
+        final messages = <String?>[];
+        final original = debugPrint;
+        debugPrint = (String? message, {int? wrapWidth}) {
+          messages.add(message);
+        };
+        addTearDown(() {
+          debugPrint = original;
+        });
+
+        final result = await db!.latestQuantitativeByType('missing-type');
+        expect(result, isNull);
+        expect(
+          messages.any(
+            (message) =>
+                message?.contains('no result for missing-type') ?? false,
+          ),
+          isTrue,
+        );
+      });
+
+      test('latestWorkout returns most recent workout', () async {
+        final first = buildWorkoutEntry(
+          id: 'workout-1',
+          start: DateTime(2024, 7, 1, 8),
+          end: DateTime(2024, 7, 1, 9),
+        );
+        final latest = buildWorkoutEntry(
+          id: 'workout-2',
+          start: DateTime(2024, 7, 2, 7),
+          end: DateTime(2024, 7, 2, 8),
+        );
+        await db!.updateJournalEntity(first);
+        await db!.updateJournalEntity(latest);
+
+        final result = await db!.latestWorkout();
+        expect(result, isNotNull);
+        expect(result!.meta.id, 'workout-2');
+      });
+
+      test('latestWorkout returns null when none exist', () async {
+        final messages = <String?>[];
+        final original = debugPrint;
+        debugPrint = (String? message, {int? wrapWidth}) {
+          messages.add(message);
+        };
+        addTearDown(() {
+          debugPrint = original;
+        });
+
+        final result = await db!.latestWorkout();
+        expect(result, isNull);
+        expect(
+          messages
+              .any((message) => message?.contains('no workout found') ?? false),
+          isTrue,
+        );
+      });
+    });
+
+    group('Entry links -', () {
+      test('linksForEntryIds returns all links for target set', () async {
+        final linkAb = buildEntryLink(
+          id: 'link-ab',
+          fromId: 'a',
+          toId: 'b',
+          timestamp: DateTime(2024, 8, 1),
+        );
+        final linkAc = buildEntryLink(
+          id: 'link-ac',
+          fromId: 'a',
+          toId: 'c',
+          timestamp: DateTime(2024, 8, 2),
+        );
+        final linkDe = buildEntryLink(
+          id: 'link-de',
+          fromId: 'd',
+          toId: 'e',
+          timestamp: DateTime(2024, 8, 3),
+        );
+
+        await db!.upsertEntryLink(linkAb);
+        await db!.upsertEntryLink(linkAc);
+        await db!.upsertEntryLink(linkDe);
+
+        final results = await db!.linksForEntryIds({'b', 'c'});
+        expect(results.map((link) => link.id).toSet(), {'link-ab', 'link-ac'});
+      });
+
+      test('upsertEntryLink rejects self-links', () async {
+        final link = buildEntryLink(
+          id: 'self-link',
+          fromId: 'self',
+          toId: 'self',
+          timestamp: DateTime(2024, 8, 4),
+        );
+
+        final written = await db!.upsertEntryLink(link);
+        expect(written, 0);
+        expect(await db!.linksForEntryIds({'self'}), isEmpty);
+      });
+
+      test('upsertEntryLink skips no-op updates', () async {
+        final link = buildEntryLink(
+          id: 'stable-link',
+          fromId: 'origin',
+          toId: 'target',
+          timestamp: DateTime(2024, 8, 5),
+        );
+
+        final firstWrite = await db!.upsertEntryLink(link);
+        final secondWrite = await db!.upsertEntryLink(link);
+
+        expect(firstWrite, 1);
+        expect(secondWrite, 0);
+      });
+
+      test('upsertEntryLink creates new link', () async {
+        final link = buildEntryLink(
+          id: 'new-link',
+          fromId: 'origin',
+          toId: 'fresh',
+          timestamp: DateTime(2024, 8, 6),
+        );
+
+        final result = await db!.upsertEntryLink(link);
+        expect(result, 1);
+        final stored = await db!.linksForEntryIds({'fresh'});
+        expect(stored.single.id, 'new-link');
+      });
+
+      test('upsertEntryLink updates existing link', () async {
+        final link = buildEntryLink(
+          id: 'update-link',
+          fromId: 'source',
+          toId: 'initial',
+          timestamp: DateTime(2024, 8, 7),
+        );
+        await db!.upsertEntryLink(link);
+
+        final updated = link.copyWith(
+          toId: 'updated',
+          updatedAt: DateTime(2024, 8, 8),
+        );
+        final result = await db!.upsertEntryLink(updated);
+        expect(result, 1);
+
+        final oldLookup = await db!.linksForEntryIds({'initial'});
+        expect(oldLookup, isEmpty);
+        final newLookup = await db!.linksForEntryIds({'updated'});
+        expect(newLookup.single.toId, 'updated');
+      });
+
+      test('upsertEntryLink handles precheck errors gracefully', () async {
+        final specialDb = _PrecheckThrowingJournalDb();
+        addTearDown(() async {
+          await specialDb.close();
+        });
+        await initConfigFlags(specialDb, inMemoryDatabase: true);
+
+        final link = buildEntryLink(
+          id: 'throwing-link',
+          fromId: 'src',
+          toId: 'dst',
+          timestamp: DateTime(2024, 8, 9),
+        );
+
+        final result = await specialDb.upsertEntryLink(link);
+        expect(result, 1);
+        final stored = await specialDb.linksForEntryIds({'dst'});
+        expect(stored, hasLength(1));
+      });
+    });
+
     tearDownAll(() async {
       await getIt.reset();
     });
@@ -1623,6 +2152,229 @@ void main() {
       },
     );
   });
+}
+
+Future<File> createPlaceholderDbFile(Directory docDir) async {
+  final dbFile = File('${docDir.path}/$journalDbFileName');
+  if (!dbFile.existsSync()) {
+    await dbFile.create(recursive: true);
+  }
+  await dbFile.writeAsBytes(const [0]);
+  return dbFile;
+}
+
+Future<void> seedDeletedDatabaseContent(
+  JournalDb database,
+  DateTime deletionTime,
+) async {
+  final dashboard = testDashboardConfig.copyWith(
+    id: 'dashboard-${deletionTime.millisecondsSinceEpoch}',
+    createdAt: deletionTime,
+    updatedAt: deletionTime,
+    deletedAt: deletionTime,
+  );
+  final measurable = measurableWater.copyWith(
+    id: 'measurable-${deletionTime.millisecondsSinceEpoch}',
+    createdAt: deletionTime,
+    updatedAt: deletionTime,
+    deletedAt: deletionTime,
+  );
+  final tag = testTag1.copyWith(
+    id: 'tag-${deletionTime.millisecondsSinceEpoch}',
+    createdAt: deletionTime,
+    updatedAt: deletionTime,
+    deletedAt: deletionTime,
+  );
+  final journalEntry = buildTextEntry(
+    id: 'deleted-${deletionTime.millisecondsSinceEpoch}',
+    timestamp: deletionTime,
+    text: 'Marked for purge',
+    deletedAt: deletionTime,
+  );
+
+  await database.upsertDashboardDefinition(dashboard);
+  await database.upsertMeasurableDataType(measurable);
+  await database.upsertTagEntity(tag);
+  await database.updateJournalEntity(journalEntry);
+}
+
+JournalEntity buildTextEntry({
+  required String id,
+  required DateTime timestamp,
+  required String text,
+  DateTime? deletedAt,
+}) {
+  return JournalEntity.journalEntry(
+    meta: Metadata(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+      deletedAt: deletedAt,
+      starred: false,
+      private: false,
+    ),
+    entryText: EntryText(plainText: text),
+  );
+}
+
+JournalEntity buildImageEntry({
+  required String id,
+  required DateTime timestamp,
+  required String imageDirectory,
+  required String imageFile,
+  DateTime? deletedAt,
+}) {
+  return JournalEntity.journalImage(
+    meta: Metadata(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+      deletedAt: deletedAt,
+      starred: false,
+      private: false,
+    ),
+    data: ImageData(
+      imageId: id,
+      imageFile: imageFile,
+      imageDirectory: imageDirectory,
+      capturedAt: timestamp,
+    ),
+    entryText: const EntryText(plainText: 'image entry'),
+  );
+}
+
+JournalEntity buildAudioEntry({
+  required String id,
+  required DateTime timestamp,
+  required String audioDirectory,
+  required String audioFile,
+  DateTime? deletedAt,
+}) {
+  return JournalEntity.journalAudio(
+    meta: Metadata(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+      deletedAt: deletedAt,
+      starred: false,
+      private: false,
+    ),
+    data: AudioData(
+      dateFrom: timestamp,
+      dateTo: timestamp,
+      duration: const Duration(minutes: 5),
+      audioDirectory: audioDirectory,
+      audioFile: audioFile,
+    ),
+    entryText: const EntryText(plainText: 'audio entry'),
+  );
+}
+
+JournalEntity buildWorkoutEntry({
+  required String id,
+  required DateTime start,
+  required DateTime end,
+  DateTime? deletedAt,
+}) {
+  return JournalEntity.workout(
+    meta: Metadata(
+      id: id,
+      createdAt: end,
+      updatedAt: end,
+      dateFrom: start,
+      dateTo: end,
+      deletedAt: deletedAt,
+      starred: false,
+      private: false,
+    ),
+    data: WorkoutData(
+      distance: 1000,
+      dateFrom: start,
+      dateTo: end,
+      workoutType: 'running',
+      energy: 200,
+      id: 'workout-$id',
+      source: 'test',
+    ),
+  );
+}
+
+JournalEntity buildHabitCompletionEntry({
+  required String id,
+  required String habitId,
+  required DateTime timestamp,
+  DateTime? deletedAt,
+}) {
+  return JournalEntity.habitCompletion(
+    meta: Metadata(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+      deletedAt: deletedAt,
+      starred: false,
+      private: false,
+    ),
+    data: HabitCompletionData(
+      habitId: habitId,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+    ),
+  );
+}
+
+JournalEntity buildQuantitativeEntry({
+  required String id,
+  required String dataType,
+  required DateTime timestamp,
+  double value = 1,
+  DateTime? deletedAt,
+}) {
+  return JournalEntity.quantitative(
+    meta: Metadata(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+      deletedAt: deletedAt,
+      starred: false,
+      private: false,
+    ),
+    data: QuantitativeData.discreteQuantityData(
+      dateFrom: timestamp,
+      dateTo: timestamp,
+      value: value,
+      dataType: dataType,
+      unit: 'unit',
+    ),
+  );
+}
+
+class _PrecheckThrowingJournalDb extends JournalDb {
+  _PrecheckThrowingJournalDb() : super(inMemoryDatabase: true);
+
+  bool _shouldThrow = true;
+
+  @override
+  drift.SimpleSelectStatement<T, R> select<T extends drift.HasResultSet, R>(
+    drift.ResultSetImplementation<T, R> table, {
+    bool distinct = false,
+  }) {
+    if (_shouldThrow &&
+        table is drift.TableInfo<LinkedEntries, LinkedDbEntry>) {
+      _shouldThrow = false;
+      throw StateError('precheck failure');
+    }
+    return super.select(table, distinct: distinct);
+  }
 }
 
 // Helper functions to create test entities
