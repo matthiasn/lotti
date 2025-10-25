@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 
@@ -63,6 +63,7 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
     required this.emptyIcon,
     required this.emptyTitleBuilder,
     required this.countSummaryBuilder,
+    this.subtitle,
     this.emptyDescriptionBuilder,
     this.initialFilter,
     this.listPadding = const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
@@ -73,6 +74,7 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
 
   /// Sliver page title.
   final String title;
+  final String? subtitle;
 
   /// Source stream that yields the full set of items. Filtering occurs locally.
   final Stream<List<T>> stream;
@@ -222,10 +224,10 @@ class _SyncListScaffoldState<T, F extends Enum>
               body: CustomScrollView(
                 controller: _scrollController,
                 slivers: [
-                  SliverTitleBar(
-                    widget.title,
+                  SettingsPageHeader(
+                    title: widget.title,
+                    subtitle: widget.subtitle,
                     showBackButton: widget.backButton,
-                    pinned: true,
                   ),
                   SliverToBoxAdapter(
                     child: Align(

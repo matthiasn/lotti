@@ -306,6 +306,21 @@ const appBarTextStyleNewLarge = TextStyle(
   fontWeight: TypographyConstants.lightFontWeight,
 );
 
+/// Primary heading style for premium settings headers.
+const settingsHeaderTitleTextStyle = TextStyle(
+  fontSize: 32,
+  fontWeight: FontWeight.w300,
+  letterSpacing: -0.2,
+  height: 1.05,
+);
+
+/// Secondary copy style used beneath the settings header title.
+const settingsHeaderSubtitleTextStyle = TextStyle(
+  fontSize: 16,
+  fontWeight: TypographyConstants.bodyFontWeight,
+  height: 1.4,
+);
+
 const settingsCardTextStyle = TextStyle(
   fontSize: fontSizeLarge,
   fontWeight: TypographyConstants.bodyFontWeight,

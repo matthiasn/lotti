@@ -16,6 +16,7 @@ class SyncSettingsPage extends StatelessWidget {
     return SyncFeatureGate(
       child: SliverBoxAdapterPage(
         title: context.messages.settingsMatrixTitle,
+        subtitle: context.messages.settingsSyncSubtitle,
         child: Column(
           children: [
             // 1) Matrix sync setup modal (top-level)
