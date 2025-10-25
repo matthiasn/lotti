@@ -106,8 +106,12 @@ class ModernTaskCard extends StatelessWidget {
     }
 
     final cache = getIt<EntitiesCacheService>();
-    final labels =
-        labelIds.map(cache.getLabelById).whereType<LabelDefinition>().toList();
+    final showPrivate = cache.showPrivateEntries;
+    final labels = labelIds
+        .map(cache.getLabelById)
+        .whereType<LabelDefinition>()
+        .where((label) => showPrivate || !(label.private ?? false))
+        .toList();
 
     if (labels.isEmpty) {
       return null;

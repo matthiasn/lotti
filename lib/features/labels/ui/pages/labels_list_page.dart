@@ -4,7 +4,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/search/index.dart';
 
 class LabelsListPage extends ConsumerStatefulWidget {
@@ -238,116 +237,134 @@ class _LabelListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = colorFromCssHex(label.color, substitute: Colors.blue);
+    final theme = Theme.of(context);
     final isPrivate = label.private ?? false;
+    final description = label.description?.trim();
+    final cardColor = theme.colorScheme.surfaceContainerHighest.withValues(
+      alpha: theme.brightness == Brightness.dark ? 0.45 : 0.9,
+    );
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            _LabelColorIndicator(color: color),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          label.name,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                        ),
-                      ),
-                      if (isPrivate)
-                        Icon(
-                          Icons.lock_outline,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                    ],
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.dividerColor.withValues(alpha: 0.18),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label.name,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  if (label.description != null &&
-                      label.description!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      label.description!,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              PopupMenuButton<String>(
+                tooltip: 'Label actions',
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    onEdit();
+                  } else if (value == 'delete') {
+                    onDelete();
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      leading: Icon(Icons.edit),
+                      title: Text('Edit'),
+                      contentPadding: EdgeInsets.zero,
                     ),
-                  ],
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: LabelChip(label: label),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(Icons.delete_outline),
+                      title: Text('Delete'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
                 ],
               ),
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  onEdit();
-                } else if (value == 'delete') {
-                  onDelete();
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'edit',
-                  child: ListTile(
-                    leading: Icon(Icons.edit),
-                    title: Text('Edit'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              LabelChip(label: label),
+              Text(
+                label.color.toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: ListTile(
-                    leading: Icon(Icons.delete_outline),
-                    title: Text('Delete'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
+              ),
+              if (isPrivate) const _PrivateLabelBadge(),
+            ],
+          ),
+          if (description != null && description.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              description,
+              style: theme.textTheme.bodySmall,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
-        ),
+        ],
       ),
     );
   }
 }
 
-class _LabelColorIndicator extends StatelessWidget {
-  const _LabelColorIndicator({required this.color});
-
-  final Color color;
+class _PrivateLabelBadge extends StatelessWidget {
+  const _PrivateLabelBadge();
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary.withValues(alpha: 0.12);
+
     return Container(
-      height: 36,
-      width: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            color,
-            color.withAlpha((0.75 * 255).round()),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withAlpha((0.35 * 255).round()),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.lock_outline,
+            size: 14,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'Private',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),

@@ -3168,7 +3168,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLabelsPrivateDescription.
   ///
   /// In en, this message translates to:
-  /// **'Private labels are only visible to you and will not sync to shared devices.'**
+  /// **'Private labels only appear when “Show private entries” is enabled.'**
   String get settingsLabelsPrivateDescription;
 
   /// No description provided for @settingsLabelsCreateSuccess.

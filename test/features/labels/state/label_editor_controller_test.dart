@@ -32,7 +32,7 @@ void main() {
   });
 
   test('initial state defaults when creating new label', () {
-    final provider = labelEditorControllerProvider(null);
+    final provider = labelEditorControllerProvider(const LabelEditorArgs());
     final state = container.read(provider);
 
     expect(state.name, isEmpty);
@@ -42,8 +42,21 @@ void main() {
     expect(state.isSaving, isFalse);
   });
 
+  test('initial state uses provided initial name when creating new label', () {
+    final provider = labelEditorControllerProvider(
+      const LabelEditorArgs(initialName: 'Blocker'),
+    );
+
+    final state = container.read(provider);
+
+    expect(state.name, 'Blocker');
+    expect(state.hasChanges, isFalse);
+  });
+
   test('initial state uses existing label when editing', () {
-    final provider = labelEditorControllerProvider(testLabelDefinition1);
+    final provider = labelEditorControllerProvider(
+      LabelEditorArgs(label: testLabelDefinition1),
+    );
     final state = container.read(provider);
 
     expect(state.name, testLabelDefinition1.name);
@@ -52,7 +65,9 @@ void main() {
   });
 
   test('setName updates state and marks changes', () {
-    final provider = labelEditorControllerProvider(testLabelDefinition1);
+    final provider = labelEditorControllerProvider(
+      LabelEditorArgs(label: testLabelDefinition1),
+    );
     final notifier = container.read(provider.notifier);
 
     notifier.setName('Updated');
@@ -73,7 +88,7 @@ void main() {
       ),
     ).thenAnswer((_) async => testLabelDefinition1);
 
-    final provider = labelEditorControllerProvider(null);
+    final provider = labelEditorControllerProvider(const LabelEditorArgs());
     final notifier = container.read(provider.notifier);
 
     notifier.setName('Release blocker');
@@ -94,7 +109,7 @@ void main() {
     when(() => repository.getAllLabels())
         .thenAnswer((_) async => [testLabelDefinition1]);
 
-    final provider = labelEditorControllerProvider(null);
+    final provider = labelEditorControllerProvider(const LabelEditorArgs());
     final notifier = container.read(provider.notifier);
 
     notifier.setName(testLabelDefinition1.name);
@@ -126,7 +141,9 @@ void main() {
       ),
     ).thenAnswer((_) async => testLabelDefinition1);
 
-    final provider = labelEditorControllerProvider(testLabelDefinition1);
+    final provider = labelEditorControllerProvider(
+      LabelEditorArgs(label: testLabelDefinition1),
+    );
     final notifier = container.read(provider.notifier);
 
     notifier.setName('Updated');

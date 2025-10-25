@@ -2,11 +2,32 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/get_it.dart';
+
+final showPrivateEntriesProvider = StreamProvider<bool>(
+    (ref) => getIt<JournalDb>().watchConfigFlag('private'));
+
+List<LabelDefinition> _visibleLabels(
+  List<LabelDefinition> labels,
+  bool showPrivate,
+) {
+  if (showPrivate) {
+    return labels;
+  }
+  return labels.where((label) => !(label.private ?? false)).toList();
+}
 
 final labelsStreamProvider = StreamProvider<List<LabelDefinition>>((ref) {
   final repository = ref.watch(labelsRepositoryProvider);
-  return repository.watchLabels();
+  final showPrivate = ref.watch(showPrivateEntriesProvider).maybeWhen(
+        data: (value) => value,
+        orElse: () => false,
+      );
+  return repository.watchLabels().map(
+        (labels) => _visibleLabels(labels, showPrivate),
+      );
 });
 
 final labelsListControllerProvider =
@@ -21,11 +42,15 @@ class LabelsListController extends Notifier<AsyncValue<List<LabelDefinition>>> {
   @override
   AsyncValue<List<LabelDefinition>> build() {
     _repository = ref.watch(labelsRepositoryProvider);
+    final showPrivate = ref.watch(showPrivateEntriesProvider).maybeWhen(
+          data: (value) => value,
+          orElse: () => false,
+        );
 
     _subscription?.cancel();
     _subscription = _repository.watchLabels().listen(
       (labels) {
-        state = AsyncValue.data(labels);
+        state = AsyncValue.data(_visibleLabels(labels, showPrivate));
       },
       onError: (Object error, StackTrace stackTrace) {
         state = AsyncValue.error(error, stackTrace);

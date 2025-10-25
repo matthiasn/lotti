@@ -27,9 +27,11 @@ class TaskLabelsWrapper extends ConsumerWidget {
 
     final cache = getIt<EntitiesCacheService>();
     final assignedIds = task.meta.labelIds ?? <String>[];
+    final showPrivate = cache.showPrivateEntries;
     final assignedLabels = assignedIds
         .map(cache.getLabelById)
         .whereType<LabelDefinition>()
+        .where((label) => showPrivate || !(label.private ?? false))
         .toList()
       ..sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),

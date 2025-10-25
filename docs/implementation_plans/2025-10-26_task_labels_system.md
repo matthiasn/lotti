@@ -134,7 +134,7 @@ Future<void> addLabeled(JournalEntity journalEntity) async {
   - Model: `LabelDefinition` as `EntityDefinition` variant (syncs via existing `SyncMessage.entityDefinition`)
   - Fields: `id`, `name`, `color`, `description?`, `groupId?` (for future label groups), `sortOrder`, standard sync fields
   - Storage: synced via `SyncMessage.entityDefinition`; Riverpod provider for CRUD
-  - UI: new Settings page reusing category management scaffolding, modern card list, color picker using `flex_color_picker` package (new dependency) with both preset colors (16 curated colors) and custom color wheel for full flexibility, create/edit dialogs
+  - UI: new Settings page reusing category management scaffolding, but each row must show the label chip (color + name) only once to avoid duplicating the dot/title; still relies on `flex_color_picker` presets + wheel for edits
   - Description tooltips: Display on hover (Linear pattern) to explain when label applies
 
 2. **Assignment Workflow**
@@ -152,6 +152,7 @@ Future<void> addLabeled(JournalEntity journalEntity) async {
 4. **Sync & Integrity**
   - **Reconciliation runs on every save** (including sync ingestion) via `JournalDb.addLabeled()` (called from `updateJournalEntity` at line 240, mirroring `addTagged()` pattern)
   - `metadata.labelIds` is authoritative; `labeled` table mirrors it deterministically
+  - Private labels sync just like public ones; they’re merely hidden from UI surfaces whenever the “show private entries” config flag is off
   - Label deletion cascades: remove label ID from impacted entries' metadata and rely on reconciliation to drop `labeled` rows
   - Label rename: no action needed (metadata stores IDs, display updates automatically)
   - Self-healing: reconciliation corrects any drift between metadata and `labeled` table
@@ -192,6 +193,7 @@ Future<void> addLabeled(JournalEntity journalEntity) async {
 - Create `lib/features/labels/` module structure (repository, state, ui)
 - Implement Settings page for labels:
   - List existing labels with edit/delete actions
+  - Each row should be a soft-card showing the primary label name, chip preview, color code, and badges (e.g., private) so the UI isn’t just a row of plain chips
   - Modal/dialog for create/edit (name, color, optional description)
   - Color picker using `ColorPicker` widget from `flex_color_picker` package
   - Configure with `pickersEnabled: {ColorPickerType.custom: true, ColorPickerType.wheel: true}`
@@ -212,18 +214,19 @@ Future<void> addLabeled(JournalEntity journalEntity) async {
 - Unit tests: CRUD flows, validation, sync serialization
 - Update `lib/features/labels/README.md` describing settings workflow
 
--### Phase 3 – Task Assignment UX
--
+### Phase 3 – Task Assignment UX
+
 - ✅ Update task detail/header widget to display current labels and allow quick assignment (`TaskLabelsWrapper` in `lib/features/tasks/ui/labels`)
 - ✅ Implement label selection modal (`TaskLabelsSheet`) with:
   - Multi-select support (checkboxes or chips)
   - Search/filter functionality
   - Adaptive layout (desktop/mobile)
   - Show label descriptions on hover/long-press
+  - ⬜️ When no search results match, surface a “Create label” CTA that opens the Settings editor sheet so users can add the missing label inline
 - ✅ Label chips widget (`LabelChip`) reused for tasks
   - Display color + name
   - Semantics support for screen readers
-  - Responsive sizing (shrink on mobile)
+  - Responsive sizing (shrink on mobile) with the same frame, padding, and typography as `ModernStatusChip` so task status + label chips align visually
   - Tooltip showing description
 - ✅ Update `metadata.labelIds` via `LabelsRepository.setLabels` (add/remove helpers covered)
 - ✅ Persistence layer auto-triggers reconciliation on save through `JournalDb.addLabeled`

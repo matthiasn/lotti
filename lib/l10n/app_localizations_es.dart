@@ -1694,7 +1694,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsLabelsPrivateDescription =>
-      'Private labels are only visible to you and will not sync to shared devices.';
+      'Private labels only appear when “Show private entries” is enabled.';
 
   @override
   String get settingsLabelsCreateSuccess => 'Label created successfully';

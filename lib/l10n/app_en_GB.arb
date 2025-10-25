@@ -238,7 +238,6 @@
   "settingsLabelsColorHeading": "Select a colour",
   "settingsLabelsColorSubheading": "Quick presets",
   "settingsLabelsPrivateTitle": "Private label",
-  "settingsLabelsPrivateDescription": "Private labels are only visible to you and will not sync to shared devices.",
   "settingsLabelsCreateSuccess": "Label created successfully",
   "settingsLabelsUpdateSuccess": "Label updated",
   "settingsLabelsDeleteConfirmTitle": "Delete label",

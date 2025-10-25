@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/utils/color.dart';
 
 class TaskLabelsSheet extends ConsumerStatefulWidget {
@@ -126,8 +127,10 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
       );
 
     if (filtered.isEmpty) {
-      return const Center(
-        child: Text('No labels match your search.'),
+      return _EmptyState(
+        isSearching: _searchQuery.isNotEmpty,
+        suggestedName: _searchQuery.isNotEmpty ? _searchQuery : null,
+        onCreateLabel: () => _openLabelCreator(defaultName: _searchQuery),
       );
     }
 
@@ -160,6 +163,83 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
           },
         );
       },
+    );
+  }
+
+  Future<void> _openLabelCreator({String? defaultName}) async {
+    final trimmed = defaultName?.trim();
+    final initialName = (trimmed?.isEmpty ?? true) ? null : trimmed;
+    final result = await showModalBottomSheet<LabelDefinition>(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      builder: (context) => LabelEditorSheet(initialName: initialName),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedLabelIds.add(result.id);
+    });
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.isSearching,
+    required this.onCreateLabel,
+    this.suggestedName,
+  });
+
+  final bool isSearching;
+  final VoidCallback onCreateLabel;
+  final String? suggestedName;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = isSearching
+        ? 'No labels match your search.'
+        : 'No labels available yet.';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.label_outline,
+              size: 48,
+              color: Theme.of(context).disabledColor,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: onCreateLabel,
+              icon: const Icon(Icons.add),
+              label: const Text('Create label'),
+            ),
+            if (suggestedName != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'New label will be prefilled with "$suggestedName"',
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Theme.of(context).hintColor),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
