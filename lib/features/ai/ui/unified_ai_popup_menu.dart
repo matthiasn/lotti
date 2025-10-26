@@ -130,36 +130,16 @@ class UnifiedAiPromptsList extends ConsumerWidget {
 
     // Get category to check for automatic prompts
     final categoryId = journalEntity.meta.categoryId;
-    final categoryAsync = categoryId != null
-        ? ref.watch(categoryChangesProvider(categoryId))
-        : null;
-
-    return categoryAsync?.when(
-          data: (_) => _buildPromptList(
-            context,
-            ref,
-            prompts,
-            categoryId,
-          ),
-          loading: () => _buildPromptList(
-            context,
-            ref,
-            prompts,
-            categoryId,
-          ),
-          error: (_, __) => _buildPromptList(
-            context,
-            ref,
-            prompts,
-            categoryId,
-          ),
-        ) ??
-        _buildPromptList(
-          context,
-          ref,
-          prompts,
-          categoryId,
-        );
+    if (categoryId != null) {
+      // This watch will rebuild the widget when the category changes.
+      ref.watch(categoryChangesProvider(categoryId));
+    }
+    return _buildPromptList(
+      context,
+      ref,
+      prompts,
+      categoryId,
+    );
   }
 
   Widget _buildPromptList(
