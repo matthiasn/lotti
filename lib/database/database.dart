@@ -134,7 +134,8 @@ class JournalDb extends _$JournalDb {
         // v28: Rebuild `labeled` with FK on label_id -> label_definitions(id) ON DELETE CASCADE
         if (from < 28) {
           await () async {
-            debugPrint('Rebuilding labeled table to add FK with ON DELETE CASCADE');
+            debugPrint(
+                'Rebuilding labeled table to add FK with ON DELETE CASCADE');
             await _rebuildLabeledWithFkCascade();
           }();
         }
@@ -1092,8 +1093,10 @@ WHERE EXISTS (
     // Replace old table with the new one and recreate indexes.
     await customStatement('DROP TABLE IF EXISTS labeled');
     await customStatement('ALTER TABLE labeled_new RENAME TO labeled');
-    await customStatement('CREATE INDEX IF NOT EXISTS idx_labeled_journal_id ON labeled (journal_id)');
-    await customStatement('CREATE INDEX IF NOT EXISTS idx_labeled_label_id ON labeled (label_id)');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_labeled_journal_id ON labeled (journal_id)');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_labeled_label_id ON labeled (label_id)');
   }
 
   Future<bool> _tableExists(String tableName) async {

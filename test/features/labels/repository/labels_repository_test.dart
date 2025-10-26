@@ -288,6 +288,148 @@ void main() {
     expect(result, isFalse);
   });
 
+  test('addLabels returns false on exception', () async {
+    final entry = buildEntry(labelIds: const ['a']);
+    when(() => journalDb.journalEntityById(entry.meta.id))
+        .thenAnswer((_) async => entry);
+    when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata);
+    when(() => persistenceLogic.updateDbEntity(any(),
+            linkedId: any(named: 'linkedId'),
+            enqueueSync: any(named: 'enqueueSync')))
+        .thenThrow(Exception('db error'));
+
+    final result = await repository.addLabels(
+      journalEntityId: entry.meta.id,
+      addedLabelIds: const ['b'],
+    );
+
+    expect(result, isFalse);
+  });
+
+  test('addLabels does not modify original labelIds list', () async {
+    final original = ['existing'];
+    final entry = buildEntry(labelIds: original);
+    when(() => journalDb.journalEntityById(entry.meta.id))
+        .thenAnswer((_) async => entry);
+    when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata);
+    when(() => persistenceLogic.updateDbEntity(any(),
+        linkedId: any(named: 'linkedId'),
+        enqueueSync: any(named: 'enqueueSync'))).thenAnswer((_) async => true);
+
+    await repository.addLabels(
+      journalEntityId: entry.meta.id,
+      addedLabelIds: const ['new'],
+    );
+
+    expect(original, equals(['existing']));
+  });
+
+  test('removeLabel returns false on database error', () async {
+    final entry = buildEntry(labelIds: const ['x']);
+    when(() => journalDb.journalEntityById(entry.meta.id))
+        .thenAnswer((_) async => entry);
+    when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata);
+    when(() => persistenceLogic.updateDbEntity(any(),
+            linkedId: any(named: 'linkedId'),
+            enqueueSync: any(named: 'enqueueSync')))
+        .thenThrow(Exception('db error'));
+
+    final result = await repository.removeLabel(
+      journalEntityId: entry.meta.id,
+      labelId: 'x',
+    );
+    expect(result, isFalse);
+  });
+
+  test('setLabels handles empty list correctly', () async {
+    final entry = buildEntry(labelIds: const ['a']);
+    when(() => journalDb.journalEntityById(entry.meta.id))
+        .thenAnswer((_) async => entry);
+    when(() =>
+        persistenceLogic.updateMetadata(any(),
+            labelIds: any(named: 'labelIds'),
+            clearLabelIds: any(named: 'clearLabelIds'))).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata);
+    JournalEntity? captured;
+    when(() => persistenceLogic.updateDbEntity(any(),
+        linkedId: any(named: 'linkedId'),
+        enqueueSync: any(named: 'enqueueSync'))).thenAnswer((invocation) async {
+      captured = invocation.positionalArguments.first as JournalEntity;
+      return true;
+    });
+
+    final result = await repository.setLabels(
+      journalEntityId: entry.meta.id,
+      labelIds: const [],
+    );
+    expect(result, isTrue);
+    expect(captured?.meta.labelIds, isNull);
+  });
+
+  test('setLabels filters deleted labels from final list and sorts by name',
+      () async {
+    final entry = buildEntry(labelIds: const ['a']);
+    when(() => journalDb.journalEntityById(entry.meta.id))
+        .thenAnswer((_) async => entry);
+    when(() => cacheService.getLabelById('keep1')).thenReturn(
+      LabelDefinition(
+        id: 'keep1',
+        name: 'Bravo',
+        color: '#000000',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+      ),
+    );
+    when(() => journalDb.getLabelDefinitionById('keep2')).thenAnswer(
+      (_) async => LabelDefinition(
+        id: 'keep2',
+        name: 'Alpha',
+        color: '#000000',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+      ),
+    );
+    when(() => journalDb.getLabelDefinitionById('deleted')).thenAnswer(
+      (_) async => LabelDefinition(
+        id: 'deleted',
+        name: 'Zulu',
+        color: '#000000',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+        deletedAt: baseTime,
+      ),
+    );
+    when(() => journalDb.getLabelDefinitionById('missing'))
+        .thenAnswer((_) async => null);
+
+    when(() =>
+        persistenceLogic.updateMetadata(any(),
+            labelIds: any(named: 'labelIds'),
+            clearLabelIds: any(named: 'clearLabelIds'))).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata);
+    JournalEntity? captured;
+    when(() => persistenceLogic.updateDbEntity(any(),
+        linkedId: any(named: 'linkedId'),
+        enqueueSync: any(named: 'enqueueSync'))).thenAnswer((invocation) async {
+      captured = invocation.positionalArguments.first as JournalEntity;
+      return true;
+    });
+
+    final result = await repository.setLabels(
+      journalEntityId: entry.meta.id,
+      labelIds: const ['keep1', 'deleted', 'missing', 'keep2'],
+    );
+    expect(result, isTrue);
+    // Sorted by name: Alpha (keep2), Bravo (keep1)
+    expect(captured?.meta.labelIds, equals(['keep2', 'keep1']));
+  });
+
   test('addLabelsToMeta merges ids without duplicates', () {
     final meta = buildMetadata(labelIds: const ['a', 'b']);
     final updated = addLabelsToMeta(meta, const ['b', 'c']);

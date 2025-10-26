@@ -42,7 +42,10 @@ class TaskLabelsWrapper extends ConsumerWidget {
       );
 
     // Respect privacy filtering when deciding if the wrapper should render.
-    final filteredCacheLabels = cache.sortedLabels;
+    // Apply the same privacy rule to cache-backed labels using the local flag.
+    final filteredCacheLabels = cache.sortedLabels
+        .where((label) => showPrivate || !(label.private ?? false))
+        .toList();
 
     final hasLabels =
         assignedLabels.isNotEmpty || filteredCacheLabels.isNotEmpty;

@@ -157,4 +157,43 @@ void main() {
 
     expect(find.text('Select labels'), findsOneWidget);
   });
+
+  testWidgets('hides wrapper when no labels assigned and none available',
+      (tester) async {
+    when(() => cacheService.sortedLabels).thenReturn(const <LabelDefinition>[]);
+    final task = taskWithLabels(const []);
+
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Labels'), findsNothing);
+  });
+
+  testWidgets('shows wrapper when labels available even if none assigned',
+      (tester) async {
+    when(() => cacheService.sortedLabels)
+        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
+    final task = taskWithLabels(const []);
+
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Labels'), findsOneWidget);
+  });
+
+  testWidgets('does not show long-press dialog when no description',
+      (tester) async {
+    final noDesc = testLabelDefinition1.copyWith(description: null);
+    when(() => cacheService.getLabelById(noDesc.id)).thenReturn(noDesc);
+    when(() => cacheService.sortedLabels).thenReturn([noDesc]);
+    final task = taskWithLabels([noDesc.id]);
+
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.text(noDesc.name));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Close'), findsNothing);
+  });
 }
