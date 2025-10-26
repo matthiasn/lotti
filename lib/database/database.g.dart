@@ -4672,6 +4672,7 @@ class Labeled extends Table with TableInfo<Labeled, LabeledWith> {
   List<String> get customConstraints => const [
         'PRIMARY KEY(id)',
         'FOREIGN KEY(journal_id)REFERENCES journal(id)ON DELETE CASCADE',
+        'FOREIGN KEY(label_id)REFERENCES label_definitions(id)ON DELETE CASCADE',
         'UNIQUE(journal_id, label_id)'
       ];
   @override
@@ -6104,21 +6105,23 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<LabelDefinitionDbEntity> allLabelDefinitions() {
     return customSelect(
-        'SELECT * FROM label_definitions WHERE deleted = FALSE ORDER BY name COLLATE NOCASE',
+        'SELECT * FROM label_definitions WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY name COLLATE NOCASE',
         variables: [],
         readsFrom: {
           labelDefinitions,
+          configFlags,
         }).asyncMap(labelDefinitions.mapFromRow);
   }
 
   Selectable<LabelDefinitionDbEntity> labelDefinitionById(String id) {
     return customSelect(
-        'SELECT * FROM label_definitions WHERE deleted = FALSE AND id = ?1',
+        'SELECT * FROM label_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
         variables: [
           Variable<String>(id)
         ],
         readsFrom: {
           labelDefinitions,
+          configFlags,
         }).asyncMap(labelDefinitions.mapFromRow);
   }
 
@@ -6484,6 +6487,13 @@ abstract class _$JournalDb extends GeneratedDatabase {
           ),
           WritePropagation(
             on: TableUpdateQuery.onTableName('journal',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('labeled', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('label_definitions',
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('labeled', kind: UpdateKind.delete),

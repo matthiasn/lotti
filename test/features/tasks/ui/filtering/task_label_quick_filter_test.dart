@@ -34,7 +34,7 @@ JournalPageState _baseState({
     pagingController: null,
     taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE'],
     selectedTaskStatuses: const <String>{},
-    selectedCategoryIds: const <String?>{},
+    selectedCategoryIds: const <String>{},
     selectedLabelIds: selectedLabelIds,
   );
 }
@@ -131,7 +131,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(TextButton, 'Clear'));
-    verify(mockCubit.clearSelectedLabelIds).called(1);
+    verify(() => mockCubit.clearSelectedLabelIds()).called(1);
   });
 
   testWidgets('renders unassigned chip when empty id present', (tester) async {

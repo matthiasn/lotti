@@ -226,6 +226,18 @@ void main() {
       await db.upsertLabelDefinition(buildLabel(i));
     }
 
+    // Ensure the special label used in filters exists
+    await db.upsertLabelDefinition(
+      LabelDefinition(
+        id: 'label-special',
+        name: 'Special',
+        color: '#FF00FF',
+        createdAt: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 1),
+        vectorClock: const VectorClock(<String, int>{}),
+      ),
+    );
+
     for (var i = 0; i < 400; i++) {
       final category = i.isEven ? 'team-a' : 'team-b';
       final status = i % 3 == 0

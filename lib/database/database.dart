@@ -903,10 +903,14 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<LabelDefinition?> watchLabelDefinitionById(String id) {
-    return labelDefinitionById(id)
-        .watch()
-        .map(labelDefinitionsStreamMapper)
-        .map((List<LabelDefinition> res) => res.firstOrNull);
+    // For single-entity watches, do not filter by the global private flag.
+    // Settings and edit flows need to observe changes (including private toggles)
+    // for a specific label. We only exclude hard-deleted rows here.
+    final query = select(labelDefinitions)
+      ..where((t) => t.id.equals(id) & t.deleted.equals(false));
+    return query.watch().map(labelDefinitionsStreamMapper).map(
+          (List<LabelDefinition> res) => res.firstOrNull,
+        );
   }
 
   Future<List<LabelDefinition>> getAllLabelDefinitions() async {

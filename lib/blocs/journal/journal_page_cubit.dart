@@ -325,15 +325,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     } else {
       _selectedLabelIds = _selectedLabelIds.union({labelId});
     }
-    persistTasksFilter();
-    refreshQuery();
+    // Schedule persistence; persistTasksFilter triggers refresh internally.
+    unawaited(persistTasksFilter());
     emitState();
   }
 
   void clearSelectedLabelIds() {
     _selectedLabelIds = {};
-    persistTasksFilter();
-    refreshQuery();
+    // Schedule persistence; persistTasksFilter triggers refresh internally.
+    unawaited(persistTasksFilter());
     emitState();
   }
 

@@ -166,6 +166,7 @@ CREATE TABLE labeled (
   label_id TEXT NOT NULL,
   PRIMARY KEY (id),
   FOREIGN KEY(journal_id) REFERENCES journal(id) ON DELETE CASCADE,
+  FOREIGN KEY(label_id) REFERENCES label_definitions(id) ON DELETE CASCADE,
   UNIQUE(journal_id, label_id)
 ) as LabeledWith;
 
@@ -571,12 +572,14 @@ SELECT * FROM category_definitions
 allLabelDefinitions:
 SELECT * FROM label_definitions
   WHERE deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY name COLLATE NOCASE;
 
 labelDefinitionById:
 SELECT * FROM label_definitions
   WHERE deleted = false
-  AND id = :id;
+  AND id = :id
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
 matchingTagEntities:
 SELECT * FROM tag_entities

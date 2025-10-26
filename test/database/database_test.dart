@@ -2144,6 +2144,37 @@ void main() {
 
     group('Label reconciliation -', () {
       test('addLabeled mirrors metadata labelIds changes', () async {
+        // Ensure label definitions exist to satisfy the labeled.label_id FK
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'alpha',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            name: 'alpha',
+            color: '#AAAAAA',
+            vectorClock: null,
+          ),
+        );
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'beta',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            name: 'beta',
+            color: '#BBBBBB',
+            vectorClock: null,
+          ),
+        );
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'gamma',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            name: 'gamma',
+            color: '#CCCCCC',
+            vectorClock: null,
+          ),
+        );
         final entry = createJournalEntry(
           'with labels',
           labelIds: const ['alpha', 'beta'],
@@ -2180,6 +2211,17 @@ void main() {
       });
 
       test('addLabeled is idempotent when metadata is unchanged', () async {
+        // Ensure label definition exists to satisfy FK
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'keep',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            name: 'keep',
+            color: '#DDDDDD',
+            vectorClock: null,
+          ),
+        );
         final entry = createJournalEntry(
           'idempotent labels',
           labelIds: const ['keep'],

@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 
 class EntitiesCacheService {
   EntitiesCacheService() {
@@ -47,6 +48,10 @@ class EntitiesCacheService {
       labelsById.clear();
       for (final label in labels) {
         labelsById[label.id] = label;
+      }
+      // Notify listeners that labels changed so task views can refresh
+      if (getIt.isRegistered<UpdateNotifications>()) {
+        getIt<UpdateNotifications>().notify({'LABELS_UPDATED'});
       }
     });
 

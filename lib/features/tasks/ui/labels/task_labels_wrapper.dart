@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_sheet.dart';
 import 'package:lotti/get_it.dart';
@@ -19,6 +20,8 @@ class TaskLabelsWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch label stream to rebuild when labels change
+    ref.watch(labelsStreamProvider);
     final entryState = ref.watch(entryControllerProvider(id: taskId)).value;
     final task = entryState?.entry;
 
