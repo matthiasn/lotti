@@ -854,6 +854,328 @@ void main() {
         expect(result.length, 1);
         expect(result.first.id, 'allowed-prompt');
       });
+
+      // Platform filtering integration tests
+      test('filters prompts by platform capability on mobile', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final cloudPrompt = _createPrompt(
+          id: 'cloud-prompt',
+          name: 'Cloud Task Prompt',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final localPrompt = _createPrompt(
+          id: 'local-prompt',
+          name: 'Local Task Prompt',
+          requiredInputData: [InputDataType.task],
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [cloudPrompt, localPrompt]);
+
+        // Mock platform filter to simulate mobile filtering
+        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
+            .thenAnswer((invocation) async {
+          final prompts =
+              invocation.positionalArguments[0] as List<AiConfigPrompt>;
+          // Simulate mobile: filter out local-prompt
+          return prompts.where((p) => p.id == 'cloud-prompt').toList();
+        });
+
+        final result = await repository!.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        expect(result.length, 1);
+        expect(result.first.id, 'cloud-prompt');
+
+        // Verify filter was called
+        verify(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
+            .called(1);
+      });
+
+      test('returns all prompts on desktop (no filtering)', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final cloudPrompt = _createPrompt(
+          id: 'cloud-prompt',
+          name: 'Cloud Task Prompt',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final localPrompt = _createPrompt(
+          id: 'local-prompt',
+          name: 'Local Task Prompt',
+          requiredInputData: [InputDataType.task],
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [cloudPrompt, localPrompt]);
+
+        // Mock platform filter to simulate desktop (no filtering)
+        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
+            .thenAnswer((invocation) async {
+          final prompts =
+              invocation.positionalArguments[0] as List<AiConfigPrompt>;
+          return prompts; // Desktop: return all
+        });
+
+        final result = await repository!.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        expect(result.length, 2);
+        expect(
+            result.map((p) => p.id).toSet(), {'cloud-prompt', 'local-prompt'});
+
+        // Verify filter was called
+        verify(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
+            .called(1);
+      });
+
+      test('combines category and platform filtering correctly', () async {
+        const categoryId = 'category-1';
+        final taskEntity = Task(
+          meta: _createMetadata(categoryId: categoryId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final cloudPrompt = _createPrompt(
+          id: 'cloud-prompt',
+          name: 'Cloud Task Prompt',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final localPrompt = _createPrompt(
+          id: 'local-prompt',
+          name: 'Local Task Prompt',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final notAllowedPrompt = _createPrompt(
+          id: 'not-allowed-prompt',
+          name: 'Not Allowed Prompt',
+          requiredInputData: [InputDataType.task],
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer(
+                (_) async => [cloudPrompt, localPrompt, notAllowedPrompt]);
+
+        // Mock category to only allow cloud and local prompts
+        when(() => mockCategoryRepo.getCategoryById(categoryId))
+            .thenAnswer((_) async => CategoryDefinition(
+                  id: categoryId,
+                  name: 'Test Category',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  vectorClock: null,
+                  private: false,
+                  active: true,
+                  allowedPromptIds: ['cloud-prompt', 'local-prompt'],
+                ));
+
+        // Mock platform filter to simulate mobile (filters out local)
+        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
+            .thenAnswer((invocation) async {
+          final prompts =
+              invocation.positionalArguments[0] as List<AiConfigPrompt>;
+          return prompts.where((p) => p.id == 'cloud-prompt').toList();
+        });
+
+        final result = await repository!.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        // Should only get cloud-prompt (allowed by category AND available on platform)
+        expect(result.length, 1);
+        expect(result.first.id, 'cloud-prompt');
+      });
+
+      test(
+          'returns empty when all category-allowed prompts are local-only on mobile',
+          () async {
+        const categoryId = 'category-1';
+        final taskEntity = Task(
+          meta: _createMetadata(categoryId: categoryId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final localPrompt1 = _createPrompt(
+          id: 'local-prompt-1',
+          name: 'Local Prompt 1',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final localPrompt2 = _createPrompt(
+          id: 'local-prompt-2',
+          name: 'Local Prompt 2',
+          requiredInputData: [InputDataType.task],
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [localPrompt1, localPrompt2]);
+
+        // Mock category to allow both local prompts
+        when(() => mockCategoryRepo.getCategoryById(categoryId))
+            .thenAnswer((_) async => CategoryDefinition(
+                  id: categoryId,
+                  name: 'Test Category',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  vectorClock: null,
+                  private: false,
+                  active: true,
+                  allowedPromptIds: ['local-prompt-1', 'local-prompt-2'],
+                ));
+
+        // Mock platform filter to simulate mobile (filters out all local)
+        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
+            .thenAnswer((invocation) async => []);
+
+        final result = await repository!.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        // Should return empty - all allowed prompts filtered by platform
+        expect(result.isEmpty, true);
+      });
+
+      test('platform filter is called exactly once per invocation', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final prompt1 = _createPrompt(
+          id: 'prompt-1',
+          name: 'Prompt 1',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final prompt2 = _createPrompt(
+          id: 'prompt-2',
+          name: 'Prompt 2',
+          requiredInputData: [InputDataType.task],
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [prompt1, prompt2]);
+
+        await repository!.getActivePromptsForContext(entity: taskEntity);
+
+        // Verify exactly one call to filter
+        verify(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
+            .called(1);
+      });
+
+      test('handles platform filter with mixed prompt types', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final taskPrompt = _createPrompt(
+          id: 'task-prompt',
+          name: 'Task Prompt',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final imagePrompt = _createPrompt(
+          id: 'image-prompt',
+          name: 'Image Prompt',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [taskPrompt, imagePrompt]);
+
+        // Platform filter simulates filtering (returns only task-prompt)
+        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
+            .thenAnswer((invocation) async {
+          final prompts =
+              invocation.positionalArguments[0] as List<AiConfigPrompt>;
+          // After entity type filtering, only task-prompt should be passed
+          expect(prompts.length, 1);
+          expect(prompts.first.id, 'task-prompt');
+          return prompts;
+        });
+
+        final result = await repository!.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        expect(result.length, 1);
+        expect(result.first.id, 'task-prompt');
+      });
     });
 
     group('runInference', () {

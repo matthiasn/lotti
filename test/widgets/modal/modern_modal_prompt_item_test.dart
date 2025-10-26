@@ -178,5 +178,144 @@ void main() {
       expect(textWidget.overflow, TextOverflow.ellipsis);
       expect(textWidget.maxLines, 4);
     });
+
+    // isDefault highlighting tests
+    group('isDefault prompt highlighting', () {
+      testWidgets('renders correctly when isDefault is true', (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ModernModalPromptItem(
+              icon: Icons.star,
+              title: 'Default Prompt',
+              description: 'This is a default prompt',
+              onTap: () {},
+              isDefault: true,
+            ),
+          ),
+        );
+
+        expect(find.text('Default Prompt'), findsOneWidget);
+        expect(find.text('This is a default prompt'), findsOneWidget);
+        expect(find.byIcon(Icons.star), findsOneWidget);
+        // Gold border and background should be applied
+      });
+
+      testWidgets('renders correctly when isDefault is true with styling',
+          (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ModernModalPromptItem(
+              icon: Icons.star,
+              title: 'Default Prompt',
+              description: 'This is a default prompt',
+              onTap: () {},
+              isDefault: true,
+            ),
+          ),
+        );
+
+        expect(find.text('Default Prompt'), findsOneWidget);
+        // Widget renders successfully with isDefault styling
+      });
+
+      testWidgets('does not show gold styling when isDefault is false',
+          (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ModernModalPromptItem(
+              icon: Icons.check,
+              title: 'Regular Prompt',
+              description: 'This is a regular prompt',
+              onTap: () {},
+            ),
+          ),
+        );
+
+        expect(find.text('Regular Prompt'), findsOneWidget);
+        // No gold styling should be present
+      });
+
+      testWidgets('custom iconColor is preserved when isDefault is true',
+          (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ModernModalPromptItem(
+              icon: Icons.color_lens,
+              title: 'Custom Color Default',
+              description: 'Default with custom icon color',
+              onTap: () {},
+              isDefault: true,
+              iconColor: Colors.purple,
+            ),
+          ),
+        );
+
+        // Gold color should take precedence for default items
+        expect(find.byIcon(Icons.color_lens), findsOneWidget);
+      });
+
+      testWidgets('isDefault true with isSelected true shows correct styling',
+          (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ModernModalPromptItem(
+              icon: Icons.check_circle,
+              title: 'Default and Selected',
+              description: 'Both default and selected',
+              onTap: () {},
+              isDefault: true,
+              isSelected: true,
+            ),
+          ),
+        );
+
+        expect(find.text('Default and Selected'), findsOneWidget);
+        // isDefault styling should take precedence
+      });
+
+      testWidgets('isDefault styling works with badge', (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ModernModalPromptItem(
+              icon: Icons.new_releases,
+              title: 'Default with Badge',
+              description: 'Default prompt with badge',
+              onTap: () {},
+              isDefault: true,
+              badge: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text('NEW', style: TextStyle(fontSize: 10)),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Default with Badge'), findsOneWidget);
+        expect(find.text('NEW'), findsOneWidget);
+      });
+
+      testWidgets('isDefault styling works with trailing widget',
+          (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ModernModalPromptItem(
+              icon: Icons.arrow_forward,
+              title: 'Default with Trailing',
+              description: 'Default prompt with trailing',
+              onTap: () {},
+              isDefault: true,
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            ),
+          ),
+        );
+
+        expect(find.text('Default with Trailing'), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+      });
+    });
   });
 }

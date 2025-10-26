@@ -349,6 +349,10 @@ The system supports multiple inference providers through a modular architecture:
 - **Gemma 3n**: Local Gemma model with audio capabilities
   - Runs on local server (default port 11343)
   - Provides both audio transcription and text generation
+  - OpenAI-compatible API for seamless integration
+  - No API key required (local execution)
+  - Supports streaming responses for real-time interaction
+  - Optimized for high-quality transcription with 2000 token default
   - **Desktop only** - automatically hidden on mobile platforms
 
 ### Platform-Aware Prompt Filtering
@@ -361,10 +365,6 @@ The AI system automatically filters prompts based on platform capabilities:
 - **Visual indicators**: Default automatic prompts are highlighted with a gold accent (border and icon background) in the AI prompt selection modal
 
 This platform-aware filtering prevents users from seeing unusable model options on mobile, while desktop users retain full access to local inference capabilities.
-  - OpenAI-compatible API for seamless integration
-  - No API key required (local execution)
-  - Supports streaming responses for real-time interaction
-  - Optimized for high-quality transcription with 2000 token default
 
 ## How Task Summaries Work
 
