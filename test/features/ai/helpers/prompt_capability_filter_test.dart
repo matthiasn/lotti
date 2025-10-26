@@ -431,5 +431,179 @@ void main() {
         expect(InferenceProviderType.gemma3n, isNotNull);
       });
     });
+
+    group('Edge Cases and Performance', () {
+      test('handles large list of prompts efficiently', () async {
+        // Arrange - Create 100 prompts
+        final prompts = List.generate(
+          100,
+          (i) => AiTestDataFactory.createTestPrompt(
+            id: 'prompt-$i',
+            name: 'Prompt $i',
+            defaultModelId: 'model-$i',
+          ),
+        );
+
+        // Mock all models and providers
+        for (var i = 0; i < 100; i++) {
+          final model = AiTestDataFactory.createTestModel(
+            id: 'model-$i',
+            name: 'Model $i',
+            inferenceProviderId: 'provider-$i',
+          );
+
+          final provider = AiTestDataFactory.createTestProvider(
+            id: 'provider-$i',
+            name: 'Provider $i',
+            type: InferenceProviderType.openAi,
+            baseUrl: 'https://api.example.com',
+            apiKey: 'key',
+          );
+
+          when(() => mockRepo.getConfigById('model-$i'))
+              .thenAnswer((_) async => model);
+          when(() => mockRepo.getConfigById('provider-$i'))
+              .thenAnswer((_) async => provider);
+        }
+
+        // Act
+        final result = await filter.filterPromptsByPlatform(prompts);
+
+        // Assert
+        expect(result, hasLength(100));
+      });
+
+      test('handles prompts with corrupted model references gracefully',
+          () async {
+        // Arrange
+        final validPrompt = AiTestDataFactory.createTestPrompt(
+          id: 'valid-prompt',
+          defaultModelId: 'valid-model',
+        );
+
+        final corruptedPrompt = AiTestDataFactory.createTestPrompt(
+          id: 'corrupted-prompt',
+          defaultModelId: 'corrupted-model',
+        );
+
+        final validModel = AiTestDataFactory.createTestModel(
+          id: 'valid-model',
+          inferenceProviderId: 'valid-provider',
+        );
+
+        final validProvider = AiTestDataFactory.createTestProvider(
+          id: 'valid-provider',
+          type: InferenceProviderType.openAi,
+        );
+
+        when(() => mockRepo.getConfigById('valid-model'))
+            .thenAnswer((_) async => validModel);
+        when(() => mockRepo.getConfigById('valid-provider'))
+            .thenAnswer((_) async => validProvider);
+        when(() => mockRepo.getConfigById('corrupted-model'))
+            .thenAnswer((_) async => null);
+
+        // Act
+        final result = await filter.filterPromptsByPlatform([
+          validPrompt,
+          corruptedPrompt,
+        ]);
+
+        // Assert - On desktop, both should be returned
+        expect(result, hasLength(2));
+      });
+
+      test('handles concurrent calls to filterPromptsByPlatform', () async {
+        // Arrange
+        final prompts1 = List.generate(
+          10,
+          (i) => AiTestDataFactory.createTestPrompt(
+            id: 'prompt-set1-$i',
+            defaultModelId: 'model-$i',
+          ),
+        );
+
+        final prompts2 = List.generate(
+          10,
+          (i) => AiTestDataFactory.createTestPrompt(
+            id: 'prompt-set2-$i',
+            defaultModelId: 'model-$i',
+          ),
+        );
+
+        // Mock all models and providers
+        for (var i = 0; i < 10; i++) {
+          final model = AiTestDataFactory.createTestModel(
+            id: 'model-$i',
+            inferenceProviderId: 'provider-$i',
+          );
+
+          final provider = AiTestDataFactory.createTestProvider(
+            id: 'provider-$i',
+            type: InferenceProviderType.openAi,
+          );
+
+          when(() => mockRepo.getConfigById('model-$i'))
+              .thenAnswer((_) async => model);
+          when(() => mockRepo.getConfigById('provider-$i'))
+              .thenAnswer((_) async => provider);
+        }
+
+        // Act - Run multiple filters concurrently
+        final results = await Future.wait([
+          filter.filterPromptsByPlatform(prompts1),
+          filter.filterPromptsByPlatform(prompts2),
+          filter.filterPromptsByPlatform(prompts1),
+        ]);
+
+        // Assert
+        expect(results[0], hasLength(10));
+        expect(results[1], hasLength(10));
+        expect(results[2], hasLength(10));
+      });
+
+      test('handles empty prompt list in getFirstAvailablePrompt', () async {
+        // Act
+        final result = await filter.getFirstAvailablePrompt([]);
+
+        // Assert
+        expect(result, isNull);
+      });
+
+      test('handles prompt with invalid model ID format', () async {
+        // Arrange
+        final prompt = AiTestDataFactory.createTestPrompt(
+          defaultModelId: '',
+        );
+
+        when(() => mockRepo.getConfigById('')).thenAnswer((_) async => null);
+
+        // Act
+        final result = await filter.isPromptAvailableOnPlatform(prompt);
+
+        // Assert - On desktop, should still return true
+        expect(result, isTrue);
+      });
+
+      test('handles provider lookup failure on desktop', () async {
+        // Arrange
+        final prompt = AiTestDataFactory.createTestPrompt();
+
+        final model = AiTestDataFactory.createTestModel(
+          inferenceProviderId: 'provider-1',
+        );
+
+        when(() => mockRepo.getConfigById('test-model'))
+            .thenAnswer((_) async => model);
+        when(() => mockRepo.getConfigById('provider-1'))
+            .thenThrow(Exception('Database error'));
+
+        // Act - On desktop, should return true before checking provider
+        final result = await filter.isPromptAvailableOnPlatform(prompt);
+
+        // Assert - Desktop returns true immediately
+        expect(result, isTrue);
+      });
+    });
   });
 }
