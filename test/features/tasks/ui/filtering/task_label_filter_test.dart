@@ -35,7 +35,7 @@ JournalPageState _baseState({
     pagingController: null,
     taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE'],
     selectedTaskStatuses: <String>{},
-    selectedCategoryIds: <String?>{},
+    selectedCategoryIds: <String>{},
     selectedLabelIds: selectedLabelIds,
   );
 }
@@ -72,6 +72,9 @@ void main() {
       when(() => cacheService.getLabelById(label.id)).thenReturn(label);
     }
     when(() => cacheService.showPrivateEntries).thenReturn(true);
+    // Stub async cubit APIs used by the widgets
+    when(() => cubit.toggleSelectedLabelId(any())).thenAnswer((_) async {});
+    when(() => cubit.clearSelectedLabelIds()).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -132,7 +135,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('All'));
-    verify(cubit.clearSelectedLabelIds).called(1);
+    verify(() => cubit.clearSelectedLabelIds()).called(1);
 
     await tester.tap(find.text('Unlabeled'));
     verify(() => cubit.toggleSelectedLabelId('')).called(1);
@@ -171,6 +174,6 @@ void main() {
     verify(() => cubit.toggleSelectedLabelId('label-0')).called(1);
 
     await tester.tap(find.text('Clear'));
-    verify(cubit.clearSelectedLabelIds).called(1);
+    verify(() => cubit.clearSelectedLabelIds()).called(1);
   });
 }

@@ -3213,6 +3213,18 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get settingsLabelsDeleteConfirmAction;
 
+  /// No description provided for @settingsLabelsActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Label actions'**
+  String get settingsLabelsActionsTooltip;
+
+  /// No description provided for @settingsLabelsUsageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Used on {count, plural, =1{1 task} other{{count} tasks}}'**
+  String settingsLabelsUsageCount(int count);
+
   /// No description provided for @selectColor.
   ///
   /// In en, this message translates to:

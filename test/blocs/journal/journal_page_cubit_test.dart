@@ -174,7 +174,7 @@ void main() {
     blocTest<JournalPageCubit, JournalPageState>(
       'toggleSelectedLabelId adds label when not selected',
       build: () => _TestJournalPageCubit(showTasks: false),
-      act: (cubit) => cubit.toggleSelectedLabelId('label-A'),
+      act: (cubit) async => cubit.toggleSelectedLabelId('label-A'),
       wait: const Duration(milliseconds: 300),
       skip: 1,
       verify: (cubit) {
@@ -186,9 +186,9 @@ void main() {
       'toggleSelectedLabelId removes label when already selected',
       build: () => _TestJournalPageCubit(showTasks: false),
       act: (cubit) async {
-        cubit.toggleSelectedLabelId('label-A');
+        await cubit.toggleSelectedLabelId('label-A');
         await Future<void>.delayed(defaultWait);
-        cubit.toggleSelectedLabelId('label-A');
+        await cubit.toggleSelectedLabelId('label-A');
       },
       wait: const Duration(milliseconds: 300),
       skip: 1,
@@ -201,11 +201,10 @@ void main() {
       'clearSelectedLabelIds removes all label filters',
       build: () => _TestJournalPageCubit(showTasks: false),
       act: (cubit) async {
-        cubit
-          ..toggleSelectedLabelId('label-A')
-          ..toggleSelectedLabelId('label-B');
+        await cubit.toggleSelectedLabelId('label-A');
+        await cubit.toggleSelectedLabelId('label-B');
         await Future<void>.delayed(defaultWait);
-        cubit.clearSelectedLabelIds();
+        await cubit.clearSelectedLabelIds();
       },
       wait: const Duration(milliseconds: 300),
       skip: 1,
@@ -216,14 +215,13 @@ void main() {
 
     blocTest<JournalPageCubit, JournalPageState>(
       'label filter state persists across state updates',
-      build: () => JournalPageCubit(showTasks: false),
+      build: () => _TestJournalPageCubit(showTasks: false),
       act: (cubit) async {
-        cubit
-          ..toggleSelectedLabelId('label-A')
-          // trigger unrelated state update
-          ..setFilters({DisplayFilter.starredEntriesOnly});
+        await cubit.toggleSelectedLabelId('label-A');
+        // trigger unrelated state update
+        cubit.setFilters({DisplayFilter.starredEntriesOnly});
       },
-      wait: defaultWait,
+      wait: const Duration(milliseconds: 300),
       skip: 1,
       verify: (cubit) {
         expect(cubit.state.selectedLabelIds, contains('label-A'));

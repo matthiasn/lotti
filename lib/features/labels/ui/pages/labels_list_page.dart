@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart' as intl;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/search/index.dart';
@@ -260,22 +258,6 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
         ),
       );
     }
-  }
-}
-
-// Temporary localization helpers until ARB keys are generated for
-// settingsLabelsActionsTooltip and settingsLabelsUsageCount across locales.
-extension _LabelsLocalizationExtras on AppLocalizations {
-  String get settingsLabelsActionsTooltip => entryActions;
-
-  String settingsLabelsUsageCount(int count) {
-    final text = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      one: 'Used on 1 task',
-      other: 'Used on $count tasks',
-    );
-    return text;
   }
 }
 

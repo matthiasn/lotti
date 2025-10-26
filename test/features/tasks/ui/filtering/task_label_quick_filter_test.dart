@@ -61,6 +61,9 @@ void main() {
     mockCache = _MockEntitiesCacheService();
     getIt.registerSingleton<EntitiesCacheService>(mockCache);
     when(() => mockCubit.state).thenReturn(_baseState());
+    // Stub async cubit APIs used by the widget
+    when(() => mockCubit.toggleSelectedLabelId(any())).thenAnswer((_) async {});
+    when(() => mockCubit.clearSelectedLabelIds()).thenAnswer((_) async {});
     whenListen(
       mockCubit,
       const Stream<JournalPageState>.empty(),
