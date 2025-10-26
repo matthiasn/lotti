@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
 class SliverBoxAdapterPage extends StatefulWidget {
   const SliverBoxAdapterPage({
     required this.child,
     required this.title,
+    this.subtitle,
     this.showBackButton = false,
     this.padding = EdgeInsets.zero,
     super.key,
@@ -15,6 +16,7 @@ class SliverBoxAdapterPage extends StatefulWidget {
 
   final Widget child;
   final String title;
+  final String? subtitle;
   final bool showBackButton;
   final EdgeInsets padding;
 
@@ -38,9 +40,9 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
       body: CustomScrollView(
         controller: _scrollController,
         slivers: <Widget>[
-          SliverTitleBar(
-            widget.title,
-            pinned: true,
+          SettingsPageHeader(
+            title: widget.title,
+            subtitle: widget.subtitle,
             showBackButton: widget.showBackButton,
           ),
           SliverToBoxAdapter(

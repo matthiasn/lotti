@@ -118,6 +118,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 
     return SyncListScaffold<OutboxItem, _OutboxListFilter>(
       title: context.messages.settingsSyncOutboxTitle,
+      subtitle: context.messages.settingsAdvancedOutboxSubtitle,
       stream: _stream,
       filters: filters,
       initialFilter: _OutboxListFilter.pending,

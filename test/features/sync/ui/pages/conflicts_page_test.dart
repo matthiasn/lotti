@@ -68,6 +68,34 @@ void main() {
       expect(find.textContaining('Entity: Text'), findsOneWidget);
       expect(find.textContaining('ID: id'), findsOneWidget);
     });
+
+    testWidgets('segmented filters stay pinned while scrolling',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const SizedBox(
+            width: 500,
+            height: 1000,
+            child: ConflictsPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
+
+      final resolvedFilter = find.byKey(const ValueKey('syncFilter-resolved'));
+      await tester.ensureVisible(resolvedFilter);
+      await tester.tap(resolvedFilter);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Resolved · 1 item'), findsOneWidget);
+    });
     testWidgets('shows empty state when streams emit no conflicts',
         (tester) async {
       when(() => mockJournalDb.watchConflicts(ConflictStatus.resolved))

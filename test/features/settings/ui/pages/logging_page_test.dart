@@ -260,39 +260,46 @@ void main() {
     });
 
     testWidgets('search handles errors gracefully', (tester) async {
-      // Mock initial logs
-      when(
-        () => mockLoggingDb.watchLogEntries(),
-      ).thenAnswer(
-        (_) => Stream<List<LogEntry>>.fromIterable([[]]),
-      );
+      final previousDebugPrint = debugPrint;
+      debugPrint = (String? message, {int? wrapWidth}) {};
 
-      // Mock search count throwing error
-      when(
-        () => mockLoggingDb.getSearchLogEntriesCount(any()),
-      ).thenThrow(Exception('Database error'));
+      try {
+        // Mock initial logs
+        when(
+          () => mockLoggingDb.watchLogEntries(),
+        ).thenAnswer(
+          (_) => Stream<List<LogEntry>>.fromIterable([[]]),
+        );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+        // Mock search count throwing error
+        when(
+          () => mockLoggingDb.getSearchLogEntriesCount(any()),
+        ).thenThrow(Exception('Database error'));
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: const LoggingPage(),
             ),
-            child: const LoggingPage(),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Enter search query
-      final searchField = find.byType(TextField);
-      await tester.enterText(searchField, 'test');
-      await tester.pumpAndSettle();
+        // Enter search query
+        final searchField = find.byType(TextField);
+        await tester.enterText(searchField, 'test');
+        await tester.pumpAndSettle();
 
-      // Verify error handling - should not crash and should show error message
-      expect(find.text('Search failed. Please try again.'), findsOneWidget);
+        // Verify error handling - should not crash and should show error message
+        expect(find.text('Search failed. Please try again.'), findsOneWidget);
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
     });
   });
 }

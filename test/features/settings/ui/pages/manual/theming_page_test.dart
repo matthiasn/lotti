@@ -74,10 +74,16 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       locale: locale,
-      home: Scaffold(
-        body: BlocProvider.value(
-          value: cubit,
-          child: const ThemingPage(),
+      home: MediaQuery(
+        data: const MediaQueryData(
+          size: Size(390, 844),
+          padding: EdgeInsets.only(top: 47),
+        ),
+        child: Scaffold(
+          body: BlocProvider.value(
+            value: cubit,
+            child: const ThemingPage(),
+          ),
         ),
       ),
     );

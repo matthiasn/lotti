@@ -97,7 +97,13 @@ void main() {
 
       await tester.tap(heartRateButtonFinder);
       await tester.tap(bpButtonFinder);
+
+      await tester.ensureVisible(bodyButtonFinder);
+      await tester.pumpAndSettle();
       await tester.tap(bodyButtonFinder);
+
+      await tester.ensureVisible(workoutButtonFinder);
+      await tester.pumpAndSettle();
       await tester.tap(workoutButtonFinder);
     });
   });

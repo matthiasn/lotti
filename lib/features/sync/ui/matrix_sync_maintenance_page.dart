@@ -19,6 +19,7 @@ class MatrixSyncMaintenancePage extends StatelessWidget {
     return SyncFeatureGate(
       child: SliverBoxAdapterPage(
         title: context.messages.settingsMatrixMaintenanceTitle,
+        subtitle: context.messages.settingsMatrixMaintenanceSubtitle,
         showBackButton: true,
         child: Column(
           children: [

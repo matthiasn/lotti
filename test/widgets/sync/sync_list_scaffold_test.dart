@@ -36,20 +36,27 @@ void main() {
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: SyncListScaffold<_TestItem, _TestFilter>(
-              title: 'Sync UI',
-              stream: controller.stream,
-              filters: _buildFilters(),
-              itemBuilder: (context, item) => ListTile(
-                title: Text(item.label),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(390, 844),
+                padding: EdgeInsets.only(top: 47),
               ),
-              emptyIcon: Icons.hourglass_empty,
-              emptyTitleBuilder: (ctx) => 'Nothing here',
-              emptyDescriptionBuilder: (_) => null,
-              countSummaryBuilder: (ctx, label, count) =>
-                  ctx.messages.syncListCountSummary(label, count),
-              initialFilter: _TestFilter.pending,
-              backButton: false,
+              child: SyncListScaffold<_TestItem, _TestFilter>(
+                title: 'Sync UI',
+                subtitle: 'Subtitle copy',
+                stream: controller.stream,
+                filters: _buildFilters(),
+                itemBuilder: (context, item) => ListTile(
+                  title: Text(item.label),
+                ),
+                emptyIcon: Icons.hourglass_empty,
+                emptyTitleBuilder: (ctx) => 'Nothing here',
+                emptyDescriptionBuilder: (_) => null,
+                countSummaryBuilder: (ctx, label, count) =>
+                    ctx.messages.syncListCountSummary(label, count),
+                initialFilter: _TestFilter.pending,
+                backButton: false,
+              ),
             ),
           ),
         );
@@ -139,39 +146,45 @@ void main() {
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: SyncListScaffold<_TestItem, _TestFilter>(
-              title: 'Sync UI',
-              stream: controller.stream,
-              filters: {
-                _TestFilter.pending: SyncFilterOption<_TestItem>(
-                  labelBuilder: (context) =>
-                      context.messages.outboxMonitorLabelPending,
-                  predicate: (_) => true,
-                  icon: Icons.schedule_rounded,
-                  selectedColor: syncPendingAccentColor,
-                  selectedForegroundColor: syncPendingForegroundColor,
-                  hideCountWhenZero: true,
-                  countAccentColor: syncPendingCountAccentColor,
-                  countAccentForegroundColor: syncPendingForegroundColor,
-                ),
-                _TestFilter.error: SyncFilterOption<_TestItem>(
-                  labelBuilder: (context) =>
-                      context.messages.outboxMonitorLabelError,
-                  predicate: (item) => item.hasError,
-                  icon: Icons.error_outline_rounded,
-                  showCount: false,
-                ),
-              },
-              itemBuilder: (context, item) => ListTile(
-                title: Text(item.label),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(390, 844),
+                padding: EdgeInsets.only(top: 47),
               ),
-              emptyIcon: Icons.hourglass_empty,
-              emptyTitleBuilder: (ctx) => 'Nothing here',
-              emptyDescriptionBuilder: (_) => null,
-              countSummaryBuilder: (ctx, label, count) =>
-                  ctx.messages.syncListCountSummary(label, count),
-              initialFilter: _TestFilter.pending,
-              backButton: false,
+              child: SyncListScaffold<_TestItem, _TestFilter>(
+                title: 'Sync UI',
+                stream: controller.stream,
+                filters: {
+                  _TestFilter.pending: SyncFilterOption<_TestItem>(
+                    labelBuilder: (context) =>
+                        context.messages.outboxMonitorLabelPending,
+                    predicate: (_) => true,
+                    icon: Icons.schedule_rounded,
+                    selectedColor: syncPendingAccentColor,
+                    selectedForegroundColor: syncPendingForegroundColor,
+                    hideCountWhenZero: true,
+                    countAccentColor: syncPendingCountAccentColor,
+                    countAccentForegroundColor: syncPendingForegroundColor,
+                  ),
+                  _TestFilter.error: SyncFilterOption<_TestItem>(
+                    labelBuilder: (context) =>
+                        context.messages.outboxMonitorLabelError,
+                    predicate: (item) => item.hasError,
+                    icon: Icons.error_outline_rounded,
+                    showCount: false,
+                  ),
+                },
+                itemBuilder: (context, item) => ListTile(
+                  title: Text(item.label),
+                ),
+                emptyIcon: Icons.hourglass_empty,
+                emptyTitleBuilder: (ctx) => 'Nothing here',
+                emptyDescriptionBuilder: (_) => null,
+                countSummaryBuilder: (ctx, label, count) =>
+                    ctx.messages.syncListCountSummary(label, count),
+                initialFilter: _TestFilter.pending,
+                backButton: false,
+              ),
             ),
           ),
         );
