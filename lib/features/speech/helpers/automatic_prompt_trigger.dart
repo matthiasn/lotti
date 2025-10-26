@@ -90,31 +90,31 @@ class AutomaticPromptTrigger {
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             );
-            return;
-          }
+            // Continue with other prompts instead of returning early
+          } else {
+            final promptId = availablePrompt.id;
 
-          final promptId = availablePrompt.id;
+            loggingService.captureEvent(
+              'Triggering audio transcription (user preference: ${state.enableSpeechRecognition})',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            );
 
-          loggingService.captureEvent(
-            'Triggering audio transcription (user preference: ${state.enableSpeechRecognition})',
-            domain: 'automatic_prompt_trigger',
-            subDomain: 'triggerAutomaticPrompts',
-          );
+            // Store the transcription future so we can wait for it if needed
+            transcriptionFuture = ref.read(
+              triggerNewInferenceProvider(
+                entityId: entryId,
+                promptId: promptId,
+                linkedEntityId: linkedTaskId,
+              ).future,
+            );
 
-          // Store the transcription future so we can wait for it if needed
-          transcriptionFuture = ref.read(
-            triggerNewInferenceProvider(
-              entityId: entryId,
-              promptId: promptId,
-              linkedEntityId: linkedTaskId,
-            ).future,
-          );
-
-          // If neither checklist updates nor task summary is needed, await transcription
-          // Otherwise, we'll wait for it before triggering the next steps
-          if (!shouldTriggerChecklistUpdates && !shouldTriggerTaskSummary ||
-              linkedTaskId == null) {
-            await transcriptionFuture;
+            // If neither checklist updates nor task summary is needed, await transcription
+            // Otherwise, we'll wait for it before triggering the next steps
+            if (!shouldTriggerChecklistUpdates && !shouldTriggerTaskSummary ||
+                linkedTaskId == null) {
+              await transcriptionFuture;
+            }
           }
         }
 

@@ -563,8 +563,7 @@ void main() {
     });
 
     group('getFirstAvailablePrompt on mobile', () {
-      test('skips local-only prompts and returns first cloud prompt',
-          () async {
+      test('skips local-only prompts and returns first cloud prompt', () async {
         // Skip on desktop
         if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
           return;
