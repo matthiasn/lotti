@@ -125,4 +125,80 @@ void main() {
     expect(list[0]['id'], 'c');
     expect(list[1]['id'], 'a');
   });
+
+  test('limits to 100 labels total (50 usage + 50 alpha)', () async {
+    when(() => mockDb.getConfigFlag(enableAiLabelAssignmentFlag))
+        .thenAnswer((_) async => true);
+    when(() => mockDb.getConfigFlag(includePrivateLabelsInPromptsFlag))
+        .thenAnswer((_) async => true);
+
+    // Create 150 labels
+    final labels = List.generate(
+      150,
+      (i) => makeLabel(id: 'id$i', name: 'Label $i'),
+    );
+    when(() => mockDb.getAllLabelDefinitions()).thenAnswer((_) async => labels);
+
+    // Usage for 60 labels, ensure top 50 are chosen by usage
+    final usage = <String, int>{
+      for (var i = 0; i < 60; i++) 'id$i': 100 - i, // descending usage
+    };
+    when(() => mockDb.getLabelUsageCounts()).thenAnswer((_) async => usage);
+    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
+        .thenAnswer((_) async => '{}');
+
+    final prompt = await helper.buildPromptWithData(
+      promptConfig: makePrompt(),
+      entity: makeTask(),
+    );
+    final match =
+        RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt!);
+    final jsonPart = match!.group(1)!;
+    final list = (jsonDecode(jsonPart) as List<dynamic>)
+        .map((e) => e as Map<String, dynamic>)
+        .toList();
+    expect(list.length, 100);
+  });
+
+  test('escapes special characters in label names', () async {
+    when(() => mockDb.getConfigFlag(enableAiLabelAssignmentFlag))
+        .thenAnswer((_) async => true);
+    when(() => mockDb.getConfigFlag(includePrivateLabelsInPromptsFlag))
+        .thenAnswer((_) async => true);
+    when(() => mockDb.getAllLabelDefinitions()).thenAnswer((_) async => [
+          makeLabel(id: '1', name: 'Quote " inside'),
+          makeLabel(id: '2', name: 'Bracket } ] combo'),
+          makeLabel(id: '3', name: 'New\nLine'),
+        ]);
+    when(() => mockDb.getLabelUsageCounts())
+        .thenAnswer((_) async => <String, int>{});
+    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
+        .thenAnswer((_) async => '{}');
+
+    final prompt = await helper.buildPromptWithData(
+      promptConfig: makePrompt(),
+      entity: makeTask(),
+    );
+    final match =
+        RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt!);
+    final jsonPart = match!.group(1)!;
+    expect(() => jsonDecode(jsonPart), returnsNormally);
+  });
+
+  test('returns empty list when feature disabled', () async {
+    when(() => mockDb.getConfigFlag(enableAiLabelAssignmentFlag))
+        .thenAnswer((_) async => false);
+    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
+        .thenAnswer((_) async => '{}');
+
+    final prompt = await helper.buildPromptWithData(
+      promptConfig: makePrompt(),
+      entity: makeTask(),
+    );
+    final match =
+        RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt!);
+    final jsonPart = match!.group(1)!;
+    final list = jsonDecode(jsonPart) as List<dynamic>;
+    expect(list, isEmpty);
+  });
 }

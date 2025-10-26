@@ -8,7 +8,6 @@ import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
-
 class LabelAssignmentResult {
   LabelAssignmentResult({
     required this.assigned,
@@ -71,8 +70,9 @@ class LabelAssignmentProcessor {
       proposedIds.where((e) => e.isNotEmpty),
     ).take(kMaxLabelsPerAssignment).toList();
     if (requested.isEmpty) {
-      return LabelAssignmentResult(assigned: const [], invalid: const [], skipped: const []);
-}
+      return LabelAssignmentResult(
+          assigned: const [], invalid: const [], skipped: const []);
+    }
 // End of file
     if (_rateLimiter.isRateLimited(taskId)) {
       _logging.captureEvent(
