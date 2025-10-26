@@ -238,10 +238,11 @@ class _SyncListScaffoldState<T, F extends Enum>
               onChanged: (value) => setState(() => _selectedFilter = value),
               locale: locale,
               summaryText: summaryText,
+              // Remove extra top padding so the segmented chips sit
+              // directly under the subtitle.
               padding: EdgeInsetsDirectional.only(
                 start: effectivePadding.start,
                 end: effectivePadding.end,
-                top: effectivePadding.top,
                 bottom: AppTheme.spacingMedium,
               ),
             );
@@ -417,41 +418,35 @@ class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
     final filterCount = filters.length;
     // Estimate height based on how many segments are likely to wrap.
     // One row (<=3) is compact; more rows need extra headroom.
-    final double height = filterCount <= 3
-        ? 120
+    final height = filterCount <= 3
+        ? 100
         : filterCount <= 6
             ? 156
             : 196;
-    return Size.fromHeight(height);
+    return Size.fromHeight(height.toDouble());
   }
 
   @override
   Widget build(BuildContext context) {
-    final resolvedPadding = padding
-        .resolve(Directionality.of(context))
-        .copyWith(bottom: AppTheme.spacingSmall);
-
-    return Padding(
-      padding: resolvedPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _FilterCard<F>(
-            filters: filters,
-            counts: counts,
-            selected: selected,
-            onChanged: onChanged,
-            locale: locale,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 5),
+        _FilterCard<F>(
+          filters: filters,
+          counts: counts,
+          selected: selected,
+          onChanged: onChanged,
+          locale: locale,
+        ),
+        const SizedBox(height: AppTheme.spacingSmall),
+        Text(
+          summaryText,
+          style: context.textTheme.titleSmall?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(height: AppTheme.spacingSmall),
-          Text(
-            summaryText,
-            style: context.textTheme.titleSmall?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

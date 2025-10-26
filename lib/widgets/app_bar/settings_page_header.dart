@@ -5,6 +5,22 @@ import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
+// Compact spacing constants for SettingsPageHeader.
+const double kSettingsHeaderTop = 0;
+const double kSettingsHeaderSubtitleGap = 6; // title → subtitle gap
+const double kSettingsHeaderSubtitleBottomGapWithBottom =
+    4; // subtitle → bottom gap when bottom is present
+const double kSettingsHeaderBottomShim =
+    2; // tiny spacer above the bottom widget
+const double kSettingsHeaderFooterWithSubtitle =
+    8; // footer padding when no bottom
+const double kSettingsHeaderFooterNoSubtitle =
+    6; // footer padding when no bottom and no subtitle
+// Reduce collapsed minimums so there’s less blank space above the title
+// when the sliver is pinned.
+const double kSettingsHeaderCollapsedMinWithSubtitle = 24;
+const double kSettingsHeaderCollapsedMinNoSubtitle = 24;
+
 /// Premium settings header that adapts to phone, tablet, and desktop layouts
 /// without overlapping the back button or status bar.
 class SettingsPageHeader extends StatelessWidget {
@@ -30,7 +46,6 @@ class SettingsPageHeader extends StatelessWidget {
     final topInset = mediaQuery.padding.top;
     final textScale = mediaQuery.textScaler.scale(1);
 
-    final compact = width < 360;
     final wide = width >= 840;
     final showSubtitle = subtitle?.trim().isNotEmpty ?? false;
 
@@ -39,47 +54,51 @@ class SettingsPageHeader extends StatelessWidget {
     final subtitleFontSize = settingsHeaderSubtitleTextStyle.fontSize ?? 16.0;
     final titleLineHeight = settingsHeaderTitleTextStyle.height ?? 1.05;
     final subtitleLineHeight = settingsHeaderSubtitleTextStyle.height ?? 1.3;
-    final topSpacing = wide
-        ? 16.0
-        : compact
-            ? 10.0
-            : 14.0;
-    final bottomSpacing = showSubtitle ? 10.0 : 8.0;
-    final gapBetween = showSubtitle ? 4.0 : 0.0;
-    final footerSpacing = showSubtitle ? 8.0 : 6.0;
+    // Fixed paddings: simple and predictable.
+    const topSpacing = kSettingsHeaderTop;
+    final bottomSpacing = bottom != null
+        ? (showSubtitle ? kSettingsHeaderSubtitleBottomGapWithBottom : 0.0)
+        : (showSubtitle
+            ? kSettingsHeaderFooterWithSubtitle
+            : kSettingsHeaderFooterNoSubtitle);
+    final subtitleGap = showSubtitle ? kSettingsHeaderSubtitleGap : 0.0;
+    final footerSpacing = showSubtitle
+        ? kSettingsHeaderFooterWithSubtitle
+        : kSettingsHeaderFooterNoSubtitle;
 
     final titleBlockHeight = baseTitleSize * titleLineHeight * textScale;
     final subtitleBlockHeight =
         showSubtitle ? subtitleFontSize * subtitleLineHeight * textScale : 0;
-    final extraScale = (textScale - 1).clamp(0.0, 1.4);
-    final accessibilityAllowance = extraScale == 0
-        ? 0.0
-        : extraScale * (showSubtitle ? 64.0 : 48.0) +
-            (showSubtitle ? 12.0 : 10.0);
+
+    // Simple, content-based heights with fixed paddings.
+    final scaleAllowance =
+        textScale > 1 ? (textScale - 1) * (showSubtitle ? 72.0 : 48.0) : 0.0;
 
     final expandedBodyHeight = topSpacing +
         titleBlockHeight +
-        gapBetween +
+        subtitleGap +
         subtitleBlockHeight +
         bottomSpacing +
         footerSpacing +
-        accessibilityAllowance;
+        scaleAllowance;
 
-    final collapsedBodyHeight = titleBlockHeight * 0.85 +
-        subtitleBlockHeight * 0.6 +
-        topSpacing * 0.5 +
-        bottomSpacing +
-        footerSpacing +
-        accessibilityAllowance * 0.8;
+    final collapsedBodyHeight = titleBlockHeight * 0.9 +
+        (showSubtitle ? subtitleBlockHeight * 0.35 : 0) +
+        topSpacing * 0.5;
 
     final expandedHeight = topInset + expandedBodyHeight;
-    final collapsedHeight =
-        topInset + math.max(showSubtitle ? 68.0 : 56.0, collapsedBodyHeight);
+    final collapsedHeight = topInset +
+        math.max(
+          showSubtitle
+              ? kSettingsHeaderCollapsedMinWithSubtitle
+              : kSettingsHeaderCollapsedMinNoSubtitle,
+          collapsedBodyHeight,
+        );
 
     final colorScheme = Theme.of(context).colorScheme;
 
     final bottomHeight = bottom?.preferredSize.height ?? 0;
-    final accessorySpacing = bottom != null ? 6.0 : 0.0;
+    final accessorySpacing = bottom != null ? kSettingsHeaderBottomShim : 0.0;
     final effectiveExpandedHeight =
         expandedHeight + bottomHeight + accessorySpacing;
     final effectiveCollapsedHeight =
@@ -120,7 +139,7 @@ class SettingsPageHeader extends StatelessWidget {
               topSpacing;
           final bottomPadding = lerpDouble(
                 bottomSpacing,
-                math.max(10.0, bottomSpacing - 4),
+                math.max(0.0, bottomSpacing - 4),
                 easedProgress,
               ) ??
               bottomSpacing;
@@ -197,7 +216,7 @@ class SettingsPageHeader extends StatelessWidget {
                   ),
                 ),
                 if (bottom != null) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 2),
                   SizedBox(
                     height: bottom!.preferredSize.height,
                     child: bottom,
@@ -233,8 +252,7 @@ class _HeaderText extends StatelessWidget {
     final subtitleOpacity = subtitle == null || subtitle!.trim().isEmpty
         ? 0.0
         : (1 - collapseProgress.clamp(0.0, 1.0));
-
-    return Column(
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -247,7 +265,7 @@ class _HeaderText extends StatelessWidget {
           child: Text(title),
         ),
         if (subtitleOpacity > 0) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: kSettingsHeaderSubtitleGap),
           AnimatedOpacity(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutCubic,
@@ -262,6 +280,16 @@ class _HeaderText extends StatelessWidget {
         ],
       ],
     );
+
+    final textScale = MediaQuery.maybeOf(context)?.textScaler.scale(1) ?? 1.0;
+    if (textScale >= 1.5) {
+      return FittedBox(
+        alignment: AlignmentDirectional.bottomStart,
+        fit: BoxFit.scaleDown,
+        child: content,
+      );
+    }
+    return content;
   }
 }
 
