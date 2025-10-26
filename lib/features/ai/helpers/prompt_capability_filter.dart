@@ -52,15 +52,14 @@ class PromptCapabilityFilter {
   Future<List<AiConfigPrompt>> filterPromptsByPlatform(
     List<AiConfigPrompt> prompts,
   ) async {
-    final availablePrompts = <AiConfigPrompt>[];
-
-    for (final prompt in prompts) {
-      if (await isPromptAvailableOnPlatform(prompt)) {
-        availablePrompts.add(prompt);
-      }
-    }
-
-    return availablePrompts;
+    if (isDesktop) return prompts;
+    final checks = await Future.wait(
+      prompts.map(isPromptAvailableOnPlatform),
+    );
+    return [
+      for (int i = 0; i < prompts.length; i++)
+        if (checks[i]) prompts[i],
+    ];
   }
 
   /// Get the first available prompt from a list of prompt IDs
