@@ -317,6 +317,13 @@ SELECT * FROM journal
   AND task = 1
   AND task_status IN :taskStatuses
   AND category IN :categories
+  -- Label filtering (OR semantics):
+  -- - If :filterByLabels is true, include rows that either
+  --   a) have any of the selected labels (when :labelFilterCount > 0), or
+  --   b) are unlabeled (when :includeUnlabeled is true).
+  -- - Otherwise, pass through without label-based filtering.
+  -- Note: The :labelIds parameter is never an empty list (see effectiveLabelIds
+  --       in database.dart). Using a non-empty list avoids an invalid `IN ()` clause.
   AND (
     CASE
       WHEN :filterByLabels THEN

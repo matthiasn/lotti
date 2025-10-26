@@ -438,6 +438,10 @@ class JournalDb extends _$JournalDb {
     final filteredLabelIds =
         selectedLabelIds.where((id) => id.isNotEmpty).toList();
     final labelFilterCount = filteredLabelIds.length;
+    // Avoid passing an empty list to the SQL `IN (:labelIds)` clause.
+    // SQLite (and SQL generally) does not allow an empty `IN ()`, so we
+    // substitute a dummy value when no label IDs are selected. The query
+    // never matches this magic string; it only keeps the SQL valid.
     final effectiveLabelIds =
         labelFilterCount == 0 ? <String>['__no_label__'] : filteredLabelIds;
     final filterByLabels = includeUnlabeled || labelFilterCount > 0;
