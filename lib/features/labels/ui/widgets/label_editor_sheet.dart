@@ -27,10 +27,15 @@ class LabelEditorSheet extends ConsumerStatefulWidget {
 class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
+  late final LabelEditorArgs _args;
 
   @override
   void initState() {
     super.initState();
+    _args = LabelEditorArgs(
+      label: widget.label,
+      initialName: widget.initialName,
+    );
     _nameController = TextEditingController(
         text: widget.label?.name ?? widget.initialName ?? '');
     _descriptionController =
@@ -47,11 +52,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final args = LabelEditorArgs(
-      label: widget.label,
-      initialName: widget.initialName,
-    );
-    final controllerProvider = labelEditorControllerProvider(args);
+    final controllerProvider = labelEditorControllerProvider(_args);
     final state = ref.watch(controllerProvider);
     ref.listen(
       controllerProvider,
