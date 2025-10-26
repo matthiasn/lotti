@@ -14,6 +14,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
@@ -257,6 +258,12 @@ Future<void> registerSingletons() async {
   _registerLazyServiceSafely<LabelAssignmentProcessor>(
     LabelAssignmentProcessor.new,
     'LabelAssignmentProcessor',
+  );
+
+  // Label assignment event service for UI notifications
+  _registerLazyServiceSafely<LabelAssignmentEventService>(
+    LabelAssignmentEventService.new,
+    'LabelAssignmentEventService',
   );
 
   // Check and run maintenance task to remove deprecated action item suggestions

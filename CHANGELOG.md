@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 ### Added
+- AI label assignment with function-calling:
+  - Prompt label injection (capped to 100, usage + alphabetical) with optional private filtering.
+  - `assign_task_labels` tool (add-only), group exclusivity, and max 5 labels per call.
+  - Shared rate limiter (5-minute window) and shadow mode.
+  - User feedback: SnackBar in Task Details listing assigned labels with Undo to remove them.
+  - Event stream for UI notifications and comprehensive unit/feature tests.
 - Settings header widget tests now cover multiple text scale factors (1.0, 1.2, 1.5, 2.0) and common screen widths to guard layout across devices.
 - Label chips now surface tooltips/long-press descriptions, Task label sheets show inline “Create
   label” CTAs, and the journal header includes a quick label filter row for active selections.

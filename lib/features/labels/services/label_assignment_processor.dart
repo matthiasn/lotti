@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -59,6 +60,8 @@ class LabelAssignmentProcessor {
   final LabelsRepository _repository;
   final LabelAssignmentRateLimiter _rateLimiter;
   final LoggingService _logging;
+  LabelAssignmentEventService get _events =>
+      getIt<LabelAssignmentEventService>();
 
   Future<LabelAssignmentResult> processAssignment({
     required String taskId,
@@ -132,6 +135,10 @@ class LabelAssignmentProcessor {
         addedLabelIds: assigned,
       );
       _rateLimiter.recordAssignment(taskId);
+      // Publish event for UI (toast + undo)
+      _events.publish(
+        LabelAssignmentEvent(taskId: taskId, assignedIds: [...assigned]),
+      );
     }
 
     return LabelAssignmentResult(

@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_redundant_argument_values
+// ignore_for_file: avoid_redundant_argument_values, cascade_invocations
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/repository/inference_repository_interface.dart
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -90,6 +91,10 @@ void main() {
           LabelAssignmentRateLimiter())
       // Also register mock LabelsRepository for processor fallback
       ..registerSingleton<LabelsRepository>(mockLabelsRepo);
+    // Event service needed by LabelAssignmentProcessor for UI notifications
+    getIt.registerSingleton<LabelAssignmentEventService>(
+      LabelAssignmentEventService(),
+    );
     // Ensure no cross-test rate limiting state persists
     getIt<LabelAssignmentRateLimiter>().clearHistory();
 

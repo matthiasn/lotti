@@ -1,9 +1,11 @@
-// ignore_for_file: avoid_redundant_argument_values
+// ignore_for_file: avoid_redundant_argument_values, directives_ordering, unnecessary_lambdas
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,6 +30,9 @@ void main() {
     mockRepo = MockLabelsRepository();
     mockLogging = MockLoggingService();
     mockLimiter = MockLimiter();
+    getIt.registerSingleton<LabelAssignmentEventService>(
+      LabelAssignmentEventService(),
+    );
     when(() => mockLimiter.isRateLimited(any())).thenReturn(false);
     when(() => mockRepo.addLabels(
           journalEntityId: any(named: 'journalEntityId'),
@@ -39,6 +44,10 @@ void main() {
       rateLimiter: mockLimiter,
       logging: mockLogging,
     );
+  });
+
+  tearDown(() {
+    getIt.reset();
   });
 
   LabelDefinition makeLabel(String id,

@@ -43,6 +43,45 @@ denormalized lookup table for efficient filtering.
 - `TaskLabelQuickFilter`: Mirrors the filter drawer selections in the task list header so users can
   quickly audit/clear active label filters.
 
+## AI Label Assignment
+
+Lotti can automatically assign labels to a task via AI function-calling during checklist updates.
+
+- Prompt enrichment: The checklistUpdates prompt injects a compact JSON array of available labels
+  (`[{"id":"…","name":"…"}]`) under the `{{labels}}` placeholder when the
+  `enable_ai_label_assignment` flag is enabled. The list is capped to 100 entries (top 50 by usage,
+  then 50 alphabetical) and optionally excludes private labels based on the
+  `include_private_labels_in_prompts` flag. Data is JSON-encoded to avoid prompt injection.
+- Function tool: The model calls `assign_task_labels` with `labelIds: string[]`. The system
+  enforces add‑only semantics (no removal), caps assignments per call using
+  `kMaxLabelsPerAssignment` (default 5), and applies group exclusivity (max 1 label per group).
+- Rate limiting: A shared `LabelAssignmentRateLimiter` prevents repeated assignments for the same
+  task within a 5‑minute window.
+- Shadow mode: When `ai_label_assignment_shadow` is true, assignments are computed and reported to
+  the model but not persisted.
+- UI feedback: After successful persistence, a non‑blocking SnackBar appears in Task Details listing
+  assigned label names with an `Undo` action that removes these labels.
+- Events: The `LabelAssignmentProcessor` publishes a `LabelAssignmentEvent` on success, consumed by
+  `TaskLabelsWrapper` to show the SnackBar.
+
+### Feature Flags
+
+- `enable_ai_label_assignment` (bool): gates tool registration and prompt label injection.
+- `include_private_labels_in_prompts` (bool): includes/excludes private labels from the injected list.
+- `ai_label_assignment_shadow` (bool): runs shadow mode (no persistence) while still returning
+  structured tool responses.
+
+### Observability
+
+- Logging domain: `labels_ai_assignment` records attempted/assigned/invalid/skipped counts.
+- Tool responses include a structured JSON payload for debugging and analytics.
+
+### Testing
+
+- Unit tests cover processor logic (group exclusivity, caps, rate limiting, shadow mode) and helper
+  prompt injection (caps, escaping, flag gating). Conversation and unified repo tests exercise the
+  function call path end‑to‑end.
+
 ## Color Picker Configuration
 
 The editor sheet limits the picker to two modes:
