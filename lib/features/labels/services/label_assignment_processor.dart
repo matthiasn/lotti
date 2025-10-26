@@ -86,39 +86,15 @@ class LabelAssignmentProcessor {
       return LabelAssignmentResult.rateLimited();
     }
 
-    // Build existing group occupancy from current task
-    final existingGroups = <String, String>{}; // groupId -> labelId
-    if (existingIds.isNotEmpty) {
-      final existingDefs = await Future.wait(
-        existingIds.map(_db.getLabelDefinitionById),
-      );
-      for (final def in existingDefs) {
-        final gid = def?.groupId;
-        final id = def?.id;
-        if (gid != null && id != null) {
-          existingGroups.putIfAbsent(gid, () => id);
-        }
-      }
-    }
-
     final assigned = <String>[];
     final invalid = <String>[];
-    final skipped = <Map<String, String>>[];
-    final seenGroups = <String>{};
+    final skipped = <Map<String, String>>[]; // reserved for future reasons
 
     for (final id in requested) {
       final def = await _db.getLabelDefinitionById(id);
       if (def == null || def.deletedAt != null) {
         invalid.add(id);
         continue;
-      }
-      final gid = def.groupId;
-      if (gid != null) {
-        if (existingGroups.containsKey(gid) || seenGroups.contains(gid)) {
-          skipped.add({'id': id, 'reason': 'group_exclusivity'});
-          continue;
-        }
-        seenGroups.add(gid);
       }
       assigned.add(id);
     }

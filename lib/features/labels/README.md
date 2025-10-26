@@ -7,8 +7,7 @@ denormalized lookup table for efficient filtering.
 ## Architecture
 
 - **EntityDefinition**: `LabelDefinition` variant lives alongside other entity definitions. It
-  stores id, name, color, description, private flag, and optional metadata required for future
-  enhancements (groupId, sortOrder).
+  stores id, name, color, description, private flag, and optional metadata (e.g., sortOrder).
 - **Database**:
   - `label_definitions` table: mirrors the existing category/habit tables so label metadata can be
     fetched efficiently with unique-name constraints.
@@ -53,8 +52,8 @@ Lotti can automatically assign labels to a task via AI function-calling during c
   then 50 alphabetical) and optionally excludes private labels based on the
   `include_private_labels_in_prompts` flag. Data is JSON-encoded to avoid prompt injection.
 - Function tool: The model calls `assign_task_labels` with `labelIds: string[]`. The system
-  enforces add‑only semantics (no removal), caps assignments per call using
-  `kMaxLabelsPerAssignment` (default 5), and applies group exclusivity (max 1 label per group).
+  enforces add‑only semantics (no removal) and caps assignments per call using
+  `kMaxLabelsPerAssignment` (default 5).
 - Rate limiting: A shared `LabelAssignmentRateLimiter` prevents repeated assignments for the same
   task within a 5‑minute window.
 - Shadow mode: When `ai_label_assignment_shadow` is true, assignments are computed and reported to

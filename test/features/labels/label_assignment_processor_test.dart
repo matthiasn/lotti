@@ -1,12 +1,12 @@
-// ignore_for_file: avoid_redundant_argument_values, directives_ordering, unnecessary_lambdas
+// ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -50,14 +50,12 @@ void main() {
     getIt.reset();
   });
 
-  LabelDefinition makeLabel(String id,
-          {String? groupId, bool deleted = false}) =>
+  LabelDefinition makeLabel(String id, {bool deleted = false}) =>
       LabelDefinition(
         id: id,
         name: id,
         color: '#000',
         description: null,
-        groupId: groupId,
         sortOrder: null,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -66,14 +64,14 @@ void main() {
         deletedAt: deleted ? DateTime.now() : null,
       );
 
-  test('assigns valid, filters invalid, enforces group exclusivity', () async {
-    // existing contains p0 in group g
+  test('assigns valid and filters invalid', () async {
+    // existing contains p0 (ignored for exclusivity)
     when(() => mockDb.getLabelDefinitionById('p0'))
-        .thenAnswer((_) async => makeLabel('p0', groupId: 'g'));
+        .thenAnswer((_) async => makeLabel('p0'));
 
-    // proposed: p1 (same group) -> skipped, bug (no group) -> assigned, del (deleted) -> invalid
+    // proposed: p1 (same group) -> now allowed, bug (no group) -> assigned, del (deleted) -> invalid
     when(() => mockDb.getLabelDefinitionById('p1'))
-        .thenAnswer((_) async => makeLabel('p1', groupId: 'g'));
+        .thenAnswer((_) async => makeLabel('p1'));
     when(() => mockDb.getLabelDefinitionById('bug'))
         .thenAnswer((_) async => makeLabel('bug'));
     when(() => mockDb.getLabelDefinitionById('del'))
@@ -86,17 +84,11 @@ void main() {
       shadowMode: false,
     );
 
-    expect(result.assigned, containsAll(['bug']));
+    expect(result.assigned, containsAll(['bug', 'p1']));
     expect(result.invalid, contains('del'));
-    expect(
-      result.skipped.any(
-        (e) => e['id'] == 'p1' && e['reason'] == 'group_exclusivity',
-      ),
-      isTrue,
-    );
     verify(() => mockRepo.addLabels(
           journalEntityId: 't1',
-          addedLabelIds: ['bug'],
+          addedLabelIds: any(named: 'addedLabelIds'),
         )).called(1);
     verify(() => mockLimiter.recordAssignment('t1')).called(1);
   });

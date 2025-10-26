@@ -124,7 +124,6 @@ void main() {
         color: any(named: 'color'),
         description: any(named: 'description'),
         private: any(named: 'private'),
-        groupId: any(named: 'groupId'),
         sortOrder: any(named: 'sortOrder'),
       ),
     ).thenAnswer((_) async => testLabelDefinition1);
@@ -156,7 +155,6 @@ void main() {
         color: any(named: 'color'),
         description: any(named: 'description'),
         private: any(named: 'private'),
-        groupId: any(named: 'groupId'),
         sortOrder: any(named: 'sortOrder'),
       ),
     ).thenAnswer((_) async => newLabel);
@@ -223,7 +221,6 @@ void main() {
         color: any(named: 'color'),
         description: any(named: 'description'),
         private: any(named: 'private'),
-        groupId: any(named: 'groupId'),
         sortOrder: any(named: 'sortOrder'),
       ),
     );
@@ -233,7 +230,6 @@ void main() {
           color: any(named: 'color'),
           description: any(named: 'description'),
           private: any(named: 'private'),
-          groupId: any(named: 'groupId'),
           sortOrder: any(named: 'sortOrder'),
         ));
   });

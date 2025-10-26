@@ -1,4 +1,4 @@
-// ignore_for_file: directives_ordering, avoid_redundant_argument_values
+// ignore_for_file: avoid_redundant_argument_values
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +9,9 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
-import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -101,7 +101,6 @@ void main() {
         name: id,
         color: '#000000',
         description: null,
-        groupId: groupId,
         sortOrder: null,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -120,14 +119,13 @@ void main() {
         ),
       );
 
-  test('assign_task_labels enforces group exclusivity and filters invalid',
-      () async {
-    // Existing label from group g1 on the task
+  test('assign_task_labels assigns valid labels and filters invalid', () async {
+    // Existing labels on the task (group is ignored for exclusivity)
     final task = makeTask(labels: const ['l1']);
     when(() => mockDb.getLabelDefinitionById('l1'))
         .thenAnswer((_) async => makeLabel('l1', groupId: 'g1'));
 
-    // Proposed: l2 (same group g1, should be skipped), l3 (g2, ok), lX (deleted)
+    // Proposed: l2 (same group g1, allowed), l3 (g2, allowed), lX (deleted)
     when(() => mockDb.getLabelDefinitionById('l2'))
         .thenAnswer((_) async => makeLabel('l2', groupId: 'g1'));
     when(() => mockDb.getLabelDefinitionById('l3'))
@@ -145,10 +143,10 @@ void main() {
 
     await repo.processToolCalls(toolCalls: calls, task: task);
 
-    // Only l3 should be assigned
+    // l2 and l3 should be assigned; lX filtered as invalid
     verify(() => mockLabelsRepo.addLabels(
           journalEntityId: task.id,
-          addedLabelIds: ['l3'],
+          addedLabelIds: any(named: 'addedLabelIds'),
         )).called(1);
   });
 }

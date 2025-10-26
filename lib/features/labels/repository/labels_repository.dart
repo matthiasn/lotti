@@ -53,7 +53,6 @@ class LabelsRepository {
     required String name,
     required String color,
     String? description,
-    String? groupId,
     int? sortOrder,
     bool? private,
   }) async {
@@ -63,7 +62,6 @@ class LabelsRepository {
       name: name.trim(),
       color: color,
       description: description?.trim(),
-      groupId: groupId,
       sortOrder: sortOrder,
       createdAt: now,
       updatedAt: now,
@@ -80,7 +78,6 @@ class LabelsRepository {
     String? name,
     String? color,
     String? description,
-    String? groupId,
     int? sortOrder,
     bool? private,
   }) async {
@@ -88,7 +85,6 @@ class LabelsRepository {
       name: name?.trim() ?? label.name,
       color: color ?? label.color,
       description: description?.trim(),
-      groupId: groupId ?? label.groupId,
       sortOrder: sortOrder ?? label.sortOrder,
       private: private ?? label.private,
       updatedAt: DateTime.now(),

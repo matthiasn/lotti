@@ -75,7 +75,6 @@ void main() {
   LabelDefinition makeLabel({
     required String id,
     required String name,
-    String? groupId,
     bool? private,
   }) =>
       LabelDefinition(
@@ -83,7 +82,6 @@ void main() {
         name: name,
         color: '#000000',
         description: null,
-        groupId: groupId,
         sortOrder: null,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

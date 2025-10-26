@@ -24,7 +24,6 @@ Feature flags are stored in settings and can be toggled from the flags panel.
 ## Safety and Limits
 
 - Max 5 labels per call (config constant `kMaxLabelsPerAssignment`).
-- Group exclusivity: one label per group enforced per task.
 - Rate limiting: prevents repeat assignments to the same task for 5 minutes.
 - Prompt bloat protection: injected label list capped at 100 entries (50 by usage + 50 alphabetical).
 - JSON encoding: All injected data is encoded to avoid prompt injection.
@@ -44,4 +43,3 @@ Feature flags are stored in settings and can be toggled from the flags panel.
 
 - Private labels can be excluded from the injected prompt list via `include_private_labels_in_prompts=false`.
 - Assigned labels are persisted like any other label change, synced via the existing entity pipelines.
-
