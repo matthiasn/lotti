@@ -76,17 +76,7 @@ class PromptBuilderHelper {
     // Inject labels list if requested and enabled via feature flag
     if (prompt.contains('{{labels}}') &&
         promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
-      var enabled = false;
-      try {
-        final dynamic fut = getIt<JournalDb>().getConfigFlag(
-          enableAiLabelAssignmentFlag,
-        );
-        if (fut is Future<bool>) {
-          enabled = await fut;
-        }
-      } catch (_) {
-        enabled = false;
-      }
+      final enabled = await _getFlagSafe(enableAiLabelAssignmentFlag);
       if (enabled) {
         final labelsJson = await _buildLabelsJson();
         prompt = prompt.replaceAll('{{labels}}', labelsJson);
@@ -140,15 +130,8 @@ class PromptBuilderHelper {
     final db = getIt<JournalDb>();
 
     // Respect privacy toggle
-    var includePrivate = true;
-    try {
-      final dynamic fut = db.getConfigFlag(includePrivateLabelsInPromptsFlag);
-      if (fut is Future<bool>) {
-        includePrivate = await fut;
-      }
-    } catch (_) {
-      includePrivate = true;
-    }
+    final includePrivate = await _getFlagSafe(includePrivateLabelsInPromptsFlag,
+        defaultValue: true);
 
     // Fetch label definitions and usage stats
     final all = await db.getAllLabelDefinitions();
@@ -182,5 +165,17 @@ class PromptBuilderHelper {
         .toList();
 
     return jsonEncode(tuples);
+  }
+
+  Future<bool> _getFlagSafe(String name, {bool defaultValue = false}) async {
+    try {
+      final dynamic fut = getIt<JournalDb>().getConfigFlag(name);
+      if (fut is Future<bool>) {
+        return await fut;
+      }
+    } catch (_) {
+      // ignore and use default
+    }
+    return defaultValue;
   }
 }

@@ -7,7 +7,7 @@ This guide explains how Lotti automatically assigns labels to tasks using AI fun
 - The AI suggests labels during the “Checklist Updates” flow.
 - The prompt includes a compact list of available labels with `{ id, name }` so the model can reference labels by ID.
 - The model calls `assign_task_labels` with `labelIds: string[]` to add labels to the current task.
-- The app enforces caps (max 5 per call), validates IDs, and ensures only one label per group is assigned.
+- The app enforces caps (max 5 per call) and validates IDs.
 - After assignment, a non‑blocking toast (SnackBar) appears in Task Details with an Undo option.
 
 ## Configuration
@@ -35,7 +35,7 @@ Feature flags are stored in settings and can be toggled from the flags panel.
 
 ## Troubleshooting
 
-- “No labels assigned”: The model may have had low confidence or group exclusivity filtered them out.
+- “No labels assigned”: The model may have had low confidence or no matching labels.
 - “Undo didn’t appear”: Ensure you’re on the Task Details page; the toast only appears in that context.
 - “Labels keep getting re‑added”: Check if the rate limiter window has elapsed; the model may try again after 5 minutes.
 

@@ -5,6 +5,17 @@ class LabelFunctions {
   static const String assignTaskLabels = 'assign_task_labels';
 
   /// Provide the tool schema for assigning labels to a task by ID.
+  ///
+  /// Example call arguments (from the model):
+  /// {"labelIds": ["bug", "backend", "ui"]}
+  ///
+  /// Expected structured response (string) from the system:
+  /// {
+  ///   "function": "assign_task_labels",
+  ///   "request": {"labelIds": ["bug", "backend", "ui"]},
+  ///   "result": {"assigned": ["bug", "backend"], "invalid": ["ui"], "skipped": []},
+  ///   "message": "Assigned 2 label(s); 1 invalid; 0 skipped"
+  /// }
   static List<ChatCompletionTool> getTools() {
     return [
       const ChatCompletionTool(

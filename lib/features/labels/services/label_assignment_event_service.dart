@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:meta/meta.dart';
 
+@immutable
 class LabelAssignmentEvent {
-  LabelAssignmentEvent({
+  const LabelAssignmentEvent({
     required this.taskId,
     required this.assignedIds,
     this.source = 'ai',

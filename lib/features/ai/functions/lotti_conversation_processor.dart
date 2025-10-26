@@ -408,7 +408,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
           );
         }
       } else if (call.function.name == 'assign_task_labels') {
-        // Assign labels to task (add-only) with group exclusivity and rate limiting (handled upstream if needed)
+        // Assign labels to task (add-only) with rate limiting (handled upstream if needed)
         try {
           final db = getIt<JournalDb>();
           final processor = LabelAssignmentProcessor(
@@ -459,10 +459,34 @@ class LottiChecklistStrategy extends ConversationStrategy {
             name: 'LottiConversationProcessor',
             error: e,
           );
-          manager.addToolResponse(
-            toolCallId: call.id,
-            response: 'Error processing label assignment',
-          );
+          // Return a structured error response instead of a generic string
+          try {
+            final args =
+                jsonDecode(call.function.arguments) as Map<String, dynamic>;
+            final idsRaw = args['labelIds'];
+            final requested = <String>[];
+            if (idsRaw is List) {
+              requested.addAll(idsRaw.map((e) => e.toString()));
+            } else if (idsRaw is String) {
+              requested.addAll(
+                idsRaw.split(RegExp(r'\s*,\s*')).map((e) => e.trim()),
+              );
+            }
+            final errorResponse = jsonEncode({
+              'function': 'assign_task_labels',
+              'request': {'labelIds': requested},
+              'error': 'Error processing label assignment: $e',
+            });
+            manager.addToolResponse(
+              toolCallId: call.id,
+              response: errorResponse,
+            );
+          } catch (_) {
+            manager.addToolResponse(
+              toolCallId: call.id,
+              response: 'Error processing label assignment',
+            );
+          }
         }
       } else if (call.function.name == 'suggest_checklist_completion') {
         // Handle but redirect to creating items

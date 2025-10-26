@@ -188,7 +188,6 @@ Tools for checklist updates:
 Label assignment rules:
 - Assign at most 3 labels and only with HIGH confidence
 - Choose from the provided Available Labels list only (use IDs)
-- If multiple labels from the same group would apply, pick at most one (group exclusivity)
 - If unsure, assign none
 
 Examples:

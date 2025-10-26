@@ -6,6 +6,7 @@ import 'package:lotti/features/labels/constants/label_assignment_constants.dart'
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
+import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
@@ -29,6 +30,22 @@ class LabelAssignmentResult {
   final List<Map<String, String>> skipped;
   final bool rateLimited;
 
+  /// Returns a structured JSON summary suitable for returning to the model.
+  ///
+  /// Example input and output:
+  ///
+  /// Input (requested): ["bug", "backend", "unknown"]
+  /// Output JSON (string):
+  /// {
+  ///   "function": "assign_task_labels",
+  ///   "request": {"labelIds": ["bug", "backend", "unknown"]},
+  ///   "result": {
+  ///     "assigned": ["bug", "backend"],
+  ///     "invalid": ["unknown"],
+  ///     "skipped": []
+  ///   },
+  ///   "message": "Assigned 2 label(s); 1 invalid; 0 skipped"
+  /// }
   String toStructuredJson(
     List<String> requested,
   ) =>
@@ -51,15 +68,16 @@ class LabelAssignmentProcessor {
     LabelsRepository? repository,
     LabelAssignmentRateLimiter? rateLimiter,
     LoggingService? logging,
-  })  : _db = db ?? getIt<JournalDb>(),
-        _repository = repository ?? getIt<LabelsRepository>(),
+    LabelValidator? validator,
+  })  : _repository = repository ?? getIt<LabelsRepository>(),
         _rateLimiter = rateLimiter ?? getIt<LabelAssignmentRateLimiter>(),
-        _logging = logging ?? getIt<LoggingService>();
+        _logging = logging ?? getIt<LoggingService>(),
+        _validator = validator ?? LabelValidator(db: db);
 
-  final JournalDb _db;
   final LabelsRepository _repository;
   final LabelAssignmentRateLimiter _rateLimiter;
   final LoggingService _logging;
+  final LabelValidator _validator;
   LabelAssignmentEventService get _events =>
       getIt<LabelAssignmentEventService>();
 
@@ -88,19 +106,15 @@ class LabelAssignmentProcessor {
 
     final assigned = <String>[];
     final invalid = <String>[];
-    final skipped = <Map<String, String>>[]; // reserved for future reasons
-
-    for (final id in requested) {
-      final def = await _db.getLabelDefinitionById(id);
-      if (def == null || def.deletedAt != null) {
-        invalid.add(id);
-        continue;
-      }
-      assigned.add(id);
-    }
+    final skipped = <Map<String, String>>[];
+    final sw = Stopwatch()..start();
+    final validation = await _validator.validate(requested);
+    assigned.addAll(validation.valid);
+    invalid.addAll(validation.invalid);
+    sw.stop();
 
     _logging.captureEvent(
-      'Assignment attempt task=$taskId attempted=${requested.length} assigned=${assigned.length} invalid=${invalid.length} skipped=${skipped.length}',
+      'Assignment attempt task=$taskId attempted=${requested.length} assigned=${assigned.length} invalid=${invalid.length} skipped=${skipped.length} validationMs=${sw.elapsedMilliseconds}',
       domain: 'labels_ai_assignment',
       subDomain: 'processor',
     );

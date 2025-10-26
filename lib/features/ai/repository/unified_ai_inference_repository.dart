@@ -1,5 +1,4 @@
 import 'dart:async';
-// ignore: unused_import
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:developer' as developer;
@@ -33,7 +32,6 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-// ignore: unused_import
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
@@ -1379,12 +1377,24 @@ class UnifiedAiInferenceRepository {
           final processor = LabelAssignmentProcessor(
             repository: ref.read(labelsRepositoryProvider),
           );
-          await processor.processAssignment(
+          final result = await processor.processAssignment(
             taskId: currentTask.id,
             proposedIds: proposed,
             existingIds: currentTask.meta.labelIds ?? const <String>[],
             shadowMode: shadow,
           );
+          // Log structured result for debugging
+          try {
+            final requested = LinkedHashSet<String>.from(
+              proposed.where((e) => e.isNotEmpty),
+            ).take(kMaxLabelsPerAssignment).toList();
+            developer.log(
+              'assign_task_labels result: ${result.toStructuredJson(requested)}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          } catch (_) {
+            // best-effort logging
+          }
         } catch (e) {
           developer.log(
             'Error processing assign_task_labels: $e',

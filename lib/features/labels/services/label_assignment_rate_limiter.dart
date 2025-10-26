@@ -1,5 +1,12 @@
 import 'package:meta/meta.dart';
 
+/// In-memory rate limiter for AI label assignment.
+///
+/// Notes and limitations:
+/// - Memory-based: state is lost on app restart (window resets).
+/// - Per-task window: blocks repeated assignments to the same task
+///   within [rateLimitWindow].
+/// - Not persisted: suitable for UX throttling, not security.
 class LabelAssignmentRateLimiter {
   final Map<String, DateTime> _lastAssignment = {};
 
