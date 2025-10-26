@@ -79,7 +79,7 @@ Lotti can automatically assign labels to a task via AI function-calling during c
 
 ### Testing
 
-- Unit tests cover processor logic (group exclusivity, caps, rate limiting, shadow mode) and helper
+- Unit tests cover processor logic (caps, rate limiting, shadow mode) and helper
   prompt injection (caps, escaping, flag gating). Conversation and unified repo tests exercise the
   function call path end‑to‑end.
 
