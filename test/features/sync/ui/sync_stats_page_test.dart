@@ -6,6 +6,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
@@ -33,7 +34,9 @@ void main() {
       // Gate enabled
       when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
           .thenAnswer((_) => Stream<bool>.value(true));
-      getIt.registerSingleton<JournalDb>(mockJournalDb);
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<UserActivityService>(UserActivityService());
       mockMatrixService = MockMatrixService();
       when(() => mockMatrixService.getV2Metrics())
           .thenAnswer((_) async => null);

@@ -3,23 +3,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
-// Compact spacing constants for SettingsPageHeader.
-const double kSettingsHeaderTop = 0;
-const double kSettingsHeaderSubtitleGap = 6; // title → subtitle gap
-const double kSettingsHeaderSubtitleBottomGapWithBottom =
-    4; // subtitle → bottom gap when bottom is present
-const double kSettingsHeaderBottomShim =
-    2; // tiny spacer above the bottom widget
-const double kSettingsHeaderFooterWithSubtitle =
-    8; // footer padding when no bottom
-const double kSettingsHeaderFooterNoSubtitle =
-    6; // footer padding when no bottom and no subtitle
-// Reduce collapsed minimums so there’s less blank space above the title
-// when the sliver is pinned.
-const double kSettingsHeaderCollapsedMinWithSubtitle = 24;
-const double kSettingsHeaderCollapsedMinNoSubtitle = 24;
+// Dimensions have been extracted to SettingsHeaderDimensions to centralize
+// spacing and layout breakpoints.
 
 /// Premium settings header that adapts to phone, tablet, and desktop layouts
 /// without overlapping the back button or status bar.
@@ -49,22 +37,26 @@ class SettingsPageHeader extends StatelessWidget {
     final wide = width >= 840;
     final showSubtitle = subtitle?.trim().isNotEmpty ?? false;
 
-    final baseTitleSize = _titleFontSize(width: width, wide: wide);
+    final baseTitleSize =
+        SettingsHeaderDimensions.titleFontSize(width: width, wide: wide);
     final collapsedTitleSize = math.max(20, baseTitleSize - (wide ? 4 : 3));
     final subtitleFontSize = settingsHeaderSubtitleTextStyle.fontSize ?? 16.0;
     final titleLineHeight = settingsHeaderTitleTextStyle.height ?? 1.05;
     final subtitleLineHeight = settingsHeaderSubtitleTextStyle.height ?? 1.3;
     // Fixed paddings: simple and predictable.
-    const topSpacing = kSettingsHeaderTop;
+    const topSpacing = SettingsHeaderDimensions.topSpacing;
     final bottomSpacing = bottom != null
-        ? (showSubtitle ? kSettingsHeaderSubtitleBottomGapWithBottom : 0.0)
+        ? (showSubtitle
+            ? SettingsHeaderDimensions.subtitleBottomGapWithBottom
+            : 0.0)
         : (showSubtitle
-            ? kSettingsHeaderFooterWithSubtitle
-            : kSettingsHeaderFooterNoSubtitle);
-    final subtitleGap = showSubtitle ? kSettingsHeaderSubtitleGap : 0.0;
+            ? SettingsHeaderDimensions.footerWithSubtitle
+            : SettingsHeaderDimensions.footerNoSubtitle);
+    final subtitleGap =
+        showSubtitle ? SettingsHeaderDimensions.subtitleGap : 0.0;
     final footerSpacing = showSubtitle
-        ? kSettingsHeaderFooterWithSubtitle
-        : kSettingsHeaderFooterNoSubtitle;
+        ? SettingsHeaderDimensions.footerWithSubtitle
+        : SettingsHeaderDimensions.footerNoSubtitle;
 
     final titleBlockHeight = baseTitleSize * titleLineHeight * textScale;
     final subtitleBlockHeight =
@@ -90,15 +82,16 @@ class SettingsPageHeader extends StatelessWidget {
     final collapsedHeight = topInset +
         math.max(
           showSubtitle
-              ? kSettingsHeaderCollapsedMinWithSubtitle
-              : kSettingsHeaderCollapsedMinNoSubtitle,
+              ? SettingsHeaderDimensions.collapsedMinWithSubtitle
+              : SettingsHeaderDimensions.collapsedMinNoSubtitle,
           collapsedBodyHeight,
         );
 
     final colorScheme = Theme.of(context).colorScheme;
 
     final bottomHeight = bottom?.preferredSize.height ?? 0;
-    final accessorySpacing = bottom != null ? kSettingsHeaderBottomShim : 0.0;
+    final accessorySpacing =
+        bottom != null ? SettingsHeaderDimensions.bottomShim : 0.0;
     final effectiveExpandedHeight =
         expandedHeight + bottomHeight + accessorySpacing;
     final effectiveCollapsedHeight =
@@ -116,7 +109,7 @@ class SettingsPageHeader extends StatelessWidget {
       flexibleSpace: LayoutBuilder(
         builder: (context, constraints) {
           final currentHeight = constraints.biggest.height;
-          final progress = _collapseProgress(
+          final progress = SettingsHeaderDimensions.collapseProgress(
             effectiveExpandedHeight,
             effectiveCollapsedHeight,
             currentHeight,
@@ -124,7 +117,8 @@ class SettingsPageHeader extends StatelessWidget {
           final easedProgress = Curves.easeOutCubic.transform(progress);
 
           final horizontalPadding =
-              (_horizontalPadding(width) - 8).clamp(16.0, double.infinity);
+              (SettingsHeaderDimensions.horizontalPadding(width) - 8)
+                  .clamp(16.0, double.infinity);
           final titleSize = lerpDouble(
                 baseTitleSize,
                 collapsedTitleSize,
@@ -265,7 +259,7 @@ class _HeaderText extends StatelessWidget {
           child: Text(title),
         ),
         if (subtitleOpacity > 0) ...[
-          const SizedBox(height: kSettingsHeaderSubtitleGap),
+          const SizedBox(height: SettingsHeaderDimensions.subtitleGap),
           AnimatedOpacity(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutCubic,
@@ -291,37 +285,4 @@ class _HeaderText extends StatelessWidget {
     }
     return content;
   }
-}
-
-double _horizontalPadding(double width) {
-  if (width >= 1600) return 160;
-  if (width >= 1200) return 120;
-  if (width >= 992) return 88;
-  if (width >= 720) return 56;
-  if (width >= 540) return 36;
-  if (width >= 420) return 28;
-  return 20;
-}
-
-double _titleFontSize({required double width, required bool wide}) {
-  if (width >= 1600) return 46;
-  if (width >= 1200) return 42;
-  if (width >= 992) return 38;
-  if (wide) return 34;
-  if (width >= 600) return 32;
-  if (width >= 420) return 30;
-  return 28;
-}
-
-double _collapseProgress(
-  double expandedHeight,
-  double collapsedHeight,
-  double currentHeight,
-) {
-  final available = expandedHeight - collapsedHeight;
-  if (available <= 0) {
-    return 1;
-  }
-  final delta = expandedHeight - currentHeight;
-  return (delta / available).clamp(0.0, 1.0);
 }
