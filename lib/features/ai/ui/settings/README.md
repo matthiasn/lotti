@@ -303,9 +303,9 @@ test('filters models by capabilities', () {
   final filterState = AiSettingsFilterState(
     selectedCapabilities: {Modality.image},
   );
-  
+
   final result = service.filterModels(testModels, filterState);
-  
+
   expect(result.every((m) => m.inputModalities.contains(Modality.image)), isTrue);
 });
 ```
@@ -316,13 +316,13 @@ UI components can be tested in isolation:
 ```dart
 testWidgets('search bar shows clear button when text present', (tester) async {
   final controller = TextEditingController(text: 'test');
-  
+
   await tester.pumpWidget(
     MaterialApp(
       home: AiSettingsSearchBar(controller: controller),
     ),
   );
-  
+
   expect(find.byIcon(Icons.clear), findsOneWidget);
 });
 ```
@@ -333,11 +333,11 @@ Full page functionality:
 ```dart
 testWidgets('switches tabs and updates filters', (tester) async {
   await tester.pumpWidget(createTestApp());
-  
+
   // Switch to models tab
   await tester.tap(find.text('Models'));
   await tester.pumpAndSettle();
-  
+
   // Should show model-specific filters
   expect(find.text('Capabilities:'), findsOneWidget);
 });
@@ -386,7 +386,7 @@ testWidgets('switches tabs and updates filters', (tester) async {
 The new AI Settings page replaces several old interfaces:
 
 1. **Advanced Settings → AI Providers** → Now: AI Settings → Providers tab
-2. **Advanced Settings → AI Models** → Now: AI Settings → Models tab  
+2. **Advanced Settings → AI Models** → Now: AI Settings → Models tab
 3. **Advanced Settings → AI Prompts** → Now: AI Settings → Prompts tab
 
 ### Breaking Changes

@@ -63,7 +63,7 @@ The repository layer has been refactored for better separation of concerns:
   - `buildStreamGenerateContentUri` / `buildGenerateContentUri` – constructs correct Gemini endpoints from a base URL
   - `buildRequestBody` – builds request payloads including thinking config and function tools (mapped from OpenAI style)
   - `stripLeadingFraming` – removes SSE `data:` prefixes and JSON array framing from mixed-format streams
-  
+
 - **`gemini_stream_parser.dart`**: Streaming JSON parser for mixed-framing Gemini responses
   - Incremental parser resilient to SSE `data:` lines, NDJSON, and JSON array framing
   - Accumulates objects across chunks and ignores braces inside string literals
@@ -338,15 +338,29 @@ The system supports multiple inference providers through a modular architecture:
   - Support for function calling via `/api/chat` endpoint
   - Model warm-up for better performance
   - Supports models like Llama, Mistral, Qwen, DeepSeek
+  - **Desktop only** - automatically hidden on mobile platforms
 
 - **Whisper**: Local audio transcription
   - Runs on local Whisper server
   - Supports various audio formats via base64 encoding
   - Integrated with task context for better accuracy
+  - **Desktop only** - automatically hidden on mobile platforms
 
 - **Gemma 3n**: Local Gemma model with audio capabilities
   - Runs on local server (default port 11343)
   - Provides both audio transcription and text generation
+  - **Desktop only** - automatically hidden on mobile platforms
+
+### Platform-Aware Prompt Filtering
+
+The AI system automatically filters prompts based on platform capabilities:
+
+- **Desktop platforms** (macOS, Windows, Linux): All AI models and prompts are available
+- **Mobile platforms** (iOS, Android): Local-only models (Whisper, Ollama, Gemini 3n) are automatically filtered out
+- **Fallback logic**: When a default automatic prompt uses a local-only model on mobile, the system automatically selects the next available cloud-based alternative
+- **Visual indicators**: Default automatic prompts are highlighted with a gold accent (border and icon background) in the AI prompt selection modal
+
+This platform-aware filtering prevents users from seeing unusable model options on mobile, while desktop users retain full access to local inference capabilities.
   - OpenAI-compatible API for seamless integration
   - No API key required (local execution)
   - Supports streaming responses for real-time interaction
@@ -487,7 +501,7 @@ The AI system includes automatic checklist creation for action item suggestions.
 
 1. **AI generates action item suggestions** for a task (first run)
 2. **Post-processing check** in `UnifiedAiInferenceRepository._handlePostProcessing()`
-3. **Decision logic**: 
+3. **Decision logic**:
    - If task has no existing checklists → auto-create checklist with all suggestions
    - If task has existing checklists → show manual drag-and-drop suggestions (existing behavior)
 4. **Automatic re-run**: After checklist creation, the same AI prompt runs again
@@ -646,11 +660,11 @@ The system supports tracking updates from preconfigured prompt templates, ensuri
 
 1. **Template Creation**: Tracking is enabled by default when creating from a preconfigured template
 2. **Visual Toggle**: A sync icon toggle controls tracking status
-3. **Tracked Mode**: 
+3. **Tracked Mode**:
    - System and user messages load dynamically from the template
    - Prompt fields become read-only
    - Template improvements apply automatically
-4. **Custom Mode**: 
+4. **Custom Mode**:
    - Fields become editable
    - Custom changes are preserved
    - Template ID is retained for re-enabling
@@ -870,15 +884,15 @@ final toolCallArgumentBuffers = <String, StringBuffer>{};
 if (existingIndex >= 0) {
   final existing = toolCalls[existingIndex];
   final toolCallKey = existing.id;
-  
+
   // Get or create buffer for this tool call
   final buffer = toolCallArgumentBuffers[toolCallKey] ??
       StringBuffer(existing.function.arguments);
   toolCallArgumentBuffers[toolCallKey] = buffer;
-  
+
   // Append new chunk to buffer
   buffer.write(toolCallChunk.function?.arguments ?? '');
-  
+
   // Update the tool call with buffered arguments
   toolCalls[existingIndex] = ChatCompletionMessageToolCall(
     id: existing.id,
@@ -896,7 +910,7 @@ if (existingIndex >= 0) {
 1. **Thread-Safe Accumulation**: StringBuffer handles proper character encoding
 2. **Preserves Chunk Order**: Each tool call has its own buffer indexed by ID
 3. **Memory Efficient**: Buffers are created only when needed
-4. **Handles Edge Cases**: 
+4. **Handles Edge Cases**:
    - Empty chunks are safely ignored
    - Missing arguments default to empty strings
    - Split UTF-8 sequences are preserved correctly
@@ -956,7 +970,7 @@ Create an adapter that wraps `CloudInferenceRepository` to implement the convers
 ```dart
 class CloudInferenceWrapper implements InferenceRepositoryInterface {
   final CloudInferenceRepository cloudRepository;
-  
+
   @override
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
