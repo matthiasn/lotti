@@ -18,6 +18,7 @@ import 'package:lotti/features/labels/services/label_assignment_event_service.da
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
+import 'package:lotti/features/speech/services/audio_normalization_service.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
@@ -242,9 +243,14 @@ Future<void> registerSingletons() async {
     'AudioPlayerCubit',
   );
 
+  // Desktop audio post-processing (macOS first)
   _registerLazyServiceSafely<AudioWaveformService>(
     AudioWaveformService.new,
     'AudioWaveformService',
+  );
+  _registerLazyServiceSafely<AudioNormalizationService>(
+    AudioNormalizationService.new,
+    'AudioNormalizationService',
   );
 
   unawaited(getIt<MatrixService>().init());

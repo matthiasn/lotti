@@ -15,3 +15,6 @@ const enableEventsFlag = 'enable_events';
 const enableAiLabelAssignmentFlag = 'enable_ai_label_assignment';
 const aiLabelAssignmentShadowFlag = 'ai_label_assignment_shadow';
 const includePrivateLabelsInPromptsFlag = 'include_private_labels_in_prompts';
+
+// Desktop audio normalization (macOS first). Default off; controlled by staged rollout.
+const normalizeAudioOnDesktopFlag = 'normalize_audio_on_desktop';

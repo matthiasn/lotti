@@ -163,6 +163,7 @@ The feature has comprehensive test coverage:
 
 ### Unit Tests
 - `recorder_controller_test.dart`: State management and recording logic
+- `recorder_controller_baseline_test.dart`: Baseline metrics collection (avg RMS/peak) and flag gating on macOS
 - `audio_recorder_repository_test.dart`: Repository functionality
 - `speech_repository_test.dart`: Data persistence and transcription
 - `audio_waveform_service_test.dart`: Waveform extraction, caching lifecycle, cache pruning, and filesystem resilience
@@ -198,6 +199,12 @@ All errors are logged through `LoggingService` with appropriate domain tags for 
 ## Performance Considerations
 
 - VU meter updates at 100ms intervals to balance responsiveness and performance
+
+## Baseline Metrics & Normalization (macOS)
+
+- On macOS, when the `normalize_audio_on_desktop` flag is enabled, the recorder collects lightweight baseline metrics at stop(): average RMS dBFS and peak dBFS derived from the VU buffer. This is used to validate desktop capture levels and inform post‑record normalization thresholds.
+- Metrics are logged via `LoggingService` under `audio_normalization/baseline` with context (platform, duration, samples, relativePath).
+- Normalization will be gated behind the same flag, run post‑record and pre‑sync (see implementation plan for details).
 - Amplitude stream is properly disposed to prevent memory leaks
 - File operations use async methods to avoid blocking UI
 - Modal visibility state prevents unnecessary widget rebuilds

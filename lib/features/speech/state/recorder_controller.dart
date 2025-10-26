@@ -1,17 +1,21 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
+import 'package:lotti/features/speech/services/audio_normalization_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/portals/portal_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:record/record.dart' show Amplitude;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -259,6 +263,74 @@ class AudioRecorderController extends _$AudioRecorderController {
     try {
       await _recorderRepository.stopRecording();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
+
+      // Capture baseline recording metrics on macOS to inform normalization thresholds
+      // Guarded by platform + feature flag; lightweight and non-blocking.
+      try {
+        final shouldCollect = Platform.isMacOS &&
+            getIt.isRegistered<JournalDb>() &&
+            await getIt<JournalDb>().getConfigFlag(normalizeAudioOnDesktopFlag);
+        if (shouldCollect && _audioNote != null && _dbfsBuffer.isNotEmpty) {
+          final baseline = _computeRecordingBaseline();
+          final relPath =
+              '${_audioNote!.audioDirectory}${_audioNote!.audioFile}';
+          _loggingService.captureEvent(
+            {
+              'message': 'Recording baseline collected',
+              'platform': Platform.operatingSystem,
+              'durationMs': _audioNote!.duration.inMilliseconds,
+              'samples': _dbfsBuffer.length,
+              'relativePath': relPath,
+              'record_avg_rms_dbfs': baseline['avg_rms_dbfs'],
+              'record_peak_dbfs': baseline['peak_dbfs'],
+            },
+            domain: 'audio_normalization',
+            subDomain: 'baseline',
+          );
+
+          // Optional: attempt post-record normalization before creating the entry.
+          if (getIt.isRegistered<AudioNormalizationService>()) {
+            try {
+              await getIt<AudioNormalizationService>().maybeNormalizeAudioNote(
+                audioDirectory: _audioNote!.audioDirectory,
+                audioFile: _audioNote!.audioFile,
+                avgDbfs: baseline['avg_rms_dbfs']!,
+                duration: _audioNote!.duration,
+              );
+            } catch (e, st) {
+              _loggingService.captureException(
+                e,
+                domain: 'audio_normalization',
+                subDomain: 'normalize_error',
+                stackTrace: st,
+              );
+            }
+          }
+        }
+      } catch (e, stackTrace) {
+        _loggingService.captureException(
+          e,
+          domain: 'audio_normalization',
+          subDomain: 'baseline_error',
+          stackTrace: stackTrace,
+        );
+        // Add context for troubleshooting
+        final relPath = _audioNote == null
+            ? null
+            : '${_audioNote!.audioDirectory}${_audioNote!.audioFile}';
+        _loggingService.captureEvent(
+          {
+            'message': 'baseline_error_context',
+            'platform': Platform.operatingSystem,
+            'hasAudioNote': _audioNote != null,
+            'relativePath': relPath,
+            'samples': _dbfsBuffer.length,
+          },
+          domain: 'audio_normalization',
+          subDomain: 'baseline_error',
+        );
+      }
+
       _dbfsBuffer.clear(); // Clear the buffer when stopping
 
       // Preserve the inference preferences before resetting state
@@ -323,6 +395,31 @@ class AudioRecorderController extends _$AudioRecorderController {
       );
     }
     return null;
+  }
+
+  /// Computes simple recording-time baselines from the accumulated dBFS buffer.
+  /// Returns a map with avg RMS (dBFS) and peak (dBFS).
+  Map<String, double> _computeRecordingBaseline() {
+    if (_dbfsBuffer.isEmpty) {
+      return {'avg_rms_dbfs': -160.0, 'peak_dbfs': -160.0};
+    }
+
+    // Convert to linear, compute RMS over the window, and peak of the raw dBFS
+    var sumSquares = 0.0;
+    var peakDbfs = -160.0;
+    for (final dbfs in _dbfsBuffer) {
+      final linear = math.pow(10, dbfs / 20).toDouble();
+      sumSquares += linear * linear;
+      if (dbfs > peakDbfs) {
+        peakDbfs = dbfs;
+      }
+    }
+    final rms = math.sqrt(sumSquares / _dbfsBuffer.length);
+    final rmsDbfs = 20 * (math.log(rms) / math.ln10);
+    return {
+      'avg_rms_dbfs': rmsDbfs.isFinite ? rmsDbfs : -160.0,
+      'peak_dbfs': peakDbfs,
+    };
   }
 
   /// Pauses the current recording.

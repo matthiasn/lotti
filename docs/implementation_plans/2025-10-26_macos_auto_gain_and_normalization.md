@@ -2,6 +2,14 @@
 
 ## Summary
 
+## Status Update (2025‑10‑26)
+
+- Added baseline recording metrics logging (avg RMS dBFS, peak dBFS) at stop(), using the existing VU buffer.
+- Introduced `normalizeAudioOnDesktopFlag` config flag (seeded, default off) for staged rollout.
+- Added `ffmpeg_kit_flutter_min_gpl` dependency in preparation for the normalization spike.
+- Analyzer is clean; targeted speech tests pass via MCP.
+- Next: scaffold `AudioNormalizationService` behind the flag and run ffmpeg‑kit spike (LUFS/true‑peak, dynaudnorm timing) to finalize thresholds.
+
 - Mobile recordings show healthy levels and visually pleasing waveforms; macOS desktop recordings are significantly quieter despite loud speech and successful transcription.
 - We already request auto gain via `record`’s `RecordConfig(autoGain: true)`, but desktop macOS likely doesn’t apply AGC the same way as iOS/Android.
 - Plan: 1) verify and, if possible, fix gain at record time on macOS; 2) add a conservative, fast post‑record normalization step (before sync) as a reliable fallback so entries arrive on other devices with consistent loudness and waveforms.

@@ -119,6 +119,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Include private labels in {{labels}} prompt injection',
     status: true,
   ),
+  const ConfigFlag(
+    name: normalizeAudioOnDesktopFlag,
+    description: 'Normalize audio on desktop (macOS)',
+    status: false,
+  ),
 };
 
 void main() {

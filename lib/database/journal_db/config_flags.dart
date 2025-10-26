@@ -106,4 +106,13 @@ Future<void> initConfigFlags(
       status: true,
     ),
   );
+
+  // Desktop audio normalization flag (macOS)
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: normalizeAudioOnDesktopFlag,
+      description: 'Normalize audio on desktop (macOS)',
+      status: false,
+    ),
+  );
 }
