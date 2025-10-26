@@ -263,6 +263,113 @@ void main() {
       expect(functionNames,
           contains(ChecklistCompletionFunctions.addChecklistItem));
       expect(functionNames, contains(TaskFunctions.setTaskLanguage));
+
+      // By default label assignment tool is gated off; should not be present
+      expect(functionNames, isNot(contains('assign_task_labels')));
+    });
+
+    test('should include label assignment tool when flag enabled', () async {
+      // Arrange
+      final task = Task(
+        meta: FakeMetadata(),
+        data: FakeTaskData(),
+        entryText: const EntryText(plainText: 'Test task'),
+      );
+
+      final promptConfig = AiConfigPrompt(
+        id: 'prompt-1',
+        name: 'Checklist Updates',
+        systemMessage: 'Process checklist updates',
+        userMessage: 'Update checklists',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.checklistUpdates,
+      );
+
+      final model = AiConfigModel(
+        id: 'model-1',
+        name: 'Test Model',
+        providerModelId: 'gpt-4',
+        inferenceProviderId: 'provider-1',
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+        supportsFunctionCalling: true,
+      );
+
+      final provider = AiConfigInferenceProvider(
+        id: 'provider-1',
+        baseUrl: 'https://api.example.com',
+        apiKey: 'test-key',
+        name: 'Test Provider',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      // Enable flag
+      when(() => mockJournalDb.getConfigFlag('enable_ai_label_assignment'))
+          .thenAnswer((_) async => true);
+
+      // Setup mocks
+      when(() => mockAiInputRepo.getEntity('task-1'))
+          .thenAnswer((_) async => task);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'))
+          .thenAnswer((_) async => '{"task": "details"}');
+
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>();
+
+      // Capture the tools
+      List<ChatCompletionTool>? capturedTools;
+      when(() => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+          )).thenAnswer((invocation) {
+        capturedTools =
+            invocation.namedArguments[#tools] as List<ChatCompletionTool>?;
+        return streamController.stream;
+      });
+
+      when(() => mockRef.watch(inferenceStatusControllerProvider(
+            id: 'task-1',
+            aiResponseType: AiResponseType.checklistUpdates,
+          ).notifier)).thenReturn(_MockInferenceStatusController());
+
+      // Act
+      final future = repository.runInference(
+        entityId: 'task-1',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+      streamController.add(CreateChatCompletionStreamResponse(
+        id: 'test',
+        created: DateTime.now().millisecondsSinceEpoch,
+        model: 'gpt-4',
+        choices: const [],
+      ));
+      await streamController.close();
+      await future;
+
+      // Assert label tool present
+      final functionNames =
+          (capturedTools ?? []).map((t) => t.function.name).toSet();
+      expect(functionNames, contains('assign_task_labels'));
     });
 
     test('should not create AI response entry for checklistUpdates type',

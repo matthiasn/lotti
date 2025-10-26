@@ -1,9 +1,15 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Helper class for building AI prompts with support for template tracking
 class PromptBuilderHelper {
@@ -66,6 +72,28 @@ class PromptBuilderHelper {
       prompt = '$userMessage \n $jsonString';
     }
 
+    // Inject labels list if requested and enabled via feature flag
+    if (prompt.contains('{{labels}}') &&
+        promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
+      var enabled = false;
+      try {
+        final dynamic fut = getIt<JournalDb>().getConfigFlag(
+          enableAiLabelAssignmentFlag,
+        );
+        if (fut is Future<bool>) {
+          enabled = await fut;
+        }
+      } catch (_) {
+        enabled = false;
+      }
+      if (enabled) {
+        final labelsJson = await _buildLabelsJson();
+        prompt = prompt.replaceAll('{{labels}}', labelsJson);
+      } else {
+        prompt = prompt.replaceAll('{{labels}}', '[]');
+      }
+    }
+
     return prompt;
   }
 
@@ -103,5 +131,55 @@ class PromptBuilderHelper {
       (entity) => entity is Task,
     ) as Task?;
     return task;
+  }
+
+  /// Build a compact JSON array [{"id":"...","name":"..."}] of labels
+  /// limited to 100 entries (top-50 by usage + next-50 alphabetical).
+  Future<String> _buildLabelsJson() async {
+    final db = getIt<JournalDb>();
+
+    // Respect privacy toggle
+    var includePrivate = true;
+    try {
+      final dynamic fut = db.getConfigFlag(includePrivateLabelsInPromptsFlag);
+      if (fut is Future<bool>) {
+        includePrivate = await fut;
+      }
+    } catch (_) {
+      includePrivate = true;
+    }
+
+    // Fetch label definitions and usage stats
+    final all = await db.getAllLabelDefinitions();
+    final usage = await db.getLabelUsageCounts();
+
+    // Optionally filter private labels
+    final filtered =
+        includePrivate ? all : all.where((l) => !(l.private ?? false)).toList();
+
+    // Sort: top 50 by usage desc (ties by name asc), then next 50 alphabetical
+    final byUsage = [...filtered]..sort((a, b) {
+        final ua = usage[a.id] ?? 0;
+        final ub = usage[b.id] ?? 0;
+        if (ua != ub) return ub.compareTo(ua);
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+    final topUsage = byUsage.take(50).toList();
+
+    final remaining = filtered
+        .where((l) => !topUsage.any((t) => t.id == l.id))
+        .toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final nextAlpha = remaining.take(50).toList();
+
+    final selected = [...topUsage, ...nextAlpha];
+    final tuples = selected
+        .map((l) => {
+              'id': l.id,
+              'name': l.name,
+            })
+        .toList();
+
+    return jsonEncode(tuples);
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:get_it/get_it.dart';
 import 'package:health/health.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
@@ -245,6 +246,11 @@ Future<void> registerSingletons() async {
 
   unawaited(getIt<MatrixService>().init());
   getIt<LoggingService>().listenToConfigFlag();
+
+  // Shared rate limiter for AI label assignment
+  getIt.registerSingleton<LabelAssignmentRateLimiter>(
+    LabelAssignmentRateLimiter(),
+  );
 
   // Check and run maintenance task to remove deprecated action item suggestions
   unawaited(_checkAndRemoveActionItemSuggestions());

@@ -83,4 +83,27 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
+
+  // AI label assignment flags
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableAiLabelAssignmentFlag,
+      description: 'Enable AI label assignment via function calls',
+      status: true,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: aiLabelAssignmentShadowFlag,
+      description: 'Shadow mode: log suggestions, do not persist',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: includePrivateLabelsInPromptsFlag,
+      description: 'Include private labels in {{labels}} prompt injection',
+      status: true,
+    ),
+  );
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
@@ -13,6 +14,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
@@ -30,10 +32,14 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -57,6 +63,20 @@ class UnifiedAiInferenceRepository {
   final Ref ref;
   late final PromptBuilderHelper promptBuilderHelper;
   AutoChecklistService? _autoChecklistService;
+
+  static const int kMaxLabelsPerAssignment = 5;
+
+  Future<bool> _getFlagSafe(String name, {bool defaultValue = false}) async {
+    try {
+      final dynamic fut = getIt<JournalDb>().getConfigFlag(name);
+      if (fut is Future<bool>) {
+        return await fut;
+      }
+    } catch (_) {
+      // ignore and use default
+    }
+    return defaultValue;
+  }
 
   AutoChecklistService get autoChecklistService {
     return _autoChecklistService ??= AutoChecklistService(
@@ -641,8 +661,10 @@ class UnifiedAiInferenceRepository {
       // This is because checklist updates can be triggered from various contexts
       if (promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
           model.supportsFunctionCalling) {
+        final enableLabels = await _getFlagSafe(enableAiLabelAssignmentFlag);
         tools = [
           ...ChecklistCompletionFunctions.getTools(),
+          if (enableLabels) ...LabelFunctions.getTools(),
           ...TaskFunctions.getTools(),
         ];
         developer.log(
@@ -1334,6 +1356,102 @@ class UnifiedAiInferenceRepository {
             error: e,
           );
         }
+      } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
+        // Handle assign task labels (add-only)
+        try {
+          final logging = getIt<LoggingService>();
+          final db = getIt<JournalDb>();
+          final repo = ref.read(labelsRepositoryProvider);
+
+          // Rate limiting per task (5 minutes)
+          final limiter = getIt<LabelAssignmentRateLimiter>();
+          if (limiter.isRateLimited(currentTask.id)) {
+            logging.captureEvent(
+              'Rate limited label assignment for task ${currentTask.id}',
+              domain: 'labels_ai_assignment',
+              subDomain: 'processToolCalls',
+            );
+            continue;
+          }
+
+          final args =
+              jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
+          final idsRaw = args['labelIds'];
+          final proposed = <String>[];
+          if (idsRaw is List) {
+            proposed.addAll(idsRaw.map((e) => e.toString()));
+          } else if (idsRaw is String) {
+            proposed
+                .addAll(idsRaw.split(RegExp(r'\s*,\s*')).map((e) => e.trim()));
+          }
+
+          // De-duplicate and constrain to max per call
+          final unique =
+              LinkedHashSet<String>.from(proposed.where((e) => e.isNotEmpty))
+                  .toList();
+          if (unique.isEmpty) continue;
+          final limited = unique.take(kMaxLabelsPerAssignment).toList();
+
+          // Shadow mode: log and skip persistence
+          final shadow = await db.getConfigFlag(aiLabelAssignmentShadowFlag);
+
+          // Validate IDs and enforce group exclusivity
+          final assigned = <String>[];
+          final invalid = <String>[];
+          final skipped = <Map<String, String>>[];
+
+          // Build existing group occupancy from current task
+          final existingIds = currentTask.meta.labelIds ?? const <String>[];
+          final existingGroups = <String, String>{}; // groupId -> labelId
+          for (final id in existingIds) {
+            final def = await db.getLabelDefinitionById(id);
+            final gid = def?.groupId;
+            if (gid != null) existingGroups.putIfAbsent(gid, () => id);
+          }
+
+          final seenGroups = <String>{};
+          for (final id in limited) {
+            final def = await db.getLabelDefinitionById(id);
+            if (def == null || def.deletedAt != null) {
+              invalid.add(id);
+              continue;
+            }
+
+            final gid = def.groupId;
+            if (gid != null) {
+              if (existingGroups.containsKey(gid)) {
+                skipped.add({'id': id, 'reason': 'group_exclusivity'});
+                continue;
+              }
+              if (seenGroups.contains(gid)) {
+                skipped.add({'id': id, 'reason': 'group_exclusivity'});
+                continue;
+              }
+              seenGroups.add(gid);
+            }
+            assigned.add(id);
+          }
+
+          logging.captureEvent(
+            'Assignment attempt task=${currentTask.id} attempted=${limited.length} assigned=${assigned.length} invalid=${invalid.length} skipped=${skipped.length}',
+            domain: 'labels_ai_assignment',
+            subDomain: 'processToolCalls',
+          );
+
+          if (!shadow && assigned.isNotEmpty) {
+            await repo.addLabels(
+              journalEntityId: currentTask.id,
+              addedLabelIds: assigned,
+            );
+            limiter.recordAssignment(currentTask.id);
+          }
+        } catch (e) {
+          developer.log(
+            'Error processing assign_task_labels: $e',
+            name: 'UnifiedAiInferenceRepository',
+            error: e,
+          );
+        }
       } else {
         developer.log(
           'Skipping unknown tool call: ${toolCall.function.name}',
@@ -1498,8 +1616,10 @@ class UnifiedAiInferenceRepository {
       }
 
       // Define tools for checklist updates
+      final enableLabels = await _getFlagSafe(enableAiLabelAssignmentFlag);
       final tools = [
         ...ChecklistCompletionFunctions.getTools(),
+        if (enableLabels) ...LabelFunctions.getTools(),
         ...TaskFunctions.getTools(),
       ];
 

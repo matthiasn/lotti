@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
@@ -13,7 +15,12 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Processes AI function calls using conversation approach for better batching and error handling
@@ -396,6 +403,130 @@ class LottiChecklistStrategy extends ConversationStrategy {
           manager.addToolResponse(
             toolCallId: call.id,
             response: 'Error processing language detection.',
+          );
+        }
+      } else if (call.function.name == 'assign_task_labels') {
+        // Assign labels to task (add-only) with group exclusivity and rate limiting (handled upstream if needed)
+        try {
+          final db = getIt<JournalDb>();
+          final labelsRepo = ref.read(labelsRepositoryProvider);
+          final logging = getIt<LoggingService>();
+
+          final args =
+              jsonDecode(call.function.arguments) as Map<String, dynamic>;
+          final idsRaw = args['labelIds'];
+          final proposed = <String>[];
+          if (idsRaw is List) {
+            proposed.addAll(idsRaw.map((e) => e.toString()));
+          } else if (idsRaw is String) {
+            proposed
+                .addAll(idsRaw.split(RegExp(r'\s*,\s*')).map((e) => e.trim()));
+          }
+          final unique =
+              LinkedHashSet<String>.from(proposed.where((e) => e.isNotEmpty))
+                  .toList();
+          const kMaxLabelsPerAssignment = 5;
+          final limited = unique.take(kMaxLabelsPerAssignment).toList();
+
+          final assigned = <String>[];
+          final invalid = <String>[];
+          final skipped = <Map<String, String>>[];
+
+          // Build existing group occupancy (batched)
+          final existingIds =
+              checklistHandler.task.meta.labelIds ?? const <String>[];
+          final existingGroups = <String, String>{};
+          final existingDefs = await Future.wait(
+            existingIds.map((id) => db.getLabelDefinitionById(id)),
+          );
+          for (final def in existingDefs) {
+            final gid = def?.groupId;
+            final id = def?.id;
+            if (gid != null && id != null) {
+              existingGroups.putIfAbsent(gid, () => id);
+            }
+          }
+
+          final seenGroups = <String>{};
+          for (final id in limited) {
+            final def = await db.getLabelDefinitionById(id);
+            if (def == null || def.deletedAt != null) {
+              invalid.add(id);
+              continue;
+            }
+            final gid = def.groupId;
+            if (gid != null) {
+              if (existingGroups.containsKey(gid)) {
+                skipped.add({'id': id, 'reason': 'group_exclusivity'});
+                continue;
+              }
+              if (seenGroups.contains(gid)) {
+                skipped.add({'id': id, 'reason': 'group_exclusivity'});
+                continue;
+              }
+              seenGroups.add(gid);
+            }
+            assigned.add(id);
+          }
+
+          // Shadow mode: do not persist if enabled (safe default false)
+          var shadow = false;
+          try {
+            final dynamic fut = db.getConfigFlag(aiLabelAssignmentShadowFlag);
+            if (fut is Future<bool>) {
+              shadow = await fut;
+            }
+          } catch (_) {
+            shadow = false;
+          }
+          if (!shadow && assigned.isNotEmpty) {
+            final limiter = getIt<LabelAssignmentRateLimiter>();
+            if (limiter.isRateLimited(checklistHandler.task.id)) {
+              logging.captureEvent(
+                'Rate limited label assignment for task ${checklistHandler.task.id}',
+                domain: 'labels_ai_assignment',
+                subDomain: 'conversation',
+              );
+            } else {
+              await labelsRepo.addLabels(
+                journalEntityId: checklistHandler.task.id,
+                addedLabelIds: assigned,
+              );
+              limiter.recordAssignment(checklistHandler.task.id);
+            }
+          }
+
+          logging.captureEvent(
+            'Conversation label assignment task=${checklistHandler.task.id} attempted=${limited.length} assigned=${assigned.length} invalid=${invalid.length} skipped=${skipped.length}',
+            domain: 'labels_ai_assignment',
+            subDomain: 'conversation',
+          );
+
+          // Structured tool response for the model
+          final response = jsonEncode({
+            'function': 'assign_task_labels',
+            'request': {'labelIds': limited},
+            'result': {
+              'assigned': assigned,
+              'invalid': invalid,
+              'skipped': skipped,
+            },
+            'message': 'Assigned ${assigned.length} label(s); '
+                '${invalid.length} invalid; ${skipped.length} skipped',
+          });
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: response,
+          );
+        } catch (e) {
+          developer.log(
+            'Error processing assign_task_labels: $e',
+            name: 'LottiConversationProcessor',
+            error: e,
+          );
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: 'Error processing label assignment',
           );
         }
       } else if (call.function.name == 'suggest_checklist_completion') {
