@@ -31,6 +31,7 @@ abstract class Metadata with _$Metadata {
     String? categoryId,
     List<String>? tags,
     List<String>? tagIds,
+    List<String>? labelIds,
     int? utcOffset,
     String? timezone,
     VectorClock? vectorClock,

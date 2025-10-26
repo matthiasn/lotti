@@ -19,6 +19,7 @@ void main() {
     late StreamController<List<CategoryDefinition>> categoriesController;
     late StreamController<List<HabitDefinition>> habitsController;
     late StreamController<List<DashboardDefinition>> dashboardsController;
+    late StreamController<List<LabelDefinition>> labelsController;
 
     setUp(() {
       if (getIt.isRegistered<JournalDb>()) {
@@ -33,6 +34,7 @@ void main() {
       categoriesController = StreamController<List<CategoryDefinition>>();
       habitsController = StreamController<List<HabitDefinition>>();
       dashboardsController = StreamController<List<DashboardDefinition>>();
+      labelsController = StreamController<List<LabelDefinition>>();
 
       when(mockJournalDb.watchMeasurableDataTypes)
           .thenAnswer((_) => dataTypesController.stream);
@@ -42,6 +44,8 @@ void main() {
           .thenAnswer((_) => habitsController.stream);
       when(mockJournalDb.watchDashboards)
           .thenAnswer((_) => dashboardsController.stream);
+      when(mockJournalDb.watchLabelDefinitions)
+          .thenAnswer((_) => labelsController.stream);
 
       getIt.registerSingleton<JournalDb>(mockJournalDb);
     });
@@ -51,6 +55,7 @@ void main() {
       await categoriesController.close();
       await habitsController.close();
       await dashboardsController.close();
+      await labelsController.close();
     });
 
     test('constructor initializes and populates caches from DB streams',
@@ -62,12 +67,14 @@ void main() {
       expect(service.categoriesById, isEmpty);
       expect(service.habitsById, isEmpty);
       expect(service.dashboardsById, isEmpty);
+      expect(service.labelsById, isEmpty);
 
       // Emit data to streams
       dataTypesController.add([measurableWater, measurablePullUps]);
       categoriesController.add([categoryMindfulness]);
       habitsController.add([habitFlossing]);
       dashboardsController.add([testDashboardConfig]);
+      labelsController.add([testLabelDefinition1, testLabelDefinition2]);
 
       // Wait for streams to process
       await pumpEventQueue();
@@ -86,7 +93,18 @@ void main() {
 
       expect(service.dashboardsById.length, 1);
       expect(
-          service.dashboardsById[testDashboardConfig.id], testDashboardConfig);
+        service.dashboardsById[testDashboardConfig.id],
+        testDashboardConfig,
+      );
+      expect(service.labelsById.length, 2);
+      expect(
+        service.labelsById[testLabelDefinition1.id],
+        testLabelDefinition1,
+      );
+      expect(
+        service.labelsById[testLabelDefinition2.id],
+        testLabelDefinition2,
+      );
     });
 
     test('getDataTypeById returns correct data type', () async {
@@ -169,6 +187,26 @@ void main() {
       expect(result, isNull);
     });
 
+    test('getLabelById returns correct label', () async {
+      final service = EntitiesCacheService();
+
+      labelsController.add([testLabelDefinition1]);
+      await pumpEventQueue();
+
+      final result = service.getLabelById(testLabelDefinition1.id);
+      expect(result, testLabelDefinition1);
+    });
+
+    test('getLabelById returns null for missing or null id', () async {
+      final service = EntitiesCacheService();
+
+      labelsController.add([testLabelDefinition1]);
+      await pumpEventQueue();
+
+      expect(service.getLabelById('missing'), isNull);
+      expect(service.getLabelById(null), isNull);
+    });
+
     test('sortedCategories returns only active categories sorted by name',
         () async {
       final inactiveCategory = CategoryDefinition(
@@ -224,6 +262,31 @@ void main() {
       expect(result[0].name, 'Apple Category');
       expect(result[1].name, 'Mindfulness');
       expect(result[2].name, 'Zebra Category');
+    });
+
+    test('sortedLabels filters deleted labels and sorts by name', () async {
+      final activeLabelB = testLabelDefinition1.copyWith(name: 'B Label');
+      final activeLabelA = testLabelDefinition2.copyWith(name: 'a Label');
+      final deletedLabel = testLabelDefinition2.copyWith(
+        id: 'label-deleted',
+        name: 'Z Label',
+        deletedAt: DateTime.now(),
+      );
+
+      final service = EntitiesCacheService();
+
+      labelsController.add([activeLabelB, activeLabelA, deletedLabel]);
+      await pumpEventQueue();
+
+      final result = service.sortedLabels;
+
+      expect(result, hasLength(2));
+      expect(result.first.name, 'a Label');
+      expect(result.last.name, 'B Label');
+      expect(
+        result.any((label) => label.id == deletedLabel.id),
+        isFalse,
+      );
     });
 
     test('cache updates when DB streams emit new data', () async {

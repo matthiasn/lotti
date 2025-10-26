@@ -72,6 +72,9 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [categoryMindfulness],
       );
+      when(() => mockEntitiesCacheService.sortedLabels)
+          .thenReturn(<LabelDefinition>[]);
+      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
 
       when(
         () => mockJournalDb
@@ -218,6 +221,9 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [categoryMindfulness],
       );
+      when(() => mockEntitiesCacheService.sortedLabels)
+          .thenReturn(<LabelDefinition>[]);
+      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
 
       when(
         () => mockJournalDb

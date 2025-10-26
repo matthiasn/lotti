@@ -6,6 +6,7 @@ import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
     as new_category_details;
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
@@ -49,6 +50,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/categories',
         '/settings/categories/:categoryId',
         '/settings/categories/create',
+        '/settings/labels',
         '/settings/dashboards',
         '/settings/dashboards/:dashboardId',
         '/settings/dashboards/create',
@@ -123,6 +125,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-sync-outbox'),
           child: OutboxMonitorPage(),
+        ),
+
+      if (pathContains('labels'))
+        const BeamPage(
+          key: ValueKey('settings-labels'),
+          child: LabelsListPage(),
         ),
 
       // New Categories Implementation (Riverpod)

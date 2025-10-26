@@ -129,6 +129,20 @@ sealed class EntityDefinition with _$EntityDefinition {
     @CategoryIconConverter() CategoryIcon? icon,
   }) = CategoryDefinition;
 
+  const factory EntityDefinition.labelDefinition({
+    required String id,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required String name,
+    required String color,
+    required VectorClock? vectorClock,
+    String? description,
+    String? groupId,
+    int? sortOrder,
+    DateTime? deletedAt,
+    bool? private,
+  }) = LabelDefinition;
+
   const factory EntityDefinition.habit({
     required String id,
     required DateTime createdAt,
