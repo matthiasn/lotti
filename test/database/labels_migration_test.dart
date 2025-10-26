@@ -118,7 +118,7 @@ void main() {
 
       // Verify the migration occurred by checking schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 28);
+      expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
 
       // Verify label_definitions table exists and has correct schema
       final labelDefResult = await db
@@ -183,7 +183,7 @@ void main() {
 
       // Verify the migration occurred
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 28);
+      expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
 
       // Verify both tables were created
       final tablesResult = await db
@@ -290,7 +290,7 @@ void main() {
 
       // Verify the migration occurred
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 28);
+      expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
 
       // Verify labeled table has CASCADE constraint
       final tableInfo = await db
@@ -557,7 +557,7 @@ void main() {
 
       // Verify migration completed
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 28);
+      expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
 
       // Verify tables exist
       final tables = await db

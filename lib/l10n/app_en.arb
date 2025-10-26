@@ -607,6 +607,15 @@
   "settingsLabelsDeleteSuccess": "Label \"{labelName}\" deleted",
   "settingsLabelsDeleteCancel": "Cancel",
   "settingsLabelsDeleteConfirmAction": "Delete",
+  "settingsLabelsActionsTooltip": "Label actions",
+  "settingsLabelsUsageCount": "Used on {count, plural, =1{1 task} other{{count} tasks}}",
+  "@settingsLabelsUsageCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "selectColor": "Select Color",
   "selectButton": "Select",
   "privateLabel": "Private",

@@ -319,22 +319,20 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     await persistTasksFilter();
   }
 
-  void toggleSelectedLabelId(String labelId) {
+  Future<void> toggleSelectedLabelId(String labelId) async {
     if (_selectedLabelIds.contains(labelId)) {
       _selectedLabelIds = _selectedLabelIds.difference({labelId});
     } else {
       _selectedLabelIds = _selectedLabelIds.union({labelId});
     }
-    // Schedule persistence; persistTasksFilter triggers refresh internally.
-    unawaited(persistTasksFilter());
     emitState();
+    await persistTasksFilter();
   }
 
-  void clearSelectedLabelIds() {
+  Future<void> clearSelectedLabelIds() async {
     _selectedLabelIds = {};
-    // Schedule persistence; persistTasksFilter triggers refresh internally.
-    unawaited(persistTasksFilter());
     emitState();
+    await persistTasksFilter();
   }
 
   void toggleSelectedEntryTypes(String entryType) {

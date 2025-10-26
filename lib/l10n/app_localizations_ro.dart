@@ -1717,6 +1717,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsLabelsDeleteConfirmAction => 'Delete';
 
   @override
+  String get settingsLabelsActionsTooltip => 'Label actions';
+
+  @override
+  String settingsLabelsUsageCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '1 task',
+    );
+    return 'Used on $_temp0';
+  }
+
+  @override
   String get selectColor => 'Select Color';
 
   @override

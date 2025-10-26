@@ -56,8 +56,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Open actions menu via tooltip
-    await tester.tap(find.byTooltip('Actions'));
+    // Open actions menu
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
     await tester.pumpAndSettle();
 
     // Tap Delete in the menu
@@ -79,7 +79,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Actions'));
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Delete'));
