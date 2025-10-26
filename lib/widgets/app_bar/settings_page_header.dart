@@ -40,20 +40,22 @@ class SettingsPageHeader extends StatelessWidget {
     final titleLineHeight = settingsHeaderTitleTextStyle.height ?? 1.05;
     final subtitleLineHeight = settingsHeaderSubtitleTextStyle.height ?? 1.3;
     final topSpacing = wide
-        ? 18.0
+        ? 16.0
         : compact
-            ? 12.0
-            : 16.0;
-    final bottomSpacing = showSubtitle ? 16.0 : 12.0;
+            ? 10.0
+            : 14.0;
+    final bottomSpacing = showSubtitle ? 10.0 : 8.0;
     final gapBetween = showSubtitle ? 4.0 : 0.0;
-    final footerSpacing = showSubtitle ? 10.0 : 8.0;
+    final footerSpacing = showSubtitle ? 8.0 : 6.0;
 
     final titleBlockHeight = baseTitleSize * titleLineHeight * textScale;
     final subtitleBlockHeight =
         showSubtitle ? subtitleFontSize * subtitleLineHeight * textScale : 0;
-    final accessibilityAllowance = textScale <= 1
+    final extraScale = (textScale - 1).clamp(0.0, 1.4);
+    final accessibilityAllowance = extraScale == 0
         ? 0.0
-        : (textScale - 1).clamp(0.0, 1.5) * (showSubtitle ? 64.0 : 48.0);
+        : extraScale * (showSubtitle ? 64.0 : 48.0) +
+            (showSubtitle ? 12.0 : 10.0);
 
     final expandedBodyHeight = topSpacing +
         titleBlockHeight +
@@ -76,22 +78,28 @@ class SettingsPageHeader extends StatelessWidget {
 
     final colorScheme = Theme.of(context).colorScheme;
 
+    final bottomHeight = bottom?.preferredSize.height ?? 0;
+    final accessorySpacing = bottom != null ? 6.0 : 0.0;
+    final effectiveExpandedHeight =
+        expandedHeight + bottomHeight + accessorySpacing;
+    final effectiveCollapsedHeight =
+        collapsedHeight + bottomHeight + accessorySpacing;
+
     return SliverAppBar(
       automaticallyImplyLeading: false,
       pinned: pinned,
       backgroundColor: colorScheme.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      expandedHeight: expandedHeight + (bottom?.preferredSize.height ?? 0),
-      collapsedHeight: collapsedHeight + (bottom?.preferredSize.height ?? 0),
-      toolbarHeight: collapsedHeight,
-      bottom: bottom,
+      expandedHeight: effectiveExpandedHeight,
+      collapsedHeight: effectiveCollapsedHeight,
+      toolbarHeight: effectiveCollapsedHeight,
       flexibleSpace: LayoutBuilder(
         builder: (context, constraints) {
           final currentHeight = constraints.biggest.height;
           final progress = _collapseProgress(
-            expandedHeight,
-            collapsedHeight,
+            effectiveExpandedHeight,
+            effectiveCollapsedHeight,
             currentHeight,
           );
           final easedProgress = Curves.easeOutCubic.transform(progress);
@@ -135,7 +143,7 @@ class SettingsPageHeader extends StatelessWidget {
                 ],
               ),
               borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(36),
+                bottom: Radius.circular(24),
               ),
               boxShadow: [
                 BoxShadow(
@@ -188,7 +196,14 @@ class SettingsPageHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(height: footerSpacing),
+                if (bottom != null) ...[
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: bottom!.preferredSize.height,
+                    child: bottom,
+                  ),
+                ] else
+                  SizedBox(height: footerSpacing),
               ],
             ),
           );
@@ -251,23 +266,21 @@ class _HeaderText extends StatelessWidget {
 }
 
 double _horizontalPadding(double width) {
-  if (width >= 1600) return 200;
-  if (width >= 1400) return 168;
-  if (width >= 1200) return 140;
-  if (width >= 992) return 108;
-  if (width >= 840) return 72;
-  if (width >= 720) return 52;
-  if (width >= 600) return 36;
-  if (width >= 420) return 26;
+  if (width >= 1600) return 160;
+  if (width >= 1200) return 120;
+  if (width >= 992) return 88;
+  if (width >= 720) return 56;
+  if (width >= 540) return 36;
+  if (width >= 420) return 28;
   return 20;
 }
 
 double _titleFontSize({required double width, required bool wide}) {
-  if (width >= 1600) return 52;
-  if (width >= 1200) return 46;
-  if (width >= 992) return 42;
-  if (wide) return 38;
-  if (width >= 600) return 34;
+  if (width >= 1600) return 46;
+  if (width >= 1200) return 42;
+  if (width >= 992) return 38;
+  if (wide) return 34;
+  if (width >= 600) return 32;
   if (width >= 420) return 30;
   return 28;
 }

@@ -220,6 +220,32 @@ class _SyncListScaffoldState<T, F extends Enum>
               bottom: effectivePadding.bottom,
             );
 
+            final summaryLabel = _formatLabel(
+              context,
+              widget.filters[_selectedFilter]!,
+              locale,
+            );
+            final summaryText = widget.countSummaryBuilder(
+              context,
+              summaryLabel,
+              filteredItems.length,
+            );
+
+            final headerBottom = _SyncHeaderBottom<T, F>(
+              filters: widget.filters,
+              counts: counts,
+              selected: _selectedFilter,
+              onChanged: (value) => setState(() => _selectedFilter = value),
+              locale: locale,
+              summaryText: summaryText,
+              padding: EdgeInsetsDirectional.only(
+                start: effectivePadding.start,
+                end: effectivePadding.end,
+                top: effectivePadding.top,
+                bottom: AppTheme.spacingMedium,
+              ),
+            );
+
             return Scaffold(
               body: CustomScrollView(
                 controller: _scrollController,
@@ -228,53 +254,7 @@ class _SyncListScaffoldState<T, F extends Enum>
                     title: widget.title,
                     subtitle: widget.subtitle,
                     showBackButton: widget.backButton,
-                  ),
-                  SliverToBoxAdapter(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Padding(
-                        padding: EdgeInsetsDirectional.only(
-                          start: effectivePadding.start,
-                          end: effectivePadding.end,
-                          top: effectivePadding.top,
-                          bottom: AppTheme.spacingMedium,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _FilterCard<F>(
-                              filters: widget.filters,
-                              counts: counts,
-                              selected: _selectedFilter,
-                              onChanged: (value) => setState(
-                                () => _selectedFilter = value,
-                              ),
-                              locale: locale,
-                            ),
-                            const SizedBox(height: AppTheme.spacingLarge),
-                            Text(
-                              widget.countSummaryBuilder(
-                                context,
-                                _formatLabel(
-                                  context,
-                                  widget.filters[_selectedFilter]!,
-                                  locale,
-                                ),
-                                filteredItems.length,
-                              ),
-                              style: context.textTheme.titleSmall?.copyWith(
-                                color: context.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: AppTheme.spacingLarge),
-                          ],
-                        ).animate().fadeIn(
-                              duration: const Duration(
-                                milliseconds: AppTheme.animationDuration,
-                              ),
-                            ),
-                      ),
-                    ),
+                    bottom: headerBottom,
                   ),
                   if (!hasData)
                     const SliverFillRemaining(
@@ -407,6 +387,70 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
             onTap: () => onChanged(entry.key),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
+    implements PreferredSizeWidget {
+  const _SyncHeaderBottom({
+    required this.filters,
+    required this.counts,
+    required this.selected,
+    required this.onChanged,
+    required this.locale,
+    required this.summaryText,
+    required this.padding,
+  });
+
+  final Map<F, SyncFilterOption<T>> filters;
+  final Map<F, int> counts;
+  final F selected;
+  final ValueChanged<F> onChanged;
+  final String locale;
+  final String summaryText;
+  final EdgeInsetsDirectional padding;
+
+  @override
+  Size get preferredSize {
+    final filterCount = filters.length;
+    // Estimate height based on how many segments are likely to wrap.
+    // One row (<=3) is compact; more rows need extra headroom.
+    final double height = filterCount <= 3
+        ? 120
+        : filterCount <= 6
+            ? 156
+            : 196;
+    return Size.fromHeight(height);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resolvedPadding = padding
+        .resolve(Directionality.of(context))
+        .copyWith(bottom: AppTheme.spacingSmall);
+
+    return Padding(
+      padding: resolvedPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _FilterCard<F>(
+            filters: filters,
+            counts: counts,
+            selected: selected,
+            onChanged: onChanged,
+            locale: locale,
+          ),
+          const SizedBox(height: AppTheme.spacingSmall),
+          Text(
+            summaryText,
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
