@@ -89,7 +89,9 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    widget.label == null ? 'Create label' : 'Edit label',
+                    widget.label == null
+                        ? context.messages.settingsLabelsCreateTitle
+                        : context.messages.settingsLabelsEditTitle,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -100,9 +102,9 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
               controller: _nameController,
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Label name',
-                hintText: 'Bug, Release blocker, Sync…',
+              decoration: InputDecoration(
+                labelText: context.messages.settingsLabelsNameLabel,
+                hintText: context.messages.settingsLabelsNameHint,
               ),
               onChanged: controller.setName,
             ),
@@ -110,9 +112,9 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
             TextField(
               controller: _descriptionController,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                hintText: 'Explain when to apply this label',
+              decoration: InputDecoration(
+                labelText: context.messages.settingsLabelsDescriptionLabel,
+                hintText: context.messages.settingsLabelsDescriptionHint,
               ),
               minLines: 2,
               maxLines: 4,
@@ -120,7 +122,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Color',
+              context.messages.settingsLabelsColorHeading,
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
@@ -154,8 +156,9 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                       ),
                     ): preset.name,
                 },
-                pickerTypeLabels: const <ColorPickerType, String>{
-                  ColorPickerType.custom: 'Quick presets',
+                pickerTypeLabels: <ColorPickerType, String>{
+                  ColorPickerType.custom:
+                      context.messages.settingsLabelsColorSubheading,
                   ColorPickerType.wheel: 'Custom color',
                 },
                 colorNameTextStyle: theme.textTheme.bodySmall,
@@ -166,7 +169,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
               value: state.isPrivate,
               onChanged: (value) =>
                   controller.setPrivate(isPrivateValue: value),
-              title: const Text('Private label'),
+              title: Text(context.messages.settingsLabelsPrivateTitle),
               subtitle: Text(
                 context.messages.settingsLabelsPrivateDescription,
               ),
@@ -189,7 +192,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                     onPressed: state.isSaving
                         ? null
                         : () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    child: Text(context.messages.cancelButton),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -212,7 +215,9 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                             width: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Text(widget.label == null ? 'Create' : 'Save'),
+                        : Text(widget.label == null
+                            ? context.messages.createButton
+                            : context.messages.saveButton),
                   ),
                 ),
               ],

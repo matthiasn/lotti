@@ -4545,6 +4545,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Insert divider'**
   String get editorInsertDivider;
+
+  /// No description provided for @tasksLabelsHeaderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get tasksLabelsHeaderTitle;
+
+  /// No description provided for @tasksLabelsHeaderEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit labels'**
+  String get tasksLabelsHeaderEditTooltip;
+
+  /// No description provided for @tasksLabelsNoLabels.
+  ///
+  /// In en, this message translates to:
+  /// **'No labels'**
+  String get tasksLabelsNoLabels;
+
+  /// No description provided for @tasksLabelsDialogClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get tasksLabelsDialogClose;
+
+  /// No description provided for @tasksLabelsSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select labels'**
+  String get tasksLabelsSheetTitle;
+
+  /// No description provided for @tasksLabelsSheetSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search labels…'**
+  String get tasksLabelsSheetSearchHint;
+
+  /// No description provided for @tasksLabelsSheetApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get tasksLabelsSheetApply;
+
+  /// No description provided for @tasksLabelsUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update labels'**
+  String get tasksLabelsUpdateFailed;
+
+  /// No description provided for @tasksLabelFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get tasksLabelFilterTitle;
+
+  /// No description provided for @tasksLabelFilterUnlabeled.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlabeled'**
+  String get tasksLabelFilterUnlabeled;
+
+  /// No description provided for @tasksLabelFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get tasksLabelFilterAll;
+
+  /// No description provided for @tasksQuickFilterLabelsActiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active label filters'**
+  String get tasksQuickFilterLabelsActiveTitle;
+
+  /// No description provided for @tasksQuickFilterClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get tasksQuickFilterClear;
+
+  /// No description provided for @tasksQuickFilterUnassignedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get tasksQuickFilterUnassignedLabel;
+
+  /// No description provided for @taskLabelUnassignedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'unassigned'**
+  String get taskLabelUnassignedLabel;
 }
 
 class _AppLocalizationsDelegate

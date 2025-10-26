@@ -6,6 +6,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_sheet.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
 class TaskLabelsWrapper extends ConsumerWidget {
@@ -57,11 +58,11 @@ class TaskLabelsWrapper extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Labels',
+              context.messages.tasksLabelsHeaderTitle,
               style: headerStyle,
             ),
             IconButton(
-              tooltip: 'Edit labels',
+              tooltip: context.messages.tasksLabelsHeaderEditTooltip,
               onPressed: () => _openSelector(context, ref, assignedIds),
               icon: Icon(
                 Icons.edit_outlined,
@@ -73,7 +74,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
         ),
         if (assignedLabels.isEmpty)
           Text(
-            'No labels',
+            context.messages.tasksLabelsNoLabels,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
             ),
@@ -135,7 +136,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(context.messages.tasksLabelsDialogClose),
           ),
         ],
       ),

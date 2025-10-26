@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
@@ -45,7 +46,7 @@ class _TaskLabelFilterState extends State<TaskLabelFilter> {
           children: [
             const SizedBox(height: 16),
             Text(
-              'Labels',
+              context.messages.tasksLabelFilterTitle,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 5),
@@ -67,13 +68,13 @@ class _TaskLabelFilterState extends State<TaskLabelFilter> {
                   );
                 }),
                 FilterChoiceChip(
-                  label: 'Unlabeled',
+                  label: context.messages.tasksLabelFilterUnlabeled,
                   selectedColor: Colors.grey,
                   isSelected: state.selectedLabelIds.contains(''),
                   onTap: () => cubit.toggleSelectedLabelId(''),
                 ),
                 FilterChoiceChip(
-                  label: 'All',
+                  label: context.messages.tasksLabelFilterAll,
                   selectedColor: Colors.grey,
                   isSelected: state.selectedLabelIds.isEmpty,
                   onTap: cubit.clearSelectedLabelIds,

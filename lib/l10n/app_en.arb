@@ -848,5 +848,20 @@
   "aiTranscribingAudio": "Transcribing audio...",
   "copyAsText": "Copy as text",
   "copyAsMarkdown": "Copy as Markdown",
-  "editorInsertDivider": "Insert divider"
+  "editorInsertDivider": "Insert divider",
+  "tasksLabelsHeaderTitle": "Labels",
+  "tasksLabelsHeaderEditTooltip": "Edit labels",
+  "tasksLabelsNoLabels": "No labels",
+  "tasksLabelsDialogClose": "Close",
+  "tasksLabelsSheetTitle": "Select labels",
+  "tasksLabelsSheetSearchHint": "Search labels…",
+  "tasksLabelsSheetApply": "Apply",
+  "tasksLabelsUpdateFailed": "Failed to update labels",
+  "tasksLabelFilterTitle": "Labels",
+  "tasksLabelFilterUnlabeled": "Unlabeled",
+  "tasksLabelFilterAll": "All",
+  "tasksQuickFilterLabelsActiveTitle": "Active label filters",
+  "tasksQuickFilterClear": "Clear",
+  "tasksQuickFilterUnassignedLabel": "Unassigned",
+  "taskLabelUnassignedLabel": "unassigned"
 }

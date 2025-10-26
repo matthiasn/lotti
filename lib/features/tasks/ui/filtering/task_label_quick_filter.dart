@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 
@@ -24,7 +25,7 @@ class TaskLabelQuickFilter extends StatelessWidget {
           if (labelId.isEmpty) {
             chips.add(
               _QuickFilterChip(
-                label: 'Unassigned',
+                label: context.messages.tasksQuickFilterUnassignedLabel,
                 color: Theme.of(context).colorScheme.outlineVariant,
                 onDeleted: () =>
                     context.read<JournalPageCubit>().toggleSelectedLabelId(''),
@@ -56,14 +57,14 @@ class TaskLabelQuickFilter extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'Active label filters',
+                    context.messages.tasksQuickFilterLabelsActiveTitle,
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                   const Spacer(),
                   TextButton(
                     onPressed:
                         context.read<JournalPageCubit>().clearSelectedLabelIds,
-                    child: const Text('Clear'),
+                    child: Text(context.messages.tasksQuickFilterClear),
                   ),
                 ],
               ),

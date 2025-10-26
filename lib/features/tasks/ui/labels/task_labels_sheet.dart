@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
 class TaskLabelsSheet extends ConsumerStatefulWidget {
@@ -41,16 +42,16 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Select labels',
+                  context.messages.tasksLabelsSheetTitle,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Search labels…',
-                    prefixIcon: Icon(Icons.search),
+                  decoration: InputDecoration(
+                    hintText: context.messages.tasksLabelsSheetSearchHint,
+                    prefixIcon: const Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -75,7 +76,7 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
+                        child: Text(context.messages.cancelButton),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -85,6 +86,7 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
                           final repository = ref.read(labelsRepositoryProvider);
                           final navigator = Navigator.of(context);
                           final messenger = ScaffoldMessenger.of(context);
+                          final messages = context.messages;
                           final ids = _selectedLabelIds.toList();
                           final result = await repository.setLabels(
                             journalEntityId: widget.taskId,
@@ -95,13 +97,13 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
                             navigator.pop(ids);
                           } else {
                             messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Failed to update labels'),
+                              SnackBar(
+                                content: Text(messages.tasksLabelsUpdateFailed),
                               ),
                             );
                           }
                         },
-                        child: const Text('Apply'),
+                        child: Text(context.messages.tasksLabelsSheetApply),
                       ),
                     ),
                   ],

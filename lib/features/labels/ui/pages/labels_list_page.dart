@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/search/index.dart';
 
 class LabelsListPage extends ConsumerStatefulWidget {
@@ -29,7 +30,7 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Labels'),
+        title: Text(context.messages.settingsLabelsTitle),
       ),
       body: labelsAsync.when(
         data: (labels) => _buildContent(context, labels),
@@ -38,7 +39,7 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openEditor,
-        tooltip: 'Create label',
+        tooltip: context.messages.settingsLabelsCreateTitle,
         child: const Icon(Icons.add),
       ),
     );
@@ -54,7 +55,7 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
           padding: const EdgeInsets.all(16),
           child: LottiSearchBar(
             controller: _searchController,
-            hintText: 'Search labels…',
+            hintText: context.messages.settingsLabelsSearchHint,
             onChanged: (value) => setState(() {
               _searchQuery = value.trim().toLowerCase();
             }),
@@ -101,14 +102,14 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                'No labels yet',
+                context.messages.settingsLabelsEmptyState,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Theme.of(context).disabledColor,
                     ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Tap the + button to create your first label.',
+                context.messages.settingsLabelsEmptyStateHint,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).disabledColor,
@@ -152,7 +153,7 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load labels',
+              context.messages.settingsLabelsErrorLoading,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
@@ -183,7 +184,9 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          label == null ? 'Label created successfully' : 'Label updated',
+          label == null
+              ? context.messages.settingsLabelsCreateSuccess
+              : context.messages.settingsLabelsUpdateSuccess,
         ),
       ),
     );
@@ -194,21 +197,21 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete label'),
+        title: Text(context.messages.settingsLabelsDeleteConfirmTitle),
         content: Text(
-          'Are you sure you want to delete "${label.name}"? Tasks with this label will lose the assignment.',
+          context.messages.settingsLabelsDeleteConfirmMessage(label.name),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.messages.settingsLabelsDeleteCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.messages.settingsLabelsDeleteConfirmAction),
           ),
         ],
       ),
@@ -224,7 +227,11 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
 
     if (!mounted) return;
     messenger.showSnackBar(
-      SnackBar(content: Text('Label "${label.name}" deleted')),
+      SnackBar(
+        content: Text(
+          context.messages.settingsLabelsDeleteSuccess(label.name),
+        ),
+      ),
     );
   }
 }
@@ -292,20 +299,20 @@ class _LabelListCard extends StatelessWidget {
                     onDelete();
                   }
                 },
-                itemBuilder: (context) => const [
+                itemBuilder: (context) => [
                   PopupMenuItem(
                     value: 'edit',
                     child: ListTile(
-                      leading: Icon(Icons.edit),
-                      title: Text('Edit'),
+                      leading: const Icon(Icons.edit),
+                      title: Text(context.messages.editMenuTitle),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
                   PopupMenuItem(
                     value: 'delete',
                     child: ListTile(
-                      leading: Icon(Icons.delete_outline),
-                      title: Text('Delete'),
+                      leading: const Icon(Icons.delete_outline),
+                      title: Text(context.messages.deleteButton),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
@@ -386,7 +393,7 @@ class _PrivateLabelBadge extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            'Private',
+            context.messages.privateLabel,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w600,

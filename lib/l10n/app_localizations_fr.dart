@@ -2417,4 +2417,49 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get editorInsertDivider => 'Insert divider';
+
+  @override
+  String get tasksLabelsHeaderTitle => 'Labels';
+
+  @override
+  String get tasksLabelsHeaderEditTooltip => 'Edit labels';
+
+  @override
+  String get tasksLabelsNoLabels => 'No labels';
+
+  @override
+  String get tasksLabelsDialogClose => 'Close';
+
+  @override
+  String get tasksLabelsSheetTitle => 'Select labels';
+
+  @override
+  String get tasksLabelsSheetSearchHint => 'Search labels…';
+
+  @override
+  String get tasksLabelsSheetApply => 'Apply';
+
+  @override
+  String get tasksLabelsUpdateFailed => 'Failed to update labels';
+
+  @override
+  String get tasksLabelFilterTitle => 'Labels';
+
+  @override
+  String get tasksLabelFilterUnlabeled => 'Unlabeled';
+
+  @override
+  String get tasksLabelFilterAll => 'All';
+
+  @override
+  String get tasksQuickFilterLabelsActiveTitle => 'Active label filters';
+
+  @override
+  String get tasksQuickFilterClear => 'Clear';
+
+  @override
+  String get tasksQuickFilterUnassignedLabel => 'Unassigned';
+
+  @override
+  String get taskLabelUnassignedLabel => 'unassigned';
 }
