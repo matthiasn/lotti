@@ -931,6 +931,9 @@ class JournalDb extends _$JournalDb {
     return usage;
   }
 
+  /// Alias to snapshot method for clarity when used alongside the stream variant.
+  Future<Map<String, int>> getLabelUsageCountsSnapshot() => getLabelUsageCounts();
+
   Stream<LabelDefinition?> watchLabelDefinitionById(String id) {
     // For single-entity watches, do not filter by the global private flag.
     // Settings and edit flows need to observe changes (including private toggles)

@@ -14,6 +14,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
@@ -250,6 +251,12 @@ Future<void> registerSingletons() async {
   // Shared rate limiter for AI label assignment
   getIt.registerSingleton<LabelAssignmentRateLimiter>(
     LabelAssignmentRateLimiter(),
+  );
+
+  // Label assignment processor
+  _registerLazyServiceSafely<LabelAssignmentProcessor>(
+    LabelAssignmentProcessor.new,
+    'LabelAssignmentProcessor',
   );
 
   // Check and run maintenance task to remove deprecated action item suggestions

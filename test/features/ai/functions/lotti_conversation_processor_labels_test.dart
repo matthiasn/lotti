@@ -20,6 +20,7 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -86,7 +87,11 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<LabelAssignmentRateLimiter>(
-          LabelAssignmentRateLimiter());
+          LabelAssignmentRateLimiter())
+      // Also register mock LabelsRepository for processor fallback
+      ..registerSingleton<LabelsRepository>(mockLabelsRepo);
+    // Ensure no cross-test rate limiting state persists
+    getIt<LabelAssignmentRateLimiter>().clearHistory();
 
     // Set up ref
     when(() => mockRef.read(journalRepositoryProvider))
@@ -205,7 +210,8 @@ void main() {
             ));
     when(() => mockJournalDb.getLabelDefinitionById('X'))
         .thenAnswer((_) async => null);
-    when(() => mockJournalDb.getConfigFlag(any()))
+    // Explicitly control only the shadow flag here
+    when(() => mockJournalDb.getConfigFlag(aiLabelAssignmentShadowFlag))
         .thenAnswer((_) async => false);
 
     // Conversation wiring

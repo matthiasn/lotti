@@ -17,9 +17,10 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
+import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+// ignore: unused_import
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -410,8 +411,9 @@ class LottiChecklistStrategy extends ConversationStrategy {
         // Assign labels to task (add-only) with group exclusivity and rate limiting (handled upstream if needed)
         try {
           final db = getIt<JournalDb>();
-          final labelsRepo = ref.read(labelsRepositoryProvider);
-          final logging = getIt<LoggingService>();
+          final processor = LabelAssignmentProcessor(
+            repository: ref.read(labelsRepositoryProvider),
+          );
 
           final args =
               jsonDecode(call.function.arguments) as Map<String, dynamic>;
@@ -423,51 +425,6 @@ class LottiChecklistStrategy extends ConversationStrategy {
             proposed
                 .addAll(idsRaw.split(RegExp(r'\s*,\s*')).map((e) => e.trim()));
           }
-          final unique =
-              LinkedHashSet<String>.from(proposed.where((e) => e.isNotEmpty))
-                  .toList();
-          final limited = unique.take(kMaxLabelsPerAssignment).toList();
-
-          final assigned = <String>[];
-          final invalid = <String>[];
-          final skipped = <Map<String, String>>[];
-
-          // Build existing group occupancy (batched)
-          final existingIds =
-              checklistHandler.task.meta.labelIds ?? const <String>[];
-          final existingGroups = <String, String>{};
-          final existingDefs =
-              await Future.wait(existingIds.map(db.getLabelDefinitionById));
-          for (final def in existingDefs) {
-            final gid = def?.groupId;
-            final id = def?.id;
-            if (gid != null && id != null) {
-              existingGroups.putIfAbsent(gid, () => id);
-            }
-          }
-
-          final seenGroups = <String>{};
-          for (final id in limited) {
-            final def = await db.getLabelDefinitionById(id);
-            if (def == null || def.deletedAt != null) {
-              invalid.add(id);
-              continue;
-            }
-            final gid = def.groupId;
-            if (gid != null) {
-              if (existingGroups.containsKey(gid)) {
-                skipped.add({'id': id, 'reason': 'group_exclusivity'});
-                continue;
-              }
-              if (seenGroups.contains(gid)) {
-                skipped.add({'id': id, 'reason': 'group_exclusivity'});
-                continue;
-              }
-              seenGroups.add(gid);
-            }
-            assigned.add(id);
-          }
-
           // Shadow mode: do not persist if enabled (safe default false)
           var shadow = false;
           try {
@@ -478,41 +435,20 @@ class LottiChecklistStrategy extends ConversationStrategy {
           } catch (_) {
             shadow = false;
           }
-          if (!shadow && assigned.isNotEmpty) {
-            final limiter = getIt<LabelAssignmentRateLimiter>();
-            if (limiter.isRateLimited(checklistHandler.task.id)) {
-              logging.captureEvent(
-                'Rate limited label assignment for task ${checklistHandler.task.id}',
-                domain: 'labels_ai_assignment',
-                subDomain: 'conversation',
-              );
-            } else {
-              await labelsRepo.addLabels(
-                journalEntityId: checklistHandler.task.id,
-                addedLabelIds: assigned,
-              );
-              limiter.recordAssignment(checklistHandler.task.id);
-            }
-          }
-
-          logging.captureEvent(
-            'Conversation label assignment task=${checklistHandler.task.id} attempted=${limited.length} assigned=${assigned.length} invalid=${invalid.length} skipped=${skipped.length}',
-            domain: 'labels_ai_assignment',
-            subDomain: 'conversation',
+          final result = await processor.processAssignment(
+            taskId: checklistHandler.task.id,
+            proposedIds: proposed,
+            existingIds:
+                checklistHandler.task.meta.labelIds ?? const <String>[],
+            shadowMode: shadow,
           );
 
           // Structured tool response for the model
-          final response = jsonEncode({
-            'function': 'assign_task_labels',
-            'request': {'labelIds': limited},
-            'result': {
-              'assigned': assigned,
-              'invalid': invalid,
-              'skipped': skipped,
-            },
-            'message': 'Assigned ${assigned.length} label(s); '
-                '${invalid.length} invalid; ${skipped.length} skipped',
-          });
+          final response = result.toStructuredJson(
+            LinkedHashSet<String>.from(
+              proposed.where((e) => e.isNotEmpty),
+            ).take(kMaxLabelsPerAssignment).toList(),
+          );
           manager.addToolResponse(
             toolCallId: call.id,
             response: response,

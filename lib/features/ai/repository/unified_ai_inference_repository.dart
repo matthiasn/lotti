@@ -1,4 +1,5 @@
 import 'dart:async';
+// ignore: unused_import
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:developer' as developer;
@@ -32,12 +33,14 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+// ignore: unused_import
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
+import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
+// ignore: unused_import
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -1360,21 +1363,6 @@ class UnifiedAiInferenceRepository {
       } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
         // Handle assign task labels (add-only)
         try {
-          final logging = getIt<LoggingService>();
-          final db = getIt<JournalDb>();
-          final repo = ref.read(labelsRepositoryProvider);
-
-          // Rate limiting per task (5 minutes)
-          final limiter = getIt<LabelAssignmentRateLimiter>();
-          if (limiter.isRateLimited(currentTask.id)) {
-            logging.captureEvent(
-              'Rate limited label assignment for task ${currentTask.id}',
-              domain: 'labels_ai_assignment',
-              subDomain: 'processToolCalls',
-            );
-            continue;
-          }
-
           final args =
               jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
           final idsRaw = args['labelIds'];
@@ -1382,70 +1370,21 @@ class UnifiedAiInferenceRepository {
           if (idsRaw is List) {
             proposed.addAll(idsRaw.map((e) => e.toString()));
           } else if (idsRaw is String) {
-            proposed
-                .addAll(idsRaw.split(RegExp(r'\s*,\s*')).map((e) => e.trim()));
-          }
-
-          // De-duplicate and constrain to max per call
-          final unique =
-              LinkedHashSet<String>.from(proposed.where((e) => e.isNotEmpty))
-                  .toList();
-          if (unique.isEmpty) continue;
-          final limited = unique.take(kMaxLabelsPerAssignment).toList();
-
-          // Shadow mode: log and skip persistence
-          final shadow = await _getFlagSafe(aiLabelAssignmentShadowFlag);
-
-          // Validate IDs and enforce group exclusivity
-          final assigned = <String>[];
-          final invalid = <String>[];
-          final skipped = <Map<String, String>>[];
-
-          // Build existing group occupancy from current task
-          final existingIds = currentTask.meta.labelIds ?? const <String>[];
-          final existingGroups = <String, String>{}; // groupId -> labelId
-          for (final id in existingIds) {
-            final def = await db.getLabelDefinitionById(id);
-            final gid = def?.groupId;
-            if (gid != null) existingGroups.putIfAbsent(gid, () => id);
-          }
-
-          final seenGroups = <String>{};
-          for (final id in limited) {
-            final def = await db.getLabelDefinitionById(id);
-            if (def == null || def.deletedAt != null) {
-              invalid.add(id);
-              continue;
-            }
-
-            final gid = def.groupId;
-            if (gid != null) {
-              if (existingGroups.containsKey(gid)) {
-                skipped.add({'id': id, 'reason': 'group_exclusivity'});
-                continue;
-              }
-              if (seenGroups.contains(gid)) {
-                skipped.add({'id': id, 'reason': 'group_exclusivity'});
-                continue;
-              }
-              seenGroups.add(gid);
-            }
-            assigned.add(id);
-          }
-
-          logging.captureEvent(
-            'Assignment attempt task=${currentTask.id} attempted=${limited.length} assigned=${assigned.length} invalid=${invalid.length} skipped=${skipped.length}',
-            domain: 'labels_ai_assignment',
-            subDomain: 'processToolCalls',
-          );
-
-          if (!shadow && assigned.isNotEmpty) {
-            await repo.addLabels(
-              journalEntityId: currentTask.id,
-              addedLabelIds: assigned,
+            proposed.addAll(
+              idsRaw.split(RegExp(r'\s*,\s*')).map((e) => e.trim()),
             );
-            limiter.recordAssignment(currentTask.id);
           }
+
+          final shadow = await _getFlagSafe(aiLabelAssignmentShadowFlag);
+          final processor = LabelAssignmentProcessor(
+            repository: ref.read(labelsRepositoryProvider),
+          );
+          await processor.processAssignment(
+            taskId: currentTask.id,
+            proposedIds: proposed,
+            existingIds: currentTask.meta.labelIds ?? const <String>[],
+            shadowMode: shadow,
+          );
         } catch (e) {
           developer.log(
             'Error processing assign_task_labels: $e',
