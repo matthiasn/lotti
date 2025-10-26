@@ -229,7 +229,7 @@ void main() {
     when(() => mockConversationManager.addToolResponse(
           toolCallId: any(named: 'toolCallId'),
           response: any(named: 'response'),
-        )).thenReturn(null);
+        )).thenAnswer((_) {});
 
     // sendMessage triggers strategy processing of our tool call
     when(() => mockConversationRepo.sendMessage(
@@ -255,7 +255,7 @@ void main() {
     });
 
     when(() => mockConversationRepo.deleteConversation(conversationId))
-        .thenReturn(null);
+        .thenAnswer((_) {});
 
     final result = await processor.processPromptWithConversation(
       prompt: 'user',
@@ -326,7 +326,7 @@ void main() {
     when(() => mockConversationManager.addToolResponse(
           toolCallId: any(named: 'toolCallId'),
           response: any(named: 'response'),
-        )).thenReturn(null);
+        )).thenAnswer((_) {});
 
     when(() => mockConversationRepo.sendMessage(
           conversationId: conversationId,
@@ -350,7 +350,7 @@ void main() {
       }
     });
     when(() => mockConversationRepo.deleteConversation(conversationId))
-        .thenReturn(null);
+        .thenAnswer((_) {});
 
     await processor.processPromptWithConversation(
       prompt: 'user',
@@ -372,6 +372,334 @@ void main() {
           toolCallId: any(named: 'toolCallId'),
           response: any(named: 'response'),
         )).called(greaterThanOrEqualTo(1));
+  });
+
+  test('handles retry with corrected label IDs in conversation', () async {
+    final task = makeTask();
+
+    // First attempt: mix of valid and invalid
+    when(() => mockJournalDb.getLabelDefinitionById('valid-1'))
+        .thenAnswer((_) async => LabelDefinition(
+              id: 'valid-1',
+              name: 'Valid 1',
+              color: '#000',
+              description: null,
+              sortOrder: null,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+            ));
+    when(() => mockJournalDb.getLabelDefinitionById('valid-2'))
+        .thenAnswer((_) async => LabelDefinition(
+              id: 'valid-2',
+              name: 'Valid 2',
+              color: '#000',
+              description: null,
+              sortOrder: null,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+            ));
+    when(() => mockJournalDb.getLabelDefinitionById('typo-id'))
+        .thenAnswer((_) async => null);
+    when(() => mockJournalDb.getLabelDefinitionById('deleted-id'))
+        .thenAnswer((_) async => LabelDefinition(
+              id: 'deleted-id',
+              name: 'Deleted',
+              color: '#000',
+              description: null,
+              sortOrder: null,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+              deletedAt: DateTime.now(),
+            ));
+
+    // Second attempt: all valid
+    when(() => mockJournalDb.getLabelDefinitionById('valid-3'))
+        .thenAnswer((_) async => LabelDefinition(
+              id: 'valid-3',
+              name: 'Valid 3',
+              color: '#000',
+              description: null,
+              sortOrder: null,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+            ));
+    when(() => mockJournalDb.getLabelDefinitionById('valid-4'))
+        .thenAnswer((_) async => LabelDefinition(
+              id: 'valid-4',
+              name: 'Valid 4',
+              color: '#000',
+              description: null,
+              sortOrder: null,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+            ));
+
+    // Repository should succeed
+    when(() => mockLabelsRepo.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        )).thenAnswer((_) async => true);
+
+    // First attempt conversation wiring
+    const conversationId1 = 'conv-retry-1';
+    when(() => mockConversationRepo.createConversation(
+          systemMessage: any(named: 'systemMessage'),
+          maxTurns: any(named: 'maxTurns'),
+        )).thenReturn(conversationId1);
+    when(() => mockConversationRepo.getConversation(conversationId1))
+        .thenReturn(mockConversationManager);
+    when(() => mockConversationManager.messages).thenReturn([]);
+
+    String? firstResponse;
+    when(() => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: captureAny(named: 'response'),
+        )).thenAnswer((invocation) {
+      firstResponse = invocation.namedArguments[#response] as String;
+      return;
+    });
+
+    when(() => mockConversationRepo.sendMessage(
+          conversationId: conversationId1,
+          message: any(named: 'message'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          inferenceRepo: any(named: 'inferenceRepo'),
+          tools: any(named: 'tools'),
+          temperature: any(named: 'temperature'),
+          strategy: any(named: 'strategy'),
+        )).thenAnswer((invocation) async {
+      final strategy =
+          invocation.namedArguments[#strategy] as ConversationStrategy?;
+      if (strategy != null) {
+        await strategy.processToolCalls(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'call-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'assign_task_labels',
+                arguments: jsonEncode({
+                  'labelIds': ['valid-1', 'typo-id', 'valid-2', 'deleted-id'],
+                }),
+              ),
+            ),
+          ],
+          manager: mockConversationManager,
+        );
+      }
+    });
+    when(() => mockConversationRepo.deleteConversation(conversationId1))
+        .thenAnswer((_) {});
+
+    await processor.processPromptWithConversation(
+      prompt: 'user',
+      entity: task,
+      task: task,
+      model: makeModel(),
+      provider: makeProvider(),
+      promptConfig: makePrompt(),
+      systemMessage: 'sys',
+      tools: const [],
+      inferenceRepo: FakeInferenceRepo(),
+    );
+
+    final firstResult = jsonDecode(firstResponse!) as Map<String, dynamic>;
+    final firstFunction = firstResult['function'] as String;
+    final firstResMap = Map<String, dynamic>.from(firstResult['result'] as Map);
+    final firstAssigned = (firstResMap['assigned'] as List).cast<String>();
+    final firstInvalid = (firstResMap['invalid'] as List).cast<String>();
+    expect(firstFunction, 'assign_task_labels');
+    expect(firstAssigned, containsAll(['valid-1', 'valid-2']));
+    expect(firstInvalid, containsAll(['typo-id', 'deleted-id']));
+
+    // Clear rate limiter before retry to allow second assignment
+    getIt<LabelAssignmentRateLimiter>().clearHistory();
+
+    // Second attempt with corrected IDs
+    const conversationId2 = 'conv-retry-2';
+    when(() => mockConversationRepo.createConversation(
+          systemMessage: any(named: 'systemMessage'),
+          maxTurns: any(named: 'maxTurns'),
+        )).thenReturn(conversationId2);
+    when(() => mockConversationRepo.getConversation(conversationId2))
+        .thenReturn(mockConversationManager);
+
+    String? secondResponse;
+    when(() => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: captureAny(named: 'response'),
+        )).thenAnswer((invocation) {
+      secondResponse = invocation.namedArguments[#response] as String;
+      return;
+    });
+
+    when(() => mockConversationRepo.sendMessage(
+          conversationId: conversationId2,
+          message: any(named: 'message'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          inferenceRepo: any(named: 'inferenceRepo'),
+          tools: any(named: 'tools'),
+          temperature: any(named: 'temperature'),
+          strategy: any(named: 'strategy'),
+        )).thenAnswer((invocation) async {
+      final strategy =
+          invocation.namedArguments[#strategy] as ConversationStrategy?;
+      if (strategy != null) {
+        await strategy.processToolCalls(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'call-2',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'assign_task_labels',
+                arguments: jsonEncode({
+                  'labelIds': ['valid-3', 'valid-4'],
+                }),
+              ),
+            ),
+          ],
+          manager: mockConversationManager,
+        );
+      }
+    });
+    when(() => mockConversationRepo.deleteConversation(conversationId2))
+        .thenAnswer((_) {});
+
+    await processor.processPromptWithConversation(
+      prompt: 'user',
+      entity: task,
+      task: task,
+      model: makeModel(),
+      provider: makeProvider(),
+      promptConfig: makePrompt(),
+      systemMessage: 'sys',
+      tools: const [],
+      inferenceRepo: FakeInferenceRepo(),
+    );
+
+    final secondResult = jsonDecode(secondResponse!) as Map<String, dynamic>;
+    final secondResMap =
+        Map<String, dynamic>.from(secondResult['result'] as Map);
+    final secondAssigned = (secondResMap['assigned'] as List).cast<String>();
+    final secondInvalid = (secondResMap['invalid'] as List).cast<String>();
+    expect(secondAssigned, equals(['valid-3', 'valid-4']));
+    expect(secondInvalid, isEmpty);
+  });
+
+  test('handles conversation interruption and recovery', () async {
+    final task = makeTask();
+
+    when(() => mockJournalDb.getLabelDefinitionById('label-1'))
+        .thenAnswer((_) async => LabelDefinition(
+              id: 'label-1',
+              name: 'Label 1',
+              color: '#000',
+              description: null,
+              sortOrder: null,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+            ));
+    when(() => mockJournalDb.getLabelDefinitionById('label-2'))
+        .thenAnswer((_) async => LabelDefinition(
+              id: 'label-2',
+              name: 'Label 2',
+              color: '#000',
+              description: null,
+              sortOrder: null,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+            ));
+
+    // Simulate repository failure during persistence
+    when(() => mockLabelsRepo.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        )).thenThrow(Exception('Network error'));
+
+    const conversationId = 'conv-error';
+    when(() => mockConversationRepo.createConversation(
+          systemMessage: any(named: 'systemMessage'),
+          maxTurns: any(named: 'maxTurns'),
+        )).thenReturn(conversationId);
+    when(() => mockConversationRepo.getConversation(conversationId))
+        .thenReturn(mockConversationManager);
+    when(() => mockConversationManager.messages).thenReturn([]);
+
+    String? errorResponse;
+    when(() => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: captureAny(named: 'response'),
+        )).thenAnswer((invocation) {
+      errorResponse = invocation.namedArguments[#response] as String;
+      return;
+    });
+
+    when(() => mockConversationRepo.sendMessage(
+          conversationId: conversationId,
+          message: any(named: 'message'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          inferenceRepo: any(named: 'inferenceRepo'),
+          tools: any(named: 'tools'),
+          temperature: any(named: 'temperature'),
+          strategy: any(named: 'strategy'),
+        )).thenAnswer((invocation) async {
+      final strategy =
+          invocation.namedArguments[#strategy] as ConversationStrategy?;
+      if (strategy != null) {
+        await strategy.processToolCalls(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'call-err',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'assign_task_labels',
+                arguments: jsonEncode({
+                  'labelIds': ['label-1', 'label-2'],
+                }),
+              ),
+            ),
+          ],
+          manager: mockConversationManager,
+        );
+      }
+    });
+    when(() => mockConversationRepo.deleteConversation(conversationId))
+        .thenAnswer((_) {});
+
+    await processor.processPromptWithConversation(
+      prompt: 'user',
+      entity: task,
+      task: task,
+      model: makeModel(),
+      provider: makeProvider(),
+      promptConfig: makePrompt(),
+      systemMessage: 'sys',
+      tools: const [],
+      inferenceRepo: FakeInferenceRepo(),
+    );
+
+    expect(errorResponse, isNotNull);
+    // Should be a structured JSON error payload containing the exception text
+    final decoded = jsonDecode(errorResponse!) as Map<String, dynamic>;
+    expect(decoded['function'], 'assign_task_labels');
+    expect(decoded['error'].toString(), contains('Network error'));
   });
 }
 

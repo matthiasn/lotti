@@ -78,8 +78,13 @@ class PromptBuilderHelper {
         promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
       final enabled = await _getFlagSafe(enableAiLabelAssignmentFlag);
       if (enabled) {
-        final labelsJson = await _buildLabelsJson();
-        prompt = prompt.replaceAll('{{labels}}', labelsJson);
+        final labels = await _buildLabelsJsonWithCounts();
+        prompt = prompt.replaceAll('{{labels}}', labels.json);
+        if (labels.totalCount > labels.selectedCount) {
+          // Add a short note after the JSON block to avoid breaking JSON parsing
+          prompt =
+              '$prompt\n(Note: showing ${labels.selectedCount} of ${labels.totalCount} labels)';
+        }
       } else {
         prompt = prompt.replaceAll('{{labels}}', '[]');
       }
@@ -126,7 +131,8 @@ class PromptBuilderHelper {
 
   /// Build a compact JSON array [{"id":"...","name":"..."}] of labels
   /// limited to 100 entries (top-50 by usage + next-50 alphabetical).
-  Future<String> _buildLabelsJson() async {
+  Future<({String json, int selectedCount, int totalCount})>
+      _buildLabelsJsonWithCounts() async {
     final db = getIt<JournalDb>();
 
     // Respect privacy toggle
@@ -164,7 +170,18 @@ class PromptBuilderHelper {
             })
         .toList();
 
-    return jsonEncode(tuples);
+    return (
+      json: jsonEncode(tuples),
+      selectedCount: tuples.length,
+      totalCount: filtered.length,
+    );
+  }
+
+  // Backwards-compatible helper if needed elsewhere (kept for potential future use)
+  // ignore: unused_element
+  Future<String> _buildLabelsJson() async {
+    final result = await _buildLabelsJsonWithCounts();
+    return result.json;
   }
 
   Future<bool> _getFlagSafe(String name, {bool defaultValue = false}) async {

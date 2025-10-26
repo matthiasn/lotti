@@ -51,6 +51,8 @@ Lotti can automatically assign labels to a task via AI function-calling during c
   `enable_ai_label_assignment` flag is enabled. The list is capped to 100 entries (top 50 by usage,
   then 50 alphabetical) and optionally excludes private labels based on the
   `include_private_labels_in_prompts` flag. Data is JSON-encoded to avoid prompt injection.
+  When the total number of labels exceeds the cap, a short note is appended after the JSON block in the
+  prompt indicating the subset size, for example: `(Note: showing 100 of 150 labels)`.
 - Function tool: The model calls `assign_task_labels` with `labelIds: string[]`. The system
   enforces add‑only semantics (no removal) and caps assignments per call using
   `kMaxLabelsPerAssignment` (default 5).

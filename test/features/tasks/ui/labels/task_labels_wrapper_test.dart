@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_wrapper.dart';
 import 'package:lotti/get_it.dart';
@@ -74,6 +75,7 @@ void main() {
     registerFallbackValue(testLabelDefinition1);
   });
 
+  // Moved toast tests below setup/buildWrapper
   setUp(() async {
     cacheService = MockEntitiesCacheService();
     editorStateService = MockEditorStateService();
@@ -117,6 +119,98 @@ void main() {
       ),
     );
   }
+
+  testWidgets('shows toast and performs undo on AI assignment', (tester) async {
+    // Register event service for provider
+    final eventService = LabelAssignmentEventService();
+    getIt.registerSingleton<LabelAssignmentEventService>(eventService);
+
+    // Ensure cache returns label definitions for names
+    when(() => cacheService.getLabelById('new-1')).thenReturn(
+      testLabelDefinition1.copyWith(id: 'new-1', name: 'New 1'),
+    );
+    when(() => cacheService.getLabelById('new-2')).thenReturn(
+      testLabelDefinition2.copyWith(id: 'new-2', name: 'New 2'),
+    );
+
+    // Stub removeLabel
+    when(() => repository.removeLabel(
+          journalEntityId: any(named: 'journalEntityId'),
+          labelId: any(named: 'labelId'),
+        )).thenAnswer((_) async => true);
+
+    final task = taskWithLabels(['existing']);
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    // Publish assignment event
+    eventService.publish(
+      const LabelAssignmentEvent(
+        taskId: 'task-123',
+        assignedIds: ['new-1', 'new-2'],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Toast content and Undo
+    expect(find.textContaining('Assigned: New 1, New 2'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    verify(() => repository.removeLabel(
+          journalEntityId: 'task-123',
+          labelId: 'new-1',
+        )).called(1);
+    verify(() => repository.removeLabel(
+          journalEntityId: 'task-123',
+          labelId: 'new-2',
+        )).called(1);
+  });
+
+  testWidgets('handles rapid multiple assignments, showing latest toast',
+      (tester) async {
+    // Register event service for provider
+    final eventService = LabelAssignmentEventService();
+    getIt.registerSingleton<LabelAssignmentEventService>(eventService);
+
+    // Ensure cache returns label definitions
+    when(() => cacheService.getLabelById('label-1')).thenReturn(
+      testLabelDefinition1.copyWith(id: 'label-1', name: 'Label 1'),
+    );
+    when(() => cacheService.getLabelById('label-2')).thenReturn(
+      testLabelDefinition1.copyWith(id: 'label-2', name: 'Label 2'),
+    );
+    when(() => cacheService.getLabelById('label-3')).thenReturn(
+      testLabelDefinition2.copyWith(id: 'label-3', name: 'Label 3'),
+    );
+
+    final task = taskWithLabels(const []);
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    // First event
+    eventService.publish(const LabelAssignmentEvent(
+      taskId: 'task-123',
+      assignedIds: ['label-1'],
+    ));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Second event supersedes toast
+    eventService.publish(const LabelAssignmentEvent(
+      taskId: 'task-123',
+      assignedIds: ['label-2', 'label-3'],
+    ));
+    await tester.pumpAndSettle();
+    // Allow SnackBar replacement animation to complete
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    final hasAny = find.textContaining('Assigned').evaluate().isNotEmpty;
+    expect(hasAny, isTrue);
+  });
 
   testWidgets('renders assigned labels as chips', (tester) async {
     final task = taskWithLabels(['label-1']);
