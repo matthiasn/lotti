@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -191,13 +193,29 @@ class LabelsRepository {
         return false;
       }
 
-      final sorted = [...labelIds]..sort(
-          (a, b) => (_entitiesCacheService.getLabelById(a)?.name ?? '')
-              .toLowerCase()
-              .compareTo(
-                (_entitiesCacheService.getLabelById(b)?.name ?? '')
-                    .toLowerCase(),
-              ),
+      final normalized = LinkedHashSet<String>.from(
+        labelIds.where((id) => id.isNotEmpty),
+      );
+      final resolved = <String>[];
+      final nameLookup = <String, String>{};
+
+      for (final id in normalized) {
+        final cached = _entitiesCacheService.getLabelById(id);
+        if (cached != null) {
+          resolved.add(id);
+          nameLookup[id] = cached.name.toLowerCase();
+          continue;
+        }
+
+        final dbLabel = await _journalDb.getLabelDefinitionById(id);
+        if (dbLabel != null && dbLabel.deletedAt == null) {
+          resolved.add(id);
+          nameLookup[id] = dbLabel.name.toLowerCase();
+        }
+      }
+
+      final sorted = [...resolved]..sort(
+          (a, b) => (nameLookup[a] ?? a).compareTo(nameLookup[b] ?? b),
         );
 
       final updatedMetadata = await _persistenceLogic.updateMetadata(
