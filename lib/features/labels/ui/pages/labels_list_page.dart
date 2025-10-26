@@ -4,7 +4,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/search/index.dart';
 
 class LabelsListPage extends ConsumerStatefulWidget {
@@ -222,17 +224,40 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
     }
 
     final controller = ref.read(labelsListControllerProvider.notifier);
+    try {
+      await controller.deleteLabel(label.id);
 
-    await controller.deleteLabel(label.id);
-
-    if (!mounted) return;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          context.messages.settingsLabelsDeleteSuccess(label.name),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            context.messages.settingsLabelsDeleteSuccess(label.name),
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e, st) {
+      // Log the error without crashing; surface feedback to the user.
+      try {
+        if (getIt.isRegistered<LoggingService>()) {
+          getIt<LoggingService>().captureException(
+            e,
+            domain: 'LABELS',
+            subDomain: 'deleteLabel',
+            stackTrace: st,
+          );
+        }
+      } catch (_) {
+        // Swallow logging failures silently.
+      }
+
+      if (!mounted) return;
+      final errText = '${context.messages.commonError}: $e';
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(errText),
+        ),
+      );
+    }
   }
 }
 

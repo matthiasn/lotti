@@ -46,7 +46,7 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration {
@@ -128,6 +128,14 @@ class JournalDb extends _$JournalDb {
           await () async {
             debugPrint('Ensuring label tables exist for legacy v26 installs');
             await _ensureLabelTables(m);
+          }();
+        }
+
+        // v28: Rebuild `labeled` with FK on label_id -> label_definitions(id) ON DELETE CASCADE
+        if (from < 28) {
+          await () async {
+            debugPrint('Rebuilding labeled table to add FK with ON DELETE CASCADE');
+            await _rebuildLabeledWithFkCascade();
           }();
         }
       },
@@ -223,14 +231,15 @@ class JournalDb extends _$JournalDb {
 
     final labelsToAdd = targetLabelIds.difference(currentLabelIds);
     final labelsToRemove = currentLabelIds.difference(targetLabelIds);
+    await transaction(() async {
+      for (final labelId in labelsToAdd) {
+        await insertLabel(journalId, labelId);
+      }
 
-    for (final labelId in labelsToAdd) {
-      await insertLabel(journalId, labelId);
-    }
-
-    for (final labelId in labelsToRemove) {
-      await deleteLabeledRow(journalId, labelId);
-    }
+      for (final labelId in labelsToRemove) {
+        await deleteLabeledRow(journalId, labelId);
+      }
+    });
   }
 
   Future<JournalUpdateResult> updateJournalEntity(
@@ -1053,6 +1062,36 @@ class JournalDb extends _$JournalDb {
       await migrator.createIndex(idxLabeledJournalId);
       await migrator.createIndex(idxLabeledLabelId);
     }
+  }
+
+  Future<void> _rebuildLabeledWithFkCascade() async {
+    // Create a replacement table with the desired foreign key constraint.
+    await customStatement('''
+CREATE TABLE IF NOT EXISTS labeled_new (
+  id TEXT NOT NULL UNIQUE,
+  journal_id TEXT NOT NULL,
+  label_id TEXT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY(journal_id) REFERENCES journal(id) ON DELETE CASCADE,
+  FOREIGN KEY(label_id) REFERENCES label_definitions(id) ON DELETE CASCADE,
+  UNIQUE(journal_id, label_id)
+)''');
+
+    // Copy only valid rows to avoid FK violations (skip orphaned label refs).
+    await customStatement('''
+INSERT INTO labeled_new (id, journal_id, label_id)
+SELECT l.id, l.journal_id, l.label_id
+FROM labeled l
+WHERE EXISTS (
+  SELECT 1 FROM label_definitions d WHERE d.id = l.label_id
+)
+''');
+
+    // Replace old table with the new one and recreate indexes.
+    await customStatement('DROP TABLE IF EXISTS labeled');
+    await customStatement('ALTER TABLE labeled_new RENAME TO labeled');
+    await customStatement('CREATE INDEX IF NOT EXISTS idx_labeled_journal_id ON labeled (journal_id)');
+    await customStatement('CREATE INDEX IF NOT EXISTS idx_labeled_label_id ON labeled (label_id)');
   }
 
   Future<bool> _tableExists(String tableName) async {
