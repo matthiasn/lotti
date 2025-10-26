@@ -54,6 +54,8 @@ class TestPersistenceLogic extends PersistenceLogic {
     DateTime? dateTo,
     String? categoryId,
     bool clearCategoryId = false,
+    List<String>? labelIds,
+    bool clearLabelIds = false,
     DateTime? deletedAt,
   }) async {
     updateMetadataCalls++;
@@ -63,6 +65,8 @@ class TestPersistenceLogic extends PersistenceLogic {
       dateTo: dateTo,
       categoryId: categoryId,
       clearCategoryId: clearCategoryId,
+      labelIds: labelIds,
+      clearLabelIds: clearLabelIds,
       deletedAt: deletedAt,
     );
   }
@@ -169,6 +173,10 @@ void main() {
     ).thenAnswer((_) async => const VectorClock({'host': 1}));
     when(() => tagsService.getFilteredStoryTagIds(any<List<String>?>()))
         .thenReturn(<String>[]);
+    when(() => journalDb.addTagged(any<JournalEntity>()))
+        .thenAnswer((_) async {});
+    when(() => journalDb.addLabeled(any<JournalEntity>()))
+        .thenAnswer((_) async {});
 
     getIt
       ..registerSingleton<JournalDb>(journalDb)
@@ -258,15 +266,23 @@ void main() {
 
     expect(saved, isFalse);
     verifyNever(() => journalDb.addTagged(any<JournalEntity>()));
+    verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
   });
 
   group('updateJournalEntity', () {
-    test('adds tags only when update applies and reuses metadata', () async {
+    test('adds tags and labels only when update applies and reuses metadata',
+        () async {
       final taggedCaptures = <JournalEntity>[];
+      final labeledCaptures = <JournalEntity>[];
       when(() => journalDb.addTagged(captureAny()))
           .thenAnswer((invocation) async {
         taggedCaptures
+            .add(invocation.positionalArguments.first as JournalEntity);
+      });
+      when(() => journalDb.addLabeled(captureAny()))
+          .thenAnswer((invocation) async {
+        labeledCaptures
             .add(invocation.positionalArguments.first as JournalEntity);
       });
 
@@ -284,13 +300,18 @@ void main() {
 
       expect(result, isTrue);
       expect(taggedCaptures, hasLength(1));
+      expect(labeledCaptures, hasLength(1));
       final updatedEntity = taggedCaptures.first;
+      final labeledEntity = labeledCaptures.first;
       expect(identical(updatedEntity.meta, logic.lastUpdateDbEntity?.meta),
+          isTrue);
+      expect(identical(labeledEntity.meta, logic.lastUpdateDbEntity?.meta),
           isTrue);
       expect(logic.updateMetadataCalls, 1);
 
       clearInteractions(journalDb);
       taggedCaptures.clear();
+      labeledCaptures.clear();
 
       logic = TestPersistenceLogic(
         updateDbEntityHandler: (
@@ -306,6 +327,7 @@ void main() {
 
       expect(skipped, isFalse);
       verifyNever(() => journalDb.addTagged(any<JournalEntity>()));
+      verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
     });
   });
 }

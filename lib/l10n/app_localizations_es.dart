@@ -1588,7 +1588,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCategoriesTitle => 'Categorías';
 
   @override
+  String get settingsLabelsTitle => 'Labels';
+
+  @override
+  String get settingsLabelsSubtitle => 'Organize tasks with colored labels';
+
+  @override
   String get settingsCategoriesAddTooltip => 'Add Category';
+
+  @override
+  String get settingsLabelsSearchHint => 'Search labels…';
+
+  @override
+  String get settingsLabelsEmptyState => 'No labels yet';
+
+  @override
+  String get settingsLabelsEmptyStateHint =>
+      'Tap the + button to create your first label.';
+
+  @override
+  String get settingsLabelsErrorLoading => 'Failed to load labels';
 
   @override
   String get settingsCategoriesEmptyState => 'No categories found';
@@ -1641,6 +1660,66 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get categoryNameRequired => 'Category name is required';
+
+  @override
+  String get settingsLabelsCreateTitle => 'Create label';
+
+  @override
+  String get settingsLabelsEditTitle => 'Edit label';
+
+  @override
+  String get settingsLabelsNameLabel => 'Label name';
+
+  @override
+  String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
+
+  @override
+  String get settingsLabelsNameRequired => 'Label name must not be empty.';
+
+  @override
+  String get settingsLabelsDescriptionLabel => 'Description (optional)';
+
+  @override
+  String get settingsLabelsDescriptionHint =>
+      'Explain when to apply this label';
+
+  @override
+  String get settingsLabelsColorHeading => 'Select a color';
+
+  @override
+  String get settingsLabelsColorSubheading => 'Quick presets';
+
+  @override
+  String get settingsLabelsPrivateTitle => 'Private label';
+
+  @override
+  String get settingsLabelsPrivateDescription =>
+      'Private labels only appear when “Show private entries” is enabled.';
+
+  @override
+  String get settingsLabelsCreateSuccess => 'Label created successfully';
+
+  @override
+  String get settingsLabelsUpdateSuccess => 'Label updated';
+
+  @override
+  String get settingsLabelsDeleteConfirmTitle => 'Delete label';
+
+  @override
+  String settingsLabelsDeleteConfirmMessage(Object labelName) {
+    return 'Are you sure you want to delete \"$labelName\"? Tasks with this label will lose the assignment.';
+  }
+
+  @override
+  String settingsLabelsDeleteSuccess(Object labelName) {
+    return 'Label \"$labelName\" deleted';
+  }
+
+  @override
+  String get settingsLabelsDeleteCancel => 'Cancel';
+
+  @override
+  String get settingsLabelsDeleteConfirmAction => 'Delete';
 
   @override
   String get selectColor => 'Select Color';
@@ -2336,4 +2415,49 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get editorInsertDivider => 'Insert divider';
+
+  @override
+  String get tasksLabelsHeaderTitle => 'Labels';
+
+  @override
+  String get tasksLabelsHeaderEditTooltip => 'Edit labels';
+
+  @override
+  String get tasksLabelsNoLabels => 'No labels';
+
+  @override
+  String get tasksLabelsDialogClose => 'Close';
+
+  @override
+  String get tasksLabelsSheetTitle => 'Select labels';
+
+  @override
+  String get tasksLabelsSheetSearchHint => 'Search labels…';
+
+  @override
+  String get tasksLabelsSheetApply => 'Apply';
+
+  @override
+  String get tasksLabelsUpdateFailed => 'Failed to update labels';
+
+  @override
+  String get tasksLabelFilterTitle => 'Labels';
+
+  @override
+  String get tasksLabelFilterUnlabeled => 'Unlabeled';
+
+  @override
+  String get tasksLabelFilterAll => 'All';
+
+  @override
+  String get tasksQuickFilterLabelsActiveTitle => 'Active label filters';
+
+  @override
+  String get tasksQuickFilterClear => 'Clear';
+
+  @override
+  String get tasksQuickFilterUnassignedLabel => 'Unassigned';
+
+  @override
+  String get taskLabelUnassignedLabel => 'unassigned';
 }

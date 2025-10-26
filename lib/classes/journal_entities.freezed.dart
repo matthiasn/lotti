@@ -22,6 +22,7 @@ mixin _$Metadata {
   String? get categoryId;
   List<String>? get tags;
   List<String>? get tagIds;
+  List<String>? get labelIds;
   int? get utcOffset;
   String? get timezone;
   VectorClock? get vectorClock;
@@ -57,6 +58,7 @@ mixin _$Metadata {
                 other.categoryId == categoryId) &&
             const DeepCollectionEquality().equals(other.tags, tags) &&
             const DeepCollectionEquality().equals(other.tagIds, tagIds) &&
+            const DeepCollectionEquality().equals(other.labelIds, labelIds) &&
             (identical(other.utcOffset, utcOffset) ||
                 other.utcOffset == utcOffset) &&
             (identical(other.timezone, timezone) ||
@@ -82,6 +84,7 @@ mixin _$Metadata {
       categoryId,
       const DeepCollectionEquality().hash(tags),
       const DeepCollectionEquality().hash(tagIds),
+      const DeepCollectionEquality().hash(labelIds),
       utcOffset,
       timezone,
       vectorClock,
@@ -92,7 +95,7 @@ mixin _$Metadata {
 
   @override
   String toString() {
-    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
+    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, labelIds: $labelIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
   }
 }
 
@@ -110,6 +113,7 @@ abstract mixin class $MetadataCopyWith<$Res> {
       String? categoryId,
       List<String>? tags,
       List<String>? tagIds,
+      List<String>? labelIds,
       int? utcOffset,
       String? timezone,
       VectorClock? vectorClock,
@@ -139,6 +143,7 @@ class _$MetadataCopyWithImpl<$Res> implements $MetadataCopyWith<$Res> {
     Object? categoryId = freezed,
     Object? tags = freezed,
     Object? tagIds = freezed,
+    Object? labelIds = freezed,
     Object? utcOffset = freezed,
     Object? timezone = freezed,
     Object? vectorClock = freezed,
@@ -179,6 +184,10 @@ class _$MetadataCopyWithImpl<$Res> implements $MetadataCopyWith<$Res> {
       tagIds: freezed == tagIds
           ? _self.tagIds
           : tagIds // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      labelIds: freezed == labelIds
+          ? _self.labelIds
+          : labelIds // ignore: cast_nullable_to_non_nullable
               as List<String>?,
       utcOffset: freezed == utcOffset
           ? _self.utcOffset
@@ -314,6 +323,7 @@ extension MetadataPatterns on Metadata {
             String? categoryId,
             List<String>? tags,
             List<String>? tagIds,
+            List<String>? labelIds,
             int? utcOffset,
             String? timezone,
             VectorClock? vectorClock,
@@ -336,6 +346,7 @@ extension MetadataPatterns on Metadata {
             _that.categoryId,
             _that.tags,
             _that.tagIds,
+            _that.labelIds,
             _that.utcOffset,
             _that.timezone,
             _that.vectorClock,
@@ -372,6 +383,7 @@ extension MetadataPatterns on Metadata {
             String? categoryId,
             List<String>? tags,
             List<String>? tagIds,
+            List<String>? labelIds,
             int? utcOffset,
             String? timezone,
             VectorClock? vectorClock,
@@ -393,6 +405,7 @@ extension MetadataPatterns on Metadata {
             _that.categoryId,
             _that.tags,
             _that.tagIds,
+            _that.labelIds,
             _that.utcOffset,
             _that.timezone,
             _that.vectorClock,
@@ -428,6 +441,7 @@ extension MetadataPatterns on Metadata {
             String? categoryId,
             List<String>? tags,
             List<String>? tagIds,
+            List<String>? labelIds,
             int? utcOffset,
             String? timezone,
             VectorClock? vectorClock,
@@ -449,6 +463,7 @@ extension MetadataPatterns on Metadata {
             _that.categoryId,
             _that.tags,
             _that.tagIds,
+            _that.labelIds,
             _that.utcOffset,
             _that.timezone,
             _that.vectorClock,
@@ -474,6 +489,7 @@ class _Metadata implements Metadata {
       this.categoryId,
       final List<String>? tags,
       final List<String>? tagIds,
+      final List<String>? labelIds,
       this.utcOffset,
       this.timezone,
       this.vectorClock,
@@ -482,7 +498,8 @@ class _Metadata implements Metadata {
       this.starred,
       this.private})
       : _tags = tags,
-        _tagIds = tagIds;
+        _tagIds = tagIds,
+        _labelIds = labelIds;
   factory _Metadata.fromJson(Map<String, dynamic> json) =>
       _$MetadataFromJson(json);
 
@@ -514,6 +531,16 @@ class _Metadata implements Metadata {
     final value = _tagIds;
     if (value == null) return null;
     if (_tagIds is EqualUnmodifiableListView) return _tagIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  final List<String>? _labelIds;
+  @override
+  List<String>? get labelIds {
+    final value = _labelIds;
+    if (value == null) return null;
+    if (_labelIds is EqualUnmodifiableListView) return _labelIds;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(value);
   }
@@ -565,6 +592,7 @@ class _Metadata implements Metadata {
                 other.categoryId == categoryId) &&
             const DeepCollectionEquality().equals(other._tags, _tags) &&
             const DeepCollectionEquality().equals(other._tagIds, _tagIds) &&
+            const DeepCollectionEquality().equals(other._labelIds, _labelIds) &&
             (identical(other.utcOffset, utcOffset) ||
                 other.utcOffset == utcOffset) &&
             (identical(other.timezone, timezone) ||
@@ -590,6 +618,7 @@ class _Metadata implements Metadata {
       categoryId,
       const DeepCollectionEquality().hash(_tags),
       const DeepCollectionEquality().hash(_tagIds),
+      const DeepCollectionEquality().hash(_labelIds),
       utcOffset,
       timezone,
       vectorClock,
@@ -600,7 +629,7 @@ class _Metadata implements Metadata {
 
   @override
   String toString() {
-    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
+    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, labelIds: $labelIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
   }
 }
 
@@ -620,6 +649,7 @@ abstract mixin class _$MetadataCopyWith<$Res>
       String? categoryId,
       List<String>? tags,
       List<String>? tagIds,
+      List<String>? labelIds,
       int? utcOffset,
       String? timezone,
       VectorClock? vectorClock,
@@ -649,6 +679,7 @@ class __$MetadataCopyWithImpl<$Res> implements _$MetadataCopyWith<$Res> {
     Object? categoryId = freezed,
     Object? tags = freezed,
     Object? tagIds = freezed,
+    Object? labelIds = freezed,
     Object? utcOffset = freezed,
     Object? timezone = freezed,
     Object? vectorClock = freezed,
@@ -689,6 +720,10 @@ class __$MetadataCopyWithImpl<$Res> implements _$MetadataCopyWith<$Res> {
       tagIds: freezed == tagIds
           ? _self._tagIds
           : tagIds // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      labelIds: freezed == labelIds
+          ? _self._labelIds
+          : labelIds // ignore: cast_nullable_to_non_nullable
               as List<String>?,
       utcOffset: freezed == utcOffset
           ? _self.utcOffset

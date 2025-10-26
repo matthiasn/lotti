@@ -49,6 +49,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
               'IN PROGRESS',
             },
             selectedCategoryIds: {},
+            selectedLabelIds: {},
           ),
         ) {
     // Check if we need to set default category selection for tasks
@@ -113,6 +114,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         taskStatuses: state.taskStatuses,
         selectedTaskStatuses: state.selectedTaskStatuses,
         selectedCategoryIds: _selectedCategoryIds,
+        selectedLabelIds: _selectedLabelIds,
       ),
     );
 
@@ -251,6 +253,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool _showPrivateEntries = false;
   bool showTasks = false;
   Set<String> _selectedCategoryIds = {};
+  Set<String> _selectedLabelIds = {};
 
   Set<String> _fullTextMatches = {};
   Set<String> _lastIds = {};
@@ -279,6 +282,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         taskStatuses: state.taskStatuses,
         selectedTaskStatuses: _selectedTaskStatuses,
         selectedCategoryIds: _selectedCategoryIds,
+        selectedLabelIds: _selectedLabelIds,
       ),
     );
   }
@@ -313,6 +317,24 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     _selectedCategoryIds = {};
     emitState();
     await persistTasksFilter();
+  }
+
+  void toggleSelectedLabelId(String labelId) {
+    if (_selectedLabelIds.contains(labelId)) {
+      _selectedLabelIds = _selectedLabelIds.difference({labelId});
+    } else {
+      _selectedLabelIds = _selectedLabelIds.union({labelId});
+    }
+    // Schedule persistence; persistTasksFilter triggers refresh internally.
+    unawaited(persistTasksFilter());
+    emitState();
+  }
+
+  void clearSelectedLabelIds() {
+    _selectedLabelIds = {};
+    // Schedule persistence; persistTasksFilter triggers refresh internally.
+    unawaited(persistTasksFilter());
+    emitState();
   }
 
   void toggleSelectedEntryTypes(String entryType) {
@@ -377,6 +399,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       // Only load task statuses if we're in the tasks tab
       if (showTasks) {
         _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
+        _selectedLabelIds = tasksFilter.selectedLabelIds;
+      } else {
+        _selectedLabelIds = {};
       }
 
       // Load category filters for both tabs
@@ -394,28 +419,25 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
     final settingsDb = getIt<SettingsDb>();
 
-    // SAFEGUARD: Only include task statuses when in tasks tab
-    // The journal tab should never write or modify task status data
-    final filterData = jsonEncode(
-      TasksFilter(
-        selectedCategoryIds: _selectedCategoryIds,
-        selectedTaskStatuses: showTasks ? _selectedTaskStatuses : {},
-      ),
+    final filter = TasksFilter(
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedTaskStatuses: showTasks ? _selectedTaskStatuses : {},
+      selectedLabelIds: showTasks ? _selectedLabelIds : {},
     );
+    final encodedFilter = jsonEncode(filter);
 
     // Write to the new per-tab key
     await settingsDb.saveSettingsItem(
       _getCategoryFiltersKey(),
-      filterData,
+      encodedFilter,
     );
 
-    // Temporarily mirror writes to legacy key for migration period
-    // This prevents data loss during the transition
-    // Only write to legacy key if we're in tasks tab to avoid overwriting task statuses
+    // Mirror writes to the legacy key while the migration is in place.
+    // Only do this on the tasks tab so journal actions never clobber task filters.
     if (showTasks) {
       await settingsDb.saveSettingsItem(
         taskFiltersKey,
-        filterData,
+        encodedFilter,
       );
     }
   }
@@ -519,11 +541,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         categoryIds = _selectedCategoryIds;
       }
 
+      final labelIds = _selectedLabelIds;
+
       final res = await _db.getTasks(
         ids: ids,
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         taskStatuses: _selectedTaskStatuses.toList(),
         categoryIds: categoryIds.toList(),
+        labelIds: labelIds.toList(),
         limit: _pageSize,
         offset: pageKey,
       );

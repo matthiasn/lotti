@@ -72,7 +72,16 @@ class MockJournalDb extends Mock implements JournalDb {
   }
 }
 
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
+class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
+  @override
+  bool get showPrivateEntries {
+    final result = super.noSuchMethod(Invocation.getter(#showPrivateEntries));
+    if (result is bool) {
+      return result;
+    }
+    return true;
+  }
+}
 
 MockJournalDb mockJournalDbWithMeasurableTypes(
   List<MeasurableDataType> dataTypes,
@@ -103,6 +112,7 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
       starredStatuses: any(named: 'starredStatuses'),
       taskStatuses: any(named: 'taskStatuses'),
       categoryIds: any(named: 'categoryIds'),
+      labelIds: any(named: 'labelIds'),
       limit: any(named: 'limit'),
       offset: any(named: 'offset'),
     ),

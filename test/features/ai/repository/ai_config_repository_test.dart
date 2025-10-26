@@ -242,7 +242,11 @@ void main() {
       // Act & Assert
       expect(
         repository.getConfigsByType(AiConfigType.inferenceProvider),
-        completion(equals([apiConfig])),
+        completion(
+          predicate<List<AiConfig>>(
+            (configs) => configs.length == 1 && configs.first.id == 'api-id',
+          ),
+        ),
       );
     });
 

@@ -7,6 +7,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/task_info_row.dart';
+import 'package:lotti/features/tasks/ui/labels/task_labels_wrapper.dart';
 import 'package:lotti/features/tasks/ui/task_date_row.dart';
 
 class TaskForm extends ConsumerWidget {
@@ -35,6 +36,7 @@ class TaskForm extends ConsumerWidget {
       children: [
         TaskDateRow(taskId: taskId),
         TaskInfoRow(taskId: taskId),
+        TaskLabelsWrapper(taskId: taskId),
         const SizedBox(height: 10),
         if (entryState?.entry?.entryText != null && plainText.isNotEmpty) ...[
           EditorWidget(entryId: taskId, margin: EdgeInsets.zero),

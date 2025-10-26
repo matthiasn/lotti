@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased]
 ### Added
 - Settings header widget tests now cover multiple text scale factors (1.0, 1.2, 1.5, 2.0) and common screen widths to guard layout across devices.
+- Label chips now surface tooltips/long-press descriptions, Task label sheets show inline “Create
+  label” CTAs, and the journal header includes a quick label filter row for active selections.
+- Labels settings list displays usage counts sourced from a new `watchLabelUsageCounts` stream plus
+  widget coverage for the editor sheet, list page, assignment sheet/wrapper, and filter chips.
+- Added integration (`label_workflow_test.dart`), accessibility, repository edge-case, and
+  performance tests (1k+ tasks + reconciliation benchmarks) for the labels system.
 
 ### Changed
 - Matrix Sync Stats page now uses the modern SettingsPageHeader with collapsing sliver layout and subtitle, aligning with the new settings header UX.
@@ -17,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task status filters (Open, In Progress, Done, etc.) remain scoped exclusively to the tasks tab.
 
 ### Fixed
+- Stabilized labels/task widget tests by awaiting `getIt.reset()`, providing scoped service mocks,
+  and giving sheet/editor hosts real `MediaQuery` sizes so chips, toggles, and CTAs are tappable
+  during automation.
 
 ## [0.9.704] - 2025-10-24
 ### Added

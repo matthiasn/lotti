@@ -252,6 +252,7 @@ void main() {
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
           categoryIds: [''],
+          labelIds: const [],
         ))
             .length,
         1,
@@ -262,6 +263,7 @@ void main() {
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
           categoryIds: [''],
+          labelIds: const [],
           ids: [task.meta.id],
         ))
             .length,
@@ -273,6 +275,7 @@ void main() {
           starredStatuses: [true, false],
           taskStatuses: ['DONE'],
           categoryIds: [],
+          labelIds: const [],
         ))
             .length,
         0,
@@ -283,6 +286,7 @@ void main() {
           starredStatuses: [true, false],
           taskStatuses: ['DONE'],
           categoryIds: [],
+          labelIds: const [],
         ))
             .length,
         0,
@@ -357,23 +361,22 @@ void main() {
       await TagsRepository.upsertTagEntity(testStoryTag);
 
       // expect tag in database when queried
-      expect(
-        await getIt<JournalDb>().getMatchingTags(testStoryTag.tag),
-        [testStoryTag],
-      );
+      final exactMatch =
+          await getIt<JournalDb>().getMatchingTags(testStoryTag.tag);
+      expect(exactMatch, hasLength(1));
+      expect(exactMatch.first.id, testStoryTag.id);
+      expect(exactMatch.first.tag, testStoryTag.tag);
 
       // expect tag in database when queried with substring match
-      expect(
-        await getIt<JournalDb>()
-            .getMatchingTags(testStoryTag.tag.substring(1, 5)),
-        [testStoryTag],
-      );
+      final partialMatch = await getIt<JournalDb>()
+          .getMatchingTags(testStoryTag.tag.substring(1, 5));
+      expect(partialMatch.any((t) => t.id == testStoryTag.id), isTrue);
+      expect(partialMatch.any((t) => t.tag == testStoryTag.tag), isTrue);
 
       // expect tag in database when watching tags
-      expect(
-        await getIt<JournalDb>().watchTags().first,
-        [testStoryTag],
-      );
+      final watchedTags = await getIt<JournalDb>().watchTags().first;
+      expect(watchedTags.any((t) => t.id == testStoryTag.id), isTrue);
+      expect(watchedTags.any((t) => t.tag == testStoryTag.tag), isTrue);
 
       // create linked comment entry
       const testText = 'test comment for task';

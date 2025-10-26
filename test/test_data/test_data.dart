@@ -35,6 +35,27 @@ final categoryMindfulness = CategoryDefinition(
   private: false,
 );
 
+final testLabelDefinition1 = LabelDefinition(
+  id: 'label-1',
+  name: 'Urgent',
+  color: '#FF0000',
+  description: 'Requires immediate attention',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  vectorClock: const VectorClock(<String, int>{}),
+  private: false,
+);
+
+final testLabelDefinition2 = LabelDefinition(
+  id: 'label-2',
+  name: 'Backlog',
+  color: '#0000FF',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  vectorClock: const VectorClock(<String, int>{}),
+  private: false,
+);
+
 final habitFlossing = HabitDefinition(
   id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
   name: 'Flossing',

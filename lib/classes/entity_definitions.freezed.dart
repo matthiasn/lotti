@@ -1689,6 +1689,8 @@ EntityDefinition _$EntityDefinitionFromJson(Map<String, dynamic> json) {
       return MeasurableDataType.fromJson(json);
     case 'categoryDefinition':
       return CategoryDefinition.fromJson(json);
+    case 'labelDefinition':
+      return LabelDefinition.fromJson(json);
     case 'habit':
       return HabitDefinition.fromJson(json);
     case 'dashboard':
@@ -1708,7 +1710,6 @@ mixin _$EntityDefinition {
   VectorClock? get vectorClock;
   DateTime? get deletedAt;
   bool? get private;
-  String? get categoryId;
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
@@ -1735,19 +1736,17 @@ mixin _$EntityDefinition {
                 other.vectorClock == vectorClock) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt) &&
-            (identical(other.private, private) || other.private == private) &&
-            (identical(other.categoryId, categoryId) ||
-                other.categoryId == categoryId));
+            (identical(other.private, private) || other.private == private));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt,
-      vectorClock, deletedAt, private, categoryId);
+  int get hashCode => Object.hash(
+      runtimeType, id, createdAt, updatedAt, vectorClock, deletedAt, private);
 
   @override
   String toString() {
-    return 'EntityDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt, private: $private, categoryId: $categoryId)';
+    return 'EntityDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt, private: $private)';
   }
 }
 
@@ -1763,8 +1762,7 @@ abstract mixin class $EntityDefinitionCopyWith<$Res> {
       DateTime updatedAt,
       VectorClock? vectorClock,
       DateTime? deletedAt,
-      bool private,
-      String? categoryId});
+      bool private});
 }
 
 /// @nodoc
@@ -1786,7 +1784,6 @@ class _$EntityDefinitionCopyWithImpl<$Res>
     Object? vectorClock = freezed,
     Object? deletedAt = freezed,
     Object? private = null,
-    Object? categoryId = freezed,
   }) {
     return _then(_self.copyWith(
       id: null == id
@@ -1813,10 +1810,6 @@ class _$EntityDefinitionCopyWithImpl<$Res>
           ? _self.private!
           : private // ignore: cast_nullable_to_non_nullable
               as bool,
-      categoryId: freezed == categoryId
-          ? _self.categoryId
-          : categoryId // ignore: cast_nullable_to_non_nullable
-              as String?,
     ));
   }
 }
@@ -1839,6 +1832,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(MeasurableDataType value)? measurableDataType,
     TResult Function(CategoryDefinition value)? categoryDefinition,
+    TResult Function(LabelDefinition value)? labelDefinition,
     TResult Function(HabitDefinition value)? habit,
     TResult Function(DashboardDefinition value)? dashboard,
     required TResult orElse(),
@@ -1849,6 +1843,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
         return measurableDataType(_that);
       case CategoryDefinition() when categoryDefinition != null:
         return categoryDefinition(_that);
+      case LabelDefinition() when labelDefinition != null:
+        return labelDefinition(_that);
       case HabitDefinition() when habit != null:
         return habit(_that);
       case DashboardDefinition() when dashboard != null:
@@ -1875,6 +1871,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
   TResult map<TResult extends Object?>({
     required TResult Function(MeasurableDataType value) measurableDataType,
     required TResult Function(CategoryDefinition value) categoryDefinition,
+    required TResult Function(LabelDefinition value) labelDefinition,
     required TResult Function(HabitDefinition value) habit,
     required TResult Function(DashboardDefinition value) dashboard,
   }) {
@@ -1884,6 +1881,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
         return measurableDataType(_that);
       case CategoryDefinition():
         return categoryDefinition(_that);
+      case LabelDefinition():
+        return labelDefinition(_that);
       case HabitDefinition():
         return habit(_that);
       case DashboardDefinition():
@@ -1907,6 +1906,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(MeasurableDataType value)? measurableDataType,
     TResult? Function(CategoryDefinition value)? categoryDefinition,
+    TResult? Function(LabelDefinition value)? labelDefinition,
     TResult? Function(HabitDefinition value)? habit,
     TResult? Function(DashboardDefinition value)? dashboard,
   }) {
@@ -1916,6 +1916,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
         return measurableDataType(_that);
       case CategoryDefinition() when categoryDefinition != null:
         return categoryDefinition(_that);
+      case LabelDefinition() when labelDefinition != null:
+        return labelDefinition(_that);
       case HabitDefinition() when habit != null:
         return habit(_that);
       case DashboardDefinition() when dashboard != null:
@@ -1971,6 +1973,19 @@ extension EntityDefinitionPatterns on EntityDefinition {
             Map<AiResponseType, List<String>>? automaticPrompts,
             @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
+    TResult Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            String name,
+            String color,
+            VectorClock? vectorClock,
+            String? description,
+            String? groupId,
+            int? sortOrder,
+            DateTime? deletedAt,
+            bool? private)?
+        labelDefinition,
     TResult Function(
             String id,
             DateTime createdAt,
@@ -2044,6 +2059,19 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.allowedPromptIds,
             _that.automaticPrompts,
             _that.icon);
+      case LabelDefinition() when labelDefinition != null:
+        return labelDefinition(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.name,
+            _that.color,
+            _that.vectorClock,
+            _that.description,
+            _that.groupId,
+            _that.sortOrder,
+            _that.deletedAt,
+            _that.private);
       case HabitDefinition() when habit != null:
         return habit(
             _that.id,
@@ -2138,6 +2166,19 @@ extension EntityDefinitionPatterns on EntityDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
+            String color,
+            VectorClock? vectorClock,
+            String? description,
+            String? groupId,
+            int? sortOrder,
+            DateTime? deletedAt,
+            bool? private)
+        labelDefinition,
+    required TResult Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            String name,
             String description,
             HabitSchedule habitSchedule,
             VectorClock? vectorClock,
@@ -2205,6 +2246,19 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.allowedPromptIds,
             _that.automaticPrompts,
             _that.icon);
+      case LabelDefinition():
+        return labelDefinition(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.name,
+            _that.color,
+            _that.vectorClock,
+            _that.description,
+            _that.groupId,
+            _that.sortOrder,
+            _that.deletedAt,
+            _that.private);
       case HabitDefinition():
         return habit(
             _that.id,
@@ -2296,6 +2350,19 @@ extension EntityDefinitionPatterns on EntityDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
+            String color,
+            VectorClock? vectorClock,
+            String? description,
+            String? groupId,
+            int? sortOrder,
+            DateTime? deletedAt,
+            bool? private)?
+        labelDefinition,
+    TResult? Function(
+            String id,
+            DateTime createdAt,
+            DateTime updatedAt,
+            String name,
             String description,
             HabitSchedule habitSchedule,
             VectorClock? vectorClock,
@@ -2363,6 +2430,19 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.allowedPromptIds,
             _that.automaticPrompts,
             _that.icon);
+      case LabelDefinition() when labelDefinition != null:
+        return labelDefinition(
+            _that.id,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.name,
+            _that.color,
+            _that.vectorClock,
+            _that.description,
+            _that.groupId,
+            _that.sortOrder,
+            _that.deletedAt,
+            _that.private);
       case HabitDefinition() when habit != null:
         return habit(
             _that.id,
@@ -2445,7 +2525,6 @@ class MeasurableDataType implements EntityDefinition {
   @override
   final bool? private;
   final bool? favorite;
-  @override
   final String? categoryId;
   final AggregationType? aggregationType;
 
@@ -2669,7 +2748,6 @@ class CategoryDefinition implements EntityDefinition {
   final bool active;
   final bool? favorite;
   final String? color;
-  @override
   final String? categoryId;
   @override
   final DateTime? deletedAt;
@@ -2893,6 +2971,193 @@ class _$CategoryDefinitionCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
+class LabelDefinition implements EntityDefinition {
+  const LabelDefinition(
+      {required this.id,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.name,
+      required this.color,
+      required this.vectorClock,
+      this.description,
+      this.groupId,
+      this.sortOrder,
+      this.deletedAt,
+      this.private,
+      final String? $type})
+      : $type = $type ?? 'labelDefinition';
+  factory LabelDefinition.fromJson(Map<String, dynamic> json) =>
+      _$LabelDefinitionFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final DateTime createdAt;
+  @override
+  final DateTime updatedAt;
+  final String name;
+  final String color;
+  @override
+  final VectorClock? vectorClock;
+  final String? description;
+  final String? groupId;
+  final int? sortOrder;
+  @override
+  final DateTime? deletedAt;
+  @override
+  final bool? private;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $LabelDefinitionCopyWith<LabelDefinition> get copyWith =>
+      _$LabelDefinitionCopyWithImpl<LabelDefinition>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$LabelDefinitionToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is LabelDefinition &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.color, color) || other.color == color) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.groupId, groupId) || other.groupId == groupId) &&
+            (identical(other.sortOrder, sortOrder) ||
+                other.sortOrder == sortOrder) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt) &&
+            (identical(other.private, private) || other.private == private));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt, name,
+      color, vectorClock, description, groupId, sortOrder, deletedAt, private);
+
+  @override
+  String toString() {
+    return 'EntityDefinition.labelDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, color: $color, vectorClock: $vectorClock, description: $description, groupId: $groupId, sortOrder: $sortOrder, deletedAt: $deletedAt, private: $private)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $LabelDefinitionCopyWith<$Res>
+    implements $EntityDefinitionCopyWith<$Res> {
+  factory $LabelDefinitionCopyWith(
+          LabelDefinition value, $Res Function(LabelDefinition) _then) =
+      _$LabelDefinitionCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      DateTime createdAt,
+      DateTime updatedAt,
+      String name,
+      String color,
+      VectorClock? vectorClock,
+      String? description,
+      String? groupId,
+      int? sortOrder,
+      DateTime? deletedAt,
+      bool? private});
+}
+
+/// @nodoc
+class _$LabelDefinitionCopyWithImpl<$Res>
+    implements $LabelDefinitionCopyWith<$Res> {
+  _$LabelDefinitionCopyWithImpl(this._self, this._then);
+
+  final LabelDefinition _self;
+  final $Res Function(LabelDefinition) _then;
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? name = null,
+    Object? color = null,
+    Object? vectorClock = freezed,
+    Object? description = freezed,
+    Object? groupId = freezed,
+    Object? sortOrder = freezed,
+    Object? deletedAt = freezed,
+    Object? private = freezed,
+  }) {
+    return _then(LabelDefinition(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      color: null == color
+          ? _self.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      groupId: freezed == groupId
+          ? _self.groupId
+          : groupId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sortOrder: freezed == sortOrder
+          ? _self.sortOrder
+          : sortOrder // ignore: cast_nullable_to_non_nullable
+              as int?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      private: freezed == private
+          ? _self.private
+          : private // ignore: cast_nullable_to_non_nullable
+              as bool?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
 class HabitDefinition implements EntityDefinition {
   const HabitDefinition(
       {required this.id,
@@ -2939,7 +3204,6 @@ class HabitDefinition implements EntityDefinition {
   @override
   final DateTime? deletedAt;
   final String? defaultStoryId;
-  @override
   final String? categoryId;
   final String? dashboardId;
   final bool? priority;
@@ -3246,7 +3510,6 @@ class DashboardDefinition implements EntityDefinition {
   final int days;
   @override
   final DateTime? deletedAt;
-  @override
   final String? categoryId;
 
   @JsonKey(name: 'runtimeType')

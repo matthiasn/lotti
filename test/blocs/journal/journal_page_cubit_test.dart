@@ -32,6 +32,23 @@ import '../../mocks/sync_config_test_mocks.dart';
 
 const defaultWait = Duration(milliseconds: 100);
 
+// Test double that disables persistence side-effects to avoid touching GetIt
+class _TestJournalPageCubit extends JournalPageCubit {
+  _TestJournalPageCubit({required super.showTasks});
+
+  @override
+  Future<void> persistTasksFilter() async {
+    // No-op for tests; just emit state to simulate refresh
+    emitState();
+  }
+
+  @override
+  Future<void> refreshQuery() async {
+    // No-op in tests
+    emitState();
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -98,6 +115,7 @@ void main() {
             starredStatuses: any(named: 'starredStatuses'),
             taskStatuses: any(named: 'taskStatuses'),
             categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           )).thenAnswer((_) async => []);
@@ -142,15 +160,75 @@ void main() {
 
     blocTest<JournalPageCubit, JournalPageState>(
       'toggle starred entries changes state',
-      build: () => JournalPageCubit(showTasks: false),
+      build: () => _TestJournalPageCubit(showTasks: false),
       setUp: () {},
       act: (c) async {
         c.setFilters({DisplayFilter.starredEntriesOnly});
       },
-      wait: defaultWait,
+      wait: const Duration(milliseconds: 300),
       skip: 1, // Skip the initial state emission from flag sanitization
       expect: () => [isJournalPageState()],
       verify: (c) => c.state.filters == {DisplayFilter.starredEntriesOnly},
+    );
+
+    blocTest<JournalPageCubit, JournalPageState>(
+      'toggleSelectedLabelId adds label when not selected',
+      build: () => _TestJournalPageCubit(showTasks: false),
+      act: (cubit) => cubit.toggleSelectedLabelId('label-A'),
+      wait: const Duration(milliseconds: 300),
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.selectedLabelIds, equals({'label-A'}));
+      },
+    );
+
+    blocTest<JournalPageCubit, JournalPageState>(
+      'toggleSelectedLabelId removes label when already selected',
+      build: () => _TestJournalPageCubit(showTasks: false),
+      act: (cubit) async {
+        cubit.toggleSelectedLabelId('label-A');
+        await Future<void>.delayed(defaultWait);
+        cubit.toggleSelectedLabelId('label-A');
+      },
+      wait: const Duration(milliseconds: 300),
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.selectedLabelIds, isEmpty);
+      },
+    );
+
+    blocTest<JournalPageCubit, JournalPageState>(
+      'clearSelectedLabelIds removes all label filters',
+      build: () => _TestJournalPageCubit(showTasks: false),
+      act: (cubit) async {
+        cubit
+          ..toggleSelectedLabelId('label-A')
+          ..toggleSelectedLabelId('label-B');
+        await Future<void>.delayed(defaultWait);
+        cubit.clearSelectedLabelIds();
+      },
+      wait: const Duration(milliseconds: 300),
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.selectedLabelIds, isEmpty);
+      },
+    );
+
+    blocTest<JournalPageCubit, JournalPageState>(
+      'label filter state persists across state updates',
+      build: () => JournalPageCubit(showTasks: false),
+      act: (cubit) async {
+        cubit
+          ..toggleSelectedLabelId('label-A')
+          // trigger unrelated state update
+          ..setFilters({DisplayFilter.starredEntriesOnly});
+      },
+      wait: defaultWait,
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.selectedLabelIds, contains('label-A'));
+        expect(cubit.state.filters, contains(DisplayFilter.starredEntriesOnly));
+      },
     );
 
     blocTest<JournalPageCubit, JournalPageState>(
@@ -308,6 +386,7 @@ void main() {
         taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN'},
         selectedCategoryIds: {'cat1', 'cat2'},
+        selectedLabelIds: const {},
       ),
       act: (cubit) => cubit.selectedAllCategories(),
       wait: defaultWait,
@@ -358,6 +437,21 @@ void main() {
         when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
         return JournalPageCubit(showTasks: false);
       },
+
+      seed: () => JournalPageState(
+        match: '',
+        tagIds: <String>{},
+        filters: {},
+        showPrivateEntries: false,
+        selectedEntryTypes: ['Task'],
+        fullTextMatches: {},
+        showTasks: false,
+        pagingController: null,
+        taskStatuses: const [],
+        selectedTaskStatuses: {},
+        selectedCategoryIds: {},
+        selectedLabelIds: const {},
+      ),
       act: (cubit) => cubit.selectAllEntryTypes(),
       wait: defaultWait,
       skip: 1, // Skip initial sanitization emission

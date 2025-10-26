@@ -49,6 +49,7 @@ void main() {
       taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
       selectedTaskStatuses: {'OPEN'},
       selectedCategoryIds: {},
+      selectedLabelIds: const {},
     );
 
     when(() => mockCubit.state).thenReturn(mockState);
@@ -254,6 +255,7 @@ void main() {
         taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN', 'GROOMED', 'IN PROGRESS'},
         selectedCategoryIds: {},
+        selectedLabelIds: const {},
       );
       when(() => mockCubit.state).thenReturn(mockState);
 
@@ -315,6 +317,7 @@ void main() {
         taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN', 'GROOMED', 'IN PROGRESS'},
         selectedCategoryIds: {},
+        selectedLabelIds: const {},
       );
       when(() => mockCubit.state).thenReturn(mockState);
 

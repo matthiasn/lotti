@@ -30,7 +30,7 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       - name: Run Flutter tests
-        run: flutter test --coverage
+        run: flutter test --coverage --reporter=compact
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

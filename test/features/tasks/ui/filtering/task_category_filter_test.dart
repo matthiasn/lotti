@@ -94,6 +94,7 @@ void main() {
       taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
       selectedTaskStatuses: {'OPEN'},
       selectedCategoryIds: {'cat1'},
+      selectedLabelIds: const {},
     );
 
     when(() => mockCubit.state).thenReturn(mockState);
@@ -290,6 +291,7 @@ void main() {
         taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN'},
         selectedCategoryIds: {''}, // Unassigned is selected
+        selectedLabelIds: const {},
       );
 
       when(() => mockCubit.state).thenReturn(stateWithUnassigned);
@@ -327,6 +329,7 @@ void main() {
         taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN'},
         selectedCategoryIds: {'cat1', 'cat2'},
+        selectedLabelIds: const {},
       );
 
       when(() => mockCubit.state).thenReturn(stateWithMultiple);
@@ -421,6 +424,7 @@ void main() {
         taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN'},
         selectedCategoryIds: {},
+        selectedLabelIds: const {},
       );
 
       // Create a new mock cubit with the new state

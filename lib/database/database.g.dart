@@ -2692,6 +2692,441 @@ class CategoryDefinitionsCompanion
   }
 }
 
+class LabelDefinitions extends Table
+    with TableInfo<LabelDefinitions, LabelDefinitionDbEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  LabelDefinitions(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL UNIQUE');
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+      'color', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  static const VerificationMeta _deletedMeta =
+      const VerificationMeta('deleted');
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+      'deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT FALSE',
+      defaultValue: const CustomExpression('FALSE'));
+  static const VerificationMeta _privateMeta =
+      const VerificationMeta('private');
+  late final GeneratedColumn<bool> private = GeneratedColumn<bool>(
+      'private', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT FALSE',
+      defaultValue: const CustomExpression('FALSE'));
+  static const VerificationMeta _serializedMeta =
+      const VerificationMeta('serialized');
+  late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
+      'serialized', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, name, color, createdAt, updatedAt, deleted, private, serialized];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'label_definitions';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LabelDefinitionDbEntity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
+    } else if (isInserting) {
+      context.missing(_colorMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(_deletedMeta,
+          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+    }
+    if (data.containsKey('private')) {
+      context.handle(_privateMeta,
+          private.isAcceptableOrUnknown(data['private']!, _privateMeta));
+    }
+    if (data.containsKey('serialized')) {
+      context.handle(
+          _serializedMeta,
+          serialized.isAcceptableOrUnknown(
+              data['serialized']!, _serializedMeta));
+    } else if (isInserting) {
+      context.missing(_serializedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LabelDefinitionDbEntity map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LabelDefinitionDbEntity(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      color: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}color'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      deleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
+      private: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}private'])!,
+      serialized: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
+    );
+  }
+
+  @override
+  LabelDefinitions createAlias(String alias) {
+    return LabelDefinitions(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class LabelDefinitionDbEntity extends DataClass
+    implements Insertable<LabelDefinitionDbEntity> {
+  final String id;
+  final String name;
+  final String color;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool deleted;
+  final bool private;
+  final String serialized;
+  const LabelDefinitionDbEntity(
+      {required this.id,
+      required this.name,
+      required this.color,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.deleted,
+      required this.private,
+      required this.serialized});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['color'] = Variable<String>(color);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['deleted'] = Variable<bool>(deleted);
+    map['private'] = Variable<bool>(private);
+    map['serialized'] = Variable<String>(serialized);
+    return map;
+  }
+
+  LabelDefinitionsCompanion toCompanion(bool nullToAbsent) {
+    return LabelDefinitionsCompanion(
+      id: Value(id),
+      name: Value(name),
+      color: Value(color),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deleted: Value(deleted),
+      private: Value(private),
+      serialized: Value(serialized),
+    );
+  }
+
+  factory LabelDefinitionDbEntity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LabelDefinitionDbEntity(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      color: serializer.fromJson<String>(json['color']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      private: serializer.fromJson<bool>(json['private']),
+      serialized: serializer.fromJson<String>(json['serialized']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'color': serializer.toJson<String>(color),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'deleted': serializer.toJson<bool>(deleted),
+      'private': serializer.toJson<bool>(private),
+      'serialized': serializer.toJson<String>(serialized),
+    };
+  }
+
+  LabelDefinitionDbEntity copyWith(
+          {String? id,
+          String? name,
+          String? color,
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          bool? deleted,
+          bool? private,
+          String? serialized}) =>
+      LabelDefinitionDbEntity(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        color: color ?? this.color,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        deleted: deleted ?? this.deleted,
+        private: private ?? this.private,
+        serialized: serialized ?? this.serialized,
+      );
+  LabelDefinitionDbEntity copyWithCompanion(LabelDefinitionsCompanion data) {
+    return LabelDefinitionDbEntity(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      color: data.color.present ? data.color.value : this.color,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      private: data.private.present ? data.private.value : this.private,
+      serialized:
+          data.serialized.present ? data.serialized.value : this.serialized,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabelDefinitionDbEntity(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('color: $color, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deleted: $deleted, ')
+          ..write('private: $private, ')
+          ..write('serialized: $serialized')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, name, color, createdAt, updatedAt, deleted, private, serialized);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LabelDefinitionDbEntity &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.color == this.color &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deleted == this.deleted &&
+          other.private == this.private &&
+          other.serialized == this.serialized);
+}
+
+class LabelDefinitionsCompanion
+    extends UpdateCompanion<LabelDefinitionDbEntity> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> color;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<bool> deleted;
+  final Value<bool> private;
+  final Value<String> serialized;
+  final Value<int> rowid;
+  const LabelDefinitionsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.color = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.private = const Value.absent(),
+    this.serialized = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LabelDefinitionsCompanion.insert({
+    required String id,
+    required String name,
+    required String color,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.deleted = const Value.absent(),
+    this.private = const Value.absent(),
+    required String serialized,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        name = Value(name),
+        color = Value(color),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt),
+        serialized = Value(serialized);
+  static Insertable<LabelDefinitionDbEntity> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? color,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? deleted,
+    Expression<bool>? private,
+    Expression<String>? serialized,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (color != null) 'color': color,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deleted != null) 'deleted': deleted,
+      if (private != null) 'private': private,
+      if (serialized != null) 'serialized': serialized,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LabelDefinitionsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? name,
+      Value<String>? color,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<bool>? deleted,
+      Value<bool>? private,
+      Value<String>? serialized,
+      Value<int>? rowid}) {
+    return LabelDefinitionsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      color: color ?? this.color,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deleted: deleted ?? this.deleted,
+      private: private ?? this.private,
+      serialized: serialized ?? this.serialized,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (private.present) {
+      map['private'] = Variable<bool>(private.value);
+    }
+    if (serialized.present) {
+      map['serialized'] = Variable<String>(serialized.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabelDefinitionsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('color: $color, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deleted: $deleted, ')
+          ..write('private: $private, ')
+          ..write('serialized: $serialized, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class DashboardDefinitions extends Table
     with TableInfo<DashboardDefinitions, DashboardDefinitionDbEntity> {
   @override
@@ -4152,6 +4587,251 @@ class TaggedCompanion extends UpdateCompanion<TaggedWith> {
   }
 }
 
+class Labeled extends Table with TableInfo<Labeled, LabeledWith> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  Labeled(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL UNIQUE');
+  static const VerificationMeta _journalIdMeta =
+      const VerificationMeta('journalId');
+  late final GeneratedColumn<String> journalId = GeneratedColumn<String>(
+      'journal_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  static const VerificationMeta _labelIdMeta =
+      const VerificationMeta('labelId');
+  late final GeneratedColumn<String> labelId = GeneratedColumn<String>(
+      'label_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  @override
+  List<GeneratedColumn> get $columns => [id, journalId, labelId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'labeled';
+  @override
+  VerificationContext validateIntegrity(Insertable<LabeledWith> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('journal_id')) {
+      context.handle(_journalIdMeta,
+          journalId.isAcceptableOrUnknown(data['journal_id']!, _journalIdMeta));
+    } else if (isInserting) {
+      context.missing(_journalIdMeta);
+    }
+    if (data.containsKey('label_id')) {
+      context.handle(_labelIdMeta,
+          labelId.isAcceptableOrUnknown(data['label_id']!, _labelIdMeta));
+    } else if (isInserting) {
+      context.missing(_labelIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {journalId, labelId},
+      ];
+  @override
+  LabeledWith map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LabeledWith(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      journalId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}journal_id'])!,
+      labelId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label_id'])!,
+    );
+  }
+
+  @override
+  Labeled createAlias(String alias) {
+    return Labeled(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const [
+        'PRIMARY KEY(id)',
+        'FOREIGN KEY(journal_id)REFERENCES journal(id)ON DELETE CASCADE',
+        'FOREIGN KEY(label_id)REFERENCES label_definitions(id)ON DELETE CASCADE',
+        'UNIQUE(journal_id, label_id)'
+      ];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class LabeledWith extends DataClass implements Insertable<LabeledWith> {
+  final String id;
+  final String journalId;
+  final String labelId;
+  const LabeledWith(
+      {required this.id, required this.journalId, required this.labelId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['journal_id'] = Variable<String>(journalId);
+    map['label_id'] = Variable<String>(labelId);
+    return map;
+  }
+
+  LabeledCompanion toCompanion(bool nullToAbsent) {
+    return LabeledCompanion(
+      id: Value(id),
+      journalId: Value(journalId),
+      labelId: Value(labelId),
+    );
+  }
+
+  factory LabeledWith.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LabeledWith(
+      id: serializer.fromJson<String>(json['id']),
+      journalId: serializer.fromJson<String>(json['journal_id']),
+      labelId: serializer.fromJson<String>(json['label_id']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'journal_id': serializer.toJson<String>(journalId),
+      'label_id': serializer.toJson<String>(labelId),
+    };
+  }
+
+  LabeledWith copyWith({String? id, String? journalId, String? labelId}) =>
+      LabeledWith(
+        id: id ?? this.id,
+        journalId: journalId ?? this.journalId,
+        labelId: labelId ?? this.labelId,
+      );
+  LabeledWith copyWithCompanion(LabeledCompanion data) {
+    return LabeledWith(
+      id: data.id.present ? data.id.value : this.id,
+      journalId: data.journalId.present ? data.journalId.value : this.journalId,
+      labelId: data.labelId.present ? data.labelId.value : this.labelId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabeledWith(')
+          ..write('id: $id, ')
+          ..write('journalId: $journalId, ')
+          ..write('labelId: $labelId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, journalId, labelId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LabeledWith &&
+          other.id == this.id &&
+          other.journalId == this.journalId &&
+          other.labelId == this.labelId);
+}
+
+class LabeledCompanion extends UpdateCompanion<LabeledWith> {
+  final Value<String> id;
+  final Value<String> journalId;
+  final Value<String> labelId;
+  final Value<int> rowid;
+  const LabeledCompanion({
+    this.id = const Value.absent(),
+    this.journalId = const Value.absent(),
+    this.labelId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LabeledCompanion.insert({
+    required String id,
+    required String journalId,
+    required String labelId,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        journalId = Value(journalId),
+        labelId = Value(labelId);
+  static Insertable<LabeledWith> custom({
+    Expression<String>? id,
+    Expression<String>? journalId,
+    Expression<String>? labelId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (journalId != null) 'journal_id': journalId,
+      if (labelId != null) 'label_id': labelId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LabeledCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? journalId,
+      Value<String>? labelId,
+      Value<int>? rowid}) {
+    return LabeledCompanion(
+      id: id ?? this.id,
+      journalId: journalId ?? this.journalId,
+      labelId: labelId ?? this.labelId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (journalId.present) {
+      map['journal_id'] = Variable<String>(journalId.value);
+    }
+    if (labelId.present) {
+      map['label_id'] = Variable<String>(labelId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabeledCompanion(')
+          ..write('id: $id, ')
+          ..write('journalId: $journalId, ')
+          ..write('labelId: $labelId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class LinkedEntries extends Table with TableInfo<LinkedEntries, LinkedDbEntry> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -4632,6 +5312,14 @@ abstract class _$JournalDb extends GeneratedDatabase {
   late final Index idxCategoryDefinitionsPrivate = Index(
       'idx_category_definitions_private',
       'CREATE INDEX idx_category_definitions_private ON category_definitions (private)');
+  late final LabelDefinitions labelDefinitions = LabelDefinitions(this);
+  late final Index idxLabelDefinitionsId = Index('idx_label_definitions_id',
+      'CREATE INDEX idx_label_definitions_id ON label_definitions (id)');
+  late final Index idxLabelDefinitionsName = Index('idx_label_definitions_name',
+      'CREATE INDEX idx_label_definitions_name ON label_definitions (name)');
+  late final Index idxLabelDefinitionsPrivate = Index(
+      'idx_label_definitions_private',
+      'CREATE INDEX idx_label_definitions_private ON label_definitions (private)');
   late final DashboardDefinitions dashboardDefinitions =
       DashboardDefinitions(this);
   late final Index idxDashboardDefinitionsId = Index(
@@ -4660,6 +5348,11 @@ abstract class _$JournalDb extends GeneratedDatabase {
       'CREATE INDEX idx_tagged_journal_id ON tagged (journal_id)');
   late final Index idxTaggedTagEntityId = Index('idx_tagged_tag_entity_id',
       'CREATE INDEX idx_tagged_tag_entity_id ON tagged (tag_entity_id)');
+  late final Labeled labeled = Labeled(this);
+  late final Index idxLabeledJournalId = Index('idx_labeled_journal_id',
+      'CREATE INDEX idx_labeled_journal_id ON labeled (journal_id)');
+  late final Index idxLabeledLabelId = Index('idx_labeled_label_id',
+      'CREATE INDEX idx_labeled_label_id ON labeled (label_id)');
   late final LinkedEntries linkedEntries = LinkedEntries(this);
   late final Index idxLinkedEntriesFromId = Index('idx_linked_entries_from_id',
       'CREATE INDEX idx_linked_entries_from_id ON linked_entries (from_id)');
@@ -4952,9 +5645,13 @@ abstract class _$JournalDb extends GeneratedDatabase {
       List<bool> starredStatuses,
       List<String?> taskStatuses,
       List<String> categories,
+      bool filterByLabels,
+      int labelFilterCount,
+      List<String> labelIds,
+      bool includeUnlabeled,
       int limit,
       int offset) {
-    var $arrayStartIndex = 3;
+    var $arrayStartIndex = 6;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     final expandedstarredStatuses =
@@ -4965,19 +5662,26 @@ abstract class _$JournalDb extends GeneratedDatabase {
     $arrayStartIndex += taskStatuses.length;
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
+    final expandedlabelIds = $expandVar($arrayStartIndex, labelIds.length);
+    $arrayStartIndex += labelIds.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC LIMIT ?4 OFFSET ?5',
         variables: [
+          Variable<bool>(filterByLabels),
+          Variable<int>(labelFilterCount),
+          Variable<bool>(includeUnlabeled),
           Variable<int>(limit),
           Variable<int>(offset),
           for (var $ in types) Variable<String>($),
           for (var $ in starredStatuses) Variable<bool>($),
           for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categories) Variable<String>($)
+          for (var $ in categories) Variable<String>($),
+          for (var $ in labelIds) Variable<String>($)
         ],
         readsFrom: {
           journal,
           configFlags,
+          labeled,
         }).asyncMap(journal.mapFromRow);
   }
 
@@ -4987,9 +5691,13 @@ abstract class _$JournalDb extends GeneratedDatabase {
       List<bool> starredStatuses,
       List<String?> taskStatuses,
       List<String> categories,
+      bool filterByLabels,
+      int labelFilterCount,
+      List<String> labelIds,
+      bool includeUnlabeled,
       int limit,
       int offset) {
-    var $arrayStartIndex = 3;
+    var $arrayStartIndex = 6;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     final expandedids = $expandVar($arrayStartIndex, ids.length);
@@ -5002,20 +5710,27 @@ abstract class _$JournalDb extends GeneratedDatabase {
     $arrayStartIndex += taskStatuses.length;
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
+    final expandedlabelIds = $expandVar($arrayStartIndex, labelIds.length);
+    $arrayStartIndex += labelIds.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC LIMIT ?4 OFFSET ?5',
         variables: [
+          Variable<bool>(filterByLabels),
+          Variable<int>(labelFilterCount),
+          Variable<bool>(includeUnlabeled),
           Variable<int>(limit),
           Variable<int>(offset),
           for (var $ in types) Variable<String>($),
           for (var $ in ids) Variable<String>($),
           for (var $ in starredStatuses) Variable<bool>($),
           for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categories) Variable<String>($)
+          for (var $ in categories) Variable<String>($),
+          for (var $ in labelIds) Variable<String>($)
         ],
         readsFrom: {
           journal,
           configFlags,
+          labeled,
         }).asyncMap(journal.mapFromRow);
   }
 
@@ -5388,6 +6103,28 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(categoryDefinitions.mapFromRow);
   }
 
+  Selectable<LabelDefinitionDbEntity> allLabelDefinitions() {
+    return customSelect(
+        'SELECT * FROM label_definitions WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY name COLLATE NOCASE',
+        variables: [],
+        readsFrom: {
+          labelDefinitions,
+          configFlags,
+        }).asyncMap(labelDefinitions.mapFromRow);
+  }
+
+  Selectable<LabelDefinitionDbEntity> labelDefinitionById(String id) {
+    return customSelect(
+        'SELECT * FROM label_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
+        variables: [
+          Variable<String>(id)
+        ],
+        readsFrom: {
+          labelDefinitions,
+          configFlags,
+        }).asyncMap(labelDefinitions.mapFromRow);
+  }
+
   Selectable<TagDbEntity> matchingTagEntities(
       String match, bool? inactive, int limit) {
     return customSelect(
@@ -5412,6 +6149,34 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
   }
 
+  Selectable<String> labeledForJournal(String journalId) {
+    return customSelect('SELECT label_id FROM labeled WHERE journal_id = ?1',
+        variables: [
+          Variable<String>(journalId)
+        ],
+        readsFrom: {
+          labeled,
+        }).map((QueryRow row) => row.read<String>('label_id'));
+  }
+
+  Future<int> deleteLabeledRow(String journalId, String labelId) {
+    return customUpdate(
+      'DELETE FROM labeled WHERE journal_id = ?1 AND label_id = ?2',
+      variables: [Variable<String>(journalId), Variable<String>(labelId)],
+      updates: {labeled},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
+  Future<int> deleteLabeledForId(String journalId) {
+    return customUpdate(
+      'DELETE FROM labeled WHERE journal_id = ?1',
+      variables: [Variable<String>(journalId)],
+      updates: {labeled},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   Future<int> purgeDeletedDashboards() {
     return customUpdate(
       'DELETE FROM dashboard_definitions WHERE deleted = TRUE',
@@ -5426,6 +6191,15 @@ abstract class _$JournalDb extends GeneratedDatabase {
       'DELETE FROM measurable_types WHERE deleted = TRUE',
       variables: [],
       updates: {measurableTypes},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
+  Future<int> purgeDeletedLabelDefinitions() {
+    return customUpdate(
+      'DELETE FROM label_definitions WHERE deleted = TRUE',
+      variables: [],
+      updates: {labelDefinitions},
       updateKind: UpdateKind.delete,
     );
   }
@@ -5473,6 +6247,14 @@ abstract class _$JournalDb extends GeneratedDatabase {
         variables: [],
         readsFrom: {
           tagged,
+        }).map((QueryRow row) => row.read<int>('_c0'));
+  }
+
+  Selectable<int> countLabeled() {
+    return customSelect('SELECT COUNT(*) AS _c0 FROM labeled',
+        variables: [],
+        readsFrom: {
+          labeled,
         }).map((QueryRow row) => row.read<int>('_c0'));
   }
 
@@ -5657,6 +6439,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
         idxCategoryDefinitionsId,
         idxCategoryDefinitionsName,
         idxCategoryDefinitionsPrivate,
+        labelDefinitions,
+        idxLabelDefinitionsId,
+        idxLabelDefinitionsName,
+        idxLabelDefinitionsPrivate,
         dashboardDefinitions,
         idxDashboardDefinitionsId,
         idxDashboardDefinitionsName,
@@ -5671,6 +6457,9 @@ abstract class _$JournalDb extends GeneratedDatabase {
         tagged,
         idxTaggedJournalId,
         idxTaggedTagEntityId,
+        labeled,
+        idxLabeledJournalId,
+        idxLabeledLabelId,
         linkedEntries,
         idxLinkedEntriesFromId,
         idxLinkedEntriesToId,
@@ -5694,6 +6483,20 @@ abstract class _$JournalDb extends GeneratedDatabase {
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('tagged', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('journal',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('labeled', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('label_definitions',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('labeled', kind: UpdateKind.delete),
             ],
           ),
         ],
@@ -6953,6 +7756,224 @@ typedef $CategoryDefinitionsProcessedTableManager = ProcessedTableManager<
     ),
     CategoryDefinitionDbEntity,
     PrefetchHooks Function()>;
+typedef $LabelDefinitionsCreateCompanionBuilder = LabelDefinitionsCompanion
+    Function({
+  required String id,
+  required String name,
+  required String color,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<bool> deleted,
+  Value<bool> private,
+  required String serialized,
+  Value<int> rowid,
+});
+typedef $LabelDefinitionsUpdateCompanionBuilder = LabelDefinitionsCompanion
+    Function({
+  Value<String> id,
+  Value<String> name,
+  Value<String> color,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<bool> deleted,
+  Value<bool> private,
+  Value<String> serialized,
+  Value<int> rowid,
+});
+
+class $LabelDefinitionsFilterComposer
+    extends Composer<_$JournalDb, LabelDefinitions> {
+  $LabelDefinitionsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnFilters(column));
+}
+
+class $LabelDefinitionsOrderingComposer
+    extends Composer<_$JournalDb, LabelDefinitions> {
+  $LabelDefinitionsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+}
+
+class $LabelDefinitionsAnnotationComposer
+    extends Composer<_$JournalDb, LabelDefinitions> {
+  $LabelDefinitionsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get private =>
+      $composableBuilder(column: $table.private, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => column);
+}
+
+class $LabelDefinitionsTableManager extends RootTableManager<
+    _$JournalDb,
+    LabelDefinitions,
+    LabelDefinitionDbEntity,
+    $LabelDefinitionsFilterComposer,
+    $LabelDefinitionsOrderingComposer,
+    $LabelDefinitionsAnnotationComposer,
+    $LabelDefinitionsCreateCompanionBuilder,
+    $LabelDefinitionsUpdateCompanionBuilder,
+    (
+      LabelDefinitionDbEntity,
+      BaseReferences<_$JournalDb, LabelDefinitions, LabelDefinitionDbEntity>
+    ),
+    LabelDefinitionDbEntity,
+    PrefetchHooks Function()> {
+  $LabelDefinitionsTableManager(_$JournalDb db, LabelDefinitions table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $LabelDefinitionsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $LabelDefinitionsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $LabelDefinitionsAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> color = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            Value<String> serialized = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LabelDefinitionsCompanion(
+            id: id,
+            name: name,
+            color: color,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String name,
+            required String color,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            required String serialized,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LabelDefinitionsCompanion.insert(
+            id: id,
+            name: name,
+            color: color,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $LabelDefinitionsProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    LabelDefinitions,
+    LabelDefinitionDbEntity,
+    $LabelDefinitionsFilterComposer,
+    $LabelDefinitionsOrderingComposer,
+    $LabelDefinitionsAnnotationComposer,
+    $LabelDefinitionsCreateCompanionBuilder,
+    $LabelDefinitionsUpdateCompanionBuilder,
+    (
+      LabelDefinitionDbEntity,
+      BaseReferences<_$JournalDb, LabelDefinitions, LabelDefinitionDbEntity>
+    ),
+    LabelDefinitionDbEntity,
+    PrefetchHooks Function()>;
 typedef $DashboardDefinitionsCreateCompanionBuilder
     = DashboardDefinitionsCompanion Function({
   required String id,
@@ -7677,6 +8698,138 @@ typedef $TaggedProcessedTableManager = ProcessedTableManager<
     (TaggedWith, BaseReferences<_$JournalDb, Tagged, TaggedWith>),
     TaggedWith,
     PrefetchHooks Function()>;
+typedef $LabeledCreateCompanionBuilder = LabeledCompanion Function({
+  required String id,
+  required String journalId,
+  required String labelId,
+  Value<int> rowid,
+});
+typedef $LabeledUpdateCompanionBuilder = LabeledCompanion Function({
+  Value<String> id,
+  Value<String> journalId,
+  Value<String> labelId,
+  Value<int> rowid,
+});
+
+class $LabeledFilterComposer extends Composer<_$JournalDb, Labeled> {
+  $LabeledFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get journalId => $composableBuilder(
+      column: $table.journalId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get labelId => $composableBuilder(
+      column: $table.labelId, builder: (column) => ColumnFilters(column));
+}
+
+class $LabeledOrderingComposer extends Composer<_$JournalDb, Labeled> {
+  $LabeledOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get journalId => $composableBuilder(
+      column: $table.journalId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get labelId => $composableBuilder(
+      column: $table.labelId, builder: (column) => ColumnOrderings(column));
+}
+
+class $LabeledAnnotationComposer extends Composer<_$JournalDb, Labeled> {
+  $LabeledAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get journalId =>
+      $composableBuilder(column: $table.journalId, builder: (column) => column);
+
+  GeneratedColumn<String> get labelId =>
+      $composableBuilder(column: $table.labelId, builder: (column) => column);
+}
+
+class $LabeledTableManager extends RootTableManager<
+    _$JournalDb,
+    Labeled,
+    LabeledWith,
+    $LabeledFilterComposer,
+    $LabeledOrderingComposer,
+    $LabeledAnnotationComposer,
+    $LabeledCreateCompanionBuilder,
+    $LabeledUpdateCompanionBuilder,
+    (LabeledWith, BaseReferences<_$JournalDb, Labeled, LabeledWith>),
+    LabeledWith,
+    PrefetchHooks Function()> {
+  $LabeledTableManager(_$JournalDb db, Labeled table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $LabeledFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $LabeledOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $LabeledAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> journalId = const Value.absent(),
+            Value<String> labelId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LabeledCompanion(
+            id: id,
+            journalId: journalId,
+            labelId: labelId,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String journalId,
+            required String labelId,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LabeledCompanion.insert(
+            id: id,
+            journalId: journalId,
+            labelId: labelId,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $LabeledProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    Labeled,
+    LabeledWith,
+    $LabeledFilterComposer,
+    $LabeledOrderingComposer,
+    $LabeledAnnotationComposer,
+    $LabeledCreateCompanionBuilder,
+    $LabeledUpdateCompanionBuilder,
+    (LabeledWith, BaseReferences<_$JournalDb, Labeled, LabeledWith>),
+    LabeledWith,
+    PrefetchHooks Function()>;
 typedef $LinkedEntriesCreateCompanionBuilder = LinkedEntriesCompanion Function({
   required String id,
   required String fromId,
@@ -7900,6 +9053,8 @@ class $JournalDbManager {
       $HabitDefinitionsTableManager(_db, _db.habitDefinitions);
   $CategoryDefinitionsTableManager get categoryDefinitions =>
       $CategoryDefinitionsTableManager(_db, _db.categoryDefinitions);
+  $LabelDefinitionsTableManager get labelDefinitions =>
+      $LabelDefinitionsTableManager(_db, _db.labelDefinitions);
   $DashboardDefinitionsTableManager get dashboardDefinitions =>
       $DashboardDefinitionsTableManager(_db, _db.dashboardDefinitions);
   $ConfigFlagsTableManager get configFlags =>
@@ -7907,6 +9062,7 @@ class $JournalDbManager {
   $TagEntitiesTableManager get tagEntities =>
       $TagEntitiesTableManager(_db, _db.tagEntities);
   $TaggedTableManager get tagged => $TaggedTableManager(_db, _db.tagged);
+  $LabeledTableManager get labeled => $LabeledTableManager(_db, _db.labeled);
   $LinkedEntriesTableManager get linkedEntries =>
       $LinkedEntriesTableManager(_db, _db.linkedEntries);
 }

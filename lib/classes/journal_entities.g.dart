@@ -16,6 +16,9 @@ _Metadata _$MetadataFromJson(Map<String, dynamic> json) => _Metadata(
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
       tagIds:
           (json['tagIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      labelIds: (json['labelIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       utcOffset: (json['utcOffset'] as num?)?.toInt(),
       timezone: json['timezone'] as String?,
       vectorClock: json['vectorClock'] == null
@@ -38,6 +41,7 @@ Map<String, dynamic> _$MetadataToJson(_Metadata instance) => <String, dynamic>{
       'categoryId': instance.categoryId,
       'tags': instance.tags,
       'tagIds': instance.tagIds,
+      'labelIds': instance.labelIds,
       'utcOffset': instance.utcOffset,
       'timezone': instance.timezone,
       'vectorClock': instance.vectorClock,

@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
@@ -79,6 +80,7 @@ void main() {
         '/settings/categories',
         '/settings/categories/:categoryId',
         '/settings/categories/create',
+        '/settings/labels',
         '/settings/dashboards',
         '/settings/dashboards/:dashboardId',
         '/settings/dashboards/create',
@@ -128,6 +130,20 @@ void main() {
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].key, isA<ValueKey<String>>());
       expect(pages[1].child, isA<TagsPage>());
+    });
+
+    test('buildPages builds LabelsListPage', () {
+      final routeInformation =
+          RouteInformation(uri: Uri.parse('/settings/labels'));
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<LabelsListPage>());
     });
 
     test('buildPages builds AiSettingsPage', () {

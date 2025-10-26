@@ -46,7 +46,7 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration {
@@ -107,6 +107,36 @@ class JournalDb extends _$JournalDb {
             await m.createIndex(idxJournalTab);
             await m.createIndex(idxJournalTasks);
             await m.createIndex(idxJournalTypeSubtype);
+          }();
+        }
+
+        if (from < 26) {
+          await () async {
+            debugPrint('Creating label_definitions and labeled tables');
+            await m.createTable(labelDefinitions);
+            await m.createIndex(idxLabelDefinitionsId);
+            await m.createIndex(idxLabelDefinitionsName);
+            await m.createIndex(idxLabelDefinitionsPrivate);
+
+            await m.createTable(labeled);
+            await m.createIndex(idxLabeledJournalId);
+            await m.createIndex(idxLabeledLabelId);
+          }();
+        }
+
+        if (from < 27) {
+          await () async {
+            debugPrint('Ensuring label tables exist for legacy v26 installs');
+            await _ensureLabelTables(m);
+          }();
+        }
+
+        // v28: Rebuild `labeled` with FK on label_id -> label_definitions(id) ON DELETE CASCADE
+        if (from < 28) {
+          await () async {
+            debugPrint(
+                'Rebuilding labeled table to add FK with ON DELETE CASCADE');
+            await _rebuildLabeledWithFkCascade();
           }();
         }
       },
@@ -176,6 +206,43 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Future<void> insertLabel(String journalId, String labelId) async {
+    try {
+      await into(labeled).insert(
+        LabeledWith(
+          id: uuid.v1(),
+          journalId: journalId,
+          labelId: labelId,
+        ),
+      );
+    } catch (ex) {
+      debugPrint(ex.toString());
+    }
+  }
+
+  Future<Set<String>> _labelIdsForJournalId(String journalId) async {
+    final existing = await labeledForJournal(journalId).get();
+    return existing.toSet();
+  }
+
+  Future<void> addLabeled(JournalEntity journalEntity) async {
+    final journalId = journalEntity.meta.id;
+    final targetLabelIds = journalEntity.meta.labelIds?.toSet() ?? {};
+    final currentLabelIds = await _labelIdsForJournalId(journalId);
+
+    final labelsToAdd = targetLabelIds.difference(currentLabelIds);
+    final labelsToRemove = currentLabelIds.difference(targetLabelIds);
+    await transaction(() async {
+      for (final labelId in labelsToAdd) {
+        await insertLabel(journalId, labelId);
+      }
+
+      for (final labelId in labelsToRemove) {
+        await deleteLabeledRow(journalId, labelId);
+      }
+    });
+  }
+
   Future<JournalUpdateResult> updateJournalEntity(
     JournalEntity updated, {
     bool overrideComparison = false,
@@ -238,6 +305,7 @@ class JournalDb extends _$JournalDb {
     if (applied) {
       await saveJournalEntityJson(updated);
       await addTagged(updated);
+      await addLabeled(updated);
       return JournalUpdateResult.applied(rowsWritten: rowsWritten);
     }
 
@@ -347,6 +415,7 @@ class JournalDb extends _$JournalDb {
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
     required List<String> categoryIds,
+    List<String>? labelIds,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
@@ -355,6 +424,7 @@ class JournalDb extends _$JournalDb {
       starredStatuses: starredStatuses,
       taskStatuses: taskStatuses,
       categoryIds: categoryIds,
+      labelIds: labelIds,
       ids: ids,
       limit: limit,
       offset: offset,
@@ -367,18 +437,37 @@ class JournalDb extends _$JournalDb {
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
     required List<String> categoryIds,
+    List<String>? labelIds,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
   }) {
     final types = <String>['Task'];
+    final selectedLabelIds = labelIds ?? <String>[];
+    final includeUnlabeled = selectedLabelIds.contains('');
+    final filteredLabelIds =
+        selectedLabelIds.where((id) => id.isNotEmpty).toList();
+    final labelFilterCount = filteredLabelIds.length;
+    // Avoid passing an empty list to the SQL `IN (:labelIds)` clause.
+    // SQLite (and SQL generally) does not allow an empty `IN ()`, so we
+    // substitute a dummy value when no label IDs are selected. The query
+    // never matches this magic string; it only keeps the SQL valid.
+    final effectiveLabelIds =
+        labelFilterCount == 0 ? <String>['__no_label__'] : filteredLabelIds;
+    final filterByLabels = includeUnlabeled || labelFilterCount > 0;
+    final dbTaskStatuses = taskStatuses.cast<String?>();
+
     if (ids != null) {
       return filteredTasks2(
         types,
         ids,
         starredStatuses,
-        taskStatuses,
+        dbTaskStatuses,
         categoryIds,
+        filterByLabels,
+        labelFilterCount,
+        effectiveLabelIds,
+        includeUnlabeled,
         limit,
         offset,
       );
@@ -386,8 +475,12 @@ class JournalDb extends _$JournalDb {
       return filteredTasks(
         types,
         starredStatuses,
-        taskStatuses,
+        dbTaskStatuses,
         categoryIds,
+        filterByLabels,
+        labelFilterCount,
+        effectiveLabelIds,
+        includeUnlabeled,
         limit,
         offset,
       );
@@ -472,6 +565,10 @@ class JournalDb extends _$JournalDb {
 
   Future<int> getTaggedCount() async {
     return (await countTagged().get()).first;
+  }
+
+  Future<int> getLabeledCount() async {
+    return (await countLabeled().get()).first;
   }
 
   Future<int> getJournalCount() async {
@@ -791,6 +888,51 @@ class JournalDb extends _$JournalDb {
         .map(categoryDefinitionsStreamMapper);
   }
 
+  Stream<List<LabelDefinition>> watchLabelDefinitions() {
+    return allLabelDefinitions().watch().map(labelDefinitionsStreamMapper);
+  }
+
+  Stream<Map<String, int>> watchLabelUsageCounts() {
+    final query = customSelect(
+      '''
+      SELECT label_id, COUNT(*) AS usage_count
+      FROM labeled
+      GROUP BY label_id
+      ''',
+      readsFrom: {labeled},
+    );
+
+    return query.watch().map((rows) {
+      final usage = <String, int>{};
+      for (final row in rows) {
+        final labelId = row.read<String>('label_id');
+        usage[labelId] = row.read<int>('usage_count');
+      }
+      return usage;
+    });
+  }
+
+  Stream<LabelDefinition?> watchLabelDefinitionById(String id) {
+    // For single-entity watches, do not filter by the global private flag.
+    // Settings and edit flows need to observe changes (including private toggles)
+    // for a specific label. We only exclude hard-deleted rows here.
+    final query = select(labelDefinitions)
+      ..where((t) => t.id.equals(id) & t.deleted.equals(false));
+    return query.watch().map(labelDefinitionsStreamMapper).map(
+          (List<LabelDefinition> res) => res.firstOrNull,
+        );
+  }
+
+  Future<List<LabelDefinition>> getAllLabelDefinitions() async {
+    final labels = await allLabelDefinitions().get();
+    return labelDefinitionsStreamMapper(labels);
+  }
+
+  Future<LabelDefinition?> getLabelDefinitionById(String id) async {
+    final result = await labelDefinitionById(id).get();
+    return labelDefinitionsStreamMapper(result).firstOrNull;
+  }
+
   Stream<CategoryDefinition?> watchCategoryById(String id) {
     return categoryById(id)
         .watch()
@@ -894,7 +1036,77 @@ class JournalDb extends _$JournalDb {
       habit: upsertHabitDefinition,
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
+      labelDefinition: upsertLabelDefinition,
     );
     return linesAffected;
+  }
+
+  Future<int> upsertLabelDefinition(
+    LabelDefinition labelDefinition,
+  ) async {
+    return into(labelDefinitions)
+        .insertOnConflictUpdate(labelDefinitionDbEntity(labelDefinition));
+  }
+
+  Future<void> _ensureLabelTables(Migrator migrator) async {
+    final hasLabelDefinitions = await _tableExists('label_definitions');
+    if (!hasLabelDefinitions) {
+      await migrator.createTable(labelDefinitions);
+      await migrator.createIndex(idxLabelDefinitionsId);
+      await migrator.createIndex(idxLabelDefinitionsName);
+      await migrator.createIndex(idxLabelDefinitionsPrivate);
+    }
+
+    final hasLabeledTable = await _tableExists('labeled');
+    if (!hasLabeledTable) {
+      await migrator.createTable(labeled);
+      await migrator.createIndex(idxLabeledJournalId);
+      await migrator.createIndex(idxLabeledLabelId);
+    }
+  }
+
+  Future<void> _rebuildLabeledWithFkCascade() async {
+    // Create a replacement table with the desired foreign key constraint.
+    // Defensive drop to ensure idempotency if this step reruns.
+    await customStatement('DROP TABLE IF EXISTS labeled_new');
+    await customStatement('''
+CREATE TABLE IF NOT EXISTS labeled_new (
+  id TEXT NOT NULL UNIQUE,
+  journal_id TEXT NOT NULL,
+  label_id TEXT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY(journal_id) REFERENCES journal(id) ON DELETE CASCADE,
+  FOREIGN KEY(label_id) REFERENCES label_definitions(id) ON DELETE CASCADE,
+  UNIQUE(journal_id, label_id)
+)''');
+
+    // Copy only valid rows to avoid FK violations (skip orphaned label refs).
+    await customStatement('''
+INSERT INTO labeled_new (id, journal_id, label_id)
+SELECT l.id, l.journal_id, l.label_id
+FROM labeled l
+WHERE EXISTS (
+  SELECT 1 FROM label_definitions d WHERE d.id = l.label_id
+)
+''');
+
+    // Replace old table with the new one and recreate indexes.
+    await customStatement('DROP TABLE IF EXISTS labeled');
+    await customStatement('ALTER TABLE labeled_new RENAME TO labeled');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_labeled_journal_id ON labeled (journal_id)');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_labeled_label_id ON labeled (label_id)');
+  }
+
+  Future<bool> _tableExists(String tableName) async {
+    final result = await customSelect(
+      'SELECT name FROM sqlite_master WHERE type = ? AND name = ?',
+      variables: [
+        Variable.withString('table'),
+        Variable.withString(tableName),
+      ],
+    ).get();
+    return result.isNotEmpty;
   }
 }

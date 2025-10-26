@@ -2142,6 +2142,99 @@ void main() {
       });
     });
 
+    group('Label reconciliation -', () {
+      test('addLabeled mirrors metadata labelIds changes', () async {
+        // Ensure label definitions exist to satisfy the labeled.label_id FK
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'alpha',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            name: 'alpha',
+            color: '#AAAAAA',
+            vectorClock: null,
+          ),
+        );
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'beta',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            name: 'beta',
+            color: '#BBBBBB',
+            vectorClock: null,
+          ),
+        );
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'gamma',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            name: 'gamma',
+            color: '#CCCCCC',
+            vectorClock: null,
+          ),
+        );
+        final entry = createJournalEntry(
+          'with labels',
+          labelIds: const ['alpha', 'beta'],
+        );
+
+        await db!.updateJournalEntity(entry);
+
+        final initial = await db!.labeledForJournal(entry.meta.id).get();
+        expect(initial, unorderedEquals(['alpha', 'beta']));
+
+        final updated = entry.copyWith(
+          meta: entry.meta.copyWith(
+            labelIds: const ['beta', 'gamma'],
+            updatedAt: DateTime.now().add(const Duration(minutes: 1)),
+          ),
+        );
+
+        await db!.updateJournalEntity(updated);
+
+        final afterUpdate = await db!.labeledForJournal(entry.meta.id).get();
+        expect(afterUpdate, unorderedEquals(['beta', 'gamma']));
+
+        final cleared = updated.copyWith(
+          meta: updated.meta.copyWith(
+            labelIds: null,
+            updatedAt: DateTime.now().add(const Duration(minutes: 2)),
+          ),
+        );
+
+        await db!.updateJournalEntity(cleared);
+
+        final afterClear = await db!.labeledForJournal(entry.meta.id).get();
+        expect(afterClear, isEmpty);
+      });
+
+      test('addLabeled is idempotent when metadata is unchanged', () async {
+        // Ensure label definition exists to satisfy FK
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'keep',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            name: 'keep',
+            color: '#DDDDDD',
+            vectorClock: null,
+          ),
+        );
+        final entry = createJournalEntry(
+          'idempotent labels',
+          labelIds: const ['keep'],
+        );
+
+        await db!.updateJournalEntity(entry);
+        await db!.updateJournalEntity(entry);
+
+        final rows = await db!.labeledForJournal(entry.meta.id).get();
+        expect(rows, unorderedEquals(['keep']));
+      });
+    });
+
     test(
       'database operations are covered by tests',
       () async {
@@ -2381,6 +2474,7 @@ class _PrecheckThrowingJournalDb extends JournalDb {
 JournalEntity createJournalEntry(
   String text, {
   String? id,
+  List<String>? labelIds,
 }) {
   final now = DateTime.now();
   return JournalEntity.journalEntry(
@@ -2392,6 +2486,7 @@ JournalEntity createJournalEntry(
       dateTo: now,
       starred: false,
       private: false,
+      labelIds: labelIds,
     ),
     entryText: EntryText(plainText: text),
   );
@@ -2400,6 +2495,7 @@ JournalEntity createJournalEntry(
 JournalEntity createJournalEntryWithVclock(
   VectorClock vclock, {
   String? id,
+  List<String>? labelIds,
 }) {
   final now = DateTime.now();
   final entryId = id ?? UniqueKey().toString();
@@ -2414,6 +2510,7 @@ JournalEntity createJournalEntryWithVclock(
       vectorClock: vclock,
       starred: false,
       private: false,
+      labelIds: labelIds,
     ),
     entryText: const EntryText(plainText: 'Entry with vector clock'),
   );

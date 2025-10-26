@@ -10,7 +10,7 @@ LogEntry _logEntry({
   String? subDomain,
   String level = 'INFO',
 }) {
-  final timestamp = createdAt ?? DateTime(2024, 1, 1, 12);
+  final timestamp = createdAt ?? DateTime.utc(2024, 1, 1, 12);
   return LogEntry(
     id: id,
     createdAt: timestamp.toIso8601String(),
@@ -143,7 +143,7 @@ void main() {
 
     test('watchSearchLogEntries returns results ordered by created_at DESC',
         () async {
-      final now = DateTime.now();
+      final now = DateTime.now().toUtc();
       final logEntries = [
         LogEntry(
           id: 'old',
@@ -576,7 +576,7 @@ void main() {
 
     test('watchSearchLogEntriesPaginated maintains order by created_at DESC',
         () async {
-      final now = DateTime.now();
+      final now = DateTime.now().toUtc();
       final logEntries = [
         LogEntry(
           id: 'old_paginated',

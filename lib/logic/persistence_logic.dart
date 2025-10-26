@@ -58,6 +58,7 @@ class PersistenceLogic {
     String? uuidV5Input,
     bool? private,
     List<String>? tagIds,
+    List<String>? labelIds,
     String? categoryId,
     bool? starred,
     EntryFlag? flag,
@@ -79,6 +80,7 @@ class PersistenceLogic {
       vectorClock: vc,
       private: private,
       tagIds: tagIds,
+      labelIds: labelIds,
       categoryId: categoryId,
       starred: starred,
       timezone: await getLocalTimezone(),
@@ -94,6 +96,8 @@ class PersistenceLogic {
     String? categoryId,
     bool clearCategoryId = false,
     DateTime? deletedAt,
+    List<String>? labelIds,
+    bool clearLabelIds = false,
   }) async =>
       metadata.copyWith(
         updatedAt: DateTime.now(),
@@ -104,6 +108,7 @@ class PersistenceLogic {
         dateTo: dateTo ?? metadata.dateTo,
         categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,
         deletedAt: deletedAt ?? metadata.deletedAt,
+        labelIds: clearLabelIds ? null : labelIds ?? metadata.labelIds,
       );
 
   Future<QuantitativeEntry?> createQuantitativeEntry(
@@ -712,6 +717,7 @@ class PersistenceLogic {
       final applied = (await updateDbEntity(entityWithUpdatedMeta)) ?? false;
       if (applied) {
         await _journalDb.addTagged(entityWithUpdatedMeta);
+        await _journalDb.addLabeled(entityWithUpdatedMeta);
       }
       return applied;
     } catch (exception, stackTrace) {

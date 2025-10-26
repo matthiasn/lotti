@@ -440,5 +440,73 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders label chips when labels present', (tester) async {
+      // Arrange cache to return labels
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
+      when(() => mockEntitiesCacheService.getLabelById('l1')).thenReturn(
+        LabelDefinition(
+          id: 'l1',
+          name: 'Alpha',
+          color: '#FF0000',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      when(() => mockEntitiesCacheService.getLabelById('l2')).thenReturn(
+        LabelDefinition(
+          id: 'l2',
+          name: 'Beta',
+          color: '#00FF00',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+
+      final task = createTestTask().copyWith(
+        meta: createTestTask().meta.copyWith(labelIds: const ['l1', 'l2']),
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(child: ModernTaskCard(task: task)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Wrap), findsWidgets);
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.text('Beta'), findsOneWidget);
+    });
+
+    testWidgets('filters private labels when showPrivate is false',
+        (tester) async {
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(false);
+      when(() => mockEntitiesCacheService.getLabelById('l1')).thenReturn(
+        LabelDefinition(
+          id: 'l1',
+          name: 'Hidden',
+          color: '#FF0000',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+          private: true,
+        ),
+      );
+
+      final task = createTestTask().copyWith(
+        meta: createTestTask().meta.copyWith(labelIds: const ['l1']),
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(child: ModernTaskCard(task: task)),
+      );
+      await tester.pumpAndSettle();
+
+      // No labels should render
+      expect(find.text('Hidden'), findsNothing);
+      // No Wrap for labels section
+      // There may be other Wraps; ensure label chip text absent is sufficient.
+    });
   });
 }

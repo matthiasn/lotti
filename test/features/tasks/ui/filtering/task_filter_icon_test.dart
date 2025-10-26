@@ -69,6 +69,26 @@ void main() {
       color: '#0000FF',
     ),
   ];
+  final mockLabels = [
+    LabelDefinition(
+      id: 'label1',
+      name: 'Urgent',
+      color: '#FF0000',
+      createdAt: DateTime(2023),
+      updatedAt: DateTime(2023),
+      vectorClock: null,
+      private: false,
+    ),
+    LabelDefinition(
+      id: 'label2',
+      name: 'Nice to have',
+      color: '#00FF00',
+      createdAt: DateTime(2023),
+      updatedAt: DateTime(2023),
+      vectorClock: null,
+      private: false,
+    ),
+  ];
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -96,6 +116,7 @@ void main() {
       taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
       selectedTaskStatuses: {'OPEN'},
       selectedCategoryIds: {'cat1'},
+      selectedLabelIds: const {},
     );
 
     when(() => mockCubit.state).thenReturn(mockState);
@@ -103,6 +124,7 @@ void main() {
     // Set up EntitiesCacheService mock
     when(() => mockEntitiesCacheService.sortedCategories)
         .thenReturn(mockCategories);
+    when(() => mockEntitiesCacheService.sortedLabels).thenReturn(mockLabels);
 
     // Register the mock with GetIt
     getIt.allowReassignment = true;
