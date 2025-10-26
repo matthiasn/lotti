@@ -1066,6 +1066,8 @@ class JournalDb extends _$JournalDb {
 
   Future<void> _rebuildLabeledWithFkCascade() async {
     // Create a replacement table with the desired foreign key constraint.
+    // Defensive drop to ensure idempotency if this step reruns.
+    await customStatement('DROP TABLE IF EXISTS labeled_new');
     await customStatement('''
 CREATE TABLE IF NOT EXISTS labeled_new (
   id TEXT NOT NULL UNIQUE,

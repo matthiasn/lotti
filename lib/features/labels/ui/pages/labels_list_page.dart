@@ -313,7 +313,7 @@ class _LabelListCard extends StatelessWidget {
                 ),
               ),
               PopupMenuButton<String>(
-                tooltip: 'Label actions',
+                tooltip: context.messages.entryActions,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

@@ -41,8 +41,11 @@ class TaskLabelsWrapper extends ConsumerWidget {
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
 
+    // Respect privacy filtering when deciding if the wrapper should render.
+    final filteredCacheLabels = cache.sortedLabels;
+
     final hasLabels =
-        assignedLabels.isNotEmpty || cache.sortedLabels.isNotEmpty;
+        assignedLabels.isNotEmpty || filteredCacheLabels.isNotEmpty;
 
     if (!hasLabels) {
       return const SizedBox.shrink();
