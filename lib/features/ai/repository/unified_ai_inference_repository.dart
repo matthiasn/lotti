@@ -32,6 +32,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -64,7 +65,7 @@ class UnifiedAiInferenceRepository {
   late final PromptBuilderHelper promptBuilderHelper;
   AutoChecklistService? _autoChecklistService;
 
-  static const int kMaxLabelsPerAssignment = 5;
+  // Use shared constant from labels constants
 
   Future<bool> _getFlagSafe(String name, {bool defaultValue = false}) async {
     try {
@@ -1393,7 +1394,7 @@ class UnifiedAiInferenceRepository {
           final limited = unique.take(kMaxLabelsPerAssignment).toList();
 
           // Shadow mode: log and skip persistence
-          final shadow = await db.getConfigFlag(aiLabelAssignmentShadowFlag);
+          final shadow = await _getFlagSafe(aiLabelAssignmentShadowFlag);
 
           // Validate IDs and enforce group exclusivity
           final assigned = <String>[];

@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -157,20 +158,20 @@ class PromptBuilderHelper {
     final filtered =
         includePrivate ? all : all.where((l) => !(l.private ?? false)).toList();
 
-    // Sort: top 50 by usage desc (ties by name asc), then next 50 alphabetical
+    // Sort: top N by usage desc (ties by name asc), then next M alphabetical
     final byUsage = [...filtered]..sort((a, b) {
         final ua = usage[a.id] ?? 0;
         final ub = usage[b.id] ?? 0;
         if (ua != ub) return ub.compareTo(ua);
         return a.name.toLowerCase().compareTo(b.name.toLowerCase());
       });
-    final topUsage = byUsage.take(50).toList();
+    final topUsage = byUsage.take(kLabelsPromptTopUsageCount).toList();
 
     final remaining = filtered
         .where((l) => !topUsage.any((t) => t.id == l.id))
         .toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    final nextAlpha = remaining.take(50).toList();
+    final nextAlpha = remaining.take(kLabelsPromptNextAlphaCount).toList();
 
     final selected = [...topUsage, ...nextAlpha];
     final tuples = selected

@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -425,7 +426,6 @@ class LottiChecklistStrategy extends ConversationStrategy {
           final unique =
               LinkedHashSet<String>.from(proposed.where((e) => e.isNotEmpty))
                   .toList();
-          const kMaxLabelsPerAssignment = 5;
           final limited = unique.take(kMaxLabelsPerAssignment).toList();
 
           final assigned = <String>[];
@@ -436,9 +436,8 @@ class LottiChecklistStrategy extends ConversationStrategy {
           final existingIds =
               checklistHandler.task.meta.labelIds ?? const <String>[];
           final existingGroups = <String, String>{};
-          final existingDefs = await Future.wait(
-            existingIds.map((id) => db.getLabelDefinitionById(id)),
-          );
+          final existingDefs =
+              await Future.wait(existingIds.map(db.getLabelDefinitionById));
           for (final def in existingDefs) {
             final gid = def?.groupId;
             final id = def?.id;
