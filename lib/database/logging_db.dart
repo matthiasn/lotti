@@ -38,7 +38,7 @@ class LoggingDb extends _$LoggingDb {
   int get schemaVersion => 1;
 
   Future<int> log(LogEntry logEntry) async {
-    return into(logEntries).insert(logEntry);
+    return into(logEntries).insert(_normalizeTimestamp(logEntry));
   }
 
   Stream<List<LogEntry>> watchLogEntryById(String id) {
@@ -76,7 +76,9 @@ class LoggingDb extends _$LoggingDb {
       // Add wildcards for partial matching and convert to lowercase
       final searchPattern = '%${sanitizedQuery.toLowerCase()}%';
 
-      return searchLogEntries(searchPattern).watch();
+      return searchLogEntries(searchPattern)
+          .watch()
+          .map(_sortEntriesByCreatedAtDesc);
     } catch (e) {
       // Log error and return empty stream to prevent app crashes
       debugPrint('Error in watchSearchLogEntries: $e');
@@ -119,7 +121,8 @@ class LoggingDb extends _$LoggingDb {
 
       return searchLogEntriesPaginated(
               searchPattern, validatedLimit, validatedOffset)
-          .watch();
+          .watch()
+          .map(_sortEntriesByCreatedAtDesc);
     } catch (e) {
       // Log error and return empty stream to prevent app crashes
       debugPrint('Error in watchSearchLogEntriesPaginated: $e');
@@ -154,5 +157,33 @@ class LoggingDb extends _$LoggingDb {
       debugPrint('Error in getSearchLogEntriesCount: $e');
       return 0;
     }
+  }
+}
+
+List<LogEntry> _sortEntriesByCreatedAtDesc(List<LogEntry> entries) {
+  final sorted = [...entries]..sort((a, b) {
+      DateTime parse(String value) {
+        try {
+          return DateTime.parse(value);
+        } catch (_) {
+          return DateTime.fromMillisecondsSinceEpoch(0);
+        }
+      }
+
+      return parse(b.createdAt).compareTo(parse(a.createdAt));
+    });
+  return sorted;
+}
+
+LogEntry _normalizeTimestamp(LogEntry entry) {
+  try {
+    final parsed = DateTime.parse(entry.createdAt);
+    final normalized = parsed.toUtc().toIso8601String();
+    if (normalized == entry.createdAt) {
+      return entry;
+    }
+    return entry.copyWith(createdAt: normalized);
+  } catch (_) {
+    return entry;
   }
 }

@@ -129,18 +129,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
     // Load persisted filters with migration from legacy key
     _loadPersistedFilters();
-    getIt<SettingsDb>().itemByKey(taskFiltersKey).then((value) {
-      if (value == null) {
-        return;
-      }
-      final json = jsonDecode(value) as Map<String, dynamic>;
-      final tasksFilter = TasksFilter.fromJson(json);
-      _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
-      _selectedCategoryIds = tasksFilter.selectedCategoryIds;
-      _selectedLabelIds = tasksFilter.selectedLabelIds;
-      emitState();
-      refreshQuery();
-    });
 
     getIt<SettingsDb>().itemByKey(selectedEntryTypesKey).then((value) {
       if (value == null) {
@@ -411,6 +399,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       // Only load task statuses if we're in the tasks tab
       if (showTasks) {
         _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
+        _selectedLabelIds = tasksFilter.selectedLabelIds;
+      } else {
+        _selectedLabelIds = {};
       }
 
       // Load category filters for both tabs
@@ -428,39 +419,25 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
     final settingsDb = getIt<SettingsDb>();
 
-    // SAFEGUARD: Only include task statuses when in tasks tab
-    // The journal tab should never write or modify task status data
-    final filterData = jsonEncode(
-      TasksFilter(
-        selectedCategoryIds: _selectedCategoryIds,
-        selectedTaskStatuses: showTasks ? _selectedTaskStatuses : {},
-      ),
+    final filter = TasksFilter(
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedTaskStatuses: showTasks ? _selectedTaskStatuses : {},
+      selectedLabelIds: showTasks ? _selectedLabelIds : {},
     );
-
-    await getIt<SettingsDb>().saveSettingsItem(
-      taskFiltersKey,
-      jsonEncode(
-        TasksFilter(
-          selectedCategoryIds: _selectedCategoryIds,
-          selectedTaskStatuses: _selectedTaskStatuses,
-          selectedLabelIds: _selectedLabelIds,
-        ),
-      ),
-    );
+    final encodedFilter = jsonEncode(filter);
 
     // Write to the new per-tab key
     await settingsDb.saveSettingsItem(
       _getCategoryFiltersKey(),
-      filterData,
+      encodedFilter,
     );
 
-    // Temporarily mirror writes to legacy key for migration period
-    // This prevents data loss during the transition
-    // Only write to legacy key if we're in tasks tab to avoid overwriting task statuses
+    // Mirror writes to the legacy key while the migration is in place.
+    // Only do this on the tasks tab so journal actions never clobber task filters.
     if (showTasks) {
       await settingsDb.saveSettingsItem(
         taskFiltersKey,
-        filterData,
+        encodedFilter,
       );
     }
   }

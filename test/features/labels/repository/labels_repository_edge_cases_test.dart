@@ -195,4 +195,103 @@ void main() {
 
     expect(label.color, 'not-a-color');
   });
+
+  test('createLabel accepts extremely long descriptions', () async {
+    when(() => persistenceLogic.upsertEntityDefinition(any()))
+        .thenAnswer((_) async => 1);
+
+    final longDescription = 'long ' * 250; // 1000+ chars
+    final label = await repository.createLabel(
+      name: 'Knowledge base',
+      color: '#010203',
+      description: '$longDescription ',
+    );
+
+    expect(label.description?.length, greaterThan(1000));
+    expect(label.description?.endsWith(' '), isFalse,
+        reason: 'Description should be trimmed');
+  });
+
+  test('setLabels deduplicates ids and sorts alphabetically', () async {
+    final entry = buildEntry(labelIds: const ['label-a']);
+    when(() => journalDb.journalEntityById(entry.meta.id))
+        .thenAnswer((_) async => entry);
+    when(() => cacheService.getLabelById('label-a')).thenReturn(
+      testLabelDefinition1.copyWith(id: 'label-a', name: 'Analytics'),
+    );
+    when(() => cacheService.getLabelById('label-b')).thenReturn(
+      testLabelDefinition2.copyWith(id: 'label-b', name: 'Backend'),
+    );
+    when(() => journalDb.getLabelDefinitionById(any()))
+        .thenAnswer((_) async => null);
+    when(
+      () => persistenceLogic.updateMetadata(
+        entry.meta,
+        labelIds: any(named: 'labelIds'),
+        clearLabelIds: any(named: 'clearLabelIds'),
+      ),
+    ).thenAnswer((invocation) async {
+      final ids = invocation.namedArguments[#labelIds] as List<String>;
+      return entry.meta.copyWith(labelIds: ids);
+    });
+    when(() => persistenceLogic.updateDbEntity(any()))
+        .thenAnswer((_) async => true);
+
+    final result = await repository.setLabels(
+      journalEntityId: entry.meta.id,
+      labelIds: const ['label-b', 'label-a', 'label-a'],
+    );
+
+    expect(result, isTrue);
+    verify(
+      () => persistenceLogic.updateMetadata(
+        entry.meta,
+        labelIds: ['label-a', 'label-b'],
+        clearLabelIds: any(named: 'clearLabelIds'),
+      ),
+    ).called(1);
+  });
+
+  test('setLabels skips ids for labels deleted mid-assignment', () async {
+    final entry = buildEntry();
+    when(() => journalDb.journalEntityById(entry.meta.id))
+        .thenAnswer((_) async => entry);
+    when(() => cacheService.getLabelById('label-live')).thenReturn(
+      testLabelDefinition1.copyWith(id: 'label-live', name: 'Live'),
+    );
+    when(() => cacheService.getLabelById('label-zombie')).thenReturn(null);
+    when(() => journalDb.getLabelDefinitionById('label-live'))
+        .thenAnswer((_) async => testLabelDefinition1.copyWith(
+              id: 'label-live',
+              name: 'Live',
+            ));
+    when(() => journalDb.getLabelDefinitionById('label-zombie'))
+        .thenAnswer((_) async => null);
+    when(
+      () => persistenceLogic.updateMetadata(
+        entry.meta,
+        labelIds: any(named: 'labelIds'),
+        clearLabelIds: any(named: 'clearLabelIds'),
+      ),
+    ).thenAnswer((invocation) async {
+      final ids = invocation.namedArguments[#labelIds] as List<String>;
+      return entry.meta.copyWith(labelIds: ids);
+    });
+    when(() => persistenceLogic.updateDbEntity(any()))
+        .thenAnswer((_) async => true);
+
+    final result = await repository.setLabels(
+      journalEntityId: entry.meta.id,
+      labelIds: const ['label-live', 'label-zombie'],
+    );
+
+    expect(result, isTrue);
+    verify(
+      () => persistenceLogic.updateMetadata(
+        entry.meta,
+        labelIds: ['label-live'],
+        clearLabelIds: any(named: 'clearLabelIds'),
+      ),
+    ).called(1);
+  });
 }

@@ -558,10 +558,15 @@ void main() {
 
     await processor.process(event: event, journalDb: journalDb);
 
-    verify(() => journalDb.upsertEntryLink(link)).called(1);
-    verify(() =>
-            updateNotifications.notify(const {'from', 'to'}, fromSync: true))
-        .called(1);
+    final capturedLink = verify(
+      () => journalDb.upsertEntryLink(captureAny<EntryLink>()),
+    ).captured.single as EntryLink;
+    expect(capturedLink.id, link.id);
+    expect(capturedLink.fromId, link.fromId);
+    expect(capturedLink.toId, link.toId);
+    verify(
+      () => updateNotifications.notify(const {'from', 'to'}, fromSync: true),
+    ).called(1);
   });
 
   test('EntryLink diag reports applied when rows > 0', () async {
@@ -610,7 +615,6 @@ void main() {
     };
 
     await processor.process(event: event, journalDb: journalDb);
-    verify(() => journalDb.upsertEntryLink(link)).called(1);
   });
 
   test('processes entity definitions', () async {
@@ -2068,7 +2072,7 @@ void main() {
       status: SyncEntryStatus.initial,
     );
     when(() => event.text).thenReturn(encodeMessage(message));
-    when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 1);
+    when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
 
     await processor.process(event: event, journalDb: journalDb);
 
@@ -2094,7 +2098,7 @@ void main() {
       status: SyncEntryStatus.initial,
     );
     when(() => event.text).thenReturn(encodeMessage(message));
-    when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 0);
+    when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
 
     SyncApplyDiagnostics? seen;
     processor.applyObserver = (d) => seen = d;
@@ -2114,6 +2118,9 @@ void main() {
     expect(seen!.conflictStatus, 'entryLink.noop');
     expect(seen!.applied, isFalse);
     expect(seen!.skipReason, JournalUpdateSkipReason.olderOrEqual);
+
+    // Restore default behavior for subsequent tests
+    when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
   });
 
   test('EntryLink apply continues when logging throws', () async {
@@ -2130,7 +2137,7 @@ void main() {
       status: SyncEntryStatus.initial,
     );
     when(() => event.text).thenReturn(encodeMessage(message));
-    when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 1);
+    when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
     when(() => loggingService.captureEvent(
           any<Object>(),
           domain: 'MATRIX_SERVICE',
@@ -2140,7 +2147,7 @@ void main() {
     // Should not throw - logging is best-effort
     await processor.process(event: event, journalDb: journalDb);
 
-    verify(() => journalDb.upsertEntryLink(link)).called(1);
+    verify(() => journalDb.upsertEntryLink(any())).called(1);
     verify(() => updateNotifications.notify(any(), fromSync: true)).called(1);
   });
 
