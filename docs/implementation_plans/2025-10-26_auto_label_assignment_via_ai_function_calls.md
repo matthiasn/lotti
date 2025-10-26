@@ -206,8 +206,6 @@ Integration tests
 
 - Extend existing checklist updates integration to assert labels added when model returns
   assign_task_labels
-- End-to-end via AutomaticPromptTrigger: audio transcription → checklistUpdates → tool call
-  processed → labels present in task metadata
 
 Performance
 
@@ -275,8 +273,7 @@ when and how to assign labels.
   - Prefer precision over recall: avoid assigning labels when ambiguous
   - Never guess a label ID: choose from the provided Available Labels section only
   - If multiple labels match, apply up to 3 highly relevant labels; do not exceed 3
-  - Do not assign mutually exclusive labels from the same group if groups are shown (at most 1 per
-    group)
+  
 
 Decision rubric:
 
@@ -306,32 +303,14 @@ Assignment rules:
 - Skip ambiguous or borderline cases
   """
 
-## Label Context, Hierarchy, and Exclusivity
+## Label Context
 
-- Immediate group validation (V1): LabelDefinition already exposes groupId. The handler will prevent
-  assigning more than one label per group:
-  - Gather proposed labelIds → load their LabelDefinition (cache → DB fallback)
-  - Build a map groupId → selectedId. If two proposed labels share the same non-null groupId, keep
-    the first high-confidence one and skip the rest
-  - Check the task’s existing labels: if the task already has a label from that group, skip new
-    labels from the same group (add-only rule)
-  - Log skipped due to exclusivity in the structured tool response (skipped bucket)
-  - This runs both in UnifiedAiInferenceRepository.processToolCalls and the conversation strategy
-    branch
-
-User-facing docs (easy add):
-
-- Document group exclusivity behavior in the user guide with simple examples (e.g., “Priority” group
-  allows only one of: P0, P1, P2).
-- Clarify that existing group labels on the task are preserved (add-only), and new conflicting
-  labels are skipped.
 - Renames are handled by stable IDs; merges are out of scope for V1 (see Edge Cases).
 
 ## User Control, Transparency, and Undo
 
-- Source attribution: record AI assignments using LoggingService events and plan a lightweight audit
-  trail (see Audit Trail). Metadata remains the single source for current labels; provenance is
-  tracked separately.
+- Source attribution: record AI assignments using LoggingService events. Metadata remains the single
+  source for current labels; provenance is tracked via logs.
 - UI feedback (MVP): show a non-blocking toast in Task Details: “Assigned labels: bug, backend.
   Undo”.
   - Undo action removes the assigned labels via LabelsRepository.removeLabel for each.
@@ -382,18 +361,9 @@ Tool response format (conversation + non-conversation):
     ]
   },
   "result": {
-    "assigned": [
-      "id-a"
-    ],
-    "invalid": [
-      "id-b"
-    ],
-    "skipped": [
-      {
-        "id": "id-x",
-        "reason": "group_exclusivity"
-      }
-    ]
+    "assigned": ["id-a"],
+    "invalid": ["id-b"],
+    "skipped": []
   },
   "message": "Assigned 1 label; 1 invalid"
 }
@@ -407,17 +377,6 @@ Tool response format (conversation + non-conversation):
   - assignment_failed(count, taskId, invalidIds)
   - assignment_rate_limited(taskId)
   - undo_triggered(taskId, labelIds)
-- Derived metrics (dashboard):
-  - Assignment acceptance rate = 1 - (undo_count / assigned_count)
-  - Top labels by AI assignment
-  - Assignment error rate (invalid / attempted)
-  - Inference time deltas when labels are injected (p50/p95)
-
-Deployment monitors (easy add):
-
-- Create a simple dev dashboard widget listing last 50 assignment attempts with structured results (
-  assigned/invalid/skipped, reasons)
-- Alert if invalid rate > 10% across last 100 attempts
 
 ## Edge Cases
 
@@ -443,25 +402,12 @@ Deployment monitors (easy add):
   - lib/features/ai/repository/unified_ai_inference_repository.dart:1014–1425 (processToolCalls)
     - Insert new else-if branch after line 1406 (post checklist item processing) and before line
       1424 (return)
-    - Apply group validation and rate limiting before calling LabelsRepository.addLabels
 
 - Handle tool calls (conversation)
   - lib/features/ai/functions/lotti_conversation_processor.dart:300–470 (
     LottiChecklistStrategy.processToolCalls)
     - Insert new else-if branch after set_task_language handling (~320–395) and before
       suggest_checklist_completion (~410–455)
-    - Apply same group validation and rate limiting
-
-## Minimal Audit Trail (Persistent)
-
-- MVP (now): Structured LoggingService events as specified in Observability.
-- Near-term enhancement (optional but recommended): add lightweight persistent events without
-  impacting core flows:
-  - Table: label_assignment_events (id, task_id, label_id, source: 'ai'|'user', operation: 'add',
-    created_at)
-  - Write on successful addLabels call triggered by AI function only
-  - Read for admin/debug UI or export; not used in product UI initially
-  - Migration: additive, low risk; follows existing DB migration patterns
 
 ## Expanded Testing Scenarios
 
@@ -481,7 +427,7 @@ Test file naming conventions:
 - test/features/ai/helpers/prompt_builder_helper_labels_test.dart — labels injection and
   capping/ordering
 - test/features/ai/repository/unified_ai_inference_repository_labels_test.dart — non-conversation
-  flow with group validation and rate limiting
+  flow with rate limiting
 - test/features/ai/functions/lotti_conversation_processor_labels_test.dart — conversation flow
   branch with structured tool responses
 
@@ -493,8 +439,8 @@ Test file naming conventions:
   - Clarify that the model sees label names and IDs (names sent to provider; IDs used in function
     calls).
   - Note privacy implications: label names become part of the model input.
-- Developer notes: add a short section about group exclusivity, feature flag, and shadow mode and
-  how to toggle them in dev builds.
+- Developer notes: add a short section about feature flag and shadow mode and how to toggle them in
+  dev builds.
 - README updates: lib/features/labels/README.md add “AI assignment” section with summary + links.
 
 ## Technical Notes
@@ -504,12 +450,3 @@ Test file naming conventions:
   applying. DB is the source of truth.
 - Tool Responses: return structured JSON payloads (see format above) to support future programmatic
   consumption.
-
-## Optional (Future)
-
-- Rollback mechanism: batch rollback of last AI assignment per task (single action in UI and service
-  API).
-- A/B testing: randomized flag to include/exclude label injection; collect assignment counts and
-  acceptance rates.
-- Audit trail (persistent): dedicated label_assignment_events table (taskId, labelId, source,
-  timestamp). MVP relies on LoggingService plus undo metrics.
