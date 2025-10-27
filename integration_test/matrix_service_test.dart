@@ -262,6 +262,11 @@ void main() {
           aiConfigRepository: sharedAiConfigRepository,
           sentEventRegistry: aliceRegistry,
         );
+        addTearDown(() async {
+          try {
+            await alice.dispose();
+          } catch (_) {}
+        });
 
         await alice.init();
         expect(alice.debugPipeline, isNotNull);
@@ -309,6 +314,11 @@ void main() {
           aiConfigRepository: sharedAiConfigRepository,
           sentEventRegistry: bobRegistry,
         );
+        addTearDown(() async {
+          try {
+            await bob.dispose();
+          } catch (_) {}
+        });
 
         await bob.init();
         expect(bob.debugPipeline, isNotNull);
@@ -466,7 +476,9 @@ void main() {
         }
 
         const n = testSlowNetwork ? 10 : 100;
-        const expectedEntriesPerDb = n * 2;
+        // With signal-driven consumer and self-event suppression, each device
+        // applies only the other device's messages. Expect n entries per DB.
+        const expectedEntriesPerDb = n;
 
         debugPrint('\n--- Alice sends $n message');
         for (var i = 0; i < n; i++) {
