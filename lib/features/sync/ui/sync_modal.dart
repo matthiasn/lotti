@@ -14,6 +14,7 @@ class SyncModal extends ConsumerWidget {
     const orderedSteps = <SyncStep>[
       SyncStep.tags,
       SyncStep.measurables,
+      SyncStep.labels,
       SyncStep.categories,
       SyncStep.dashboards,
       SyncStep.habits,
@@ -238,6 +239,8 @@ class SyncModal extends ConsumerWidget {
         return context.messages.syncStepTags;
       case SyncStep.measurables:
         return context.messages.syncStepMeasurables;
+      case SyncStep.labels:
+        return context.messages.syncStepLabels;
       case SyncStep.categories:
         return context.messages.syncStepCategories;
       case SyncStep.dashboards:

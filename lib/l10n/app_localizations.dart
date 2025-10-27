@@ -4138,6 +4138,12 @@ abstract class AppLocalizations {
   /// **'Measurables'**
   String get syncStepMeasurables;
 
+  /// No description provided for @syncStepLabels.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get syncStepLabels;
+
   /// No description provided for @syncStepTags.
   ///
   /// In en, this message translates to:

@@ -1,6 +1,7 @@
 enum SyncStep {
   tags,
   measurables,
+  labels,
   categories,
   dashboards,
   habits,

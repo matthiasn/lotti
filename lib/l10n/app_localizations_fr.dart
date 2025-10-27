@@ -2223,6 +2223,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncStepMeasurables => 'Measurables';
 
   @override
+  String get syncStepLabels => 'Labels';
+
+  @override
   String get syncStepTags => 'Tags';
 
   @override
