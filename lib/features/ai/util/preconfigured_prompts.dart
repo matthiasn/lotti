@@ -14,6 +14,7 @@ library;
 
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 
 /// Represents a preconfigured prompt template that can be used
 /// to quickly create common prompt types.
@@ -178,6 +179,18 @@ IMPORTANT RULES:
 - If you receive an unknown function name error, use only the functions listed above
 - Do NOT use suggest_checklist_completion for creating new items
 
+Tools for checklist updates:
+1. add_checklist_item: Create a single checklist item
+2. add_multiple_checklist_items: Create multiple items at once
+3. suggest_checklist_completion: Suggest marking items as done when evidence exists
+4. set_task_language: Set task language after creating items
+5. assign_task_labels: Add one or more labels to the task using label IDs (add-only)
+
+Label assignment rules:
+- Assign at most $kMaxLabelsPerAssignment labels and only with HIGH confidence
+- Choose from the provided Available Labels list only (use IDs)
+- If unsure, assign none
+
 Examples:
 - "Add milk" → add_checklist_item with {"actionItemDescription": "milk"}
 - "Add milk and eggs" → add_multiple_checklist_items with {"items": "milk, eggs"}
@@ -198,10 +211,16 @@ Create checklist items based on the user's request below.
 {{task}}
 ```
 
+Available Labels (id and name):
+```json
+{{labels}}
+```
+
 REMEMBER:
 - Count the items first: if 2 or more, use add_multiple_checklist_items
 - Create items in the language used in the request
 - After creating items, ALWAYS set the task language (even if it's English, use "en")
+- To assign labels, use assign_task_labels and pass label IDs from the list above; only assign with HIGH confidence and at most $kMaxLabelsPerAssignment labels
 - Only use the functions listed in the system message''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.checklistUpdates,

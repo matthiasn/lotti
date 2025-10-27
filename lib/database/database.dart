@@ -912,6 +912,29 @@ class JournalDb extends _$JournalDb {
     });
   }
 
+  /// Snapshot version of label usage statistics for prompt construction or one-off queries
+  Future<Map<String, int>> getLabelUsageCounts() async {
+    final query = customSelect(
+      '''
+      SELECT label_id, COUNT(*) AS usage_count
+      FROM labeled
+      GROUP BY label_id
+      ''',
+      readsFrom: {labeled},
+    );
+
+    final rows = await query.get();
+    final usage = <String, int>{};
+    for (final row in rows) {
+      usage[row.read<String>('label_id')] = row.read<int>('usage_count');
+    }
+    return usage;
+  }
+
+  /// Alias to snapshot method for clarity when used alongside the stream variant.
+  Future<Map<String, int>> getLabelUsageCountsSnapshot() =>
+      getLabelUsageCounts();
+
   Stream<LabelDefinition?> watchLabelDefinitionById(String id) {
     // For single-entity watches, do not filter by the global private flag.
     // Settings and edit flows need to observe changes (including private toggles)

@@ -202,10 +202,17 @@ List<TimeByDayAndCategory> _convertTimeByCategory(
 }
 
 List<DateTime> getDaysAtNoon(int rangeDays, DateTime rangeEnd) {
-  return List<DateTime>.generate(rangeDays, (days) {
-    final day = rangeEnd.subtract(Duration(days: days));
-    return day.dayAtNoon;
-  });
+  // Generate civil dates at local noon using calendar arithmetic to avoid
+  // DST/offset artifacts from subtracting 24h durations.
+  return List<DateTime>.generate(
+    rangeDays,
+    (i) => DateTime(
+      rangeEnd.year,
+      rangeEnd.month,
+      rangeEnd.day - i,
+      12,
+    ),
+  );
 }
 
 @riverpod

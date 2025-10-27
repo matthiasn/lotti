@@ -18,7 +18,8 @@ class LabelsListPage extends ConsumerStatefulWidget {
 
 class _LabelsListPageState extends ConsumerState<LabelsListPage> {
   final _searchController = TextEditingController();
-  String _searchQuery = '';
+  String _searchRaw = '';
+  String _searchLower = '';
 
   @override
   void dispose() {
@@ -58,11 +59,14 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
           child: LottiSearchBar(
             controller: _searchController,
             hintText: context.messages.settingsLabelsSearchHint,
+            textCapitalization: TextCapitalization.words,
             onChanged: (value) => setState(() {
-              _searchQuery = value.trim().toLowerCase();
+              _searchRaw = value;
+              _searchLower = value.trim().toLowerCase();
             }),
             onClear: () => setState(() {
-              _searchQuery = '';
+              _searchRaw = '';
+              _searchLower = '';
             }),
           ),
         ),
@@ -82,15 +86,45 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
           orElse: () => const <String, int>{},
         );
     final filtered = labels.where((label) {
-      if (_searchQuery.isEmpty) return true;
-      return label.name.toLowerCase().contains(_searchQuery) ||
-          (label.description?.toLowerCase().contains(_searchQuery) ?? false);
+      if (_searchLower.isEmpty) return true;
+      return label.name.toLowerCase().contains(_searchLower) ||
+          (label.description?.toLowerCase().contains(_searchLower) ?? false);
     }).toList()
       ..sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
 
     if (filtered.isEmpty) {
+      // If user searched for something, offer to create exactly that.
+      final query = _searchRaw.trim();
+      if (query.isNotEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.search_off_rounded,
+                  size: 64,
+                  color: Theme.of(context).disabledColor,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No labels match "$query"',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: () => _openEditorWithInitial(query),
+                  icon: const Icon(Icons.add),
+                  label: Text('Create "$query" label'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -190,6 +224,26 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
               ? context.messages.settingsLabelsCreateSuccess
               : context.messages.settingsLabelsUpdateSuccess,
         ),
+      ),
+    );
+  }
+
+  Future<void> _openEditorWithInitial(String initialName) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await showModalBottomSheet<LabelDefinition>(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      builder: (context) => LabelEditorSheet(initialName: initialName),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(context.messages.settingsLabelsCreateSuccess),
       ),
     );
   }

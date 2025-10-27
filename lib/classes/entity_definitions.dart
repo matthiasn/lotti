@@ -137,7 +137,6 @@ sealed class EntityDefinition with _$EntityDefinition {
     required String color,
     required VectorClock? vectorClock,
     String? description,
-    String? groupId,
     int? sortOrder,
     DateTime? deletedAt,
     bool? private,

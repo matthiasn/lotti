@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
@@ -13,7 +15,15 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/get_it.dart';
+// ignore: unused_import
+import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Processes AI function calls using conversation approach for better batching and error handling
@@ -397,6 +407,69 @@ class LottiChecklistStrategy extends ConversationStrategy {
             toolCallId: call.id,
             response: 'Error processing language detection.',
           );
+        }
+      } else if (call.function.name == 'assign_task_labels') {
+        // Assign labels to task (add-only) with rate limiting (handled upstream if needed)
+        try {
+          final db = getIt<JournalDb>();
+          final processor = LabelAssignmentProcessor(
+            repository: ref.read(labelsRepositoryProvider),
+          );
+
+          final parsed = parseLabelIdsFromToolArgs(call.function.arguments);
+          final proposed = LinkedHashSet<String>.from(parsed)
+              .take(kMaxLabelsPerAssignment)
+              .toList();
+          // Shadow mode: do not persist if enabled (safe default false)
+          var shadow = false;
+          try {
+            final dynamic fut = db.getConfigFlag(aiLabelAssignmentShadowFlag);
+            if (fut is Future<bool>) {
+              shadow = await fut;
+            }
+          } catch (_) {
+            shadow = false;
+          }
+          final result = await processor.processAssignment(
+            taskId: checklistHandler.task.id,
+            proposedIds: proposed,
+            existingIds:
+                checklistHandler.task.meta.labelIds ?? const <String>[],
+            shadowMode: shadow,
+          );
+
+          // Structured tool response for the model
+          final response = result.toStructuredJson(proposed);
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: response,
+          );
+        } catch (e) {
+          developer.log(
+            'Error processing assign_task_labels: $e',
+            name: 'LottiConversationProcessor',
+            error: e,
+          );
+          // Return a structured error response instead of a generic string
+          try {
+            final requested = LinkedHashSet<String>.from(
+              parseLabelIdsFromToolArgs(call.function.arguments),
+            ).take(kMaxLabelsPerAssignment).toList();
+            final errorResponse = jsonEncode({
+              'function': 'assign_task_labels',
+              'request': {'labelIds': requested},
+              'error': 'Error processing label assignment: $e',
+            });
+            manager.addToolResponse(
+              toolCallId: call.id,
+              response: errorResponse,
+            );
+          } catch (_) {
+            manager.addToolResponse(
+              toolCallId: call.id,
+              response: 'Error processing label assignment',
+            );
+          }
         }
       } else if (call.function.name == 'suggest_checklist_completion') {
         // Handle but redirect to creating items

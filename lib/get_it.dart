@@ -14,6 +14,10 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
+import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
+import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
@@ -245,6 +249,29 @@ Future<void> registerSingletons() async {
 
   unawaited(getIt<MatrixService>().init());
   getIt<LoggingService>().listenToConfigFlag();
+
+  // Shared rate limiter for AI label assignment
+  getIt.registerSingleton<LabelAssignmentRateLimiter>(
+    LabelAssignmentRateLimiter(),
+  );
+
+  // Label validator used by the assignment processor
+  _registerLazyServiceSafely<LabelValidator>(
+    LabelValidator.new,
+    'LabelValidator',
+  );
+
+  // Label assignment processor
+  _registerLazyServiceSafely<LabelAssignmentProcessor>(
+    LabelAssignmentProcessor.new,
+    'LabelAssignmentProcessor',
+  );
+
+  // Label assignment event service for UI notifications
+  _registerLazyServiceSafely<LabelAssignmentEventService>(
+    LabelAssignmentEventService.new,
+    'LabelAssignmentEventService',
+  );
 
   // Check and run maintenance task to remove deprecated action item suggestions
   unawaited(_checkAndRemoveActionItemSuggestions());

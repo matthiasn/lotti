@@ -1981,7 +1981,6 @@ extension EntityDefinitionPatterns on EntityDefinition {
             String color,
             VectorClock? vectorClock,
             String? description,
-            String? groupId,
             int? sortOrder,
             DateTime? deletedAt,
             bool? private)?
@@ -2068,7 +2067,6 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.color,
             _that.vectorClock,
             _that.description,
-            _that.groupId,
             _that.sortOrder,
             _that.deletedAt,
             _that.private);
@@ -2169,7 +2167,6 @@ extension EntityDefinitionPatterns on EntityDefinition {
             String color,
             VectorClock? vectorClock,
             String? description,
-            String? groupId,
             int? sortOrder,
             DateTime? deletedAt,
             bool? private)
@@ -2255,7 +2252,6 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.color,
             _that.vectorClock,
             _that.description,
-            _that.groupId,
             _that.sortOrder,
             _that.deletedAt,
             _that.private);
@@ -2353,7 +2349,6 @@ extension EntityDefinitionPatterns on EntityDefinition {
             String color,
             VectorClock? vectorClock,
             String? description,
-            String? groupId,
             int? sortOrder,
             DateTime? deletedAt,
             bool? private)?
@@ -2439,7 +2434,6 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.color,
             _that.vectorClock,
             _that.description,
-            _that.groupId,
             _that.sortOrder,
             _that.deletedAt,
             _that.private);
@@ -2980,7 +2974,6 @@ class LabelDefinition implements EntityDefinition {
       required this.color,
       required this.vectorClock,
       this.description,
-      this.groupId,
       this.sortOrder,
       this.deletedAt,
       this.private,
@@ -3000,7 +2993,6 @@ class LabelDefinition implements EntityDefinition {
   @override
   final VectorClock? vectorClock;
   final String? description;
-  final String? groupId;
   final int? sortOrder;
   @override
   final DateTime? deletedAt;
@@ -3041,7 +3033,6 @@ class LabelDefinition implements EntityDefinition {
                 other.vectorClock == vectorClock) &&
             (identical(other.description, description) ||
                 other.description == description) &&
-            (identical(other.groupId, groupId) || other.groupId == groupId) &&
             (identical(other.sortOrder, sortOrder) ||
                 other.sortOrder == sortOrder) &&
             (identical(other.deletedAt, deletedAt) ||
@@ -3052,11 +3043,11 @@ class LabelDefinition implements EntityDefinition {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt, name,
-      color, vectorClock, description, groupId, sortOrder, deletedAt, private);
+      color, vectorClock, description, sortOrder, deletedAt, private);
 
   @override
   String toString() {
-    return 'EntityDefinition.labelDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, color: $color, vectorClock: $vectorClock, description: $description, groupId: $groupId, sortOrder: $sortOrder, deletedAt: $deletedAt, private: $private)';
+    return 'EntityDefinition.labelDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, color: $color, vectorClock: $vectorClock, description: $description, sortOrder: $sortOrder, deletedAt: $deletedAt, private: $private)';
   }
 }
 
@@ -3076,7 +3067,6 @@ abstract mixin class $LabelDefinitionCopyWith<$Res>
       String color,
       VectorClock? vectorClock,
       String? description,
-      String? groupId,
       int? sortOrder,
       DateTime? deletedAt,
       bool? private});
@@ -3102,7 +3092,6 @@ class _$LabelDefinitionCopyWithImpl<$Res>
     Object? color = null,
     Object? vectorClock = freezed,
     Object? description = freezed,
-    Object? groupId = freezed,
     Object? sortOrder = freezed,
     Object? deletedAt = freezed,
     Object? private = freezed,
@@ -3135,10 +3124,6 @@ class _$LabelDefinitionCopyWithImpl<$Res>
       description: freezed == description
           ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
-              as String?,
-      groupId: freezed == groupId
-          ? _self.groupId
-          : groupId // ignore: cast_nullable_to_non_nullable
               as String?,
       sortOrder: freezed == sortOrder
           ? _self.sortOrder

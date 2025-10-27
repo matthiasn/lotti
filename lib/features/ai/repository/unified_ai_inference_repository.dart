@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
@@ -13,6 +14,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
@@ -30,10 +32,17 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
+// ignore: unused_import
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -57,6 +66,20 @@ class UnifiedAiInferenceRepository {
   final Ref ref;
   late final PromptBuilderHelper promptBuilderHelper;
   AutoChecklistService? _autoChecklistService;
+
+  // Use shared constant from labels constants
+
+  Future<bool> _getFlagSafe(String name, {bool defaultValue = false}) async {
+    try {
+      final dynamic fut = getIt<JournalDb>().getConfigFlag(name);
+      if (fut is Future<bool>) {
+        return await fut;
+      }
+    } catch (_) {
+      // ignore and use default
+    }
+    return defaultValue;
+  }
 
   AutoChecklistService get autoChecklistService {
     return _autoChecklistService ??= AutoChecklistService(
@@ -641,8 +664,10 @@ class UnifiedAiInferenceRepository {
       // This is because checklist updates can be triggered from various contexts
       if (promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
           model.supportsFunctionCalling) {
+        final enableLabels = await _getFlagSafe(enableAiLabelAssignmentFlag);
         tools = [
           ...ChecklistCompletionFunctions.getTools(),
+          if (enableLabels) ...LabelFunctions.getTools(),
           ...TaskFunctions.getTools(),
         ];
         developer.log(
@@ -1334,6 +1359,41 @@ class UnifiedAiInferenceRepository {
             error: e,
           );
         }
+      } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
+        // Handle assign task labels (add-only)
+        try {
+          final parsed = parseLabelIdsFromToolArgs(toolCall.function.arguments);
+          final proposed = LinkedHashSet<String>.from(parsed)
+              .take(kMaxLabelsPerAssignment)
+              .toList();
+
+          final shadow = await _getFlagSafe(aiLabelAssignmentShadowFlag);
+          final processor = LabelAssignmentProcessor(
+            repository: ref.read(labelsRepositoryProvider),
+          );
+          final result = await processor.processAssignment(
+            taskId: currentTask.id,
+            proposedIds: proposed,
+            existingIds: currentTask.meta.labelIds ?? const <String>[],
+            shadowMode: shadow,
+          );
+          // Log structured result for debugging
+          try {
+            final requested = proposed;
+            developer.log(
+              'assign_task_labels result: ${result.toStructuredJson(requested)}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          } catch (_) {
+            // best-effort logging
+          }
+        } catch (e) {
+          developer.log(
+            'Error processing assign_task_labels: $e',
+            name: 'UnifiedAiInferenceRepository',
+            error: e,
+          );
+        }
       } else {
         developer.log(
           'Skipping unknown tool call: ${toolCall.function.name}',
@@ -1498,8 +1558,10 @@ class UnifiedAiInferenceRepository {
       }
 
       // Define tools for checklist updates
+      final enableLabels = await _getFlagSafe(enableAiLabelAssignmentFlag);
       final tools = [
         ...ChecklistCompletionFunctions.getTools(),
+        if (enableLabels) ...LabelFunctions.getTools(),
         ...TaskFunctions.getTools(),
       ];
 

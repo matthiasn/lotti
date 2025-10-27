@@ -29,6 +29,7 @@ class LottiSearchBar extends StatefulWidget {
     this.onClear,
     this.hintText = 'Search...',
     this.isCompact = false,
+    this.textCapitalization = TextCapitalization.none,
     super.key,
   });
 
@@ -46,6 +47,9 @@ class LottiSearchBar extends StatefulWidget {
 
   /// Whether to use a more compact style
   final bool isCompact;
+
+  /// Text capitalization behavior for the input (e.g., Words for label searches)
+  final TextCapitalization textCapitalization;
 
   @override
   State<LottiSearchBar> createState() => _LottiSearchBarState();
@@ -122,6 +126,7 @@ class _LottiSearchBarState extends State<LottiSearchBar> {
       child: TextField(
         controller: widget.controller,
         onChanged: widget.onChanged,
+        textCapitalization: widget.textCapitalization,
         style: TextStyle(
           color: context.colorScheme.onSurface,
           fontSize: widget.isCompact ? 14 : 15,

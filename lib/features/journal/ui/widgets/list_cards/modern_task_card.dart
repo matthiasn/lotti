@@ -122,7 +122,7 @@ class ModernTaskCard extends StatelessWidget {
       runSpacing: 6,
       children: labels
           .map(
-            (label) => LabelChip(label: label),
+            (label) => LabelChip(label: label, showDot: false),
           )
           .toList(),
     );

@@ -712,8 +712,21 @@ class PersistenceLogic {
     Metadata metadata,
   ) async {
     try {
+      // Preserve existing labels to avoid races with concurrent label assignments.
+      // Label changes should go through LabelsRepository; general updates should
+      // not override meta.labelIds based on a stale in-memory entity.
+      JournalEntity? current;
+      try {
+        current = await _journalDb.journalEntityById(journalEntity.id);
+      } catch (_) {
+        // If we can't fetch current (e.g., in tests without a stub), proceed without preservation.
+        current = null;
+      }
       final updatedMeta = await updateMetadata(metadata);
-      final entityWithUpdatedMeta = journalEntity.copyWith(meta: updatedMeta);
+      final preservedLabelIds = current?.meta.labelIds;
+      final entityWithUpdatedMeta = journalEntity.copyWith(
+        meta: updatedMeta.copyWith(labelIds: preservedLabelIds),
+      );
       final applied = (await updateDbEntity(entityWithUpdatedMeta)) ?? false;
       if (applied) {
         await _journalDb.addTagged(entityWithUpdatedMeta);

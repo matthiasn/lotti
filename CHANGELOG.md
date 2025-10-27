@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 ### Added
+- tests(labels/ai):
+  - Max-volume labels selection (500+) with performance and ordering checks
+  - Prompt injection protection for label names
+  - Conversation retry and interruption coverage for `assign_task_labels`
+  - TaskLabelsWrapper toast + undo + rapid assignment behavior
+  - LabelValidator validity/concurrency tests
+  - Summary note test when labels exceed the prompt cap
+- AI label assignment with function-calling (see PR #2365):
+  - Prompt label injection (capped to 100, usage + alphabetical) with optional private filtering.
+  - `assign_task_labels` tool (add-only) with max 5 labels per call.
+  - Shared rate limiter (5-minute window) and shadow mode.
+  - User feedback: SnackBar in Task Details listing assigned labels with Undo to remove them.
+  - Event stream for UI notifications and comprehensive unit/feature tests.
 - Settings header widget tests now cover multiple text scale factors (1.0, 1.2, 1.5, 2.0) and common screen widths to guard layout across devices.
 - Label chips now surface tooltips/long-press descriptions, Task label sheets show inline “Create
   label” CTAs, and the journal header includes a quick label filter row for active selections.
@@ -15,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   performance tests (1k+ tasks + reconciliation benchmarks) for the labels system.
 
 ### Changed
+- feat(ai/labels): Append a summary note after the labels JSON in prompts when the
+  number of available labels exceeds the cap, e.g. `(Note: showing 100 of 150 labels)`.
 - Matrix Sync Stats page now uses the modern SettingsPageHeader with collapsing sliver layout and subtitle, aligning with the new settings header UX.
 - Extracted header spacing and breakpoints into `lib/widgets/app_bar/settings_header_dimensions.dart` for maintainability and consistency.
 - Settings header filter card now hugs the count summary by trimming the extra padding underneath it.

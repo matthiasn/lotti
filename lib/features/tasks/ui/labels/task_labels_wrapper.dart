@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/state/label_assignment_event_provider.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 
 class TaskLabelsWrapper extends ConsumerWidget {
   const TaskLabelsWrapper({
@@ -20,8 +23,45 @@ class TaskLabelsWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch label stream to rebuild when labels change
-    ref.watch(labelsStreamProvider);
+    // Listen for AI label assignment events to show toast with Undo
+    ref
+      ..listen(labelAssignmentEventsProvider, (previous, next) async {
+        final event = next.valueOrNull;
+        if (event == null || event.taskId != taskId) return;
+        if (!context.mounted) return;
+        final cache = getIt<EntitiesCacheService>();
+        final messenger = ScaffoldMessenger.of(context);
+        final assignedNames = event.assignedIds
+            .map(cache.getLabelById)
+            .whereType<LabelDefinition>()
+            .map((l) => l.name)
+            .toList();
+        final message = assignedNames.isEmpty
+            ? 'Assigned ${event.assignedIds.length} label(s)'
+            : 'Assigned: ${assignedNames.join(', ')}';
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(message),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () async {
+                final repo = ref.read(labelsRepositoryProvider);
+                for (final id in event.assignedIds) {
+                  await repo.removeLabel(journalEntityId: taskId, labelId: id);
+                }
+                // Log undo metrics
+                getIt<LoggingService>().captureEvent(
+                  'undo_triggered',
+                  domain: 'labels_ai_assignment',
+                  subDomain: 'ui',
+                );
+              },
+            ),
+          ),
+        );
+      })
+      // Watch label stream to rebuild when labels change
+      ..watch(labelsStreamProvider);
     final entryState = ref.watch(entryControllerProvider(id: taskId)).value;
     final task = entryState?.entry;
 
@@ -99,7 +139,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
                         ? () => _showLabelDescription(context, label)
                         : null,
                     behavior: HitTestBehavior.opaque,
-                    child: LabelChip(label: label),
+                    child: LabelChip(label: label, showDot: false),
                   ),
                 )
                 .toList(),
