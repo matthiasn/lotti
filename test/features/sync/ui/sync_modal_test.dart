@@ -49,10 +49,11 @@ void main() {
     const totalsByStep = <SyncStep, int>{
       SyncStep.tags: 4,
       SyncStep.measurables: 5,
-      SyncStep.categories: 6,
-      SyncStep.dashboards: 7,
-      SyncStep.habits: 8,
-      SyncStep.aiSettings: 9,
+      SyncStep.labels: 6,
+      SyncStep.categories: 7,
+      SyncStep.dashboards: 8,
+      SyncStep.habits: 9,
+      SyncStep.aiSettings: 10,
     };
 
     Future<void> simulateStep(
@@ -88,6 +89,14 @@ void main() {
       ),
     ).thenAnswer(
       (invocation) => simulateStep(SyncStep.measurables, invocation),
+    );
+    when(
+      () => mockSyncMaintenanceRepository.syncLabels(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.labels, invocation),
     );
     when(
       () => mockSyncMaintenanceRepository.syncCategories(
@@ -219,6 +228,7 @@ void main() {
         {
           SyncStep.tags,
           SyncStep.measurables,
+          SyncStep.labels,
           SyncStep.categories,
           SyncStep.dashboards,
           SyncStep.habits,
@@ -235,6 +245,7 @@ void main() {
     expect(find.text('7 / 7'), findsOneWidget);
     expect(find.text('8 / 8'), findsOneWidget);
     expect(find.text('9 / 9'), findsOneWidget);
+    expect(find.text('10 / 10'), findsOneWidget);
   });
 
   testWidgets(
@@ -259,6 +270,7 @@ void main() {
       // Verify the confirmation dialog is shown with the checkboxes for each step
       expect(find.text(messages.syncStepTags), findsOneWidget);
       expect(find.text(messages.syncStepMeasurables), findsOneWidget);
+      expect(find.text(messages.syncStepLabels), findsOneWidget);
       expect(find.text(messages.syncStepCategories), findsOneWidget);
       expect(find.text(messages.syncStepDashboards), findsOneWidget);
       expect(find.text(messages.syncStepHabits), findsOneWidget);
@@ -293,9 +305,10 @@ void main() {
     expect(confirmButton.onPressed, isNotNull);
 
     final checkboxFinder = find.byType(CheckboxListTile);
-    final totalCheckboxes = checkboxFinder.evaluate().length;
-    for (var i = 0; i < totalCheckboxes; i++) {
-      await tester.tap(checkboxFinder.at(i));
+    final tiles = checkboxFinder.evaluate().toList();
+    for (final el in tiles) {
+      final tile = el.widget as CheckboxListTile;
+      tile.onChanged?.call(false);
       await tester.pump();
     }
 
@@ -303,7 +316,9 @@ void main() {
     expect(confirmButton.onPressed, isNull);
 
     // Re-enable by selecting the first option again.
-    await tester.tap(checkboxFinder.first);
+    // Re-enable by selecting the first option again via callback
+    final firstTile = tester.widget<CheckboxListTile>(checkboxFinder.first);
+    firstTile.onChanged?.call(true);
     await tester.pump();
     confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
     expect(confirmButton.onPressed, isNotNull);

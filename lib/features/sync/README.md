@@ -173,6 +173,9 @@ Key helpers:
 - Matrix Sync Maintenance is a dedicated page under
   `/settings/sync/matrix/maintenance` for deleting the Sync database,
   replaying sync definitions, and forcing a re-sync window.
+  - Supported definition sync steps: Tags, Measurables, Labels, Categories,
+    Dashboards, Habits, and AI Settings. Each step reports per-step progress
+    and totals; you can select any subset to sync.
 - Outbox Monitor lives under `/settings/sync/outbox` and no longer exposes
   its own on/off toggle. The global Matrix sync flag governs enablement.
 - Outbox Monitor adopts the shared `SyncListScaffold` with modern cards,

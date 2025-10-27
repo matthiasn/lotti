@@ -788,6 +788,7 @@
   "syncStepDashboards": "Dashboards",
   "syncStepHabits": "Habits",
   "syncStepMeasurables": "Measurables",
+  "syncStepLabels": "Labels",
   "syncStepTags": "Tags",
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",

@@ -87,6 +87,19 @@ class SyncMaintenanceRepository {
     shouldSync: (category) => category.deletedAt == null,
   );
 
+  late final SyncOperation<LabelDefinition> _labelSyncOperation =
+      _createOperation<LabelDefinition>(
+    step: SyncStep.labels,
+    fetchEntities: () => _journalDb.watchLabelDefinitions().first,
+    enqueueEntity: (label) => _outboxService.enqueueMessage(
+      SyncMessage.entityDefinition(
+        entityDefinition: label,
+        status: SyncEntryStatus.update,
+      ),
+    ),
+    shouldSync: (label) => label.deletedAt == null,
+  );
+
   late final SyncOperation<DashboardDefinition> _dashboardSyncOperation =
       _createOperation<DashboardDefinition>(
     step: SyncStep.dashboards,
@@ -129,6 +142,7 @@ class SyncMaintenanceRepository {
   late final Map<SyncStep, SyncOperation<dynamic>> _operations = {
     SyncStep.tags: _tagSyncOperation,
     SyncStep.measurables: _measurableSyncOperation,
+    SyncStep.labels: _labelSyncOperation,
     SyncStep.categories: _categorySyncOperation,
     SyncStep.dashboards: _dashboardSyncOperation,
     SyncStep.habits: _habitSyncOperation,
@@ -163,6 +177,17 @@ class SyncMaintenanceRepository {
   }) {
     return _runOperation<CategoryDefinition>(
       _categorySyncOperation,
+      onProgress: onProgress,
+      onDetailedProgress: onDetailedProgress,
+    );
+  }
+
+  Future<void> syncLabels({
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<LabelDefinition>(
+      _labelSyncOperation,
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
     );
@@ -324,6 +349,8 @@ class SyncMaintenanceRepository {
         return 'syncTags';
       case SyncStep.measurables:
         return 'syncMeasurables';
+      case SyncStep.labels:
+        return 'syncLabels';
       case SyncStep.categories:
         return 'syncCategories';
       case SyncStep.dashboards:
@@ -343,6 +370,8 @@ class SyncMaintenanceRepository {
         return 'fetchTotals_tags';
       case SyncStep.measurables:
         return 'fetchTotals_measurables';
+      case SyncStep.labels:
+        return 'fetchTotals_labels';
       case SyncStep.categories:
         return 'fetchTotals_categories';
       case SyncStep.dashboards:

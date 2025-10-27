@@ -197,3 +197,5 @@
 - In default mode, stream events do not directly invoke `_processOrdered()`; only scans/catch‑up do.
 - Metrics indicate `mode=signal` and show non‑zero signal counters; `flushes` may be 0.
 - Offline → online recovery shows backlog applied before any marker advancement to newer events.
+- Sync maintenance includes a Labels step alongside Tags, Measurables, Categories, Dashboards,
+  Habits, and AI Settings; each can be triggered via the "Sync Entities" modal.
