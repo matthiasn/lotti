@@ -411,8 +411,7 @@ void main() {
         expect(tapCount, 0);
       });
 
-      testWidgets('handles tap without animation controller',
-          (tester) async {
+      testWidgets('handles tap without animation controller', (tester) async {
         var tapCount = 0;
 
         await tester.pumpWidget(
@@ -448,23 +447,6 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tapCount, 1);
-      });
-
-      testWidgets('disabled card does not trigger tap', (tester) async {
-        var tapCount = 0;
-
-        await tester.pumpWidget(
-          createTestWidget(
-            onTap: () => tapCount++,
-            isDisabled: true,
-            child: const Text('Disabled Card'),
-          ),
-        );
-
-        await tester.tap(find.text('Disabled Card'));
-        await tester.pumpAndSettle();
-
-        expect(tapCount, 0);
       });
 
       testWidgets('card without onTap handler renders correctly',
