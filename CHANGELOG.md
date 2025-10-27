@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Event stream for UI notifications and comprehensive unit/feature tests.
 - macOS speech: baseline recording metrics collection (avg RMS dBFS, peak dBFS) at stop(), using existing VU buffer; logs under `audio_normalization/baseline`.
 - Config flag `normalize_audio_on_desktop` (default off) to gate baseline collection and upcoming normalization on macOS.
-- Added `ffmpeg_kit_flutter_min_gpl` dependency in preparation for desktop post‑record normalization spike.
+- Added `ffmpeg_kit_flutter_new_audio` dependency (audio-only) to support desktop post‑record normalization and avoid CocoaPods 404 on macOS.
 - Settings header widget tests now cover multiple text scale factors (1.0, 1.2, 1.5, 2.0) and common screen widths to guard layout across devices.
 - Label chips now surface tooltips/long-press descriptions, Task label sheets show inline “Create
   label” CTAs, and the journal header includes a quick label filter row for active selections.

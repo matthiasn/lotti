@@ -9,7 +9,7 @@ import audio_session
 import connectivity_plus
 import desktop_drop
 import device_info_plus
-import ffmpeg_kit_flutter_min_gpl
+import ffmpeg_kit_flutter_new_audio
 import file_selector_macos
 import flutter_image_compress_macos
 import flutter_local_notifications

@@ -6,7 +6,7 @@
 
 - Added baseline recording metrics logging (avg RMS dBFS, peak dBFS) at stop(), using the existing VU buffer.
 - Introduced `normalizeAudioOnDesktopFlag` config flag (seeded, default off) for staged rollout.
-- Added `ffmpeg_kit_flutter_min_gpl` dependency in preparation for the normalization spike.
+- Added `ffmpeg_kit_flutter_new_audio` dependency (audio-only) for the normalization spike; avoids CocoaPods 404s.
 - Analyzer is clean; targeted speech tests pass via MCP.
 - Next: scaffold `AudioNormalizationService` behind the flag and run ffmpeg‑kit spike (LUFS/true‑peak, dynaudnorm timing) to finalize thresholds.
 
