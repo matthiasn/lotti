@@ -13,9 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - TaskLabelsWrapper toast + undo + rapid assignment behavior
   - LabelValidator validity/concurrency tests
   - Summary note test when labels exceed the prompt cap
-- AI label assignment with function-calling:
+- AI label assignment with function-calling (see PR #2365):
   - Prompt label injection (capped to 100, usage + alphabetical) with optional private filtering.
-  - `assign_task_labels` tool (add-only), group exclusivity, and max 5 labels per call.
+  - `assign_task_labels` tool (add-only) with max 5 labels per call.
   - Shared rate limiter (5-minute window) and shadow mode.
   - User feedback: SnackBar in Task Details listing assigned labels with Undo to remove them.
   - Event stream for UI notifications and comprehensive unit/feature tests.

@@ -14,6 +14,7 @@ library;
 
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 
 /// Represents a preconfigured prompt template that can be used
 /// to quickly create common prompt types.
@@ -186,7 +187,7 @@ Tools for checklist updates:
 5. assign_task_labels: Add one or more labels to the task using label IDs (add-only)
 
 Label assignment rules:
-- Assign at most 3 labels and only with HIGH confidence
+- Assign at most $kMaxLabelsPerAssignment labels and only with HIGH confidence
 - Choose from the provided Available Labels list only (use IDs)
 - If unsure, assign none
 
@@ -219,7 +220,7 @@ REMEMBER:
 - Count the items first: if 2 or more, use add_multiple_checklist_items
 - Create items in the language used in the request
 - After creating items, ALWAYS set the task language (even if it's English, use "en")
-- To assign labels, use assign_task_labels and pass label IDs from the list above; only assign with HIGH confidence and at most 3 labels
+- To assign labels, use assign_task_labels and pass label IDs from the list above; only assign with HIGH confidence and at most $kMaxLabelsPerAssignment labels
 - Only use the functions listed in the system message''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.checklistUpdates,

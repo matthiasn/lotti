@@ -206,12 +206,13 @@ void main() {
       assignedIds: ['label-2', 'label-3'],
     ));
     await tester.pumpAndSettle();
-    // Allow SnackBar replacement animation to complete
-    await tester.pump(const Duration(seconds: 1));
+    // Let the first SnackBar auto-dismiss (default ~4s) and the second one show
+    await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
 
-    final hasAny = find.textContaining('Assigned').evaluate().isNotEmpty;
-    expect(hasAny, isTrue);
+    // Assert latest toast shows only the most recent assignment
+    expect(find.textContaining('Assigned: Label 2'), findsOneWidget);
+    expect(find.textContaining('Label 1'), findsNothing);
   });
 
   testWidgets('renders assigned labels as chips', (tester) async {

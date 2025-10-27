@@ -257,6 +257,12 @@ void main() {
     when(() => mockConversationRepo.deleteConversation(conversationId))
         .thenAnswer((_) {});
 
+    // Stub addLabels to avoid null futures and ensure success
+    when(() => mockLabelsRepo.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        )).thenAnswer((_) async => true);
+
     final result = await processor.processPromptWithConversation(
       prompt: 'user',
       entity: task,

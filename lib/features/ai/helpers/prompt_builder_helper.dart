@@ -136,8 +136,9 @@ class PromptBuilderHelper {
     final db = getIt<JournalDb>();
 
     // Respect privacy toggle
-    final includePrivate = await _getFlagSafe(includePrivateLabelsInPromptsFlag,
-        defaultValue: true);
+    final includePrivate = await _getFlagSafe(
+      includePrivateLabelsInPromptsFlag,
+    );
 
     // Fetch label definitions and usage stats
     final all = await db.getAllLabelDefinitions();

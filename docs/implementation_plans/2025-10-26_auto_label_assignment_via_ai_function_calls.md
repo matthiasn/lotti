@@ -330,7 +330,7 @@ Available Labels (id and name):
 
 Assignment rules:
 
-- Assign at most 3 labels
+- Assign at most 5 labels
 - Only assign with HIGH confidence
 - Skip ambiguous or borderline cases
   """

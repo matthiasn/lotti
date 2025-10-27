@@ -57,14 +57,44 @@ class LabelChip extends StatelessWidget {
               width: AppTheme.statusIndicatorBorderWidth,
             ),
           ),
-          child: Text(
-            label.name,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontSize: AppTheme.statusIndicatorFontSize,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
-              color: textColor,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (showDot) ...[
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        color,
+                        color.withValues(alpha: 0.75),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.35),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label.name,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: AppTheme.statusIndicatorFontSize,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                  color: textColor,
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1362,8 +1362,10 @@ class UnifiedAiInferenceRepository {
       } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
         // Handle assign task labels (add-only)
         try {
-          final proposed =
-              parseLabelIdsFromToolArgs(toolCall.function.arguments);
+          final parsed = parseLabelIdsFromToolArgs(toolCall.function.arguments);
+          final proposed = LinkedHashSet<String>.from(parsed)
+              .take(kMaxLabelsPerAssignment)
+              .toList();
 
           final shadow = await _getFlagSafe(aiLabelAssignmentShadowFlag);
           final processor = LabelAssignmentProcessor(
@@ -1377,9 +1379,7 @@ class UnifiedAiInferenceRepository {
           );
           // Log structured result for debugging
           try {
-            final requested = LinkedHashSet<String>.from(
-              proposed.where((e) => e.isNotEmpty),
-            ).take(kMaxLabelsPerAssignment).toList();
+            final requested = proposed;
             developer.log(
               'assign_task_labels result: ${result.toStructuredJson(requested)}',
               name: 'UnifiedAiInferenceRepository',

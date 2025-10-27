@@ -416,7 +416,10 @@ class LottiChecklistStrategy extends ConversationStrategy {
             repository: ref.read(labelsRepositoryProvider),
           );
 
-          final proposed = parseLabelIdsFromToolArgs(call.function.arguments);
+          final parsed = parseLabelIdsFromToolArgs(call.function.arguments);
+          final proposed = LinkedHashSet<String>.from(parsed)
+              .take(kMaxLabelsPerAssignment)
+              .toList();
           // Shadow mode: do not persist if enabled (safe default false)
           var shadow = false;
           try {
@@ -436,11 +439,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
           );
 
           // Structured tool response for the model
-          final response = result.toStructuredJson(
-            LinkedHashSet<String>.from(
-              proposed.where((e) => e.isNotEmpty),
-            ).take(kMaxLabelsPerAssignment).toList(),
-          );
+          final response = result.toStructuredJson(proposed);
           manager.addToolResponse(
             toolCallId: call.id,
             response: response,
@@ -453,8 +452,9 @@ class LottiChecklistStrategy extends ConversationStrategy {
           );
           // Return a structured error response instead of a generic string
           try {
-            final requested =
-                parseLabelIdsFromToolArgs(call.function.arguments);
+            final requested = LinkedHashSet<String>.from(
+              parseLabelIdsFromToolArgs(call.function.arguments),
+            ).take(kMaxLabelsPerAssignment).toList();
             final errorResponse = jsonEncode({
               'function': 'assign_task_labels',
               'request': {'labelIds': requested},

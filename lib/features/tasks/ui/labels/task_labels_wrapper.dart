@@ -139,7 +139,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
                         ? () => _showLabelDescription(context, label)
                         : null,
                     behavior: HitTestBehavior.opaque,
-                    child: LabelChip(label: label),
+                    child: LabelChip(label: label, showDot: false),
                   ),
                 )
                 .toList(),
