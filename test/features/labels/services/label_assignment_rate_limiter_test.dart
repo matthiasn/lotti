@@ -1,43 +1,50 @@
+// ignore_for_file: avoid_redundant_argument_values, cascade_invocations
+
 // ignore_for_file: cascade_invocations
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 
+class _MutableClock extends Clock {
+  _MutableClock(this._now);
+  DateTime _now;
+  @override
+  DateTime now() => _now;
+  void advance(Duration by) => _now = _now.add(by);
+}
+
 void main() {
-  group('LabelAssignmentRateLimiter', () {
-    test('allows first assignment', () {
-      final limiter = LabelAssignmentRateLimiter();
-      expect(limiter.isRateLimited('task-1'), isFalse);
-    });
+  test('rate limiter caps by window and prunes history', () {
+    final start = DateTime(2025, 1, 1, 12, 0, 0);
+    final clock = _MutableClock(start);
+    final limiter = LabelAssignmentRateLimiter(clock: clock);
 
-    test('blocks within window after record', () {
-      final limiter = LabelAssignmentRateLimiter();
-      limiter.recordAssignment('task-1');
-      expect(limiter.isRateLimited('task-1'), isTrue);
-    });
+    const taskId = 't1';
+    expect(limiter.isRateLimited(taskId), isFalse);
+    expect(limiter.nextAllowedAt(taskId), isNull);
 
-    test('allows after window has passed', () {
-      final limiter = LabelAssignmentRateLimiter();
-      // Simulate a past assignment older than the window
-      final past = DateTime.now().subtract(
-        LabelAssignmentRateLimiter.rateLimitWindow + const Duration(seconds: 1),
-      );
-      limiter.setLastAssignmentForTesting('task-1', past);
-      expect(limiter.isRateLimited('task-1'), isFalse);
-    });
+    limiter.recordAssignment(taskId);
+    expect(limiter.isRateLimited(taskId), isTrue);
+    final next = limiter.nextAllowedAt(taskId)!;
+    expect(next.isAfter(start), isTrue);
 
-    test('tracks multiple tasks independently', () {
-      final limiter = LabelAssignmentRateLimiter();
-      limiter.recordAssignment('task-1');
-      expect(limiter.isRateLimited('task-1'), isTrue);
-      expect(limiter.isRateLimited('task-2'), isFalse);
-    });
+    // Advance just under the window: still rate limited
+    clock.advance(LabelAssignmentRateLimiter.rateLimitWindow -
+        const Duration(seconds: 1));
+    expect(limiter.isRateLimited(taskId), isTrue);
 
-    test('clearHistory resets state', () {
-      final limiter = LabelAssignmentRateLimiter();
-      limiter.recordAssignment('task-1');
-      expect(limiter.isRateLimited('task-1'), isTrue);
-      limiter.clearHistory();
-      expect(limiter.isRateLimited('task-1'), isFalse);
-    });
+    // Advance past the window: not rate limited; entry pruned
+    clock.advance(const Duration(seconds: 2));
+    expect(limiter.isRateLimited(taskId), isFalse);
+    expect(limiter.nextAllowedAt(taskId), isNull);
+    expect(limiter.history.containsKey(taskId), isFalse);
+  });
+
+  test('history is unmodifiable', () {
+    final clock = _MutableClock(DateTime(2025));
+    final limiter = LabelAssignmentRateLimiter(clock: clock);
+    limiter.recordAssignment('a');
+    final history = limiter.history;
+    expect(() => history['x'] = DateTime.now(), throwsUnsupportedError);
   });
 }
