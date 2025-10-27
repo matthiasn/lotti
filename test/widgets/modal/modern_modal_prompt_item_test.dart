@@ -200,24 +200,6 @@ void main() {
         // Gold border and background should be applied
       });
 
-      testWidgets('renders correctly when isDefault is true with styling',
-          (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ModernModalPromptItem(
-              icon: Icons.star,
-              title: 'Default Prompt',
-              description: 'This is a default prompt',
-              onTap: () {},
-              isDefault: true,
-            ),
-          ),
-        );
-
-        expect(find.text('Default Prompt'), findsOneWidget);
-        // Widget renders successfully with isDefault styling
-      });
-
       testWidgets('does not show gold styling when isDefault is false',
           (tester) async {
         await tester.pumpWidget(

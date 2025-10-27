@@ -411,7 +411,7 @@ void main() {
         expect(tapCount, 0);
       });
 
-      testWidgets('handles tap with animation controller provided',
+      testWidgets('handles tap without animation controller',
           (tester) async {
         var tapCount = 0;
 
