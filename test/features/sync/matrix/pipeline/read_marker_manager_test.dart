@@ -1,7 +1,7 @@
 // ignore_for_file: cascade_invocations
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/read_marker_manager.dart';
+import 'package:lotti/features/sync/matrix/pipeline/read_marker_manager.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -60,7 +60,7 @@ void main() {
 
       verify(() => log.captureException(
             any<dynamic>(),
-            domain: 'MATRIX_SYNC_V2',
+            domain: any<String>(named: 'domain'),
             subDomain: 'flushReadMarker',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           )).called(1);

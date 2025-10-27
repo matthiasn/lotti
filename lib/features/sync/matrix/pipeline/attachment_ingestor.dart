@@ -1,10 +1,11 @@
 import 'dart:io';
 
-import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/descriptor_catch_up_manager.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_event_classifier.dart'
+import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart'
     as ec;
-import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_counters.dart';
+import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 import 'package:lotti/features/sync/matrix/save_attachment.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -62,7 +63,7 @@ class AttachmentIngestor {
         final msgType = content['msgtype'];
         logging.captureEvent(
           'attachmentEvent id=${event.eventId} path=$rpAny mime=$mime msgtype=$msgType hasUrl=$hasUrl hasFile=$hasEnc',
-          domain: 'MATRIX_SYNC_V2',
+          domain: syncLoggingDomain,
           subDomain: 'attachment.observe',
         );
       } catch (_) {
@@ -82,7 +83,7 @@ class AttachmentIngestor {
         if (ts < lastProcessedTs.toInt() - attachmentTsGate.inMilliseconds) {
           logging.captureEvent(
             'prefetch.skip.tsGate id=${event.eventId}',
-            domain: 'MATRIX_SYNC_V2',
+            domain: syncLoggingDomain,
             subDomain: 'prefetch',
           );
           return false;
@@ -102,7 +103,7 @@ class AttachmentIngestor {
       } catch (err, st) {
         logging.captureException(
           err,
-          domain: 'MATRIX_SYNC_V2',
+          domain: syncLoggingDomain,
           subDomain: 'prefetch',
           stackTrace: st,
         );

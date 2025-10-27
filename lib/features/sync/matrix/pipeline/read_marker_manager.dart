@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -36,7 +37,7 @@ class ReadMarkerManager {
     _pendingRoom = room;
     _logging.captureEvent(
       'marker.schedule id=$eventId debounceMs=${_debounce.inMilliseconds}',
-      domain: 'MATRIX_SYNC_V2',
+      domain: syncLoggingDomain,
       subDomain: 'marker.schedule',
     );
     _timer?.cancel();
@@ -48,7 +49,7 @@ class ReadMarkerManager {
       _pendingRoom = null;
       _logging.captureEvent(
         'marker.flush id=$id',
-        domain: 'MATRIX_SYNC_V2',
+        domain: syncLoggingDomain,
         subDomain: 'marker.flush',
       );
       try {
@@ -57,7 +58,7 @@ class ReadMarkerManager {
         result.catchError((Object error, StackTrace stack) {
           _logging.captureException(
             error,
-            domain: 'MATRIX_SYNC_V2',
+            domain: syncLoggingDomain,
             subDomain: 'flushReadMarker',
             stackTrace: stack,
           );
@@ -80,7 +81,7 @@ class ReadMarkerManager {
     if (id != null && r != null) {
       _logging.captureEvent(
         'marker.disposeFlush id=$id',
-        domain: 'MATRIX_SYNC_V2',
+        domain: syncLoggingDomain,
         subDomain: 'marker.flush',
       );
       // Best-effort flush without awaiting to keep dispose lightweight.
@@ -90,7 +91,7 @@ class ReadMarkerManager {
         unawaited(result.catchError((Object error, StackTrace stack) {
           _logging.captureException(
             error,
-            domain: 'MATRIX_SYNC_V2',
+            domain: syncLoggingDomain,
             subDomain: 'flushReadMarker.onDispose',
             stackTrace: stack,
           );

@@ -3,8 +3,8 @@ import 'package:lotti/features/sync/ui/matrix_stats/diagnostics_panel.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_actions.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_grid.dart';
 
-class V2MetricsSection extends StatelessWidget {
-  const V2MetricsSection({
+class SyncMetricsSection extends StatelessWidget {
+  const SyncMetricsSection({
     required this.metrics,
     required this.lastUpdated,
     required this.onForceRescan,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/matrix_v2_metrics_panel.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,8 +18,8 @@ void main() {
   setUp(() {
     mockMatrixService = MockMatrixService();
 
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+      (_) async => SyncMetrics.fromMap({
         'processed': 2,
         'skipped': 1,
         'failures': 0,
@@ -27,15 +27,15 @@ void main() {
     );
     when(() => mockMatrixService.getSyncDiagnosticsText())
         .thenAnswer((_) async => 'diagnostics');
-    when(() => mockMatrixService.forceV2Rescan()).thenAnswer((_) async {});
-    when(() => mockMatrixService.retryV2Now()).thenAnswer((_) async {});
+    when(() => mockMatrixService.forceRescan()).thenAnswer((_) async {});
+    when(() => mockMatrixService.retryNow()).thenAnswer((_) async {});
   });
 
-  testWidgets('MatrixV2MetricsPanel renders metrics and handles actions',
+  testWidgets('MatrixSyncMetricsPanel renders metrics and handles actions',
       (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        const MatrixV2MetricsPanel(),
+        const MatrixSyncMetricsPanel(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
         ],
@@ -46,22 +46,22 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
 
     expect(find.textContaining('Last updated:'), findsOneWidget);
-    verify(() => mockMatrixService.getV2Metrics()).called(greaterThan(0));
+    verify(() => mockMatrixService.getSyncMetrics()).called(greaterThan(0));
 
     await tester.tap(find.byKey(const Key('matrixStats.forceRescan')));
     await tester.pump();
-    verify(() => mockMatrixService.forceV2Rescan()).called(1);
+    verify(() => mockMatrixService.forceRescan()).called(1);
 
     await tester.tap(find.byKey(const Key('matrixStats.retryNow')));
     await tester.pump();
-    verify(() => mockMatrixService.retryV2Now()).called(1);
+    verify(() => mockMatrixService.retryNow()).called(1);
 
     await tester.tap(find.byKey(const Key('matrixStats.refresh.metrics')));
     await tester.pump();
     // Allow refresh to complete.
     await tester.pump(const Duration(milliseconds: 10));
 
-    verify(() => mockMatrixService.getV2Metrics()).called(greaterThan(1));
+    verify(() => mockMatrixService.getSyncMetrics()).called(greaterThan(1));
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();

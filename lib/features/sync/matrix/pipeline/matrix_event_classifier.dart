@@ -1,5 +1,5 @@
 import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_helpers.dart'
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_helpers.dart'
     as msh;
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;

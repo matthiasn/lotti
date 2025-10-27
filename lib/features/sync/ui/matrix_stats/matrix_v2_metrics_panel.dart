@@ -12,14 +12,14 @@ import 'package:lotti/providers/service_providers.dart';
 
 /// Typed metrics panel responsible for polling MatrixService V2 metrics and
 /// exposing the refresh/rescan actions to the UI.
-class MatrixV2MetricsPanel extends ConsumerStatefulWidget {
-  const MatrixV2MetricsPanel({super.key});
+class MatrixSyncMetricsPanel extends ConsumerStatefulWidget {
+  const MatrixSyncMetricsPanel({super.key});
 
   @override
-  MatrixV2MetricsPanelState createState() => MatrixV2MetricsPanelState();
+  MatrixSyncMetricsPanelState createState() => MatrixSyncMetricsPanelState();
 }
 
-class MatrixV2MetricsPanelState extends ConsumerState<MatrixV2MetricsPanel>
+class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
     with WidgetsBindingObserver {
   DateTime? _lastUpdated;
   Map<String, int>? _metricsMap;
@@ -42,7 +42,7 @@ class MatrixV2MetricsPanelState extends ConsumerState<MatrixV2MetricsPanel>
       if (!_appActive || _inFlight) return;
       _inFlight = true;
       try {
-        final v2 = await ref.read(matrixServiceProvider).getV2Metrics();
+        final v2 = await ref.read(matrixServiceProvider).getSyncMetrics();
         final map = v2?.toMap();
         if (!mounted || map == null || map.isEmpty) return;
         final signature = metricsMapSignature(map);
@@ -56,7 +56,7 @@ class MatrixV2MetricsPanelState extends ConsumerState<MatrixV2MetricsPanel>
   }
 
   Future<void> _refreshOnce({bool forceTimestamp = false}) async {
-    final v2 = await ref.read(matrixServiceProvider).getV2Metrics();
+    final v2 = await ref.read(matrixServiceProvider).getSyncMetrics();
     final map = v2?.toMap();
     if (!mounted || map == null || map.isEmpty) return;
     _applyMetricsUpdate(map, forceTimestamp: forceTimestamp);
@@ -92,24 +92,24 @@ class MatrixV2MetricsPanelState extends ConsumerState<MatrixV2MetricsPanel>
 
   void _refreshDiagnostics({bool forceTimestamp = false}) {
     ref
-      ..invalidate(matrixV2MetricsFutureProvider)
+      ..invalidate(matrixSyncMetricsFutureProvider)
       ..invalidate(matrixDiagnosticsTextProvider);
     unawaited(_refreshOnce(forceTimestamp: forceTimestamp));
   }
 
   @override
   Widget build(BuildContext context) {
-    return V2MetricsSection(
+    return SyncMetricsSection(
       metrics: _metricsMap ?? const <String, int>{},
       lastUpdated: _lastUpdated,
-      title: context.messages.settingsMatrixV2Metrics,
+      title: context.messages.settingsMatrixMetrics,
       lastUpdatedLabel: context.messages.settingsMatrixLastUpdated,
       onForceRescan: () async {
-        await ref.read(matrixServiceProvider).forceV2Rescan();
+        await ref.read(matrixServiceProvider).forceRescan();
         _refreshDiagnostics(forceTimestamp: true);
       },
       onRetryNow: () async {
-        await ref.read(matrixServiceProvider).retryV2Now();
+        await ref.read(matrixServiceProvider).retryNow();
         _refreshDiagnostics(forceTimestamp: true);
       },
       onCopyDiagnostics: () async {

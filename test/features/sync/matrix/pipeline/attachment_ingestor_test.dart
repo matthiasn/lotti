@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_ingestor.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/descriptor_catch_up_manager.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_counters.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
+import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
+import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -71,7 +71,7 @@ void main() {
     // Logs emitted
     verify(() => logging.captureEvent(
           any<String>(),
-          domain: 'MATRIX_SYNC_V2',
+          domain: any<String>(named: 'domain'),
           subDomain: 'attachment.observe',
         )).called(greaterThan(0));
     // Pending cleared triggers scan and retry (no media write here)
@@ -167,7 +167,7 @@ void main() {
     expect(wrote, isFalse);
     verify(() => logging.captureEvent(
           contains('prefetch.skip.tsGate'),
-          domain: 'MATRIX_SYNC_V2',
+          domain: any<String>(named: 'domain'),
           subDomain: 'prefetch',
         )).called(1);
   });

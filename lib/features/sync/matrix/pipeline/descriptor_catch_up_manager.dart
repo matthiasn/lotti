@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -137,7 +138,7 @@ class DescriptorCatchUpManager {
       if (room == null) return;
       _logging.captureEvent(
         'descriptorCatchUp.start pending=${_pending.length}',
-        domain: 'MATRIX_SYNC_V2',
+        domain: syncLoggingDomain,
         subDomain: 'descriptorCatchUp',
       );
       final snapshot = await room.getTimeline(limit: 1000);
@@ -163,7 +164,7 @@ class DescriptorCatchUpManager {
           // Log cleanup failures to aid debugging; do not rethrow.
           _logging.captureException(
             e,
-            domain: 'MATRIX_SYNC_V2',
+            domain: syncLoggingDomain,
             subDomain: 'descriptorCatchUp.cleanup',
             stackTrace: st,
           );
@@ -172,7 +173,7 @@ class DescriptorCatchUpManager {
       _runs++;
       _logging.captureEvent(
         'descriptorCatchUp.summary recorded=$recorded pendingHits=$pendingHits',
-        domain: 'MATRIX_SYNC_V2',
+        domain: syncLoggingDomain,
         subDomain: 'descriptorCatchUp',
       );
       if (pendingHits > 0) {
@@ -182,7 +183,7 @@ class DescriptorCatchUpManager {
     } catch (e, st) {
       _logging.captureException(
         e,
-        domain: 'MATRIX_SYNC_V2',
+        domain: syncLoggingDomain,
         subDomain: 'descriptorCatchUp',
         stackTrace: st,
       );

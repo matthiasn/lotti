@@ -8,9 +8,9 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -119,7 +119,7 @@ void main() {
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
       documentsDirectory: Directory.systemTemp,
-      collectV2Metrics: collectMetrics,
+      collectSyncMetrics: collectMetrics,
       roomManager: roomManager,
       sessionManager: sessionManager,
       v2PipelineOverride: pipeline,
@@ -153,7 +153,7 @@ void main() {
   test('getV2Metrics returns null when metrics collection disabled', () async {
     final service = await createService(collectMetrics: false);
 
-    final metrics = await service.getV2Metrics();
+    final metrics = await service.getSyncMetrics();
 
     expect(metrics, isNull);
   });
@@ -163,16 +163,16 @@ void main() {
       metricsSnapshot: const {'dbApplied': 7, 'failures': 0},
     );
 
-    final metrics = await service.getV2Metrics();
+    final metrics = await service.getSyncMetrics();
 
-    expect(metrics, isA<V2Metrics>());
+    expect(metrics, isA<SyncMetrics>());
     expect(metrics?.dbApplied, 7);
   });
 
   test('forceV2Rescan forwards includeCatchUp flag to pipeline', () async {
     final service = await createService();
 
-    await service.forceV2Rescan(includeCatchUp: false);
+    await service.forceRescan(includeCatchUp: false);
 
     verify(() => pipeline.forceRescan(includeCatchUp: false)).called(1);
   });
@@ -180,7 +180,7 @@ void main() {
   test('retryV2Now triggers pipeline retry', () async {
     final service = await createService();
 
-    await service.retryV2Now();
+    await service.retryNow();
 
     verify(() => pipeline.retryNow()).called(1);
   });

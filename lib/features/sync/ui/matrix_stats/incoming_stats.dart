@@ -21,7 +21,7 @@ class _IncomingStatsState extends ConsumerState<IncomingStats> {
         children: [
           RepaintBoundary(child: MessageCountsView()),
           SizedBox(height: 16),
-          RepaintBoundary(child: MatrixV2MetricsPanel()),
+          RepaintBoundary(child: MatrixSyncMetricsPanel()),
         ],
       ),
     );

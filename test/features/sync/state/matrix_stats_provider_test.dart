@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 
 void main() {
@@ -13,15 +13,15 @@ void main() {
             });
 
     final container = ProviderContainer(overrides: [
-      matrixV2MetricsFutureProvider.overrideWith((ref) async {
+      matrixSyncMetricsFutureProvider.overrideWith((ref) async {
         final m = ref.watch(metricsStateProvider);
-        return V2Metrics.fromMap(m);
+        return SyncMetrics.fromMap(m);
       }),
     ]);
     addTearDown(container.dispose);
 
     // Instantiate notifier and allow first append
-    container.read(v2MetricsHistoryProvider);
+    container.read(syncMetricsHistoryProvider);
     await Future<void>.delayed(Duration.zero);
 
     // Append 30 updates; history should cap at 24.
@@ -34,7 +34,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
     }
 
-    final hist = container.read(v2MetricsHistoryProvider);
+    final hist = container.read(syncMetricsHistoryProvider);
     expect(hist['processed']!.length, 24);
     expect(hist['failures']!.length, 24);
     expect(hist['retriesScheduled']!.length, 24);
@@ -45,17 +45,17 @@ void main() {
 
   test('V2MetricsHistory.clear resets state', () async {
     final container = ProviderContainer(overrides: [
-      matrixV2MetricsFutureProvider.overrideWith((ref) async =>
-          V2Metrics.fromMap(
+      matrixSyncMetricsFutureProvider.overrideWith((ref) async =>
+          SyncMetrics.fromMap(
               const {'processed': 1, 'failures': 0, 'retriesScheduled': 0})),
     ]);
     addTearDown(container.dispose);
 
-    container.read(v2MetricsHistoryProvider);
+    container.read(syncMetricsHistoryProvider);
     await Future<void>.delayed(Duration.zero);
 
-    expect(container.read(v2MetricsHistoryProvider).isNotEmpty, isTrue);
-    container.read(v2MetricsHistoryProvider.notifier).clear();
-    expect(container.read(v2MetricsHistoryProvider), isEmpty);
+    expect(container.read(syncMetricsHistoryProvider).isNotEmpty, isTrue);
+    container.read(syncMetricsHistoryProvider.notifier).clear();
+    expect(container.read(syncMetricsHistoryProvider), isEmpty);
   });
 }

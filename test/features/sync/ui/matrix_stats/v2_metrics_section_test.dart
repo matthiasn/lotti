@@ -6,7 +6,7 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   testWidgets(
-      'V2MetricsSection renders KPIs, groups, labels, actions, and diagnostics',
+      'SyncMetricsSection renders KPIs, groups, labels, actions, and diagnostics',
       (tester) async {
     final metrics = <String, int>{
       // KPIs
@@ -38,10 +38,10 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         SingleChildScrollView(
-          child: V2MetricsSection(
+          child: SyncMetricsSection(
             metrics: metrics,
             lastUpdated: DateTime(2025, 1, 1, 12),
-            title: 'Sync V2 Metrics',
+            title: 'Sync Metrics',
             lastUpdatedLabel: 'Last updated:',
             onForceRescan: () => force++,
             onRetryNow: () => retry++,
@@ -56,7 +56,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Header labels
-    expect(find.text('Sync V2 Metrics'), findsOneWidget);
+    expect(find.text('Sync Metrics'), findsOneWidget);
     expect(find.textContaining('Last updated:'), findsOneWidget);
 
     // KPIs section present

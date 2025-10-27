@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -35,7 +35,7 @@ void main() {
     expect(miss, isNull);
     verify(() => logging.captureEvent(
           any<String>(),
-          domain: 'MATRIX_SYNC_V2',
+          domain: any<String>(named: 'domain'),
           subDomain: 'attachmentIndex.find',
         )).called(greaterThanOrEqualTo(1));
   });

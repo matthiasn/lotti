@@ -1,3 +1,4 @@
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -32,14 +33,14 @@ class AttachmentIndex {
         _byPath[noSlash] = e;
         _logging?.captureEvent(
           'attachmentIndex.record path=$key mime=$mimetype id=${e.eventId}',
-          domain: 'MATRIX_SYNC_V2',
+          domain: syncLoggingDomain,
           subDomain: 'attachmentIndex.record',
         );
       }
     } catch (err) {
       _logging?.captureEvent(
         'attachmentIndex.record failed: $err',
-        domain: 'MATRIX_SYNC_V2',
+        domain: syncLoggingDomain,
         subDomain: 'attachmentIndex',
       );
     }
@@ -56,7 +57,7 @@ class AttachmentIndex {
       hit == null
           ? 'attachmentIndex.miss path=$relativePath alt=$key2'
           : 'attachmentIndex.hit path=$relativePath id=${hit.eventId}',
-      domain: 'MATRIX_SYNC_V2',
+      domain: syncLoggingDomain,
       subDomain: 'attachmentIndex.find',
     );
     return hit;

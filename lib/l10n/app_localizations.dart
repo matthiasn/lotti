@@ -3741,17 +3741,17 @@ abstract class AppLocalizations {
   /// **'Value'**
   String get settingsMatrixValue;
 
-  /// No description provided for @settingsMatrixV2Metrics.
+  /// No description provided for @settingsMatrixMetrics.
   ///
   /// In en, this message translates to:
-  /// **'Sync V2 Metrics'**
-  String get settingsMatrixV2Metrics;
+  /// **'Sync Metrics'**
+  String get settingsMatrixMetrics;
 
-  /// No description provided for @settingsMatrixV2MetricsNoData.
+  /// No description provided for @settingsMatrixMetricsNoData.
   ///
   /// In en, this message translates to:
-  /// **'Sync V2 Metrics: no data'**
-  String get settingsMatrixV2MetricsNoData;
+  /// **'Sync Metrics: no data'**
+  String get settingsMatrixMetricsNoData;
 
   /// No description provided for @settingsMatrixLastUpdated.
   ///

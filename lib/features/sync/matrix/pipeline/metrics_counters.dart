@@ -1,6 +1,6 @@
-import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_helpers.dart'
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_helpers.dart'
     as msh;
-import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_utils.dart';
+import 'package:lotti/features/sync/matrix/pipeline/metrics_utils.dart';
 
 class MetricsCounters {
   MetricsCounters({

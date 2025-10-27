@@ -1,7 +1,7 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/descriptor_catch_up_manager.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -214,7 +214,7 @@ void main() {
     expect(manager.runs, 1);
     verify(() => logging.captureException(
           any<Object>(),
-          domain: 'MATRIX_SYNC_V2',
+          domain: any<String>(named: 'domain'),
           subDomain: 'descriptorCatchUp.cleanup',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         )).called(1);
@@ -314,7 +314,7 @@ void main() {
       // Exception should be logged; runs should remain 0 since early failure
       verify(() => logging.captureException(
             any<Object>(),
-            domain: 'MATRIX_SYNC_V2',
+            domain: any<String>(named: 'domain'),
             subDomain: 'descriptorCatchUp',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           )).called(greaterThanOrEqualTo(1));

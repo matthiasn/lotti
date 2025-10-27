@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -123,7 +123,7 @@ void main() {
       // No local/remote marker advancement should be scheduled
       verifyNever(() => logger.captureEvent(
             any<String>(that: contains('marker.local id=')),
-            domain: 'MATRIX_SYNC_V2',
+            domain: syncLoggingDomain,
             subDomain: 'marker.local',
           ));
       verifyNever(() => readMarker.updateReadMarker(

@@ -19,7 +19,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -486,12 +486,12 @@ void main() {
           );
         }
 
-        await alice.forceV2Rescan();
+        await alice.forceRescan();
         debugPrint(
           'Alice V2 metrics after rescan: '
           '${alice.debugV2Pipeline?.metricsSnapshot()}',
         );
-        await bob.forceV2Rescan();
+        await bob.forceRescan();
         debugPrint(
           'Bob V2 metrics after rescan: '
           '${bob.debugV2Pipeline?.metricsSnapshot()}',

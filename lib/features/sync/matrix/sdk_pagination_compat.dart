@@ -1,3 +1,4 @@
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -43,7 +44,7 @@ class SdkPaginationCompat {
         } catch (e, st) {
           logging.captureException(
             e,
-            domain: 'MATRIX_SYNC_V2',
+            domain: syncLoggingDomain,
             subDomain: 'sdkPagination.requestHistory',
             stackTrace: st,
           );
@@ -56,7 +57,7 @@ class SdkPaginationCompat {
     } catch (e, st) {
       logging.captureException(
         e,
-        domain: 'MATRIX_SYNC_V2',
+        domain: syncLoggingDomain,
         subDomain: 'sdkPaginationCompat',
         stackTrace: st,
       );

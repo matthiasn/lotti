@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/metrics_counters.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
+import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 
 void main() {
   test('fromMap handles missing keys gracefully', () {
-    final metrics = V2Metrics.fromMap(const <String, dynamic>{});
+    final metrics = SyncMetrics.fromMap(const <String, dynamic>{});
 
     expect(metrics.processed, 0);
     expect(metrics.skipped, 0);
@@ -15,7 +15,7 @@ void main() {
   });
 
   test('fromMap deserializes processedByType and droppedByType entries', () {
-    final metrics = V2Metrics.fromMap(const <String, dynamic>{
+    final metrics = SyncMetrics.fromMap(const <String, dynamic>{
       'processed.journalEntity': 5,
       'processed.entryLink': 1,
       'droppedByType.journalEntity': 2,
@@ -27,7 +27,7 @@ void main() {
   });
 
   test('toMap includes persisted counters', () {
-    const metrics = V2Metrics(
+    const metrics = SyncMetrics(
       processed: 2,
       skipped: 1,
       failures: 0,

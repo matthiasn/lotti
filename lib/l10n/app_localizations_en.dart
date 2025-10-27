@@ -1993,10 +1993,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixValue => 'Value';
 
   @override
-  String get settingsMatrixV2Metrics => 'Sync V2 Metrics';
+  String get settingsMatrixMetrics => 'Sync Metrics';
 
   @override
-  String get settingsMatrixV2MetricsNoData => 'Sync V2 Metrics: no data';
+  String get settingsMatrixMetricsNoData => 'Sync Metrics: no data';
 
   @override
   String get settingsMatrixLastUpdated => 'Last updated:';
@@ -3388,12 +3388,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get settingsMatrixValue => 'Value';
-
-  @override
-  String get settingsMatrixV2Metrics => 'Sync V2 Metrics';
-
-  @override
-  String get settingsMatrixV2MetricsNoData => 'Sync V2 Metrics: no data';
 
   @override
   String get settingsMatrixLastUpdated => 'Last updated:';
