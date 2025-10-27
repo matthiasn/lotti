@@ -87,9 +87,31 @@ class LabelAssignmentProcessor {
     required List<String> existingIds,
     bool shadowMode = false,
   }) async {
-    final requested = LinkedHashSet<String>.from(
-      proposedIds.where((e) => e.isNotEmpty),
-    ).take(kMaxLabelsPerAssignment).toList();
+    // Normalize proposed IDs (trim, drop empties)
+    final normalized =
+        proposedIds.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
+    // Track duplicates in the original proposal order
+    final counts = <String, int>{};
+    for (final id in normalized) {
+      counts.update(id, (v) => v + 1, ifAbsent: () => 1);
+    }
+    final duplicateIds =
+        counts.entries.where((e) => e.value > 1).map((e) => e.key).toSet();
+
+    // Preserve order, dedupe, and cap by max-per-call
+    final dedupedOrder = LinkedHashSet<String>.from(normalized).toList();
+    final overCap = dedupedOrder.length > kMaxLabelsPerAssignment
+        ? dedupedOrder.sublist(kMaxLabelsPerAssignment)
+        : const <String>[];
+    final base = dedupedOrder.take(kMaxLabelsPerAssignment).toList();
+
+    // Skip labels already assigned on the task
+    final existingSet = existingIds.toSet();
+    final alreadyAssigned = base.where(existingSet.contains).toList();
+
+    // Final requested set to validate and (optionally) persist
+    final requested = base.where((id) => !existingSet.contains(id)).toList();
     if (requested.isEmpty) {
       return LabelAssignmentResult(
           assigned: const [], invalid: const [], skipped: const []);
@@ -110,6 +132,23 @@ class LabelAssignmentProcessor {
     final validation = await _validator.validate(requested);
     assigned.addAll(validation.valid);
     invalid.addAll(validation.invalid);
+
+    // Populate skipped with structured reasons. Priority:
+    // 1) already_assigned, 2) over_cap, 3) duplicate
+    final skipReasons = <String, String>{};
+    for (final id in alreadyAssigned) {
+      skipReasons[id] = 'already_assigned';
+    }
+    for (final id in overCap) {
+      skipReasons.putIfAbsent(id, () => 'over_cap');
+    }
+    for (final id in duplicateIds) {
+      skipReasons.putIfAbsent(id, () => 'duplicate');
+    }
+    skipped.addAll(
+      skipReasons.entries
+          .map((e) => <String, String>{'id': e.key, 'reason': e.value}),
+    );
     sw.stop();
 
     _logging.captureEvent(

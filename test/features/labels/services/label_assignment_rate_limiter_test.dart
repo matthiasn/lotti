@@ -1,6 +1,4 @@
 // ignore_for_file: avoid_redundant_argument_values, cascade_invocations
-
-// ignore_for_file: cascade_invocations
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
