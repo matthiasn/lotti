@@ -183,27 +183,7 @@ class UnifiedAiPromptsList extends ConsumerWidget {
     String? categoryId,
     AiConfigPrompt prompt,
   ) {
-    if (categoryId == null) return false;
-
-    try {
-      final cacheService = getIt<EntitiesCacheService>();
-      final category = cacheService.getCategoryById(categoryId);
-
-      if (category?.automaticPrompts == null) return false;
-
-      // Check if this prompt is the first in any automatic prompt list
-      for (final entry in category!.automaticPrompts!.entries) {
-        final promptIds = entry.value;
-        if (promptIds.isNotEmpty && promptIds.first == prompt.id) {
-          return true;
-        }
-      }
-    } catch (e) {
-      // If we can't get the category, just return false
-      return false;
-    }
-
-    return false;
+    return isDefaultPromptSync(categoryId, prompt);
   }
 
   IconData _getIconForPrompt(AiConfigPrompt prompt) {
@@ -218,4 +198,34 @@ class UnifiedAiPromptsList extends ConsumerWidget {
       return Icons.chat_rounded;
     }
   }
+}
+
+/// Check if a prompt is configured as an automatic default for the category
+/// This is a synchronous version that uses the category cache
+@visibleForTesting
+bool isDefaultPromptSync(
+  String? categoryId,
+  AiConfigPrompt prompt,
+) {
+  if (categoryId == null) return false;
+
+  try {
+    final cacheService = getIt<EntitiesCacheService>();
+    final category = cacheService.getCategoryById(categoryId);
+
+    if (category?.automaticPrompts == null) return false;
+
+    // Check if this prompt is the first in any automatic prompt list
+    for (final entry in category!.automaticPrompts!.entries) {
+      final promptIds = entry.value;
+      if (promptIds.isNotEmpty && promptIds.first == prompt.id) {
+        return true;
+      }
+    }
+  } catch (e) {
+    // If we can't get the category, just return false
+    return false;
+  }
+
+  return false;
 }

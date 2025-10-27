@@ -23,7 +23,7 @@ void main() {
 
   tearDown(getIt.reset);
 
-  group('_isDefaultPromptSync edge cases', () {
+  group('isDefaultPromptSync edge cases', () {
     AiConfigPrompt createTestPrompt({
       required String id,
       String name = 'Test Prompt',
@@ -44,9 +44,8 @@ void main() {
 
     test('returns false when categoryId is null', () {
       final testPrompt = createTestPrompt(id: 'test-prompt');
-      final helper = UnifiedAiPromptsListTestHelper();
 
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         null,
         testPrompt,
       );
@@ -60,9 +59,8 @@ void main() {
       when(() => mockCacheService.getCategoryById(categoryId)).thenReturn(null);
 
       final testPrompt = createTestPrompt(id: 'test-prompt');
-      final helper = UnifiedAiPromptsListTestHelper();
 
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -88,9 +86,8 @@ void main() {
           .thenReturn(category);
 
       final testPrompt = createTestPrompt(id: 'test-prompt');
-      final helper = UnifiedAiPromptsListTestHelper();
 
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -116,9 +113,8 @@ void main() {
           .thenReturn(category);
 
       final testPrompt = createTestPrompt(id: 'test-prompt');
-      final helper = UnifiedAiPromptsListTestHelper();
 
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -163,8 +159,7 @@ void main() {
         aiResponseType: AiResponseType.audioTranscription,
       ) as AiConfigPrompt;
 
-      final helper = UnifiedAiPromptsListTestHelper();
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -208,8 +203,7 @@ void main() {
         aiResponseType: AiResponseType.checklistUpdates,
       ) as AiConfigPrompt;
 
-      final helper = UnifiedAiPromptsListTestHelper();
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -252,8 +246,7 @@ void main() {
         aiResponseType: AiResponseType.taskSummary,
       ) as AiConfigPrompt;
 
-      final helper = UnifiedAiPromptsListTestHelper();
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -298,8 +291,7 @@ void main() {
         aiResponseType: AiResponseType.audioTranscription,
       ) as AiConfigPrompt;
 
-      final helper = UnifiedAiPromptsListTestHelper();
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -342,8 +334,7 @@ void main() {
         aiResponseType: AiResponseType.audioTranscription,
       ) as AiConfigPrompt;
 
-      final helper = UnifiedAiPromptsListTestHelper();
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -358,10 +349,9 @@ void main() {
           .thenThrow(Exception('Cache error'));
 
       final testPrompt = createTestPrompt(id: 'test-prompt');
-      final helper = UnifiedAiPromptsListTestHelper();
 
       // Should not throw, should return false
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -409,8 +399,7 @@ void main() {
         aiResponseType: AiResponseType.audioTranscription,
       ) as AiConfigPrompt;
 
-      final helper = UnifiedAiPromptsListTestHelper();
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -453,8 +442,7 @@ void main() {
         aiResponseType: AiResponseType.audioTranscription,
       ) as AiConfigPrompt;
 
-      final helper = UnifiedAiPromptsListTestHelper();
-      final result = helper.testIsDefaultPromptSync(
+      final result = isDefaultPromptSync(
         categoryId,
         testPrompt,
       );
@@ -677,34 +665,4 @@ void main() {
       expect(find.text('Test Prompt'), findsOneWidget);
     });
   });
-}
-
-/// Test helper that provides access to private methods for testing
-class UnifiedAiPromptsListTestHelper {
-  bool testIsDefaultPromptSync(
-    String? categoryId,
-    AiConfigPrompt prompt,
-  ) {
-    if (categoryId == null) return false;
-
-    try {
-      final cacheService = getIt<EntitiesCacheService>();
-      final category = cacheService.getCategoryById(categoryId);
-
-      if (category?.automaticPrompts == null) return false;
-
-      // Check if this prompt is the first in any automatic prompt list
-      for (final entry in category!.automaticPrompts!.entries) {
-        final promptIds = entry.value;
-        if (promptIds.isNotEmpty && promptIds.first == prompt.id) {
-          return true;
-        }
-      }
-    } catch (e) {
-      // If we can't get the category, just return false
-      return false;
-    }
-
-    return false;
-  }
 }
