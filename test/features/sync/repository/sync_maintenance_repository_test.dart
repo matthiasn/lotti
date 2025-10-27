@@ -544,6 +544,79 @@ void main() {
     });
   });
 
+  group('SyncMaintenanceRepository - Labels', () {
+    test('syncLabels enqueues label definitions for sync', () async {
+      final label = LabelDefinition(
+        id: 'lab-1',
+        name: 'Label1',
+        color: '#ffffff',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        private: false,
+      );
+      when(() => mockJournalDb.watchLabelDefinitions())
+          .thenAnswer((_) => Stream.value([label]));
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncMaintenanceRepository.syncLabels();
+
+      final captured =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          entityDefinition: (s) => (s.entityDefinition as LabelDefinition).id,
+        ),
+        label.id,
+      );
+      expect(
+        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+        SyncEntryStatus.update,
+      );
+    });
+
+    test('syncLabels filters deleted labels (deletedAt != null)', () async {
+      final deleted = LabelDefinition(
+        id: 'lab-del',
+        name: 'X',
+        color: '#ffffff',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        private: false,
+        deletedAt: DateTime(2024),
+      );
+      final active = LabelDefinition(
+        id: 'lab-ok',
+        name: 'Y',
+        color: '#000000',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        private: false,
+      );
+
+      when(() => mockJournalDb.watchLabelDefinitions())
+          .thenAnswer((_) => Stream.value([deleted, active]));
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncMaintenanceRepository.syncLabels();
+
+      final messages =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(messages.length, 1);
+      final first = messages.first as SyncMessage;
+      final id = first.mapOrNull(
+        entityDefinition: (s) => (s.entityDefinition as LabelDefinition).id,
+      );
+      expect(id, 'lab-ok');
+    });
+  });
+
   group('SyncMaintenanceRepository - Logging Tests', () {
     final testException = Exception('Test DB Error');
 

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 import 'dart:io';
 
@@ -183,6 +185,35 @@ void main() {
     await service.retryNow();
 
     verify(() => pipeline.retryNow()).called(1);
+  });
+
+  test('connectivity change calls recordConnectivitySignal before forceRescan',
+      () async {
+    final connectivityController =
+        StreamController<List<ConnectivityResult>>.broadcast();
+    addTearDown(connectivityController.close);
+
+    final service = await createService(
+      connectivity: connectivityController.stream,
+    );
+
+    // Stub methods to track ordering
+    when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
+    when(() =>
+            pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')))
+        .thenAnswer((_) async {});
+
+    // Emit connectivity regain
+    connectivityController.add([ConnectivityResult.wifi]);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    verifyInOrder([
+      () => pipeline.recordConnectivitySignal(),
+      () => pipeline.forceRescan(includeCatchUp: true),
+    ]);
+
+    // Clean up
+    await service.dispose();
   });
 
   test('getSyncDiagnosticsText joins metrics and diagnostics strings',

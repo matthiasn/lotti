@@ -755,6 +755,9 @@ class MatrixStreamConsumer implements SyncPipeline {
   Timeline? _liveTimeline;
 
   void _scheduleLiveScan() {
+    // Test seam: allow tests to inject behavior/failures to exercise
+    // scheduling error handling paths.
+    _scheduleLiveScanTestHook?.call();
     // Debounced scheduler for live scans. It's valid for _liveTimeline to be
     // null during early startup (hydration/catch-up still in progress). We
     // record the signal and log for observability either way.
@@ -1320,5 +1323,18 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Record a connectivity-driven signal for observability.
   void recordConnectivitySignal() {
     if (_collectMetrics) _metrics.incSignalConnectivity();
+  }
+
+  // Test-only hook invoked at the start of _scheduleLiveScan() to simulate
+  // errors and exercise fallback logic.
+  void Function()? _scheduleLiveScanTestHook;
+
+  // Visible for testing only: getter/setter for the hook to support tests.
+  @visibleForTesting
+  void Function()? get scheduleLiveScanTestHook => _scheduleLiveScanTestHook;
+
+  @visibleForTesting
+  set scheduleLiveScanTestHook(void Function()? fn) {
+    _scheduleLiveScanTestHook = fn;
   }
 }
