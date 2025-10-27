@@ -2,6 +2,8 @@ import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_helpers.dart'
     as msh;
 import 'package:lotti/features/sync/matrix/pipeline/metrics_utils.dart';
 
+/// Mutable counters used for lightweight in-memory metrics. When `collect` is
+/// false, most counters are no-ops to avoid overhead outside diagnostics runs.
 class MetricsCounters {
   MetricsCounters({
     this.collect = false,
@@ -35,9 +37,20 @@ class MetricsCounters {
   int selfEventsSuppressed = 0;
 
   // Signal-driven ingestion observability
+  /// Number of signals received from the client stream listener for the active
+  /// room (after filtering).
   int signalClientStream = 0;
+
+  /// Number of signals received from live timeline callbacks (onNewEvent,
+  /// onInsert, onChange, onRemove, onUpdate).
   int signalTimelineCallbacks = 0;
+
+  /// Number of connectivity-driven nudges recorded by MatrixService when
+  /// connectivity resumes.
   int signalConnectivity = 0;
+
+  /// Signal→scan latency in milliseconds (last/min/max) recorded at the start
+  /// of `_scanLiveTimeline()` if a prior signal timestamp was captured.
   int signalLatencyLastMs = 0;
   int signalLatencyMinMs = 0;
   int signalLatencyMaxMs = 0;
@@ -126,6 +139,7 @@ class MetricsCounters {
     signalConnectivity++;
   }
 
+  /// Records the end-to-end latency from signal scheduling to scan start.
   void recordSignalLatencyMs(int ms) {
     if (!collect) return;
     signalLatencyLastMs = ms;
@@ -200,6 +214,8 @@ class MetricsCounters {
     return base;
   }
 
+  /// Builds a compact, human-readable line summarizing counters suitable for
+  /// periodic log emission. Includes a signals(...) appendix for quick checks.
   String buildFlushLog({required int retriesPending}) {
     final base =
         'metrics flush=$flushes processed=$processed skipped=$skipped failures=$failures prefetch=$prefetch catchup=$catchupBatches skippedByRetry=$skippedByRetryLimit retriesScheduled=$retriesScheduled retriesPending=$retriesPending signals(client=$signalClientStream,timeline=$signalTimelineCallbacks,net=$signalConnectivity,lat=${signalLatencyLastMs}ms)';

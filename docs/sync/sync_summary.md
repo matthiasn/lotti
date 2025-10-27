@@ -8,6 +8,11 @@ This note captures the current pipeline behavior, recent fixes, logs to look for
 - Vector clocks remain authoritative for conflict detection; duplicate replays are cheap (rows=0, status=equal).
 - Read markers (local + remote) are monotonic; we only advance.
 
+### Manual Sync Maintenance
+- The Sync page exposes a "Sync Entities" modal to manually enqueue definition syncs.
+- Supported steps: Tags, Measurables, Labels, Categories, Dashboards, Habits, and AI Settings.
+- Each step reports per-step totals and progress; you can run any subset.
+
 ## What We Fixed/Added
 
 Recent changes (Oct 2025)

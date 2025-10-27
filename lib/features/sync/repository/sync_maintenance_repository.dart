@@ -14,6 +14,10 @@ import 'package:lotti/services/logging_service.dart';
 typedef SyncProgressCallback = void Function(double progress);
 typedef SyncDetailedProgressCallback = void Function(int processed, int total);
 
+/// Describes a single sync step (e.g., Tags, Labels) with functions to fetch
+/// current entities, decide if an entity should be synced, and enqueue a sync
+/// message for it. Used by the repository to run steps uniformly and report
+/// progress.
 class SyncOperation<T> {
   const SyncOperation({
     required this.step,
@@ -32,6 +36,9 @@ class SyncOperation<T> {
   final bool Function(T entity) shouldSync;
 }
 
+/// Orchestrates one-off definition syncs for Tags, Measurables, Labels,
+/// Categories, Dashboards, Habits, and AI Settings. Exposes per-step runners
+/// and totals helpers used by the controller and Sync modal.
 class SyncMaintenanceRepository {
   SyncMaintenanceRepository({
     required JournalDb journalDb,
@@ -87,6 +94,7 @@ class SyncMaintenanceRepository {
     shouldSync: (category) => category.deletedAt == null,
   );
 
+  // Labels: sync label definitions so new/edited labels appear across devices.
   late final SyncOperation<LabelDefinition> _labelSyncOperation =
       _createOperation<LabelDefinition>(
     step: SyncStep.labels,
@@ -241,6 +249,8 @@ class SyncMaintenanceRepository {
     return Map<SyncStep, int>.fromEntries(entries);
   }
 
+  /// Computes the number of entities that will be considered in a given step.
+  /// Totals are surfaced in the modal as "processed / total" per step.
   Future<int> _calculateTotalForStep(SyncStep step) async {
     if (step == SyncStep.complete) {
       return 0;
@@ -260,6 +270,11 @@ class SyncMaintenanceRepository {
     );
   }
 
+  /// Runs a sync step and reports progress via callbacks.
+  ///
+  /// Progress math: each step contributes an equal fraction to overall
+  /// completion (handled by the controller). Within a step, we emit detailed
+  /// processed/total counts and a normalized [0..1] fraction for the step.
   Future<void> _runOperation<T>(
     SyncOperation<T> operation, {
     SyncProgressCallback? onProgress,

@@ -52,6 +52,16 @@ class _ProcessOutcome {
 
 /// Stream-first sync consumer.
 ///
+/// Design (high level):
+/// - Client stream events and live timeline callbacks are treated as lightweight
+///   signals only. They schedule a debounced live scan and never process per-event
+///   payloads directly. This avoids advancing markers out of order when the
+///   device comes online mid-stream.
+/// - Marker advancement happens exclusively inside ordered batches produced by
+///   `_scanLiveTimeline()` or `_attachCatchUp()`.
+/// - Optional metrics capture signal counts (client/timeline/connectivity) and
+///   the latency from signal → first scan to aid observability.
+///
 /// Responsibilities:
 /// - Attach-time catch-up using SDK pagination/backfill when available and a
 ///   limit-escalation fallback for large backlogs.
@@ -493,6 +503,9 @@ class MatrixStreamConsumer implements SyncPipeline {
       _scheduleInitialCatchUpRetry();
     }
     await _sub?.cancel();
+    // Client-level session stream → signal-only ingestion.
+    // Filter by current room; the very first event also triggers a catch-up
+    // to ensure we ingest backlog before scanning the tail.
     _sub = _sessionManager.timelineEvents.listen((event) {
       final roomId = _roomManager.currentRoomId;
       if (roomId == null || event.roomId != roomId) return;
@@ -507,6 +520,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         unawaited(forceRescan());
       }
       // Record client-stream signal and schedule a scan with safeguards.
+      // If scheduling the scan throws (rare), fall back to a forceRescan
+      // which runs catch-up + a live scan to recover quickly.
       if (_collectMetrics) _metrics.incSignalClientStream();
       _loggingService.captureEvent(
         'signal.clientStream',
@@ -532,7 +547,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     final room = _roomManager.currentRoom;
     if (room != null) {
       try {
-        // Wrap timeline callbacks to count and log signals
+        // Wrap timeline callbacks to count and log signals. These callbacks do
+        // not process payloads; they only nudge the scheduler.
         void onTimelineSignal() {
           if (_collectMetrics) _metrics.incSignalTimelineCallbacks();
           _loggingService.captureEvent(
@@ -739,8 +755,9 @@ class MatrixStreamConsumer implements SyncPipeline {
   Timeline? _liveTimeline;
 
   void _scheduleLiveScan() {
-    // Note: it's valid for _liveTimeline to be null during early startup;
-    // record the signal and log for observability.
+    // Debounced scheduler for live scans. It's valid for _liveTimeline to be
+    // null during early startup (hydration/catch-up still in progress). We
+    // record the signal and log for observability either way.
     if (_collectMetrics) _lastSignalAt = clock.now();
     if (_liveTimeline == null) {
       _loggingService.captureEvent(
@@ -750,6 +767,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       );
     }
     _liveScanTimer?.cancel();
+    // Tight debounce keeps scans responsive while coalescing bursts.
     _liveScanTimer = Timer(const Duration(milliseconds: 120), () {
       unawaited(_scanLiveTimeline());
     });
@@ -759,14 +777,14 @@ class MatrixStreamConsumer implements SyncPipeline {
     final tl = _liveTimeline;
     if (tl == null) return;
     try {
-      // Record signal->scan latency if a signal was captured recently.
+      // Record signal→scan latency if a signal was captured recently.
       if (_collectMetrics && _lastSignalAt != null) {
         final ms = clock.now().difference(_lastSignalAt!).inMilliseconds;
         _metrics.recordSignalLatencyMs(ms);
         _lastSignalAt = null;
       }
-      // Build the normal strictly-after slice (no timestamp gating for
-      // payload discovery; gating applies only to attachment prefetch).
+      // Build the normal strictly-after slice (no timestamp gating for payload
+      // discovery; gating applies only to attachment prefetch).
       final afterSlice = msh.buildLiveScanSlice(
         timelineEvents: tl.events,
         lastEventId: _lastProcessedEventId,
@@ -776,7 +794,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       );
       List<Event> combined;
       if (_liveScanIncludeLookBehind) {
-        // Merge bounded look-behind tail.
+        // Merge bounded look-behind tail for better attachment/descriptor pairing
+        // during steady state while keeping ordering strict.
         var tail = _liveScanSteadyTail;
         if (_liveScanAuditScansRemaining > 0) {
           tail = _liveScanAuditTail;

@@ -211,6 +211,8 @@ class MatrixService {
     incomingKeyVerificationRunnerStream =
         incomingKeyVerificationRunnerController.stream;
 
+    // On connectivity regain, nudge the pipeline with a catch-up + scan and
+    // record this as a signal for observability.
     _connectivitySubscription =
         (connectivityStream ?? Connectivity().onConnectivityChanged)
             .listen((List<ConnectivityResult> result) {
