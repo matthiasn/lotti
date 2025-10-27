@@ -1,6 +1,6 @@
-# Lotti Matrix Sync V2 – Debug + Behavior Summary
+# Lotti Matrix Sync – Debug + Behavior Summary
 
-This note captures the current V2 pipeline behavior, recent fixes, logs to look for, and how to validate. Paste this into a fresh session to regain context.
+This note captures the current pipeline behavior, recent fixes, logs to look for, and how to validate. Paste this into a fresh session to regain context.
 
 ## High‑Level
 - Single-room Matrix sync.

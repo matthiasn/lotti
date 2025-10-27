@@ -1,4 +1,4 @@
-Sync V2 Reliability Tracker — 2025-10-12
+Sync Reliability Tracker — 2025-10-12
 
 Context
 - After overnight sleep or during early sessions, some updates (flag changes, checklist items/updates, entry links) occasionally fail to land on the receiving device.
@@ -62,4 +62,3 @@ Open Questions
 - How frequently do markerMisses occur across devices? (Collect anonymized counts)
 - Do missed updates cluster around specific types (checklist, transcripts)?
 - Does adaptive heartbeat significantly reduce markerMisses without noticeable battery impact?
-

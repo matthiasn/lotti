@@ -1,4 +1,4 @@
-# Sync V2 Migration – Progress Log
+# Sync Migration – Progress Log
 
 Date: 2025-10-11
 
@@ -37,14 +37,14 @@ Next
   - Matrix Stats UI: counts, v2Metrics refresh, loading and error states
     - test/features/sync/ui/matrix_stats_page_test.dart
 - Integration Tests
-  - Split V2 integration into matrix_service_v2_test.dart
+  - Split integration into matrix_service_test.dart
   - SAS device verification auto-accept flow (prevents “unverified devices” send block)
   - Reconnect scenario with verification and batch send on both devices
   - Runner script for V2 tests
 
 CI
 - Added dedicated V2 workflows and scripts:
-  - integration_test/run_matrix_v2_tests.sh
+  - integration_test/run_matrix_tests.sh
   - .github/workflows/flutter-matrix-v2-test.yml (normal + degraded network jobs)
 
 Issues Investigated (Integration)
@@ -65,7 +65,7 @@ How To Verify
   - `make analyze`
   - `make test` (unit suite)
 - Integration (requires local homeserver and iOS/macOS tooling):
-  - `./integration_test/run_matrix_v2_tests.sh`
+- `./integration_test/run_matrix_tests.sh`
   - Ensure variables `TEST_USER1`, `TEST_USER2`, `TEST_SERVER`, `TEST_PASSWORD` set by the script.
   - Expect SAS auto-verify to complete and both tests to pass without timeouts.
 
@@ -94,7 +94,7 @@ Next Steps
 
 Implementation
 - Catch-up pagination (SDK tokens): replace doubling snapshot limit with SDK pagination/backfill tokens for large rooms. Keep current logic as fallback.
-- Metrics cadence + flags: add a dedicated `enable_sync_v2_metrics` config flag (or sample logs every N flushes). Add a UI toggle in Matrix Stats to enable/disable V2 metrics.
+- Metrics cadence + flags: consider sampling logs every N flushes. Metrics are now unified.
 - Circuit breaker/TTL knobs: read thresholds (failure count, cooldown, retry TTL, retry size cap) from config to allow tuning without code changes.
 
 Testing

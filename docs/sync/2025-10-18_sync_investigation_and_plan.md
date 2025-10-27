@@ -1,4 +1,4 @@
-# Sync V2 – 2025-10-18 Deep Dive and Implementation Plan
+# Sync – 2025-10-18 Deep Dive and Implementation Plan
 
 ## Scenario Summary
 - Created a task on mobile while desktop was offline; multiple checklist items and audio generated.

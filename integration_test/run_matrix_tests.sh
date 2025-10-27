@@ -14,8 +14,7 @@ docker compose exec dendrite create-account -config dendrite.yaml -username "$TE
 cd - > /dev/null || exit
 cd ..
 
-flutter test integration_test/matrix_service_v2_test.dart \
+flutter test integration_test/matrix_service_test.dart \
 --dart-define=TEST_USER1="@$TEST_USER1:localhost" \
 --dart-define=TEST_USER2="@$TEST_USER2:localhost" \
 --dart-define=SLOW_NETWORK="$SLOW_NETWORK" "$@"
-
