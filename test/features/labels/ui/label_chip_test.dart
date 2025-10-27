@@ -5,7 +5,7 @@ import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import '../../../test_data/test_data.dart';
 
 void main() {
-  testWidgets('renders label name with contrast and indicator', (tester) async {
+  testWidgets('renders label name with contrast (no dot)', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -20,15 +20,34 @@ void main() {
     final text = tester.widget<Text>(find.text(testLabelDefinition1.name));
     expect(text.style?.color, equals(Colors.black));
 
+    // No circular color dot is rendered in presentation anymore
     final dotFinder = find.byWidgetPredicate((widget) {
-      if (widget is! Container) {
-        return false;
-      }
+      if (widget is! Container) return false;
       final decoration = widget.decoration;
       return decoration is BoxDecoration && decoration.shape == BoxShape.circle;
     });
-    expect(dotFinder, findsOneWidget);
-    final dotRenderBox = tester.renderObject<RenderBox>(dotFinder);
-    expect(dotRenderBox.size, const Size(9, 9));
+    expect(dotFinder, findsNothing);
+  });
+
+  testWidgets('does not render dot and keeps spacing', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: LabelChip(label: testLabelDefinition1),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text(testLabelDefinition1.name), findsOneWidget);
+
+    // No circular dot decoration present
+    final dotFinder = find.byWidgetPredicate((widget) {
+      if (widget is! Container) return false;
+      final decoration = widget.decoration;
+      return decoration is BoxDecoration && decoration.shape == BoxShape.circle;
+    });
+    expect(dotFinder, findsNothing);
   });
 }

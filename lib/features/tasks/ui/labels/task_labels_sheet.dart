@@ -23,7 +23,8 @@ class TaskLabelsSheet extends ConsumerStatefulWidget {
 
 class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
   late final Set<String> _selectedLabelIds = widget.initialLabelIds.toSet();
-  String _searchQuery = '';
+  String _searchRaw = '';
+  String _searchLower = '';
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +54,11 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
                     hintText: context.messages.tasksLabelsSheetSearchHint,
                     prefixIcon: const Icon(Icons.search),
                   ),
+                  textCapitalization: TextCapitalization.words,
                   onChanged: (value) {
                     setState(() {
-                      _searchQuery = value.trim().toLowerCase();
+                      _searchRaw = value;
+                      _searchLower = value.trim().toLowerCase();
                     });
                   },
                 ),
@@ -118,22 +121,22 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
 
   Widget _buildList(BuildContext context, List<LabelDefinition> labels) {
     final filtered = labels.where((label) {
-      if (_searchQuery.isEmpty) {
+      if (_searchLower.isEmpty) {
         return true;
       }
-      return label.name.toLowerCase().contains(_searchQuery) ||
-          (label.description?.toLowerCase().contains(_searchQuery) ?? false);
+      return label.name.toLowerCase().contains(_searchLower) ||
+          (label.description?.toLowerCase().contains(_searchLower) ?? false);
     }).toList()
       ..sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
 
     if (filtered.isEmpty) {
-      final hasQuery = _searchQuery.isNotEmpty;
+      final hasQuery = _searchRaw.trim().isNotEmpty;
       return _EmptyState(
         isSearching: hasQuery,
-        searchQuery: hasQuery ? _searchQuery : null,
-        onCreateLabel: () => _openLabelCreator(defaultName: _searchQuery),
+        searchQuery: hasQuery ? _searchRaw.trim() : null,
+        onCreateLabel: () => _openLabelCreator(defaultName: _searchRaw.trim()),
       );
     }
 

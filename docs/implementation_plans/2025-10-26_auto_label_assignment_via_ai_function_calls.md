@@ -258,6 +258,38 @@ This addendum strengthens AI decision-making, user control, error handling, obse
 edge-case coverage. It refines the original plan without changing core scope (assign existing labels
 by ID).
 
+## UX Polish — Label Creation and Presentation
+
+The following UX improvements were applied to make label creation and presentation smoother and more
+predictable, based on hands-on usage feedback:
+
+- Preserve user casing end-to-end
+  - Task label selector search no longer lowercases the “Create from search” suggestion; it passes
+    the raw typed text to the label editor unchanged.
+  - Labels settings search behaves the same and opens the editor prefilled with the exact search
+    text (unchanged), if the user taps “Create”.
+  - Rationale: users often include capitalization and emoji in names; we avoid surprising
+    transformations.
+
+- Capitalized search fields where labels are created from search
+  - Task label selector search input uses `TextCapitalization.words`.
+  - Labels settings search input now also uses `TextCapitalization.words`.
+
+- Consistent “Create from search” affordance in settings
+  - When a settings search yields no results, a centered affordance offers to create a new label
+    with the current query, opening the label editor prefilled with that text.
+
+- Label chip presentation refined
+  - In presentation contexts (task view, task cards), chips no longer show the leading color dot.
+  - The frame encodes the color more prominently (stronger border/background); the label text (often
+    with emoji) stands on its own.
+  - In settings, the dot remains unchanged to aid quick visual scanning while managing labels.
+
+- Future idea: “Suggest labels” button
+  - Add an optional “AI suggestions” action on a task to propose labels for existing tasks in bulk.
+    Stays out-of-scope for this iteration but aligns with the function-calling plumbing already in
+    place.
+
 ## Decision Criteria & Prompt Template (Exact Text)
 
 We will extend the checklist updates preconfigured prompt with explicit instructions that define

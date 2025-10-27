@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
+import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -138,4 +141,59 @@ void main() {
 
   // Note: FAB behavior is covered by dedicated editor sheet tests; here we
   // verify presence and focus coverage via other interactions.
+
+  testWidgets('shows create-from-search CTA and opens editor prefilled',
+      (tester) async {
+    // Provide a mock repository to satisfy LabelEditorSheet dependencies.
+    final mockRepo = _MockLabelsRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          labelsRepositoryProvider.overrideWithValue(mockRepo),
+          labelsStreamProvider.overrideWith(
+            (ref) => Stream.value([
+              testLabelDefinition1,
+              testLabelDefinition2,
+            ]),
+          ),
+          labelUsageStatsProvider.overrideWith(
+            (ref) => Stream.value(const <String, int>{}),
+          ),
+        ],
+        child: makeTestableWidgetWithScaffold(const LabelsListPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Enter a query that matches no existing label
+    const query = 'NewLabelX';
+    await tester.enterText(
+      find.byType(TextField, skipOffstage: false).first,
+      query,
+    );
+    await tester.pumpAndSettle();
+
+    // CTA should reflect the exact typed casing
+    expect(find.text('Create "$query" label'), findsOneWidget);
+
+    // Tap to open the label editor, which should be prefilled with the query
+    await tester.tap(find.text('Create "$query" label'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LabelEditorSheet), findsOneWidget);
+    expect(find.text(query), findsWidgets);
+  });
+
+  testWidgets('settings search field capitalizes words', (tester) async {
+    await tester.pumpWidget(
+      _buildPage(labels: [testLabelDefinition1, testLabelDefinition2]),
+    );
+    await tester.pumpAndSettle();
+
+    final searchFieldFinder = find.byType(TextField, skipOffstage: false).first;
+    final tf = tester.widget<TextField>(searchFieldFinder);
+    expect(tf.textCapitalization, TextCapitalization.words);
+  });
 }
+
+class _MockLabelsRepository extends Mock implements LabelsRepository {}
