@@ -18,6 +18,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 // ignore: unused_import
@@ -415,16 +416,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
             repository: ref.read(labelsRepositoryProvider),
           );
 
-          final args =
-              jsonDecode(call.function.arguments) as Map<String, dynamic>;
-          final idsRaw = args['labelIds'];
-          final proposed = <String>[];
-          if (idsRaw is List) {
-            proposed.addAll(idsRaw.map((e) => e.toString()));
-          } else if (idsRaw is String) {
-            proposed
-                .addAll(idsRaw.split(RegExp(r'\s*,\s*')).map((e) => e.trim()));
-          }
+          final proposed = parseLabelIdsFromToolArgs(call.function.arguments);
           // Shadow mode: do not persist if enabled (safe default false)
           var shadow = false;
           try {
@@ -461,17 +453,8 @@ class LottiChecklistStrategy extends ConversationStrategy {
           );
           // Return a structured error response instead of a generic string
           try {
-            final args =
-                jsonDecode(call.function.arguments) as Map<String, dynamic>;
-            final idsRaw = args['labelIds'];
-            final requested = <String>[];
-            if (idsRaw is List) {
-              requested.addAll(idsRaw.map((e) => e.toString()));
-            } else if (idsRaw is String) {
-              requested.addAll(
-                idsRaw.split(RegExp(r'\s*,\s*')).map((e) => e.trim()),
-              );
-            }
+            final requested =
+                parseLabelIdsFromToolArgs(call.function.arguments);
             final errorResponse = jsonEncode({
               'function': 'assign_task_labels',
               'request': {'labelIds': requested},

@@ -35,6 +35,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -1361,17 +1362,8 @@ class UnifiedAiInferenceRepository {
       } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
         // Handle assign task labels (add-only)
         try {
-          final args =
-              jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
-          final idsRaw = args['labelIds'];
-          final proposed = <String>[];
-          if (idsRaw is List) {
-            proposed.addAll(idsRaw.map((e) => e.toString()));
-          } else if (idsRaw is String) {
-            proposed.addAll(
-              idsRaw.split(RegExp(r'\s*,\s*')).map((e) => e.trim()),
-            );
-          }
+          final proposed =
+              parseLabelIdsFromToolArgs(toolCall.function.arguments);
 
           final shadow = await _getFlagSafe(aiLabelAssignmentShadowFlag);
           final processor = LabelAssignmentProcessor(

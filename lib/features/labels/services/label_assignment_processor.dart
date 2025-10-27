@@ -94,7 +94,6 @@ class LabelAssignmentProcessor {
       return LabelAssignmentResult(
           assigned: const [], invalid: const [], skipped: const []);
     }
-// End of file
     if (_rateLimiter.isRateLimited(taskId)) {
       _logging.captureEvent(
         'Rate limited label assignment for task $taskId',

@@ -353,8 +353,8 @@ Assignment rules:
 
 ## Performance Limits and Prompt Size
 
-- Label injection limit: include up to 200 labels. If more exist, include the top 100 by usage and
-  the next 100 alphabetically. Add summary note: “Showing 200 of N labels”.
+- Label injection limit: include up to 100 labels. If more exist, include the top 50 by usage and
+  the next 50 alphabetically. Add summary note: “Showing 100 of N labels”.
 - Sorting: top by usage desc, ties by name asc.
 - JSON encoding: use proper JSON encoding for names to prevent prompt injection via label names.
 
