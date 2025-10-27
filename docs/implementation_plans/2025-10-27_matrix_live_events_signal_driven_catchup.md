@@ -50,7 +50,7 @@
 - MatrixStreamConsumer
   - Start listener:
     - Change `timelineEvents.listen` handler (
-      `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart:498-512`):
+      `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart:498-512`):
       - Keep the first‑event `forceRescan()` branch.
       - Replace `_enqueue(event)` with `_scheduleLiveScan()`.
       - Add a debug log for signal nudge.
@@ -90,7 +90,7 @@
 ## Implementation Steps
 
 1. Replace client stream per‑event processing with signal
-  - Edit `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart`:
+  - Edit `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart`:
     - In `start()` at `:498-512`:
       - Keep the first‑event `forceRescan()` branch.
       - Replace `_enqueue(event)` with `_scheduleLiveScan()`.
@@ -117,7 +117,7 @@
 - Run focused tests for the modified pipeline file via `dart-mcp.run_tests` and then the full suite.
 - Format via `dart-mcp.dart_format`.
 - Maintain one test file per implementation file principle; add tests under
-  `test/features/sync/matrix/pipeline_v2/`.
+  `test/features/sync/matrix/pipeline/`.
 - Ensure tests and analyzer pass before creating new files.
 
 ## Rollout
@@ -137,20 +137,18 @@
 ## Refinements Based on Review
 
 ### 1) _enqueue/_flush Path Clarification
-- After this change, the client stream no longer calls `_enqueue`, so `_pending` remains empty in the default configuration.
-- Keep `_enqueue/_flush` for the legacy/rollback path and tests. They are not exercised when running in signal‑only mode.
-- Documented behavior:
-  - Default: `_pending.length == 0` unless `processClientStreamEvents == true` (see Migration Toggle).
-  - `_flushInterval` and `_maxBatch` only apply to the legacy path.
+- After this change, the client stream no longer calls `_enqueue`, so `_pending` remains empty.
+- Remove `_enqueue/_flush` and related queueing entirely. Catch‑up and live scans are the only
+  sources that call `_processOrdered()`.
+- `_flushInterval` and `_maxBatch` are removed with the queue; metrics `flushes` is expected to be 0.
 
 ### 2) Rollback/Migration
 - No rollback toggle. The client stream no longer feeds `_enqueue` at all. Tests must adapt to
   signal‑only behavior.
 
 ### 3) Performance Considerations
-- `_flushInterval` and `_maxBatch` become effectively unused. Retain temporarily for internal batch
-  helpers (and potential future use), mark them as legacy in docs, and expect `flushes` to remain 0
-  in steady state.
+- With queueing removed, `_flushInterval` and `_maxBatch` no longer exist. Expect `flushes` to
+  remain 0 in steady state; this is intentional.
 
 ### 4) Error Handling in Listener
 - `_scheduleLiveScan()` schedules a timer; `_scanLiveTimeline()` already has try/catch.
@@ -174,7 +172,7 @@
   - Debounce remains 120ms; optionally coalesce concurrent scans via a `_liveScanInFlight` flag to skip overlapping scans if we see churn (can be added if needed post‑rollout).
 
 ### 7) Test Strategy Enhancements
-- Unit tests under `test/features/sync/matrix/pipeline_v2/`:
+- Unit tests under `test/features/sync/matrix/pipeline/`:
   - “Client stream signals rescan (no direct processing)”: verify `_scheduleLiveScan` is called, `_enqueue` is not, and first event triggers `forceRescan(includeCatchUp: true)`.
   - “Pending queue stays empty in signal mode”: push N stream events and assert `_pending.isEmpty`; advancement occurs only after simulated `_scanLiveTimeline()`.
   - “Live timeline null at signal”: no crash; delayed `forceRescan` gets scheduled.
@@ -189,8 +187,8 @@
 - Continue logging marker regression guards via `SyncReadMarkerService`.
 
 ### 9) Documentation and Deprecations
-- Document default signal‑driven ingestion in `docs/sync/` and mark `_flushInterval`/`_maxBatch`
-  as legacy knobs that are unused by the live signal path.
+- Document default signal‑driven ingestion in `docs/sync/` and note that queueing and its knobs
+  (`_flushInterval`, `_maxBatch`) have been removed.
 - Remove V2 from function names, directories, documentation, as there is only one version now.
 
 ### 10) Updated Acceptance

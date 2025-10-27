@@ -76,6 +76,12 @@ void main() {
     );
     await consumer.initialize();
     await consumer.start();
+    // Ensure timers are cancelled and resources are cleaned between tests.
+    addTearDown(() async {
+      try {
+        await consumer.dispose();
+      } catch (_) {}
+    });
     return consumer;
   }
 
@@ -427,7 +433,7 @@ void main() {
         domain: any<String>(named: 'domain'),
         subDomain: 'forceRescan',
       ),
-    ).called(greaterThanOrEqualTo(0));
+    ).called(greaterThanOrEqualTo(1));
   });
 
   test('connectivity increments signalConnectivity counter (consumer level)',
@@ -687,6 +693,9 @@ void main() {
       expect(last, greaterThan(0));
       expect(min, greaterThan(0));
       expect(max, greaterThanOrEqualTo(last));
+      // Explicitly dispose to cancel timers created in the fakeAsync scope.
+      consumer.dispose();
+      async.flushMicrotasks();
     });
   });
 }
