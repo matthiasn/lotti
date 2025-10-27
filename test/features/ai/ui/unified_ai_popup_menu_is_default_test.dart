@@ -29,8 +29,8 @@ void main() {
       String name = 'Test Prompt',
     }) {
       return AiConfig.prompt(
-        id: 'test-id',
-        name: 'Test Prompt',
+        id: id,
+        name: name,
         systemMessage: 'test system',
         userMessage: 'test user',
         defaultModelId: 'test-model',
