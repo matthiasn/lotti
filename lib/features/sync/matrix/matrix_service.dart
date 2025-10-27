@@ -597,6 +597,8 @@ class MatrixService {
     }
   }
 
+  // Raw map accessor removed in favor of the expanded typed SyncMetrics model.
+
   Future<void> forceRescan({bool includeCatchUp = true}) async {
     final p = _pipeline;
     if (p == null) return;

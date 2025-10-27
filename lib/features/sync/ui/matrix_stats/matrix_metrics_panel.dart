@@ -105,7 +105,7 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
 
   @override
   Widget build(BuildContext context) {
-    return SyncMetricsSection(
+    final section = SyncMetricsSection(
       metrics: _metricsMap ?? const <String, int>{},
       lastUpdated: _lastUpdated,
       title: context.messages.settingsMatrixMetrics,
@@ -134,6 +134,20 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
       onRefresh: _refreshDiagnostics,
       fetchDiagnostics: () =>
           ref.read(matrixServiceProvider).getSyncDiagnosticsText(),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final needsScroll = constraints.hasBoundedHeight;
+        if (needsScroll) {
+          return SingleChildScrollView(
+            primary: false,
+            padding: EdgeInsets.zero,
+            child: section,
+          );
+        }
+        return section;
+      },
     );
   }
 }

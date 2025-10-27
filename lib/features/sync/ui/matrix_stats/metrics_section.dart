@@ -64,6 +64,13 @@ class SyncMetricsSection extends StatelessWidget {
       'staleAttachmentPurges': 'Stale Attachment Purges',
       'lookBehindMerges': 'Look-behind Merges',
       'lastLookBehindTail': 'Last Look-behind Tail',
+      // Signals (ingestion)
+      'signalClientStream': 'Signals (client stream)',
+      'signalTimelineCallbacks': 'Signals (timeline callbacks)',
+      'signalConnectivity': 'Signals (connectivity)',
+      'signalLatencyLastMs': 'Signal Latency (last ms)',
+      'signalLatencyMinMs': 'Signal Latency (min ms)',
+      'signalLatencyMaxMs': 'Signal Latency (max ms)',
     };
     return pretty[key] ?? key;
   }
@@ -96,7 +103,19 @@ class SyncMetricsSection extends StatelessWidget {
             k == 'staleAttachmentPurges' ||
             k.startsWith('droppedByType.'));
     final lookBehind = _select(
-        v2, (k) => k == 'lookBehindMerges' || k == 'lastLookBehindTail');
+      v2,
+      (k) => k == 'lookBehindMerges' || k == 'lastLookBehindTail',
+    ).where((e) => e.value != 0).toList();
+    final signals = _select(
+      v2,
+      (k) =>
+          k == 'signalClientStream' ||
+          k == 'signalTimelineCallbacks' ||
+          k == 'signalConnectivity' ||
+          k == 'signalLatencyLastMs' ||
+          k == 'signalLatencyMinMs' ||
+          k == 'signalLatencyMaxMs',
+    ).where((e) => e.value != 0).toList();
     final sections = <String, List<MapEntry<String, int>>>{
       'Throughput': throughput,
       'Reliability': reliability,
@@ -104,6 +123,9 @@ class SyncMetricsSection extends StatelessWidget {
     };
     if (lookBehind.isNotEmpty) {
       sections['Look-behind'] = lookBehind;
+    }
+    if (signals.isNotEmpty) {
+      sections['Signals'] = signals;
     }
     return sections;
   }
