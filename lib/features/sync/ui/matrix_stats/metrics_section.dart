@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // metrics section (renamed from v2_metrics_section)
 import 'package:lotti/features/sync/ui/matrix_stats/diagnostics_panel.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_actions.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_grid.dart';

@@ -287,8 +287,6 @@
   "settingsMatrixCount": "Count",
   "settingsMatrixMetric": "Metric",
   "settingsMatrixValue": "Value",
-  "settingsMatrixSyncMetrics": "Sync V2 Metrics",
-  "settingsMatrixSyncMetricsNoData": "Sync V2 Metrics: no data",
   "settingsMatrixLastUpdated": "Last updated:",
   "settingsMatrixRefresh": "Refresh",
   "settingsMatrixTitle": "Matrix Sync Settings",

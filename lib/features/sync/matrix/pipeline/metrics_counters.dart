@@ -34,6 +34,14 @@ class MetricsCounters {
   int staleAttachmentPurges = 0;
   int selfEventsSuppressed = 0;
 
+  // Signal-driven ingestion observability
+  int signalClientStream = 0;
+  int signalTimelineCallbacks = 0;
+  int signalConnectivity = 0;
+  int signalLatencyLastMs = 0;
+  int signalLatencyMinMs = 0;
+  int signalLatencyMaxMs = 0;
+
   final Map<String, int> processedByType = <String, int>{};
   final Map<String, int> droppedByType = <String, int>{};
 
@@ -103,6 +111,32 @@ class MetricsCounters {
     circuitOpens++;
   }
 
+  void incSignalClientStream() {
+    if (!collect) return;
+    signalClientStream++;
+  }
+
+  void incSignalTimelineCallbacks() {
+    if (!collect) return;
+    signalTimelineCallbacks++;
+  }
+
+  void incSignalConnectivity() {
+    if (!collect) return;
+    signalConnectivity++;
+  }
+
+  void recordSignalLatencyMs(int ms) {
+    if (!collect) return;
+    signalLatencyLastMs = ms;
+    if (signalLatencyMinMs == 0 || ms < signalLatencyMinMs) {
+      signalLatencyMinMs = ms;
+    }
+    if (ms > signalLatencyMaxMs) {
+      signalLatencyMaxMs = ms;
+    }
+  }
+
   void recordLookBehindMerge(int tail) {
     if (!collect) return;
     lookBehindMerges++;
@@ -155,13 +189,20 @@ class MetricsCounters {
       ..putIfAbsent('staleAttachmentPurges', () => staleAttachmentPurges)
       ..putIfAbsent('selfEventsSuppressed', () => selfEventsSuppressed)
       ..putIfAbsent('lookBehindMerges', () => lookBehindMerges)
-      ..putIfAbsent('lastLookBehindTail', () => lastLookBehindTail);
+      ..putIfAbsent('lastLookBehindTail', () => lastLookBehindTail)
+      // Signal ingestion metrics
+      ..putIfAbsent('signalClientStream', () => signalClientStream)
+      ..putIfAbsent('signalTimelineCallbacks', () => signalTimelineCallbacks)
+      ..putIfAbsent('signalConnectivity', () => signalConnectivity)
+      ..putIfAbsent('signalLatencyLastMs', () => signalLatencyLastMs)
+      ..putIfAbsent('signalLatencyMinMs', () => signalLatencyMinMs)
+      ..putIfAbsent('signalLatencyMaxMs', () => signalLatencyMaxMs);
     return base;
   }
 
   String buildFlushLog({required int retriesPending}) {
     final base =
-        'v2 metrics flush=$flushes processed=$processed skipped=$skipped failures=$failures prefetch=$prefetch catchup=$catchupBatches skippedByRetry=$skippedByRetryLimit retriesScheduled=$retriesScheduled retriesPending=$retriesPending';
+        'metrics flush=$flushes processed=$processed skipped=$skipped failures=$failures prefetch=$prefetch catchup=$catchupBatches skippedByRetry=$skippedByRetryLimit retriesScheduled=$retriesScheduled retriesPending=$retriesPending signals(client=$signalClientStream,timeline=$signalTimelineCallbacks,net=$signalConnectivity,lat=${signalLatencyLastMs}ms)';
     // Append a compact processedByType breakdown (e.g., entryLink=3,journalEntity=10)
     if (processedByType.isEmpty) return base;
     final entries = processedByType.entries.toList()

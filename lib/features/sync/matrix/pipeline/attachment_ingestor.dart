@@ -14,7 +14,7 @@ import 'package:matrix/matrix.dart';
 /// AttachmentIngestor
 ///
 /// Purpose
-/// - Encapsulates first-pass attachment handling for the V2 pipeline:
+/// - Encapsulates first-pass attachment handling for the sync pipeline:
 ///   - Record descriptors into AttachmentIndex and emit observability logs
 ///   - Optionally prefetch media (image/audio/video) when policy allows
 ///   - Clear pending jsonPaths via [DescriptorCatchUpManager] and nudge scans

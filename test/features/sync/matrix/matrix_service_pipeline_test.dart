@@ -122,7 +122,7 @@ void main() {
       collectSyncMetrics: collectMetrics,
       roomManager: roomManager,
       sessionManager: sessionManager,
-      v2PipelineOverride: pipeline,
+      pipelineOverride: pipeline,
       attachmentIndex: attachmentIndex,
       connectivityStream: connectivityStream,
     );

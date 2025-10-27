@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix/stats_signature.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
-import 'package:lotti/features/sync/ui/matrix_stats/v2_metrics_section.dart';
+import 'package:lotti/features/sync/ui/matrix_stats/metrics_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 
-/// Typed metrics panel responsible for polling MatrixService V2 metrics and
+/// Typed metrics panel responsible for polling MatrixService metrics and
 /// exposing the refresh/rescan actions to the UI.
 class MatrixSyncMetricsPanel extends ConsumerStatefulWidget {
   const MatrixSyncMetricsPanel({super.key});
@@ -56,8 +56,8 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
   }
 
   Future<void> _refreshOnce({bool forceTimestamp = false}) async {
-    final v2 = await ref.read(matrixServiceProvider).getSyncMetrics();
-    final map = v2?.toMap();
+    final m = await ref.read(matrixServiceProvider).getSyncMetrics();
+    final map = m?.toMap();
     if (!mounted || map == null || map.isEmpty) return;
     _applyMetricsUpdate(map, forceTimestamp: forceTimestamp);
   }

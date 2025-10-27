@@ -50,7 +50,7 @@ class _ProcessOutcome {
 
 // Retry info moved to retry_and_circuit.dart
 
-/// Stream-first sync consumer (V2 pipeline).
+/// Stream-first sync consumer.
 ///
 /// Responsibilities:
 /// - Attach-time catch-up using SDK pagination/backfill when available and a
@@ -208,6 +208,10 @@ class MatrixStreamConsumer implements SyncPipeline {
   final int _liveScanSteadyTail;
   final int? _overrideAuditTail; // optional override for tests
   final bool _dropOldPayloadsInLiveScan;
+
+  // Tracks the last time we received a signal (client stream or timeline)
+  // to compute signal->scan latency when the next scan runs.
+  DateTime? _lastSignalAt;
 
   // Tracks eventIds that reported rows=0 while predicted status suggests
   // incoming is newer (missing base). These should be retried and block
@@ -502,7 +506,25 @@ class MatrixStreamConsumer implements SyncPipeline {
         // Attempt a catch-up + live scan in the background.
         unawaited(forceRescan());
       }
-      _scheduleLiveScan();
+      // Record client-stream signal and schedule a scan with safeguards.
+      if (_collectMetrics) _metrics.incSignalClientStream();
+      _loggingService.captureEvent(
+        'signal.clientStream',
+        domain: syncLoggingDomain,
+        subDomain: 'signal',
+      );
+      try {
+        _scheduleLiveScan();
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: syncLoggingDomain,
+          subDomain: 'signal.schedule',
+          stackTrace: st,
+        );
+        // Fallback: run a catch-up + live scan to recover
+        unawaited(forceRescan());
+      }
     });
 
     // Also attach live timeline listeners to proactively scan in case the
@@ -510,12 +532,33 @@ class MatrixStreamConsumer implements SyncPipeline {
     final room = _roomManager.currentRoom;
     if (room != null) {
       try {
+        // Wrap timeline callbacks to count and log signals
+        void onTimelineSignal() {
+          if (_collectMetrics) _metrics.incSignalTimelineCallbacks();
+          _loggingService.captureEvent(
+            'signal.timeline',
+            domain: syncLoggingDomain,
+            subDomain: 'signal',
+          );
+          try {
+            _scheduleLiveScan();
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: syncLoggingDomain,
+              subDomain: 'signal.schedule',
+              stackTrace: st,
+            );
+            unawaited(forceRescan());
+          }
+        }
+
         final tl = await room.getTimeline(
-          onNewEvent: _scheduleLiveScan,
-          onInsert: (_) => _scheduleLiveScan(),
-          onChange: (_) => _scheduleLiveScan(),
-          onRemove: (_) => _scheduleLiveScan(),
-          onUpdate: _scheduleLiveScan,
+          onNewEvent: onTimelineSignal,
+          onInsert: (_) => onTimelineSignal(),
+          onChange: (_) => onTimelineSignal(),
+          onRemove: (_) => onTimelineSignal(),
+          onUpdate: onTimelineSignal,
         );
         _liveTimeline = tl;
         // Size the initial audit tail based on offline delta (or override).
@@ -524,7 +567,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         // Proactively scan once at startup, now that initial catch‑up has run
         // (or been attempted) to avoid skipping backlog.
         _loggingService.captureEvent(
-          'v2 start: scheduling initial liveScan',
+          'start: scheduling initial liveScan',
           domain: syncLoggingDomain,
           subDomain: 'start.liveScan',
         );
@@ -538,7 +581,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         // catch-up attempt had no active room.
         if (_lastProcessedEventId != null) {
           _loggingService.captureEvent(
-            'v2 start: scheduling catchUp retry',
+            'start: scheduling catchUp retry',
             domain: syncLoggingDomain,
             subDomain: 'start.catchUpRetry',
           );
@@ -696,6 +739,16 @@ class MatrixStreamConsumer implements SyncPipeline {
   Timeline? _liveTimeline;
 
   void _scheduleLiveScan() {
+    // Note: it's valid for _liveTimeline to be null during early startup;
+    // record the signal and log for observability.
+    if (_collectMetrics) _lastSignalAt = clock.now();
+    if (_liveTimeline == null) {
+      _loggingService.captureEvent(
+        'signal.noTimeline',
+        domain: syncLoggingDomain,
+        subDomain: 'signal',
+      );
+    }
     _liveScanTimer?.cancel();
     _liveScanTimer = Timer(const Duration(milliseconds: 120), () {
       unawaited(_scanLiveTimeline());
@@ -706,6 +759,12 @@ class MatrixStreamConsumer implements SyncPipeline {
     final tl = _liveTimeline;
     if (tl == null) return;
     try {
+      // Record signal->scan latency if a signal was captured recently.
+      if (_collectMetrics && _lastSignalAt != null) {
+        final ms = clock.now().difference(_lastSignalAt!).inMilliseconds;
+        _metrics.recordSignalLatencyMs(ms);
+        _lastSignalAt = null;
+      }
       // Build the normal strictly-after slice (no timestamp gating for
       // payload discovery; gating applies only to attachment prefetch).
       final afterSlice = msh.buildLiveScanSlice(
@@ -756,7 +815,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         }
         if (_collectMetrics) {
           _loggingService.captureEvent(
-            'v2 liveScan processed=${toProcess.length} latest=${_lastProcessedEventId ?? 'null'}',
+            'liveScan processed=${toProcess.length} latest=${_lastProcessedEventId ?? 'null'}',
             domain: syncLoggingDomain,
             subDomain: 'liveScan',
           );
@@ -928,7 +987,7 @@ class MatrixStreamConsumer implements SyncPipeline {
             }
             if (processedOk && _collectMetrics) {
               _loggingService.captureEvent(
-                'v2 processed via no-msgtype fallback: $id',
+                'processed via no-msgtype fallback: $id',
                 domain: syncLoggingDomain,
                 subDomain: 'fallback',
               );
@@ -1239,4 +1298,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   }
 
   // Debug helpers removed in favor of metricsSnapshot() fields.
+  // Record a connectivity-driven signal for observability.
+  void recordConnectivitySignal() {
+    if (_collectMetrics) _metrics.incSignalConnectivity();
+  }
 }

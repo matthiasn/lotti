@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/sync/ui/matrix_stats/matrix_v2_metrics_panel.dart';
+import 'package:lotti/features/sync/ui/matrix_stats/matrix_metrics_panel.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/message_counts_view.dart';
 
 class IncomingStats extends ConsumerStatefulWidget {

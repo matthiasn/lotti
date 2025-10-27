@@ -45,7 +45,7 @@ import 'package:meta/meta.dart';
 ///   ready or network is flaky.
 /// - On connectivity regain, nudges the pipeline again with a force rescan to
 ///   recover from offline-created bursts.
-/// - Exposes `getSyncMetrics()`, `forceV2Rescan()`, `retryV2Now()`, and
+/// - Exposes `getSyncMetrics()`, `forceRescan()`, `retryNow()`, and
 ///   `getSyncDiagnosticsText()` for UI (Matrix Stats) and tooling.
 class MatrixService {
   MatrixService({
@@ -69,8 +69,8 @@ class MatrixService {
     MatrixSessionManager? sessionManager,
     SyncLifecycleCoordinator? lifecycleCoordinator,
     SyncEngine? syncEngine,
-    // Test-only seam to inject a V2 pipeline
-    @visibleForTesting MatrixStreamConsumer? v2PipelineOverride,
+    // Test-only seam to inject a pipeline instance
+    @visibleForTesting MatrixStreamConsumer? pipelineOverride,
     // Optional seam to inject connectivity changes (for tests)
     this.connectivityStream,
   })  : _gateway = gateway,
@@ -124,7 +124,7 @@ class MatrixService {
       }
       _syncEngine = syncEngine;
     } else {
-      final pipeline = v2PipelineOverride ??
+      final pipeline = pipelineOverride ??
           MatrixStreamConsumer(
             sessionManager: _sessionManager,
             roomManager: _roomManager,
@@ -169,9 +169,9 @@ class MatrixService {
       }());
 
       if (syncEngine != null) {
-        if (v2PipelineOverride == null) {
+        if (pipelineOverride == null) {
           throw ArgumentError(
-            'Providing a SyncEngine requires supplying v2PipelineOverride so '
+            'Providing a SyncEngine requires supplying pipelineOverride so '
             'MatrixService and the engine share the same pipeline instance.',
           );
         }
@@ -229,6 +229,8 @@ class MatrixService {
               domain: 'MATRIX_SERVICE',
               subDomain: 'forceRescan',
             );
+            // Record connectivity as a signal for metrics/observability.
+            _pipeline?.recordConnectivitySignal();
             await _pipeline?.forceRescan();
             _loggingService.captureEvent(
               'service.forceRescan.connectivity.done',
@@ -598,7 +600,7 @@ class MatrixService {
     if (p == null) return;
     await p.forceRescan(includeCatchUp: includeCatchUp);
     _loggingService.captureEvent(
-      'V2 forceRescan(includeCatchUp=$includeCatchUp) invoked',
+      'forceRescan(includeCatchUp=$includeCatchUp) invoked',
       domain: 'MATRIX_SERVICE',
       subDomain: 'forceRescan',
     );
@@ -609,7 +611,7 @@ class MatrixService {
     if (p == null) return;
     await p.retryNow();
     _loggingService.captureEvent(
-      'V2 retryNow invoked',
+      'retryNow invoked',
       domain: 'MATRIX_SERVICE',
       subDomain: 'retryNow',
     );
@@ -617,7 +619,7 @@ class MatrixService {
 
   Future<String> getSyncDiagnosticsText() async {
     final p = _pipeline;
-    if (p == null) return 'V2 pipeline disabled';
+    if (p == null) return 'pipeline disabled';
     // Use raw snapshot so we include diagnostics-only fields
     final map = p.metricsSnapshot();
     final lines = map.entries.map((e) => '${e.key}=${e.value}').toList();
@@ -632,10 +634,10 @@ class MatrixService {
   }
 
   // Visible for testing only
-  /// Exposes the V2 pipeline instance for tests. Returns `null` when V2 is
-  /// disabled or the service was constructed without a pipeline.
+  /// Exposes the pipeline instance for tests. Returns `null` when disabled or
+  /// the service was constructed without a pipeline.
   @visibleForTesting
-  MatrixStreamConsumer? get debugV2Pipeline => _pipeline;
+  MatrixStreamConsumer? get debugPipeline => _pipeline;
 
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
         session: _sessionManager,

@@ -264,7 +264,7 @@ void main() {
         );
 
         await alice.init();
-        expect(alice.debugV2Pipeline, isNotNull);
+        expect(alice.debugPipeline, isNotNull);
 
         // Allow time for constructor initialization to complete
         await Future<void>.delayed(const Duration(seconds: 1));
@@ -311,7 +311,7 @@ void main() {
         );
 
         await bob.init();
-        expect(bob.debugV2Pipeline, isNotNull);
+        expect(bob.debugPipeline, isNotNull);
 
         // Allow time for constructor initialization to complete
         await Future<void>.delayed(const Duration(seconds: 1));
@@ -489,12 +489,12 @@ void main() {
         await alice.forceRescan();
         debugPrint(
           'Alice V2 metrics after rescan: '
-          '${alice.debugV2Pipeline?.metricsSnapshot()}',
+          '${alice.debugPipeline?.metricsSnapshot()}',
         );
         await bob.forceRescan();
         debugPrint(
           'Bob V2 metrics after rescan: '
-          '${bob.debugV2Pipeline?.metricsSnapshot()}',
+          '${bob.debugPipeline?.metricsSnapshot()}',
         );
 
         var lastAliceCount = -1;

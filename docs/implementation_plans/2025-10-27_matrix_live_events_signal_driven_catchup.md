@@ -3,21 +3,20 @@
 ## Summary
 
 - Devices can miss updates when a live event advances the read marker beyond unseen backlog during offline windows. The next catch‑up then skips older events.
-- Current V2 pipeline processes client stream events directly and can advance markers before a catch‑up runs.
+- The former pipeline processed client stream events directly and could advance markers before a catch‑up ran.
 - Change: Treat all live events as lightweight signals to rescan/catch‑up, never as units to process directly. This keeps marker advancement coupled to ordered slices from timeline scans/catch‑up only.
 
 ## Current Behavior (grounded)
 
-- Client stream processing path is active:
-  - `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart:498` subscribes to `timelineEvents`.
-  - `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart:511` enqueues events for per‑event processing via `_enqueue()` and `_flush()`.
+- Client stream previously enqueued per‑event work; now it only signals scans:
+  - `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart` subscribes to `timelineEvents` and calls `_scheduleLiveScan()` (no `_enqueue`).
 - Live timeline callbacks already behave as a signal:
-  - `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart:520-524` attach `onNewEvent`/ `onUpdate` etc → `_scheduleLiveScan()`.
-  - `_scheduleLiveScan()` debounces and calls `_scanLiveTimeline()` (`:715-733`, `:722`).
+  - `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart` attaches `onNewEvent`/`onUpdate` etc → `_scheduleLiveScan()`.
+  - `_scheduleLiveScan()` debounces and calls `_scanLiveTimeline()`.
 - Connectivity regain nudges the pipeline:
   - `lib/features/sync/matrix/matrix_service.dart:292-315` calls `pipeline.forceRescan()` on online.
 - Marker advancement happens only during ordered batch processing:
-  - `_processOrdered()` computes `latestEventId` over sync payloads and persists local + schedules remote marker (`lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart:1015-1053`).
+  - `_processOrdered()` computes `latestEventId` over sync payloads and persists local + schedules remote marker (`lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart`).
 
 ## Problem
 
@@ -55,7 +54,7 @@
       - Keep the first‑event `forceRescan()` branch.
       - Replace `_enqueue(event)` with `_scheduleLiveScan()`.
       - Add a debug log for signal nudge.
-  - Remove `_enqueue/_flush`, `_pending`, `flushInterval`, and `maxBatch`. Catch‑up and live scans
+- Remove `_enqueue/_flush`, `_pending`, `flushInterval`, and `maxBatch`. Catch‑up and live scans
     are the only sources that call `_processOrdered()`.
   - No changes to `_attachCatchUp()` and `_scanLiveTimeline()`; they already sort, dedupe, and apply
     monotonic rules.
@@ -155,22 +154,22 @@
 
 ### 4) Error Handling in Listener
 - `_scheduleLiveScan()` schedules a timer; `_scanLiveTimeline()` already has try/catch.
-- Strengthen listener:
-  - If `_liveTimeline == null`, still schedule a scan (NOP), then also schedule a one‑shot delayed `forceRescan(includeCatchUp: true)` (e.g., 300ms) to bootstrap after attach.
-  - Wrap scheduling in try/catch; on error log `clientStream.signal.error` and fall back to `forceRescan(includeCatchUp: true)`.
+- Implemented:
+  - If `_liveTimeline == null`, we log `signal.noTimeline` (safe to ignore; hydration/attach will enable scans shortly).
+  - Wrap scheduling in try/catch; on error, log and fall back to `forceRescan(includeCatchUp: true)`.
 
 ### 5) Metrics and Observability
-- Add new counters when `collectMetrics == true`:
+- Implemented when `collectMetrics == true`:
   - `signalClientStream` — client stream signal nudges.
-  - `signalConnectivity` — connectivity‑driven rescans (incremented in MatrixService before calling `forceRescan`).
-  - `signalTimelineCallbacks` — onNewEvent/onUpdate driven nudges from live timeline.
-- Add latency tracking:
-  - Record `lastSignalAt` on signal; compute `signalToScanLatencyMs` at the start of `_scanLiveTimeline()`; store last/min/max.
-- Expect `flushes` to be 0; this is expected and should not be treated as regression.
+  - `signalConnectivity` — connectivity‑driven nudges (recorded via `MatrixService ➜ pipeline.recordConnectivitySignal()` before `forceRescan`).
+  - `signalTimelineCallbacks` — live timeline callback nudges.
+- Latency tracking:
+  - Record `lastSignalAt` on signal; compute latency at the start of `_scanLiveTimeline()`; expose `signalLatencyLastMs`, `signalLatencyMinMs`, `signalLatencyMaxMs`.
+- Expect `flushes` to be 0 in signal mode; not a regression.
 
 ### 6) Edge Cases
 - `_liveTimeline == null` at signal time:
-  - Schedule the scan anyway (safe no‑op), plus a one‑shot delayed `forceRescan()` to kickstart after attach.
+  - We log and still schedule the scan (safe no‑op). Hydration/catch‑up flows will bring the timeline online.
 - Rapid event bursts:
   - Debounce remains 120ms; optionally coalesce concurrent scans via a `_liveScanInFlight` flag to skip overlapping scans if we see churn (can be added if needed post‑rollout).
 
