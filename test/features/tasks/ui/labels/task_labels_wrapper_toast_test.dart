@@ -15,6 +15,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -72,6 +73,7 @@ void main() {
     final updateNotifications = MockUpdateNotifications();
     final repo = _MockLabelsRepository();
     final events = LabelAssignmentEventService();
+    final loggingService = MockLoggingService();
 
     await getIt.reset();
     getIt
@@ -79,7 +81,8 @@ void main() {
       ..registerSingleton<EditorStateService>(editorStateService)
       ..registerSingleton<JournalDb>(journalDb)
       ..registerSingleton<UpdateNotifications>(updateNotifications)
-      ..registerSingleton<LabelAssignmentEventService>(events);
+      ..registerSingleton<LabelAssignmentEventService>(events)
+      ..registerSingleton<LoggingService>(loggingService);
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
     when(() => cacheService.getLabelById(testLabelDefinition1.id))
@@ -131,6 +134,12 @@ void main() {
           labelId: any(named: 'labelId'),
         )).thenAnswer((_) async => true);
 
+    when(() => loggingService.captureEvent(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String?>(named: 'subDomain'),
+        )).thenAnswer((_) {});
+
     await tester.tap(find.text('Undo'));
     await tester.pump();
 
@@ -152,6 +161,7 @@ void main() {
     final updateNotifications = MockUpdateNotifications();
     final repo = _MockLabelsRepository();
     final events = LabelAssignmentEventService();
+    final loggingService = MockLoggingService();
 
     await getIt.reset();
     getIt
@@ -159,7 +169,8 @@ void main() {
       ..registerSingleton<EditorStateService>(editorStateService)
       ..registerSingleton<JournalDb>(journalDb)
       ..registerSingleton<UpdateNotifications>(updateNotifications)
-      ..registerSingleton<LabelAssignmentEventService>(events);
+      ..registerSingleton<LabelAssignmentEventService>(events)
+      ..registerSingleton<LoggingService>(loggingService);
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
     when(() => cacheService.getLabelById(testLabelDefinition1.id))
@@ -215,6 +226,7 @@ void main() {
     final journalDb = MockJournalDb();
     final updateNotifications = MockUpdateNotifications();
     final events = LabelAssignmentEventService();
+    final loggingService = MockLoggingService();
 
     await getIt.reset();
     getIt
@@ -222,7 +234,8 @@ void main() {
       ..registerSingleton<EditorStateService>(editorStateService)
       ..registerSingleton<JournalDb>(journalDb)
       ..registerSingleton<UpdateNotifications>(updateNotifications)
-      ..registerSingleton<LabelAssignmentEventService>(events);
+      ..registerSingleton<LabelAssignmentEventService>(events)
+      ..registerSingleton<LoggingService>(loggingService);
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
     when(() => cacheService.getLabelById(testLabelDefinition1.id))
@@ -269,5 +282,98 @@ void main() {
         taskId: task.meta.id, assignedIds: [testLabelDefinition1.id]));
     await tester.pump();
     expect(find.textContaining('Assigned:'), findsNothing);
+  });
+
+  testWidgets('logs undo_triggered metrics when Undo tapped', (tester) async {
+    final cacheService = MockEntitiesCacheService();
+    final editorStateService = MockEditorStateService();
+    final journalDb = MockJournalDb();
+    final updateNotifications = MockUpdateNotifications();
+    final repo = _MockLabelsRepository();
+    final events = LabelAssignmentEventService();
+    final loggingService = MockLoggingService();
+
+    await getIt.reset();
+    getIt
+      ..registerSingleton<EntitiesCacheService>(cacheService)
+      ..registerSingleton<EditorStateService>(editorStateService)
+      ..registerSingleton<JournalDb>(journalDb)
+      ..registerSingleton<UpdateNotifications>(updateNotifications)
+      ..registerSingleton<LabelAssignmentEventService>(events)
+      ..registerSingleton<LoggingService>(loggingService);
+
+    when(() => cacheService.showPrivateEntries).thenReturn(true);
+    when(() => cacheService.getLabelById(testLabelDefinition1.id))
+        .thenReturn(testLabelDefinition1);
+    when(() => cacheService.getLabelById(testLabelDefinition2.id))
+        .thenReturn(testLabelDefinition2);
+    when(() => cacheService.sortedLabels)
+        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
+
+    final task = _task('metrics-task');
+    final widget = ProviderScope(
+      overrides: [
+        entryControllerProvider(id: task.meta.id).overrideWith(
+          () => _TestEntryController(task),
+        ),
+        labelsStreamProvider.overrideWith(
+          (ref) => Stream<List<LabelDefinition>>.value(
+            [testLabelDefinition1, testLabelDefinition2],
+          ),
+        ),
+        labelsRepositoryProvider.overrideWithValue(repo),
+      ],
+      child: makeTestableWidgetWithScaffold(
+        TaskLabelsWrapper(taskId: task.meta.id),
+      ),
+    );
+
+    await tester.pumpWidget(widget);
+    await tester.pumpAndSettle();
+
+    // Publish event and expect toast
+    events.publish(
+      LabelAssignmentEvent(
+        taskId: task.meta.id,
+        assignedIds: [testLabelDefinition1.id, testLabelDefinition2.id],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Assigned:'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+
+    // Setup mocks for undo action
+    when(() => repo.removeLabel(
+          journalEntityId: any(named: 'journalEntityId'),
+          labelId: any(named: 'labelId'),
+        )).thenAnswer((_) async => true);
+
+    when(() => loggingService.captureEvent(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String?>(named: 'subDomain'),
+        )).thenAnswer((_) {});
+
+    // Tap Undo
+    await tester.tap(find.text('Undo'));
+    await tester.pump();
+
+    // Verify labels were removed
+    verify(() => repo.removeLabel(
+          journalEntityId: task.meta.id,
+          labelId: testLabelDefinition1.id,
+        )).called(1);
+    verify(() => repo.removeLabel(
+          journalEntityId: task.meta.id,
+          labelId: testLabelDefinition2.id,
+        )).called(1);
+
+    // Verify metrics were logged
+    verify(() => loggingService.captureEvent(
+          'undo_triggered',
+          domain: 'labels_ai_assignment',
+          subDomain: 'ui',
+        )).called(1);
   });
 }

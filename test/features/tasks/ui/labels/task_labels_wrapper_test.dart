@@ -14,6 +14,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -88,7 +89,8 @@ void main() {
       ..registerSingleton<EntitiesCacheService>(cacheService)
       ..registerSingleton<EditorStateService>(editorStateService)
       ..registerSingleton<JournalDb>(journalDb)
-      ..registerSingleton<UpdateNotifications>(updateNotifications);
+      ..registerSingleton<UpdateNotifications>(updateNotifications)
+      ..registerSingleton<LoggingService>(MockLoggingService());
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
     when(() => cacheService.getLabelById(testLabelDefinition1.id))

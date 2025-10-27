@@ -11,6 +11,7 @@ import 'package:lotti/features/tasks/ui/labels/task_labels_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 
 class TaskLabelsWrapper extends ConsumerWidget {
   const TaskLabelsWrapper({
@@ -48,6 +49,12 @@ class TaskLabelsWrapper extends ConsumerWidget {
                 for (final id in event.assignedIds) {
                   await repo.removeLabel(journalEntityId: taskId, labelId: id);
                 }
+                // Log undo metrics
+                getIt<LoggingService>().captureEvent(
+                  'undo_triggered',
+                  domain: 'labels_ai_assignment',
+                  subDomain: 'ui',
+                );
               },
             ),
           ),
