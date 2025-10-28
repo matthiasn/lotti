@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/cards/modal_card.dart';
+import 'package:lotti/widgets/modal/animated_modal_item_controller.dart';
 
 void main() {
   group('ModalCard', () {
@@ -11,6 +12,11 @@ void main() {
       Color? shadowColor,
       Color? backgroundColor,
       ThemeData? theme,
+      VoidCallback? onTap,
+      bool isDisabled = false,
+      AnimatedModalItemController? animationController,
+      BoxBorder? border,
+      BorderRadius? borderRadius,
     }) {
       return MaterialApp(
         theme: theme ?? ThemeData.light(),
@@ -19,6 +25,11 @@ void main() {
             child: ModalCard(
               padding: padding,
               backgroundColor: backgroundColor,
+              onTap: onTap,
+              isDisabled: isDisabled,
+              animationController: animationController,
+              border: border,
+              borderRadius: borderRadius,
               child: child,
             ),
           ),
@@ -292,6 +303,163 @@ void main() {
       final card = tester.widget<Card>(find.byType(Card));
       expect(card.color,
           equals(ThemeData.dark().colorScheme.surfaceContainerHighest));
+    });
+
+    // Border and animation tests
+    group('border and borderRadius', () {
+      testWidgets('applies custom border when provided', (tester) async {
+        final customBorder = Border.all(color: Colors.red, width: 3);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            border: customBorder,
+            child: const Text('Bordered Card'),
+          ),
+        );
+
+        // Find the outer Container that wraps the Card
+        final containers = find.byType(Container);
+        expect(containers, findsWidgets);
+
+        // The outer container should have the border decoration
+        final outerContainer = tester.widgetList<Container>(containers).first;
+        final decoration = outerContainer.decoration as BoxDecoration?;
+
+        expect(decoration, isNotNull);
+        expect(decoration!.border, equals(customBorder));
+      });
+
+      testWidgets('applies custom borderRadius when provided', (tester) async {
+        const customBorderRadius = BorderRadius.all(Radius.circular(16));
+
+        await tester.pumpWidget(
+          createTestWidget(
+            borderRadius: customBorderRadius,
+            child: const Text('Rounded Card'),
+          ),
+        );
+
+        expect(find.text('Rounded Card'), findsOneWidget);
+        // BorderRadius is applied to both Container and Card shape
+      });
+
+      testWidgets('combines border and borderRadius correctly', (tester) async {
+        final customBorder = Border.all(color: Colors.blue, width: 2);
+        const customBorderRadius = BorderRadius.all(Radius.circular(12));
+
+        await tester.pumpWidget(
+          createTestWidget(
+            border: customBorder,
+            borderRadius: customBorderRadius,
+            child: const Text('Border with Radius'),
+          ),
+        );
+
+        final containers = find.byType(Container);
+        final outerContainer = tester.widgetList<Container>(containers).first;
+        final decoration = outerContainer.decoration as BoxDecoration?;
+
+        expect(decoration, isNotNull);
+        expect(decoration!.border, equals(customBorder));
+        expect(decoration.borderRadius, equals(customBorderRadius));
+      });
+
+      testWidgets('works without border (null border)', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('No Border'),
+          ),
+        );
+
+        expect(find.text('No Border'), findsOneWidget);
+        expect(find.byType(Card), findsOneWidget);
+      });
+    });
+
+    group('tap handlers and animation', () {
+      testWidgets('calls onTap when tapped', (tester) async {
+        var tapCount = 0;
+
+        await tester.pumpWidget(
+          createTestWidget(
+            onTap: () => tapCount++,
+            child: const Text('Tappable Card'),
+          ),
+        );
+
+        await tester.tap(find.text('Tappable Card'));
+        await tester.pumpAndSettle();
+
+        expect(tapCount, 1);
+      });
+
+      testWidgets('does not call onTap when isDisabled is true',
+          (tester) async {
+        var tapCount = 0;
+
+        await tester.pumpWidget(
+          createTestWidget(
+            onTap: () => tapCount++,
+            isDisabled: true,
+            child: const Text('Disabled Card'),
+          ),
+        );
+
+        await tester.tap(find.text('Disabled Card'));
+        await tester.pumpAndSettle();
+
+        expect(tapCount, 0);
+      });
+
+      testWidgets('handles tap without animation controller', (tester) async {
+        var tapCount = 0;
+
+        await tester.pumpWidget(
+          createTestWidget(
+            onTap: () => tapCount++,
+            child: const Text('Animated Card'),
+          ),
+        );
+
+        await tester.tap(find.text('Animated Card'));
+        await tester.pumpAndSettle();
+
+        expect(tapCount, 1);
+        // Animation controller would handle tap animations
+      });
+
+      testWidgets('handles gesture events correctly', (tester) async {
+        var tapCount = 0;
+
+        await tester.pumpWidget(
+          createTestWidget(
+            onTap: () => tapCount++,
+            child: const Text('Gesture Test'),
+          ),
+        );
+
+        // Tap down and up
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('Gesture Test')),
+        );
+        await tester.pump();
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        expect(tapCount, 1);
+      });
+
+      testWidgets('card without onTap handler renders correctly',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('No Tap Handler'),
+          ),
+        );
+
+        expect(find.text('No Tap Handler'), findsOneWidget);
+        expect(find.byType(Card), findsOneWidget);
+      });
     });
   });
 }

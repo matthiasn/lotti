@@ -7,7 +7,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/index.dart';
 
@@ -126,6 +128,26 @@ class UnifiedAiPromptsList extends ConsumerWidget {
             .valueOrNull ??
         [];
 
+    // Get category to check for automatic prompts
+    final categoryId = journalEntity.meta.categoryId;
+    if (categoryId != null) {
+      // This watch will rebuild the widget when the category changes.
+      ref.watch(categoryChangesProvider(categoryId));
+    }
+    return _buildPromptList(
+      context,
+      ref,
+      prompts,
+      categoryId,
+    );
+  }
+
+  Widget _buildPromptList(
+    BuildContext context,
+    WidgetRef ref,
+    List<AiConfigPrompt> prompts,
+    String? categoryId,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -133,16 +155,35 @@ class UnifiedAiPromptsList extends ConsumerWidget {
           final index = entry.key;
           final prompt = entry.value;
 
+          // Check if this prompt is a default automatic prompt
+          final isDefault = _isDefaultPromptSync(
+            ref,
+            categoryId,
+            prompt,
+          );
+
           return ModernModalPromptItem(
             title: prompt.name,
             description: prompt.description ?? '',
             icon: _getIconForPrompt(prompt),
             onTap: () => onPromptSelected(prompt, index),
+            isDefault: isDefault,
+            iconColor: isDefault ? const Color(0xFFD4AF37) : null,
           );
         }),
         const SizedBox(height: 24),
       ],
     );
+  }
+
+  /// Check if a prompt is configured as an automatic default for the category
+  /// This is a synchronous version that uses the category cache
+  bool _isDefaultPromptSync(
+    WidgetRef ref,
+    String? categoryId,
+    AiConfigPrompt prompt,
+  ) {
+    return isDefaultPromptSync(categoryId, prompt);
   }
 
   IconData _getIconForPrompt(AiConfigPrompt prompt) {
@@ -157,4 +198,34 @@ class UnifiedAiPromptsList extends ConsumerWidget {
       return Icons.chat_rounded;
     }
   }
+}
+
+/// Check if a prompt is configured as an automatic default for the category
+/// This is a synchronous version that uses the category cache
+@visibleForTesting
+bool isDefaultPromptSync(
+  String? categoryId,
+  AiConfigPrompt prompt,
+) {
+  if (categoryId == null) return false;
+
+  try {
+    final cacheService = getIt<EntitiesCacheService>();
+    final category = cacheService.getCategoryById(categoryId);
+
+    if (category?.automaticPrompts == null) return false;
+
+    // Check if this prompt is the first in any automatic prompt list
+    for (final entry in category!.automaticPrompts!.entries) {
+      final promptIds = entry.value;
+      if (promptIds.isNotEmpty && promptIds.first == prompt.id) {
+        return true;
+      }
+    }
+  } catch (e) {
+    // If we can't get the category, just return false
+    return false;
+  }
+
+  return false;
 }
