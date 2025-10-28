@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   performance tests (1k+ tasks + reconciliation benchmarks) for the labels system.
 
 ### Changed
+- Settings header title font now matches other title labels (18px via `AppTheme.titleFontSize`) and is capped to this size on desktop/tablet. Subtitle remains at 16px.
 - feat(ai/labels): Append a summary note after the labels JSON in prompts when the
   number of available labels exceeds the cap, e.g. `(Note: showing 100 of 150 labels)`.
 - Matrix Sync Stats page now uses the modern SettingsPageHeader with collapsing sliver layout and subtitle, aligning with the new settings header UX.

@@ -41,7 +41,7 @@ Solution: Make a simpler, more compact header and use it in the Matrix sync page
 ## Phase 1 — Build New Header
 
 Create `SettingsPageHeader` widget with:
-- Reasonable font size: responsive 28-34px on phones, up to 46px on desktop (was fixed 25px)
+- Reasonable font size: match app title labels (18px via `AppTheme.titleFontSize`) on all devices; cap to this value on tablet/desktop for visual consistency.
 - Dynamic height that adapts to content and text scaling
 - Support for existing back button without collision
 - Handle text overflow with ellipsis for long titles
@@ -68,7 +68,7 @@ For pages with segmented controls, extract them from the page body and pass as `
 
 ## Technical Notes
 
-- Use `MediaQuery.of(context).size.width` to determine if phone or tablet
+- Use `MediaQuery.of(context).size.width` to determine if phone or tablet; however, cap title size at 30px regardless of width to keep desktop spacing stable. Subtitle remains 16px max.
 - For text scaling > 1.5x, use FittedBox to prevent overflow
 - Keep leadingWidth flexible instead of fixed 100px
 

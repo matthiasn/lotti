@@ -39,12 +39,16 @@ class SettingsPageHeader extends StatelessWidget {
 
     final baseTitleSize =
         SettingsHeaderDimensions.titleFontSize(width: width, wide: wide);
-    final collapsedTitleSize = math.max(20, baseTitleSize - (wide ? 4 : 3));
+    // Keep collapsed title slightly smaller than expanded but never larger
+    // than the base size; with the new cap this avoids growing on collapse.
+    final collapsedTitleSize = math.max(16, baseTitleSize - 2);
     final subtitleFontSize = settingsHeaderSubtitleTextStyle.fontSize ?? 16.0;
     final titleLineHeight = settingsHeaderTitleTextStyle.height ?? 1.05;
     final subtitleLineHeight = settingsHeaderSubtitleTextStyle.height ?? 1.3;
     // Fixed paddings: simple and predictable.
-    const topSpacing = SettingsHeaderDimensions.topSpacing;
+    final topSpacing = bottom != null
+        ? SettingsHeaderDimensions.topSpacingWithBottom
+        : SettingsHeaderDimensions.topSpacingNoBottom;
     final bottomSpacing = bottom != null
         ? (showSubtitle
             ? SettingsHeaderDimensions.subtitleBottomGapWithBottom
@@ -72,6 +76,7 @@ class SettingsPageHeader extends StatelessWidget {
         subtitleBlockHeight +
         bottomSpacing +
         footerSpacing +
+        SettingsHeaderDimensions.antiOverflowEpsilon +
         scaleAllowance;
 
     final collapsedBodyHeight = titleBlockHeight * 0.9 +
@@ -103,6 +108,7 @@ class SettingsPageHeader extends StatelessWidget {
       backgroundColor: colorScheme.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
+      // No explicit leading; back button is rendered inline next to the text.
       expandedHeight: effectiveExpandedHeight,
       collapsedHeight: effectiveCollapsedHeight,
       toolbarHeight: effectiveCollapsedHeight,
@@ -125,15 +131,26 @@ class SettingsPageHeader extends StatelessWidget {
                 easedProgress,
               ) ??
               baseTitleSize;
+          final collapsedTop = bottom != null
+              ? SettingsHeaderDimensions.collapsedTopPaddingWithBottom
+              : SettingsHeaderDimensions.collapsedTopPaddingNoBottom;
           final topPadding = lerpDouble(
                 topSpacing,
-                topSpacing * 0.6,
+                collapsedTop,
                 easedProgress,
               ) ??
               topSpacing;
+          // Use a fixed collapsed bottom padding so the collapsed row sits at
+          // the same visual height across pages.
+          // For pages with a bottom accessory (chips/segments), bring the
+          // title/back row slightly higher on collapse by reducing the
+          // bottom padding a touch. For simple pages, keep it constant.
+          final collapsedBottom = bottom != null
+              ? SettingsHeaderDimensions.collapsedBottomPaddingWithBottom
+              : bottomSpacing;
           final bottomPadding = lerpDouble(
                 bottomSpacing,
-                math.max(0.0, bottomSpacing - 4),
+                collapsedBottom,
                 easedProgress,
               ) ??
               bottomSpacing;
@@ -183,11 +200,21 @@ class SettingsPageHeader extends StatelessWidget {
                     child: Align(
                       alignment: AlignmentDirectional.bottomStart,
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           if (showBackButton)
                             const Padding(
-                              padding: EdgeInsetsDirectional.only(end: 4),
-                              child: BackWidget(),
+                              padding: EdgeInsetsDirectional.only(
+                                end: SettingsHeaderDimensions.backButtonGap,
+                              ),
+                              child: SizedBox(
+                                width: 48,
+                                height: 56,
+                                child: Align(
+                                    alignment:
+                                        AlignmentDirectional.bottomStart,
+                                    child: BackWidget()),
+                              ),
                             ),
                           Expanded(
                             child: _HeaderText(

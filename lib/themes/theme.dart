@@ -315,10 +315,11 @@ const settingsHeaderTitleTextStyle = TextStyle(
 );
 
 /// Secondary copy style used beneath the settings header title.
+/// Use the small font size to keep hierarchy tight and premium.
 const settingsHeaderSubtitleTextStyle = TextStyle(
-  fontSize: 16,
+  fontSize: fontSizeSmall,
   fontWeight: TypographyConstants.bodyFontWeight,
-  height: 1.4,
+  height: 1.45,
 );
 
 const settingsCardTextStyle = TextStyle(

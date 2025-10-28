@@ -51,21 +51,19 @@ void main() {
       expect(hp(2600), 160);
     });
 
-    test('titleFontSize respects width and wide flag', () {
+    test('titleFontSize applies cap across widths and flags', () {
       double t({required double w, required bool wide}) =>
           SettingsHeaderDimensions.titleFontSize(width: w, wide: wide);
+      const cap = SettingsHeaderDimensions.mobileMaxTitleSize;
 
-      // Below all thresholds
-      expect(t(w: 360, wide: false), 28);
-      // Phone
-      expect(t(w: 420, wide: false), 30);
-      expect(t(w: 600, wide: false), 32);
-      // Tablet/desktop mid-range
-      expect(t(w: 840, wide: true), 34);
-      expect(t(w: 992, wide: false), 38);
-      // Large desktop
-      expect(t(w: 1200, wide: false), 42);
-      expect(t(w: 1600, wide: false), 46);
+      // All sizes should be clamped to the mobile max cap
+      expect(t(w: 360, wide: false), cap);
+      expect(t(w: 420, wide: false), cap);
+      expect(t(w: 600, wide: false), cap);
+      expect(t(w: 840, wide: true), cap);
+      expect(t(w: 992, wide: false), cap);
+      expect(t(w: 1200, wide: false), cap);
+      expect(t(w: 1600, wide: false), cap);
     });
   });
 }
