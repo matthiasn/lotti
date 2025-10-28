@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -7,13 +9,13 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/features/sync/utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -164,6 +166,41 @@ void main() {
       expect(hasP1, isTrue,
           reason:
               'Expected getTasks to be invoked with priorities [P1], captured=$captured');
+
+      await cubit.close();
+    });
+
+    test('clearing selected priorities results in empty priorities list',
+        () async {
+      final mockJournalDb = getIt<JournalDb>();
+
+      final captured = <List<String>?>[];
+      when(() => mockJournalDb.getTasks(
+            ids: any(named: 'ids'),
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          )).thenAnswer((invocation) async {
+        captured.add(invocation.namedArguments[#priorities] as List<String>?);
+        return [];
+      });
+
+      final cubit = _TestPriorityCubit(mockJournalDb);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await cubit.toggleSelectedPriority('P0');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await cubit.clearSelectedPriorities();
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      final sawEmpty = captured.any((p) => p != null && p.isEmpty);
+      expect(sawEmpty, isTrue,
+          reason:
+              'Expected getTasks to be invoked with empty priorities, captured=$captured');
 
       await cubit.close();
     });

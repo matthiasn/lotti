@@ -10,6 +10,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -178,6 +179,7 @@ void main() {
       expect(find.byType(JournalFilter), findsOneWidget);
       expect(find.byType(TaskStatusFilter), findsOneWidget);
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
+      expect(find.byType(TaskPriorityFilter), findsOneWidget);
     });
 
     testWidgets('modal can be closed by tapping outside', (tester) async {

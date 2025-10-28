@@ -187,6 +187,10 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  @visibleForTesting
+  Future<bool> columnExistsForTesting(String table, String column) =>
+      _columnExists(table, column);
+
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
     final res = into(journal).insertOnConflictUpdate(entry);
     return res;
