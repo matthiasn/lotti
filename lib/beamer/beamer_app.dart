@@ -89,14 +89,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         });
       }
     });
-
-    // No ref.listen here; listeners are registered in build() to align with
-    // ConsumerWidget lifecycle semantics.
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   void _showNotLoggedInToast(BuildContext context) {
