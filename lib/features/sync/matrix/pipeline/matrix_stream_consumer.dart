@@ -194,11 +194,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Client stream does not buffer events; scans are scheduled via timers.
 
   Timer? _liveScanTimer;
-  Timer? _initialCatchUpRetryTimer;
-  DateTime? _initialCatchUpStartAt;
-  int _initialCatchUpAttempts = 0;
-  bool _initialCatchUpCompleted = false;
-  bool _firstStreamEventCatchUpTriggered = false;
+  // Guard to prevent overlapping catch-ups triggered by signals.
+  bool _catchUpInFlight = false;
   final Duration _markerDebounce;
   // Catch-up window is handled by strategy with sensible defaults.
 
@@ -492,54 +489,38 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'start',
       );
     }
-    // Attempt catch‑up only when we have an active room; otherwise we'll rely
-    // on the later scheduled retry once the room is ready.
+    // Attempt catch‑up only when we have an active room; otherwise signals
+    // (client stream/connectivity) will trigger a catch‑up shortly.
     if (_roomManager.currentRoom != null) {
       await _attachCatchUp();
     }
-    // Ensure we eventually run initial catch‑up even if the room was not yet
-    // ready — schedule a retry loop that cancels itself once catch‑up runs.
-    if (_roomManager.currentRoom == null) {
-      _scheduleInitialCatchUpRetry();
-    }
     await _sub?.cancel();
-    // Client-level session stream → signal-only ingestion.
-    // Filter by current room; the very first event also triggers a catch-up
-    // to ensure we ingest backlog before scanning the tail.
+    // Client-level session stream → signal-driven catch-up.
+    // Filter by current room; every signal triggers a catch-up to avoid
+    // skipping backlog created while offline.
     _sub = _sessionManager.timelineEvents.listen((event) {
       final roomId = _roomManager.currentRoomId;
       if (roomId == null || event.roomId != roomId) return;
-      if (!_initialCatchUpCompleted && !_firstStreamEventCatchUpTriggered) {
-        _firstStreamEventCatchUpTriggered = true;
-        _loggingService.captureEvent(
-          'catchup.trigger.onFirstStreamEvent',
-          domain: syncLoggingDomain,
-          subDomain: 'catchup',
-        );
-        // Attempt a catch-up + live scan in the background.
-        unawaited(forceRescan());
-      }
-      // Record client-stream signal and schedule a scan with safeguards.
-      // If scheduling the scan throws (rare), fall back to a forceRescan
-      // which runs catch-up + a live scan to recover quickly.
       if (_collectMetrics) _metrics.incSignalClientStream();
       _loggingService.captureEvent(
         'signal.clientStream',
         domain: syncLoggingDomain,
         subDomain: 'signal',
       );
-      try {
-        _scheduleLiveScan();
-      } catch (e, st) {
-        _loggingService.captureException(
-          e,
+      if (_catchUpInFlight) {
+        _loggingService.captureEvent(
+          'signal.catchup.skipped inFlight=true',
           domain: syncLoggingDomain,
-          subDomain: 'signal.schedule',
-          stackTrace: st,
+          subDomain: 'signal',
         );
-        // Fallback: run a catch-up + live scan to recover
-        unawaited(forceRescan());
+        return;
       }
+      _catchUpInFlight = true;
+      unawaited(
+        forceRescan().whenComplete(() {
+          _catchUpInFlight = false;
+        }),
+      );
     });
 
     // Also attach live timeline listeners to proactively scan in case the
@@ -625,7 +606,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     await _sub?.cancel();
     _sub = null;
     _liveScanTimer?.cancel();
-    _initialCatchUpRetryTimer?.cancel();
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
@@ -684,10 +664,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         if (_collectMetrics) _metrics.incCatchupBatches();
         await _processOrdered(slice);
       }
-      // Initial catch-up attempt considered completed (even if empty). Cancel any pending retries.
-      _initialCatchUpRetryTimer?.cancel();
-      _initialCatchUpRetryTimer = null;
-      _initialCatchUpCompleted = true;
+      // Catch-up completed.
     } catch (e, st) {
       _loggingService.captureException(
         e,
@@ -696,60 +673,6 @@ class MatrixStreamConsumer implements SyncPipeline {
         stackTrace: st,
       );
     }
-  }
-
-  void _scheduleInitialCatchUpRetry() {
-    _initialCatchUpRetryTimer?.cancel();
-    final start = _initialCatchUpStartAt ?? clock.now();
-    _initialCatchUpStartAt = start;
-    final elapsed = clock.now().difference(start);
-    // Give up after ~15 minutes of trying; logs will indicate timeout.
-    const maxWait = Duration(minutes: 15);
-    if (elapsed >= maxWait) {
-      _loggingService.captureEvent(
-        'catchup.timeout after ${elapsed.inSeconds}s',
-        domain: syncLoggingDomain,
-        subDomain: 'catchup',
-      );
-      return;
-    }
-    // Exponential backoff starting at 200ms, capping at 10s, no jitter.
-    final delay = tu.computeExponentialBackoff(
-      _initialCatchUpAttempts,
-    );
-    _initialCatchUpAttempts++;
-    _initialCatchUpRetryTimer = Timer(delay, () {
-      if (_initialCatchUpCompleted) return;
-      if (_roomManager.currentRoom != null) {
-        // Attempt catch-up and ensure we continue retrying until it marks
-        // completion. Capture and log errors before rescheduling.
-        _attachCatchUp().then((_) {
-          if (!_initialCatchUpCompleted) {
-            _loggingService.captureEvent(
-              'catchup.retry.reschedule (not completed)',
-              domain: syncLoggingDomain,
-              subDomain: 'catchup',
-            );
-            _scheduleInitialCatchUpRetry();
-          }
-        }).catchError((Object error, StackTrace st) {
-          _loggingService.captureException(
-            error,
-            domain: syncLoggingDomain,
-            subDomain: 'catchup.retry',
-            stackTrace: st,
-          );
-          _scheduleInitialCatchUpRetry();
-        });
-      } else {
-        _loggingService.captureEvent(
-          'waiting for room for initial catch-up (attempt=$_initialCatchUpAttempts, delay=${delay.inMilliseconds}ms)',
-          domain: syncLoggingDomain,
-          subDomain: 'catchup',
-        );
-        _scheduleInitialCatchUpRetry();
-      }
-    });
   }
 
   Timeline? _liveTimeline;

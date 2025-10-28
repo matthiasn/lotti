@@ -85,7 +85,8 @@ void main() {
     return consumer;
   }
 
-  test('client stream event calls scheduler (no immediate processing)',
+  test(
+      'client stream event triggers catch-up/forceRescan (no immediate processing)',
       () async {
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
@@ -130,7 +131,7 @@ void main() {
           journalDb: journalDb,
         ));
 
-    // After debounce, snapshot shows 1 client signal and still no crash.
+    // After a brief delay, snapshot shows 1 client signal.
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final snap = consumer.metricsSnapshot();
     expect(snap['signalClientStream'], 1);
@@ -142,14 +143,14 @@ void main() {
         subDomain: 'signal',
       ),
     ).called(1);
-    // No timeline set: log includes signal.noTimeline once.
+    // With new behavior, client-stream triggers a forceRescan (catch-up + scan)
     verify(
       () => logger.captureEvent(
-        any<String>(that: contains('signal.noTimeline')),
+        any<String>(that: contains('forceRescan.start includeCatchUp=true')),
         domain: any<String>(named: 'domain'),
-        subDomain: 'signal',
+        subDomain: 'forceRescan',
       ),
-    ).called(greaterThan(0));
+    ).called(greaterThanOrEqualTo(1));
   });
 
   test('client stream schedules scan when room exists', () async {
@@ -270,7 +271,6 @@ void main() {
     });
     when(() => liveTimeline.events).thenReturn(<Event>[]);
     when(liveTimeline.cancelSubscriptions).thenReturn(null);
-
     final consumer = await buildConsumer(
       session: session,
       roomManager: roomManager,
@@ -557,7 +557,7 @@ void main() {
     ).called(greaterThanOrEqualTo(1));
   });
 
-  test('schedule exception triggers fallback forceRescan', () async {
+  test('client stream triggers forceRescan', () async {
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
     final logger = MockLoggingService();
@@ -579,7 +579,7 @@ void main() {
     when(() => settingsDb.itemByKey(lastReadMatrixEventId))
         .thenAnswer((_) async => null);
 
-    final consumer = await buildConsumer(
+    await buildConsumer(
       session: session,
       roomManager: roomManager,
       logger: logger,
@@ -589,29 +589,19 @@ void main() {
       readMarker: readMarker,
     );
 
-    consumer.scheduleLiveScanTestHook = () => throw StateError('boom');
-
     final ev = MockEvent();
     when(() => ev.roomId).thenReturn('!room:server');
     controller.add(ev);
 
     await Future<void>.delayed(const Duration(milliseconds: 10));
-    // Exception logged and fallback forceRescan logged
-    verify(
-      () => logger.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: 'signal.schedule',
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
-      ),
-    ).called(1);
+    // Client stream directly triggers forceRescan
     verify(
       () => logger.captureEvent(
         any<String>(that: contains('forceRescan.start includeCatchUp=true')),
         domain: any<String>(named: 'domain'),
         subDomain: 'forceRescan',
       ),
-    ).called(2); // first-event catch-up + fallback on schedule error
+    ).called(greaterThanOrEqualTo(1));
   });
 
   test('latency calculated and min/max tracked', () async {

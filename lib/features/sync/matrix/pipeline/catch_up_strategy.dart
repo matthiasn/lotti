@@ -63,7 +63,13 @@ class CatchUpStrategy {
             (events.isEmpty ||
                 TimelineEventOrdering.timestamp(events.first) >
                     preContextSinceTs);
-        return needCount || needSinceTs;
+        if (needCount || needSinceTs) return true;
+        // NEW: If the snapshot is full, there may be more events after the
+        // marker that are not yet included. Keep escalating until the snapshot
+        // is not full (boundary reached) or we hit the cap.
+        final snapshotFull = events.length >= limit;
+        if (snapshotFull) return true;
+        return false;
       }
 
       while (needsMore()) {

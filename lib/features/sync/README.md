@@ -57,6 +57,14 @@ that keeps the pipeline testable and observable.
 - `MatrixStreamConsumer` attaches directly to the sync room and performs
   attach-time catch-up via SDK pagination/backfill with a graceful fallback for
   large gaps.
+- Signal-driven ingestion (2025-10-28):
+  - Client stream events are treated as signals that always trigger a
+    `forceRescan()` with catch-up. An in-flight guard prevents overlapping
+    catch-ups.
+  - Live timeline callbacks continue to schedule debounced live scans; on
+    scheduling failure, the consumer falls back to `forceRescan()`.
+  - Marker advancement happens only from ordered slices returned by
+    catch-up/live scans, never directly from the client stream.
 - Live streaming is micro-batched and ordered chronologically with
   de-duplication by event ID; attachment prefetch happens before invoking
   `SyncEventProcessor` so text payloads arrive with their media ready.
