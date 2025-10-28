@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,7 +66,7 @@ class _EmptyLocation extends BeamLocation<BeamState> {
 }
 
 void main() {
-  testWidgets('Shows one-time red toast when sync enabled and logged out',
+  testWidgets('Shows red toast only when outbox attempts send while logged out',
       (tester) async {
     final db = MockJournalDb();
     // Emit active flags that include enableMatrixFlag
@@ -188,6 +190,12 @@ void main() {
     // Initialize the delegate's route
     await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
 
+    // Mock OutboxService and provide a stream to emit login-gate events
+    final mockOutboxService = MockOutboxService();
+    final controller = StreamController<void>.broadcast();
+    when(() => mockOutboxService.notLoggedInGateStream)
+        .thenAnswer((_) => controller.stream);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -195,6 +203,7 @@ void main() {
           loginStateStreamProvider.overrideWith(
             (ref) => Stream<LoginState>.value(LoginState.loggedOut),
           ),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -210,9 +219,16 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Expect a SnackBar with the localized text
+    // On startup while logged out: no toast yet (only on outbox attempt)
+    expect(find.byType(SnackBar), findsNothing);
+
+    // Simulate an outbox send attempt getting gated by not-logged-in
+    controller.add(null);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Expect a SnackBar with the localized text after the event
     expect(find.byType(SnackBar), findsOneWidget);
-    // Localized text from l10n
     expect(find.text('Sync is not logged in'), findsOneWidget);
 
     // Now simulate login: rebuild with logged in state
@@ -234,6 +250,7 @@ void main() {
           loginStateStreamProvider.overrideWith(
             (ref) => Stream<LoginState>.value(LoginState.loggedIn),
           ),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,

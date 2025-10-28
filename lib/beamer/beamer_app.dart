@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:beamer/beamer.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -22,6 +24,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
@@ -71,6 +74,9 @@ class _AppScreenState extends State<AppScreen> {
   bool _isCalendarPageEnabled = true;
   bool _isSyncEnabled = false;
   bool _notLoggedInToastShown = false;
+  OutboxService? _observedOutboxService;
+  StreamSubscription<void>? _notLoggedInSub;
+  bool _pendingLoginGateToast = false;
 
   @override
   void initState() {
@@ -91,24 +97,20 @@ class _AppScreenState extends State<AppScreen> {
     });
   }
 
-  void _maybeShowNotLoggedInToast(
-    BuildContext context, {
-    required bool notLoggedIn,
-  }) {
-    if (!mounted) return;
+  @override
+  void dispose() {
+    _notLoggedInSub?.cancel();
+    super.dispose();
+  }
 
-    // Reset the guard when logging in or when sync is disabled
-    if (!notLoggedIn) {
-      if (_notLoggedInToastShown) {
-        _notLoggedInToastShown = false;
-      }
-      return;
+  void _resetNotLoggedInToastGuardIfNeeded({required bool notLoggedIn}) {
+    if (!notLoggedIn && _notLoggedInToastShown) {
+      _notLoggedInToastShown = false;
     }
+  }
 
-    if (_notLoggedInToastShown) return;
-    _notLoggedInToastShown = true;
-
-    // Defer SnackBar until after the current frame when Scaffold is ready
+  void _showNotLoggedInToast(BuildContext context) {
+    if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final scheme = Theme.of(context).colorScheme;
@@ -145,11 +147,33 @@ class _AppScreenState extends State<AppScreen> {
           // when flags are toggled and items list shrinks
           final index = rawIndex.clamp(0, itemCount - 1);
 
-          // Evaluate login state for the toast (Option B via Riverpod)
+          // Evaluate login state to reset the toast guard after login
           final loginState = ref.watch(loginStateStreamProvider).valueOrNull;
           final notLoggedIn =
               _isSyncEnabled && loginState != LoginState.loggedIn;
-          _maybeShowNotLoggedInToast(context, notLoggedIn: notLoggedIn);
+          _resetNotLoggedInToastGuardIfNeeded(notLoggedIn: notLoggedIn);
+
+          // Subscribe to OutboxService login-gate events to show toast only
+          // when a send attempt is blocked due to being logged out.
+          final outboxService = ref.watch(outboxServiceProvider);
+          if (_observedOutboxService != outboxService) {
+            _notLoggedInSub?.cancel();
+            _observedOutboxService = outboxService;
+            _notLoggedInSub = outboxService.notLoggedInGateStream.listen((_) {
+              if (!mounted) return;
+              if (_notLoggedInToastShown) return;
+              setState(() {
+                _pendingLoginGateToast = true;
+                _notLoggedInToastShown = true;
+              });
+            });
+          }
+
+          // If a login-gate toast was requested by the outbox, show it now.
+          if (_pendingLoginGateToast) {
+            _pendingLoginGateToast = false;
+            _showNotLoggedInToast(context);
+          }
 
           return Scaffold(
             body: Stack(

@@ -34,10 +34,37 @@
 - Do not drain or update outbox items; keep them pending.
 - Avoid aggressive immediate re‑scheduling while logged out; rely on normal triggers after login.
 
-3) One‑time red toast via StreamBuilder
-- Add a top‑level StreamBuilder (in `AppScreen`) that listens to a not‑logged‑in signal.
-- When sync is enabled and the signal indicates “not logged in,” show a red SnackBar (`syncNotLoggedInToast`) once per login session.
+3) One‑time red toast (event‑driven)
+- Show a red SnackBar (`syncNotLoggedInToast`) once per login session, but only when the outbox actually attempts to send and is blocked by the login gate.
 - Maintain a simple per‑login guard; reset the guard on login state changes so the toast can re‑appear on a future logout.
+
+### Post‑Implementation Update (2025‑10‑28) — Startup toast regression and fix
+
+- Introduced problem
+  - After the initial implementation, the app showed the red “Sync is not logged in” toast on app startup whenever sync was enabled but the user had not logged in yet. This was noisy and misleading because no send had been attempted yet.
+
+- Root cause
+  - The UI computed a “not logged in” condition (sync flag × login state) in `AppScreen.build()` and immediately triggered the toast, leading to a startup‑time SnackBar before any actual outbox activity.
+
+- Fix (event‑driven toast)
+  - Move toast triggering behind an explicit outbox login‑gate event so it only fires when the outbox tries to send and is prevented by being logged out.
+  - OutboxService now exposes a `notLoggedInGateStream` and emits when `sendNext()` returns early due to `!isLoggedIn`.
+  - `AppScreen` subscribes to this stream via the `outboxServiceProvider` and shows the one‑time red toast upon receiving the event. The guard resets when the user logs in or sync is disabled.
+
+- Code changes
+  - `lib/features/sync/outbox/outbox_service.dart`
+    - Added `StreamController<void>` and public `notLoggedInGateStream`.
+    - On login gate in `sendNext()`, emit to the stream (no aggressive rescheduling).
+  - `lib/beamer/beamer_app.dart`
+    - Removed the eager, startup‑time toast check from `build()`.
+    - Subscribed to `outboxServiceProvider.notLoggedInGateStream` and deferred showing the toast to after frame.
+
+- Tests
+  - Updated widget test to assert no toast on startup and that a toast appears only after emitting an outbox login‑gate event:
+    - `test/beamer/not_logged_in_toast_test.dart`
+
+- Outcome
+  - Users no longer see a red toast on app launch when they simply haven’t logged in yet. The toast appears only when it is actionable/relevant—i.e., when the outbox attempts to send and is blocked by login state.
 
 ## Data Flow & API Changes
 
