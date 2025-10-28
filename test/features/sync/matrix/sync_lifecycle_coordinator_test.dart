@@ -14,11 +14,11 @@ class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
-class MockSyncPipeline extends Mock implements SyncPipeline {}
-
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockPipeline extends Mock implements SyncPipeline {}
 
 class MockClient extends Mock implements Client {}
 
@@ -26,201 +26,139 @@ class _FakeClient extends Fake implements Client {}
 
 void main() {
   setUpAll(() {
+    registerFallbackValue(StackTrace.empty);
     registerFallbackValue(_FakeClient());
   });
 
-  late MockMatrixSyncGateway gateway;
-  late MockMatrixSessionManager sessionManager;
-  late MockSyncPipeline pipeline;
-  late MockSyncRoomManager roomManager;
-  late MockLoggingService loggingService;
-  late MockClient client;
-  late StreamController<LoginState> loginStateController;
+  group('SyncLifecycleCoordinator with pipeline', () {
+    late MockMatrixSyncGateway gateway;
+    late MockMatrixSessionManager sessionManager;
+    late MockSyncRoomManager roomManager;
+    late MockLoggingService logging;
+    late MockPipeline pipeline;
+    late StreamController<LoginState> loginStates;
 
-  setUp(() {
-    gateway = MockMatrixSyncGateway();
-    sessionManager = MockMatrixSessionManager();
-    pipeline = MockSyncPipeline();
-    roomManager = MockSyncRoomManager();
-    loggingService = MockLoggingService();
-    client = MockClient();
-    loginStateController = StreamController<LoginState>.broadcast();
+    SyncLifecycleCoordinator makeCoordinator() {
+      return SyncLifecycleCoordinator(
+        gateway: gateway,
+        sessionManager: sessionManager,
+        roomManager: roomManager,
+        loggingService: logging,
+        pipeline: pipeline,
+      );
+    }
 
-    when(() => gateway.loginStateChanges)
-        .thenAnswer((_) => loginStateController.stream);
-    when(() => sessionManager.client).thenReturn(client);
-    when(() => sessionManager.isLoggedIn()).thenReturn(false);
-    when(() => pipeline.initialize()).thenAnswer((_) async {});
-    when(() => pipeline.start()).thenAnswer((_) async {});
-    when(() => pipeline.dispose()).thenAnswer((_) async {});
-    when(() => roomManager.initialize()).thenAnswer((_) async {});
-    when(
-      () => roomManager.hydrateRoomSnapshot(
-        client: any<Client>(named: 'client'),
-      ),
-    ).thenAnswer((_) async {});
-    when(
-      () => loggingService.captureEvent(
-        any<String>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenReturn(null);
-    when(
-      () => loggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenReturn(null);
-  });
+    setUp(() {
+      gateway = MockMatrixSyncGateway();
+      sessionManager = MockMatrixSessionManager();
+      roomManager = MockSyncRoomManager();
+      logging = MockLoggingService();
+      pipeline = MockPipeline();
+      loginStates = StreamController<LoginState>.broadcast(sync: true);
+      when(() => gateway.loginStateChanges)
+          .thenAnswer((_) => loginStates.stream);
 
-  tearDown(() async {
-    await loginStateController.close();
-  });
-
-  test('initialize primes pipeline and handles already logged-in devices',
-      () async {
-    when(() => client.isLogged()).thenReturn(true);
-    when(() => sessionManager.isLoggedIn()).thenReturn(true);
-
-    var onLoginInvoked = 0;
-    final coordinator = SyncLifecycleCoordinator(
-      gateway: gateway,
-      sessionManager: sessionManager,
-      roomManager: roomManager,
-      loggingService: loggingService,
-      pipeline: pipeline,
-      onLogin: () async {
-        onLoginInvoked += 1;
-      },
-    );
-
-    await coordinator.initialize();
-
-    verify(() => pipeline.initialize()).called(1);
-    verify(() => roomManager.initialize()).called(1);
-    verify(
-      () => roomManager.hydrateRoomSnapshot(client: client),
-    ).called(1);
-    verify(() => pipeline.start()).called(1);
-    expect(onLoginInvoked, 1);
-    expect(coordinator.isActive, isTrue);
-  });
-
-  test('login state transitions trigger lifecycle hooks once', () async {
-    when(() => client.isLogged()).thenReturn(false);
-
-    var onLoginInvoked = 0;
-    var onLogoutInvoked = 0;
-
-    final coordinator = SyncLifecycleCoordinator(
-      gateway: gateway,
-      sessionManager: sessionManager,
-      roomManager: roomManager,
-      loggingService: loggingService,
-      pipeline: pipeline,
-      onLogin: () async {
-        onLoginInvoked += 1;
-      },
-      onLogout: () async {
-        onLogoutInvoked += 1;
-      },
-    );
-
-    await coordinator.initialize();
-
-    when(() => client.isLogged()).thenReturn(true);
-    when(() => sessionManager.isLoggedIn()).thenReturn(true);
-
-    loginStateController.add(LoginState.loggedIn);
-    await Future<void>.delayed(Duration.zero);
-
-    loginStateController.add(LoginState.loggedIn);
-    await Future<void>.delayed(Duration.zero);
-
-    expect(onLoginInvoked, 1);
-    expect(coordinator.isActive, isTrue);
-
-    when(() => sessionManager.isLoggedIn()).thenReturn(false);
-    when(() => client.isLogged()).thenReturn(false);
-    when(() => pipeline.dispose()).thenAnswer((_) async {});
-
-    loginStateController.add(LoginState.loggedOut);
-    await Future<void>.delayed(Duration.zero);
-
-    expect(onLogoutInvoked, 1);
-    verify(() => pipeline.dispose()).called(1);
-    expect(coordinator.isActive, isFalse);
-  });
-
-  test(
-      'reconcileLifecycleState honours imperative session changes when no events fire',
-      () async {
-    when(() => client.isLogged()).thenReturn(false);
-
-    final coordinator = SyncLifecycleCoordinator(
-      gateway: gateway,
-      sessionManager: sessionManager,
-      roomManager: roomManager,
-      loggingService: loggingService,
-      pipeline: pipeline,
-    );
-
-    await coordinator.initialize();
-
-    when(() => client.isLogged()).thenReturn(true);
-    when(() => sessionManager.isLoggedIn()).thenReturn(true);
-
-    await coordinator.reconcileLifecycleState();
-
-    verify(() => pipeline.start()).called(1);
-    expect(coordinator.isActive, isTrue);
-
-    when(() => client.isLogged()).thenReturn(false);
-    when(() => sessionManager.isLoggedIn()).thenReturn(false);
-
-    await coordinator.reconcileLifecycleState();
-
-    verify(() => pipeline.dispose()).called(1);
-    expect(coordinator.isActive, isFalse);
-  });
-
-  test(
-      '_handleLoggedOut waits for pending transition before triggering another',
-      () async {
-    when(() => client.isLogged()).thenReturn(true);
-    when(() => sessionManager.isLoggedIn()).thenReturn(true);
-
-    final coordinator = SyncLifecycleCoordinator(
-      gateway: gateway,
-      sessionManager: sessionManager,
-      roomManager: roomManager,
-      loggingService: loggingService,
-      pipeline: pipeline,
-    );
-
-    await coordinator.initialize();
-
-    when(() => pipeline.start()).thenAnswer((_) async {});
-    await coordinator.reconcileLifecycleState();
-
-    expect(coordinator.isActive, isTrue);
-
-    final firstDeactivationCompleter = Completer<void>();
-    when(() => pipeline.dispose()).thenAnswer((_) async {
-      firstDeactivationCompleter.complete();
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.hydrateRoomSnapshot(
+          client: any<Client>(named: 'client'))).thenAnswer((_) async {});
+      when(() => sessionManager.client).thenReturn(MockClient());
+      when(() => pipeline.initialize()).thenAnswer((_) async {});
+      when(() => pipeline.start()).thenAnswer((_) async {});
+      when(() => pipeline.dispose()).thenAnswer((_) async {});
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
     });
 
-    final pendingLogout = coordinator.reconcileLifecycleState();
+    tearDown(() async {
+      await loginStates.close();
+    });
 
-    when(() => sessionManager.isLoggedIn()).thenReturn(false);
-    await coordinator.reconcileLifecycleState();
+    test(
+        'initialize calls pipeline.initialize and activates if already logged in',
+        () async {
+      when(() => sessionManager.isLoggedIn()).thenReturn(true);
+      final coord = makeCoordinator();
 
-    await pendingLogout;
-    await firstDeactivationCompleter.future;
+      await coord.initialize();
 
-    verify(() => pipeline.dispose()).called(1);
+      verify(() => pipeline.initialize()).called(1);
+      verify(() =>
+              roomManager.hydrateRoomSnapshot(client: any(named: 'client')))
+          .called(1);
+      verify(() => pipeline.start()).called(1);
+      expect(coord.isActive, isTrue);
+    });
+
+    test('reacts to login event and starts pipeline once', () async {
+      when(() => sessionManager.isLoggedIn()).thenReturn(false);
+      final coord = makeCoordinator();
+      await coord.initialize();
+
+      // Emit loggedIn twice rapidly
+      loginStates
+        ..add(LoginState.loggedIn)
+        ..add(LoginState.loggedIn);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verify(() =>
+              roomManager.hydrateRoomSnapshot(client: any(named: 'client')))
+          .called(greaterThanOrEqualTo(1));
+      verify(() => pipeline.start()).called(1);
+      expect(coord.isActive, isTrue);
+    });
+
+    test('reacts to loggedOut and disposes pipeline', () async {
+      when(() => sessionManager.isLoggedIn()).thenReturn(false);
+      final coord = makeCoordinator();
+      await coord.initialize();
+
+      loginStates.add(LoginState.loggedIn);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      loginStates.add(LoginState.loggedOut);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verify(() => pipeline.dispose()).called(1);
+      expect(coord.isActive, isFalse);
+    });
+
+    test('logout before activation completes is ignored', () async {
+      when(() => sessionManager.isLoggedIn()).thenReturn(false);
+      final startCompleter = Completer<void>();
+      when(() => pipeline.start()).thenAnswer((_) => startCompleter.future);
+
+      final coord = makeCoordinator();
+      await coord.initialize();
+
+      loginStates
+        ..add(LoginState.loggedIn)
+        // Immediately log out before start completes
+        ..add(LoginState.loggedOut);
+      // Now complete start
+      startCompleter.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      // Because logout arrived while not active, coordinator does not queue a
+      // deactivation. Activation completes and remains active.
+      verifyNever(() => pipeline.dispose());
+      expect(coord.isActive, isTrue);
+    });
+
+    test('dispose cancels subscription; further events ignored', () async {
+      when(() => sessionManager.isLoggedIn()).thenReturn(false);
+      final coord = makeCoordinator();
+      await coord.initialize();
+      await coord.dispose();
+
+      // Emit an event after dispose; expect no calls
+      clearInteractions(pipeline);
+      loginStates.add(LoginState.loggedIn);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      verifyNever(() => pipeline.start());
+      expect(coord.isActive, isFalse);
+    });
   });
 }

@@ -25,7 +25,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -179,7 +179,7 @@ Future<void> registerSingletons() async {
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
 
-  final collectV2Metrics = await journalDb.getConfigFlag(enableLoggingFlag);
+  final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
   final matrixService = MatrixService(
     gateway: matrixGateway,
@@ -192,7 +192,7 @@ Future<void> registerSingletons() async {
     eventProcessor: syncEventProcessor,
     secureStorage: secureStorage,
     documentsDirectory: documentsDirectory,
-    collectV2Metrics: collectV2Metrics,
+    collectSyncMetrics: collectSyncMetrics,
     attachmentIndex: attachmentIndex,
   );
 

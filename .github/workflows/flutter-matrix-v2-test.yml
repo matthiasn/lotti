@@ -1,4 +1,4 @@
-name: Flutter Matrix V2 Test
+name: Flutter Matrix Integration Test
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - '**'
 
 jobs:
-  test_v2:
-    name: Matrix V2 Test on Linux
+  test:
+    name: Matrix Test on Linux
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -30,19 +30,19 @@ jobs:
       - uses: hoverkraft-tech/compose-action@v2.0.0
         with:
           cwd: "integration_test/docker"
-      - name: Run Matrix V2 integration tests
+      - name: Run Matrix integration tests
         uses: GabrielBB/xvfb-action@v1.6
         env:
           SLOW_NETWORK: false
         with:
           working-directory: ./integration_test
           run: |
-            chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_v2_tests.sh
+            chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_tests.sh
             ./setup_toxiproxy_docker.sh
-            ./run_matrix_v2_tests.sh
+            ./run_matrix_tests.sh
 
-  test_v2_degraded_network:
-    name: Matrix V2 Test on Linux with degraded network
+  test_degraded_network:
+    name: Matrix Test on Linux with degraded network
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -65,13 +65,13 @@ jobs:
       - uses: hoverkraft-tech/compose-action@v2.0.0
         with:
           cwd: "integration_test/docker"
-      - name: Run Matrix V2 integration tests (degraded)
+      - name: Run Matrix integration tests (degraded)
         uses: GabrielBB/xvfb-action@v1.6
         env:
           SLOW_NETWORK: true
         with:
           working-directory: ./integration_test
           run: |
-            chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_v2_tests.sh
+            chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_tests.sh
             ./setup_toxiproxy_docker.sh
-            ./run_matrix_v2_tests.sh
+            ./run_matrix_tests.sh

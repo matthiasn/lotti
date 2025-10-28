@@ -59,6 +59,12 @@ void main() {
       ),
     ).thenAnswer((invocation) async => stubSuccess(invocation));
     when(
+      () => mockRepository.syncLabels(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer((invocation) async => stubSuccess(invocation));
+    when(
       () => mockRepository.syncCategories(
         onProgress: any(named: 'onProgress'),
         onDetailedProgress: any(named: 'onDetailedProgress'),
@@ -122,6 +128,7 @@ void main() {
       await controller.syncAll(selectedSteps: {
         SyncStep.tags,
         SyncStep.measurables,
+        SyncStep.labels,
         SyncStep.categories,
         SyncStep.dashboards,
         SyncStep.habits,
@@ -142,6 +149,12 @@ void main() {
       ).called(1);
       verify(
         () => mockRepository.syncMeasurables(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).called(1);
+      verify(
+        () => mockRepository.syncLabels(
           onProgress: any(named: 'onProgress'),
           onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
@@ -175,6 +188,7 @@ void main() {
       for (final step in {
         SyncStep.tags,
         SyncStep.measurables,
+        SyncStep.labels,
         SyncStep.categories,
         SyncStep.dashboards,
         SyncStep.habits,
@@ -262,6 +276,7 @@ void main() {
         controller.syncAll(selectedSteps: {
           SyncStep.tags,
           SyncStep.measurables,
+          SyncStep.labels,
           SyncStep.categories,
           SyncStep.dashboards,
           SyncStep.habits,
@@ -283,6 +298,12 @@ void main() {
       ).called(1);
       verify(
         () => mockRepository.syncMeasurables(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).called(1);
+      verify(
+        () => mockRepository.syncLabels(
           onProgress: any(named: 'onProgress'),
           onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
@@ -326,6 +347,7 @@ void main() {
       await controller.syncAll(selectedSteps: {
         SyncStep.tags,
         SyncStep.measurables,
+        SyncStep.labels,
         SyncStep.categories,
         SyncStep.dashboards,
         SyncStep.habits,

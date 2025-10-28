@@ -2011,10 +2011,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMatrixValue => 'Value';
 
   @override
-  String get settingsMatrixV2Metrics => 'Sync V2 Metrics';
+  String get settingsMatrixMetrics => 'Sync Metrics';
 
   @override
-  String get settingsMatrixV2MetricsNoData => 'Sync V2 Metrics: no data';
+  String get settingsMatrixMetricsNoData => 'Sync Metrics: no data';
 
   @override
   String get settingsMatrixLastUpdated => 'Last updated:';
@@ -2221,6 +2221,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Measurables';
+
+  @override
+  String get syncStepLabels => 'Labels';
 
   @override
   String get syncStepTags => 'Tags';

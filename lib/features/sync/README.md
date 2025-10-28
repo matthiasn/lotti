@@ -35,9 +35,9 @@ that keeps the pipeline testable and observable.
 | **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, timelines, and logout. |
 | **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, registers the Matrix event IDs it emits, increments send counters, and notifies `MatrixService`. |
 | **SentEventRegistry** (`matrix/sent_event_registry.dart`) | In-memory TTL cache of event IDs produced by this device so timeline ingestion can drop echo events without re-applying them. |
-| **MatrixStreamConsumer** (`matrix/pipeline_v2/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and typed metrics. |
+| **MatrixStreamConsumer** (`matrix/pipeline_v2/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
-| **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, emits notifications (e.g. `UpdateNotifications`), and now surfaces precise `applied/skipReason` diagnostics so the V2 pipeline can distinguish conflicts, older/equal payloads, and genuine missing-base scenarios. |
+| **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, emits notifications (e.g. `UpdateNotifications`), and surfaces precise `applied/skipReason` diagnostics so the pipeline can distinguish conflicts, older/equal payloads, and genuine missing-base scenarios. |
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
 | **OutboxService** (`outbox/outbox_service.dart`) | Stores pending messages, resolves attachments, and hands work to `MatrixMessageSender`. |
 | **UserActivityGate** (`features/user_activity/state/user_activity_gate.dart`) | Exposes reactive idleness signals so heavy timeline processing defers while the user is active. |
@@ -66,7 +66,7 @@ that keeps the pipeline testable and observable.
 - Retries apply exponential backoff with a TTL, bounded queue, and circuit
   breaker to avoid thrashing on persistent failures. Diagnostics surface per
   event via `SyncApplyDiagnostics`.
-- Optional typed metrics (`V2Metrics`) power the Matrix Stats UI and tooling.
+- Optional typed metrics (`SyncMetrics`) power the Matrix Stats UI and tooling.
 
 ### Documentation & Artefacts
 
@@ -86,9 +86,7 @@ that keeps the pipeline testable and observable.
    logged in and the room has been hydrated. Synchronisation continues
    automatically while both devices are idle.
 
-### Data Flow (V2)
-
-### Pipeline Data Flow
+### Data Flow
 
 The stream-first consumer replaces the legacy multi-pass drain:
 
@@ -119,9 +117,9 @@ Key helpers:
 
 - Use `matrixServiceProvider.read().getDiagnosticInfo()` in debug builds to
   inspect saved room IDs, active room state, lifecycle activity, joined rooms,
-  and login status. Note: typed V2 metrics are not included in this payload; use
-  `MatrixService.getV2Metrics()` or the Matrix Stats UI instead.
-- Key log domains: `MATRIX_SERVICE`, `MATRIX_SYNC_V2`, `SYNC_ENGINE`,
+  and login status. Note: typed metrics are not included in this payload; use
+  `MatrixService.getSyncMetrics()` or the Matrix Stats UI instead.
+- Key log domains: `MATRIX_SERVICE`, `MATRIX_SYNC`, `SYNC_ENGINE`,
   `SYNC_ROOM_MANAGER`, `SYNC_EVENT_PROCESSOR`, `SYNC_READ_MARKER`, and `OUTBOX`.
 - Typical messages include invite acceptance/filters, hydration retries, send
   attempts, and timeline processing outcomes.
@@ -139,8 +137,7 @@ Key helpers:
     streaming/flush batching, metrics accuracy, and retry/circuit-breaker logic.
   - `pipeline_v2/*` helper suites validate catch-up, descriptor hydration, and
     attachment ingestion.
-  - `sync_lifecycle_coordinator_test.dart` / `_v2_test.dart` exercise lifecycle
-    activation, deactivation, and login/logout races with the pipeline.
+  - Lifecycle tests exercise activation, deactivation, and login/logout races with the pipeline.
   - `matrix_service_pipeline_test.dart` covers metrics exposure, retry/rescan
     delegation, diagnostics text, and resource disposal.
 - Always run `dart-mcp.analyze_files` before committing. The custom lint will
@@ -163,10 +160,7 @@ Key helpers:
 
 ## Current Status
 
-- V2 (MatrixStreamConsumer) is available behind the `enable_sync_v2` flag; V1
-  remains the default. V2 typed metrics can be surfaced in the Matrix Stats UI
-  and via `MatrixService.getV2Metrics()`.
-- Provider overrides and custom lint rules enforce the new dependency model.
+- Provider overrides and custom lint rules enforce the dependency model.
 - When extending the sync feature, update both this README and the architecture
   documents so the narrative stays aligned with the implementation.
 
@@ -179,6 +173,9 @@ Key helpers:
 - Matrix Sync Maintenance is a dedicated page under
   `/settings/sync/matrix/maintenance` for deleting the Sync database,
   replaying sync definitions, and forcing a re-sync window.
+  - Supported definition sync steps: Tags, Measurables, Labels, Categories,
+    Dashboards, Habits, and AI Settings. Each step reports per-step progress
+    and totals; you can select any subset to sync.
 - Outbox Monitor lives under `/settings/sync/outbox` and no longer exposes
   its own on/off toggle. The global Matrix sync flag governs enablement.
 - Outbox Monitor adopts the shared `SyncListScaffold` with modern cards,
@@ -193,11 +190,8 @@ Key helpers:
 - Beamer route matching for the Sync section uses exact path matching to avoid
   brittle substring checks.
 
-## Sync V2 – Rollout & Observability
+## Sync – Observability
 
-- Enabling V2
-  - Set the config flag `enable_sync_v2` (JournalDb flags). Restart so DI can
-    construct the V2 pipeline path. V1 remains intact if the flag is false.
 - Metrics (typed + diagnostics)
   - Consumer surfaces counters via `metricsSnapshot()` including:
     - processed, skipped, failures, prefetch, flushes, catchupBatches,
@@ -205,15 +199,15 @@ Key helpers:
     - processed.<type>, droppedByType.<type>
     - dbApplied, dbIgnoredByVectorClock, conflictsCreated
     - heartbeatScans, markerMisses
-  - `MatrixService.getV2Metrics()` maps these into a typed `V2Metrics` model
+  - `MatrixService.getSyncMetrics()` maps these into a typed `SyncMetrics` model
     for UI display. The Matrix Stats page renders them and supports:
     - Refresh
     - Force Rescan (triggers live rescan + focused catch-up)
     - Copy Diagnostics (copies a readable metrics snapshot)
-  - `getDiagnosticInfo()` intentionally omits V2 metrics; prefer the typed API
+  - `getDiagnosticInfo()` intentionally omits metrics; prefer the typed API
     or diagnostics text for tooling/UI.
 - Catch-up and Pagination
-  - On attach, V2 attempts SDK pagination/backfill first (best-effort across
+  - On attach, the pipeline attempts SDK pagination/backfill first (best-effort across
     SDK versions); if unavailable, it falls back to escalating snapshot limits.
   - Startup lookback: include a bounded pre-context since the last processed
     timestamp and up to a fixed number of events before the stored marker to
@@ -234,10 +228,9 @@ Key helpers:
 
 ### Reliability tracker
 
-For ongoing issues, hypotheses, and the current mitigation plan see:
-`docs/progress/2025-10-12-sync-v2-reliability.md`. This document outlines what we
-are struggling with in the field, what we’ve landed so far, and how to verify
-behaviour using Matrix Stats and logs.
+For ongoing issues, hypotheses, and the current mitigation plan, see the
+reliability documents under `docs/progress/`. These outline current challenges,
+landed fixes, and how to verify behaviour using Matrix Stats and logs.
 
 ## Implementation Notes & Consistency
 

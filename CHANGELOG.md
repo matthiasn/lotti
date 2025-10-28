@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 ### Added
+- Sync maintenance now supports Labels in the manual definition sync flow:
+  - Sync page → Sync Entities modal includes a "Labels" checkbox alongside Tags, Measurables,
+    Categories, Dashboards, Habits, and AI Settings.
+  - Each step reports per-step progress and totals; selections can be run together.
 - tests(labels/ai):
   - Max-volume labels selection (500+) with performance and ordering checks
   - Prompt injection protection for label names

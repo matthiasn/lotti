@@ -4,7 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/features/sync/matrix/pipeline_v2/v2_metrics.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/features/sync/ui/matrix_stats_page.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -56,7 +56,8 @@ void main() {
         .thenAnswer((_) async => <String, dynamic>{});
     when(() => mockMatrixService.getSyncDiagnosticsText())
         .thenAnswer((_) async => '');
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer((_) async => null);
+    when(() => mockMatrixService.getSyncMetrics())
+        .thenAnswer((_) async => null);
   });
 
   tearDown(() async {
@@ -103,8 +104,8 @@ void main() {
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
 
     // First typed metrics payload
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+      (_) async => SyncMetrics.fromMap({
         'processed': 2,
         'skipped': 1,
         'failures': 0,
@@ -134,8 +135,8 @@ void main() {
     expect(find.textContaining('Last updated:'), findsOneWidget);
 
     // Change typed metrics payload for refresh
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+      (_) async => SyncMetrics.fromMap({
         'processed': 3,
         'skipped': 1,
         'failures': 0,
@@ -163,10 +164,10 @@ void main() {
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({'processed': 1}),
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+      (_) async => SyncMetrics.fromMap({'processed': 1}),
     );
-    when(() => mockMatrixService.retryV2Now()).thenAnswer((_) async {});
+    when(() => mockMatrixService.retryNow()).thenAnswer((_) async {});
 
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -182,7 +183,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('matrixStats.retryNow')));
     await tester.pump();
-    verify(() => mockMatrixService.retryV2Now()).called(1);
+    verify(() => mockMatrixService.retryNow()).called(1);
   });
 
   testWidgets('V2 metrics signature gating keeps lastUpdated on identical map',
@@ -195,8 +196,8 @@ void main() {
     var map = {'processed': 2, 'failures': 0, 'retriesScheduled': 0};
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics())
-        .thenAnswer((_) async => V2Metrics.fromMap(map));
+    when(() => mockMatrixService.getSyncMetrics())
+        .thenAnswer((_) async => SyncMetrics.fromMap(map));
 
     final initialNow = DateTime(2024, 1, 1, 12);
     var fakeNow = initialNow;
@@ -230,8 +231,8 @@ void main() {
 
       // Change map and trigger refresh; time should update
       map = {'processed': 3, 'failures': 0, 'retriesScheduled': 0};
-      when(() => mockMatrixService.getV2Metrics())
-          .thenAnswer((_) async => V2Metrics.fromMap(map));
+      when(() => mockMatrixService.getSyncMetrics())
+          .thenAnswer((_) async => SyncMetrics.fromMap(map));
       fakeNow = fakeNow.add(const Duration(seconds: 5));
 
       await tester.tap(find.byIcon(Icons.refresh_rounded).first);
@@ -254,9 +255,9 @@ void main() {
     var refreshCount = 0;
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer((_) async {
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer((_) async {
       refreshCount++;
-      return V2Metrics.fromMap({
+      return SyncMetrics.fromMap({
         'processed': refreshCount,
         'skipped': 0,
         'failures': 0,
@@ -299,7 +300,8 @@ void main() {
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer((_) async => null);
+    when(() => mockMatrixService.getSyncMetrics())
+        .thenAnswer((_) async => null);
 
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -314,7 +316,7 @@ void main() {
 
     await tester.pumpAndSettle();
     // We no longer show a special no-data banner; the section header remains.
-    expect(find.textContaining('Sync V2 Metrics'), findsOneWidget);
+    expect(find.textContaining('Sync Metrics'), findsOneWidget);
   });
 
   testWidgets('IncomingStats renders stable shell while loading',
@@ -334,7 +336,7 @@ void main() {
     );
 
     await tester.pump();
-    expect(find.textContaining('Sync V2 Metrics'), findsOneWidget);
+    expect(find.textContaining('Sync Metrics'), findsOneWidget);
 
     completer.complete(
       MatrixStats(sentCount: 0, messageCounts: const {}),
@@ -355,7 +357,7 @@ void main() {
     );
 
     await tester.pump();
-    expect(find.textContaining('Sync V2 Metrics'), findsOneWidget);
+    expect(find.textContaining('Sync Metrics'), findsOneWidget);
   });
 
   testWidgets('IncomingStats shows DB-apply metrics and legend tooltip',
@@ -367,8 +369,8 @@ void main() {
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+      (_) async => SyncMetrics.fromMap({
         'processed': 1,
         'skipped': 0,
         'failures': 0,
@@ -453,8 +455,8 @@ void main() {
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+      (_) async => SyncMetrics.fromMap({
         'processed': 1,
         'skipped': 0,
         'failures': 0,
@@ -466,7 +468,7 @@ void main() {
         'circuitOpens': 0,
       }),
     );
-    when(() => mockMatrixService.forceV2Rescan()).thenAnswer((_) async {});
+    when(() => mockMatrixService.forceRescan()).thenAnswer((_) async {});
 
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -484,7 +486,7 @@ void main() {
     await tester.tap(find.byKey(const Key('matrixStats.forceRescan')));
     await tester.pumpAndSettle();
 
-    verify(() => mockMatrixService.forceV2Rescan()).called(1);
+    verify(() => mockMatrixService.forceRescan()).called(1);
   });
 
   testWidgets('Last updated formatting shows HH:mm:ss', (tester) async {
@@ -495,8 +497,8 @@ void main() {
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+      (_) async => SyncMetrics.fromMap({
         'processed': 0,
         'skipped': 0,
         'failures': 0,
@@ -539,8 +541,8 @@ void main() {
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+      (_) async => SyncMetrics.fromMap({
         'processed': 1,
         'skipped': 0,
         'failures': 0,
@@ -610,8 +612,8 @@ void main() {
       longMap['processed.type$i'] = i;
       longMap['droppedByType.type$i'] = i;
     }
-    when(() => mockMatrixService.getV2Metrics())
-        .thenAnswer((_) async => V2Metrics.fromMap(longMap));
+    when(() => mockMatrixService.getSyncMetrics())
+        .thenAnswer((_) async => SyncMetrics.fromMap(longMap));
 
     final bucket = PageStorageBucket();
 
@@ -666,8 +668,8 @@ void main() {
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getV2Metrics()).thenAnswer(
-      (_) async => V2Metrics.fromMap({
+    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+      (_) async => SyncMetrics.fromMap({
         'processed': 1,
         'skipped': 0,
         'failures': 0,

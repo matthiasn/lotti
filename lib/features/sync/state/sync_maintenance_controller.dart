@@ -5,6 +5,9 @@ import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart'
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 
+/// Coordinates execution of selected definition sync steps and maps per-step
+/// progress into a simple [SyncState] used by the Sync modal. Each step is
+/// weighted equally for the overall progress bar.
 class SyncMaintenanceController extends Notifier<SyncState> {
   SyncMaintenanceController();
 
@@ -19,9 +22,11 @@ class SyncMaintenanceController extends Notifier<SyncState> {
   }
 
   Future<void> syncAll({required Set<SyncStep> selectedSteps}) async {
+    // Respect a canonical order for display, then filter it to the selection.
     final orderedSteps = <SyncStep>[
       SyncStep.tags,
       SyncStep.measurables,
+      SyncStep.labels,
       SyncStep.categories,
       SyncStep.dashboards,
       SyncStep.habits,
@@ -32,6 +37,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       return;
     }
 
+    // Precompute totals so the UI can show "processed / total" immediately.
     final initialTotals =
         await _repository.fetchTotalsForSteps(orderedSteps.toSet());
 
@@ -57,6 +63,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
     })>{
       SyncStep.tags: _repository.syncTags,
       SyncStep.measurables: _repository.syncMeasurables,
+      SyncStep.labels: _repository.syncLabels,
       SyncStep.categories: _repository.syncCategories,
       SyncStep.dashboards: _repository.syncDashboards,
       SyncStep.habits: _repository.syncHabits,
@@ -72,6 +79,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
         )
         .toList();
 
+    // Each selected step contributes the same weight to overall progress.
     final operationWeight =
         syncOperations.isEmpty ? 0.0 : 1 / syncOperations.length;
 

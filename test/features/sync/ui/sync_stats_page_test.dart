@@ -38,7 +38,7 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<UserActivityService>(UserActivityService());
       mockMatrixService = MockMatrixService();
-      when(() => mockMatrixService.getV2Metrics())
+      when(() => mockMatrixService.getSyncMetrics())
           .thenAnswer((_) async => null);
       when(() => mockMatrixService.getSyncDiagnosticsText())
           .thenAnswer((_) async => 'ok');

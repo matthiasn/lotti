@@ -15,9 +15,14 @@ denormalized lookup table for efficient filtering.
     every entity save via `JournalDb.addLabeled`.
 - **Reconciliation**: Diff-based reconciliation compares the authoritative metadata (`meta.labelIds`)
   with the denormalized table, inserting/removing rows as needed.
-- **Sync**: Because labels reuse the entity definition sync pipeline, updates automatically flow to
-  other devices. Soft deletions flip `deletedAt` so reconciliation drops associations without losing
-  history.
+## Sync
+
+Labels reuse the entity definition sync pipeline, so updates automatically flow to other devices.
+Soft deletions flip `deletedAt` so reconciliation drops associations without losing history.
+
+- Manual sync: You can trigger a one-off sync of label definitions from the Sync page via the
+  "Sync Entities" modal. Select "Labels" (and any other steps) to enqueue current definitions for
+  sync. This is useful after adding labels offline or when bringing a new device online.
 
 ## State Management
 

@@ -40,7 +40,7 @@
   still assumes the timeline needs cancellation.
 - Numerous unit tests (timeline_* suites, matrix_service_unit tests) and integration tests
   explicitly exercise V1-specific behaviours.
-- Documentation (`docs/sync/sync_v2_summary.md`, `lib/features/sync/README.md`, CHANGELOG) frames V2
+- Documentation (`docs/sync/sync_summary.md`, `lib/features/sync/README.md`, CHANGELOG) frames the unified pipeline
   as optional behind the flag.
 
 ## Design Overview
@@ -102,7 +102,7 @@
 - Targeted `dart-mcp.run_tests` runs:
   - Sync-focused unit tests (`test/features/sync/matrix/**/*`).
   - Database config seeding tests (`test/database/database_test.dart`).
-  - Integration test suite (`integration_test/run_matrix_v2_tests.sh` or equivalent MCP command) to
+  - Integration test suite (`integration_test/run_matrix_tests.sh` or equivalent MCP command) to
     confirm end-to-end behaviour.
 - Consider adding/adjusting tests that assert `MatrixService` always exposes the pipeline (no
   `listenToTimeline`) and that metrics are still accessible.
@@ -126,4 +126,3 @@
   read markers.
 - Schedule the Phase 2 rename work once stability is confirmed (rename files/classes, update metrics
   labels, etc.).
-
