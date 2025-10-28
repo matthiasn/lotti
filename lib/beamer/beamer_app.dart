@@ -153,7 +153,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
         // Clamp index to valid range to prevent out of bounds errors
         // when flags are toggled and items list shrinks
-        final index = rawIndex.clamp(0, itemCount - 1);
+        final index = rawIndex < 0
+            ? 0
+            : (rawIndex > itemCount - 1 ? itemCount - 1 : rawIndex);
 
         // No eager toast from build(); event-driven toast handled via ref.listen
 
