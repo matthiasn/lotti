@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/ai/utils/item_list_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -46,39 +47,17 @@ class LottiBatchChecklistHandler extends FunctionHandler {
 
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
-      final itemsString = args['items'] as String?;
+      final raw = args['items'];
 
-      if (itemsString != null && itemsString.trim().isNotEmpty) {
-        // Parse comma-separated items
-        final items = itemsString
-            .split(',')
-            .map((item) => item.trim())
-            .where((item) => item.isNotEmpty)
+      List<String> items;
+      if (raw is List) {
+        items = raw
+            .whereType<Object>()
+            .map((e) => e.toString().trim())
+            .where((s) => s.isNotEmpty && s != 'null')
             .toList();
-
-        if (items.isNotEmpty) {
-          return FunctionCallResult(
-            success: true,
-            functionName: functionName,
-            arguments: call.function.arguments,
-            data: {
-              'items': items,
-              'toolCallId': call.id,
-              'taskId': task.id,
-            },
-          );
-        } else {
-          return FunctionCallResult(
-            success: false,
-            functionName: functionName,
-            arguments: call.function.arguments,
-            data: {
-              'toolCallId': call.id,
-              'taskId': task.id,
-            },
-            error: 'No valid items found in the comma-separated list',
-          );
-        }
+      } else if (raw is String && raw.trim().isNotEmpty) {
+        items = parseItemListString(raw);
       } else {
         return FunctionCallResult(
           success: false,
@@ -91,6 +70,30 @@ class LottiBatchChecklistHandler extends FunctionHandler {
           error: 'Missing required field "items" or empty list',
         );
       }
+
+      if (items.isNotEmpty) {
+        return FunctionCallResult(
+          success: true,
+          functionName: functionName,
+          arguments: call.function.arguments,
+          data: {
+            'items': items,
+            'toolCallId': call.id,
+            'taskId': task.id,
+          },
+        );
+      }
+
+      return FunctionCallResult(
+        success: false,
+        functionName: functionName,
+        arguments: call.function.arguments,
+        data: {
+          'toolCallId': call.id,
+          'taskId': task.id,
+        },
+        error: 'No valid items found in the list',
+      );
     } catch (e) {
       return FunctionCallResult(
         success: false,
@@ -136,8 +139,15 @@ class LottiBatchChecklistHandler extends FunctionHandler {
     required List<String> successfulDescriptions,
   }) {
     return '''
-I noticed an error in your function call. Please use the correct format:
+I noticed an error in your function call.
+
+Preferred format for multiple items:
+{"items": ["item1", "item2", "item3"]}
+
+Fallback format (if arrays are not supported):
 {"items": "item1, item2, item3"}
+- If an item contains a comma, escape it with \\, or wrap the item in quotes.
+- Commas inside parentheses/brackets/braces belong to the item and should not split it.
 
 You already successfully created these checklist items: ${successfulDescriptions.join(', ')}
 

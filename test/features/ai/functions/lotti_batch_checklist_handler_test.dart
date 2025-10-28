@@ -117,6 +117,21 @@ void main() {
     });
 
     group('processFunctionCall', () {
+      test('should process array of items (preferred)', () {
+        // Arrange
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": ["cheese", "tomatoes, sliced", "pepperoni"]}',
+        );
+
+        // Act
+        final result = handler.processFunctionCall(toolCall);
+
+        // Assert
+        expect(result.success, true);
+        expect(
+            result.data['items'], ['cheese', 'tomatoes, sliced', 'pepperoni']);
+      });
+
       test('should process valid comma-separated items', () {
         // Arrange
         final toolCall = TestDataFactory.createToolCall(
@@ -133,6 +148,105 @@ void main() {
         expect(result.data['toolCallId'], 'tool-1');
         expect(result.data['taskId'], testTask.meta.id);
         expect(result.error, isNull);
+      });
+
+      test('should fail on empty array of items', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": []}',
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, false);
+        expect(result.error, 'No valid items found in the list');
+      });
+
+      test('should accept array with non-string types and filter empties', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": [123, true, null, "valid", "  "]}',
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['123', 'true', 'valid']);
+      });
+
+      test('should parse grouping with brackets in string fallback', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": "[a, b], c"}',
+        );
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['[a, b]', 'c']);
+      });
+
+      test('should parse grouping with braces in string fallback', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": "{a, b}, c"}',
+        );
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['{a, b}', 'c']);
+      });
+
+      test('should handle mixed quotes and escapes in string fallback', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: r'{"items": "\"a\", b\\, c"}',
+        );
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['a', 'b, c']);
+      });
+
+      test('should handle single-item array', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": ["single"]}',
+        );
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['single']);
+      });
+
+      test('should support quoted items with commas', () {
+        // Arrange
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: r'{"items": "\"cheese, sliced\", tomatoes"}',
+        );
+
+        // Act
+        final result = handler.processFunctionCall(toolCall);
+
+        // Assert
+        expect(result.success, true);
+        expect(result.data['items'], ['cheese, sliced', 'tomatoes']);
+      });
+
+      test('should support escaped commas', () {
+        // Arrange
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: r'{"items": "cheese\\, sliced, tomatoes"}',
+        );
+
+        // Act
+        final result = handler.processFunctionCall(toolCall);
+
+        // Assert
+        expect(result.success, true);
+        expect(result.data['items'], ['cheese, sliced', 'tomatoes']);
+      });
+
+      test('should not split commas inside parentheses', () {
+        // Arrange
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": "Start database (index cache, warm), Verify"}',
+        );
+
+        // Act
+        final result = handler.processFunctionCall(toolCall);
+
+        // Assert
+        expect(result.success, true);
+        expect(result.data['items'],
+            ['Start database (index cache, warm)', 'Verify']);
       });
 
       test('should trim whitespace from items', () {

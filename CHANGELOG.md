@@ -53,6 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI prompt availability now respects platform capabilities, preventing confusion from unusable model options on mobile.
 
 ### Fixed
+- AI: Hardened checklist item parsing to avoid accidental splitting when items contain commas or grouped text:
+  - `add_multiple_checklist_items` now accepts a JSON array of strings (preferred) or a robustly parsed string.
+  - Escaped commas (`\,`), quoted items ("..." / '...'), and commas inside parentheses/brackets/braces no longer split into separate items.
+  - Updated prompt guidance to prefer arrays; fallback string format documented with escaping.
+  - Added unit tests for parser and batch handler; analyzer warnings resolved.
 - Sync (Matrix): Catch-up now continues escalating snapshot size until it’s not full (or lookback
   cap reached), ensuring the entire backlog after the read marker is retrieved. This eliminates
   missing EntryLinks after offline windows and prevents gray boxes on return to online.

@@ -580,16 +580,21 @@ class LottiChecklistStrategy extends ConversationStrategy {
 
     // If no items created yet, provide explicit instructions
     if (allSuccessfulItems.isEmpty) {
-      return '''
+      return r'''
 You haven't created any checklist items yet. Please review the user's original request.
 
 IMPORTANT: When you have multiple items to add (2 or more), you MUST use add_multiple_checklist_items for efficiency.
 
-For multiple items, use this format:
-{"items": "item1, item2, item3"}
+Preferred format for multiple items:
+{"items": ["item1", "item2", "item3"]}
+
+Fallback format (if arrays are not supported):
+- {"items": "item1, item2, item3"}
+- If an item contains a comma, escape it with \\, or wrap the item in quotes.
+- Commas inside parentheses/brackets/braces belong to the item and should not split it.
 
 Example: If the user asked for a pizza shopping list with cheese, pepperoni, and dough, use ONE call:
-add_multiple_checklist_items with {"items": "cheese, pepperoni, dough"}
+add_multiple_checklist_items with {"items": ["cheese", "pepperoni", "dough"]}
 
 Only use add_checklist_item for single items:
 {"actionItemDescription": "single item"}
@@ -601,7 +606,8 @@ Please create the checklist items now using the appropriate function.''';
 Great! You've created ${allSuccessfulItems.length} checklist item(s) so far: ${allSuccessfulItems.join(', ')}.
 
 If there are more items to add from the user's original request:
-- For multiple remaining items: Use add_multiple_checklist_items with {"items": "item1, item2, item3"}
+- For multiple remaining items: Use add_multiple_checklist_items with {"items": ["item1", "item2", "item3"]} (preferred)
+- If arrays are not supported, use {"items": "item1, item2, item3"} and escape commas within an item as \\, or wrap the item in quotes
 - For a single remaining item: Use add_checklist_item with {"actionItemDescription": "item"}
 
 Continue until all items from the user's request have been added.''';
