@@ -85,13 +85,18 @@ class LabelChip extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label.name,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: AppTheme.statusIndicatorFontSize,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
-                  color: textColor,
+              Flexible(
+                child: Text(
+                  label.name,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: AppTheme.statusIndicatorFontSize,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                    color: textColor,
+                  ),
                 ),
               ),
             ],
