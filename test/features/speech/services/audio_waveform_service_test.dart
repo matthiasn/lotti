@@ -212,7 +212,7 @@ void main() {
     return files;
   }
 
-  test('returns null when audio duration exceeds limit', () async {
+  test('extracts waveform for long audio (no gating)', () async {
     final audio = createAudio(
       duration: const Duration(minutes: 5),
     );
@@ -222,14 +222,14 @@ void main() {
       targetBuckets: 200,
     );
 
-    expect(result, isNull);
-    verify(
+    expect(result, isNotNull);
+    verifyNever(
       () => loggingService.captureEvent(
         any<String>(),
         domain: 'audio_waveform_service',
         subDomain: 'duration_gate',
       ),
-    ).called(1);
+    );
   });
 
   test('normalizes waveform and caches result', () async {
