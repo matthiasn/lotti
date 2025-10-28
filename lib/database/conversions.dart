@@ -40,6 +40,14 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     task: (task) => task.data.status.toDbString,
     orElse: () => '',
   );
+  final taskPriority = entity.maybeMap(
+    task: (task) => task.data.priority.short,
+    orElse: () => null,
+  );
+  final taskPriorityRank = entity.maybeMap(
+    task: (task) => task.data.priority.rank,
+    orElse: () => null,
+  );
 
   final id = entity.meta.id;
   final dbEntity = JournalDbEntity(
@@ -53,6 +61,8 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     flag: entity.meta.flag?.index ?? 0,
     task: task,
     taskStatus: taskStatus,
+    taskPriority: taskPriority,
+    taskPriorityRank: taskPriorityRank,
     category: entity.meta.categoryId ?? '',
     dateTo: entity.meta.dateTo,
     plainText: entity.entryText?.plainText,
@@ -89,7 +99,24 @@ JournalEntity fromSerialized(String serialized) {
 }
 
 JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
-  return fromSerialized(dbEntity.serialized);
+  final entity = fromSerialized(dbEntity.serialized);
+
+  // Patch denormalized fields that may be missing from legacy JSON or
+  // when codegen is temporarily out of sync (e.g., after a hot restart).
+  // Priority: prefer DB column when present to ensure UI reflects the latest
+  // persisted value.
+  if (dbEntity.taskPriority != null && dbEntity.taskPriority!.isNotEmpty) {
+    return entity.maybeMap(
+      task: (t) {
+        final prio = taskPriorityFromString(dbEntity.taskPriority!);
+        if (t.data.priority == prio) return t;
+        return t.copyWith(data: t.data.copyWith(priority: prio));
+      },
+      orElse: () => entity,
+    );
+  }
+
+  return entity;
 }
 
 List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {

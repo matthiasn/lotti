@@ -875,4 +875,17 @@
   "tasksQuickFilterClear": "Clear",
   "tasksQuickFilterUnassignedLabel": "Unassigned",
   "taskLabelUnassignedLabel": "unassigned"
+  ,
+  "tasksPriorityTitle": "Priority",
+  "tasksPriorityP0": "Urgent",
+  "tasksPriorityP1": "High",
+  "tasksPriorityP2": "Medium",
+  "tasksPriorityP3": "Low",
+  "tasksPriorityPickerTitle": "Select priority",
+  "tasksPriorityFilterTitle": "Priority",
+  "tasksPriorityFilterAll": "All",
+  "tasksPriorityP0Description": "Urgent (ASAP)",
+  "tasksPriorityP1Description": "High (Soon)",
+  "tasksPriorityP2Description": "Medium (Default)",
+  "tasksPriorityP3Description": "Low (Whenever)"
 }

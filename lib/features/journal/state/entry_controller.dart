@@ -281,6 +281,29 @@ class EntryController extends _$EntryController {
     }
   }
 
+  Future<void> updateTaskPriority(String code) async {
+    final entry = state.value?.entry;
+    if (entry is! Task) return;
+
+    final next = taskPriorityFromString(code);
+    if (entry.data.priority == next) return;
+
+    // Optimistically update local state for immediate UI feedback
+    final optimistic = entry.copyWith(
+      data: entry.data.copyWith(priority: next),
+    );
+    state = AsyncData(state.value?.copyWith(entry: optimistic));
+
+    // Persist change
+    final _ = await _persistenceLogic.updateTask(
+      journalEntityId: id,
+      taskData: optimistic.data,
+    );
+
+    // Haptic feedback
+    await HapticFeedback.heavyImpact();
+  }
+
   Future<void> updateRating(double stars) async {
     final event = state.value?.entry;
     if (event != null && event is JournalEvent) {

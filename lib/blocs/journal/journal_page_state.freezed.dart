@@ -26,6 +26,7 @@ mixin _$JournalPageState {
   Set<String> get selectedTaskStatuses;
   Set<String?> get selectedCategoryIds;
   Set<String> get selectedLabelIds;
+  Set<String> get selectedPriorities;
 
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
@@ -60,7 +61,9 @@ mixin _$JournalPageState {
             const DeepCollectionEquality()
                 .equals(other.selectedCategoryIds, selectedCategoryIds) &&
             const DeepCollectionEquality()
-                .equals(other.selectedLabelIds, selectedLabelIds));
+                .equals(other.selectedLabelIds, selectedLabelIds) &&
+            const DeepCollectionEquality()
+                .equals(other.selectedPriorities, selectedPriorities));
   }
 
   @override
@@ -77,11 +80,12 @@ mixin _$JournalPageState {
       const DeepCollectionEquality().hash(taskStatuses),
       const DeepCollectionEquality().hash(selectedTaskStatuses),
       const DeepCollectionEquality().hash(selectedCategoryIds),
-      const DeepCollectionEquality().hash(selectedLabelIds));
+      const DeepCollectionEquality().hash(selectedLabelIds),
+      const DeepCollectionEquality().hash(selectedPriorities));
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities)';
   }
 }
 
@@ -103,7 +107,8 @@ abstract mixin class $JournalPageStateCopyWith<$Res> {
       List<String> taskStatuses,
       Set<String> selectedTaskStatuses,
       Set<String?> selectedCategoryIds,
-      Set<String> selectedLabelIds});
+      Set<String> selectedLabelIds,
+      Set<String> selectedPriorities});
 }
 
 /// @nodoc
@@ -131,6 +136,7 @@ class _$JournalPageStateCopyWithImpl<$Res>
     Object? selectedTaskStatuses = null,
     Object? selectedCategoryIds = null,
     Object? selectedLabelIds = null,
+    Object? selectedPriorities = null,
   }) {
     return _then(_self.copyWith(
       match: null == match
@@ -180,6 +186,10 @@ class _$JournalPageStateCopyWithImpl<$Res>
       selectedLabelIds: null == selectedLabelIds
           ? _self.selectedLabelIds
           : selectedLabelIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      selectedPriorities: null == selectedPriorities
+          ? _self.selectedPriorities
+          : selectedPriorities // ignore: cast_nullable_to_non_nullable
               as Set<String>,
     ));
   }
@@ -290,7 +300,8 @@ extension JournalPageStatePatterns on JournalPageState {
             List<String> taskStatuses,
             Set<String> selectedTaskStatuses,
             Set<String?> selectedCategoryIds,
-            Set<String> selectedLabelIds)?
+            Set<String> selectedLabelIds,
+            Set<String> selectedPriorities)?
         $default, {
     required TResult orElse(),
   }) {
@@ -309,7 +320,8 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.taskStatuses,
             _that.selectedTaskStatuses,
             _that.selectedCategoryIds,
-            _that.selectedLabelIds);
+            _that.selectedLabelIds,
+            _that.selectedPriorities);
       case _:
         return orElse();
     }
@@ -342,7 +354,8 @@ extension JournalPageStatePatterns on JournalPageState {
             List<String> taskStatuses,
             Set<String> selectedTaskStatuses,
             Set<String?> selectedCategoryIds,
-            Set<String> selectedLabelIds)
+            Set<String> selectedLabelIds,
+            Set<String> selectedPriorities)
         $default,
   ) {
     final _that = this;
@@ -360,7 +373,8 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.taskStatuses,
             _that.selectedTaskStatuses,
             _that.selectedCategoryIds,
-            _that.selectedLabelIds);
+            _that.selectedLabelIds,
+            _that.selectedPriorities);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -392,7 +406,8 @@ extension JournalPageStatePatterns on JournalPageState {
             List<String> taskStatuses,
             Set<String> selectedTaskStatuses,
             Set<String?> selectedCategoryIds,
-            Set<String> selectedLabelIds)?
+            Set<String> selectedLabelIds,
+            Set<String> selectedPriorities)?
         $default,
   ) {
     final _that = this;
@@ -410,7 +425,8 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.taskStatuses,
             _that.selectedTaskStatuses,
             _that.selectedCategoryIds,
-            _that.selectedLabelIds);
+            _that.selectedLabelIds,
+            _that.selectedPriorities);
       case _:
         return null;
     }
@@ -432,7 +448,8 @@ class _JournalPageState implements JournalPageState {
       required final List<String> taskStatuses,
       required final Set<String> selectedTaskStatuses,
       required final Set<String?> selectedCategoryIds,
-      required final Set<String> selectedLabelIds})
+      required final Set<String> selectedLabelIds,
+      final Set<String> selectedPriorities = const <String>{}})
       : _tagIds = tagIds,
         _filters = filters,
         _selectedEntryTypes = selectedEntryTypes,
@@ -440,7 +457,8 @@ class _JournalPageState implements JournalPageState {
         _taskStatuses = taskStatuses,
         _selectedTaskStatuses = selectedTaskStatuses,
         _selectedCategoryIds = selectedCategoryIds,
-        _selectedLabelIds = selectedLabelIds;
+        _selectedLabelIds = selectedLabelIds,
+        _selectedPriorities = selectedPriorities;
 
   @override
   final String match;
@@ -517,6 +535,16 @@ class _JournalPageState implements JournalPageState {
     return EqualUnmodifiableSetView(_selectedLabelIds);
   }
 
+  final Set<String> _selectedPriorities;
+  @override
+  @JsonKey()
+  Set<String> get selectedPriorities {
+    if (_selectedPriorities is EqualUnmodifiableSetView)
+      return _selectedPriorities;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(_selectedPriorities);
+  }
+
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
   @override
@@ -550,7 +578,9 @@ class _JournalPageState implements JournalPageState {
             const DeepCollectionEquality()
                 .equals(other._selectedCategoryIds, _selectedCategoryIds) &&
             const DeepCollectionEquality()
-                .equals(other._selectedLabelIds, _selectedLabelIds));
+                .equals(other._selectedLabelIds, _selectedLabelIds) &&
+            const DeepCollectionEquality()
+                .equals(other._selectedPriorities, _selectedPriorities));
   }
 
   @override
@@ -567,11 +597,12 @@ class _JournalPageState implements JournalPageState {
       const DeepCollectionEquality().hash(_taskStatuses),
       const DeepCollectionEquality().hash(_selectedTaskStatuses),
       const DeepCollectionEquality().hash(_selectedCategoryIds),
-      const DeepCollectionEquality().hash(_selectedLabelIds));
+      const DeepCollectionEquality().hash(_selectedLabelIds),
+      const DeepCollectionEquality().hash(_selectedPriorities));
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities)';
   }
 }
 
@@ -595,7 +626,8 @@ abstract mixin class _$JournalPageStateCopyWith<$Res>
       List<String> taskStatuses,
       Set<String> selectedTaskStatuses,
       Set<String?> selectedCategoryIds,
-      Set<String> selectedLabelIds});
+      Set<String> selectedLabelIds,
+      Set<String> selectedPriorities});
 }
 
 /// @nodoc
@@ -623,6 +655,7 @@ class __$JournalPageStateCopyWithImpl<$Res>
     Object? selectedTaskStatuses = null,
     Object? selectedCategoryIds = null,
     Object? selectedLabelIds = null,
+    Object? selectedPriorities = null,
   }) {
     return _then(_JournalPageState(
       match: null == match
@@ -673,6 +706,10 @@ class __$JournalPageStateCopyWithImpl<$Res>
           ? _self._selectedLabelIds
           : selectedLabelIds // ignore: cast_nullable_to_non_nullable
               as Set<String>,
+      selectedPriorities: null == selectedPriorities
+          ? _self._selectedPriorities
+          : selectedPriorities // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
     ));
   }
 }
@@ -682,6 +719,7 @@ mixin _$TasksFilter {
   Set<String> get selectedCategoryIds;
   Set<String> get selectedTaskStatuses;
   Set<String> get selectedLabelIds;
+  Set<String> get selectedPriorities;
 
   /// Create a copy of TasksFilter
   /// with the given fields replaced by the non-null parameter values.
@@ -703,7 +741,9 @@ mixin _$TasksFilter {
             const DeepCollectionEquality()
                 .equals(other.selectedTaskStatuses, selectedTaskStatuses) &&
             const DeepCollectionEquality()
-                .equals(other.selectedLabelIds, selectedLabelIds));
+                .equals(other.selectedLabelIds, selectedLabelIds) &&
+            const DeepCollectionEquality()
+                .equals(other.selectedPriorities, selectedPriorities));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -712,11 +752,12 @@ mixin _$TasksFilter {
       runtimeType,
       const DeepCollectionEquality().hash(selectedCategoryIds),
       const DeepCollectionEquality().hash(selectedTaskStatuses),
-      const DeepCollectionEquality().hash(selectedLabelIds));
+      const DeepCollectionEquality().hash(selectedLabelIds),
+      const DeepCollectionEquality().hash(selectedPriorities));
 
   @override
   String toString() {
-    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds)';
+    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities)';
   }
 }
 
@@ -729,7 +770,8 @@ abstract mixin class $TasksFilterCopyWith<$Res> {
   $Res call(
       {Set<String> selectedCategoryIds,
       Set<String> selectedTaskStatuses,
-      Set<String> selectedLabelIds});
+      Set<String> selectedLabelIds,
+      Set<String> selectedPriorities});
 }
 
 /// @nodoc
@@ -747,6 +789,7 @@ class _$TasksFilterCopyWithImpl<$Res> implements $TasksFilterCopyWith<$Res> {
     Object? selectedCategoryIds = null,
     Object? selectedTaskStatuses = null,
     Object? selectedLabelIds = null,
+    Object? selectedPriorities = null,
   }) {
     return _then(_self.copyWith(
       selectedCategoryIds: null == selectedCategoryIds
@@ -760,6 +803,10 @@ class _$TasksFilterCopyWithImpl<$Res> implements $TasksFilterCopyWith<$Res> {
       selectedLabelIds: null == selectedLabelIds
           ? _self.selectedLabelIds
           : selectedLabelIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      selectedPriorities: null == selectedPriorities
+          ? _self.selectedPriorities
+          : selectedPriorities // ignore: cast_nullable_to_non_nullable
               as Set<String>,
     ));
   }
@@ -858,8 +905,11 @@ extension TasksFilterPatterns on TasksFilter {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(Set<String> selectedCategoryIds,
-            Set<String> selectedTaskStatuses, Set<String> selectedLabelIds)?
+    TResult Function(
+            Set<String> selectedCategoryIds,
+            Set<String> selectedTaskStatuses,
+            Set<String> selectedLabelIds,
+            Set<String> selectedPriorities)?
         $default, {
     required TResult orElse(),
   }) {
@@ -867,7 +917,7 @@ extension TasksFilterPatterns on TasksFilter {
     switch (_that) {
       case _TasksFilter() when $default != null:
         return $default(_that.selectedCategoryIds, _that.selectedTaskStatuses,
-            _that.selectedLabelIds);
+            _that.selectedLabelIds, _that.selectedPriorities);
       case _:
         return orElse();
     }
@@ -888,15 +938,18 @@ extension TasksFilterPatterns on TasksFilter {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(Set<String> selectedCategoryIds,
-            Set<String> selectedTaskStatuses, Set<String> selectedLabelIds)
+    TResult Function(
+            Set<String> selectedCategoryIds,
+            Set<String> selectedTaskStatuses,
+            Set<String> selectedLabelIds,
+            Set<String> selectedPriorities)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _TasksFilter():
         return $default(_that.selectedCategoryIds, _that.selectedTaskStatuses,
-            _that.selectedLabelIds);
+            _that.selectedLabelIds, _that.selectedPriorities);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -916,15 +969,18 @@ extension TasksFilterPatterns on TasksFilter {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(Set<String> selectedCategoryIds,
-            Set<String> selectedTaskStatuses, Set<String> selectedLabelIds)?
+    TResult? Function(
+            Set<String> selectedCategoryIds,
+            Set<String> selectedTaskStatuses,
+            Set<String> selectedLabelIds,
+            Set<String> selectedPriorities)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _TasksFilter() when $default != null:
         return $default(_that.selectedCategoryIds, _that.selectedTaskStatuses,
-            _that.selectedLabelIds);
+            _that.selectedLabelIds, _that.selectedPriorities);
       case _:
         return null;
     }
@@ -937,10 +993,12 @@ class _TasksFilter implements TasksFilter {
   _TasksFilter(
       {final Set<String> selectedCategoryIds = const <String>{},
       final Set<String> selectedTaskStatuses = const <String>{},
-      final Set<String> selectedLabelIds = const <String>{}})
+      final Set<String> selectedLabelIds = const <String>{},
+      final Set<String> selectedPriorities = const <String>{}})
       : _selectedCategoryIds = selectedCategoryIds,
         _selectedTaskStatuses = selectedTaskStatuses,
-        _selectedLabelIds = selectedLabelIds;
+        _selectedLabelIds = selectedLabelIds,
+        _selectedPriorities = selectedPriorities;
   factory _TasksFilter.fromJson(Map<String, dynamic> json) =>
       _$TasksFilterFromJson(json);
 
@@ -973,6 +1031,16 @@ class _TasksFilter implements TasksFilter {
     return EqualUnmodifiableSetView(_selectedLabelIds);
   }
 
+  final Set<String> _selectedPriorities;
+  @override
+  @JsonKey()
+  Set<String> get selectedPriorities {
+    if (_selectedPriorities is EqualUnmodifiableSetView)
+      return _selectedPriorities;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(_selectedPriorities);
+  }
+
   /// Create a copy of TasksFilter
   /// with the given fields replaced by the non-null parameter values.
   @override
@@ -998,7 +1066,9 @@ class _TasksFilter implements TasksFilter {
             const DeepCollectionEquality()
                 .equals(other._selectedTaskStatuses, _selectedTaskStatuses) &&
             const DeepCollectionEquality()
-                .equals(other._selectedLabelIds, _selectedLabelIds));
+                .equals(other._selectedLabelIds, _selectedLabelIds) &&
+            const DeepCollectionEquality()
+                .equals(other._selectedPriorities, _selectedPriorities));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1007,11 +1077,12 @@ class _TasksFilter implements TasksFilter {
       runtimeType,
       const DeepCollectionEquality().hash(_selectedCategoryIds),
       const DeepCollectionEquality().hash(_selectedTaskStatuses),
-      const DeepCollectionEquality().hash(_selectedLabelIds));
+      const DeepCollectionEquality().hash(_selectedLabelIds),
+      const DeepCollectionEquality().hash(_selectedPriorities));
 
   @override
   String toString() {
-    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds)';
+    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities)';
   }
 }
 
@@ -1026,7 +1097,8 @@ abstract mixin class _$TasksFilterCopyWith<$Res>
   $Res call(
       {Set<String> selectedCategoryIds,
       Set<String> selectedTaskStatuses,
-      Set<String> selectedLabelIds});
+      Set<String> selectedLabelIds,
+      Set<String> selectedPriorities});
 }
 
 /// @nodoc
@@ -1044,6 +1116,7 @@ class __$TasksFilterCopyWithImpl<$Res> implements _$TasksFilterCopyWith<$Res> {
     Object? selectedCategoryIds = null,
     Object? selectedTaskStatuses = null,
     Object? selectedLabelIds = null,
+    Object? selectedPriorities = null,
   }) {
     return _then(_TasksFilter(
       selectedCategoryIds: null == selectedCategoryIds
@@ -1057,6 +1130,10 @@ class __$TasksFilterCopyWithImpl<$Res> implements _$TasksFilterCopyWith<$Res> {
       selectedLabelIds: null == selectedLabelIds
           ? _self._selectedLabelIds
           : selectedLabelIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      selectedPriorities: null == selectedPriorities
+          ? _self._selectedPriorities
+          : selectedPriorities // ignore: cast_nullable_to_non_nullable
               as Set<String>,
     ));
   }

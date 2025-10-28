@@ -9,6 +9,8 @@ CREATE TABLE journal (
   private BOOLEAN NOT NULL DEFAULT FALSE,
   task BOOLEAN NOT NULL DEFAULT FALSE,
   task_status TEXT,
+  task_priority TEXT,
+  task_priority_rank INTEGER,
   flag INTEGER NOT NULL DEFAULT 0,
   type TEXT NOT NULL,
   subtype TEXT,
@@ -29,7 +31,13 @@ CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC);
 CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC);
 
 CREATE INDEX idx_journal_tab ON journal(type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
-CREATE INDEX idx_journal_tasks ON journal(type COLLATE BINARY ASC, task_status COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+CREATE INDEX idx_journal_tasks ON journal(
+  type COLLATE BINARY ASC,
+  task_status COLLATE BINARY ASC,
+  task_priority_rank COLLATE BINARY ASC,
+  category COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC
+);
 CREATE INDEX idx_journal_type_subtype ON journal(type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
 
 CREATE TABLE conflicts (
@@ -338,7 +346,18 @@ SELECT * FROM journal
       ELSE 1
     END
   ) = 1
-  ORDER BY date_from DESC
+  -- Priority filtering (AND semantics): when enabled, include rows whose task_priority is in :priorities
+  AND (
+    CASE
+      WHEN :filterByPriorities THEN
+        CASE
+          WHEN task_priority IN :priorities THEN 1
+          ELSE 0
+        END
+      ELSE 1
+    END
+  ) = 1
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 
@@ -365,7 +384,17 @@ SELECT * FROM journal
       ELSE 1
     END
   ) = 1
-  ORDER BY date_from DESC
+  AND (
+    CASE
+      WHEN :filterByPriorities THEN
+        CASE
+          WHEN task_priority IN :priorities THEN 1
+          ELSE 0
+        END
+      ELSE 1
+    END
+  ) = 1
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 

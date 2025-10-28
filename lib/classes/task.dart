@@ -8,6 +8,60 @@ import 'package:lotti/utils/file_utils.dart';
 part 'task.freezed.dart';
 part 'task.g.dart';
 
+/// Priority levels for tasks, aligned with Linear-style P0..P3
+enum TaskPriority {
+  p0Urgent,
+  p1High,
+  p2Medium,
+  p3Low,
+}
+
+/// Parse a DB/display string (e.g., 'P0', 'P1', 'P2', 'P3') to TaskPriority.
+TaskPriority taskPriorityFromString(
+  String value, {
+  TaskPriority fallback = TaskPriority.p2Medium,
+}) {
+  switch (value.trim().toUpperCase()) {
+    case 'P0':
+      return TaskPriority.p0Urgent;
+    case 'P1':
+      return TaskPriority.p1High;
+    case 'P2':
+      return TaskPriority.p2Medium;
+    case 'P3':
+      return TaskPriority.p3Low;
+    default:
+      return fallback;
+  }
+}
+
+extension TaskPriorityExt on TaskPriority {
+  /// Short label used in compact UI, e.g., 'P0'.
+  String get short => 'P$rank';
+
+  /// Numerical rank used for ordering (lower is higher priority).
+  int get rank => index; // 0..3
+
+  /// Human-readable label (non-localized) for use in fallback UI.
+  String get label => switch (this) {
+        TaskPriority.p0Urgent => 'Urgent',
+        TaskPriority.p1High => 'High',
+        TaskPriority.p2Medium => 'Medium',
+        TaskPriority.p3Low => 'Low',
+      };
+
+  /// Color aligned with task status theme tokens.
+  Color colorForBrightness(Brightness brightness) {
+    final isLight = brightness == Brightness.light;
+    return switch (this) {
+      TaskPriority.p0Urgent => isLight ? taskStatusDarkRed : taskStatusRed,
+      TaskPriority.p1High => isLight ? taskStatusDarkOrange : taskStatusOrange,
+      TaskPriority.p2Medium => isLight ? taskStatusDarkBlue : taskStatusBlue,
+      TaskPriority.p3Low => Colors.grey,
+    };
+  }
+}
+
 @freezed
 sealed class TaskStatus with _$TaskStatus {
   const factory TaskStatus.open({
@@ -84,6 +138,7 @@ abstract class TaskData with _$TaskData {
     Duration? estimate,
     List<String>? checklistIds,
     String? languageCode,
+    @Default(TaskPriority.p2Medium) TaskPriority priority,
   }) = _TaskData;
 
   factory TaskData.fromJson(Map<String, dynamic> json) =>

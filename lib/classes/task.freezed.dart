@@ -1526,6 +1526,7 @@ mixin _$TaskData {
   Duration? get estimate;
   List<String>? get checklistIds;
   String? get languageCode;
+  TaskPriority get priority;
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
@@ -1555,7 +1556,9 @@ mixin _$TaskData {
             const DeepCollectionEquality()
                 .equals(other.checklistIds, checklistIds) &&
             (identical(other.languageCode, languageCode) ||
-                other.languageCode == languageCode));
+                other.languageCode == languageCode) &&
+            (identical(other.priority, priority) ||
+                other.priority == priority));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1570,11 +1573,12 @@ mixin _$TaskData {
       due,
       estimate,
       const DeepCollectionEquality().hash(checklistIds),
-      languageCode);
+      languageCode,
+      priority);
 
   @override
   String toString() {
-    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode)';
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, priority: $priority)';
   }
 }
 
@@ -1592,7 +1596,8 @@ abstract mixin class $TaskDataCopyWith<$Res> {
       DateTime? due,
       Duration? estimate,
       List<String>? checklistIds,
-      String? languageCode});
+      String? languageCode,
+      TaskPriority priority});
 
   $TaskStatusCopyWith<$Res> get status;
 }
@@ -1618,6 +1623,7 @@ class _$TaskDataCopyWithImpl<$Res> implements $TaskDataCopyWith<$Res> {
     Object? estimate = freezed,
     Object? checklistIds = freezed,
     Object? languageCode = freezed,
+    Object? priority = null,
   }) {
     return _then(_self.copyWith(
       status: null == status
@@ -1656,6 +1662,10 @@ class _$TaskDataCopyWithImpl<$Res> implements $TaskDataCopyWith<$Res> {
           ? _self.languageCode
           : languageCode // ignore: cast_nullable_to_non_nullable
               as String?,
+      priority: null == priority
+          ? _self.priority
+          : priority // ignore: cast_nullable_to_non_nullable
+              as TaskPriority,
     ));
   }
 
@@ -1772,7 +1782,8 @@ extension TaskDataPatterns on TaskData {
             DateTime? due,
             Duration? estimate,
             List<String>? checklistIds,
-            String? languageCode)?
+            String? languageCode,
+            TaskPriority priority)?
         $default, {
     required TResult orElse(),
   }) {
@@ -1788,7 +1799,8 @@ extension TaskDataPatterns on TaskData {
             _that.due,
             _that.estimate,
             _that.checklistIds,
-            _that.languageCode);
+            _that.languageCode,
+            _that.priority);
       case _:
         return orElse();
     }
@@ -1818,7 +1830,8 @@ extension TaskDataPatterns on TaskData {
             DateTime? due,
             Duration? estimate,
             List<String>? checklistIds,
-            String? languageCode)
+            String? languageCode,
+            TaskPriority priority)
         $default,
   ) {
     final _that = this;
@@ -1833,7 +1846,8 @@ extension TaskDataPatterns on TaskData {
             _that.due,
             _that.estimate,
             _that.checklistIds,
-            _that.languageCode);
+            _that.languageCode,
+            _that.priority);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -1862,7 +1876,8 @@ extension TaskDataPatterns on TaskData {
             DateTime? due,
             Duration? estimate,
             List<String>? checklistIds,
-            String? languageCode)?
+            String? languageCode,
+            TaskPriority priority)?
         $default,
   ) {
     final _that = this;
@@ -1877,7 +1892,8 @@ extension TaskDataPatterns on TaskData {
             _that.due,
             _that.estimate,
             _that.checklistIds,
-            _that.languageCode);
+            _that.languageCode,
+            _that.priority);
       case _:
         return null;
     }
@@ -1896,7 +1912,8 @@ class _TaskData implements TaskData {
       this.due,
       this.estimate,
       final List<String>? checklistIds,
-      this.languageCode})
+      this.languageCode,
+      this.priority = TaskPriority.p2Medium})
       : _statusHistory = statusHistory,
         _checklistIds = checklistIds;
   factory _TaskData.fromJson(Map<String, dynamic> json) =>
@@ -1934,6 +1951,9 @@ class _TaskData implements TaskData {
 
   @override
   final String? languageCode;
+  @override
+  @JsonKey()
+  final TaskPriority priority;
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
@@ -1968,7 +1988,9 @@ class _TaskData implements TaskData {
             const DeepCollectionEquality()
                 .equals(other._checklistIds, _checklistIds) &&
             (identical(other.languageCode, languageCode) ||
-                other.languageCode == languageCode));
+                other.languageCode == languageCode) &&
+            (identical(other.priority, priority) ||
+                other.priority == priority));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1983,11 +2005,12 @@ class _TaskData implements TaskData {
       due,
       estimate,
       const DeepCollectionEquality().hash(_checklistIds),
-      languageCode);
+      languageCode,
+      priority);
 
   @override
   String toString() {
-    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode)';
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, priority: $priority)';
   }
 }
 
@@ -2007,7 +2030,8 @@ abstract mixin class _$TaskDataCopyWith<$Res>
       DateTime? due,
       Duration? estimate,
       List<String>? checklistIds,
-      String? languageCode});
+      String? languageCode,
+      TaskPriority priority});
 
   @override
   $TaskStatusCopyWith<$Res> get status;
@@ -2034,6 +2058,7 @@ class __$TaskDataCopyWithImpl<$Res> implements _$TaskDataCopyWith<$Res> {
     Object? estimate = freezed,
     Object? checklistIds = freezed,
     Object? languageCode = freezed,
+    Object? priority = null,
   }) {
     return _then(_TaskData(
       status: null == status
@@ -2072,6 +2097,10 @@ class __$TaskDataCopyWithImpl<$Res> implements _$TaskDataCopyWith<$Res> {
           ? _self.languageCode
           : languageCode // ignore: cast_nullable_to_non_nullable
               as String?,
+      priority: null == priority
+          ? _self.priority
+          : priority // ignore: cast_nullable_to_non_nullable
+              as TaskPriority,
     ));
   }
 

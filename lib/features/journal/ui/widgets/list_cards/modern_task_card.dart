@@ -56,6 +56,12 @@ class ModernTaskCard extends StatelessWidget {
     final statusRow = Row(
       children: [
         ModernStatusChip(
+          label: task.data.priority.short,
+          color: task.data.priority.colorForBrightness(brightness),
+          icon: Icons.priority_high_rounded,
+        ),
+        const SizedBox(width: 6),
+        ModernStatusChip(
           label: _getStatusLabel(context, task.data.status),
           color: task.data.status.colorForBrightness(brightness),
           icon: _getStatusIcon(task.data.status),

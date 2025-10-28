@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_category_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_language_wrapper.dart';
+import 'package:lotti/features/tasks/ui/header/task_priority_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_wrapper.dart';
 import 'package:lotti/widgets/layouts/space_between_wrap.dart';
 
@@ -22,6 +23,7 @@ class TaskInfoRow extends StatelessWidget {
       runSpacing: spacing,
       children: [
         EstimatedTimeWrapper(taskId: taskId),
+        TaskPriorityWrapper(taskId: taskId),
         TaskCategoryWrapper(taskId: taskId),
         TaskLanguageWrapper(taskId: taskId),
         TaskStatusWrapper(taskId: taskId),

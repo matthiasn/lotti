@@ -79,6 +79,20 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       $customConstraints: '');
+  static const VerificationMeta _taskPriorityMeta =
+      const VerificationMeta('taskPriority');
+  late final GeneratedColumn<String> taskPriority = GeneratedColumn<String>(
+      'task_priority', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: '');
+  static const VerificationMeta _taskPriorityRankMeta =
+      const VerificationMeta('taskPriorityRank');
+  late final GeneratedColumn<int> taskPriorityRank = GeneratedColumn<int>(
+      'task_priority_rank', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: '');
   static const VerificationMeta _flagMeta = const VerificationMeta('flag');
   late final GeneratedColumn<int> flag = GeneratedColumn<int>(
       'flag', aliasedName, false,
@@ -169,6 +183,8 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
         private,
         task,
         taskStatus,
+        taskPriority,
+        taskPriorityRank,
         flag,
         type,
         subtype,
@@ -241,6 +257,18 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
           _taskStatusMeta,
           taskStatus.isAcceptableOrUnknown(
               data['task_status']!, _taskStatusMeta));
+    }
+    if (data.containsKey('task_priority')) {
+      context.handle(
+          _taskPriorityMeta,
+          taskPriority.isAcceptableOrUnknown(
+              data['task_priority']!, _taskPriorityMeta));
+    }
+    if (data.containsKey('task_priority_rank')) {
+      context.handle(
+          _taskPriorityRankMeta,
+          taskPriorityRank.isAcceptableOrUnknown(
+              data['task_priority_rank']!, _taskPriorityRankMeta));
     }
     if (data.containsKey('flag')) {
       context.handle(
@@ -327,6 +355,10 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
           .read(DriftSqlType.bool, data['${effectivePrefix}task'])!,
       taskStatus: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}task_status']),
+      taskPriority: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}task_priority']),
+      taskPriorityRank: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}task_priority_rank']),
       flag: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}flag'])!,
       type: attachedDatabase.typeMapping
@@ -374,6 +406,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
   final bool private;
   final bool task;
   final String? taskStatus;
+  final String? taskPriority;
+  final int? taskPriorityRank;
   final int flag;
   final String type;
   final String? subtype;
@@ -396,6 +430,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       required this.private,
       required this.task,
       this.taskStatus,
+      this.taskPriority,
+      this.taskPriorityRank,
       required this.flag,
       required this.type,
       this.subtype,
@@ -421,6 +457,12 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     map['task'] = Variable<bool>(task);
     if (!nullToAbsent || taskStatus != null) {
       map['task_status'] = Variable<String>(taskStatus);
+    }
+    if (!nullToAbsent || taskPriority != null) {
+      map['task_priority'] = Variable<String>(taskPriority);
+    }
+    if (!nullToAbsent || taskPriorityRank != null) {
+      map['task_priority_rank'] = Variable<int>(taskPriorityRank);
     }
     map['flag'] = Variable<int>(flag);
     map['type'] = Variable<String>(type);
@@ -462,6 +504,12 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       taskStatus: taskStatus == null && nullToAbsent
           ? const Value.absent()
           : Value(taskStatus),
+      taskPriority: taskPriority == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskPriority),
+      taskPriorityRank: taskPriorityRank == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskPriorityRank),
       flag: Value(flag),
       type: Value(type),
       subtype: subtype == null && nullToAbsent
@@ -502,6 +550,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       private: serializer.fromJson<bool>(json['private']),
       task: serializer.fromJson<bool>(json['task']),
       taskStatus: serializer.fromJson<String?>(json['task_status']),
+      taskPriority: serializer.fromJson<String?>(json['task_priority']),
+      taskPriorityRank: serializer.fromJson<int?>(json['task_priority_rank']),
       flag: serializer.fromJson<int>(json['flag']),
       type: serializer.fromJson<String>(json['type']),
       subtype: serializer.fromJson<String?>(json['subtype']),
@@ -529,6 +579,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       'private': serializer.toJson<bool>(private),
       'task': serializer.toJson<bool>(task),
       'task_status': serializer.toJson<String?>(taskStatus),
+      'task_priority': serializer.toJson<String?>(taskPriority),
+      'task_priority_rank': serializer.toJson<int?>(taskPriorityRank),
       'flag': serializer.toJson<int>(flag),
       'type': serializer.toJson<String>(type),
       'subtype': serializer.toJson<String?>(subtype),
@@ -554,6 +606,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           bool? private,
           bool? task,
           Value<String?> taskStatus = const Value.absent(),
+          Value<String?> taskPriority = const Value.absent(),
+          Value<int?> taskPriorityRank = const Value.absent(),
           int? flag,
           String? type,
           Value<String?> subtype = const Value.absent(),
@@ -576,6 +630,11 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
         private: private ?? this.private,
         task: task ?? this.task,
         taskStatus: taskStatus.present ? taskStatus.value : this.taskStatus,
+        taskPriority:
+            taskPriority.present ? taskPriority.value : this.taskPriority,
+        taskPriorityRank: taskPriorityRank.present
+            ? taskPriorityRank.value
+            : this.taskPriorityRank,
         flag: flag ?? this.flag,
         type: type ?? this.type,
         subtype: subtype.present ? subtype.value : this.subtype,
@@ -602,6 +661,12 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       task: data.task.present ? data.task.value : this.task,
       taskStatus:
           data.taskStatus.present ? data.taskStatus.value : this.taskStatus,
+      taskPriority: data.taskPriority.present
+          ? data.taskPriority.value
+          : this.taskPriority,
+      taskPriorityRank: data.taskPriorityRank.present
+          ? data.taskPriorityRank.value
+          : this.taskPriorityRank,
       flag: data.flag.present ? data.flag.value : this.flag,
       type: data.type.present ? data.type.value : this.type,
       subtype: data.subtype.present ? data.subtype.value : this.subtype,
@@ -635,6 +700,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           ..write('private: $private, ')
           ..write('task: $task, ')
           ..write('taskStatus: $taskStatus, ')
+          ..write('taskPriority: $taskPriority, ')
+          ..write('taskPriorityRank: $taskPriorityRank, ')
           ..write('flag: $flag, ')
           ..write('type: $type, ')
           ..write('subtype: $subtype, ')
@@ -662,6 +729,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
         private,
         task,
         taskStatus,
+        taskPriority,
+        taskPriorityRank,
         flag,
         type,
         subtype,
@@ -688,6 +757,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           other.private == this.private &&
           other.task == this.task &&
           other.taskStatus == this.taskStatus &&
+          other.taskPriority == this.taskPriority &&
+          other.taskPriorityRank == this.taskPriorityRank &&
           other.flag == this.flag &&
           other.type == this.type &&
           other.subtype == this.subtype &&
@@ -712,6 +783,8 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
   final Value<bool> private;
   final Value<bool> task;
   final Value<String?> taskStatus;
+  final Value<String?> taskPriority;
+  final Value<int?> taskPriorityRank;
   final Value<int> flag;
   final Value<String> type;
   final Value<String?> subtype;
@@ -735,6 +808,8 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     this.private = const Value.absent(),
     this.task = const Value.absent(),
     this.taskStatus = const Value.absent(),
+    this.taskPriority = const Value.absent(),
+    this.taskPriorityRank = const Value.absent(),
     this.flag = const Value.absent(),
     this.type = const Value.absent(),
     this.subtype = const Value.absent(),
@@ -759,6 +834,8 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     this.private = const Value.absent(),
     this.task = const Value.absent(),
     this.taskStatus = const Value.absent(),
+    this.taskPriority = const Value.absent(),
+    this.taskPriorityRank = const Value.absent(),
     this.flag = const Value.absent(),
     required String type,
     this.subtype = const Value.absent(),
@@ -789,6 +866,8 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     Expression<bool>? private,
     Expression<bool>? task,
     Expression<String>? taskStatus,
+    Expression<String>? taskPriority,
+    Expression<int>? taskPriorityRank,
     Expression<int>? flag,
     Expression<String>? type,
     Expression<String>? subtype,
@@ -813,6 +892,8 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       if (private != null) 'private': private,
       if (task != null) 'task': task,
       if (taskStatus != null) 'task_status': taskStatus,
+      if (taskPriority != null) 'task_priority': taskPriority,
+      if (taskPriorityRank != null) 'task_priority_rank': taskPriorityRank,
       if (flag != null) 'flag': flag,
       if (type != null) 'type': type,
       if (subtype != null) 'subtype': subtype,
@@ -839,6 +920,8 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       Value<bool>? private,
       Value<bool>? task,
       Value<String?>? taskStatus,
+      Value<String?>? taskPriority,
+      Value<int?>? taskPriorityRank,
       Value<int>? flag,
       Value<String>? type,
       Value<String?>? subtype,
@@ -862,6 +945,8 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       private: private ?? this.private,
       task: task ?? this.task,
       taskStatus: taskStatus ?? this.taskStatus,
+      taskPriority: taskPriority ?? this.taskPriority,
+      taskPriorityRank: taskPriorityRank ?? this.taskPriorityRank,
       flag: flag ?? this.flag,
       type: type ?? this.type,
       subtype: subtype ?? this.subtype,
@@ -909,6 +994,12 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     }
     if (taskStatus.present) {
       map['task_status'] = Variable<String>(taskStatus.value);
+    }
+    if (taskPriority.present) {
+      map['task_priority'] = Variable<String>(taskPriority.value);
+    }
+    if (taskPriorityRank.present) {
+      map['task_priority_rank'] = Variable<int>(taskPriorityRank.value);
     }
     if (flag.present) {
       map['flag'] = Variable<int>(flag.value);
@@ -962,6 +1053,8 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
           ..write('private: $private, ')
           ..write('task: $task, ')
           ..write('taskStatus: $taskStatus, ')
+          ..write('taskPriority: $taskPriority, ')
+          ..write('taskPriorityRank: $taskPriorityRank, ')
           ..write('flag: $flag, ')
           ..write('type: $type, ')
           ..write('subtype: $subtype, ')
@@ -5288,7 +5381,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
   late final Index idxJournalTab = Index('idx_journal_tab',
       'CREATE INDEX idx_journal_tab ON journal (type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
   late final Index idxJournalTasks = Index('idx_journal_tasks',
-      'CREATE INDEX idx_journal_tasks ON journal (type COLLATE BINARY ASC, task_status COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
+      'CREATE INDEX idx_journal_tasks ON journal (type COLLATE BINARY ASC, task_status COLLATE BINARY ASC, task_priority_rank COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
   late final Index idxJournalTypeSubtype = Index('idx_journal_type_subtype',
       'CREATE INDEX idx_journal_type_subtype ON journal (type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
   late final Conflicts conflicts = Conflicts(this);
@@ -5649,9 +5742,11 @@ abstract class _$JournalDb extends GeneratedDatabase {
       int labelFilterCount,
       List<String> labelIds,
       bool includeUnlabeled,
+      bool filterByPriorities,
+      List<String?> priorities,
       int limit,
       int offset) {
-    var $arrayStartIndex = 6;
+    var $arrayStartIndex = 7;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     final expandedstarredStatuses =
@@ -5664,19 +5759,23 @@ abstract class _$JournalDb extends GeneratedDatabase {
     $arrayStartIndex += categories.length;
     final expandedlabelIds = $expandVar($arrayStartIndex, labelIds.length);
     $arrayStartIndex += labelIds.length;
+    final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
+    $arrayStartIndex += priorities.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC LIMIT ?4 OFFSET ?5',
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC LIMIT ?5 OFFSET ?6',
         variables: [
           Variable<bool>(filterByLabels),
           Variable<int>(labelFilterCount),
           Variable<bool>(includeUnlabeled),
+          Variable<bool>(filterByPriorities),
           Variable<int>(limit),
           Variable<int>(offset),
           for (var $ in types) Variable<String>($),
           for (var $ in starredStatuses) Variable<bool>($),
           for (var $ in taskStatuses) Variable<String>($),
           for (var $ in categories) Variable<String>($),
-          for (var $ in labelIds) Variable<String>($)
+          for (var $ in labelIds) Variable<String>($),
+          for (var $ in priorities) Variable<String>($)
         ],
         readsFrom: {
           journal,
@@ -5695,9 +5794,11 @@ abstract class _$JournalDb extends GeneratedDatabase {
       int labelFilterCount,
       List<String> labelIds,
       bool includeUnlabeled,
+      bool filterByPriorities,
+      List<String?> priorities,
       int limit,
       int offset) {
-    var $arrayStartIndex = 6;
+    var $arrayStartIndex = 7;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     final expandedids = $expandVar($arrayStartIndex, ids.length);
@@ -5712,12 +5813,15 @@ abstract class _$JournalDb extends GeneratedDatabase {
     $arrayStartIndex += categories.length;
     final expandedlabelIds = $expandVar($arrayStartIndex, labelIds.length);
     $arrayStartIndex += labelIds.length;
+    final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
+    $arrayStartIndex += priorities.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC LIMIT ?4 OFFSET ?5',
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC LIMIT ?5 OFFSET ?6',
         variables: [
           Variable<bool>(filterByLabels),
           Variable<int>(labelFilterCount),
           Variable<bool>(includeUnlabeled),
+          Variable<bool>(filterByPriorities),
           Variable<int>(limit),
           Variable<int>(offset),
           for (var $ in types) Variable<String>($),
@@ -5725,7 +5829,8 @@ abstract class _$JournalDb extends GeneratedDatabase {
           for (var $ in starredStatuses) Variable<bool>($),
           for (var $ in taskStatuses) Variable<String>($),
           for (var $ in categories) Variable<String>($),
-          for (var $ in labelIds) Variable<String>($)
+          for (var $ in labelIds) Variable<String>($),
+          for (var $ in priorities) Variable<String>($)
         ],
         readsFrom: {
           journal,
@@ -6514,6 +6619,8 @@ typedef $JournalCreateCompanionBuilder = JournalCompanion Function({
   Value<bool> private,
   Value<bool> task,
   Value<String?> taskStatus,
+  Value<String?> taskPriority,
+  Value<int?> taskPriorityRank,
   Value<int> flag,
   required String type,
   Value<String?> subtype,
@@ -6538,6 +6645,8 @@ typedef $JournalUpdateCompanionBuilder = JournalCompanion Function({
   Value<bool> private,
   Value<bool> task,
   Value<String?> taskStatus,
+  Value<String?> taskPriority,
+  Value<int?> taskPriorityRank,
   Value<int> flag,
   Value<String> type,
   Value<String?> subtype,
@@ -6589,6 +6698,13 @@ class $JournalFilterComposer extends Composer<_$JournalDb, Journal> {
 
   ColumnFilters<String> get taskStatus => $composableBuilder(
       column: $table.taskStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get taskPriority => $composableBuilder(
+      column: $table.taskPriority, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get taskPriorityRank => $composableBuilder(
+      column: $table.taskPriorityRank,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get flag => $composableBuilder(
       column: $table.flag, builder: (column) => ColumnFilters(column));
@@ -6661,6 +6777,14 @@ class $JournalOrderingComposer extends Composer<_$JournalDb, Journal> {
 
   ColumnOrderings<String> get taskStatus => $composableBuilder(
       column: $table.taskStatus, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get taskPriority => $composableBuilder(
+      column: $table.taskPriority,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get taskPriorityRank => $composableBuilder(
+      column: $table.taskPriorityRank,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get flag => $composableBuilder(
       column: $table.flag, builder: (column) => ColumnOrderings(column));
@@ -6736,6 +6860,12 @@ class $JournalAnnotationComposer extends Composer<_$JournalDb, Journal> {
   GeneratedColumn<String> get taskStatus => $composableBuilder(
       column: $table.taskStatus, builder: (column) => column);
 
+  GeneratedColumn<String> get taskPriority => $composableBuilder(
+      column: $table.taskPriority, builder: (column) => column);
+
+  GeneratedColumn<int> get taskPriorityRank => $composableBuilder(
+      column: $table.taskPriorityRank, builder: (column) => column);
+
   GeneratedColumn<int> get flag =>
       $composableBuilder(column: $table.flag, builder: (column) => column);
 
@@ -6803,6 +6933,8 @@ class $JournalTableManager extends RootTableManager<
             Value<bool> private = const Value.absent(),
             Value<bool> task = const Value.absent(),
             Value<String?> taskStatus = const Value.absent(),
+            Value<String?> taskPriority = const Value.absent(),
+            Value<int?> taskPriorityRank = const Value.absent(),
             Value<int> flag = const Value.absent(),
             Value<String> type = const Value.absent(),
             Value<String?> subtype = const Value.absent(),
@@ -6827,6 +6959,8 @@ class $JournalTableManager extends RootTableManager<
             private: private,
             task: task,
             taskStatus: taskStatus,
+            taskPriority: taskPriority,
+            taskPriorityRank: taskPriorityRank,
             flag: flag,
             type: type,
             subtype: subtype,
@@ -6851,6 +6985,8 @@ class $JournalTableManager extends RootTableManager<
             Value<bool> private = const Value.absent(),
             Value<bool> task = const Value.absent(),
             Value<String?> taskStatus = const Value.absent(),
+            Value<String?> taskPriority = const Value.absent(),
+            Value<int?> taskPriorityRank = const Value.absent(),
             Value<int> flag = const Value.absent(),
             required String type,
             Value<String?> subtype = const Value.absent(),
@@ -6875,6 +7011,8 @@ class $JournalTableManager extends RootTableManager<
             private: private,
             task: task,
             taskStatus: taskStatus,
+            taskPriority: taskPriority,
+            taskPriorityRank: taskPriorityRank,
             flag: flag,
             type: type,
             subtype: subtype,
