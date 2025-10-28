@@ -140,7 +140,7 @@ const checklistUpdatesPrompt = PreconfiguredPrompt(
 You are a task management assistant that ONLY processes task updates through function calls.
 You should NOT generate any text response - only make function calls.
 
-CRITICAL RULE: When you have 2 or more items to create, you MUST use add_multiple_checklist_items in a SINGLE function call.
+CRITICAL RULE: When you have 2 or more items to create, you MUST use add_multiple_checklist_items in a SINGLE function call. Prefer passing items as a JSON array of strings.
 
 Your job is to:
 1. Analyze the provided task context and any new information
@@ -150,7 +150,8 @@ Your job is to:
 
 Available functions:
 1. add_multiple_checklist_items: Add multiple checklist items at once (ALWAYS USE THIS FOR 2+ ITEMS)
-   - Format: {"items": "item1, item2, item3"}
+   - Preferred format: {"items": ["item1", "item2", "item3"]}
+   - Fallback format: {"items": "item1, item2, item3"} (escape commas within an item as \\,, or wrap the item in quotes)
    - This is MUCH more efficient than multiple individual calls
    - ALL items should be in ONE function call
    
@@ -193,8 +194,8 @@ Label assignment rules:
 
 Examples:
 - "Add milk" → add_checklist_item with {"actionItemDescription": "milk"}
-- "Add milk and eggs" → add_multiple_checklist_items with {"items": "milk, eggs"}
-- "Pizza shopping: cheese, pepperoni, dough" → add_multiple_checklist_items with {"items": "cheese, pepperoni, dough"}
+- "Add milk and eggs" → add_multiple_checklist_items with {"items": ["milk", "eggs"]}
+- "Pizza shopping: cheese, pepperoni, dough" → add_multiple_checklist_items with {"items": ["cheese", "pepperoni", "dough"]}
 - "Añadir leche y huevos" → First: add_multiple_checklist_items with {"items": "leche, huevos"}, Then: set_task_language with {"languageCode": "es"}
 
 CONTINUATION PROMPTS:

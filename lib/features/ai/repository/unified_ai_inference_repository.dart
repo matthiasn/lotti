@@ -31,6 +31,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/utils/item_list_parsing.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
@@ -1157,7 +1158,7 @@ class UnifiedAiInferenceRepository {
           final itemDescriptions = <String>[];
 
           if (isBatch) {
-            // Prefer JSON array, fallback to comma-separated string
+            // Prefer JSON array, fallback to robustly parsed string
             final itemsField = arguments['items'];
             if (itemsField is List) {
               itemDescriptions.addAll(
@@ -1166,11 +1167,9 @@ class UnifiedAiInferenceRepository {
                     .where((e) => e.isNotEmpty),
               );
             } else if (itemsField is String && itemsField.trim().isNotEmpty) {
+              // Use the same robust parsing as the batch handler
               itemDescriptions.addAll(
-                itemsField
-                    .split(RegExp(r'\s*,\s*'))
-                    .map((e) => e.trim())
-                    .where((e) => e.isNotEmpty),
+                parseItemListString(itemsField),
               );
             } else {
               developer.log(

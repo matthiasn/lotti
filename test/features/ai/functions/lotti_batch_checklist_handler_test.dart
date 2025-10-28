@@ -117,6 +117,21 @@ void main() {
     });
 
     group('processFunctionCall', () {
+      test('should process array of items (preferred)', () {
+        // Arrange
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": ["cheese", "tomatoes, sliced", "pepperoni"]}',
+        );
+
+        // Act
+        final result = handler.processFunctionCall(toolCall);
+
+        // Assert
+        expect(result.success, true);
+        expect(
+            result.data['items'], ['cheese', 'tomatoes, sliced', 'pepperoni']);
+      });
+
       test('should process valid comma-separated items', () {
         // Arrange
         final toolCall = TestDataFactory.createToolCall(
@@ -133,6 +148,49 @@ void main() {
         expect(result.data['toolCallId'], 'tool-1');
         expect(result.data['taskId'], testTask.meta.id);
         expect(result.error, isNull);
+      });
+
+      test('should support quoted items with commas', () {
+        // Arrange
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: r'{"items": "\"cheese, sliced\", tomatoes"}',
+        );
+
+        // Act
+        final result = handler.processFunctionCall(toolCall);
+
+        // Assert
+        expect(result.success, true);
+        expect(result.data['items'], ['cheese, sliced', 'tomatoes']);
+      });
+
+      test('should support escaped commas', () {
+        // Arrange
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: r'{"items": "cheese\\, sliced, tomatoes"}',
+        );
+
+        // Act
+        final result = handler.processFunctionCall(toolCall);
+
+        // Assert
+        expect(result.success, true);
+        expect(result.data['items'], ['cheese, sliced', 'tomatoes']);
+      });
+
+      test('should not split commas inside parentheses', () {
+        // Arrange
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": "Start database (index cache, warm), Verify"}',
+        );
+
+        // Act
+        final result = handler.processFunctionCall(toolCall);
+
+        // Assert
+        expect(result.success, true);
+        expect(result.data['items'],
+            ['Start database (index cache, warm)', 'Verify']);
       });
 
       test('should trim whitespace from items', () {

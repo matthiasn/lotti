@@ -67,14 +67,28 @@ class ChecklistCompletionFunctions {
         function: FunctionObject(
           name: addMultipleChecklistItems,
           description:
-              'Add multiple checklist items to the task at once. Provide a comma-separated list of items. If no checklist exists, create a "TODOs" checklist first.',
+              'Add multiple checklist items to the task at once. Prefer a JSON array of strings for items; alternatively, a comma-separated string is accepted. If no checklist exists, create a "TODOs" checklist first.',
           parameters: {
             'type': 'object',
             'properties': {
               'items': {
-                'type': 'string',
-                'description':
-                    'Comma-separated list of checklist items to add (e.g., "cheese, tomatoes, pepperoni")',
+                'oneOf': [
+                  {
+                    'type': 'array',
+                    'items': {
+                      'type': 'string',
+                      'minLength': 1,
+                    },
+                    'description':
+                        'Array of checklist item descriptions (preferred). Example: ["cheese", "tomatoes, sliced", "pepperoni"]',
+                  },
+                  {
+                    'type': 'string',
+                    'description':
+                        r'Comma-separated list (fallback). Escape commas inside an item with \\ or wrap items in quotes. Commas inside parentheses/brackets/braces are treated as part of the item.',
+                  },
+                ],
+                'description': 'List of checklist items to add',
               },
             },
             'required': ['items'],
