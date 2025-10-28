@@ -12,6 +12,7 @@ class AppTheme {
   // Modern card layout constants
   static const double cardBorderRadius = 20; // Increased for more modern look
   static const double cardPadding = 16; // Increased padding
+  static const double cardPaddingHalf = cardPadding / 2;
   static const double cardPaddingCompact = 14;
   static const double cardElevationLight = 8; // Enhanced shadows
   static const double cardElevationDark = 12;

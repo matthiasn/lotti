@@ -40,6 +40,10 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     final color = context.colorScheme.outline;
 
     return ModernBaseCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.cardPadding,
+        vertical: AppTheme.cardPaddingHalf,
+      ),
       child: Column(
         children: [
           Row(
