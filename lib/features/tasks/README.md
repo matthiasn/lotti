@@ -16,7 +16,7 @@ This feature powers task creation, editing, filtering and list/grid rendering.
   - Dual columns on `journal` for performance and readability:
     - `task_priority` (TEXT: `P0`–`P3`)
     - `task_priority_rank` (INTEGER: 0–3)
-  - Ordering: `task_priority_rank` ASC, then `date_from`
+  - Ordering: `task_priority_rank` ASC, then `date_from` DESC
   - Migration v29 backfills legacy tasks to `P2` with rank `2` and rebuilds `idx_journal_tasks`
 
 ## Developer Notes
@@ -24,4 +24,3 @@ This feature powers task creation, editing, filtering and list/grid rendering.
 - Model helpers live in `lib/classes/task.dart` (enum, rank/short/color mapping)
 - Filter state lives in `JournalPageCubit`/`JournalPageState`; TasksFilter JSON is used for persistence
 - Do not modify generated code; run `make build_runner` when model changes are made
-
