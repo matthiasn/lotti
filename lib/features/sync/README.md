@@ -35,7 +35,7 @@ that keeps the pipeline testable and observable.
 | **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, timelines, and logout. |
 | **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, registers the Matrix event IDs it emits, increments send counters, and notifies `MatrixService`. |
 | **SentEventRegistry** (`matrix/sent_event_registry.dart`) | In-memory TTL cache of event IDs produced by this device so timeline ingestion can drop echo events without re-applying them. |
-| **MatrixStreamConsumer** (`matrix/pipeline_v2/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
+| **MatrixStreamConsumer** (`matrix/pipeline/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
 | **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, emits notifications (e.g. `UpdateNotifications`), and surfaces precise `applied/skipReason` diagnostics so the pipeline can distinguish conflicts, older/equal payloads, and genuine missing-base scenarios. |
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
@@ -57,6 +57,14 @@ that keeps the pipeline testable and observable.
 - `MatrixStreamConsumer` attaches directly to the sync room and performs
   attach-time catch-up via SDK pagination/backfill with a graceful fallback for
   large gaps.
+- Signal-driven ingestion (2025-10-28):
+  - Client stream events are treated as signals that always trigger a
+    `forceRescan()` with catch-up. An in-flight guard prevents overlapping
+    catch-ups.
+  - Live timeline callbacks continue to schedule debounced live scans; on
+    scheduling failure, the consumer falls back to `forceRescan()`.
+  - Marker advancement happens only from ordered slices returned by
+    catch-up/live scans, never directly from the client stream.
 - Live streaming is micro-batched and ordered chronologically with
   de-duplication by event ID; attachment prefetch happens before invoking
   `SyncEventProcessor` so text payloads arrive with their media ready.
@@ -103,9 +111,9 @@ The stream-first consumer replaces the legacy multi-pass drain:
   when at least one new file was written.
 
 Key helpers:
-- `pipeline_v2/catch_up_strategy.dart`: no-rewind catch-up via SDK seam and
+- `matrix/pipeline/catch_up_strategy.dart`: no-rewind catch-up via SDK seam and
   snapshot-limit escalation fallback.
-- `pipeline_v2/attachment_index.dart`: in-memory relativePath→event map used by
+- `matrix/pipeline/attachment_index.dart`: in-memory relativePath→event map used by
   the apply phase.
 - `matrix/sync_event_processor.dart` smart loader: vector-clock aware JSON
   fetching that uses `AttachmentIndex` to fetch newer JSON for same-path
@@ -133,9 +141,9 @@ Key helpers:
 - **Unit/Widget:** Coverage includes the client runner queue, activity gating,
   timeline error recovery, verification modals (provider overrides),
   dependency-injection helpers, and the modern sync pipeline:
-  - `pipeline_v2/matrix_stream_consumer_test.dart` covers SDK pagination seams,
+  - `test/features/sync/matrix/pipeline/matrix_stream_consumer_test.dart` covers SDK pagination seams,
     streaming/flush batching, metrics accuracy, and retry/circuit-breaker logic.
-  - `pipeline_v2/*` helper suites validate catch-up, descriptor hydration, and
+  - `test/features/sync/matrix/pipeline/*` helper suites validate catch-up, descriptor hydration, and
     attachment ingestion.
   - Lifecycle tests exercise activation, deactivation, and login/logout races with the pipeline.
   - `matrix_service_pipeline_test.dart` covers metrics exposure, retry/rescan

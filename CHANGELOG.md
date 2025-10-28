@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test coverage added for platform filtering, isDefault prompt highlighting, and ModalCard border/animation behavior.
 
 ### Changed
+- Sync (Matrix): Client stream is now signal-driven and always triggers a catch-up via
+  `forceRescan(includeCatchUp=true)` with an in-flight guard to prevent overlaps. Timeline callbacks
+  continue to schedule debounced live scans and fall back to `forceRescan()` on scheduling errors.
+- Sync (Matrix): Documentation refreshed to reflect signal-driven ingestion and backlog completion
+  behavior (`lib/features/sync/README.md`, `docs/sync/sync_summary.md`).
 - feat(ai/labels): Append a summary note after the labels JSON in prompts when the
   number of available labels exceeds the cap, e.g. `(Note: showing 100 of 150 labels)`.
 - Matrix Sync Stats page now uses the modern SettingsPageHeader with collapsing sliver layout and subtitle, aligning with the new settings header UX.
@@ -47,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI prompt availability now respects platform capabilities, preventing confusion from unusable model options on mobile.
 
 ### Fixed
+- Sync (Matrix): Catch-up now continues escalating snapshot size until it’s not full (or lookback
+  cap reached), ensuring the entire backlog after the read marker is retrieved. This eliminates
+  missing EntryLinks after offline windows and prevents gray boxes on return to online.
 - Stabilized labels/task widget tests by awaiting `getIt.reset()`, providing scoped service mocks,
   and giving sheet/editor hosts real `MediaQuery` sizes so chips, toggles, and CTAs are tappable
   during automation.

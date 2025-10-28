@@ -16,6 +16,16 @@ This note captures the current pipeline behavior, recent fixes, logs to look for
 ## What We Fixed/Added
 
 Recent changes (Oct 2025)
+- Client stream → signal-driven catch-up (2025-10-28):
+  - Every client stream signal triggers `forceRescan(includeCatchUp=true)` with an in-flight guard.
+  - Timeline callbacks continue to schedule debounced live scans and fall back to `forceRescan()`
+    on scheduling errors.
+  - Marker advancement only from ordered slices (catch-up/live scans), never directly from stream
+    events.
+- Catch-up backlog completion (2025-10-28):
+  - Catch-up continues escalating snapshot size until it is not full (or cap reached), ensuring the
+    full backlog after the marker is included.
+  - Pre-context by count and timestamp remains unchanged.
 - Removed rewind from both implementation and docs:
   Catch‑up always backfills until the marker is present and processes strictly after.
   Code: `pipeline_v2/catch_up_strategy.dart`, consumer call‑site.

@@ -521,6 +521,8 @@ void main() {
             // while we wait to avoid long hangs on CI.
             await alice.forceRescan();
             await alice.retryNow();
+            // Allow the homeserver to settle before the next fetch.
+            await Future<void>.delayed(const Duration(milliseconds: 200));
           }
           return currentCount >= expectedEntriesPerDb;
         });
@@ -539,6 +541,8 @@ void main() {
           if (currentCount < expectedEntriesPerDb) {
             await bob.forceRescan();
             await bob.retryNow();
+            // Allow the homeserver to settle before the next fetch.
+            await Future<void>.delayed(const Duration(milliseconds: 200));
           }
           return currentCount >= expectedEntriesPerDb;
         });
