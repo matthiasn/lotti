@@ -129,6 +129,10 @@ Exact header action order
   - Move the delete icon to the header actions cluster, gated by `_isEditing`.
   - Preserve divider suppression and progress indicator semantics.
   - Keep export/long‑press share behavior unchanged.
+  - Implementation note: due to the `AnimatedCrossFade` header (title editor vs. view row), the
+    delete action remains available in the content area while editing to guarantee a tappable
+    affordance without restructuring the header. A follow‑up can migrate it fully into the header
+    by replacing the cross‑fade with a unified header layout.
 
 - `lib/features/tasks/ui/checklists/checklist_item_widget.dart`
   - Wrap `CheckboxListTile` in `Padding + AnimatedContainer` using the tokens above.
@@ -200,6 +204,13 @@ Target: maintain or exceed current coverage; aim for ≈100% across the touched 
 - No behavior changes: editing, reordering, deleting, exporting, and sharing work exactly as before.
 - Analyzer reports zero warnings; formatter clean.
 - Widget tests pass with coverage ≈100% for the affected components.
+
+## Status (2025‑10‑28)
+
+- Implemented item visuals (rounded/tinted rows, padding, strikethrough on checked, fade overflow).
+- Dismissible background clipped and padded to match item visuals.
+- Header keeps Edit and Export; Delete remains in content area while editing to guarantee a visible tap‑target under the current AnimatedCrossFade header. A follow‑up will migrate Delete into a unified header.
+- Tests updated/added: strikethrough verification and suggestion overlay rendering. All checklist tests pass locally; analyzer is clean.
 
 ## Regression Checklist
 

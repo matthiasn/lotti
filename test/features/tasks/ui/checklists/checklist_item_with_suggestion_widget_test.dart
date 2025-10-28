@@ -242,6 +242,25 @@ void main() {
 
       // In loading state, the widget should still render without crashing
     });
+
+    testWidgets('renders positioned suggestion indicator overlay',
+        (WidgetTester tester) async {
+      const suggestion = ChecklistCompletionSuggestion(
+        checklistItemId: itemId,
+        reason: 'Looks complete',
+        confidence: ChecklistCompletionConfidence.high,
+      );
+
+      await tester.pumpWidget(createWidget(suggestions: [suggestion]));
+      await tester.pump();
+
+      // Should render a Positioned indicator when a suggestion exists
+      final positionedIndicator = find.descendant(
+        of: find.byType(ChecklistItemWithSuggestionWidget),
+        matching: find.byType(Positioned),
+      );
+      expect(positionedIndicator, findsWidgets);
+    });
   });
 }
 

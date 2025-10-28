@@ -2672,3 +2672,14 @@ Added:
 ## [0.7.5] - 2022-04-21
 ### Added:
 - Added `make` tasks for TestFlight upload
+### UI/UX
+- Checklist section polish:
+  - Clear visual separation for items with subtle rounded backgrounds and hairline borders
+  - Increased row padding (H 16, V 8), multi‑line support (up to 4 lines) with fade overflow
+  - Checked items use strikethrough with reduced text opacity for faster scanning
+  - Swipe‑to‑delete background now clips to the same radius and aligns with row padding
+  - Header keeps Edit and Export; Delete remains available while editing just below the header to ensure a reliable tap‑target (follow‑up planned to unify in header)
+  - No functional changes to reordering, export/share, or AI suggestions
+
+### Tests
+- Added widget tests for checklist visuals (strikethrough on check, row wrapper presence) and suggestion overlay rendering; kept behavioural tests green.

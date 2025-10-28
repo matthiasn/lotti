@@ -123,6 +123,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                         maxLines: 3,
                       ),
                     ),
+                    // Edit toggle
                     IconButton(
                       icon: Icon(
                         Icons.edit,
@@ -203,7 +204,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.only(bottom: 5),
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
             child: TitleTextField(
               focusNode: _focusNode,
               onSave: (title) async {
