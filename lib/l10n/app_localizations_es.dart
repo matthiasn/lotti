@@ -2118,6 +2118,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsSyncOutboxTitle => 'Bandeja de salida de sincronización';
 
   @override
+  String get syncNotLoggedInToast => 'Sync is not logged in';
+
+  @override
   String get settingsSyncSubtitle => 'Configure sync and view stats';
 
   @override

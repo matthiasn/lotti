@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Platform-aware AI prompt filtering automatically hides local-only models (Whisper, Ollama, Gemini 3N) on mobile platforms.
 - Fallback logic ensures default automatic prompts gracefully switch to available alternatives when local-only models are filtered on mobile.
 - Comprehensive test coverage added for platform filtering, isDefault prompt highlighting, and ModalCard border/animation behavior.
+- Outbox: Pause processing while logged out and surface a one-time red toast ("Sync is not logged in") when sync is enabled but not authenticated. Prevents wasted retries and clarifies state to the user.
 
 ### Changed
 - feat(ai/labels): Append a summary note after the labels JSON in prompts when the

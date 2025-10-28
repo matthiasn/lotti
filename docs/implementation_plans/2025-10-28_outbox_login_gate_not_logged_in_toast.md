@@ -35,7 +35,7 @@
 - Avoid aggressive immediate re‑scheduling while logged out; rely on normal triggers after login.
 
 3) One‑time red toast via StreamBuilder
-- Add a top‑level StreamBuilder (e.g., in `BeamerApp`) that listens to a not‑logged‑in signal.
+- Add a top‑level StreamBuilder (in `AppScreen`) that listens to a not‑logged‑in signal.
 - When sync is enabled and the signal indicates “not logged in,” show a red SnackBar (`syncNotLoggedInToast`) once per login session.
 - Maintain a simple per‑login guard; reset the guard on login state changes so the toast can re‑appear on a future logout.
 
@@ -44,12 +44,13 @@
 - No repository changes.
 
 - OutboxService
-  - Call `_matrixService.isLoggedIn()` directly; if false, return early without draining.
-  - Keep scheduling conservative while logged out (no tight loops).
+  - Store an optional `MatrixService` reference (passed at construction via DI) and use it for gating. If absent (e.g., tests that inject only a custom `OutboxMessageSender`), default to permissive behavior so tests are unaffected.
+  - Call `_matrixService?.isLoggedIn()`; if `false`, return early without draining and do not enqueue an immediate retry.
+  - Keep scheduling conservative while logged out (no tight loops, no reschedule on gate).
 
 - Not‑logged‑in stream for UI (StreamBuilder)
   - Option A (preferred): Extend `OutboxState` with `notLoggedIn` and have `OutboxCubit` derive it from the feature flag and login stream. Use `StreamBuilder<OutboxState>` on `cubit.stream` to drive the toast.
-  - Option B: Use `StreamBuilder<LoginState>` on `matrixService.client.onLoginStateChanged.stream` combined with the feature flag stream to compute “not logged in”.
+  - Option B: Use the existing Riverpod providers (`loginStateStreamProvider` / `isLoggedInProvider`) from `lib/features/sync/state/matrix_login_controller.dart` combined with the feature flag stream from `JournalDb` to compute “not logged in”.
 
 ## UX & Localization
 
@@ -66,7 +67,7 @@
 
 ### Phase 2 — One‑Time Warning via StreamBuilder (P0)
 - Implement Option A or B from “Not‑logged‑in stream for UI”.
-- Add a top‑level StreamBuilder in `BeamerApp` (or a sync page shell) to show the red SnackBar when the stream indicates not logged in and the feature flag is on.
+- Add a top‑level StreamBuilder in `AppScreen` (where a `Scaffold` is present) to show the red SnackBar when the stream indicates not logged in and the feature flag is on.
 - Maintain a per‑login guard that resets on login state changes.
 
 ### Phase 3 — UX polish (P1)
@@ -103,8 +104,137 @@
 
 - `lib/features/sync/outbox/outbox_service.dart` (gate only)
 - Option A: `lib/blocs/sync/outbox_state.dart` (`notLoggedIn`), `lib/blocs/sync/outbox_cubit.dart` (derive state)
-- `lib/beamer/beamer_app.dart` (top‑level StreamBuilder for SnackBar)
+- `lib/beamer/beamer_app.dart:1-240` and `lib/beamer/beamer_app.dart:240-560` (entry tree)
+- `lib/beamer/beamer_app.dart` → specifically integrate in `AppScreen` (top‑level `Scaffold`) for SnackBar context
 - `lib/l10n/*.arb` (new `syncNotLoggedInToast` string)
+
+## Current State (short)
+
+- Outbox drain gate checks only the feature flag, not login state:
+  - `lib/features/sync/outbox/outbox_service.dart:296-356` — `sendNext()` returns early only when `enableMatrixFlag` is false. It always proceeds to `_drainOutbox()` when enabled.
+- Matrix login state is available and already surfaced:
+  - Imperative: `lib/features/sync/matrix/matrix_service.dart:448` — `bool isLoggedIn()`
+  - Streams/providers: `lib/features/sync/state/matrix_login_controller.dart:1-200` — `loginStateStreamProvider`, `isLoggedInProvider`
+- Outbox UI/state:
+  - `lib/blocs/sync/outbox_state.dart:1-60` — Freezed union with `initial|online|disabled` only.
+  - `lib/blocs/sync/outbox_cubit.dart:1-80` — Emits `online|disabled` based on `enableMatrixFlag`.
+- App shell and SnackBar context:
+  - `lib/beamer/beamer_app.dart:1-240` — `AppScreen` defines the top‑level `Scaffold` where SnackBars are shown.
+  - `lib/features/settings/ui/pages/outbox/outbox_badge.dart:1-240` — badge does not reflect login state.
+
+## Implementation Details — Code Sketches
+
+1) Outbox gate
+
+Add an optional `_matrixService` field in `OutboxService` and gate in `sendNext()`:
+
+```dart
+class OutboxService {
+  OutboxService({
+    // ...
+    MatrixService? matrixService,
+  }) : _matrixService = matrixService /* existing assigns ... */;
+
+  final MatrixService? _matrixService;
+
+  Future<void> sendNext() async {
+    try {
+      final enableMatrix = await _journalDb.getConfigFlag(enableMatrixFlag);
+      if (!enableMatrix) return;
+
+      // New: login gate
+      if (_matrixService != null && !_matrixService!.isLoggedIn()) {
+        // Do not drain; do not schedule immediate retry to avoid spin.
+        return;
+      }
+
+      final firstDrained = await _drainOutbox();
+      if (!firstDrained) return;
+      await Future<void>.delayed(_postDrainSettle);
+      await _drainOutbox();
+    } catch (e, st) {
+      // unchanged
+    }
+  }
+}
+```
+
+Tests that inject a custom `OutboxMessageSender` (without a `MatrixService`) keep behavior unchanged (`_matrixService == null` → no gate).
+
+2) One‑time toast in AppScreen
+
+Compute “sync enabled” × “not logged in” and show a one‑time SnackBar per login session. Use the existing login providers and `JournalDb` flag stream:
+
+```dart
+// In AppScreen.build() -> around the Scaffold body
+return StreamBuilder<bool>(
+  stream: journalDb.watchConfigFlag(enableMatrixFlag),
+  builder: (context, flagSnap) {
+    final syncEnabled = flagSnap.data ?? false;
+    return Consumer(builder: (context, ref, _) {
+      final loginState = ref.watch(loginStateStreamProvider).valueOrNull;
+      final notLoggedIn = syncEnabled && loginState != LoginState.loggedIn;
+      _maybeShowOneTimeToast(context, notLoggedIn);
+      return Scaffold(
+        // ... existing content ...
+      );
+    });
+  },
+);
+
+void _maybeShowOneTimeToast(BuildContext context, bool notLoggedIn) {
+  // Keep a bool _toastShownForThisSession; reset it when loginState becomes loggedIn.
+  if (notLoggedIn && !_toastShownForThisSession) {
+    _toastShownForThisSession = true;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.messages.syncNotLoggedInToast),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+  if (!notLoggedIn && _toastShownForThisSession) {
+    // Reset on login so a future logout can show again.
+    _toastShownForThisSession = false;
+  }
+}
+```
+
+3) Optional: Outbox badge disabled styling
+
+In `OutboxBadgeIcon`, consider dimming the icon when sync is enabled but not logged in; combine the flag stream with `isLoggedInProvider`.
+
+## Localization Keys
+
+- Add to `lib/l10n/app_en.arb` (and sync to other locales):
+
+```json
+"syncNotLoggedInToast": "Sync is not logged in"
+```
+
+- Run `make l10n` and resolve `missing_translations.txt`.
+
+## Testing — Files and Cases
+
+- Unit
+  - `test/features/sync/outbox/outbox_service_gate_test.dart`
+    - When `enableMatrixFlag=false` → unchanged early return.
+    - When `enableMatrixFlag=true` and `isLoggedIn=false` → `sendNext()` returns early; `_processor.processQueue()` never called; no scheduling.
+    - When `enableMatrixFlag=true` and `isLoggedIn=true` → normal drain path.
+- Widget
+  - `test/beamer/app_not_logged_in_toast_test.dart`
+    - With sync enabled and login state `loggedOut` → SnackBar appears once; after login then logout again → appears again.
+    - With sync disabled → no SnackBar regardless of login state.
+
+## Risks & Mitigations
+
+- Gate could suppress processing in tests where no `MatrixService` is injected.
+  - Mitigation: optional `_matrixService`; default to permissive behavior when null.
+- Potential UI flicker if toast logic rebuilds too often.
+  - Mitigation: guard with a per‑session boolean and show only on state transitions.
+- Accidental tight loops while logged out.
+  - Mitigation: do not enqueue follow‑up drain when the login gate returns early.
 
 ## Implementation Checklist
 
@@ -128,4 +258,3 @@
 - Always ensure the analyzer has no complaints and everything compiles. Also run the formatter frequently.
 - Prefer running commands via the dart-mcp server.
 - Only move on to adding new files when already created tests are all green.
-
