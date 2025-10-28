@@ -1,10 +1,13 @@
 // A robust parser for comma-separated item lists that appear in tool calls.
 // Supports:
 // - JSON-array alternative is handled by callers; this parses only strings
-// - Quotes: "..." or '...' to group items with commas
+// - Quotes: "..." or '...' to group items with commas (quotes themselves are not retained)
 // - Backslash escapes: \\ to escape next char, including comma
 // - Parentheses/brackets/braces: commas inside (), [], {} do not split
 // - Trims whitespace; discards empty results
+// Notes:
+// - Unbalanced quotes/grouping: best-effort parsing; commas remain unsplit while a group is open
+// - Trailing backslash: treated as an incomplete escape and ignored (i.e., dropped)
 List<String> parseItemListString(String input) {
   final items = <String>[];
   final buf = StringBuffer();

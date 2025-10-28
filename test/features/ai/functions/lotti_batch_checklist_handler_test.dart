@@ -150,6 +150,62 @@ void main() {
         expect(result.error, isNull);
       });
 
+      test('should fail on empty array of items', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": []}',
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, false);
+        expect(result.error, 'No valid items found in the list');
+      });
+
+      test('should accept array with non-string types and filter empties', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": [123, true, null, "valid", "  "]}',
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['123', 'true', 'valid']);
+      });
+
+      test('should parse grouping with brackets in string fallback', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": "[a, b], c"}',
+        );
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['[a, b]', 'c']);
+      });
+
+      test('should parse grouping with braces in string fallback', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": "{a, b}, c"}',
+        );
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['{a, b}', 'c']);
+      });
+
+      test('should handle mixed quotes and escapes in string fallback', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: r'{"items": "\"a\", b\\, c"}',
+        );
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['a', 'b, c']);
+      });
+
+      test('should handle single-item array', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": ["single"]}',
+        );
+        final result = handler.processFunctionCall(toolCall);
+        expect(result.success, true);
+        expect(result.data['items'], ['single']);
+      });
+
       test('should support quoted items with commas', () {
         // Arrange
         final toolCall = TestDataFactory.createToolCall(

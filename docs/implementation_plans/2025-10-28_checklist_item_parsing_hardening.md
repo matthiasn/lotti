@@ -101,9 +101,11 @@
 
 - Analyzer reports zero warnings.
 - Tests pass:
-  - Parser unit tests exercise quotes, escapes, grouping, trimming.
-  - Batch handler tests validate array + string inputs including complex cases.
-  - Preconfigured prompts/conversation tests still pass.
+  - Parser unit tests exercise quotes, escapes, grouping, trimming, unicode, newlines/tabs, and best‑effort behavior for unbalanced groups.
+  - Batch handler tests validate array (incl. non‑string values filtered, empty arrays rejected) + string fallback (quotes, escapes, grouping) including complex cases.
+  - Unified inference integration test verifies string fallback path uses robust parsing and creates checklist items.
+  - Function schema test verifies `oneOf` (array|string) preference for arrays.
+  - Preconfigured prompts/conversation tests remain green.
 - CHANGELOG entry documents the fix.
 - Manual sanity: Verify an item like `Start database (index cache, warm)` remains a single item.
 
@@ -116,15 +118,31 @@
 
 - Overall: Implemented and validated locally
 
-Checklist:
+Changes landed:
 - [x] Parser utility implemented (`parseItemListString`)
-- [x] Batch handler updated to prefer arrays + robust fallback
+- [x] Batch handler updated to prefer arrays + robust fallback (filters null/empty/non-string properly)
 - [x] Unified inference fallback updated to use robust parsing
-- [x] Function schema updated to `oneOf` (array|string) with docs
-- [x] Conversation and preconfigured prompts updated (array-first guidance)
-- [x] Unit tests added (parser) and extended (batch handler)
+- [x] Function schema updated to `oneOf` (array|string) with array-first description
+- [x] Conversation + preconfigured prompts updated (array-first guidance, string fallback rules)
+- [x] Retry prompt updated to show array-first and fallback rules
+- [x] Tests added/extended:
+  - Parser: nested quotes, grouping, escapes, unbalanced groups, unicode, newlines/tabs, trimming
+  - Batch handler: array (empty, non-string/null filtering), string fallback (quotes, escapes, grouping), single-item array
+  - Unified inference: integration verifying robust parsing on string fallback
+  - Schema: oneOf presence and array-first preference
 - [x] Analyzer zero warnings
 - [x] Targeted tests pass
 - [x] CHANGELOG updated
 - [ ] Full test suite run (optional, recommended before release)
 - [ ] Link duplicate tracking task/issue (TBD by maintainer)
+
+## Test Coverage (Added)
+
+- Parser:
+  - `test/features/ai/utils/item_list_parsing_test.dart`
+- Batch handler:
+  - `test/features/ai/functions/lotti_batch_checklist_handler_test.dart`
+- Unified inference integration (string fallback path):
+  - `test/features/ai/repository/unified_ai_inference_repository_test.dart`
+- Function schema (arrays preferred via oneOf):
+  - `test/features/ai/functions/checklist_completion_functions_test.dart`

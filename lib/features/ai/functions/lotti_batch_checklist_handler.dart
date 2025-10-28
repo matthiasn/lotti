@@ -51,10 +51,13 @@ class LottiBatchChecklistHandler extends FunctionHandler {
 
       List<String> items;
       if (raw is List) {
-        items = raw
-            .map((e) => e.toString().trim())
-            .where((e) => e.isNotEmpty)
-            .toList();
+        items = [];
+        for (final e in raw) {
+          if (e == null) continue;
+          final s = e.toString().trim();
+          if (s.isEmpty || s == 'null') continue;
+          items.add(s);
+        }
       } else if (raw is String && raw.trim().isNotEmpty) {
         items = parseItemListString(raw);
       } else {
@@ -138,8 +141,15 @@ class LottiBatchChecklistHandler extends FunctionHandler {
     required List<String> successfulDescriptions,
   }) {
     return '''
-I noticed an error in your function call. Please use the correct format:
+I noticed an error in your function call.
+
+Preferred format for multiple items:
+{"items": ["item1", "item2", "item3"]}
+
+Fallback format (if arrays are not supported):
 {"items": "item1, item2, item3"}
+- If an item contains a comma, escape it with \\, or wrap the item in quotes.
+- Commas inside parentheses/brackets/braces belong to the item and should not split it.
 
 You already successfully created these checklist items: ${successfulDescriptions.join(', ')}
 

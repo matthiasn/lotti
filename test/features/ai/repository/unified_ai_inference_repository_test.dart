@@ -4935,6 +4935,110 @@ Take into account the following task context:
     });
   });
 
+  group('Batch checklist items parsing in unified repository', () {
+    test('parses string fallback with grouping and creates items', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: [],
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Checklist Updates',
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.checklistUpdates,
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      ).copyWith(supportsFunctionCalling: true);
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openRouter,
+      );
+
+      when(() => mockAiInputRepo.getEntity(taskEntity.id))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+          .thenAnswer((_) async => '{"task": "details"}');
+
+      // Stream with one tool call using string fallback that includes grouped comma
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>()
+            ..add(_createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'add_multiple_checklist_items',
+                arguments:
+                    '{"items": "Start database (index cache, warm), Verify"}',
+              ),
+            ]))
+            ..add(_createStreamChunk('Done'))
+            ..close();
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          provider: any(named: 'provider'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: taskEntity.id,
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          )).thenAnswer((_) async => (
+            success: true,
+            checklistId: 'new-checklist',
+            error: null,
+          ));
+
+      await repository!.runInference(
+        entityId: taskEntity.id,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      final captured =
+          verify(() => mockAutoChecklistService.autoCreateChecklist(
+                taskId: taskEntity.id,
+                suggestions: captureAny(named: 'suggestions'),
+                title: 'TODOs',
+              )).captured;
+
+      // Ensure at least one call with the first parsed item
+      expect(captured.length, greaterThanOrEqualTo(1));
+      final first = captured.first as List<ChecklistItemData>;
+      expect(first.single.title, 'Start database (index cache, warm)');
+    });
+  });
+
   group('Add checklist item tool calls', () {
     test('creates new checklist when none exists', () async {
       final taskEntity = Task(
