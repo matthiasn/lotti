@@ -56,6 +56,12 @@ final outboxServiceProvider = Provider<OutboxService>(
   name: 'outboxServiceProvider',
 );
 
+/// Emits an event whenever the Outbox hits the login gate during a send attempt.
+final outboxLoginGateStreamProvider = StreamProvider<void>(
+  (ref) => ref.watch(outboxServiceProvider).notLoggedInGateStream,
+  name: 'outboxLoginGateStreamProvider',
+);
+
 /// Provides the shared [AiConfigRepository]. Must be overridden in [ProviderScope].
 final aiConfigRepositoryProvider = Provider<AiConfigRepository>(
   (ref) => throw UnimplementedError(
