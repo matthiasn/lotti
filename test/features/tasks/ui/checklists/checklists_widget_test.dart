@@ -230,7 +230,7 @@ void main() {
       );
     }
 
-    testWidgets('renders ModernBaseCard with checklists', (tester) async {
+    testWidgets('renders checklist cards (one per checklist)', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -240,7 +240,8 @@ void main() {
       // Debug: Print widget tree
       await tester.pump();
 
-      expect(find.byType(ModernBaseCard), findsOneWidget);
+      // Two checklists -> two ModernBaseCard checklist cards
+      expect(find.byType(ModernBaseCard), findsNWidgets(2));
       expect(find.text('Checklists'), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
       expect(find.byIcon(Icons.reorder), findsOneWidget);
