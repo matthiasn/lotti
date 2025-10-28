@@ -3934,6 +3934,12 @@ abstract class AppLocalizations {
   /// **'Sync Outbox'**
   String get settingsSyncOutboxTitle;
 
+  /// No description provided for @syncNotLoggedInToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync is not logged in'**
+  String get syncNotLoggedInToast;
+
   /// No description provided for @settingsSyncSubtitle.
   ///
   /// In en, this message translates to:

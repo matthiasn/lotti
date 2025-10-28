@@ -754,6 +754,7 @@
   "settingsSpeechLastActivity": "Last transcription activity:",
   "settingsSpeechModelSelectionTitle": "Whisper speech recognition model:",
   "settingsSyncOutboxTitle": "Sync Outbox",
+  "syncNotLoggedInToast": "Sync is not logged in",
   "settingsSyncSubtitle": "Configure sync and view stats",
   "settingsSyncStatsSubtitle": "Inspect sync pipeline metrics",
   "matrixStatsError": "Error loading Matrix stats",

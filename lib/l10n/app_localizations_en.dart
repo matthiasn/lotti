@@ -2099,6 +2099,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSyncOutboxTitle => 'Sync Outbox';
 
   @override
+  String get syncNotLoggedInToast => 'Sync is not logged in';
+
+  @override
   String get settingsSyncSubtitle => 'Configure sync and view stats';
 
   @override

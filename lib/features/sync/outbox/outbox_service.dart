@@ -48,7 +48,8 @@ class OutboxService {
             UserActivityGate(
               activityService: userActivityService,
             ),
-        _ownsActivityGate = ownsActivityGate ?? activityGate == null {
+        _ownsActivityGate = ownsActivityGate ?? activityGate == null,
+        _matrixService = matrixService {
     // Runtime validation that works in release builds
     if (messageSender == null && matrixService == null) {
       throw ArgumentError(
@@ -95,6 +96,7 @@ class OutboxService {
   late final OutboxRepository _repository;
   late final OutboxMessageSender _messageSender;
   late final OutboxProcessor _processor;
+  final MatrixService? _matrixService;
 
   late ClientRunner<int> _clientRunner;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -299,6 +301,18 @@ class OutboxService {
       );
 
       if (!enableMatrix) {
+        return;
+      }
+
+      // Pause processing while not logged in. Do not schedule immediate retries
+      // from here to avoid spin while logged out. Normal triggers (enqueue,
+      // connectivity regain, UI actions) will re-nudge the outbox after login.
+      if (_matrixService != null && !_matrixService!.isLoggedIn()) {
+        _loggingService.captureEvent(
+          'sendNext.loginGate.notLoggedIn',
+          domain: 'OUTBOX',
+          subDomain: 'sendNext',
+        );
         return;
       }
 

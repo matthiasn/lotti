@@ -642,6 +642,7 @@ void main() {
 
       await svc.sendNext();
 
+      // Processor requested scheduling; sendNext returns after first drain
       verify(() => processor.processQueue()).called(1);
       expect(svc.enqueueCalls, 1);
       expect(svc.lastDelay, const Duration(seconds: 3));
@@ -811,5 +812,92 @@ void main() {
 
     expect(result, isTrue);
     verify(() => matrixService.sendMatrixMsg(message)).called(1);
+  });
+
+  group('sendNext login gate - ', () {
+    test('returns early when sync enabled but not logged in', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+
+      final matrixService = MockMatrixService();
+      when(matrixService.isLoggedIn).thenReturn(false);
+
+      final svc = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+      );
+
+      // Inject matrixService by replacing the sender with MatrixOutboxMessageSender
+      // and re-creating the service with matrixService for login gate.
+      final gatedSvc = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+        matrixService: matrixService,
+      );
+
+      await gatedSvc.sendNext();
+
+      // Should not attempt to drain
+      verifyNever(() => processor.processQueue());
+
+      await gatedSvc.dispose();
+      await svc.dispose();
+    });
+
+    test('drains when sync enabled and logged in', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+
+      final matrixService = MockMatrixService();
+      when(matrixService.isLoggedIn).thenReturn(true);
+
+      final svc = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+        matrixService: matrixService,
+      );
+
+      await svc.sendNext();
+
+      // sendNext performs two drains (second after a short settle delay)
+      verify(() => processor.processQueue()).called(2);
+
+      await svc.dispose();
+    });
   });
 }
