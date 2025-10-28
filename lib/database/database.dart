@@ -144,15 +144,18 @@ class JournalDb extends _$JournalDb {
         if (from < 29) {
           await () async {
             debugPrint('Adding task priority columns and updating index');
-            try {
+
+            // Add columns only if missing to avoid masking other errors
+            final hasTaskPriority =
+                await _columnExists('journal', 'task_priority');
+            if (!hasTaskPriority) {
               await m.addColumn(journal, journal.taskPriority);
-            } catch (_) {
-              // Column may already exist; ignore
             }
-            try {
+
+            final hasTaskPriorityRank =
+                await _columnExists('journal', 'task_priority_rank');
+            if (!hasTaskPriorityRank) {
               await m.addColumn(journal, journal.taskPriorityRank);
-            } catch (_) {
-              // Column may already exist; ignore
             }
 
             // Backfill existing task rows to P2/2
@@ -167,6 +170,21 @@ class JournalDb extends _$JournalDb {
         }
       },
     );
+  }
+
+  // Check whether a column exists in a given table to make migrations safer
+  Future<bool> _columnExists(String table, String column) async {
+    try {
+      final rows = await customSelect('PRAGMA table_info($table)').get();
+      for (final row in rows) {
+        final name = row.read<String>('name');
+        if (name == column) return true;
+      }
+      return false;
+    } catch (_) {
+      // If PRAGMA fails for any reason, fall back to false so migration attempts add the column
+      return false;
+    }
   }
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
