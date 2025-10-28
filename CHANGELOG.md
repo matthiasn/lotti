@@ -58,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Escaped commas (`\,`), quoted items ("..." / '...'), and commas inside parentheses/brackets/braces no longer split into separate items.
   - Updated prompt guidance to prefer arrays; fallback string format documented with escaping.
   - Added unit tests for parser and batch handler; analyzer warnings resolved.
+- Sync Outbox: The red "Sync is not logged in" toast now triggers only when an outbox send is attempted while logged out, not on app startup. Prevents noisy startup toasts when users haven’t logged in yet.
 - Sync (Matrix): Catch-up now continues escalating snapshot size until it’s not full (or lookback
   cap reached), ensuring the entire backlog after the read marker is retrieved. This eliminates
   missing EntryLinks after offline windows and prevents gray boxes on return to online.

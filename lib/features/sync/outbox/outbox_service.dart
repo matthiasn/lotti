@@ -97,6 +97,13 @@ class OutboxService {
   late final OutboxMessageSender _messageSender;
   late final OutboxProcessor _processor;
   final MatrixService? _matrixService;
+  final StreamController<void> _loginGateEventsController =
+      StreamController<void>.broadcast();
+
+  /// Emits an event whenever `sendNext` is invoked while sync is enabled but
+  /// the Matrix service is not logged in. Consumers (UI) can use this to show
+  /// a one-time toast informing the user.
+  Stream<void> get notLoggedInGateStream => _loginGateEventsController.stream;
 
   late ClientRunner<int> _clientRunner;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -313,6 +320,11 @@ class OutboxService {
           domain: 'OUTBOX',
           subDomain: 'sendNext',
         );
+        // Notify listeners that an outbox send was attempted while logged out.
+        // This is used by the UI to surface a one-time red toast.
+        if (!_loginGateEventsController.isClosed) {
+          _loginGateEventsController.add(null);
+        }
         return;
       }
 
@@ -352,6 +364,7 @@ class OutboxService {
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }
+    await _loginGateEventsController.close();
   }
 }
 

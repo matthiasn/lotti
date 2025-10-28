@@ -22,6 +22,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
@@ -51,7 +53,7 @@ bool _isRunningInFlatpak() {
           Platform.environment['FLATPAK_ID']!.isNotEmpty);
 }
 
-class AppScreen extends StatefulWidget {
+class AppScreen extends ConsumerStatefulWidget {
   const AppScreen({
     super.key,
     this.journalDb,
@@ -60,16 +62,15 @@ class AppScreen extends StatefulWidget {
   final JournalDb? journalDb;
 
   @override
-  State<AppScreen> createState() => _AppScreenState();
+  ConsumerState<AppScreen> createState() => _AppScreenState();
 }
 
-class _AppScreenState extends State<AppScreen> {
+class _AppScreenState extends ConsumerState<AppScreen> {
   final NavService navService = getIt<NavService>();
 
   bool _isHabitsPageEnabled = true;
   bool _isDashboardsPageEnabled = true;
   bool _isCalendarPageEnabled = true;
-  bool _isSyncEnabled = false;
   bool _notLoggedInToastShown = false;
 
   @override
@@ -85,30 +86,13 @@ class _AppScreenState extends State<AppScreen> {
           _isDashboardsPageEnabled =
               configFlags.contains(enableDashboardsPageFlag);
           _isCalendarPageEnabled = configFlags.contains(enableCalendarPageFlag);
-          _isSyncEnabled = configFlags.contains(enableMatrixFlag);
         });
       }
     });
   }
 
-  void _maybeShowNotLoggedInToast(
-    BuildContext context, {
-    required bool notLoggedIn,
-  }) {
+  void _showNotLoggedInToast(BuildContext context) {
     if (!mounted) return;
-
-    // Reset the guard when logging in or when sync is disabled
-    if (!notLoggedIn) {
-      if (_notLoggedInToastShown) {
-        _notLoggedInToastShown = false;
-      }
-      return;
-    }
-
-    if (_notLoggedInToastShown) return;
-    _notLoggedInToastShown = true;
-
-    // Defer SnackBar until after the current frame when Scaffold is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final scheme = Theme.of(context).colorScheme;
@@ -124,142 +108,165 @@ class _AppScreenState extends State<AppScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer(builder: (context, ref, __) {
-      return StreamBuilder<int>(
-        stream: navService.getIndexStream(),
-        builder: (context, snapshot) {
-          final rawIndex = snapshot.data ?? 0;
+    // Reset toast guard on login, and listen for login-gate events from outbox.
+    ref
+      ..listen(loginStateStreamProvider, (prev, next) {
+        final state = next.asData?.value;
+        if (state == LoginState.loggedIn) {
+          _notLoggedInToastShown = false;
+        }
+      })
+      ..listen(outboxLoginGateStreamProvider, (prev, next) {
+        next.when(
+          data: (_) {
+            if (_notLoggedInToastShown) return;
+            _notLoggedInToastShown = true;
+            _showNotLoggedInToast(context);
+          },
+          loading: () {},
+          error: (error, stack) {
+            getIt<LoggingService>().captureException(
+              error,
+              domain: 'OUTBOX',
+              subDomain: 'notLoggedInGateStream',
+              stackTrace: stack,
+            );
+          },
+        );
+      });
 
-          // Calculate the number of navigation items based on enabled flags
-          final navItems = [
-            true, // Tasks
-            _isCalendarPageEnabled, // Calendar
-            _isHabitsPageEnabled, // Habits
-            _isDashboardsPageEnabled, // Dashboards
-            true, // Journal
-            true, // Settings
-          ];
-          final itemCount = navItems.where((isEnabled) => isEnabled).length;
+    return StreamBuilder<int>(
+      stream: navService.getIndexStream(),
+      builder: (context, snapshot) {
+        final rawIndex = snapshot.data ?? 0;
 
-          // Clamp index to valid range to prevent out of bounds errors
-          // when flags are toggled and items list shrinks
-          final index = rawIndex.clamp(0, itemCount - 1);
+        // Calculate the number of navigation items based on enabled flags
+        final navItems = [
+          true, // Tasks
+          _isCalendarPageEnabled, // Calendar
+          _isHabitsPageEnabled, // Habits
+          _isDashboardsPageEnabled, // Dashboards
+          true, // Journal
+          true, // Settings
+        ];
+        final itemCount = navItems.where((isEnabled) => isEnabled).length;
 
-          // Evaluate login state for the toast (Option B via Riverpod)
-          final loginState = ref.watch(loginStateStreamProvider).valueOrNull;
-          final notLoggedIn =
-              _isSyncEnabled && loginState != LoginState.loggedIn;
-          _maybeShowNotLoggedInToast(context, notLoggedIn: notLoggedIn);
+        // Clamp index to valid range to prevent out of bounds errors
+        // when flags are toggled and items list shrinks
+        final index = rawIndex < 0
+            ? 0
+            : (rawIndex > itemCount - 1 ? itemCount - 1 : rawIndex);
 
-          return Scaffold(
-            body: Stack(
-              children: [
-                const IncomingVerificationWrapper(),
-                IndexedStack(
-                  index: index,
-                  children: [
-                    Beamer(routerDelegate: navService.tasksDelegate),
-                    if (_isCalendarPageEnabled)
-                      Beamer(routerDelegate: navService.calendarDelegate),
-                    if (_isHabitsPageEnabled)
-                      Beamer(routerDelegate: navService.habitsDelegate),
-                    if (_isDashboardsPageEnabled)
-                      Beamer(routerDelegate: navService.dashboardsDelegate),
-                    Beamer(routerDelegate: navService.journalDelegate),
-                    Beamer(routerDelegate: navService.settingsDelegate),
-                  ],
-                ),
+        // No eager toast from build(); event-driven toast handled via ref.listen
+
+        return Scaffold(
+          body: Stack(
+            children: [
+              const IncomingVerificationWrapper(),
+              IndexedStack(
+                index: index,
+                children: [
+                  Beamer(routerDelegate: navService.tasksDelegate),
+                  if (_isCalendarPageEnabled)
+                    Beamer(routerDelegate: navService.calendarDelegate),
+                  if (_isHabitsPageEnabled)
+                    Beamer(routerDelegate: navService.habitsDelegate),
+                  if (_isDashboardsPageEnabled)
+                    Beamer(routerDelegate: navService.dashboardsDelegate),
+                  Beamer(routerDelegate: navService.journalDelegate),
+                  Beamer(routerDelegate: navService.settingsDelegate),
+                ],
+              ),
+              const Positioned(
+                left: AppScreenConstants.navigationPadding,
+                bottom: AppScreenConstants.navigationTimeIndicatorBottom,
+                child: TimeRecordingIndicator(),
+              ),
+              // Only show AudioRecordingIndicator when not running in Flatpak
+              // Flatpak builds have MediaKit compatibility issues
+              if (!_isRunningInFlatpak())
                 const Positioned(
-                  left: AppScreenConstants.navigationPadding,
+                  right: AppScreenConstants.navigationAudioIndicatorRight,
                   bottom: AppScreenConstants.navigationTimeIndicatorBottom,
-                  child: TimeRecordingIndicator(),
+                  child: AudioRecordingIndicator(),
                 ),
-                // Only show AudioRecordingIndicator when not running in Flatpak
-                // Flatpak builds have MediaKit compatibility issues
-                if (!_isRunningInFlatpak())
-                  const Positioned(
-                    right: AppScreenConstants.navigationAudioIndicatorRight,
-                    bottom: AppScreenConstants.navigationTimeIndicatorBottom,
-                    child: AudioRecordingIndicator(),
-                  ),
-              ],
+            ],
+          ),
+          bottomNavigationBar: SpotifyStyleBottomNavigationBar(
+            selectedItemColor: context.colorScheme.primary,
+            unselectedItemColor: context.colorScheme.primary.withAlpha(127),
+            enableFeedback: true,
+            backgroundColor: context.colorScheme.surface,
+            elevation: AppScreenConstants.navigationElevation,
+            iconSize: AppScreenConstants.navigationIconSize,
+            selectedLabelStyle: const TextStyle(
+              height: AppScreenConstants.navigationTextHeight,
+              fontWeight: FontWeight.normal,
+              fontSize: fontSizeSmall,
             ),
-            bottomNavigationBar: SpotifyStyleBottomNavigationBar(
-              selectedItemColor: context.colorScheme.primary,
-              unselectedItemColor: context.colorScheme.primary.withAlpha(127),
-              enableFeedback: true,
-              backgroundColor: context.colorScheme.surface,
-              elevation: AppScreenConstants.navigationElevation,
-              iconSize: AppScreenConstants.navigationIconSize,
-              selectedLabelStyle: const TextStyle(
-                height: AppScreenConstants.navigationTextHeight,
-                fontWeight: FontWeight.normal,
-                fontSize: fontSizeSmall,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                height: AppScreenConstants.navigationTextHeight,
-                fontWeight: FontWeight.w300,
-                fontSize: fontSizeSmall,
-              ),
-              type: SpotifyStyleBottomNavigationBarType.fixed,
-              currentIndex: index,
-              items: [
-                createNavBarItem(
-                  semanticLabel: 'Tasks Tab',
-                  icon: TasksBadge(
-                    child: Icon(MdiIcons.checkboxMarkedCircleOutline),
-                  ),
-                  activeIcon: TasksBadge(
-                    child: Icon(MdiIcons.checkboxMarkedCircle),
-                  ),
-                  label: context.messages.navTabTitleTasks,
+            unselectedLabelStyle: const TextStyle(
+              height: AppScreenConstants.navigationTextHeight,
+              fontWeight: FontWeight.w300,
+              fontSize: fontSizeSmall,
+            ),
+            type: SpotifyStyleBottomNavigationBarType.fixed,
+            currentIndex: index,
+            items: [
+              createNavBarItem(
+                semanticLabel: 'Tasks Tab',
+                icon: TasksBadge(
+                  child: Icon(MdiIcons.checkboxMarkedCircleOutline),
                 ),
-                if (_isCalendarPageEnabled)
-                  createNavBarItem(
-                    semanticLabel: 'Calendar Tab',
-                    icon: const Icon(Ionicons.calendar_outline),
-                    activeIcon: OutboxBadgeIcon(
-                      icon: const Icon(Ionicons.calendar),
-                    ),
-                    label: context.messages.navTabTitleCalendar,
-                  ),
-                if (_isHabitsPageEnabled)
-                  createNavBarItem(
-                    semanticLabel: 'Habits Tab',
-                    icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
-                    activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
-                    label: context.messages.navTabTitleHabits,
-                  ),
-                if (_isDashboardsPageEnabled)
-                  createNavBarItem(
-                    semanticLabel: 'Dashboards Tab',
-                    icon: const Icon(Ionicons.bar_chart_outline),
-                    activeIcon: const Icon(Ionicons.bar_chart),
-                    label: context.messages.navTabTitleInsights,
-                  ),
-                createNavBarItem(
-                  semanticLabel: 'Logbook Tab',
-                  icon: const Icon(Ionicons.book_outline),
-                  activeIcon: const Icon(Ionicons.book),
-                  label: context.messages.navTabTitleJournal,
+                activeIcon: TasksBadge(
+                  child: Icon(MdiIcons.checkboxMarkedCircle),
                 ),
+                label: context.messages.navTabTitleTasks,
+              ),
+              if (_isCalendarPageEnabled)
                 createNavBarItem(
-                  semanticLabel: 'Settings Tab',
-                  icon: OutboxBadgeIcon(
-                    icon: const Icon(Ionicons.settings_outline),
-                  ),
+                  semanticLabel: 'Calendar Tab',
+                  icon: const Icon(Ionicons.calendar_outline),
                   activeIcon: OutboxBadgeIcon(
-                    icon: const Icon(Ionicons.settings),
+                    icon: const Icon(Ionicons.calendar),
                   ),
-                  label: context.messages.navTabTitleSettings,
+                  label: context.messages.navTabTitleCalendar,
                 ),
-              ],
-              onTap: navService.tapIndex,
-            ),
-          );
-        },
-      );
-    });
+              if (_isHabitsPageEnabled)
+                createNavBarItem(
+                  semanticLabel: 'Habits Tab',
+                  icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
+                  activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
+                  label: context.messages.navTabTitleHabits,
+                ),
+              if (_isDashboardsPageEnabled)
+                createNavBarItem(
+                  semanticLabel: 'Dashboards Tab',
+                  icon: const Icon(Ionicons.bar_chart_outline),
+                  activeIcon: const Icon(Ionicons.bar_chart),
+                  label: context.messages.navTabTitleInsights,
+                ),
+              createNavBarItem(
+                semanticLabel: 'Logbook Tab',
+                icon: const Icon(Ionicons.book_outline),
+                activeIcon: const Icon(Ionicons.book),
+                label: context.messages.navTabTitleJournal,
+              ),
+              createNavBarItem(
+                semanticLabel: 'Settings Tab',
+                icon: OutboxBadgeIcon(
+                  icon: const Icon(Ionicons.settings_outline),
+                ),
+                activeIcon: OutboxBadgeIcon(
+                  icon: const Icon(Ionicons.settings),
+                ),
+                label: context.messages.navTabTitleSettings,
+              ),
+            ],
+            onTap: navService.tapIndex,
+          ),
+        );
+      },
+    );
   }
 }
 

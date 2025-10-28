@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,7 +66,7 @@ class _EmptyLocation extends BeamLocation<BeamState> {
 }
 
 void main() {
-  testWidgets('Shows one-time red toast when sync enabled and logged out',
+  testWidgets('Shows red toast only when outbox attempts send while logged out',
       (tester) async {
     final db = MockJournalDb();
     // Emit active flags that include enableMatrixFlag
@@ -188,6 +190,12 @@ void main() {
     // Initialize the delegate's route
     await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
 
+    // Mock OutboxService and provide a stream to emit login-gate events
+    final mockOutboxService = MockOutboxService();
+    final controller = StreamController<void>.broadcast();
+    when(() => mockOutboxService.notLoggedInGateStream)
+        .thenAnswer((_) => controller.stream);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -195,6 +203,7 @@ void main() {
           loginStateStreamProvider.overrideWith(
             (ref) => Stream<LoginState>.value(LoginState.loggedOut),
           ),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -210,9 +219,16 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Expect a SnackBar with the localized text
+    // On startup while logged out: no toast yet (only on outbox attempt)
+    expect(find.byType(SnackBar), findsNothing);
+
+    // Simulate an outbox send attempt getting gated by not-logged-in
+    controller.add(null);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Expect a SnackBar with the localized text after the event
     expect(find.byType(SnackBar), findsOneWidget);
-    // Localized text from l10n
     expect(find.text('Sync is not logged in'), findsOneWidget);
 
     // Now simulate login: rebuild with logged in state
@@ -234,6 +250,7 @@ void main() {
           loginStateStreamProvider.overrideWith(
             (ref) => Stream<LoginState>.value(LoginState.loggedIn),
           ),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -249,5 +266,198 @@ void main() {
     await tester.pumpAndSettle();
     // No additional SnackBar expected now.
     // We tolerate one lingering SnackBar due to UI rebuilds.
+  });
+
+  testWidgets('Duplicate login-gate events show only one toast per session',
+      (tester) async {
+    final db = MockJournalDb();
+    when(db.watchActiveConfigFlagNames)
+        .thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
+
+    // Register GetIt dependencies used by AppScreen children
+    final syncDb = mockSyncDatabaseWithCount(0);
+    if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
+    if (getIt.isRegistered<SyncDatabase>()) getIt.unregister<SyncDatabase>();
+    if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
+    final settingsDb = MockSettingsDb();
+    when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+    when(() => settingsDb.saveSettingsItem(any(), any()))
+        .thenAnswer((_) async => 1);
+    getIt
+      ..registerSingleton<JournalDb>(db)
+      ..registerSingleton<SyncDatabase>(syncDb)
+      ..registerSingleton<SettingsDb>(settingsDb);
+
+    final mockMatrix = MockMatrixService();
+    when(mockMatrix.getIncomingKeyVerificationStream)
+        .thenAnswer((_) => const Stream<KeyVerification>.empty());
+    when(() => mockMatrix.incomingKeyVerificationRunnerStream)
+        .thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+
+    final mockOutboxService = MockOutboxService();
+    final controller = StreamController<void>.broadcast();
+    when(() => mockOutboxService.notLoggedInGateStream)
+        .thenAnswer((_) => controller.stream);
+
+    final routerDelegate = BeamerDelegate(
+      setBrowserTabTitle: false,
+      locationBuilder: (routeInformation, _) {
+        return _TestLocation(routeInformation, db: db);
+      },
+    );
+    await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrix),
+          loginStateStreamProvider.overrideWith(
+            (ref) => Stream<LoginState>.value(LoginState.loggedOut),
+          ),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
+        ],
+        child: MaterialApp.router(
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          routerDelegate: routerDelegate,
+          routeInformationParser: BeamerParser(),
+          backButtonDispatcher: BeamerBackButtonDispatcher(
+            delegate: routerDelegate,
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsNothing);
+
+    // Emit two events in the same session
+    controller
+      ..add(null)
+      ..add(null);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.text('Sync is not logged in'), findsOneWidget);
+  });
+
+  testWidgets('Guard resets on login; event after login shows toast again',
+      (tester) async {
+    final db = MockJournalDb();
+    when(db.watchActiveConfigFlagNames)
+        .thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
+
+    // Register GetIt dependencies used by AppScreen children
+    final syncDb = mockSyncDatabaseWithCount(0);
+    if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
+    if (getIt.isRegistered<SyncDatabase>()) getIt.unregister<SyncDatabase>();
+    if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
+    final settingsDb = MockSettingsDb();
+    when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+    when(() => settingsDb.saveSettingsItem(any(), any()))
+        .thenAnswer((_) async => 1);
+    getIt
+      ..registerSingleton<JournalDb>(db)
+      ..registerSingleton<SyncDatabase>(syncDb)
+      ..registerSingleton<SettingsDb>(settingsDb);
+
+    final mockMatrix = MockMatrixService();
+    when(mockMatrix.getIncomingKeyVerificationStream)
+        .thenAnswer((_) => const Stream<KeyVerification>.empty());
+    when(() => mockMatrix.incomingKeyVerificationRunnerStream)
+        .thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+
+    final mockOutboxService = MockOutboxService();
+    final controller = StreamController<void>.broadcast();
+    when(() => mockOutboxService.notLoggedInGateStream)
+        .thenAnswer((_) => controller.stream);
+
+    final routerDelegate = BeamerDelegate(
+      setBrowserTabTitle: false,
+      locationBuilder: (routeInformation, _) {
+        return _TestLocation(routeInformation, db: db);
+      },
+    );
+    await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
+
+    // First build: logged out
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrix),
+          loginStateStreamProvider.overrideWith(
+            (ref) => Stream<LoginState>.value(LoginState.loggedOut),
+          ),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
+        ],
+        child: MaterialApp.router(
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          routerDelegate: routerDelegate,
+          routeInformationParser: BeamerParser(),
+          backButtonDispatcher: BeamerBackButtonDispatcher(
+            delegate: routerDelegate,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsNothing);
+    controller.add(null);
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsOneWidget);
+
+    // Second build: simulate login (resets guard)
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrix),
+          loginStateStreamProvider.overrideWith(
+            (ref) => Stream<LoginState>.value(LoginState.loggedIn),
+          ),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
+        ],
+        child: MaterialApp.router(
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          routerDelegate: routerDelegate,
+          routeInformationParser: BeamerParser(),
+          backButtonDispatcher: BeamerBackButtonDispatcher(
+            delegate: routerDelegate,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Third build: back to logged out, a new event should show toast again
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrix),
+          loginStateStreamProvider.overrideWith(
+            (ref) => Stream<LoginState>.value(LoginState.loggedOut),
+          ),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
+        ],
+        child: MaterialApp.router(
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          routerDelegate: routerDelegate,
+          routeInformationParser: BeamerParser(),
+          backButtonDispatcher: BeamerBackButtonDispatcher(
+            delegate: routerDelegate,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    controller.add(null);
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.text('Sync is not logged in'), findsOneWidget);
   });
 }
