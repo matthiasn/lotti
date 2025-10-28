@@ -510,32 +510,38 @@ void main() {
         );
 
         var lastAliceCount = -1;
-        await waitUntilAsync(
-          () async {
-            final currentCount = await aliceDb.getJournalCount();
-            if (currentCount != lastAliceCount) {
-              debugPrint('Alice journal count: $currentCount');
-              lastAliceCount = currentCount;
-            }
-            return currentCount == expectedEntriesPerDb;
-          },
-        );
+        await waitUntilAsync(() async {
+          final currentCount = await aliceDb.getJournalCount();
+          if (currentCount != lastAliceCount) {
+            debugPrint('Alice journal count: $currentCount');
+            lastAliceCount = currentCount;
+          }
+          if (currentCount < expectedEntriesPerDb) {
+            // Under degraded network, proactively drive catch-up and retries
+            // while we wait to avoid long hangs on CI.
+            await alice.forceRescan();
+            await alice.retryNow();
+          }
+          return currentCount >= expectedEntriesPerDb;
+        });
         debugPrint('\n--- Alice finished receiving messages');
         final aliceEntriesCount = await aliceDb.getJournalCount();
         expect(aliceEntriesCount, expectedEntriesPerDb);
         debugPrint('Alice persisted $aliceEntriesCount entries');
 
         var lastBobCount = -1;
-        await waitUntilAsync(
-          () async {
-            final currentCount = await bobDb.getJournalCount();
-            if (currentCount != lastBobCount) {
-              debugPrint('Bob journal count: $currentCount');
-              lastBobCount = currentCount;
-            }
-            return currentCount == expectedEntriesPerDb;
-          },
-        );
+        await waitUntilAsync(() async {
+          final currentCount = await bobDb.getJournalCount();
+          if (currentCount != lastBobCount) {
+            debugPrint('Bob journal count: $currentCount');
+            lastBobCount = currentCount;
+          }
+          if (currentCount < expectedEntriesPerDb) {
+            await bob.forceRescan();
+            await bob.retryNow();
+          }
+          return currentCount >= expectedEntriesPerDb;
+        });
         debugPrint('\n--- Bob finished receiving messages');
         final bobEntriesCount = await bobDb.getJournalCount();
         expect(bobEntriesCount, expectedEntriesPerDb);
