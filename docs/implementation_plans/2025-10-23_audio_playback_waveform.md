@@ -6,13 +6,13 @@
   detail expected in polished voice journaling experiences.
 - We will generate normalized waveform samples with `just_waveform`, cache them per audio asset, and
   swap the progress bar for an adaptive waveform scrubber once data is available.
-- Shorter clips (≤3 min) render waveforms immediately; longer audio falls back to the existing bar
-  until we confirm decoding costs are acceptable.
+  Waveforms render for all supported clip lengths; long recordings no longer fall back to the
+  plain progress bar solely due to duration.
 
 ## Goals
 
-- Ship a background-friendly waveform service that derives 160–240 samples from `.m4a` sources using
-  `just_waveform`.
+- Ship a background-friendly waveform service that derives ~160–320 samples from `.m4a` sources
+  using `just_waveform`, with dynamic zoom scaling for long clips.
 - Persist normalized amplitudes alongside metadata (duration, sample rate, version) so subsequent
   loads are instant.
 - Update `AudioPlayerCubit`/UI to load waveform data on `setAudioNote`, expose status in state, and
@@ -42,6 +42,8 @@
   - Introduce `AudioWaveformService` (GetIt singleton) wrapping `just_waveform`.
   - Compute reduced sample sets sized to the target UI width (default 200 buckets), normalize to
     0–1.
+  - Select zoom dynamically based on clip duration and requested bucket count to keep extraction
+    time bounded even for long recordings (no hard duration cutoff).
   - Persist the raw waveform data to `/Documents/audio_waveforms/<audioId>_<bucketCount>.json` so
     width-specific caches can be reused locally (these caches remain device-local; no sync).
 2. **Cubit & State**
@@ -86,8 +88,10 @@
 
 - Implement `AudioWaveformService`:
   - `Future<AudioWaveformData> load(JournalAudio note, {int targetSamples = 200})`.
-  - Handle cache read/write, duration gating, and versioning, using `<audioId>_<bucketCount>.json`
-    naming so per-density caches are independent.
+  - Handle cache read/write and versioning, using `<audioId>_<bucketCount>.json` naming so
+    per-density caches are independent.
+  - Remove the strict duration gate; always attempt extraction when the file exists. Extraction
+    uses dynamic zoom to constrain work for long clips.
 - Unit tests using small fixture audio under `test/test_resources/audio/`.
 - Hook into GetIt registration.
 
@@ -153,14 +157,14 @@
 
 ### Phase 3 — UI Integration
 
-- Create `AudioWaveformScrubber` widget (progress-overlaid bars with scrubbing).
-- Compute bar count at layout time from the available width, resampling cached amplitudes so bar
-  spacing stays within design targets across breakpoints.
-- Ensure window resize/orientation changes trigger recomputation for every visible waveform (not
-  just the active player) via layout listeners and provider updates.
-- Swap into `AudioPlayerWidget` with fallback logic.
-- Add accessibility semantics and animations mirroring the current progress bar.
-- Widget tests for waveform rendering, adaptive bar count, progress tint, and seek invocation.
+  - Create `AudioWaveformScrubber` widget (progress-overlaid bars with scrubbing).
+  - Compute bar count at layout time from the available width, resampling cached amplitudes so bar
+    spacing stays within design targets across breakpoints.
+  - Ensure window resize/orientation changes trigger recomputation for every visible waveform (not
+    just the active player) via layout listeners and provider updates.
+  - Swap into `AudioPlayerWidget` with fallback logic.
+  - Add accessibility semantics and animations mirroring the current progress bar.
+  - Widget tests for waveform rendering, adaptive bar count, progress tint, and seek invocation.
 
 #### Tests
 
@@ -204,7 +208,7 @@
 - Manual QA: confirm waveform appears for ≤3 min clips, longer clips fall back gracefully, and
   scrubbing works.
 
-### Phase 5 — Sync Metadata Persistence
+### Phase 5 — Sync Metadata Persistence (Future)
 
 - Persist waveform metadata (bucket duration, amplitudes hash, cache version) alongside the audio
   entry so other devices can reuse precomputed waveforms.
@@ -216,7 +220,9 @@
 
 ## Risks & Mitigations
 
-- **Decoding cost on large files** — guard with a duration cutoff and offload work to an isolate.
+- **Decoding cost on large files** — scale `pixelsPerSecond` dynamically from target bucket count
+  and clip length so the extracted pixel count remains near a small multiple of the requested bars;
+  extraction already streams on a separate worker via `just_waveform`.
 - **Cache drift after file replacement** — include file stat hash (size + modified timestamp) in the
   cache key; invalidate on mismatch.
 - **Cross-platform decoder quirks** — add integration test fixtures and sanity-check on macOS +
@@ -227,7 +233,7 @@
 ## Decisions
 
 - Adopt `just_waveform` for decoding; no native binaries required.
-- Limit waveform generation to clips ≤3 min (configurable) in the first release.
+- Generate waveforms for all durations; no hard cutoff. Use dynamic zoom to bound work.
 - Store cache under documents to align with the existing audio storage hierarchy.
 - Reuse the `WaveformBars` painter, wrapping it to add progress overlay rather than rebuilding it.
 

@@ -15,9 +15,6 @@ import 'package:path/path.dart' as p;
 const int _waveformCacheVersion = 1;
 const int audioWaveformCacheVersion = _waveformCacheVersion;
 
-/// Maximum supported audio duration for waveform extraction.
-const Duration _defaultMaxDuration = Duration(minutes: 3);
-
 /// Maximum number of cached waveform files retained on disk.
 const int _maxCacheEntries = 1000;
 
@@ -28,7 +25,7 @@ const int _maxTempFileIdLength = 60;
 const double _peakWeight = 0.7;
 const double _rmsWeight = 0.3;
 
-/// Zoom level tuned for ~200 buckets across typical journal clips.
+/// Default zoom level tuned for ~200 buckets across typical journal clips.
 const WaveformZoom _defaultZoom = WaveformZoom.pixelsPerSecond(120);
 
 /// Result of waveform extraction for use in the UI.
@@ -164,14 +161,11 @@ Future<Waveform> _defaultWaveformExtractor({
 class AudioWaveformService {
   AudioWaveformService({
     AudioWaveformExtractor? extractor,
-    Duration maxSupportedDuration = _defaultMaxDuration,
     WaveformZoom zoom = _defaultZoom,
   })  : _extractor = extractor ?? _defaultWaveformExtractor,
-        _maxSupportedDuration = maxSupportedDuration,
         _zoom = zoom;
 
   final AudioWaveformExtractor _extractor;
-  final Duration _maxSupportedDuration;
   final WaveformZoom _zoom;
 
   LoggingService get _loggingService => getIt<LoggingService>();
@@ -182,22 +176,12 @@ class AudioWaveformService {
       Directory(p.join(_documentsDirectory.path, 'audio_waveforms'));
 
   /// Load (or compute) waveform data for the given [audio]. Returns `null`
-  /// when the audio exceeds the supported duration or the source file is
-  /// missing.
+  /// when the source file is missing or extraction fails.
   Future<AudioWaveformData?> loadWaveform(
     JournalAudio audio, {
     required int targetBuckets,
   }) async {
     final bucketTarget = math.max(1, targetBuckets);
-    if (audio.data.duration > _maxSupportedDuration) {
-      _loggingService.captureEvent(
-        'Skipping waveform generation for long clip '
-        '(${audio.data.duration.inSeconds}s > ${_maxSupportedDuration.inSeconds}s)',
-        domain: 'audio_waveform_service',
-        subDomain: 'duration_gate',
-      );
-      return null;
-    }
 
     final audioPath = await AudioUtils.getFullAudioPath(audio);
     final audioFile = File(audioPath);
@@ -247,7 +231,10 @@ class AudioWaveformService {
       final waveform = await _extractor(
         audioFile: audioFile,
         waveOutFile: tempWaveOutFile,
-        zoom: _zoom,
+        zoom: _selectZoom(
+          duration: audio.data.duration,
+          targetBuckets: bucketTarget,
+        ),
       );
 
       final normalized = _normalizeWaveform(
@@ -293,6 +280,28 @@ class AudioWaveformService {
         // Ignore cleanup failures.
       }
     }
+  }
+
+  /// Choose a zoom level that keeps extraction bounded while preserving enough
+  /// resolution for high‑quality downsampling to [targetBuckets]. For very
+  /// long clips, reduce pixels-per-second to avoid excessive work. For short
+  /// clips, fall back to the default zoom.
+  WaveformZoom _selectZoom({
+    required Duration duration,
+    required int targetBuckets,
+  }) {
+    // If duration is unknown, keep defaults.
+    final seconds = duration.inMilliseconds / 1000.0;
+    if (seconds <= 0) return _zoom;
+
+    // Aim to extract around 3x the requested buckets for stable downsampling,
+    // but keep pixel density within reasonable bounds.
+    final desiredPixels = (targetBuckets * 3).toDouble();
+    const minPps = 24.0; // good baseline for long clips
+    const maxPps = 160.0; // upper bound close to default
+    final ppsDouble = (desiredPixels / seconds).clamp(minPps, maxPps);
+    final pps = ppsDouble.round();
+    return WaveformZoom.pixelsPerSecond(pps);
   }
 
   String _sanitizeTempId(String rawId) {

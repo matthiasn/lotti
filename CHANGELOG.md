@@ -50,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stabilized labels/task widget tests by awaiting `getIt.reset()`, providing scoped service mocks,
   and giving sheet/editor hosts real `MediaQuery` sizes so chips, toggles, and CTAs are tappable
   during automation.
+- Waveform: show visualization for recordings longer than 3 minutes by removing the duration gate
+  and introducing dynamic zoom scaling for long clips; updated tests and docs accordingly.
 
 ## [0.9.704] - 2025-10-24
 ### Added
