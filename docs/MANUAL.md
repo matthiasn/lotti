@@ -194,3 +194,7 @@ It would be useful to also be able to create screenshots from the app menu, see 
 
 ## Tasks
 
+### Priority (P0–P3)
+Tasks support four priority levels using compact short codes (P0—P3). You can set a task’s priority from the task header and filter the Tasks tab by one or more priorities. The list orders by priority first (P0 to P3), then by creation date (newer first).
+
+See: docs/user_guides/task_priority.md
