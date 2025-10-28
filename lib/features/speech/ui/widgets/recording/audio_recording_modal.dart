@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lotti/features/categories/state/category_details_controller.dart';
-import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
+import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
@@ -242,21 +241,14 @@ class _AudioRecordingModalContentState
     AudioRecorderState state,
     ThemeData theme,
   ) {
-    if (widget.categoryId == null) {
-      return const SizedBox.shrink();
-    }
-
-    // Get category to check if automatic prompts are configured
-    final categoryDetailsState = ref.watch(
-      categoryDetailsControllerProvider(widget.categoryId!),
-    );
-
-    final category = categoryDetailsState.category;
-
-    final visibility = deriveAutomaticPromptVisibility(
-      automaticPrompts: category?.automaticPrompts,
-      hasLinkedTask: widget.linkedId != null,
-      userSpeechPreference: state.enableSpeechRecognition,
+    // Use the extracted provider to compute visibility
+    // This makes the logic testable independently from the widget
+    final visibility = ref.watch(
+      checkboxVisibilityProvider(
+        categoryId: widget.categoryId,
+        linkedId: widget.linkedId,
+        userSpeechPreference: state.enableSpeechRecognition,
+      ),
     );
 
     if (visibility.none) {
