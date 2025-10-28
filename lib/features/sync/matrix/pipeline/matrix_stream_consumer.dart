@@ -817,7 +817,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       // Skip duplicate attachment work if we've already seen this eventId.
       // Keep processing for sync payload events to ensure apply/retry semantics.
       final dup = _isDuplicateAndRecordSeen(eventId);
-      final suppressed = _sentEventRegistry.consume(eventId);
+      final isSelfOrigin = e.senderId == _client.userID;
+      final suppressed = _sentEventRegistry.consume(eventId) || isSelfOrigin;
       if (suppressed) {
         suppressedIds.add(eventId);
         _metrics.incSelfEventsSuppressed();
