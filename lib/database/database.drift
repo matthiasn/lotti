@@ -346,11 +346,14 @@ SELECT * FROM journal
       ELSE 1
     END
   ) = 1
-  -- Priority filtering (AND semantics): when enabled, include rows whose task_priority is in :priorities
+  -- Priority filtering (AND semantics): when enabled, include rows whose task_priority is in :priorities.
+  -- To avoid invalid `IN ()` when :priorities is empty, mirror the label guard
+  -- by short-circuiting when :priorityFilterCount = 0.
   AND (
     CASE
       WHEN :filterByPriorities THEN
         CASE
+          WHEN :priorityFilterCount = 0 THEN 1
           WHEN task_priority IN :priorities THEN 1
           ELSE 0
         END
@@ -388,6 +391,7 @@ SELECT * FROM journal
     CASE
       WHEN :filterByPriorities THEN
         CASE
+          WHEN :priorityFilterCount = 0 THEN 1
           WHEN task_priority IN :priorities THEN 1
           ELSE 0
         END
