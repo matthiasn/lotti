@@ -166,4 +166,61 @@ void main() {
     expect(find.text('P3'), findsOneWidget);
     expect(find.byIcon(Icons.priority_high_rounded), findsNothing);
   });
+
+  testWidgets('priority selection persists after rebuild', (tester) async {
+    final initial = testTask.copyWith(
+      data: testTask.data.copyWith(priority: TaskPriority.p2Medium),
+    );
+
+    var currentPriority = TaskPriority.p2Medium;
+
+    when(() => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+          categoryId: any(named: 'categoryId'),
+          entryText: any(named: 'entryText'),
+        )).thenAnswer((invocation) async {
+      final td = invocation.namedArguments[#taskData] as TaskData;
+      currentPriority = td.priority;
+      return true;
+    });
+
+    List<Override> buildOverrides() => <Override>[
+          entryControllerProvider(id: initial.meta.id).overrideWith(
+            () => _TestEntryController(initial.copyWith(
+              data: initial.data.copyWith(priority: currentPriority),
+            )),
+          ),
+        ];
+
+    // Initial build
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        overrides: buildOverrides(),
+        child: TaskPriorityWrapper(taskId: initial.meta.id),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('P2'), findsOneWidget);
+
+    // Change to P0 via UI
+    await tester.tap(find.text('P2'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('P0'));
+    await tester.pumpAndSettle();
+
+    // Rebuild the widget tree simulating a rebuild
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        overrides: buildOverrides(),
+        child: TaskPriorityWrapper(taskId: initial.meta.id),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify persistence in UI and captured state
+    expect(find.text('P0'), findsOneWidget);
+    expect(currentPriority, TaskPriority.p0Urgent);
+  });
 }

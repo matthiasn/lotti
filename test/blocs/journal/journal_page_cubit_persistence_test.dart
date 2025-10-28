@@ -529,6 +529,68 @@ void main() {
         // Ensure the legacy key hasn't been accidentally changed
         expect(JournalPageCubit.taskFiltersKey, equals('TASK_FILTERS'));
       });
+
+      test('Priority filter persists and restores correctly', () async {
+        // Ensure required singletons are registered (defensive against cross-test resets)
+        if (!getIt.isRegistered<JournalDb>()) {
+          getIt.registerSingleton<JournalDb>(mockJournalDb);
+        }
+        if (!getIt.isRegistered<UpdateNotifications>()) {
+          getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+        }
+        if (!getIt.isRegistered<EntitiesCacheService>()) {
+          getIt.registerSingleton<EntitiesCacheService>(
+              mockEntitiesCacheService);
+        }
+        if (!getIt.isRegistered<SettingsDb>()) {
+          getIt.registerSingleton<SettingsDb>(mockSettingsDb);
+        }
+        if (!getIt.isRegistered<UpdateNotifications>()) {
+          getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+        }
+        if (!getIt.isRegistered<EntitiesCacheService>()) {
+          getIt.registerSingleton<EntitiesCacheService>(
+              mockEntitiesCacheService);
+        }
+        if (!getIt.isRegistered<SettingsDb>()) {
+          getIt.registerSingleton<SettingsDb>(mockSettingsDb);
+        }
+
+        // Use the in-memory mock SettingsDb already wired via storedSettings
+        final cubit = JournalPageCubit(showTasks: true);
+
+        // Toggle priorities and persist
+        await cubit.toggleSelectedPriority('P0');
+        await cubit.toggleSelectedPriority('P1');
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+
+        // Ensure something was saved to the per-tab key
+        final savedJson =
+            storedSettings[JournalPageCubit.tasksCategoryFiltersKey];
+        expect(savedJson, isNotNull);
+
+        // Create a new cubit; constructor loads persisted filters asynchronously
+        if (!getIt.isRegistered<JournalDb>()) {
+          getIt.registerSingleton<JournalDb>(mockJournalDb);
+        }
+        if (!getIt.isRegistered<UpdateNotifications>()) {
+          getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+        }
+        if (!getIt.isRegistered<EntitiesCacheService>()) {
+          getIt.registerSingleton<EntitiesCacheService>(
+              mockEntitiesCacheService);
+        }
+        if (!getIt.isRegistered<SettingsDb>()) {
+          getIt.registerSingleton<SettingsDb>(mockSettingsDb);
+        }
+        final newCubit = JournalPageCubit(showTasks: true);
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+
+        expect(newCubit.state.selectedPriorities, {'P0', 'P1'});
+
+        await cubit.close();
+        await newCubit.close();
+      });
     });
   });
 }
