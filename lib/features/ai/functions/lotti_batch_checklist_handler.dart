@@ -51,13 +51,11 @@ class LottiBatchChecklistHandler extends FunctionHandler {
 
       List<String> items;
       if (raw is List) {
-        items = [];
-        for (final e in raw) {
-          if (e == null) continue;
-          final s = e.toString().trim();
-          if (s.isEmpty || s == 'null') continue;
-          items.add(s);
-        }
+        items = raw
+            .whereType<Object>()
+            .map((e) => e.toString().trim())
+            .where((s) => s.isNotEmpty && s != 'null')
+            .toList();
       } else if (raw is String && raw.trim().isNotEmpty) {
         items = parseItemListString(raw);
       } else {

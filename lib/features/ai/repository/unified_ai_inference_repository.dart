@@ -1163,8 +1163,9 @@ class UnifiedAiInferenceRepository {
             if (itemsField is List) {
               itemDescriptions.addAll(
                 itemsField
+                    .whereType<Object>()
                     .map((e) => e.toString().trim())
-                    .where((e) => e.isNotEmpty),
+                    .where((e) => e.isNotEmpty && e != 'null'),
               );
             } else if (itemsField is String && itemsField.trim().isNotEmpty) {
               // Use the same robust parsing as the batch handler

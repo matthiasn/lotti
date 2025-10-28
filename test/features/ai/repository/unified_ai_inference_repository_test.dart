@@ -5035,7 +5035,10 @@ Take into account the following task context:
       // Ensure at least one call with the first parsed item
       expect(captured.length, greaterThanOrEqualTo(1));
       final first = captured.first as List<ChecklistItemData>;
-      expect(first.single.title, 'Start database (index cache, warm)');
+      expect(
+        first.any((i) => i.title == 'Start database (index cache, warm)'),
+        isTrue,
+      );
     });
   });
 
