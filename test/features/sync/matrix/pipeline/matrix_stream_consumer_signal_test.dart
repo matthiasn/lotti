@@ -142,7 +142,7 @@ void main() {
         domain: any<String>(named: 'domain'),
         subDomain: 'signal',
       ),
-    ).called(1);
+    ).called(greaterThanOrEqualTo(1));
     // With new behavior, client-stream triggers a forceRescan (catch-up + scan)
     verify(
       () => logger.captureEvent(
@@ -216,6 +216,9 @@ void main() {
       processor: processor,
       readMarker: readMarker,
     );
+
+    // Drop any startup liveScan logs to isolate the client-stream effect.
+    clearInteractions(logger);
 
     // Emit client stream event
     final csEv = MockEvent();

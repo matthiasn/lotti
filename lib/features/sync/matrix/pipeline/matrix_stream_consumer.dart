@@ -196,6 +196,9 @@ class MatrixStreamConsumer implements SyncPipeline {
   Timer? _liveScanTimer;
   // Guard to prevent overlapping catch-ups triggered by signals.
   bool _catchUpInFlight = false;
+  // Explicitly request catch-up when nudging via signals, keeping semantics
+  // independent of default parameter values.
+  final bool _alwaysIncludeCatchUp = true;
   final Duration _markerDebounce;
   // Catch-up window is handled by strategy with sensible defaults.
 
@@ -517,7 +520,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
       _catchUpInFlight = true;
       unawaited(
-        forceRescan().whenComplete(() {
+        forceRescan(includeCatchUp: _alwaysIncludeCatchUp).whenComplete(() {
           _catchUpInFlight = false;
         }),
       );
@@ -546,7 +549,7 @@ class MatrixStreamConsumer implements SyncPipeline {
               subDomain: 'signal.schedule',
               stackTrace: st,
             );
-            unawaited(forceRescan());
+            unawaited(forceRescan(includeCatchUp: _alwaysIncludeCatchUp));
           }
         }
 
