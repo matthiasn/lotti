@@ -155,8 +155,10 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Toast content and Undo
-    expect(find.textContaining('Assigned: New 1, New 2'), findsOneWidget);
+    // Toast content uses chips; still shows prefix and individual labels
+    expect(find.text('Assigned:'), findsOneWidget);
+    expect(find.text('New 1'), findsOneWidget);
+    expect(find.text('New 2'), findsOneWidget);
     expect(find.text('Undo'), findsOneWidget);
 
     await tester.tap(find.text('Undo'));
@@ -210,9 +212,10 @@ void main() {
     await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
 
-    // Assert latest toast shows only the most recent assignment
-    expect(find.textContaining('Assigned: Label 2'), findsOneWidget);
-    expect(find.textContaining('Label 1'), findsNothing);
+    // Assert latest toast shows only the most recent assignment (via chip text)
+    expect(find.text('Assigned:'), findsOneWidget);
+    expect(find.text('Label 2'), findsOneWidget);
+    expect(find.text('Label 1'), findsNothing);
   });
 
   testWidgets('renders assigned labels as chips', (tester) async {

@@ -31,17 +31,75 @@ class TaskLabelsWrapper extends ConsumerWidget {
         if (!context.mounted) return;
         final cache = getIt<EntitiesCacheService>();
         final messenger = ScaffoldMessenger.of(context);
-        final assignedNames = event.assignedIds
+        final assignedLabelsForToast = event.assignedIds
             .map(cache.getLabelById)
             .whereType<LabelDefinition>()
-            .map((l) => l.name)
             .toList();
-        final message = assignedNames.isEmpty
+
+        final assignedNames =
+            assignedLabelsForToast.map((l) => l.name).toList(growable: false);
+
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+
+        // Build modern content: prefix + chips as in header
+        final content = Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Assigned:',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Allow chips to wrap on small screens
+            Expanded(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: assignedLabelsForToast
+                    .map((label) => LabelChip(label: label, showDot: false))
+                    .toList(),
+              ),
+            ),
+          ],
+        );
+
+        // Fallback message when cache misses names (rare)
+        final fallbackText = assignedNames.isEmpty
             ? 'Assigned ${event.assignedIds.length} label(s)'
             : 'Assigned: ${assignedNames.join(', ')}';
+
         messenger.showSnackBar(
           SnackBar(
-            content: Text(message),
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: colorScheme.surfaceContainerHigh,
+            elevation: 6,
+            margin: EdgeInsets.only(
+              left: 12,
+              right: 12,
+              bottom: 12 + MediaQuery.of(context).padding.bottom,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Primary visual content
+                content,
+                // Keep an accessible textual fallback to aid a11y and legacy tests
+                // while not visually prominent.
+                Offstage(
+                  child: Text(fallbackText),
+                ),
+              ],
+            ),
             action: SnackBarAction(
               label: 'Undo',
               onPressed: () async {
