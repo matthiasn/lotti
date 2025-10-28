@@ -239,6 +239,9 @@ void main() {
 
       // Default priority is P2
       expect(find.text('P2'), findsOneWidget);
+
+      // No exclamation priority icon should be present on the card
+      expect(find.byIcon(Icons.priority_high_rounded), findsNothing);
     });
 
     testWidgets('displays correct status chip for done task',

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/widgets/cards/modern_status_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -112,5 +114,56 @@ void main() {
 
     final updated = captured.single as TaskData;
     expect(updated.priority, TaskPriority.p0Urgent);
+  });
+
+  testWidgets('renders Priority: label and chip in header', (tester) async {
+    final task = testTask;
+
+    final overrides = <Override>[
+      entryControllerProvider(id: task.meta.id).overrideWith(
+        () => _TestEntryController(task),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        overrides: overrides,
+        child: TaskPriorityWrapper(taskId: task.meta.id),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Priority:'), findsOneWidget);
+    expect(find.byType(ModernStatusChip), findsOneWidget);
+  });
+
+  testWidgets('modal shows chips and no exclamation icon', (tester) async {
+    final task = testTask;
+
+    final overrides = <Override>[
+      entryControllerProvider(id: task.meta.id).overrideWith(
+        () => _TestEntryController(task),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        overrides: overrides,
+        child: TaskPriorityWrapper(taskId: task.meta.id),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open modal by tapping header label
+    await tester.tap(find.text('Priority:'));
+    await tester.pumpAndSettle();
+
+    // Expect chip options (P0..P3) and no old exclamation icon
+    expect(find.text('P0'), findsOneWidget);
+    expect(find.text('P1'), findsOneWidget);
+    // 'P2' appears in header chip and in the modal; allow multiple.
+    expect(find.text('P2'), findsWidgets);
+    expect(find.text('P3'), findsOneWidget);
+    expect(find.byIcon(Icons.priority_high_rounded), findsNothing);
   });
 }

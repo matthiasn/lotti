@@ -116,6 +116,7 @@ void main() {
             taskStatuses: any(named: 'taskStatuses'),
             categoryIds: any(named: 'categoryIds'),
             labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           )).thenAnswer((_) async => []);
@@ -766,6 +767,8 @@ class MockVisibilityInfo extends VisibilityInfo {
             starredStatuses: any(named: 'starredStatuses'),
             taskStatuses: any(named: 'taskStatuses'),
             categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           )).thenAnswer((_) async => []);

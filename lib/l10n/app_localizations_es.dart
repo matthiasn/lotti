@@ -2482,7 +2482,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskLabelUnassignedLabel => 'unassigned';
 
   @override
-  String get tasksPriorityTitle => 'Priority';
+  String get tasksPriorityTitle => 'Priority:';
 
   @override
   String get tasksPriorityP0 => 'Urgent';

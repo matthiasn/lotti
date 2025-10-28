@@ -4663,7 +4663,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksPriorityTitle.
   ///
   /// In en, this message translates to:
-  /// **'Priority'**
+  /// **'Priority:'**
   String get tasksPriorityTitle;
 
   /// No description provided for @tasksPriorityP0.

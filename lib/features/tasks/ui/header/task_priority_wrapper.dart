@@ -4,6 +4,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/cards/modern_status_chip.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class TaskPriorityWrapper extends ConsumerWidget {
@@ -27,24 +29,29 @@ class TaskPriorityWrapper extends ConsumerWidget {
     final brightness = Theme.of(context).brightness;
     final color = task.data.priority.colorForBrightness(brightness);
 
-    return OutlinedButton.icon(
-      onPressed: () => _showPicker(
+    return InkWell(
+      onTap: () => _showPicker(
         context,
         ref,
         taskId,
         task.data.priority,
       ),
-      icon: Icon(Icons.priority_high_rounded, color: color, size: 18),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        visualDensity: VisualDensity.compact,
-      ),
-      label: Text(
-        task.data.priority.short,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.tasksPriorityTitle,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+          ),
+          const SizedBox(height: 4),
+          ModernStatusChip(
+            label: task.data.priority.short,
+            color: color,
+            borderWidth: AppTheme.statusIndicatorBorderWidth * 1.5,
+          ),
+        ],
       ),
     );
   }
@@ -57,8 +64,7 @@ class TaskPriorityWrapper extends ConsumerWidget {
   ) async {
     // Read a fresh notifier right before opening the sheet to avoid
     // holding a stale reference across rebuilds/navigation.
-    final controller =
-        ref.read(entryControllerProvider(id: taskId).notifier);
+    final controller = ref.read(entryControllerProvider(id: taskId).notifier);
     const options = TaskPriority.values;
     final res = await ModalUtils.showSinglePageModal<String>(
       context: context,
@@ -67,12 +73,12 @@ class TaskPriorityWrapper extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ...options.map((p) => ListTile(
-                leading: Icon(
-                  Icons.priority_high_rounded,
+                leading: ModernStatusChip(
+                  label: p.short,
                   color: p.colorForBrightness(Theme.of(ctx).brightness),
+                  borderWidth: AppTheme.statusIndicatorBorderWidth * 1.5,
                 ),
-                title:
-                    Text('${p.short} — ${_localizedDescription(ctx, p)}'),
+                title: Text(_localizedDescription(ctx, p)),
                 trailing: current == p ? const Icon(Icons.check) : null,
                 onTap: () => Navigator.of(ctx).pop(p.short),
               )),

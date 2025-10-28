@@ -58,7 +58,7 @@ class ModernTaskCard extends StatelessWidget {
         ModernStatusChip(
           label: task.data.priority.short,
           color: task.data.priority.colorForBrightness(brightness),
-          icon: Icons.priority_high_rounded,
+          borderWidth: AppTheme.statusIndicatorBorderWidth * 1.5,
         ),
         const SizedBox(width: 6),
         ModernStatusChip(
