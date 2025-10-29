@@ -591,6 +591,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistsTitle => 'Checklists';
 
   @override
+  String get checklistsReorder => 'Reorder';
+
+  @override
   String get settingsResetHintsTitle => 'Reset In‑App Hints';
 
   @override

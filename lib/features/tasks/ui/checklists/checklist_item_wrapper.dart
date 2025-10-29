@@ -66,15 +66,21 @@ class ChecklistItemWrapper extends ConsumerWidget {
                 // Also remove from parent checklist to trigger task update
                 await checklistNotifier.unlinkItem(itemId);
               },
-              background: ColoredBox(
-                color: context.colorScheme.error,
-                child: const Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: EdgeInsets.all(10),
-                    child: Icon(
-                      Icons.delete,
-                      color: Colors.white,
+              background: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ColoredBox(
+                    color: context.colorScheme.error,
+                    child: const Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ),

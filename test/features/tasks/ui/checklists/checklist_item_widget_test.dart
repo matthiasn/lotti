@@ -6,6 +6,37 @@ import '../../../../test_helper.dart';
 
 void main() {
   group('ChecklistItemWidget', () {
+    testWidgets('applies background + strikethrough when checked',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Ensure we render with an AnimatedContainer row wrapper
+      expect(find.byType(AnimatedContainer), findsWidgets);
+
+      // Toggle checkbox to checked
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Verify strikethrough style is applied to the title text
+      final textWidget = find
+          .byType(Text)
+          .evaluate()
+          .map((e) => e.widget as Text)
+          .firstWhere((t) => t.data == 'Test Item');
+      expect(
+        textWidget.style?.decoration,
+        equals(TextDecoration.lineThrough),
+      );
+    });
     testWidgets('renders title and checkbox correctly', (tester) async {
       // Define test variables
       const title = 'Test Checklist Item';

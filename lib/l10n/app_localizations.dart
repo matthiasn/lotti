@@ -1167,6 +1167,12 @@ abstract class AppLocalizations {
   /// **'Checklists'**
   String get checklistsTitle;
 
+  /// No description provided for @checklistsReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder'**
+  String get checklistsReorder;
+
   /// No description provided for @settingsResetHintsTitle.
   ///
   /// In en, this message translates to:

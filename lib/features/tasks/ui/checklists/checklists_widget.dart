@@ -39,63 +39,71 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     final checklistIds = _checklistIds ?? item.data.checklistIds ?? [];
     final color = context.colorScheme.outline;
 
-    return ModernBaseCard(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                context.messages.checklistsTitle,
-                style: context.textTheme.titleSmall?.copyWith(color: color),
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              context.messages.checklistsTitle,
+              style: context.textTheme.titleSmall?.copyWith(color: color),
+            ),
+            IconButton(
+              tooltip: context.messages.addActionAddChecklist,
+              onPressed: () => createChecklist(task: widget.task, ref: ref),
+              icon: Icon(Icons.add_rounded, color: color),
+            ),
+            if (checklistIds.length > 1)
               IconButton(
-                tooltip: context.messages.addActionAddChecklist,
-                onPressed: () => createChecklist(task: widget.task, ref: ref),
-                icon: Icon(Icons.add_rounded, color: color),
+                tooltip: context.messages.checklistsReorder,
+                onPressed: () {
+                  setState(() {
+                    _isEditing = !_isEditing;
+                  });
+                },
+                icon: Icon(Icons.reorder, color: color),
               ),
-              if (checklistIds.length > 1)
-                IconButton(
-                  tooltip: context.messages.addActionAddChecklist,
-                  onPressed: () {
-                    setState(() {
-                      _isEditing = !_isEditing;
-                    });
-                  },
-                  icon: Icon(Icons.reorder, color: color),
-                ),
-            ],
-          ),
-          ReorderableListView(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: _isEditing,
-            onReorder: (int oldIndex, int newIndex) {
-              final itemIds = [...checklistIds];
-              final movedItem = itemIds.removeAt(oldIndex);
-              final insertionIndex =
-                  newIndex > oldIndex ? newIndex - 1 : newIndex;
-              itemIds.insert(insertionIndex, movedItem);
-              setState(() {
-                _checklistIds = itemIds;
-              });
+          ],
+        ),
+        ReorderableListView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: _isEditing,
+          onReorder: (int oldIndex, int newIndex) {
+            final itemIds = [...checklistIds];
+            final movedItem = itemIds.removeAt(oldIndex);
+            final insertionIndex =
+                newIndex > oldIndex ? newIndex - 1 : newIndex;
+            itemIds.insert(insertionIndex, movedItem);
+            setState(() {
+              _checklistIds = itemIds;
+            });
 
-              notifier.updateChecklistOrder(itemIds);
-            },
-            children: List.generate(
-              checklistIds.length,
-              (int index) {
-                final checklistId = checklistIds.elementAt(index);
-                return ChecklistWrapper(
-                  key: Key('$checklistId${widget.entryId}$index'),
+            notifier.updateChecklistOrder(itemIds);
+          },
+          children: List.generate(
+            checklistIds.length,
+            (int index) {
+              final checklistId = checklistIds.elementAt(index);
+              return ModernBaseCard(
+                key: Key('$checklistId${widget.entryId}$index'),
+                margin: const EdgeInsets.only(
+                  bottom: AppTheme.cardSpacing,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.cardPadding,
+                  vertical: AppTheme.cardPaddingHalf,
+                ),
+                child: ChecklistWrapper(
                   entryId: checklistId,
                   categoryId: item.categoryId,
                   taskId: widget.task.id,
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
