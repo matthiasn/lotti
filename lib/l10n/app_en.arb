@@ -235,6 +235,7 @@
   "checklistNothingToExport": "No items to export",
   "checklistExportFailed": "Export failed",
   "checklistsTitle": "Checklists",
+  "checklistsReorder": "Reorder",
   "settingsResetHintsTitle": "Reset In‑App Hints",
   "settingsResetHintsSubtitle": "Clear one‑time tips and onboarding hints",
   "settingsResetHintsConfirmQuestion": "Reset in‑app hints shown across the app?",

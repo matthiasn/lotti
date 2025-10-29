@@ -55,7 +55,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
             ),
             if (checklistIds.length > 1)
               IconButton(
-                tooltip: context.messages.addActionAddChecklist,
+                tooltip: context.messages.checklistsReorder,
                 onPressed: () {
                   setState(() {
                     _isEditing = !_isEditing;

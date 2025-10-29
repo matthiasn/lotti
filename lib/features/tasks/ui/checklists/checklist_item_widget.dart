@@ -99,77 +99,77 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
               child: CheckboxListTile(
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              title: AnimatedCrossFade(
-                duration: checklistCrossFadeDuration,
-                firstChild: TitleTextField(
-                  initialValue: widget.title,
-                  onSave: (title) {
-                    setState(() {
+                title: AnimatedCrossFade(
+                  duration: checklistCrossFadeDuration,
+                  firstChild: TitleTextField(
+                    initialValue: widget.title,
+                    onSave: (title) {
+                      setState(() {
+                        _isEditing = false;
+                      });
+                      widget.onTitleChange?.call(title);
+                    },
+                    resetToInitialValue: true,
+                    onCancel: () => setState(() {
                       _isEditing = false;
-                    });
-                    widget.onTitleChange?.call(title);
-                  },
-                  resetToInitialValue: true,
-                  onCancel: () => setState(() {
-                    _isEditing = false;
-                  }),
-                ),
-                secondChild: SizedBox(
-                  width: double.infinity,
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          widget.title,
-                          softWrap: true,
-                          maxLines: 4,
-                          overflow: TextOverflow.fade,
-                          style: () {
-                            final baseStyle = context.textTheme.bodyMedium;
-                            if (!_isChecked) return baseStyle;
-
-                            final strikethroughStyle = TextStyle(
-                              decoration: TextDecoration.lineThrough,
-                              color: (baseStyle?.color ??
-                                      context.colorScheme.onSurface)
-                                  .withValues(alpha: 0.6),
-                            );
-                            return baseStyle?.merge(strikethroughStyle) ??
-                                strikethroughStyle;
-                          }(),
-                        ),
-                      ),
-                      if (widget.showEditIcon)
-                        IconButton(
-                          icon: Icon(
-                            Icons.edit,
-                            color: context.colorScheme.outline,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isEditing = !_isEditing;
-                            });
-                          },
-                        ),
-                    ],
+                    }),
                   ),
+                  secondChild: SizedBox(
+                    width: double.infinity,
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            widget.title,
+                            softWrap: true,
+                            maxLines: 4,
+                            overflow: TextOverflow.fade,
+                            style: () {
+                              final baseStyle = context.textTheme.bodyMedium;
+                              if (!_isChecked) return baseStyle;
+
+                              final strikethroughStyle = TextStyle(
+                                decoration: TextDecoration.lineThrough,
+                                color: (baseStyle?.color ??
+                                        context.colorScheme.onSurface)
+                                    .withValues(alpha: 0.6),
+                              );
+                              return baseStyle?.merge(strikethroughStyle) ??
+                                  strikethroughStyle;
+                            }(),
+                          ),
+                        ),
+                        if (widget.showEditIcon)
+                          IconButton(
+                            icon: Icon(
+                              Icons.edit,
+                              color: context.colorScheme.outline,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isEditing = !_isEditing;
+                              });
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                  crossFadeState: _isEditing
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
                 ),
-                crossFadeState: _isEditing
-                    ? CrossFadeState.showFirst
-                    : CrossFadeState.showSecond,
-              ),
-              value: _isChecked,
-              controlAffinity: ListTileControlAffinity.leading,
-              secondary: widget.onEdit != null
-                  ? IconButton(
-                      icon: const Icon(
-                        Icons.edit,
-                        size: 20,
-                      ),
-                      onPressed: widget.onEdit,
-                    )
-                  : null,
+                value: _isChecked,
+                controlAffinity: ListTileControlAffinity.leading,
+                secondary: widget.onEdit != null
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.edit,
+                          size: 20,
+                        ),
+                        onPressed: widget.onEdit,
+                      )
+                    : null,
                 onChanged: widget.readOnly
                     ? null
                     : (bool? value) {
