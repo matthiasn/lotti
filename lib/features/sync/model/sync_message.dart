@@ -43,6 +43,14 @@ sealed class SyncMessage with _$SyncMessage {
     required String id,
   }) = SyncAiConfigDelete;
 
+  const factory SyncMessage.themingSelection({
+    required String lightThemeName,
+    required String darkThemeName,
+    required String themeMode,
+    required int updatedAt,
+    required SyncEntryStatus status,
+  }) = SyncThemingSelection;
+
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>
       _$SyncMessageFromJson(json);
 }

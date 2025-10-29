@@ -167,6 +167,7 @@ dev_dependencies:
   riverpod_generator: ^2.4.0
   riverpod_lint: ^2.6.5
   very_good_analysis: ^10.0.0
+
 flutter_launcher_icons:
   android: true
   ios: true

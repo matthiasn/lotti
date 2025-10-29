@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -39,6 +40,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
+
+class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockMatrixRoom extends Mock implements Room {}
 
@@ -77,6 +80,7 @@ void main() {
   late MockLoggingService loggingService;
   late MockAiConfigRepository aiConfigRepository;
   late MockJournalEntityLoader journalEntityLoader;
+  late MockSettingsDb settingsDb;
   late SyncEventProcessor processor;
 
   setUp(() {
@@ -86,6 +90,7 @@ void main() {
     loggingService = MockLoggingService();
     aiConfigRepository = MockAiConfigRepository();
     journalEntityLoader = MockJournalEntityLoader();
+    settingsDb = MockSettingsDb();
 
     when(() => journalDb.updateJournalEntity(any<JournalEntity>()))
         .thenAnswer((_) async => JournalUpdateResult.applied());
@@ -120,10 +125,16 @@ void main() {
     when(() => event.eventId).thenReturn('event-id');
     when(() => event.originServerTs).thenReturn(DateTime(2024));
 
+    when(() => settingsDb.itemByKey(any<String>()))
+        .thenAnswer((_) async => null);
+    when(() => settingsDb.saveSettingsItem(any<String>(), any<String>()))
+        .thenAnswer((_) async => 1);
+
     processor = SyncEventProcessor(
       loggingService: loggingService,
       updateNotifications: updateNotifications,
       aiConfigRepository: aiConfigRepository,
+      settingsDb: settingsDb,
       journalEntityLoader: journalEntityLoader,
     );
   });
@@ -2049,6 +2060,7 @@ void main() {
         loggingService: loggingService,
         updateNotifications: updateNotifications,
         aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
         journalEntityLoader: const FileSyncJournalEntityLoader(),
       );
 
@@ -2173,5 +2185,217 @@ void main() {
       ),
     ).called(1);
     verifyNever(() => journalDb.updateJournalEntity(any()));
+  });
+
+  group('SyncEventProcessor - SyncThemingSelection', () {
+    String encodeThemingMessage(SyncMessage message) =>
+        base64.encode(utf8.encode(json.encode(message.toJson())));
+
+    // Helper to create event with theming message
+    Event createThemingEvent(SyncMessage message) {
+      final themingEvent = MockEvent();
+      final encoded = encodeThemingMessage(message);
+      when(() => themingEvent.eventId).thenReturn('event-id');
+      when(() => themingEvent.originServerTs).thenReturn(DateTime(2024));
+      when(() => themingEvent.content).thenReturn({
+        'msgtype': 'com.lotti.sync.message',
+        'body': 'sync',
+        'data': encoded,
+      });
+      when(() => themingEvent.text).thenReturn(encoded);
+      return themingEvent;
+    }
+
+    test('applies incoming theme selection', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: now,
+        status: SyncEntryStatus.update,
+      );
+      final themingEvent = createThemingEvent(message);
+
+      await processor.process(event: themingEvent, journalDb: journalDb);
+
+      // Verify all settings saved
+      verify(() => settingsDb.saveSettingsItem('LIGHT_SCHEME', 'Indigo'))
+          .called(1);
+      verify(() => settingsDb.saveSettingsItem('DARK_SCHEMA', 'Shark'))
+          .called(1);
+      verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'dark')).called(1);
+      verify(() =>
+              settingsDb.saveSettingsItem('THEME_PREFS_UPDATED_AT', '$now'))
+          .called(1);
+    });
+
+    test('rejects stale message based on timestamp', () async {
+      // Mock local timestamp to future
+      when(() => settingsDb.itemByKey('THEME_PREFS_UPDATED_AT'))
+          .thenAnswer((_) async => '9999999999999');
+
+      const message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: 1000000000000,
+        status: SyncEntryStatus.update,
+      );
+      final themingEvent = createThemingEvent(message);
+
+      await processor.process(event: themingEvent, journalDb: journalDb);
+
+      // Verify settings not saved for theme keys
+      verifyNever(() => settingsDb.saveSettingsItem('LIGHT_SCHEME', any()));
+      verifyNever(() => settingsDb.saveSettingsItem('DARK_SCHEMA', any()));
+      verifyNever(() => settingsDb.saveSettingsItem('THEME_MODE', any()));
+
+      // Verify log contains stale message
+      verify(() => loggingService.captureEvent(
+            contains('themingSync.ignored.stale'),
+            domain: 'THEMING_SYNC',
+            subDomain: 'apply',
+          )).called(1);
+    });
+
+    test('accepts message when no local timestamp exists', () async {
+      // Mock no local timestamp
+      when(() => settingsDb.itemByKey('THEME_PREFS_UPDATED_AT'))
+          .thenAnswer((_) async => null);
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: now,
+        status: SyncEntryStatus.update,
+      );
+      final themingEvent = createThemingEvent(message);
+
+      await processor.process(event: themingEvent, journalDb: journalDb);
+
+      // Verify all settings saved
+      verify(() => settingsDb.saveSettingsItem('LIGHT_SCHEME', 'Indigo'))
+          .called(1);
+      verify(() => settingsDb.saveSettingsItem('DARK_SCHEMA', 'Shark'))
+          .called(1);
+      verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'dark')).called(1);
+      verify(() =>
+              settingsDb.saveSettingsItem('THEME_PREFS_UPDATED_AT', '$now'))
+          .called(1);
+    });
+
+    test('accepts newer message', () async {
+      // Mock old local timestamp
+      when(() => settingsDb.itemByKey('THEME_PREFS_UPDATED_AT'))
+          .thenAnswer((_) async => '1000000000000');
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: now,
+        status: SyncEntryStatus.update,
+      );
+      final themingEvent = createThemingEvent(message);
+
+      await processor.process(event: themingEvent, journalDb: journalDb);
+
+      // Verify all settings saved
+      verify(() => settingsDb.saveSettingsItem('LIGHT_SCHEME', 'Indigo'))
+          .called(1);
+      verify(() => settingsDb.saveSettingsItem('DARK_SCHEMA', 'Shark'))
+          .called(1);
+      verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'dark')).called(1);
+      verify(() =>
+              settingsDb.saveSettingsItem('THEME_PREFS_UPDATED_AT', '$now'))
+          .called(1);
+    });
+
+    test('normalizes invalid ThemeMode to system', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'invalid_mode',
+        updatedAt: now,
+        status: SyncEntryStatus.update,
+      );
+      final themingEvent = createThemingEvent(message);
+
+      await processor.process(event: themingEvent, journalDb: journalDb);
+
+      // Verify themeMode normalized to 'system'
+      verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'system'))
+          .called(1);
+    });
+
+    test('handles exception during apply', () async {
+      // Mock saveSettingsItem to throw
+      when(() => settingsDb.saveSettingsItem(any(), any()))
+          .thenThrow(Exception('DB error'));
+
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+      final themingEvent = createThemingEvent(message);
+
+      // Should not throw
+      await processor.process(event: themingEvent, journalDb: journalDb);
+
+      // Verify exception logged
+      verify(() => loggingService.captureException(
+            any<Object>(),
+            domain: 'THEMING_SYNC',
+            subDomain: 'apply',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          )).called(1);
+    });
+
+    test('logs success on apply', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: now,
+        status: SyncEntryStatus.update,
+      );
+      final themingEvent = createThemingEvent(message);
+
+      await processor.process(event: themingEvent, journalDb: journalDb);
+
+      // Verify success logged
+      verify(() => loggingService.captureEvent(
+            contains('apply themingSelection'),
+            domain: 'THEMING_SYNC',
+            subDomain: 'apply',
+          )).called(1);
+    });
+
+    test('saves updatedAt as string', () async {
+      const timestamp = 1234567890;
+      const message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: timestamp,
+        status: SyncEntryStatus.update,
+      );
+      final themingEvent = createThemingEvent(message);
+
+      await processor.process(event: themingEvent, journalDb: journalDb);
+
+      // Verify updatedAt saved as string
+      verify(() => settingsDb.saveSettingsItem(
+          'THEME_PREFS_UPDATED_AT', '$timestamp')).called(1);
+    });
   });
 }

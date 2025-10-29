@@ -260,6 +260,17 @@ class OutboxService {
           subDomain: 'enqueueMessage',
         );
       }
+
+      if (syncMessage is SyncThemingSelection) {
+        await _syncDatabase.addOutboxItem(
+          commonFields.copyWith(subject: const Value('themingSelection')),
+        );
+        _loggingService.captureEvent(
+          'enqueue type=SyncThemingSelection subject=themingSelection light=${syncMessage.lightThemeName} dark=${syncMessage.darkThemeName} mode=${syncMessage.themeMode}',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
+      }
       unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
     } catch (exception, stackTrace) {
       _loggingService.captureException(

@@ -171,6 +171,7 @@ Future<void> registerSingletons() async {
     loggingService: loggingService,
     updateNotifications: getIt<UpdateNotifications>(),
     aiConfigRepository: aiConfigRepository,
+    settingsDb: settingsDb,
     journalEntityLoader: SmartJournalEntityLoader(
       attachmentIndex: attachmentIndex,
       loggingService: loggingService,

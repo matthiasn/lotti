@@ -900,4 +900,49 @@ void main() {
       await svc.dispose();
     });
   });
+
+  group('SyncThemingSelection', () {
+    test('enqueues theming message with correct subject', () async {
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+              () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()))
+          .captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'themingSelection');
+    });
+
+    test('logs theming message details', () async {
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+
+      await service.enqueueMessage(message);
+
+      verify(() => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncThemingSelection'),
+              contains('light=Indigo'),
+              contains('dark=Shark'),
+              contains('mode=dark'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+  });
 }
