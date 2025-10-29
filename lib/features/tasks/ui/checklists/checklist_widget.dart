@@ -79,9 +79,18 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          splashColor: Colors.transparent,
+        ),
+        child: ExpansionTile(
         collapsedIconColor: context.colorScheme.outline,
         iconColor: context.colorScheme.outline,
         tilePadding: EdgeInsets.zero,
@@ -249,6 +258,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

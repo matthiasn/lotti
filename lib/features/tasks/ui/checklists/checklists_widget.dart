@@ -72,7 +72,8 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
           onReorder: (int oldIndex, int newIndex) {
             final itemIds = [...checklistIds];
             final movedItem = itemIds.removeAt(oldIndex);
-            final insertionIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
+            final insertionIndex =
+                newIndex > oldIndex ? newIndex - 1 : newIndex;
             itemIds.insert(insertionIndex, movedItem);
             setState(() {
               _checklistIds = itemIds;

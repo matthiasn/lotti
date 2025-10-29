@@ -33,6 +33,7 @@ class ChecklistItemWidget extends StatefulWidget {
 class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
   late bool _isChecked;
   bool _isEditing = false;
+  bool _isHovered = false;
 
   @override
   void initState() {
@@ -67,25 +68,37 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
     return Theme(
       data: Theme.of(context).copyWith(
         listTileTheme: Theme.of(context).listTileTheme.copyWith(dense: true),
+        hoverColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        splashColor: Colors.transparent,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: animatedBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: colorScheme.outline.withValues(alpha: 0.12),
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              color: _isHovered
+                  ? Color.alphaBlend(
+                      context.colorScheme.primary.withValues(alpha: 0.05),
+                      animatedBg,
+                    )
+                  : animatedBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.12),
+              ),
             ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            clipBehavior: Clip.antiAlias,
-            child: CheckboxListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              clipBehavior: Clip.antiAlias,
+              child: CheckboxListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               title: AnimatedCrossFade(
                 duration: checklistCrossFadeDuration,
                 firstChild: TitleTextField(
@@ -160,16 +173,17 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                       onPressed: widget.onEdit,
                     )
                   : null,
-              onChanged: widget.readOnly
-                  ? null
-                  : (bool? value) {
-                      final isChecked = value ?? false;
-                      setState(() {
-                        _isChecked = isChecked;
-                      });
+                onChanged: widget.readOnly
+                    ? null
+                    : (bool? value) {
+                        final isChecked = value ?? false;
+                        setState(() {
+                          _isChecked = isChecked;
+                        });
 
-                      widget.onChanged(isChecked);
-                    },
+                        widget.onChanged(isChecked);
+                      },
+              ),
             ),
           ),
         ),
