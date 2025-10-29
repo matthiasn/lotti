@@ -421,6 +421,7 @@ class MatrixService {
       entryLink: (_) => 'entryLink',
       aiConfig: (_) => 'aiConfig',
       aiConfigDelete: (_) => 'aiConfigDelete',
+      themingSelection: (_) => 'themingSelection',
     );
 
     return _messageSender.sendMatrixMessage(

@@ -100,3 +100,25 @@ Map<String, dynamic> _$SyncAiConfigDeleteToJson(SyncAiConfigDelete instance) =>
       'id': instance.id,
       'runtimeType': instance.$type,
     };
+
+SyncThemingSelection _$SyncThemingSelectionFromJson(
+        Map<String, dynamic> json) =>
+    SyncThemingSelection(
+      lightThemeName: json['lightThemeName'] as String,
+      darkThemeName: json['darkThemeName'] as String,
+      themeMode: json['themeMode'] as String,
+      updatedAt: (json['updatedAt'] as num).toInt(),
+      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncThemingSelectionToJson(
+        SyncThemingSelection instance) =>
+    <String, dynamic>{
+      'lightThemeName': instance.lightThemeName,
+      'darkThemeName': instance.darkThemeName,
+      'themeMode': instance.themeMode,
+      'updatedAt': instance.updatedAt,
+      'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'runtimeType': instance.$type,
+    };

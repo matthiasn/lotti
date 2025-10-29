@@ -25,6 +25,8 @@ SyncMessage _$SyncMessageFromJson(Map<String, dynamic> json) {
       return SyncAiConfig.fromJson(json);
     case 'aiConfigDelete':
       return SyncAiConfigDelete.fromJson(json);
+    case 'themingSelection':
+      return SyncThemingSelection.fromJson(json);
 
     default:
       throw CheckedFromJsonException(json, 'runtimeType', 'SyncMessage',
@@ -80,6 +82,7 @@ extension SyncMessagePatterns on SyncMessage {
     TResult Function(SyncEntryLink value)? entryLink,
     TResult Function(SyncAiConfig value)? aiConfig,
     TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
+    TResult Function(SyncThemingSelection value)? themingSelection,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -96,6 +99,8 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfig(_that);
       case SyncAiConfigDelete() when aiConfigDelete != null:
         return aiConfigDelete(_that);
+      case SyncThemingSelection() when themingSelection != null:
+        return themingSelection(_that);
       case _:
         return orElse();
     }
@@ -122,6 +127,7 @@ extension SyncMessagePatterns on SyncMessage {
     required TResult Function(SyncEntryLink value) entryLink,
     required TResult Function(SyncAiConfig value) aiConfig,
     required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
+    required TResult Function(SyncThemingSelection value) themingSelection,
   }) {
     final _that = this;
     switch (_that) {
@@ -137,6 +143,8 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfig(_that);
       case SyncAiConfigDelete():
         return aiConfigDelete(_that);
+      case SyncThemingSelection():
+        return themingSelection(_that);
     }
   }
 
@@ -160,6 +168,7 @@ extension SyncMessagePatterns on SyncMessage {
     TResult? Function(SyncEntryLink value)? entryLink,
     TResult? Function(SyncAiConfig value)? aiConfig,
     TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
+    TResult? Function(SyncThemingSelection value)? themingSelection,
   }) {
     final _that = this;
     switch (_that) {
@@ -175,6 +184,8 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfig(_that);
       case SyncAiConfigDelete() when aiConfigDelete != null:
         return aiConfigDelete(_that);
+      case SyncThemingSelection() when themingSelection != null:
+        return themingSelection(_that);
       case _:
         return null;
     }
@@ -203,6 +214,9 @@ extension SyncMessagePatterns on SyncMessage {
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     TResult Function(String id)? aiConfigDelete,
+    TResult Function(String lightThemeName, String darkThemeName,
+            String themeMode, int updatedAt, SyncEntryStatus status)?
+        themingSelection,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -220,6 +234,9 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete() when aiConfigDelete != null:
         return aiConfigDelete(_that.id);
+      case SyncThemingSelection() when themingSelection != null:
+        return themingSelection(_that.lightThemeName, _that.darkThemeName,
+            _that.themeMode, _that.updatedAt, _that.status);
       case _:
         return orElse();
     }
@@ -253,6 +270,9 @@ extension SyncMessagePatterns on SyncMessage {
     required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
         aiConfig,
     required TResult Function(String id) aiConfigDelete,
+    required TResult Function(String lightThemeName, String darkThemeName,
+            String themeMode, int updatedAt, SyncEntryStatus status)
+        themingSelection,
   }) {
     final _that = this;
     switch (_that) {
@@ -269,6 +289,9 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete():
         return aiConfigDelete(_that.id);
+      case SyncThemingSelection():
+        return themingSelection(_that.lightThemeName, _that.darkThemeName,
+            _that.themeMode, _that.updatedAt, _that.status);
     }
   }
 
@@ -296,6 +319,9 @@ extension SyncMessagePatterns on SyncMessage {
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     TResult? Function(String id)? aiConfigDelete,
+    TResult? Function(String lightThemeName, String darkThemeName,
+            String themeMode, int updatedAt, SyncEntryStatus status)?
+        themingSelection,
   }) {
     final _that = this;
     switch (_that) {
@@ -312,6 +338,9 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete() when aiConfigDelete != null:
         return aiConfigDelete(_that.id);
+      case SyncThemingSelection() when themingSelection != null:
+        return themingSelection(_that.lightThemeName, _that.darkThemeName,
+            _that.themeMode, _that.updatedAt, _that.status);
       case _:
         return null;
     }
@@ -901,6 +930,129 @@ class _$SyncAiConfigDeleteCopyWithImpl<$Res>
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class SyncThemingSelection implements SyncMessage {
+  const SyncThemingSelection(
+      {required this.lightThemeName,
+      required this.darkThemeName,
+      required this.themeMode,
+      required this.updatedAt,
+      required this.status,
+      final String? $type})
+      : $type = $type ?? 'themingSelection';
+  factory SyncThemingSelection.fromJson(Map<String, dynamic> json) =>
+      _$SyncThemingSelectionFromJson(json);
+
+  final String lightThemeName;
+  final String darkThemeName;
+  final String themeMode;
+  final int updatedAt;
+  final SyncEntryStatus status;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $SyncThemingSelectionCopyWith<SyncThemingSelection> get copyWith =>
+      _$SyncThemingSelectionCopyWithImpl<SyncThemingSelection>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$SyncThemingSelectionToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is SyncThemingSelection &&
+            (identical(other.lightThemeName, lightThemeName) ||
+                other.lightThemeName == lightThemeName) &&
+            (identical(other.darkThemeName, darkThemeName) ||
+                other.darkThemeName == darkThemeName) &&
+            (identical(other.themeMode, themeMode) ||
+                other.themeMode == themeMode) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.status, status) || other.status == status));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, lightThemeName, darkThemeName, themeMode, updatedAt, status);
+
+  @override
+  String toString() {
+    return 'SyncMessage.themingSelection(lightThemeName: $lightThemeName, darkThemeName: $darkThemeName, themeMode: $themeMode, updatedAt: $updatedAt, status: $status)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $SyncThemingSelectionCopyWith<$Res>
+    implements $SyncMessageCopyWith<$Res> {
+  factory $SyncThemingSelectionCopyWith(SyncThemingSelection value,
+          $Res Function(SyncThemingSelection) _then) =
+      _$SyncThemingSelectionCopyWithImpl;
+  @useResult
+  $Res call(
+      {String lightThemeName,
+      String darkThemeName,
+      String themeMode,
+      int updatedAt,
+      SyncEntryStatus status});
+}
+
+/// @nodoc
+class _$SyncThemingSelectionCopyWithImpl<$Res>
+    implements $SyncThemingSelectionCopyWith<$Res> {
+  _$SyncThemingSelectionCopyWithImpl(this._self, this._then);
+
+  final SyncThemingSelection _self;
+  final $Res Function(SyncThemingSelection) _then;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? lightThemeName = null,
+    Object? darkThemeName = null,
+    Object? themeMode = null,
+    Object? updatedAt = null,
+    Object? status = null,
+  }) {
+    return _then(SyncThemingSelection(
+      lightThemeName: null == lightThemeName
+          ? _self.lightThemeName
+          : lightThemeName // ignore: cast_nullable_to_non_nullable
+              as String,
+      darkThemeName: null == darkThemeName
+          ? _self.darkThemeName
+          : darkThemeName // ignore: cast_nullable_to_non_nullable
+              as String,
+      themeMode: null == themeMode
+          ? _self.themeMode
+          : themeMode // ignore: cast_nullable_to_non_nullable
+              as String,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as int,
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as SyncEntryStatus,
     ));
   }
 }

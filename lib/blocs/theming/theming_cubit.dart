@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
@@ -10,13 +11,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
-
-const lightSchemeNameKey = 'LIGHT_SCHEME';
-const darkSchemeNameKey = 'DARK_SCHEMA';
-const themeModeKey = 'THEME_MODE';
 
 /// Get emoji font fallback list for the current platform.
 /// Only Linux needs explicit emoji font configuration.
@@ -36,6 +37,37 @@ class ThemingCubit extends Cubit<ThemingState> {
   }
 
   bool _enableTooltips = false;
+  final _debounceKey = 'theming.sync.${identityHashCode(Object())}';
+
+  void _enqueueSyncMessage() {
+    EasyDebounce.debounce(
+      _debounceKey,
+      const Duration(milliseconds: 250),
+      () async {
+        if (!getIt.isRegistered<OutboxService>()) {
+          return;
+        }
+        try {
+          await getIt<OutboxService>().enqueueMessage(
+            SyncMessage.themingSelection(
+              lightThemeName: _lightThemeName ?? 'Grey Law',
+              darkThemeName: _darkThemeName ?? 'Grey Law',
+              themeMode: _themeMode.name,
+              updatedAt: DateTime.now().millisecondsSinceEpoch,
+              status: SyncEntryStatus.update,
+            ),
+          );
+        } catch (e, st) {
+          getIt<LoggingService>().captureException(
+            e,
+            domain: 'THEMING_SYNC',
+            subDomain: 'enqueue',
+            stackTrace: st,
+          );
+        }
+      },
+    );
+  }
 
   Future<void> _loadSelectedSchemes() async {
     _darkThemeName = await getIt<SettingsDb>().itemByKey(darkSchemeNameKey);
@@ -106,6 +138,7 @@ class ThemingCubit extends Cubit<ThemingState> {
       );
 
       emitState();
+      _enqueueSyncMessage();
     }
   }
 
@@ -117,6 +150,7 @@ class ThemingCubit extends Cubit<ThemingState> {
       EnumToString.convertToString(_themeMode),
     );
     emitState();
+    _enqueueSyncMessage();
   }
 
   void setDarkTheme(String themeName) {
@@ -131,6 +165,7 @@ class ThemingCubit extends Cubit<ThemingState> {
       );
 
       emitState();
+      _enqueueSyncMessage();
     }
   }
 

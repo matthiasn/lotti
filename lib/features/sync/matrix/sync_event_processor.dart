@@ -3,10 +3,14 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:enum_to_string/enum_to_string.dart';
+import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -482,16 +486,19 @@ class SyncEventProcessor {
     required LoggingService loggingService,
     required UpdateNotifications updateNotifications,
     required AiConfigRepository aiConfigRepository,
+    required SettingsDb settingsDb,
     SyncJournalEntityLoader? journalEntityLoader,
   })  : _loggingService = loggingService,
         _updateNotifications = updateNotifications,
         _aiConfigRepository = aiConfigRepository,
+        _settingsDb = settingsDb,
         _journalEntityLoader =
             journalEntityLoader ?? const FileSyncJournalEntityLoader();
 
   final LoggingService _loggingService;
   final UpdateNotifications _updateNotifications;
   final AiConfigRepository _aiConfigRepository;
+  final SettingsDb _settingsDb;
   final SyncJournalEntityLoader _journalEntityLoader;
   void Function(SyncApplyDiagnostics diag)? applyObserver;
   void Function()? _cachePurgeListener;
@@ -661,6 +668,67 @@ class SyncEventProcessor {
           id,
           fromSync: true,
         );
+        return null;
+      case SyncThemingSelection(
+          lightThemeName: final lightThemeName,
+          darkThemeName: final darkThemeName,
+          themeMode: final themeMode,
+          updatedAt: final updatedAt,
+        ):
+        try {
+          // Check if incoming update is newer than local
+          final localUpdatedAtStr =
+              await _settingsDb.itemByKey(themePrefsUpdatedAtKey);
+          final localUpdatedAt =
+              localUpdatedAtStr != null ? int.tryParse(localUpdatedAtStr) : 0;
+
+          if (updatedAt < (localUpdatedAt ?? 0)) {
+            _loggingService.captureEvent(
+              'themingSync.ignored.stale incoming=$updatedAt local=$localUpdatedAt',
+              domain: 'THEMING_SYNC',
+              subDomain: 'apply',
+            );
+            return null;
+          }
+
+          // Normalize themeMode value
+          final normalizedMode = EnumToString.fromString(
+                ThemeMode.values,
+                themeMode,
+              ) ??
+              ThemeMode.system;
+
+          // Apply all three settings
+          await _settingsDb.saveSettingsItem(
+            lightSchemeNameKey,
+            lightThemeName,
+          );
+          await _settingsDb.saveSettingsItem(
+            darkSchemeNameKey,
+            darkThemeName,
+          );
+          await _settingsDb.saveSettingsItem(
+            themeModeKey,
+            EnumToString.convertToString(normalizedMode),
+          );
+          await _settingsDb.saveSettingsItem(
+            themePrefsUpdatedAtKey,
+            updatedAt.toString(),
+          );
+
+          _loggingService.captureEvent(
+            'apply themingSelection light=$lightThemeName dark=$darkThemeName mode=$themeMode',
+            domain: 'THEMING_SYNC',
+            subDomain: 'apply',
+          );
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'THEMING_SYNC',
+            subDomain: 'apply',
+            stackTrace: st,
+          );
+        }
         return null;
     }
   }
