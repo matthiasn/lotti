@@ -126,19 +126,16 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                           overflow: TextOverflow.fade,
                           style: () {
                             final baseStyle = context.textTheme.bodyMedium;
-                            if (_isChecked) {
-                              final baseColor = baseStyle?.color ??
-                                  context.colorScheme.onSurface;
-                              return baseStyle?.copyWith(
-                                    decoration: TextDecoration.lineThrough,
-                                    color: baseColor.withValues(alpha: 0.6),
-                                  ) ??
-                                  TextStyle(
-                                    decoration: TextDecoration.lineThrough,
-                                    color: baseColor.withValues(alpha: 0.6),
-                                  );
-                            }
-                            return baseStyle;
+                            if (!_isChecked) return baseStyle;
+
+                            final strikethroughStyle = TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: (baseStyle?.color ??
+                                      context.colorScheme.onSurface)
+                                  .withValues(alpha: 0.6),
+                            );
+                            return baseStyle?.merge(strikethroughStyle) ??
+                                strikethroughStyle;
                           }(),
                         ),
                       ),
