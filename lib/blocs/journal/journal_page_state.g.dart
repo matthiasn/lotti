@@ -19,6 +19,10 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
               ?.map((e) => e as String)
               .toSet() ??
           const <String>{},
+      selectedPriorities: (json['selectedPriorities'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toSet() ??
+          const <String>{},
     );
 
 Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
@@ -26,4 +30,5 @@ Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
       'selectedCategoryIds': instance.selectedCategoryIds.toList(),
       'selectedTaskStatuses': instance.selectedTaskStatuses.toList(),
       'selectedLabelIds': instance.selectedLabelIds.toList(),
+      'selectedPriorities': instance.selectedPriorities.toList(),
     };

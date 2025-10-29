@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_filter.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
@@ -33,6 +34,7 @@ class TaskFilterIcon extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 TaskStatusFilter(),
+                TaskPriorityFilter(),
                 TaskCategoryFilter(),
                 TaskLabelFilter(),
               ],

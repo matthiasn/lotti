@@ -116,6 +116,7 @@ void main() {
             taskStatuses: any(named: 'taskStatuses'),
             categoryIds: any(named: 'categoryIds'),
             labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           )).thenAnswer((_) async => []);
@@ -221,6 +222,7 @@ void main() {
         final filterData = TasksFilter(
           selectedCategoryIds: {'cat1', 'cat2'},
           selectedTaskStatuses: {'DONE', 'OPEN'},
+          selectedPriorities: {'P0', 'P2'},
         );
         storedSettings[JournalPageCubit.tasksCategoryFiltersKey] =
             jsonEncode(filterData);
@@ -231,9 +233,10 @@ void main() {
         // Wait for the async loading to complete
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Verify both categories and task statuses are loaded
+        // Verify categories, task statuses, and priorities are loaded
         expect(cubit.state.selectedCategoryIds, {'cat1', 'cat2'});
         expect(cubit.state.selectedTaskStatuses, {'DONE', 'OPEN'});
+        expect(cubit.state.selectedPriorities, {'P0', 'P2'});
 
         await cubit.close();
         await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -244,6 +247,7 @@ void main() {
         final filterData = TasksFilter(
           selectedCategoryIds: {'cat3', 'cat4'},
           selectedTaskStatuses: {}, // Should be ignored for journal tab
+          selectedPriorities: {'P1'}, // Should be ignored for journal tab
         );
         storedSettings[JournalPageCubit.journalCategoryFiltersKey] =
             jsonEncode(filterData);
@@ -261,6 +265,8 @@ void main() {
           cubit.state.selectedTaskStatuses,
           {'OPEN', 'GROOMED', 'IN PROGRESS'},
         );
+        // Priorities are not loaded on journal tab
+        expect(cubit.state.selectedPriorities, isEmpty);
 
         await cubit.close();
         await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -310,6 +316,7 @@ void main() {
         final filterData = TasksFilter(
           selectedCategoryIds: {'cat1', 'cat2'},
           selectedTaskStatuses: {'DONE'},
+          selectedPriorities: {'P3'},
         );
         storedSettings[JournalPageCubit.taskFiltersKey] =
             jsonEncode(filterData);
@@ -325,6 +332,8 @@ void main() {
           cubit.state.selectedTaskStatuses,
           {'OPEN', 'GROOMED', 'IN PROGRESS'},
         );
+        // Priorities are NOT loaded on journal tab
+        expect(cubit.state.selectedPriorities, isEmpty);
 
         await cubit.close();
         await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -335,6 +344,7 @@ void main() {
         final filterData = TasksFilter(
           selectedCategoryIds: {'cat1', 'cat2'},
           selectedTaskStatuses: {'DONE', 'BLOCKED'},
+          selectedPriorities: {'P0', 'P1'},
         );
         storedSettings[JournalPageCubit.taskFiltersKey] =
             jsonEncode(filterData);
@@ -343,9 +353,10 @@ void main() {
         final cubit = JournalPageCubit(showTasks: true);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Verify both are loaded
+        // Verify categories, statuses, and priorities are loaded
         expect(cubit.state.selectedCategoryIds, {'cat1', 'cat2'});
         expect(cubit.state.selectedTaskStatuses, {'DONE', 'BLOCKED'});
+        expect(cubit.state.selectedPriorities, {'P0', 'P1'});
 
         await cubit.close();
         await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -447,6 +458,45 @@ void main() {
         expect(decoded.selectedCategoryIds, equals(selectedCategoryIds));
       });
 
+      test('verifies tasks tab includes selected priorities in encoded data',
+          () {
+        const selectedCategoryIds = {'cat1'};
+        const selectedPriorities = {'P0', 'P2'};
+
+        final filterData = jsonEncode(
+          TasksFilter(
+            selectedCategoryIds: selectedCategoryIds,
+            selectedTaskStatuses: const {'OPEN'},
+            selectedPriorities: selectedPriorities,
+          ),
+        );
+
+        final decoded = TasksFilter.fromJson(
+            jsonDecode(filterData) as Map<String, dynamic>);
+
+        expect(decoded.selectedPriorities, equals(selectedPriorities));
+        expect(decoded.selectedCategoryIds, equals(selectedCategoryIds));
+      });
+
+      test('verifies journal tab excludes priorities from encoded data', () {
+        const selectedCategoryIds = {'cat1'};
+
+        final filterData = jsonEncode(
+          TasksFilter(
+            selectedCategoryIds: selectedCategoryIds,
+            selectedTaskStatuses: const {},
+            // On journal tab we encode with empty priorities
+            selectedPriorities: const {},
+          ),
+        );
+
+        final decoded = TasksFilter.fromJson(
+            jsonDecode(filterData) as Map<String, dynamic>);
+
+        expect(decoded.selectedPriorities, isEmpty);
+        expect(decoded.selectedCategoryIds, equals(selectedCategoryIds));
+      });
+
       test('verifies _getCategoryFiltersKey returns correct key for each tab',
           () {
         // Create cubits to test the key selection logic
@@ -478,6 +528,68 @@ void main() {
       test('verifies legacy key constant remains unchanged for migration', () {
         // Ensure the legacy key hasn't been accidentally changed
         expect(JournalPageCubit.taskFiltersKey, equals('TASK_FILTERS'));
+      });
+
+      test('Priority filter persists and restores correctly', () async {
+        // Ensure required singletons are registered (defensive against cross-test resets)
+        if (!getIt.isRegistered<JournalDb>()) {
+          getIt.registerSingleton<JournalDb>(mockJournalDb);
+        }
+        if (!getIt.isRegistered<UpdateNotifications>()) {
+          getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+        }
+        if (!getIt.isRegistered<EntitiesCacheService>()) {
+          getIt.registerSingleton<EntitiesCacheService>(
+              mockEntitiesCacheService);
+        }
+        if (!getIt.isRegistered<SettingsDb>()) {
+          getIt.registerSingleton<SettingsDb>(mockSettingsDb);
+        }
+        if (!getIt.isRegistered<UpdateNotifications>()) {
+          getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+        }
+        if (!getIt.isRegistered<EntitiesCacheService>()) {
+          getIt.registerSingleton<EntitiesCacheService>(
+              mockEntitiesCacheService);
+        }
+        if (!getIt.isRegistered<SettingsDb>()) {
+          getIt.registerSingleton<SettingsDb>(mockSettingsDb);
+        }
+
+        // Use the in-memory mock SettingsDb already wired via storedSettings
+        final cubit = JournalPageCubit(showTasks: true);
+
+        // Toggle priorities and persist
+        await cubit.toggleSelectedPriority('P0');
+        await cubit.toggleSelectedPriority('P1');
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+
+        // Ensure something was saved to the per-tab key
+        final savedJson =
+            storedSettings[JournalPageCubit.tasksCategoryFiltersKey];
+        expect(savedJson, isNotNull);
+
+        // Create a new cubit; constructor loads persisted filters asynchronously
+        if (!getIt.isRegistered<JournalDb>()) {
+          getIt.registerSingleton<JournalDb>(mockJournalDb);
+        }
+        if (!getIt.isRegistered<UpdateNotifications>()) {
+          getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+        }
+        if (!getIt.isRegistered<EntitiesCacheService>()) {
+          getIt.registerSingleton<EntitiesCacheService>(
+              mockEntitiesCacheService);
+        }
+        if (!getIt.isRegistered<SettingsDb>()) {
+          getIt.registerSingleton<SettingsDb>(mockSettingsDb);
+        }
+        final newCubit = JournalPageCubit(showTasks: true);
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+
+        expect(newCubit.state.selectedPriorities, {'P0', 'P1'});
+
+        await cubit.close();
+        await newCubit.close();
       });
     });
   });

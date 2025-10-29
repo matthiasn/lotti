@@ -168,7 +168,8 @@ void main() {
       expect(find.byType(CategoryIconCompact), findsOneWidget);
       expect(find.byType(TimeRecordingIcon), findsOneWidget);
       expect(find.byType(CompactTaskProgress), findsOneWidget);
-      expect(find.byType(ModernStatusChip), findsOneWidget);
+      // Status row now includes two chips: priority + status
+      expect(find.byType(ModernStatusChip), findsWidgets);
 
       // Check task title is displayed
       expect(find.text('Test Task Title'), findsOneWidget);
@@ -217,6 +218,30 @@ void main() {
         find.byIcon(Icons.play_circle_outline_rounded),
         findsOneWidget,
       );
+    });
+
+    testWidgets('shows priority chip with short code',
+        (WidgetTester tester) async {
+      final task = createTestTask(
+        status: TaskStatus.open(
+          id: 'status-id',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: ModernTaskCard(task: task),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Default priority is P2
+      expect(find.text('P2'), findsOneWidget);
+
+      // No exclamation priority icon should be present on the card
+      expect(find.byIcon(Icons.priority_high_rounded), findsNothing);
     });
 
     testWidgets('displays correct status chip for done task',

@@ -4659,6 +4659,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'unassigned'**
   String get taskLabelUnassignedLabel;
+
+  /// No description provided for @tasksPriorityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority:'**
+  String get tasksPriorityTitle;
+
+  /// No description provided for @tasksPriorityP0.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get tasksPriorityP0;
+
+  /// No description provided for @tasksPriorityP1.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get tasksPriorityP1;
+
+  /// No description provided for @tasksPriorityP2.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get tasksPriorityP2;
+
+  /// No description provided for @tasksPriorityP3.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get tasksPriorityP3;
+
+  /// No description provided for @tasksPriorityPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select priority'**
+  String get tasksPriorityPickerTitle;
+
+  /// No description provided for @tasksPriorityFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get tasksPriorityFilterTitle;
+
+  /// No description provided for @tasksPriorityFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get tasksPriorityFilterAll;
+
+  /// No description provided for @tasksPriorityP0Description.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent (ASAP)'**
+  String get tasksPriorityP0Description;
+
+  /// No description provided for @tasksPriorityP1Description.
+  ///
+  /// In en, this message translates to:
+  /// **'High (Soon)'**
+  String get tasksPriorityP1Description;
+
+  /// No description provided for @tasksPriorityP2Description.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium (Default)'**
+  String get tasksPriorityP2Description;
+
+  /// No description provided for @tasksPriorityP3Description.
+  ///
+  /// In en, this message translates to:
+  /// **'Low (Whenever)'**
+  String get tasksPriorityP3Description;
 }
 
 class _AppLocalizationsDelegate

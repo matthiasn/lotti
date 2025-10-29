@@ -50,6 +50,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             },
             selectedCategoryIds: {},
             selectedLabelIds: {},
+            selectedPriorities: {},
           ),
         ) {
     // Check if we need to set default category selection for tasks
@@ -115,6 +116,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         selectedTaskStatuses: state.selectedTaskStatuses,
         selectedCategoryIds: _selectedCategoryIds,
         selectedLabelIds: _selectedLabelIds,
+        selectedPriorities: _selectedPriorities,
       ),
     );
 
@@ -254,6 +256,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool showTasks = false;
   Set<String> _selectedCategoryIds = {};
   Set<String> _selectedLabelIds = {};
+  Set<String> _selectedPriorities = {};
 
   Set<String> _fullTextMatches = {};
   Set<String> _lastIds = {};
@@ -283,6 +286,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         selectedTaskStatuses: _selectedTaskStatuses,
         selectedCategoryIds: _selectedCategoryIds,
         selectedLabelIds: _selectedLabelIds,
+        selectedPriorities: _selectedPriorities,
       ),
     );
   }
@@ -375,6 +379,21 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     await persistTasksFilter();
   }
 
+  // Priority selection handlers
+  Future<void> toggleSelectedPriority(String priority) async {
+    if (_selectedPriorities.contains(priority)) {
+      _selectedPriorities = _selectedPriorities.difference({priority});
+    } else {
+      _selectedPriorities = _selectedPriorities.union({priority});
+    }
+    await persistTasksFilter();
+  }
+
+  Future<void> clearSelectedPriorities() async {
+    _selectedPriorities = {};
+    await persistTasksFilter();
+  }
+
   /// Loads persisted filters with migration from legacy key
   Future<void> _loadPersistedFilters() async {
     final settingsDb = getIt<SettingsDb>();
@@ -394,12 +413,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       final json = jsonDecode(value) as Map<String, dynamic>;
       final tasksFilter = TasksFilter.fromJson(json);
 
-      // Only load task statuses if we're in the tasks tab
+      // Only load task-related filters if we're in the tasks tab
       if (showTasks) {
         _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
         _selectedLabelIds = tasksFilter.selectedLabelIds;
+        _selectedPriorities = tasksFilter.selectedPriorities;
       } else {
         _selectedLabelIds = {};
+        _selectedPriorities = {};
       }
 
       // Load category filters for both tabs
@@ -421,6 +442,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       selectedCategoryIds: _selectedCategoryIds,
       selectedTaskStatuses: showTasks ? _selectedTaskStatuses : {},
       selectedLabelIds: showTasks ? _selectedLabelIds : {},
+      selectedPriorities: showTasks ? _selectedPriorities : {},
     );
     final encodedFilter = jsonEncode(filter);
 
@@ -540,6 +562,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       }
 
       final labelIds = _selectedLabelIds;
+      final priorities = _selectedPriorities;
 
       final res = await _db.getTasks(
         ids: ids,
@@ -547,6 +570,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         taskStatuses: _selectedTaskStatuses.toList(),
         categoryIds: categoryIds.toList(),
         labelIds: labelIds.toList(),
+        priorities: priorities.toList(),
         limit: _pageSize,
         offset: pageKey,
       );

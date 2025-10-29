@@ -11,6 +11,7 @@ class ModernStatusChip extends StatelessWidget {
     required this.color,
     this.icon,
     this.isDark,
+    this.borderWidth,
     super.key,
   });
 
@@ -18,6 +19,7 @@ class ModernStatusChip extends StatelessWidget {
   final Color color;
   final IconData? icon;
   final bool? isDark;
+  final double? borderWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +52,7 @@ class ModernStatusChip extends StatelessWidget {
         ),
         border: Border.all(
           color: borderColor,
-          width: AppTheme.statusIndicatorBorderWidth,
+          width: borderWidth ?? AppTheme.statusIndicatorBorderWidth,
         ),
       ),
       child: Row(

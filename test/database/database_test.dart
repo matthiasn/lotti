@@ -716,6 +716,147 @@ void main() {
 
         expect(await db!.getWipCount(), 2);
       });
+
+      test('getTasks filters by priorities', () async {
+        final base = DateTime(2024, 7, 4, 11);
+        final p0 = JournalEntity.task(
+          meta: Metadata(
+            id: 'prio-0',
+            createdAt: base,
+            updatedAt: base,
+            dateFrom: base,
+            dateTo: base,
+          ),
+          data: testTask.data.copyWith(
+            status: TaskStatus.open(
+              id: 's0',
+              createdAt: base,
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            dateFrom: base,
+            dateTo: base,
+            title: 'P0',
+            priority: TaskPriority.p0Urgent,
+          ),
+          entryText: const EntryText(plainText: 'prio 0'),
+        );
+        final p2 = JournalEntity.task(
+          meta: Metadata(
+            id: 'prio-2',
+            createdAt: base,
+            updatedAt: base,
+            dateFrom: base,
+            dateTo: base,
+          ),
+          data: testTask.data.copyWith(
+            status: TaskStatus.open(
+              id: 's2',
+              createdAt: base,
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            dateFrom: base,
+            dateTo: base,
+            title: 'P2',
+            priority: TaskPriority.p2Medium,
+          ),
+          entryText: const EntryText(plainText: 'prio 2'),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(p0));
+        await db!.upsertJournalDbEntity(toDbEntity(p2));
+
+        final results = await db!.getTasks(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const [''],
+          priorities: const ['P0'],
+        );
+
+        expect(results.map((e) => e.meta.id), ['prio-0']);
+      });
+
+      test('getTasks orders by priority rank then date_from desc', () async {
+        final base = DateTime(2024, 7, 5, 12);
+        final p3older = JournalEntity.task(
+          meta: Metadata(
+            id: 'older-low',
+            createdAt: base,
+            updatedAt: base,
+            dateFrom: base,
+            dateTo: base,
+          ),
+          data: testTask.data.copyWith(
+            status: TaskStatus.open(
+              id: 's3',
+              createdAt: base,
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            dateFrom: base,
+            dateTo: base,
+            title: 'P3 older',
+            priority: TaskPriority.p3Low,
+          ),
+          entryText: const EntryText(plainText: 'older low'),
+        );
+        final p1newer = JournalEntity.task(
+          meta: Metadata(
+            id: 'newer-high',
+            createdAt: base.add(const Duration(minutes: 1)),
+            updatedAt: base.add(const Duration(minutes: 1)),
+            dateFrom: base.add(const Duration(minutes: 1)),
+            dateTo: base.add(const Duration(minutes: 1)),
+          ),
+          data: testTask.data.copyWith(
+            status: TaskStatus.open(
+              id: 's1',
+              createdAt: base.add(const Duration(minutes: 1)),
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            dateFrom: base.add(const Duration(minutes: 1)),
+            dateTo: base.add(const Duration(minutes: 1)),
+            title: 'P1 newer',
+            priority: TaskPriority.p1High,
+          ),
+          entryText: const EntryText(plainText: 'newer high'),
+        );
+        final p0newest = JournalEntity.task(
+          meta: Metadata(
+            id: 'newest-urgent',
+            createdAt: base.add(const Duration(minutes: 2)),
+            updatedAt: base.add(const Duration(minutes: 2)),
+            dateFrom: base.add(const Duration(minutes: 2)),
+            dateTo: base.add(const Duration(minutes: 2)),
+          ),
+          data: testTask.data.copyWith(
+            status: TaskStatus.open(
+              id: 's0',
+              createdAt: base.add(const Duration(minutes: 2)),
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            dateFrom: base.add(const Duration(minutes: 2)),
+            dateTo: base.add(const Duration(minutes: 2)),
+            title: 'P0 newest',
+            priority: TaskPriority.p0Urgent,
+          ),
+          entryText: const EntryText(plainText: 'newest urgent'),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(p3older));
+        await db!.upsertJournalDbEntity(toDbEntity(p1newer));
+        await db!.upsertJournalDbEntity(toDbEntity(p0newest));
+
+        final results = await db!.getTasks(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const [''],
+        );
+
+        // Order: P0 -> P1 -> P3; within same priority, date_from DESC
+        expect(
+          results.map((e) => e.meta.id).toList(),
+          ['newest-urgent', 'newer-high', 'older-low'],
+        );
+      });
     });
 
     group('Linked entities -', () {

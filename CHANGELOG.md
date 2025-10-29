@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 ### Added
+- Tasks: Priority (P0–P3) end-to-end support
+  - New TaskPriority field with compact P0–P3 chips and colors
+  - Header picker + detail chip; selection modal uses the chip visuals
+  - Task list filtering by priorities and ordering by priority rank, then date
+  - Persistence: priority filter stored per-tab with other task filters
+  - Migration v29: adds `task_priority` (TEXT) and `task_priority_rank` (INTEGER)
+    with backfill to P2/2 for legacy tasks and updated composite index
+  - i18n: English keys for labels, picker title and descriptions
+  - Tests: database ordering/filtering, UI wrappers, filter UX
 - Sync maintenance now supports Labels in the manual definition sync flow:
   - Sync page → Sync Entities modal includes a "Labels" checkbox alongside Tags, Measurables,
     Categories, Dashboards, Habits, and AI Settings.

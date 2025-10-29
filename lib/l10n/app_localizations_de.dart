@@ -2475,4 +2475,40 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskLabelUnassignedLabel => 'unassigned';
+
+  @override
+  String get tasksPriorityTitle => 'Priority:';
+
+  @override
+  String get tasksPriorityP0 => 'Urgent';
+
+  @override
+  String get tasksPriorityP1 => 'High';
+
+  @override
+  String get tasksPriorityP2 => 'Medium';
+
+  @override
+  String get tasksPriorityP3 => 'Low';
+
+  @override
+  String get tasksPriorityPickerTitle => 'Select priority';
+
+  @override
+  String get tasksPriorityFilterTitle => 'Priority';
+
+  @override
+  String get tasksPriorityFilterAll => 'All';
+
+  @override
+  String get tasksPriorityP0Description => 'Urgent (ASAP)';
+
+  @override
+  String get tasksPriorityP1Description => 'High (Soon)';
+
+  @override
+  String get tasksPriorityP2Description => 'Medium (Default)';
+
+  @override
+  String get tasksPriorityP3Description => 'Low (Whenever)';
 }

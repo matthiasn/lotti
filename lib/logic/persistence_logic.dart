@@ -607,6 +607,17 @@ class PersistenceLogic {
               data: taskData,
             ),
           );
+
+          // Ensure denormalized priority columns are updated for reliable UI reads
+          try {
+            await _journalDb.updateTaskPriorityColumn(
+              id: journalEntityId,
+              priority: taskData.priority.short,
+              rank: taskData.priority.rank,
+            );
+          } catch (_) {
+            // ignore best-effort denormalized update errors
+          }
         },
         orElse: () async => _loggingService.captureException(
           'not a task',

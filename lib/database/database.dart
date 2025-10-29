@@ -46,7 +46,7 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
 
   @override
   MigrationStrategy get migration {
@@ -139,13 +139,76 @@ class JournalDb extends _$JournalDb {
             await _rebuildLabeledWithFkCascade();
           }();
         }
+
+        // v29: Add task priority columns and update tasks index
+        if (from < 29) {
+          await () async {
+            debugPrint('Adding task priority columns and updating index');
+
+            // Add columns only if missing to avoid masking other errors
+            final hasTaskPriority =
+                await _columnExists('journal', 'task_priority');
+            if (!hasTaskPriority) {
+              await m.addColumn(journal, journal.taskPriority);
+            }
+
+            final hasTaskPriorityRank =
+                await _columnExists('journal', 'task_priority_rank');
+            if (!hasTaskPriorityRank) {
+              await m.addColumn(journal, journal.taskPriorityRank);
+            }
+
+            // Backfill existing task rows to P2/2
+            await customStatement(
+              "UPDATE journal SET task_priority = 'P2', task_priority_rank = 2 WHERE task = 1 AND (task_priority IS NULL OR task_priority = '')",
+            );
+
+            // Rebuild index to include priority rank
+            await customStatement('DROP INDEX IF EXISTS idx_journal_tasks');
+            await m.createIndex(idxJournalTasks);
+          }();
+        }
       },
     );
   }
 
+  // Check whether a column exists in a given table to make migrations safer
+  Future<bool> _columnExists(String table, String column) async {
+    try {
+      final rows = await customSelect('PRAGMA table_info($table)').get();
+      for (final row in rows) {
+        final name = row.read<String>('name');
+        if (name == column) return true;
+      }
+      return false;
+    } catch (_) {
+      // If PRAGMA fails for any reason, fall back to false so migration attempts add the column
+      return false;
+    }
+  }
+
+  @visibleForTesting
+  Future<bool> columnExistsForTesting(String table, String column) =>
+      _columnExists(table, column);
+
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
     final res = into(journal).insertOnConflictUpdate(entry);
     return res;
+  }
+
+  Future<void> updateTaskPriorityColumn({
+    required String id,
+    required String priority,
+    required int rank,
+  }) async {
+    try {
+      await customStatement(
+        'UPDATE journal SET task_priority = ?, task_priority_rank = ? WHERE id = ?',
+        [priority, rank, id],
+      );
+    } catch (e) {
+      debugPrint('updateTaskPriorityColumn error: $e');
+    }
   }
 
   Future<int> addConflict(Conflict conflict) async {
@@ -416,6 +479,7 @@ class JournalDb extends _$JournalDb {
     required List<String> taskStatuses,
     required List<String> categoryIds,
     List<String>? labelIds,
+    List<String>? priorities,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
@@ -425,6 +489,7 @@ class JournalDb extends _$JournalDb {
       taskStatuses: taskStatuses,
       categoryIds: categoryIds,
       labelIds: labelIds,
+      priorities: priorities,
       ids: ids,
       limit: limit,
       offset: offset,
@@ -438,6 +503,7 @@ class JournalDb extends _$JournalDb {
     required List<String> taskStatuses,
     required List<String> categoryIds,
     List<String>? labelIds,
+    List<String>? priorities,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
@@ -456,6 +522,9 @@ class JournalDb extends _$JournalDb {
         labelFilterCount == 0 ? <String>['__no_label__'] : filteredLabelIds;
     final filterByLabels = includeUnlabeled || labelFilterCount > 0;
     final dbTaskStatuses = taskStatuses.cast<String?>();
+    final selectedPriorities = priorities ?? <String>[];
+    final filterByPriorities = selectedPriorities.isNotEmpty;
+    final dbPriorities = selectedPriorities.cast<String?>();
 
     if (ids != null) {
       return filteredTasks2(
@@ -468,6 +537,9 @@ class JournalDb extends _$JournalDb {
         labelFilterCount,
         effectiveLabelIds,
         includeUnlabeled,
+        filterByPriorities,
+        selectedPriorities.length,
+        dbPriorities,
         limit,
         offset,
       );
@@ -481,6 +553,9 @@ class JournalDb extends _$JournalDb {
         labelFilterCount,
         effectiveLabelIds,
         includeUnlabeled,
+        filterByPriorities,
+        selectedPriorities.length,
+        dbPriorities,
         limit,
         offset,
       );
