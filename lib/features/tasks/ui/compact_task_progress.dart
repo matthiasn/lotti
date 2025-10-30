@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 
 class CompactTaskProgress extends ConsumerWidget {
   const CompactTaskProgress({
@@ -48,19 +49,21 @@ class CompactTaskProgress extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Time display
-        Text(
-          '${_formatDurationHoursMinutes(progress)} / ${_formatDurationHoursMinutes(estimate)}',
-          style: textStyle.copyWith(
-            color: isOvertime
-                ? context.colorScheme.error.withValues(alpha: 0.8)
-                : context.colorScheme.outline,
+        if (isDesktop) ...[
+          // Time display
+          Text(
+            '${_formatDurationHoursMinutes(progress)} / ${_formatDurationHoursMinutes(estimate)}',
+            style: textStyle.copyWith(
+              color: isOvertime
+                  ? context.colorScheme.error.withValues(alpha: 0.8)
+                  : context.colorScheme.outline,
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
+          const SizedBox(width: 10),
+        ],
         // Progress bar
         SizedBox(
-          width: 42,
+          width: 50,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
