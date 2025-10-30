@@ -16,6 +16,10 @@ on:
       - "services/gemma-local/.flake8"
       - "services/gemma-local/mypy.ini"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   code-quality:
     name: Python Code Quality Check

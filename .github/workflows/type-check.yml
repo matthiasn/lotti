@@ -2,9 +2,13 @@ name: Type Check
 
 on:
   push:
-    branches: [ main, feat/* ]
+    branches: ["**"]
   pull_request:
     branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   type-check:

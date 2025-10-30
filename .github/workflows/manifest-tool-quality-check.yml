@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: ["**"]
     paths:
       - 'flatpak/manifest_tool/**'
       - '.github/workflows/manifest-tool-quality-check.yml'
@@ -14,6 +14,10 @@ on:
     paths:
       - 'flatpak/manifest_tool/**'
       - '.github/workflows/manifest-tool-quality-check.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality-check:
