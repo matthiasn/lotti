@@ -11,6 +11,7 @@ concurrency:
 jobs:
   test:
     name: Flutter Test on Linux (self-hosted)
+    timeout-minutes: 60
     permissions:
       contents: read
     runs-on: self-hosted
@@ -34,3 +35,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
+      - name: Clean up
+        if: always()
+        run: |
+          flutter clean || true
+          rm -rf .dart_tool || true
