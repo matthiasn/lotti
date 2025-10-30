@@ -991,6 +991,28 @@ void main() {
       expect(captured.data.dateFrom, equals(lastModified));
     });
 
+    test('uses fallback metadata reader when none registered', () async {
+      // Arrange: remove injected reader to force default reader path
+      if (getIt.isRegistered<AudioMetadataReader>()) {
+        getIt.unregister<AudioMetadataReader>();
+      }
+
+      final testFile = await createTestAudioFile('fallback.m4a', 256);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act: default reader executes; errors are logged but do not abort import
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert: Entry creation proceeded
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).called(1);
+    });
+
     test('uses parsed timestamp in directory path', () async {
       // Arrange
       final testFile =
