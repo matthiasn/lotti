@@ -52,9 +52,7 @@ class ModernBaseCard extends StatelessWidget {
             : context.colorScheme.outline
                 .withValues(alpha: AppTheme.alphaOutline));
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: AppTheme.animationDuration),
-      curve: AppTheme.animationCurve,
+    return Container(
       margin: margin,
       decoration: BoxDecoration(
         color: effectiveBackgroundColor,
