@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Update apt-get
-        run: sudo apt-get update
-      - name: Install libraries
-        run: sudo apt-get install network-manager libmpv-dev
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: network-manager libmpv-dev
+          version: test-1.0
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:

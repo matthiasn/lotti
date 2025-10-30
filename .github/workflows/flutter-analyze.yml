@@ -18,7 +18,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: network-manager
-          version: 1.0
+          version: analyze-1.0
       - uses: actions/checkout@v5
       - name: Cache Pub Packages
         uses: actions/cache@v3
