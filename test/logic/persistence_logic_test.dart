@@ -162,7 +162,8 @@ void main() {
       if (getIt.isRegistered<Directory>()) {
         getIt.unregister<Directory>();
       }
-      getIt.registerSingleton<Directory>(await getApplicationDocumentsDirectory());
+      getIt.registerSingleton<Directory>(
+          await getApplicationDocumentsDirectory());
     });
 
     tearDown(() {

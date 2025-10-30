@@ -277,7 +277,7 @@ void main() {
       expect(mapIconOutlinedFinder, findsNothing);
       expect(mapIconFilledFinder, findsNothing);
     });
-    
+
     testWidgets('entry date is visible', (WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

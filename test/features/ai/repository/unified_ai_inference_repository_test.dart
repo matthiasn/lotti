@@ -159,7 +159,8 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService);
 
     // Mock directory path to a writable temp location (unique per test)
-    final baseTempDir = Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
+    final baseTempDir =
+        Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
     when(() => mockDirectory.path).thenReturn(baseTempDir.path);
 
     // Setup mock ref to return mocked repositories
@@ -194,7 +195,8 @@ void main() {
     // Clean up temp directories if they were created
     // Note: Only remove if it still exists and is empty-ish; ignore errors
     try {
-      final p = getIt.isRegistered<Directory>() ? getIt<Directory>().path : null;
+      final p =
+          getIt.isRegistered<Directory>() ? getIt<Directory>().path : null;
       if (p != null) {
         final d = Directory(p);
         if (d.existsSync()) {

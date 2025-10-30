@@ -122,7 +122,8 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService);
 
     // Mock directory path to writable temp location per test
-    final baseTempDir = Directory.systemTemp.createTempSync('lotti_ai_integ_test_');
+    final baseTempDir =
+        Directory.systemTemp.createTempSync('lotti_ai_integ_test_');
     when(() => mockDirectory.path).thenReturn(baseTempDir.path);
 
     when(() => mockRef.read(aiConfigRepositoryProvider))
@@ -143,7 +144,8 @@ void main() {
   tearDown(() {
     // Clean up temp directories created for this test
     try {
-      final p = getIt.isRegistered<Directory>() ? getIt<Directory>().path : null;
+      final p =
+          getIt.isRegistered<Directory>() ? getIt<Directory>().path : null;
       if (p != null) {
         final d = Directory(p);
         if (d.existsSync()) {

@@ -58,6 +58,14 @@ void _registerLazyServiceSafely<T extends Object>(
   String serviceName,
 ) {
   try {
+    // Proactively prevent duplicate registration regardless of
+    // GetIt's global allowReassignment flag, to keep semantics strict
+    // and predictable across optimized test runners.
+    if (getIt.isRegistered<T>()) {
+      _safeLog('Failed to register lazy $serviceName: already registered',
+          isError: true);
+      return;
+    }
     getIt.registerLazySingleton<T>(() {
       try {
         final instance = factory();

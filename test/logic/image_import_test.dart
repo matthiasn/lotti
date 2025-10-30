@@ -20,7 +20,6 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
-
 // Fakes
 class FakeJournalImage extends Fake implements JournalImage {}
 
