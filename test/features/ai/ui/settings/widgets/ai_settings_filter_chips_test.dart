@@ -13,7 +13,9 @@ void main() {
     late List<AiConfig> mockProviders;
 
     setUp(() {
-      initialFilterState = AiSettingsFilterState.initial();
+      initialFilterState = AiSettingsFilterState.initial().copyWith(
+        activeTab: AiSettingsTab.models, // Set to models tab so capability filters show
+      );
       filterChanges = [];
       mockProviders = [AiTestDataFactory.createTestProvider()];
     });
@@ -385,7 +387,9 @@ void main() {
       });
 
       testWidgets('works with empty filter state', (WidgetTester tester) async {
-        const emptyState = AiSettingsFilterState();
+        final emptyState = AiSettingsFilterState.initial().copyWith(
+          activeTab: AiSettingsTab.models,
+        );
 
         await tester.pumpWidget(createWidget(filterState: emptyState));
 

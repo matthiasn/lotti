@@ -112,7 +112,7 @@ class AiSettingsFixedHeader extends StatelessWidget {
   }
 
   Widget _buildFilterSection() {
-    // Model filters are only shown on the Models tab
+    // Provider filters are shown only on Models tab
     if (filterState.activeTab == AiSettingsTab.models) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),

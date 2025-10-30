@@ -46,11 +46,12 @@ class AiSettingsFilterChips extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: [
-            // Provider Filter
+            // Provider Filter (shown on both Models and Prompts tabs)
             _buildProviderFilter(context, ref),
 
-            // Capability Filters
-            _buildCapabilityFilters(context),
+            // Capability Filters (only shown on Models tab)
+            if (filterState.activeTab == AiSettingsTab.models)
+              _buildCapabilityFilters(context),
           ],
         ),
       ),

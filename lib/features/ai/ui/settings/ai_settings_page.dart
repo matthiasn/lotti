@@ -354,11 +354,27 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       ),
     );
 
+    final modelsAsync = ref.watch(
+      aiConfigByTypeControllerProvider(
+        configType: AiConfigType.model,
+      ),
+    );
+
     return promptsAsync.when(
       data: (configs) {
         final prompts = configs.whereType<AiConfigPrompt>().toList();
-        final filteredPrompts =
-            _filterService.filterPrompts(prompts, _filterState);
+
+        // Get models for provider filtering
+        final allModels = modelsAsync.maybeWhen(
+          data: (models) => models.whereType<AiConfigModel>().toList(),
+          orElse: () => <AiConfigModel>[],
+        );
+
+        final filteredPrompts = _filterService.filterPrompts(
+          prompts,
+          _filterState,
+          allModels: allModels,
+        );
 
         return AiSettingsConfigSliver<AiConfigPrompt>(
           configsAsync: promptsAsync,
