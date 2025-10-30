@@ -15,7 +15,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: awalsh128/cache-apt-pkgs-action@1.6.0
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: network-manager
           version: analyze-1.0
