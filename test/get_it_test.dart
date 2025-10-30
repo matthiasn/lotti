@@ -15,11 +15,13 @@ class _MockMaintenance extends Mock implements Maintenance {}
 
 void main() {
   setUp(() async {
-    await getIt.reset();
+    // Use a dedicated scope per test to avoid cross-file contamination
+    getIt.pushNewScope();
   });
 
   tearDown(() async {
-    await getIt.reset();
+    await getIt.resetScope();
+    await getIt.popScope();
   });
 
   group('safeLog', () {
