@@ -35,6 +35,7 @@ jobs:
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
       - name: Get dependencies
         run: flutter pub get
       - name: Activate very_good_cli
