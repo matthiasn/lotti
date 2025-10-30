@@ -1,4 +1,4 @@
-name: Flutter Test (very_good)
+name: Flutter Test
 
 on:
   push:
@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   test:
-    name: Flutter Test on Linux (very_good)
+    name: Flutter Test on Linux
     permissions:
       contents: read
     runs-on: ubuntu-latest
