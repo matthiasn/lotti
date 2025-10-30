@@ -15,7 +15,7 @@ jobs:
           git config --global core.symlinks true
       - name: Support long paths
         run: git config --system core.longpaths true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
       - uses: subosito/flutter-action@v2

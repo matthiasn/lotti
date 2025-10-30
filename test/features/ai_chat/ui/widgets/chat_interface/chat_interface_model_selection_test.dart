@@ -17,6 +17,15 @@ class MockLoggingService extends Mock implements LoggingService {}
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 void main() {
+  setUp(() {
+    // Use a dedicated scope for this test to avoid global GetIt state
+    GetIt.instance.pushNewScope();
+  });
+
+  tearDown(() async {
+    await GetIt.instance.resetScope();
+    await GetIt.instance.popScope();
+  });
   setUpAll(() {
     // Required when verifying saveSession argument types in mocktail
     registerFallbackValue(ChatSession(
@@ -35,9 +44,7 @@ void main() {
     final mockAiRepo = MockAiConfigRepository();
 
     // Register GetIt services used by providers
-    if (!GetIt.instance.isRegistered<LoggingService>()) {
-      GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
-    }
+    GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
 
     final provider = AiConfigInferenceProvider(
       id: 'prov-g',

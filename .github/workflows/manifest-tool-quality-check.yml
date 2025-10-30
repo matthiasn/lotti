@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: ["**"]
     paths:
       - 'flatpak/manifest_tool/**'
       - '.github/workflows/manifest-tool-quality-check.yml'
@@ -15,12 +15,16 @@ on:
       - 'flatpak/manifest_tool/**'
       - '.github/workflows/manifest-tool-quality-check.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality-check:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up Python 3.13
       uses: actions/setup-python@v5

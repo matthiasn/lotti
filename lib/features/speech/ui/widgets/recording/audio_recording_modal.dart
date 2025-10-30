@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/ui/app_fonts.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 
@@ -102,7 +102,7 @@ class _AudioRecordingModalContentState
             // Duration display
             Text(
               formatDuration(state.progress.toString()),
-              style: GoogleFonts.inconsolata(
+              style: AppFonts.inconsolata(
                 fontSize: fontSizeLarge,
                 fontWeight: FontWeight.w300,
                 color: theme.colorScheme.primaryFixedDim,

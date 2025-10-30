@@ -1,4 +1,4 @@
-name: Flutter Analyze
+name: Flutter Test
 
 on:
   push:
@@ -10,16 +10,20 @@ concurrency:
 
 jobs:
   test:
-    name: Flutter Analyze on Linux
+    name: Flutter Test on Linux
     permissions:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: awalsh128/cache-apt-pkgs-action@v1.6.0
-        with:
-          packages: network-manager
-          version: analyze-1.0
       - uses: actions/checkout@v5
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install network-manager libmpv-dev
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
       - name: Cache Pub Packages
         uses: actions/cache@v4
         with:
@@ -32,5 +36,13 @@ jobs:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
           cache: true
-      - name: Run Flutter Analyze
-        run: flutter analyze
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Activate very_good_cli
+        run: dart pub global activate very_good_cli
+      - name: Run Flutter tests
+        run: very_good test --coverage
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: matthiasn/lotti

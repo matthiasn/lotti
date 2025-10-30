@@ -33,7 +33,8 @@ void main() {
     Widget child, {
     List<Override> overrides = const [],
   }) async {
-    tester.view.physicalSize = const Size(800, 1200);
+    // Use a generous viewport to avoid overflows on CI/very_good runner
+    tester.view.physicalSize = const Size(1400, 2000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() => tester.view.reset());
 
@@ -57,18 +58,19 @@ void main() {
     late MockLoggingService mockLoggingService;
 
     setUp(() {
+      // Isolate GetIt state per test for optimized runners
+      GetIt.instance.pushNewScope();
       mockChatRepository = MockChatRepository();
       mockLoggingService = MockLoggingService();
       // default: empty eligible models
 
       // Register mock services with GetIt
-      if (!GetIt.instance.isRegistered<LoggingService>()) {
-        GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
-      }
+      GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
     });
 
-    tearDown(() {
-      GetIt.instance.reset();
+    tearDown(() async {
+      await GetIt.instance.resetScope();
+      await GetIt.instance.popScope();
     });
 
     testWidgets('displays empty state when no messages', (tester) async {

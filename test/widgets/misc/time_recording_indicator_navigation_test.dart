@@ -49,6 +49,8 @@ void main() {
   late MockNavService mockNavService;
 
   setUp(() {
+    // Isolate GetIt state per test to avoid cross-file contamination
+    getIt.pushNewScope();
     fakeTimeService = FakeTimeService();
     mockNavService = MockNavService();
 
@@ -57,9 +59,11 @@ void main() {
       ..registerSingleton<NavService>(mockNavService);
   });
 
-  tearDown(() {
+  tearDown(() async {
     fakeTimeService.dispose();
-    getIt.reset();
+    // Pop the scoped registrations for this test file
+    await getIt.resetScope();
+    await getIt.popScope();
   });
 
   JournalEntity makeEntry(String entryId) {

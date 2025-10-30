@@ -85,7 +85,8 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<Directory>(tempDir);
+      ..registerSingleton<Directory>(tempDir)
+      ..registerSingleton<AudioMetadataReader>((_) async => Duration.zero);
 
     // Default stub for logging
     when(
@@ -157,6 +158,9 @@ void main() {
     }
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
+    }
+    if (getIt.isRegistered<AudioMetadataReader>()) {
+      getIt.unregister<AudioMetadataReader>();
     }
   });
 
@@ -987,6 +991,28 @@ void main() {
       expect(captured.data.dateFrom, equals(lastModified));
     });
 
+    test('uses fallback metadata reader when none registered', () async {
+      // Arrange: remove injected reader to force default reader path
+      if (getIt.isRegistered<AudioMetadataReader>()) {
+        getIt.unregister<AudioMetadataReader>();
+      }
+
+      final testFile = await createTestAudioFile('fallback.m4a', 256);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act: default reader executes; errors are logged but do not abort import
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert: Entry creation proceeded
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).called(1);
+    });
+
     test('uses parsed timestamp in directory path', () async {
       // Arrange
       final testFile =
@@ -1006,6 +1032,71 @@ void main() {
       ).captured.single as JournalAudio;
 
       expect(captured.data.audioDirectory, equals('/audio/2025-03-15/'));
+    });
+
+    test('default metadata reader is bypassed in tests when flag set',
+        () async {
+      // Arrange: force default path and enable bypass
+      if (getIt.isRegistered<AudioMetadataReader>()) {
+        getIt.unregister<AudioMetadataReader>();
+      }
+      imageImportBypassMediaKitInTests = true;
+
+      final testFile = await createTestAudioFile('bypass.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert: entry creation proceeded without attempting media_kit
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).called(1);
+
+      // Cleanup flag
+      imageImportBypassMediaKitInTests = false;
+    });
+
+    test('selectAudioMetadataReader returns injected reader when registered',
+        () async {
+      // Arrange injected reader
+      if (getIt.isRegistered<AudioMetadataReader>()) {
+        getIt.unregister<AudioMetadataReader>();
+      }
+      getIt.registerSingleton<AudioMetadataReader>(
+        (_) async => const Duration(seconds: 42),
+      );
+
+      final reader = selectAudioMetadataReader();
+      final result = await reader('ignored');
+      expect(result, const Duration(seconds: 42));
+
+      getIt.unregister<AudioMetadataReader>();
+    });
+
+    test('selectAudioMetadataReader returns default when not registered',
+        () async {
+      if (getIt.isRegistered<AudioMetadataReader>()) {
+        getIt.unregister<AudioMetadataReader>();
+      }
+      imageImportBypassMediaKitInTests = true;
+      final reader = selectAudioMetadataReader();
+      final result = await reader('ignored');
+      expect(result, Duration.zero);
+      imageImportBypassMediaKitInTests = false;
+    });
+
+    test('computeAudioRelativePath and file name helpers return expected',
+        () async {
+      final ts = DateTime(2025, 10, 20, 16, 49, 32, 203);
+      final rel = computeAudioRelativePath(ts);
+      final name = computeAudioTargetFileName(ts, 'm4a');
+      expect(rel, '/audio/2025-10-20/');
+      expect(name, '2025-10-20_16-49-32-203.m4a');
     });
 
     test('uses parsed timestamp in target filename', () async {

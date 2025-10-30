@@ -507,16 +507,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   Future<List<JournalEntity>> _fetchPage(int pageKey) async {
     try {
-      final start = DateTime.now();
-      final newItems = await _runQuery(pageKey);
-      // The PagingController will use the returned list (newItems)
-      // to update its state, including pages, keys, and hasNextPage.
-
-      final duration2 = DateTime.now().difference(start).inMicroseconds / 1000;
-      debugPrint(
-        '_fetchPage ${showTasks ? 'TASK' : 'JOURNAL'} duration $duration2 ms, found ${newItems.length} items',
-      );
-      return newItems;
+      return _runQuery(pageKey);
     } catch (error, stackTrace) {
       if (kDebugMode) {
         print('Error in _fetchPage: $error\n$stackTrace');

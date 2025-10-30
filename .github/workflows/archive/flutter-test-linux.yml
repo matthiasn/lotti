@@ -2,8 +2,11 @@ name: Flutter Test
 
 on:
   push:
-    branches:
-      - '**'
+    branches: ["**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -12,7 +15,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -21,7 +24,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-      - uses: kuhnroyal/flutter-fvm-config-action@v2 
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
       - uses: subosito/flutter-action@v2
         with:

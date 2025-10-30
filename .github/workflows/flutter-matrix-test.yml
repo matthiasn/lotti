@@ -2,8 +2,11 @@ name: Flutter Matrix Integration Test
 
 on:
   push:
-    branches:
-      - '**'
+    branches: ["**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -12,7 +15,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -47,7 +50,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries

@@ -1,0 +1,42 @@
+name: Flutter Test (self-hosted)
+
+on:
+  push:
+    branches: ["**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Flutter Test on Linux (self-hosted)
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: kuhnroyal/flutter-fvm-config-action@v2 
+        id: fvm-config-action
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Run Flutter tests
+        run: flutter test --coverage --reporter=compact
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: matthiasn/lotti
+      - name: Clean up
+        if: always()
+        run: |
+          flutter clean || true
+          rm -rf .dart_tool || true

@@ -82,6 +82,8 @@ void main() {
   late MockDirectory mockDirectory;
 
   setUpAll(() {
+    // Isolate GetIt registrations within this test file
+    getIt.pushNewScope();
     registerFallbackValue(FakeAiConfigPrompt());
     registerFallbackValue(FakeAiConfigModel());
     registerFallbackValue(FakeAiConfigInferenceProvider());
@@ -91,6 +93,9 @@ void main() {
     registerFallbackValue(FakeAiResponseData());
     registerFallbackValue(fallbackJournalEntity);
   });
+
+  late Directory? baseTempDir;
+  late List<Directory> overrideTempDirs;
 
   setUp(() {
     mockRef = MockRef();
@@ -119,8 +124,10 @@ void main() {
       ..registerSingleton<Directory>(mockDirectory)
       ..registerSingleton<LoggingService>(mockLoggingService);
 
-    // Mock directory path
-    when(() => mockDirectory.path).thenReturn('/mock/documents');
+    // Mock directory path to writable temp location per test
+    baseTempDir = Directory.systemTemp.createTempSync('lotti_ai_integ_test_');
+    overrideTempDirs = <Directory>[];
+    when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
 
     when(() => mockRef.read(aiConfigRepositoryProvider))
         .thenReturn(mockAiConfigRepo);
@@ -138,6 +145,19 @@ void main() {
   });
 
   tearDown(() {
+    // Clean up temp directories created for this test
+    try {
+      if (baseTempDir != null && baseTempDir!.existsSync()) {
+        baseTempDir!.deleteSync(recursive: true);
+      }
+      for (final d in overrideTempDirs) {
+        if (d.existsSync()) {
+          d.deleteSync(recursive: true);
+        }
+      }
+      when(() => mockDirectory.path).thenReturn(Directory.systemTemp.path);
+    } catch (_) {}
+
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }
@@ -147,6 +167,11 @@ void main() {
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
+  });
+
+  tearDownAll(() async {
+    await getIt.resetScope();
+    await getIt.popScope();
   });
 
   group('Real Concurrent Scenarios Integration Tests', () {
@@ -789,6 +814,7 @@ void main() {
         () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('audio_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -897,6 +923,7 @@ void main() {
     test('Audio transcription handles entity not found gracefully', () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('audio_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -988,6 +1015,7 @@ void main() {
         () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('image_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -1095,6 +1123,7 @@ void main() {
         () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('image_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -1185,6 +1214,7 @@ void main() {
     test('Image analysis handles entity not found gracefully', () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('image_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);

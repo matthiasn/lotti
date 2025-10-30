@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:lotti/ui/app_fonts.dart';
 
 class VuMeterPainter extends CustomPainter {
   VuMeterPainter({
@@ -164,7 +164,7 @@ class VuMeterPainter extends CustomPainter {
       final textPainter = TextPainter(
         text: TextSpan(
           text: mark['label']! as String,
-          style: GoogleFonts.inconsolata(
+          style: AppFonts.inconsolata(
             color: isRed ? redColor : mainColor,
             fontSize: 10,
             fontWeight: FontWeight.w600,
@@ -229,7 +229,7 @@ class VuMeterPainter extends CustomPainter {
     final textPainter = TextPainter(
       text: TextSpan(
         text: 'VU',
-        style: GoogleFonts.inconsolata(
+        style: AppFonts.inconsolata(
           fontSize: 24,
           fontWeight: FontWeight.w300,
           color:
@@ -415,7 +415,7 @@ class VuMeterPainter extends CustomPainter {
     final textPainter = TextPainter(
       text: TextSpan(
         text: 'PEAK',
-        style: GoogleFonts.inconsolata(
+        style: AppFonts.inconsolata(
           color: isDarkMode
               ? colorScheme.primary.withValues(alpha: 0.8)
               : colorScheme.onSurface,

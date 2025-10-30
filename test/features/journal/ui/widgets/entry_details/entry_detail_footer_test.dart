@@ -27,7 +27,8 @@ void main() {
     final mockJournalDb = MockJournalDb();
     final mockTagsService = mockTagsServiceWithTags([]);
 
-    setUpAll(() {
+    setUpAll(() async {
+      await getIt.reset();
       final mockUpdateNotifications = MockUpdateNotifications();
       registerFallbackValue(FakeEntryText());
       registerFallbackValue(FakeQuillController());
@@ -89,6 +90,10 @@ void main() {
       ).thenAnswer(
         (_) => Stream<bool>.fromIterable([false]),
       );
+    });
+
+    tearDownAll(() async {
+      await getIt.reset();
     });
 
     testWidgets('map is invisible when not set in cubit',

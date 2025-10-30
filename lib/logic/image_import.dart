@@ -295,6 +295,49 @@ DateTime? _parseAudioFileTimestamp(String filename) {
   }
 }
 
+/// Function type for reading audio duration from a file.
+typedef AudioMetadataReader = Future<Duration> Function(String filePath);
+
+@visibleForTesting
+bool imageImportBypassMediaKitInTests = false;
+
+@visibleForTesting
+AudioMetadataReader selectAudioMetadataReader() {
+  return getIt.isRegistered<AudioMetadataReader>()
+      ? getIt<AudioMetadataReader>()
+      : _extractDurationWithMediaKit;
+}
+
+Future<Duration> _extractDurationWithMediaKit(String filePath) async {
+  Player? player;
+  try {
+    if (imageImportBypassMediaKitInTests) {
+      return Duration.zero;
+    }
+    player = Player();
+    await player.open(Media(filePath), play: false);
+    return await player.stream.duration
+        .firstWhere((d) => d > Duration.zero, orElse: () => Duration.zero)
+        .timeout(const Duration(seconds: 5), onTimeout: () => Duration.zero);
+  } finally {
+    await player?.dispose();
+  }
+}
+
+@visibleForTesting
+String computeAudioRelativePath(DateTime timestamp) {
+  final day =
+      DateFormat(AudioRecorderConstants.directoryDateFormat).format(timestamp);
+  return '${AudioRecorderConstants.audioDirectoryPrefix}$day/';
+}
+
+@visibleForTesting
+String computeAudioTargetFileName(DateTime timestamp, String extension) {
+  final base =
+      DateFormat(AudioRecorderConstants.fileNameDateFormat).format(timestamp);
+  return '$base.$extension';
+}
+
 /// Imports dropped audio files and creates audio journal entries
 ///
 /// Validates file extensions, size limits, and extracts audio duration before
@@ -349,37 +392,21 @@ Future<void> importDroppedAudio({
         continue;
       }
 
-      final day = DateFormat(AudioRecorderConstants.directoryDateFormat)
-          .format(timestamp);
-      final relativePath =
-          '${AudioRecorderConstants.audioDirectoryPrefix}$day/';
+      final relativePath = computeAudioRelativePath(timestamp);
       final directory = await createAssetDirectory(relativePath);
       final targetFileName =
-          '${DateFormat(AudioRecorderConstants.fileNameDateFormat).format(timestamp)}.$fileExtension';
+          computeAudioTargetFileName(timestamp, fileExtension);
       final targetFilePath = '$directory$targetFileName';
 
       // Copy file first
       await File(srcPath).copy(targetFilePath);
       copiedFilePath = targetFilePath;
 
-      // Extract audio duration using MediaKit with proper resource management
+      // Extract audio duration using injected metadata reader.
       var duration = Duration.zero;
-      Player? player;
       try {
-        player = Player();
-        await player.open(Media(targetFilePath), play: false);
-
-        // Wait for the duration to become available
-        // MediaKit needs time to parse the media file metadata
-        duration = await player.stream.duration
-            .firstWhere(
-              (d) => d > Duration.zero,
-              orElse: () => Duration.zero,
-            )
-            .timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => Duration.zero,
-            );
+        final reader = selectAudioMetadataReader();
+        duration = await reader(targetFilePath);
       } catch (exception, stackTrace) {
         // Log but continue with zero duration - can be updated later
         getIt<LoggingService>().captureException(
@@ -388,9 +415,6 @@ Future<void> importDroppedAudio({
           subDomain: 'importDroppedAudio_duration',
           stackTrace: stackTrace,
         );
-      } finally {
-        // Always dispose player to prevent resource leak
-        await player?.dispose();
       }
 
       final audioNote = AudioNote(

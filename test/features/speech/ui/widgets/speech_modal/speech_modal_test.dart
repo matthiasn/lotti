@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,14 +18,28 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final mockPathProvider = MockPathProviderPlatform();
+  late PathProviderPlatform originalPathProvider;
+  Directory? tempDir;
 
-  setUpAll(() {
+  setUpAll(() async {
+    originalPathProvider = PathProviderPlatform.instance;
     PathProviderPlatform.instance = mockPathProvider;
     registerFallbackValue(FakeJournalAudio());
 
     // Mock directory path
+    tempDir = await Directory.systemTemp.createTemp('lotti_speech_modal_test_');
     when(mockPathProvider.getApplicationDocumentsPath)
-        .thenAnswer((_) => Future.value('/mock/path'));
+        .thenAnswer((_) => Future.value(tempDir!.path));
+  });
+
+  tearDownAll(() async {
+    // Restore global platform and clean up
+    PathProviderPlatform.instance = originalPathProvider;
+    try {
+      if (tempDir != null && tempDir!.existsSync()) {
+        await tempDir!.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   test('SpeechModal exists and audio entry can be accessed', () {

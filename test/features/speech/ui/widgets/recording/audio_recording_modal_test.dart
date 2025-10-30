@@ -154,6 +154,8 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // Font downloads are centrally configured in test/flutter_test_config.dart
+
   late MockLoggingService mockLoggingService;
   late MockAudioPlayerCubit mockAudioPlayerCubit;
   late MockAudioRecorderRepository mockAudioRecorderRepository;

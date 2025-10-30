@@ -83,7 +83,8 @@ void main() {
     when(() => mockTagsService.getMatchingTags(any()))
         .thenAnswer((_) async => [testTag1]);
 
-    setUpAll(() {
+    setUpAll(() async {
+      await getIt.reset();
       registerFallbackValue(fallbackTagEntity);
       registerFallbackValue(fallbackSyncMessage);
       registerFallbackValue(fallbackJournalEntity);
@@ -134,6 +135,13 @@ void main() {
 
       when(() => mockJournalDb.journalEntityById(testTextEntryWithTags.meta.id))
           .thenAnswer((_) async => testTextEntryWithTags);
+    });
+
+    tearDownAll(() async {
+      if (getIt.isRegistered<LoggingDb>()) {
+        await getIt<LoggingDb>().close();
+      }
+      await getIt.reset();
     });
 
     testWidgets('tag copy and paste', (tester) async {

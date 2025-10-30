@@ -30,7 +30,8 @@ void main() {
     final mockEditorStateService = MockEditorStateService();
     final mockEntitiesCacheService = MockEntitiesCacheService();
 
-    setUpAll(() {
+    setUpAll(() async {
+      await getIt.reset();
       registerFallbackValue(FakeEntryText());
       registerFallbackValue(FakeQuillController());
 
@@ -95,6 +96,10 @@ void main() {
       ).thenAnswer(
         (_) => Stream<bool>.fromIterable([false]),
       );
+    });
+
+    tearDownAll(() async {
+      await getIt.reset();
     });
 
     testWidgets('tap star icon', (WidgetTester tester) async {
@@ -224,6 +229,9 @@ void main() {
 
       final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
       await tester.tap(moreHorizIconFinder);
+      // Give overlay animation an extra frame to complete to avoid
+      // transient debugNeedsLayout during hit testing on fractional translations.
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
       // The map action should be visible with the outlined icon initially
@@ -231,8 +239,9 @@ void main() {
       expect(mapIconFinder, findsOneWidget);
       expect(find.text('Show map'), findsOneWidget);
 
-      // Tap the map action
+      // Tap the map action (icon is in an overlay; ensure layout is stable first)
       await tester.ensureVisible(mapIconFinder);
+      await tester.pump();
       await tester.tap(mapIconFinder, warnIfMissed: false);
       await tester.pumpAndSettle();
     });
@@ -268,20 +277,20 @@ void main() {
       expect(mapIconOutlinedFinder, findsNothing);
       expect(mapIconFilledFinder, findsNothing);
     });
-  });
 
-  testWidgets('entry date is visible', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        EntryDetailHeader(
-          entryId: testTextEntry.meta.id,
+    testWidgets('entry date is visible', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailHeader(
+            entryId: testTextEntry.meta.id,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    final entryDateFromFinder =
-        find.text(dfShorter.format(testTextEntry.meta.dateFrom));
-    expect(entryDateFromFinder, findsOneWidget);
+      final entryDateFromFinder =
+          find.text(dfShorter.format(testTextEntry.meta.dateFrom));
+      expect(entryDateFromFinder, findsOneWidget);
+    });
   });
 }
