@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -49,6 +50,8 @@ class MockTimeService extends Mock implements TimeService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class FakeJournalImage extends Fake implements JournalImage {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -56,11 +59,16 @@ void main() {
   late MockSystemClipboard mockClipboard;
   late MockClipboardReader mockReader;
   late MockDataReaderFile mockFile;
+  late MockPersistenceLogic mockPersistenceLogic;
+  late MockLoggingService mockLoggingService;
 
   setUpAll(() async {
     // Isolate all registrations in a dedicated scope for this file
     getIt.pushNewScope();
     setFakeDocumentsPath();
+
+    // Mocktail fallback for typed argument matchers
+    registerFallbackValue(FakeJournalImage());
 
     // Clear any existing registrations to avoid conflicts with other tests
     if (getIt.isRegistered<Directory>()) {
@@ -100,20 +108,24 @@ void main() {
       getIt.unregister<LoggingService>();
     }
 
+    // Create and keep references to mocks we need to stub
+    mockPersistenceLogic = MockPersistenceLogic();
+    mockLoggingService = MockLoggingService();
+
     // Register all required mock services
     getIt
       ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
       ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
       ..registerSingleton<JournalDb>(MockJournalDb())
       ..registerSingleton<Fts5Db>(MockFts5Db())
-      ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<VectorClockService>(MockVectorClockService())
       ..registerSingleton<UpdateNotifications>(MockUpdateNotifications())
       ..registerSingleton<OutboxService>(MockOutboxService())
       ..registerSingleton<TagsService>(MockTagsService())
       ..registerSingleton<NotificationService>(MockNotificationService())
       ..registerSingleton<TimeService>(MockTimeService())
-      ..registerSingleton<LoggingService>(MockLoggingService());
+      ..registerSingleton<LoggingService>(mockLoggingService);
   });
 
   tearDownAll(() async {
@@ -171,6 +183,46 @@ void main() {
     );
 
     when(() => mockClipboard.read()).thenAnswer((_) async => mockReader);
+
+    // Stub persistence logic used by JournalRepository.createImageEntry
+    when(
+      () => mockPersistenceLogic.createMetadata(
+        dateFrom: any(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
+        uuidV5Input: any(named: 'uuidV5Input'),
+        flag: any(named: 'flag'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) async {
+      final now = DateTime.now();
+      return Metadata(
+        id: 'meta-id',
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      );
+    });
+
+    when(
+      () => mockPersistenceLogic.createDbEntity(
+        any<JournalImage>(that: isA<JournalImage>()),
+        linkedId: any(named: 'linkedId'),
+        shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+        enqueueSync: any(named: 'enqueueSync'),
+        addTags: any(named: 'addTags'),
+      ),
+    ).thenAnswer((_) async => true);
+
+    // Silence logging side effects
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String?>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   group('ImagePasteController', () {
