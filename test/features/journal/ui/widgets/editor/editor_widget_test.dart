@@ -32,7 +32,8 @@ void main() {
   group('EditorWidget', () {
     final mockTimeService = MockTimeService();
 
-    setUpAll(() {
+    setUpAll(() async {
+      await getIt.reset();
       final mockUpdateNotifications = MockUpdateNotifications();
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
@@ -51,6 +52,20 @@ void main() {
 
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDownAll(() async {
+      // Ensure databases are closed and service locator is reset
+      if (getIt.isRegistered<LoggingDb>()) {
+        await getIt<LoggingDb>().close();
+      }
+      if (getIt.isRegistered<JournalDb>()) {
+        await getIt<JournalDb>().close();
+      }
+      if (getIt.isRegistered<EditorDb>()) {
+        await getIt<EditorDb>().close();
+      }
+      await getIt.reset();
     });
 
     testWidgets('editor toolbar is invisible without autofocus',

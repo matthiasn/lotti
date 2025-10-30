@@ -112,6 +112,8 @@ void main() {
   late MockPromptCapabilityFilter mockPromptCapabilityFilter;
 
   setUpAll(() {
+    // Isolate registrations from other files when tests are optimized
+    getIt.pushNewScope();
     registerFallbackValue(FakeAiConfigPrompt());
     registerFallbackValue(FakeAiConfigModel());
     registerFallbackValue(FakeAiConfigInferenceProvider());
@@ -156,8 +158,9 @@ void main() {
       ..registerSingleton<Directory>(mockDirectory)
       ..registerSingleton<LoggingService>(mockLoggingService);
 
-    // Mock directory path
-    when(() => mockDirectory.path).thenReturn('/mock/documents');
+    // Mock directory path to a writable temp location (unique per test)
+    final baseTempDir = Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
+    when(() => mockDirectory.path).thenReturn(baseTempDir.path);
 
     // Setup mock ref to return mocked repositories
     when(() => mockRef.read(aiConfigRepositoryProvider))
@@ -188,6 +191,18 @@ void main() {
   });
 
   tearDown(() {
+    // Clean up temp directories if they were created
+    // Note: Only remove if it still exists and is empty-ish; ignore errors
+    try {
+      final p = getIt.isRegistered<Directory>() ? getIt<Directory>().path : null;
+      if (p != null) {
+        final d = Directory(p);
+        if (d.existsSync()) {
+          d.deleteSync(recursive: true);
+        }
+      }
+    } catch (_) {}
+
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }
@@ -197,6 +212,12 @@ void main() {
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
+  });
+
+  tearDownAll(() async {
+    // Pop scoped registrations for this file
+    await getIt.resetScope();
+    await getIt.popScope();
   });
 
   group('UnifiedAiInferenceRepository', () {

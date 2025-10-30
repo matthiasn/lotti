@@ -20,6 +20,7 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
+
 // Fakes
 class FakeJournalImage extends Fake implements JournalImage {}
 
@@ -85,7 +86,8 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<Directory>(tempDir);
+      ..registerSingleton<Directory>(tempDir)
+      ..registerSingleton<AudioMetadataReader>((_) async => Duration.zero);
 
     // Default stub for logging
     when(
@@ -157,6 +159,9 @@ void main() {
     }
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
+    }
+    if (getIt.isRegistered<AudioMetadataReader>()) {
+      getIt.unregister<AudioMetadataReader>();
     }
   });
 

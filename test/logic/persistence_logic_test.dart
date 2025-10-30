@@ -157,6 +157,14 @@ void main() {
       await getIt.reset();
     });
 
+    // Ensure Directory registration is fresh per test to avoid cross-file overrides
+    setUp(() async {
+      if (getIt.isRegistered<Directory>()) {
+        getIt.unregister<Directory>();
+      }
+      getIt.registerSingleton<Directory>(await getApplicationDocumentsDirectory());
+    });
+
     tearDown(() {
       clearInteractions(mockNotificationService);
       clearInteractions(mockUpdateNotifications);

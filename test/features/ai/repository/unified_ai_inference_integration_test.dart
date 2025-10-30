@@ -82,6 +82,8 @@ void main() {
   late MockDirectory mockDirectory;
 
   setUpAll(() {
+    // Isolate GetIt registrations within this test file
+    getIt.pushNewScope();
     registerFallbackValue(FakeAiConfigPrompt());
     registerFallbackValue(FakeAiConfigModel());
     registerFallbackValue(FakeAiConfigInferenceProvider());
@@ -119,8 +121,9 @@ void main() {
       ..registerSingleton<Directory>(mockDirectory)
       ..registerSingleton<LoggingService>(mockLoggingService);
 
-    // Mock directory path
-    when(() => mockDirectory.path).thenReturn('/mock/documents');
+    // Mock directory path to writable temp location per test
+    final baseTempDir = Directory.systemTemp.createTempSync('lotti_ai_integ_test_');
+    when(() => mockDirectory.path).thenReturn(baseTempDir.path);
 
     when(() => mockRef.read(aiConfigRepositoryProvider))
         .thenReturn(mockAiConfigRepo);
@@ -138,6 +141,17 @@ void main() {
   });
 
   tearDown(() {
+    // Clean up temp directories created for this test
+    try {
+      final p = getIt.isRegistered<Directory>() ? getIt<Directory>().path : null;
+      if (p != null) {
+        final d = Directory(p);
+        if (d.existsSync()) {
+          d.deleteSync(recursive: true);
+        }
+      }
+    } catch (_) {}
+
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }
@@ -147,6 +161,11 @@ void main() {
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
+  });
+
+  tearDownAll(() async {
+    await getIt.resetScope();
+    await getIt.popScope();
   });
 
   group('Real Concurrent Scenarios Integration Tests', () {

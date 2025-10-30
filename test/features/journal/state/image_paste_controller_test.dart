@@ -238,6 +238,10 @@ void main() {
 
       await controller.paste();
 
+      // Ensure async work triggered by paste completes to avoid interactions
+      // with tearDown/other suites that may reset GetIt.
+      await pumpEventQueue();
+
       verify(() => mockReader.getFile(Formats.png, any())).called(1);
       verify(() => mockFile.readAll()).called(1);
     });
@@ -265,6 +269,9 @@ void main() {
       );
 
       await controller.paste();
+
+      // Ensure any pending async completes before expectations/teardown
+      await pumpEventQueue();
 
       verify(() => mockReader.getFile(Formats.jpeg, any())).called(1);
       verify(() => mockFile.readAll()).called(1);
@@ -294,6 +301,9 @@ void main() {
       );
 
       await controller.paste();
+
+      // Ensure any pending async completes before expectations/teardown
+      await pumpEventQueue();
 
       verify(() => mockReader.getFile(Formats.jpeg, any())).called(1);
       verify(() => mockFile.readAll()).called(1);

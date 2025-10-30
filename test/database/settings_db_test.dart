@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 
@@ -5,6 +6,8 @@ void main() {
   late SettingsDb db;
 
   setUp(() {
+    // Avoid drift warning when optimizer reuses isolates
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     db = SettingsDb(inMemoryDatabase: true);
   });
 

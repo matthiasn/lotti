@@ -24,7 +24,8 @@ void main() {
     final mockTagsService = mockTagsServiceWithTags([]);
     final mockEditorStateService = MockEditorStateService();
 
-    setUpAll(() {
+    setUpAll(() async {
+      await getIt.reset();
       final mockUpdateNotifications = MockUpdateNotifications();
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
@@ -52,6 +53,10 @@ void main() {
       ).thenAnswer(
         (_) => Stream<bool>.fromIterable([false]),
       );
+    });
+
+    tearDownAll(() async {
+      await getIt.reset();
     });
 
     testWidgets('tap entry date opens modal', (WidgetTester tester) async {

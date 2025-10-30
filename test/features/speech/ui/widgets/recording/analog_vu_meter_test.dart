@@ -8,6 +8,8 @@ import '../../../../../widget_test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // Font downloads are centrally configured in test/flutter_test_config.dart
+
   group('AnalogVuMeter Tests', () {
     Widget makeTestableWidget({
       required double vu,

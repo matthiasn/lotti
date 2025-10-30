@@ -59,6 +59,8 @@ void main() {
     });
 
     setUp(() async {
+      // Ensure a clean service locator before each test in this file
+      await getIt.reset();
       mockJournalDb = mockJournalDbWithMeasurableTypes([
         measurableWater,
         measurableChocolate,
