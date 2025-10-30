@@ -324,6 +324,20 @@ Future<Duration> _extractDurationWithMediaKit(String filePath) async {
   }
 }
 
+@visibleForTesting
+String computeAudioRelativePath(DateTime timestamp) {
+  final day =
+      DateFormat(AudioRecorderConstants.directoryDateFormat).format(timestamp);
+  return '${AudioRecorderConstants.audioDirectoryPrefix}$day/';
+}
+
+@visibleForTesting
+String computeAudioTargetFileName(DateTime timestamp, String extension) {
+  final base =
+      DateFormat(AudioRecorderConstants.fileNameDateFormat).format(timestamp);
+  return '$base.$extension';
+}
+
 /// Imports dropped audio files and creates audio journal entries
 ///
 /// Validates file extensions, size limits, and extracts audio duration before
@@ -378,13 +392,10 @@ Future<void> importDroppedAudio({
         continue;
       }
 
-      final day = DateFormat(AudioRecorderConstants.directoryDateFormat)
-          .format(timestamp);
-      final relativePath =
-          '${AudioRecorderConstants.audioDirectoryPrefix}$day/';
+      final relativePath = computeAudioRelativePath(timestamp);
       final directory = await createAssetDirectory(relativePath);
       final targetFileName =
-          '${DateFormat(AudioRecorderConstants.fileNameDateFormat).format(timestamp)}.$fileExtension';
+          computeAudioTargetFileName(timestamp, fileExtension);
       final targetFilePath = '$directory$targetFileName';
 
       // Copy file first

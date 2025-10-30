@@ -1090,6 +1090,15 @@ void main() {
       imageImportBypassMediaKitInTests = false;
     });
 
+    test('computeAudioRelativePath and file name helpers return expected',
+        () async {
+      final ts = DateTime(2025, 10, 20, 16, 49, 32, 203);
+      final rel = computeAudioRelativePath(ts);
+      final name = computeAudioTargetFileName(ts, 'm4a');
+      expect(rel, '/audio/2025-10-20/');
+      expect(name, '2025-10-20_16-49-32-203.m4a');
+    });
+
     test('uses parsed timestamp in target filename', () async {
       // Arrange
       final testFile =
