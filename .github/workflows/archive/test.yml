@@ -22,7 +22,7 @@ jobs:
           lein: 2.9.1
       - name: Check leiningen version
         run: lein -v
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
       - uses: actions/setup-node@v1
