@@ -301,12 +301,19 @@ typedef AudioMetadataReader = Future<Duration> Function(String filePath);
 @visibleForTesting
 bool imageImportBypassMediaKitInTests = false;
 
+@visibleForTesting
+AudioMetadataReader selectAudioMetadataReader() {
+  return getIt.isRegistered<AudioMetadataReader>()
+      ? getIt<AudioMetadataReader>()
+      : _extractDurationWithMediaKit;
+}
+
 Future<Duration> _extractDurationWithMediaKit(String filePath) async {
-  if (imageImportBypassMediaKitInTests) {
-    return Duration.zero;
-  }
   Player? player;
   try {
+    if (imageImportBypassMediaKitInTests) {
+      return Duration.zero;
+    }
     player = Player();
     await player.open(Media(filePath), play: false);
     return await player.stream.duration
@@ -387,9 +394,7 @@ Future<void> importDroppedAudio({
       // Extract audio duration using injected metadata reader.
       var duration = Duration.zero;
       try {
-        final reader = getIt.isRegistered<AudioMetadataReader>()
-            ? getIt<AudioMetadataReader>()
-            : _extractDurationWithMediaKit;
+        final reader = selectAudioMetadataReader();
         duration = await reader(targetFilePath);
       } catch (exception, stackTrace) {
         // Log but continue with zero duration - can be updated later

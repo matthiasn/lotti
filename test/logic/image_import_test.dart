@@ -1061,6 +1061,35 @@ void main() {
       imageImportBypassMediaKitInTests = false;
     });
 
+    test('selectAudioMetadataReader returns injected reader when registered',
+        () async {
+      // Arrange injected reader
+      if (getIt.isRegistered<AudioMetadataReader>()) {
+        getIt.unregister<AudioMetadataReader>();
+      }
+      getIt.registerSingleton<AudioMetadataReader>(
+        (_) async => const Duration(seconds: 42),
+      );
+
+      final reader = selectAudioMetadataReader();
+      final result = await reader('ignored');
+      expect(result, const Duration(seconds: 42));
+
+      getIt.unregister<AudioMetadataReader>();
+    });
+
+    test('selectAudioMetadataReader returns default when not registered',
+        () async {
+      if (getIt.isRegistered<AudioMetadataReader>()) {
+        getIt.unregister<AudioMetadataReader>();
+      }
+      imageImportBypassMediaKitInTests = true;
+      final reader = selectAudioMetadataReader();
+      final result = await reader('ignored');
+      expect(result, Duration.zero);
+      imageImportBypassMediaKitInTests = false;
+    });
+
     test('uses parsed timestamp in target filename', () async {
       // Arrange
       final testFile =

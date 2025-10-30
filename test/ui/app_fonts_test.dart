@@ -43,5 +43,12 @@ void main() {
     expect(
         AppFonts.inclusiveSansFamily(), GoogleFonts.inclusiveSans().fontFamily);
   });
+
+  test('inconsolata returns a style with defaults when no args', () {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    final style = AppFonts.inconsolata();
+    expect(style, isA<TextStyle>());
+    expect(style.fontFamily, 'Inconsolata');
+  });
 }
 // End of file
