@@ -130,8 +130,8 @@ void main() {
     }
     stopwatch.stop();
 
-    expect(stopwatch.elapsedMilliseconds, lessThan(10000),
-        reason: 'Reconciliation should complete under 10s for 500 tasks');
+    expect(stopwatch.elapsedMilliseconds, lessThan(5000),
+        reason: 'Reconciliation should complete under 5s for 500 tasks');
 
     // Verify labeled table populated
     final labeled = await db.labeledForJournal('task-0').get();
