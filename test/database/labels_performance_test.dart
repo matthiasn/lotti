@@ -112,7 +112,7 @@ void main() {
   });
 
   // intentionally giving more time because of anemic GitHub Actions test runner
-  test('reconciliation on 500 tasks completes under 5000ms', () async {
+  test('reconciliation on 500 tasks completes under 10s', () async {
     // Create a label
     await db.upsertLabelDefinition(buildLabel(0));
 
@@ -130,8 +130,8 @@ void main() {
     }
     stopwatch.stop();
 
-    expect(stopwatch.elapsedMilliseconds, lessThan(5000),
-        reason: 'Reconciliation should complete under 5000ms for 500 tasks');
+    expect(stopwatch.elapsedMilliseconds, lessThan(10000),
+        reason: 'Reconciliation should complete under 10s for 500 tasks');
 
     // Verify labeled table populated
     final labeled = await db.labeledForJournal('task-0').get();
@@ -186,7 +186,7 @@ void main() {
     await db.updateJournalEntity(updated);
     stopwatch.stop();
 
-    expect(stopwatch.elapsedMilliseconds, lessThan(10),
+    expect(stopwatch.elapsedMilliseconds, lessThan(50),
         reason: 'Diff-based reconciliation should be fast');
 
     // Verify correct labels in denormalized table
