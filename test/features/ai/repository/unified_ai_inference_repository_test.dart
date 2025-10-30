@@ -129,6 +129,9 @@ void main() {
     registerFallbackValue(FakeChecklistItemData());
   });
 
+  late Directory? baseTempDir;
+  late List<Directory> overrideTempDirs;
+
   setUp(() {
     mockRef = MockRef();
     mockAiConfigRepo = MockAiConfigRepository();
@@ -159,9 +162,9 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService);
 
     // Mock directory path to a writable temp location (unique per test)
-    final baseTempDir =
-        Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
-    when(() => mockDirectory.path).thenReturn(baseTempDir.path);
+    baseTempDir = Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
+    overrideTempDirs = <Directory>[];
+    when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
 
     // Setup mock ref to return mocked repositories
     when(() => mockRef.read(aiConfigRepositoryProvider))
@@ -195,14 +198,18 @@ void main() {
     // Clean up temp directories if they were created
     // Note: Only remove if it still exists and is empty-ish; ignore errors
     try {
-      final p =
-          getIt.isRegistered<Directory>() ? getIt<Directory>().path : null;
-      if (p != null) {
-        final d = Directory(p);
+      // Always attempt to remove the base temp dir
+      if (baseTempDir != null && baseTempDir!.existsSync()) {
+        baseTempDir!.deleteSync(recursive: true);
+      }
+      // Remove any override dirs registered by tests
+      for (final d in overrideTempDirs) {
         if (d.existsSync()) {
           d.deleteSync(recursive: true);
         }
       }
+      // Reset stub so following tests don't reuse an overridden path
+      when(() => mockDirectory.path).thenReturn(Directory.systemTemp.path);
     } catch (_) {}
 
     if (getIt.isRegistered<JournalDb>()) {
@@ -1342,6 +1349,7 @@ void main() {
       test('successfully runs inference with images', () async {
         // Create a temporary directory for the test
         final tempDir = Directory.systemTemp.createTempSync('image_test');
+        overrideTempDirs.add(tempDir);
 
         // Update the mock directory to point to our temp directory
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -1481,6 +1489,7 @@ void main() {
       test('successfully runs inference with audio', () async {
         // Create a temporary directory for the test
         final tempDir = Directory.systemTemp.createTempSync('audio_test');
+        overrideTempDirs.add(tempDir);
 
         // Update the mock directory to point to our temp directory
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -2741,6 +2750,7 @@ Remaining steps:
 
       test('image analysis appends to existing entry text', () async {
         final tempDir = Directory.systemTemp.createTempSync('image_test');
+        overrideTempDirs.add(tempDir);
 
         // Update the mock directory to point to our temp directory
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -2884,6 +2894,7 @@ Remaining steps:
 
       test('image analysis works correctly with empty entry text', () async {
         final tempDir = Directory.systemTemp.createTempSync('image_test');
+        overrideTempDirs.add(tempDir);
 
         // Update the mock directory to point to our temp directory
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -3027,6 +3038,7 @@ Remaining steps:
         );
 
         final tempDir = Directory.systemTemp.createTempSync('audio_test');
+        overrideTempDirs.add(tempDir);
         when(() => mockDirectory.path).thenReturn(tempDir.path);
 
         // Create the audio directory and file
@@ -3230,6 +3242,7 @@ Remaining steps:
       test('image analysis uses task context when linked to a task', () async {
         // Create a temporary directory for the test
         final tempDir = Directory.systemTemp.createTempSync('image_task_test');
+        overrideTempDirs.add(tempDir);
 
         // Update the mock directory to point to our temp directory
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -3428,6 +3441,7 @@ If the image IS relevant:
         // Create a temporary directory for the test
         final tempDir =
             Directory.systemTemp.createTempSync('image_generic_test');
+        overrideTempDirs.add(tempDir);
 
         // Update the mock directory to point to our temp directory
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -3561,6 +3575,7 @@ Extract ONLY information from the image that is relevant to this task. Be concis
           () async {
         // Create a temporary directory for the test
         final tempDir = Directory.systemTemp.createTempSync('audio_task_test');
+        overrideTempDirs.add(tempDir);
 
         // Update the mock directory to point to our temp directory
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -3736,6 +3751,7 @@ be consulted to ensure accuracy.''',
         // Create a temporary directory for the test
         final tempDir =
             Directory.systemTemp.createTempSync('audio_no_task_test');
+        overrideTempDirs.add(tempDir);
 
         // Update the mock directory to point to our temp directory
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -4221,6 +4237,7 @@ Take into account the following task context:
         () async {
       // Create temporary directory for the test
       final tempDir = Directory.systemTemp.createTempSync('image_test');
+      overrideTempDirs.add(tempDir);
 
       // Update the mock directory to point to our temp directory
       when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -4339,6 +4356,7 @@ Take into account the following task context:
         () async {
       // Create temporary directory for the test
       final tempDir = Directory.systemTemp.createTempSync('audio_test');
+      overrideTempDirs.add(tempDir);
 
       // Update the mock directory to point to our temp directory
       when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -4469,6 +4487,7 @@ Take into account the following task context:
         () async {
       // Create temporary directory for the test
       final tempDir = Directory.systemTemp.createTempSync('image_test');
+      overrideTempDirs.add(tempDir);
 
       // Update the mock directory to point to our temp directory
       when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -4606,6 +4625,7 @@ Take into account the following task context:
         () async {
       // Create temporary directory for the test
       final tempDir = Directory.systemTemp.createTempSync('audio_test');
+      overrideTempDirs.add(tempDir);
 
       // Update the mock directory to point to our temp directory
       when(() => mockDirectory.path).thenReturn(tempDir.path);

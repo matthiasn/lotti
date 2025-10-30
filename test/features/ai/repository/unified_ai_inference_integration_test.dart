@@ -94,6 +94,9 @@ void main() {
     registerFallbackValue(fallbackJournalEntity);
   });
 
+  late Directory? baseTempDir;
+  late List<Directory> overrideTempDirs;
+
   setUp(() {
     mockRef = MockRef();
     mockAiConfigRepo = MockAiConfigRepository();
@@ -122,9 +125,9 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService);
 
     // Mock directory path to writable temp location per test
-    final baseTempDir =
-        Directory.systemTemp.createTempSync('lotti_ai_integ_test_');
-    when(() => mockDirectory.path).thenReturn(baseTempDir.path);
+    baseTempDir = Directory.systemTemp.createTempSync('lotti_ai_integ_test_');
+    overrideTempDirs = <Directory>[];
+    when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
 
     when(() => mockRef.read(aiConfigRepositoryProvider))
         .thenReturn(mockAiConfigRepo);
@@ -144,14 +147,15 @@ void main() {
   tearDown(() {
     // Clean up temp directories created for this test
     try {
-      final p =
-          getIt.isRegistered<Directory>() ? getIt<Directory>().path : null;
-      if (p != null) {
-        final d = Directory(p);
+      if (baseTempDir != null && baseTempDir!.existsSync()) {
+        baseTempDir!.deleteSync(recursive: true);
+      }
+      for (final d in overrideTempDirs) {
         if (d.existsSync()) {
           d.deleteSync(recursive: true);
         }
       }
+      when(() => mockDirectory.path).thenReturn(Directory.systemTemp.path);
     } catch (_) {}
 
     if (getIt.isRegistered<JournalDb>()) {
@@ -810,6 +814,7 @@ void main() {
         () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('audio_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -918,6 +923,7 @@ void main() {
     test('Audio transcription handles entity not found gracefully', () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('audio_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -1009,6 +1015,7 @@ void main() {
         () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('image_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -1116,6 +1123,7 @@ void main() {
         () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('image_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);
@@ -1206,6 +1214,7 @@ void main() {
     test('Image analysis handles entity not found gracefully', () async {
       // Create temporary directory and files
       final tempDir = Directory.systemTemp.createTempSync('image_test');
+      overrideTempDirs.add(tempDir);
 
       try {
         when(() => mockDirectory.path).thenReturn(tempDir.path);
