@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modal_card.dart';
 import 'package:lotti/widgets/modal/animated_modal_item_controller.dart';
 
@@ -11,12 +12,11 @@ void main() {
       double? elevation,
       Color? shadowColor,
       Color? backgroundColor,
+      Color? borderColor,
       ThemeData? theme,
       VoidCallback? onTap,
       bool isDisabled = false,
       AnimatedModalItemController? animationController,
-      BoxBorder? border,
-      BorderRadius? borderRadius,
     }) {
       return MaterialApp(
         theme: theme ?? ThemeData.light(),
@@ -25,11 +25,10 @@ void main() {
             child: ModalCard(
               padding: padding,
               backgroundColor: backgroundColor,
+              borderColor: borderColor,
               onTap: onTap,
               isDisabled: isDisabled,
               animationController: animationController,
-              border: border,
-              borderRadius: borderRadius,
               child: child,
             ),
           ),
@@ -307,61 +306,54 @@ void main() {
 
     // Border and animation tests
     group('border and borderRadius', () {
-      testWidgets('applies custom border when provided', (tester) async {
-        final customBorder = Border.all(color: Colors.red, width: 3);
-
+      testWidgets('applies borderColor when provided', (tester) async {
         await tester.pumpWidget(
           createTestWidget(
-            border: customBorder,
+            borderColor: Colors.red,
             child: const Text('Bordered Card'),
           ),
         );
 
-        // Find the outer Container that wraps the Card
-        final containers = find.byType(Container);
-        expect(containers, findsWidgets);
-
-        // The outer container should have the border decoration
-        final outerContainer = tester.widgetList<Container>(containers).first;
-        final decoration = outerContainer.decoration as BoxDecoration?;
-
-        expect(decoration, isNotNull);
-        expect(decoration!.border, equals(customBorder));
+        final card = tester.widget<Card>(find.byType(Card));
+        final shape = card.shape! as RoundedRectangleBorder;
+        expect(shape.side.color, equals(Colors.red));
+        expect(shape.side.width, equals(1.0));
       });
 
-      testWidgets('applies custom borderRadius when provided', (tester) async {
-        const customBorderRadius = BorderRadius.all(Radius.circular(16));
-
+      testWidgets('uses default borderRadius with borderColor', (tester) async {
         await tester.pumpWidget(
           createTestWidget(
-            borderRadius: customBorderRadius,
+            borderColor: Colors.green,
             child: const Text('Rounded Card'),
           ),
         );
 
         expect(find.text('Rounded Card'), findsOneWidget);
-        // BorderRadius is applied to both Container and Card shape
+        final card = tester.widget<Card>(find.byType(Card));
+        final shape = card.shape! as RoundedRectangleBorder;
+        expect(
+          shape.borderRadius,
+          equals(BorderRadius.circular(AppTheme.cardBorderRadius)),
+        );
       });
 
-      testWidgets('combines border and borderRadius correctly', (tester) async {
-        final customBorder = Border.all(color: Colors.blue, width: 2);
-        const customBorderRadius = BorderRadius.all(Radius.circular(12));
-
+      testWidgets('applies borderColor with default borderRadius',
+          (tester) async {
         await tester.pumpWidget(
           createTestWidget(
-            border: customBorder,
-            borderRadius: customBorderRadius,
+            borderColor: Colors.blue,
             child: const Text('Border with Radius'),
           ),
         );
 
-        final containers = find.byType(Container);
-        final outerContainer = tester.widgetList<Container>(containers).first;
-        final decoration = outerContainer.decoration as BoxDecoration?;
-
-        expect(decoration, isNotNull);
-        expect(decoration!.border, equals(customBorder));
-        expect(decoration.borderRadius, equals(customBorderRadius));
+        final card = tester.widget<Card>(find.byType(Card));
+        final shape = card.shape! as RoundedRectangleBorder;
+        expect(shape.side.color, equals(Colors.blue));
+        expect(shape.side.width, equals(1.0));
+        expect(
+          shape.borderRadius,
+          equals(BorderRadius.circular(AppTheme.cardBorderRadius)),
+        );
       });
 
       testWidgets('works without border (null border)', (tester) async {
