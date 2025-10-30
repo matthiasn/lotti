@@ -137,15 +137,7 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
         backgroundColor: widget.isDefault
             ? goldColor.withValues(alpha: 0.12)
             : context.colorScheme.surfaceContainerHighest,
-        border: widget.isDefault
-            ? Border.all(
-                color: goldColor.withValues(alpha: 0.6),
-                width: 2,
-              )
-            : null,
-        borderRadius: widget.isDefault
-            ? BorderRadius.circular(AppTheme.cardBorderRadius)
-            : null,
+        borderColor: widget.isDefault ? goldColor.withValues(alpha: 0.6) : null,
         onTap: widget.onTap,
         isDisabled: widget.isDisabled,
         animationController: controller,
