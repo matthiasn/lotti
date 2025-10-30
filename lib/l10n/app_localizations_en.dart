@@ -1328,6 +1328,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadAiConfigDelete => 'AI configuration delete';
 
   @override
+  String get syncPayloadThemingSelection => 'Theming selection';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,

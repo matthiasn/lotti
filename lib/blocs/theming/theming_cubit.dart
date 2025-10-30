@@ -34,12 +34,32 @@ class ThemingCubit extends Cubit<ThemingState> {
       _enableTooltips = enableTooltips;
       emitState();
     });
+    _watchThemePrefsUpdates();
   }
 
   bool _enableTooltips = false;
   final _debounceKey = 'theming.sync.${identityHashCode(Object())}';
+  bool _isApplyingSyncedChanges = false;
+  StreamSubscription<List<SettingsItem>>? _themePrefsSubscription;
+
+  void _watchThemePrefsUpdates() {
+    _themePrefsSubscription = getIt<SettingsDb>()
+        .watchSettingsItemByKey(themePrefsUpdatedAtKey)
+        .listen((items) async {
+      if (items.isNotEmpty && !_isApplyingSyncedChanges) {
+        _isApplyingSyncedChanges = true;
+        await _loadSelectedSchemes();
+        _isApplyingSyncedChanges = false;
+      }
+    });
+  }
 
   void _enqueueSyncMessage() {
+    // Skip enqueuing sync messages when applying synced changes
+    if (_isApplyingSyncedChanges) {
+      return;
+    }
+
     EasyDebounce.debounce(
       _debounceKey,
       const Duration(milliseconds: 250),
@@ -171,6 +191,7 @@ class ThemingCubit extends Cubit<ThemingState> {
 
   @override
   Future<void> close() async {
+    await _themePrefsSubscription?.cancel();
     await super.close();
   }
 }
