@@ -298,7 +298,13 @@ DateTime? _parseAudioFileTimestamp(String filename) {
 /// Function type for reading audio duration from a file.
 typedef AudioMetadataReader = Future<Duration> Function(String filePath);
 
+@visibleForTesting
+bool imageImportBypassMediaKitInTests = false;
+
 Future<Duration> _extractDurationWithMediaKit(String filePath) async {
+  if (imageImportBypassMediaKitInTests) {
+    return Duration.zero;
+  }
   Player? player;
   try {
     player = Player();

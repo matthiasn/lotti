@@ -1034,6 +1034,33 @@ void main() {
       expect(captured.data.audioDirectory, equals('/audio/2025-03-15/'));
     });
 
+    test('default metadata reader is bypassed in tests when flag set',
+        () async {
+      // Arrange: force default path and enable bypass
+      if (getIt.isRegistered<AudioMetadataReader>()) {
+        getIt.unregister<AudioMetadataReader>();
+      }
+      imageImportBypassMediaKitInTests = true;
+
+      final testFile = await createTestAudioFile('bypass.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      // Act
+      await importDroppedAudio(data: dropDetails);
+
+      // Assert: entry creation proceeded without attempting media_kit
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).called(1);
+
+      // Cleanup flag
+      imageImportBypassMediaKitInTests = false;
+    });
+
     test('uses parsed timestamp in target filename', () async {
       // Arrange
       final testFile =
