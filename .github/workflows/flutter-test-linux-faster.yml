@@ -1,0 +1,39 @@
+name: Flutter Test (very_good)
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    name: Flutter Test on Linux (very_good)
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install network-manager libmpv-dev
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: kuhnroyal/flutter-fvm-config-action@v2 
+        id: fvm-config-action
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Activate very_good_cli
+        run: dart pub global activate very_good_cli
+      - name: Run Flutter tests
+        run: very_good test --coverage
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: matthiasn/lotti
