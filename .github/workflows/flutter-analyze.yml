@@ -15,10 +15,10 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - name: Update apt-get
-        run: sudo apt-get update
-      - name: Install libraries
-        run: sudo apt-get install network-manager
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: network-manager
+          version: 1.0
       - uses: actions/checkout@v5
       - name: Cache Pub Packages
         uses: actions/cache@v3
@@ -31,5 +31,6 @@ jobs:
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
       - name: Run Flutter Analyze
         run: flutter analyze
