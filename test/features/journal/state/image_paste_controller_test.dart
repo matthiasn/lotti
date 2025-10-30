@@ -58,6 +58,8 @@ void main() {
   late MockDataReaderFile mockFile;
 
   setUpAll(() async {
+    // Isolate all registrations in a dedicated scope for this file
+    getIt.pushNewScope();
     setFakeDocumentsPath();
 
     // Clear any existing registrations to avoid conflicts with other tests
@@ -114,7 +116,10 @@ void main() {
       ..registerSingleton<LoggingService>(MockLoggingService());
   });
 
-  tearDownAll(() {
+  tearDownAll(() async {
+    // Pop the scope and dispose resources
+    await getIt.resetScope();
+    await getIt.popScope();
     // Clean up GetIt registrations
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
