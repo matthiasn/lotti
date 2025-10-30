@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
-          version: 1.0
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -57,10 +57,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
-          version: 1.0
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
