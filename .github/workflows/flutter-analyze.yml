@@ -20,7 +20,12 @@ jobs:
       - name: Install libraries
         run: sudo apt-get install network-manager
       - uses: actions/checkout@v5
-      - uses: kuhnroyal/flutter-fvm-config-action@v2 
+      - name: Cache Pub Packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
       - uses: subosito/flutter-action@v2
         with:
