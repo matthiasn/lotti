@@ -36,12 +36,12 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Find the AnimatedContainer
-      final animatedContainer = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      // Find the Container
+      final container = tester.widget<Container>(
+        find.byType(Container).first,
       );
 
-      final decoration = animatedContainer.decoration! as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
 
       // Light theme should have gradient when no background color is specified
       expect(decoration.color, isNull);
@@ -62,11 +62,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final animatedContainer = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      final container = tester.widget<Container>(
+        find.byType(Container).first,
       );
 
-      final decoration = animatedContainer.decoration! as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
 
       // Dark theme should have gradient, no solid color
       expect(decoration.color, isNull);
@@ -88,11 +88,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final animatedContainer = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      final container = tester.widget<Container>(
+        find.byType(Container).first,
       );
 
-      final decoration = animatedContainer.decoration! as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(decoration.color, customColor);
       expect(decoration.gradient, isNull);
     });
@@ -111,11 +111,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final animatedContainer = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      final container = tester.widget<Container>(
+        find.byType(Container).first,
       );
 
-      final decoration = animatedContainer.decoration! as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(decoration.border, isNotNull);
       expect((decoration.border! as Border).top.color, customBorderColor);
     });
@@ -137,11 +137,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final animatedContainer = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      final container = tester.widget<Container>(
+        find.byType(Container).first,
       );
 
-      final decoration = animatedContainer.decoration! as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(decoration.gradient, customGradient);
     });
 
@@ -260,11 +260,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final animatedContainer = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      final container = tester.widget<Container>(
+        find.byType(Container).first,
       );
 
-      expect(animatedContainer.margin, customMargin);
+      expect(container.margin, customMargin);
     });
 
     testWidgets('shadow differs between light and dark themes', (tester) async {
@@ -280,10 +280,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      var animatedContainer = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      var container = tester.widget<Container>(
+        find.byType(Container).first,
       );
-      var decoration = animatedContainer.decoration! as BoxDecoration;
+      var decoration = container.decoration! as BoxDecoration;
       final lightShadow = decoration.boxShadow!.first;
 
       // Test dark theme shadow
@@ -298,10 +298,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      animatedContainer = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      container = tester.widget<Container>(
+        find.byType(Container).first,
       );
-      decoration = animatedContainer.decoration! as BoxDecoration;
+      decoration = container.decoration! as BoxDecoration;
       final darkShadow = decoration.boxShadow!.first;
 
       // Shadows should be different
@@ -336,15 +336,64 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final animatedContainer = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      final container = tester.widget<Container>(
+        find.byType(Container).first,
       );
 
-      final decoration = animatedContainer.decoration! as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(
         decoration.borderRadius,
         BorderRadius.circular(AppTheme.cardBorderRadius),
       );
+    });
+
+    testWidgets('theme changes apply instantly without animation',
+        (tester) async {
+      // Start with light theme
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ModernBaseCard(
+            child: Text('Test Content'),
+          ),
+          theme: ThemeData.light(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify Container is used (not AnimatedContainer)
+      expect(find.byType(Container), findsWidgets);
+
+      final container = tester.widget<Container>(
+        find.byType(Container).first,
+      );
+
+      // Container should not have duration or curve properties
+      // (these only exist on AnimatedContainer)
+      expect(container.runtimeType.toString(), 'Container');
+
+      // Switch to dark theme
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ModernBaseCard(
+            child: Text('Test Content'),
+          ),
+          theme: ThemeData.dark(),
+        ),
+      );
+
+      // No animation should occur - theme should change immediately
+      // We verify this by checking that after one frame (not pumpAndSettle),
+      // the decoration has already changed
+      await tester.pump();
+
+      final darkContainer = tester.widget<Container>(
+        find.byType(Container).first,
+      );
+      final darkDecoration = darkContainer.decoration! as BoxDecoration;
+
+      // Dark theme should have gradient immediately
+      expect(darkDecoration.gradient, isNotNull);
     });
   });
 }

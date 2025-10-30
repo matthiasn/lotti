@@ -50,6 +50,8 @@ void main() {
         .thenAnswer((_) async => 'dark');
     when(() => mockSettingsDb.saveSettingsItem(any(), any()))
         .thenAnswer((_) async => 1);
+    when(() => mockSettingsDb.watchSettingsItemByKey(any()))
+        .thenAnswer((_) => Stream.value([]));
 
     when(() => mockJournalDb.watchConfigFlag(enableTooltipFlag))
         .thenAnswer((_) => Stream.value(true));

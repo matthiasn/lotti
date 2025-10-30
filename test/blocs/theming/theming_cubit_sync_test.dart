@@ -58,6 +58,8 @@ void main() {
         .thenAnswer((_) async => 1);
     when(() => journalDb.watchConfigFlag(any<String>()))
         .thenAnswer((_) => Stream.value(false));
+    when(() => settingsDb.watchSettingsItemByKey(any<String>()))
+        .thenAnswer((_) => const Stream.empty());
     when(() => outboxService.enqueueMessage(any<SyncMessage>()))
         .thenAnswer((_) async {});
     when(

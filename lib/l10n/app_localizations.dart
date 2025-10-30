@@ -2517,6 +2517,12 @@ abstract class AppLocalizations {
   /// **'AI configuration delete'**
   String get syncPayloadAiConfigDelete;
 
+  /// No description provided for @syncPayloadThemingSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Theming selection'**
+  String get syncPayloadThemingSelection;
+
   /// No description provided for @syncListCountSummary.
   ///
   /// In en, this message translates to:

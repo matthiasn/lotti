@@ -153,7 +153,7 @@ class OutboxListItemViewModel {
         entryLink: (_) => messages.syncPayloadEntryLink,
         aiConfig: (_) => messages.syncPayloadAiConfig,
         aiConfigDelete: (_) => messages.syncPayloadAiConfigDelete,
-        themingSelection: (_) => 'Theming Selection',
+        themingSelection: (_) => messages.syncPayloadThemingSelection,
       );
     } catch (_) {
       return messages.syncListUnknownPayload;
