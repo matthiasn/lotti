@@ -5,6 +5,11 @@
 - When sync is configured but the user is not logged in, the outbox still attempts to process and wastes retries. We will pause processing while logged out and show a one‑time red toast to explain why.
 - Use a simple guard in `OutboxService.sendNext()` and a StreamBuilder‑driven UI toast. No DB mutations while logged out; pending items resume automatically after login.
 
+### 2025‑10‑29 Update — Connectivity regain didn’t auto‑send until a new item was created
+
+- Field observation: after landing (network available and other apps online), pending outbox items did not start sending. Creating a new item immediately triggered sends.
+- Expected behavior: connectivity detection should reliably nudge the outbox to send pending items once the Matrix client is logged in again, without requiring a new enqueue.
+
 ## Goals
 
 - Block outbox processing when Matrix is not logged in (regardless of feature flag).
@@ -24,6 +29,13 @@
 - Login state is available (`MatrixService.isLoggedIn()`) and via `client.onLoginStateChanged.stream`.
 - UI already uses SnackBars; Outbox Monitor handles retry actions.
 
+### New findings (connectivity + login interaction)
+
+- Outbox already listens to connectivity regain and enqueues a send: `OutboxService` subscribes to `Connectivity().onConnectivityChanged` and calls `_clientRunner.enqueueRequest(...)` when any of `[wifi, mobile, ethernet]` is present.
+- `sendNext()` has a login gate; if the Matrix client isn’t logged in yet, it returns early and emits a one‑time UI event. There is no follow‑up nudge when the client later reports `loggedIn`.
+- MatrixService separately nudges its pipeline on connectivity regain (forces a rescan), but that doesn’t enqueue the outbox.
+- Net effect: if the connectivity nudge fires before login completes, Outbox idles until another event (e.g., creating a new item) enqueues a request.
+
 ## Design Overview
 
 1) Process gate on login state
@@ -37,6 +49,14 @@
 3) One‑time red toast (event‑driven)
 - Show a red SnackBar (`syncNotLoggedInToast`) once per login session, but only when the outbox actually attempts to send and is blocked by the login gate.
 - Maintain a simple per‑login guard; reset the guard on login state changes so the toast can re‑appear on a future logout.
+
+4) Robust recovery on connectivity regain (new)
+- Subscribe Outbox to the Matrix login state stream and enqueue immediately on `LoginState.loggedIn`. This guarantees that a connectivity nudge which arrived “too early” (pre‑login) still results in sending once login completes.
+- Optionally add a bounded follow‑up nudge sequence after connectivity regain while logged out (e.g., schedule re‑nudges at 1s and 5s) to catch staggered login without spinning.
+
+5) Reduce startup toast noise (new)
+- Emit the login‑gate toast only if there are pending outbox items at the moment of the gate.
+- Add a short startup grace window before surfacing the toast to avoid alarming users during normal boot/login initialization.
 
 ### Post‑Implementation Update (2025‑10‑28) — Startup toast regression and fix
 
@@ -65,6 +85,21 @@
 
 - Outcome
   - Users no longer see a red toast on app launch when they simply haven’t logged in yet. The toast appears only when it is actionable/relevant—i.e., when the outbox attempts to send and is blocked by login state.
+
+### 2025‑10‑29 Addendum — Connectivity‑driven recovery and toast polish
+
+- Problem restated
+  - Connectivity regain enqueues a send, but if login is not yet complete, `sendNext()` returns early. With no subsequent nudge tied to login success, Outbox remains idle until a new item is created.
+
+- Fix plan
+  - OutboxService subscribes to `matrixService.client.onLoginStateChanged.stream` and, on `loggedIn`, calls `enqueueNextSendRequest(Duration.zero)`. This provides a deterministic post‑login nudge.
+  - Gate the not‑logged‑in toast behind “has pending items” and an optional startup grace window to avoid noisy toasts while the client is still initializing.
+  - Optional: after a connectivity regain event while logged out, schedule a small, bounded re‑nudge sequence (e.g., 1s and 5s) to bridge login latency.
+
+- Acceptance criteria
+  - With pending items and app offline at launch: upon connectivity regain, once login completes, Outbox sends without creating new items.
+  - No “not logged in” toast at startup while the client is in the process of logging in and there are no pending items, or we’re still within the grace window.
+  - Analyzer/test clean.
 
 ## Data Flow & API Changes
 
@@ -111,6 +146,7 @@
 - Widget/Integration tests
   - StreamBuilder shows toast once per login session on not‑logged‑in transition; guard resets on login.
   - Items remain Pending while logged out; resume processing after login without manual intervention.
+  - Connectivity/login recovery: with a pending outbox item, simulate connectivity regain while `isLoggedIn=false` (no send), then emit `LoginState.loggedIn` → send occurs without enqueueing a new item; toast gated by pending items and startup grace.
 
 - Analyzer & format
   - `make analyze` clean; `dart format .` as needed.
@@ -268,6 +304,9 @@ In `OutboxBadgeIcon`, consider dimming the icon when sync is enabled but not log
 - [ ] Wire `isLoggedIn` gate in `OutboxService.sendNext()`
 - [ ] Option A: Extend `OutboxState` with `notLoggedIn` and update `OutboxCubit`
 - [ ] Add top‑level StreamBuilder that shows red SnackBar (`syncNotLoggedInToast`) once per login session; reset guard on login
+- [ ] Subscribe OutboxService to login state; enqueue on `LoginState.loggedIn`
+- [ ] Gate toast emission: pending‑only + startup grace window
+- [ ] Optional: bounded re‑nudge after connectivity regain while logged out
 - [ ] Optional: adjust `OutboxBadgeIcon` disabled state when login missing
 - [ ] Optional: “Retry All Errors” action in Outbox Monitor
 - [ ] Add localization key; run `make l10n`

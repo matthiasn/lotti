@@ -21,6 +21,7 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:matrix/matrix.dart';
 
 class OutboxService {
   OutboxService({
@@ -38,6 +39,8 @@ class OutboxService {
     MatrixService? matrixService,
     bool? ownsActivityGate,
     Future<void> Function(String path, String json)? saveJsonHandler,
+    // Optional seams for testing/injection
+    Stream<List<ConnectivityResult>>? connectivityStream,
   })  : _syncDatabase = syncDatabase,
         _loggingService = loggingService,
         _vectorClockService = vectorClockService,
@@ -49,7 +52,8 @@ class OutboxService {
               activityService: userActivityService,
             ),
         _ownsActivityGate = ownsActivityGate ?? activityGate == null,
-        _matrixService = matrixService {
+        _matrixService = matrixService,
+        _connectivityStream = connectivityStream {
     // Runtime validation that works in release builds
     if (messageSender == null && matrixService == null) {
       throw ArgumentError(
@@ -72,17 +76,52 @@ class OutboxService {
 
     _startRunner();
 
-    _connectivitySubscription = Connectivity()
-        .onConnectivityChanged
-        .listen((List<ConnectivityResult> result) {
-      if ({
+    // Connectivity regain: nudge the outbox to attempt sending. If the client
+    // is not yet logged in, schedule a couple of bounded follow-up nudges and
+    // rely on the login-state subscription to trigger a send once login
+    // completes.
+    _connectivitySubscription =
+        (_connectivityStream ?? Connectivity().onConnectivityChanged)
+            .listen((List<ConnectivityResult> result) {
+      final regained = {
         ConnectivityResult.wifi,
         ConnectivityResult.mobile,
         ConnectivityResult.ethernet,
-      }.intersection(result.toSet()).isNotEmpty) {
-        _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+      }.intersection(result.toSet()).isNotEmpty;
+      if (regained) {
+        _loggingService.captureEvent(
+          'connectivity.regained → enqueue',
+          domain: 'OUTBOX',
+          subDomain: 'connectivity',
+        );
+        if (!_isDisposed) {
+          _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+        }
+        // If not logged in yet, add bounded extra nudges.
+        final notLoggedIn =
+            _matrixService != null && !_matrixService!.isLoggedIn();
+        if (notLoggedIn) {
+          unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
+          unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 5)));
+        }
       }
     });
+
+    // Post-login nudge: if connectivity regain fired too early, ensure a
+    // deterministic enqueue once the Matrix client reports logged in.
+    final client = _matrixService?.client;
+    if (client != null) {
+      _loginSubscription = client.onLoginStateChanged.stream.listen((state) {
+        if (state == LoginState.loggedIn) {
+          _loggingService.captureEvent(
+            'login.loggedIn → enqueue',
+            domain: 'OUTBOX',
+            subDomain: 'login',
+          );
+          unawaited(enqueueNextSendRequest(delay: Duration.zero));
+        }
+      });
+    }
   }
 
   final LoggingService _loggingService;
@@ -97,6 +136,7 @@ class OutboxService {
   late final OutboxMessageSender _messageSender;
   late final OutboxProcessor _processor;
   final MatrixService? _matrixService;
+  final Stream<List<ConnectivityResult>>? _connectivityStream;
   final StreamController<void> _loginGateEventsController =
       StreamController<void>.broadcast();
 
@@ -107,6 +147,10 @@ class OutboxService {
 
   late ClientRunner<int> _clientRunner;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  StreamSubscription<LoginState>? _loginSubscription;
+  final DateTime _createdAt = DateTime.now();
+  static const Duration _loginGateStartupGrace = Duration(seconds: 5);
+  bool _isDisposed = false;
 
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
@@ -331,10 +375,17 @@ class OutboxService {
           domain: 'OUTBOX',
           subDomain: 'sendNext',
         );
-        // Notify listeners that an outbox send was attempted while logged out.
-        // This is used by the UI to surface a one-time red toast.
-        if (!_loginGateEventsController.isClosed) {
-          _loginGateEventsController.add(null);
+        // Notify listeners only when meaningful and outside startup grace:
+        // - There are pending outbox items
+        // - We are past the initial startup window
+        final withinGrace =
+            DateTime.now().difference(_createdAt) < _loginGateStartupGrace;
+        if (!withinGrace && !_loginGateEventsController.isClosed) {
+          final hasPending =
+              (await _repository.fetchPending(limit: 1)).isNotEmpty;
+          if (hasPending) {
+            _loginGateEventsController.add(null);
+          }
         }
         return;
       }
@@ -361,8 +412,10 @@ class OutboxService {
   Future<void> enqueueNextSendRequest({
     Duration delay = const Duration(milliseconds: 1),
   }) async {
+    if (_isDisposed) return;
     unawaited(
       Future<void>.delayed(delay).then((_) {
+        if (_isDisposed) return;
         _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
         _loggingService.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
       }),
@@ -370,8 +423,10 @@ class OutboxService {
   }
 
   Future<void> dispose() async {
+    _isDisposed = true;
     _clientRunner.close();
     await _connectivitySubscription?.cancel();
+    await _loginSubscription?.cancel();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }
